@@ -1,0 +1,9 @@
+logging:
+  level: "INFO"
+  directory: "logs"
+  application_filename: "aip.log"
+  audit_filename: "audit.jsonl"
+  rotation: "25 MB"
+  retention: "90 days"
+  compression: "zip"
+  serialize: false

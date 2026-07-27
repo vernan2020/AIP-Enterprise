@@ -1,0 +1,4 @@
+database:
+  engine: "duckdb"
+  path: "database/aip.duckdb"
+  read_only: false
