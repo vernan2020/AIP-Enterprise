@@ -1,0 +1,12 @@
+* text=auto
+
+*.py text
+*.md text
+*.yml text
+*.yaml text
+*.json text
+*.toml text
+
+*.png binary
+*.jpg binary
+*.ico binary
