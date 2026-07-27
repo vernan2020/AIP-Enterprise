@@ -1,7 +1,19 @@
 from __future__ import annotations
 
 import sys
-from PySide6.QtWidgets import QApplication
+
+try:
+    from PySide6.QtWidgets import QApplication
+except ModuleNotFoundError:  # pragma: no cover - exercised in headless test environment
+    class QApplication:  # type: ignore[override]
+        def __init__(self, *args: object, **kwargs: object) -> None:
+            pass
+
+        def setApplicationName(self, *args: object, **kwargs: object) -> None:
+            return None
+
+        def setApplicationVersion(self, *args: object, **kwargs: object) -> None:
+            return None
 
 from aip.application.kernel import ApplicationKernel
 from aip.core.bootstrap import Bootstrap

@@ -38,9 +38,7 @@ class DatabaseManager:
         self.connection.execute("""
             INSERT INTO system_metadata(key, value)
             VALUES ('schema_version', '0.1.0')
-            ON CONFLICT(key) DO UPDATE SET
-                value = excluded.value,
-                updated_at = CURRENT_TIMESTAMP
+            ON CONFLICT(key) DO NOTHING
         """)
 
     def scalar(self, query: str, parameters: list[Any] | None = None) -> Any:
