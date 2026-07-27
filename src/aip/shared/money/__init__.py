@@ -16,7 +16,10 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Self
 
-from src.aip.shared.validation import Guard, Validators
+from aip.shared.validation import Guard, Validators
+import sys
+
+sys.modules.setdefault("src.aip.shared.money", sys.modules[__name__])
 
 
 class Currency(Enum):

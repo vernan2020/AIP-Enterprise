@@ -14,9 +14,9 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Self, Sequence
 
-from src.aip.shared.validation import Guard
-from src.aip.shared.calendars import BusinessCalendar, CostaRicaCalendar
-from src.aip.shared.conventions import BusinessDayConvention
+from aip.shared.validation import Guard
+from aip.shared.calendars import BusinessCalendar, CostaRicaCalendar
+from aip.shared.conventions import BusinessDayConvention
 
 
 @dataclass(frozen=True)

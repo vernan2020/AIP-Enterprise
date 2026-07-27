@@ -11,7 +11,7 @@ Classes:
 from decimal import Decimal
 from typing import Any, Callable, TypeVar, Sequence
 
-from src.aip.shared.validation.exceptions import (
+from aip.shared.validation.exceptions import (
     RequiredValueError,
     PositiveValueError,
     NotEmptyError,

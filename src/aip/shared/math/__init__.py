@@ -14,7 +14,7 @@ from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
 from dataclasses import dataclass
 from typing import Self, Sequence
 
-from src.aip.shared.validation import Guard, Validators
+from aip.shared.validation import Guard, Validators
 
 
 @dataclass(frozen=True)

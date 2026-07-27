@@ -15,7 +15,7 @@ Sub-packages:
 """
 
 # Validation exports
-from src.aip.shared.validation import (
+from aip.shared.validation import (
     Guard,
     Validators,
     ValidationException,
@@ -27,7 +27,7 @@ from src.aip.shared.validation import (
 )
 
 # Math exports
-from src.aip.shared.math import (
+from aip.shared.math import (
     SafeDecimal,
     Percentage,
     WeightedAverage,
@@ -35,7 +35,7 @@ from src.aip.shared.math import (
 )
 
 # Conventions exports
-from src.aip.shared.conventions import (
+from aip.shared.conventions import (
     DayCountConvention,
     Frequency,
     CouponConvention,
@@ -43,7 +43,7 @@ from src.aip.shared.conventions import (
 )
 
 # Calendars exports
-from src.aip.shared.calendars import (
+from aip.shared.calendars import (
     BusinessCalendar,
     HolidayProvider,
     WeekendRules,
@@ -52,7 +52,7 @@ from src.aip.shared.calendars import (
 )
 
 # Dates exports
-from src.aip.shared.dates import (
+from aip.shared.dates import (
     BusinessDate,
     BusinessPeriod,
     DateRange,
@@ -60,7 +60,7 @@ from src.aip.shared.dates import (
 )
 
 # Money exports
-from src.aip.shared.money import (
+from aip.shared.money import (
     Currency,
     Money,
     ExchangeRate,
@@ -68,14 +68,14 @@ from src.aip.shared.money import (
 )
 
 # Serialization exports
-from src.aip.shared.serialization import (
+from aip.shared.serialization import (
     JsonSerializer,
     DecimalEncoder,
     DateEncoder,
 )
 
 # Collections exports
-from src.aip.shared.collections import (
+from aip.shared.collections import (
     ImmutableList,
     ImmutableDict,
     ImmutableSet,

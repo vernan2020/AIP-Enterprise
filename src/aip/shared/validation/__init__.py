@@ -8,7 +8,7 @@ Classes:
     Validators: Collection of reusable validation functions.
 """
 
-from src.aip.shared.validation.exceptions import (
+from aip.shared.validation.exceptions import (
     ValidationException,
     RequiredValueError,
     PositiveValueError,
@@ -16,10 +16,13 @@ from src.aip.shared.validation.exceptions import (
     RangeError,
     InvalidFormatError,
 )
-from src.aip.shared.validation.validators import (
+from aip.shared.validation.validators import (
     Guard,
     Validators,
 )
+import sys
+
+sys.modules.setdefault("src.aip.shared.validation", sys.modules[__name__])
 
 __all__ = [
     "ValidationException",

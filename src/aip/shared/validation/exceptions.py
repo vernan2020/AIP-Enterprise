@@ -4,6 +4,10 @@ This module defines the exception hierarchy for validation errors,
 providing domain-specific error types for different validation failures.
 """
 
+from __future__ import annotations
+
+import sys
+
 
 class ValidationException(Exception):
     """Base exception for all validation errors."""
@@ -103,3 +107,6 @@ class InvalidFormatError(ValidationException):
         """
         message = f"Invalid format: {field_name}, expected {expected_format}"
         super().__init__(message, field_name)
+
+
+sys.modules.setdefault("src.aip.shared.validation.exceptions", sys.modules[__name__])
