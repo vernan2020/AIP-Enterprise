@@ -1,0 +1,14 @@
+docs/.gitkeep
+docs/architecture/.gitkeep
+docs/api/.gitkeep
+docs/adr/.gitkeep
+docs/decisions/.gitkeep
+docs/standards/.gitkeep
+
+resources/.gitkeep
+resources/icons/.gitkeep
+resources/images/.gitkeep
+resources/styles/.gitkeep
+
+tests/integration/.gitkeep
+tests/performance/.gitkeep
