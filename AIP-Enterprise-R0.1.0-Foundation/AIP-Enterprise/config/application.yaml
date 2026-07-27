@@ -1,0 +1,7 @@
+application:
+  name: "AIP Enterprise"
+  organization: "Coopealianza R.L."
+  environment: "development"
+  debug: true
+  window_width: 1440
+  window_height: 900
