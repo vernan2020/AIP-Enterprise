@@ -1,8 +1,21 @@
 from __future__ import annotations
-from PySide6.QtWidgets import QApplication
+
+from typing import TYPE_CHECKING, Any
+
+try:
+    from PySide6.QtWidgets import QApplication
+except Exception:  # pragma: no cover - exercised in headless test environments
+    QApplication = Any  # type: ignore[assignment,misc]
 
 from aip.core.bootstrap import BootstrapServices
-from aip.ui.main_window import MainWindow
+
+if TYPE_CHECKING:
+    from aip.ui.main_window import MainWindow
+else:
+    try:
+        from aip.ui.main_window import MainWindow
+    except Exception:  # pragma: no cover - exercised in headless test environments
+        MainWindow = Any  # type: ignore[assignment,misc]
 
 
 class ApplicationKernel:
