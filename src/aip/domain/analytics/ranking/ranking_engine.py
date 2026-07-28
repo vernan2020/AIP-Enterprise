@@ -45,9 +45,16 @@ class RankingEngine:
             last_score = item.primary_score
         percentile_rank = tuple(Decimal(rank) / Decimal(len(ordered)) for rank in ordinal_rank)
         tie_groups = []
-        for index, item in enumerate(ordered):
-            same_score = [candidate.business_id for candidate in ordered if candidate.primary_score == item.primary_score]
+        index = 0
+        while index < len(ordered):
+            current_score = ordered[index].primary_score
+            same_score = [ordered[index].business_id]
+            inner = index + 1
+            while inner < len(ordered) and ordered[inner].primary_score == current_score:
+                same_score.append(ordered[inner].business_id)
+                inner += 1
             tie_groups.append(tuple(same_score))
+            index = inner
         return RankingResult(
             ranked_items=tuple(ordered),
             ordinal_rank=ordinal_rank,
