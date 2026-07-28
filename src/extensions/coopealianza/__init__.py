@@ -1,0 +1,1 @@
+"""Coopealianza-specific extensions."""
