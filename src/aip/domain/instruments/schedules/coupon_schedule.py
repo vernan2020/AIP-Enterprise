@@ -20,7 +20,7 @@ class CouponSchedule:
         *,
         issue_date: date,
         maturity_date: date,
-        payment_frequency: PaymentFrequency,
+        payment_frequency: PaymentFrequency | str,
         coupon_rate: Decimal,
         nominal_value: Decimal,
         include_principal: bool = True,
@@ -30,7 +30,8 @@ class CouponSchedule:
         if maturity_date <= issue_date:
             return schedule
 
-        step = payment_frequency.months_between_payments()
+        normalized_payment_frequency = PaymentFrequency.from_value(payment_frequency)
+        step = normalized_payment_frequency.months_between_payments()
         payment_dates: list[date] = [issue_date] if include_initial_coupon else []
         current = issue_date
         while True:

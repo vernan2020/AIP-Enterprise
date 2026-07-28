@@ -24,7 +24,7 @@ class FixedIncomeInstrument(FinancialInstrument):
     def __post_init__(self) -> None:
         super().__post_init__()
         self.coupon_rate = self._ensure_decimal(self.coupon_rate)
-        self.payment_frequency = self.payment_frequency
+        self.payment_frequency = PaymentFrequency.from_value(self.payment_frequency)
         self.coupon_type = self.coupon_type
         self.amortization_type = self.amortization_type
         if self.coupon_rate < 0:

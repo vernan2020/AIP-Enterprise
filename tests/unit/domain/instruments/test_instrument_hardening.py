@@ -193,6 +193,14 @@ def test_fixed_income_instrument_builds_coupon_schedule_and_rejects_negative_cou
     assert "Coupon rate" in str(exc_info.value)
 
 
+def test_fixed_income_instrument_normalizes_string_payment_frequency() -> None:
+    instrument = FixedIncomeInstrument(**make_common_kwargs(coupon_rate=Decimal("0.06"), payment_frequency="quarterly"))
+
+    assert instrument.payment_frequency is PaymentFrequency.QUARTERLY
+    assert instrument.coupon_schedule is not None
+    assert instrument.coupon_schedule.coupons
+
+
 def test_fixed_income_calculate_price_and_yield_cover_branch_paths() -> None:
     instrument = FixedIncomeInstrument(**make_common_kwargs(coupon_rate=Decimal("0.06"), payment_frequency=PaymentFrequency.SEMIANNUAL))
     instrument.coupon_schedule = None
