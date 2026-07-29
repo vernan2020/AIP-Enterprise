@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from PySide6.QtWidgets import QHBoxLayout, QWidget
 
-from aip.ui.modules.portfolio.widgets.portfolio_metric_card import PortfolioMetricCard
+from aip.ui.modules.market.widgets.market_metric_card import MarketMetricCard
 
 
 class MarketSummaryView(QWidget):
@@ -19,4 +19,4 @@ class MarketSummaryView(QWidget):
             ("Average Spread", getattr(summary, "average_spread", "")),
             ("Market Status", getattr(summary, "market_status", "")),
         ]:
-            layout.addWidget(PortfolioMetricCard(title, value))
+            layout.addWidget(MarketMetricCard(title, value))

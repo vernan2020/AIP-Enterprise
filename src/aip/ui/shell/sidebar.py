@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from PySide6.QtWidgets import QLineEdit, QListWidget, QVBoxLayout, QWidget
 
+from aip.ui.modules.liquidity.views.liquidity_view import LiquidityView
+from aip.ui.modules.market.views.market_view import MarketView
 from aip.ui.modules.portfolio.views.portfolio_view import PortfolioView
 from aip.ui.navigation.navigation_manager import NavigationManager
 from aip.ui.shell.workspace import Workspace
@@ -35,5 +37,9 @@ class Sidebar(QWidget):
         route_id = item.text().lower()
         if route_id == "portfolio":
             self._workspace.open_tab("Portfolio", PortfolioView())
+        elif route_id == "market":
+            self._workspace.open_tab("Market", MarketView())
+        elif route_id == "liquidity":
+            self._workspace.open_tab("Liquidity", LiquidityView())
         else:
             self._workspace.open_tab(item.text(), QWidget())

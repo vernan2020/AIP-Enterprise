@@ -3,6 +3,8 @@ from __future__ import annotations
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QDockWidget, QMainWindow, QSplitter, QTextEdit, QVBoxLayout, QWidget
 
+from aip.ui.modules.liquidity.views.liquidity_view import LiquidityView
+from aip.ui.modules.market.views.market_view import MarketView
 from aip.ui.modules.portfolio.views.portfolio_view import PortfolioView
 
 from aip.core.version import APP_NAME, APP_VERSION
@@ -54,6 +56,8 @@ class MainWindow(QMainWindow):
     def _build_ui(self) -> None:
         self._ribbon = Ribbon()
         self._ribbon.action("Portfolio").triggered.connect(lambda: self.open_workspace("portfolio"))
+        self._ribbon.action("Market").triggered.connect(lambda: self.open_workspace("market"))
+        self._ribbon.action("Liquidity").triggered.connect(lambda: self.open_workspace("liquidity"))
         self.addToolBar(Qt.ToolBarArea.TopToolBarArea, self._ribbon)
 
         self._sidebar = Sidebar(self._navigation)
@@ -107,8 +111,16 @@ class MainWindow(QMainWindow):
         self._window_state.restore(self)
 
     def open_workspace(self, route_id: str) -> None:
+        if self._workspace is None:
+            raise RuntimeError("Workspace not initialized")
         if route_id == "portfolio":
             self._workspace.open_tab("Portfolio", PortfolioView())
+            return
+        if route_id == "market":
+            self._workspace.open_tab("Market", MarketView())
+            return
+        if route_id == "liquidity":
+            self._workspace.open_tab("Liquidity", LiquidityView())
             return
         self._workspace.open_tab(route_id.title(), QTextEdit(route_id))
 

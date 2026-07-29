@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from PySide6.QtWidgets import QWidget
+
 from aip.ui.modules.market.routing.market_route import MarketRoute
 from aip.ui.navigation.menu_registry import MenuRegistry
 from aip.ui.navigation.navigation_manager import NavigationManager
