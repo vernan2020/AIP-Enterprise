@@ -1,0 +1,1 @@
+"""Folder watch integration package."""
