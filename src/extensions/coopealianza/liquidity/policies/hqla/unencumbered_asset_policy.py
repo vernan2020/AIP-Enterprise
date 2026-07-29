@@ -3,7 +3,9 @@ from __future__ import annotations
 from aip.domain.policies.base.policy_context import PolicyContext
 from aip.domain.policies.evaluation.evaluation_result import EvaluationResult
 from aip.domain.policies.severity.policy_severity import PolicySeverity
-from src.extensions.coopealianza.liquidity.configuration.liquidity_policy_config import LiquidityPolicyConfig
+from src.extensions.coopealianza.liquidity.configuration.liquidity_policy_config import (
+    LiquidityPolicyConfig,
+)
 from src.extensions.coopealianza.liquidity.policies.institutional_policy import InstitutionalPolicy
 
 

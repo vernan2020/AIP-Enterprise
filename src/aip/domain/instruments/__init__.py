@@ -4,10 +4,10 @@ import sys
 
 from aip.domain.instruments.base.financial_instrument import FinancialInstrument
 from aip.domain.instruments.bonds.bond import Bond
+from aip.domain.instruments.bonds.floating_rate_bond import FloatingRateBond
 from aip.domain.instruments.bonds.government_bond import GovernmentBond
 from aip.domain.instruments.bonds.treasury_bill import TreasuryBill
 from aip.domain.instruments.bonds.zero_coupon_bond import ZeroCouponBond
-from aip.domain.instruments.bonds.floating_rate_bond import FloatingRateBond
 from aip.domain.instruments.cash.cash import Cash
 from aip.domain.instruments.enums.amortization_type import AmortizationType
 from aip.domain.instruments.enums.coupon_type import CouponType

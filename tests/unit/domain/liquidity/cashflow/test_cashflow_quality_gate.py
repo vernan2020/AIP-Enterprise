@@ -9,7 +9,6 @@ import pytest
 from aip.domain.financial_math.cashflows.cashflow import CashFlow
 from aip.domain.instruments.enums.payment_frequency import PaymentFrequency
 from aip.domain.instruments.schedules.coupon_schedule import CouponSchedule
-from aip.domain.liquidity.cashflow.aggregation import scenario_aggregation
 from aip.domain.liquidity.cashflow.calculators.amortization_projection import AmortizationProjection
 from aip.domain.liquidity.cashflow.calculators.behavioral_projection import BehavioralProjection
 from aip.domain.liquidity.cashflow.calculators.contractual_projection import ContractualProjection
@@ -18,12 +17,16 @@ from aip.domain.liquidity.cashflow.calculators.rollover_projection import Rollov
 from aip.domain.liquidity.cashflow.engine.aggregation_engine import AggregationEngine
 from aip.domain.liquidity.cashflow.engine.cashflow_engine import CashFlowEngine
 from aip.domain.liquidity.cashflow.engine.projection_engine import ProjectionEngine
-from aip.domain.liquidity.cashflow.exceptions import AggregationError, BehavioralError, ProjectionError, ScenarioError
+from aip.domain.liquidity.cashflow.exceptions import (
+    AggregationError,
+    BehavioralError,
+    ProjectionError,
+    ScenarioError,
+)
 from aip.domain.liquidity.cashflow.models.behavioral_assumption import BehavioralAssumption
 from aip.domain.liquidity.cashflow.models.projection_request import ProjectionRequest
 from aip.domain.liquidity.cashflow.models.projection_result import ProjectionResult
 from aip.domain.liquidity.cashflow.providers.behavioral_provider import BehavioralProvider
-from aip.domain.liquidity.cashflow.providers.rollover_provider import RolloverProvider
 from aip.domain.liquidity.cashflow.providers.scenario_provider import ScenarioProvider
 
 

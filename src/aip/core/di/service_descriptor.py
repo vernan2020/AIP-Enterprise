@@ -4,9 +4,8 @@ A service descriptor contains metadata about a service including its type,
 implementation, lifetime, and factory function (if applicable).
 """
 
-from abc import ABC, abstractmethod
 from collections.abc import Callable
-from typing import Any, Generic, TypeVar
+from typing import Generic, TypeVar
 
 from .lifetimes import ServiceLifetime
 

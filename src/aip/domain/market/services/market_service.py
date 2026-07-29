@@ -4,7 +4,6 @@ from datetime import date, datetime
 from decimal import Decimal
 
 from aip.domain.financial_math.curves.curve_point import CurvePoint
-from aip.domain.financial_math.curves.yield_curve import YieldCurve
 from aip.domain.instruments.base.financial_instrument import FinancialInstrument
 from aip.domain.market.curves.curve_snapshot import CurveSnapshot
 from aip.domain.market.curves.market_curve import MarketCurve

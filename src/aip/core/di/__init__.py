@@ -61,7 +61,7 @@ from .exceptions import (
 from .lifetimes import ServiceLifetime
 from .service_collection import ServiceCollection
 from .service_descriptor import ServiceDescriptor
-from .service_provider import ServiceProvider, ServiceScope, DefaultServiceScope
+from .service_provider import DefaultServiceScope, ServiceProvider, ServiceScope
 
 __all__ = [
     # Container

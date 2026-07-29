@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from datetime import UTC, datetime, date
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import Any
 
@@ -10,7 +10,12 @@ import pytest
 from aip.application.contracts.analysis_request import AnalysisRequest
 from aip.application.contracts.analysis_result import AnalysisResult
 from aip.application.events.domain_event_dispatcher import DomainEventDispatcher
-from aip.application.exceptions import ContractValidationError, EventDispatchError, TelemetryError, WorkflowExecutionError
+from aip.application.exceptions import (
+    ContractValidationError,
+    EventDispatchError,
+    TelemetryError,
+    WorkflowExecutionError,
+)
 from aip.application.telemetry.execution_metrics import ExecutionMetrics
 from aip.application.workflows.base_workflow import BaseWorkflow, WorkflowLifecycleState
 from aip.application.workflows.relative_value_workflow import RelativeValueWorkflow

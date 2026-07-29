@@ -7,7 +7,9 @@ from aip.domain.liquidity.gap.engine.gap_engine import GapEngine
 from aip.domain.liquidity.gap.models.gap_request import GapRequest
 from src.extensions.coopealianza.liquidity.stress.engine.stress_engine import StressEngine
 from src.extensions.coopealianza.liquidity.stress.models.stress_request import StressRequest
-from src.extensions.coopealianza.liquidity.stress.reports.stress_report_builder import StressReportBuilder
+from src.extensions.coopealianza.liquidity.stress.reports.stress_report_builder import (
+    StressReportBuilder,
+)
 
 
 def test_report_consistency_aggregates_stress_output_for_reporting(projection_request, stress_config) -> None:

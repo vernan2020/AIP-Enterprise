@@ -5,9 +5,7 @@ from datetime import date
 from decimal import Decimal
 
 from aip.domain.instruments.bonds.bond import Bond
-from aip.domain.instruments.enums.payment_frequency import PaymentFrequency
 from aip.domain.instruments.exceptions import InstrumentValidationError
-from aip.domain.instruments.schedules.coupon import Coupon
 from aip.domain.instruments.schedules.coupon_schedule import CouponSchedule
 
 

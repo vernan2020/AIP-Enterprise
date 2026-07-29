@@ -25,12 +25,12 @@ from src.aip.domain.portfolio.exceptions import (
 from src.aip.domain.portfolio.repositories import PortfolioRepository
 from src.aip.domain.portfolio.services import PortfolioCalculationService
 from src.aip.domain.portfolio.value_objects import (
+    ISIN,
     AcquisitionCost,
     BookValue,
     Convexity,
     Duration,
     InstrumentName,
-    ISIN,
     MarketValue,
     NominalValue,
     PortfolioId,

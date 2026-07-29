@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from aip.domain.financial_math.curves.yield_curve import YieldCurve
 from aip.domain.relative_value.exceptions import BenchmarkNotAvailableError, SpreadCalculationError
 
 

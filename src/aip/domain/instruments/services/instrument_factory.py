@@ -22,7 +22,6 @@ from aip.domain.instruments.money_market.certificate_of_deposit import Certifica
 from aip.domain.instruments.money_market.commercial_paper import CommercialPaper
 from aip.domain.instruments.money_market.repo import Repo
 from aip.domain.instruments.money_market.reverse_repo import ReverseRepo
-from aip.domain.instruments.schedules.coupon_schedule import CouponSchedule
 from aip.shared.conventions import DayCountConvention
 
 

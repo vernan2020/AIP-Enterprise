@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-from typing import Sequence
-
 from aip.domain.policies.base.policy import Policy
 from aip.domain.policies.base.policy_context import PolicyContext
 from aip.domain.policies.engine.policy_engine import PolicyEngine
-from aip.domain.policies.evaluation.evaluation_report import EvaluationReport
 from aip.domain.policies.registry.policy_registry import PolicyRegistry
 
 from ..configuration.models import CoopealianzaLiquiditySettings

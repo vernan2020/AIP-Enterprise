@@ -18,15 +18,21 @@ from aip.application.exceptions import (
     translate_application_exception,
 )
 from aip.application.kernel import ApplicationKernel
-from aip.application.workflows.base_workflow import WorkflowLifecycleState
+from aip.application.orchestrators.investment_decision_orchestrator import (
+    InvestmentDecisionOrchestrator,
+)
+from aip.application.orchestrators.liquidity_analysis_orchestrator import (
+    LiquidityAnalysisOrchestrator,
+)
+from aip.application.orchestrators.portfolio_analysis_orchestrator import (
+    PortfolioAnalysisOrchestrator,
+)
 from aip.application.orchestrators.pricing_orchestrator import PricingOrchestrator
-from aip.application.orchestrators.portfolio_analysis_orchestrator import PortfolioAnalysisOrchestrator
-from aip.application.orchestrators.liquidity_analysis_orchestrator import LiquidityAnalysisOrchestrator
-from aip.application.orchestrators.investment_decision_orchestrator import InvestmentDecisionOrchestrator
-from aip.application.workflows.relative_value_workflow import RelativeValueWorkflow
-from aip.application.workflows.liquidity_workflow import LiquidityWorkflow
-from aip.application.workflows.hqla_workflow import HQLAWorkflow
 from aip.application.telemetry.execution_metrics import ExecutionMetrics
+from aip.application.workflows.base_workflow import WorkflowLifecycleState
+from aip.application.workflows.hqla_workflow import HQLAWorkflow
+from aip.application.workflows.liquidity_workflow import LiquidityWorkflow
+from aip.application.workflows.relative_value_workflow import RelativeValueWorkflow
 from aip.domain.financial_math.cashflows.cashflow import CashFlow
 from aip.domain.financial_math.curves.curve_point import CurvePoint
 from aip.domain.financial_math.curves.yield_curve import YieldCurve
@@ -35,11 +41,6 @@ from aip.domain.instruments.enums.payment_frequency import PaymentFrequency
 from aip.domain.instruments.issuers.issuer import Issuer
 from aip.domain.instruments.issuers.issuer_type import IssuerType
 from aip.shared.conventions import DayCountConvention
-from aip.domain.liquidity.cashflow.models.projection_request import ProjectionRequest
-from aip.domain.liquidity.gap.models.gap_request import GapRequest
-from aip.domain.liquidity.hqla.models.hqla_request import HQLARequest
-from aip.domain.pricing.models.pricing_request import PricingRequest
-from aip.domain.relative_value.models.relative_value_request import RelativeValueRequest
 
 
 class _StubInstrument(GovernmentBond):
@@ -369,7 +370,7 @@ def test_workflow_lifecycle_transitions_are_deterministic() -> None:
         workflow.mark_partially_completed()
 
 
-def test_results_preserve_metadata_and_decimals() -> None:
+def test_execution_metrics_validate_inputs() -> None:
     metrics = ExecutionMetrics(workflow_id="wf", correlation_id="corr")
     with pytest.raises(TelemetryError):
         metrics.record_step("pricing", Decimal("-0.01"))

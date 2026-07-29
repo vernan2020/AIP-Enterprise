@@ -1,6 +1,5 @@
 """Unit tests for dependency injection exceptions."""
 
-import pytest
 
 from aip.core.di.exceptions import (
     CircularDependencyError,

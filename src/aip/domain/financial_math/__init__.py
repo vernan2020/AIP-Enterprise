@@ -1,7 +1,6 @@
 """Financial mathematics domain package."""
 
 from aip.domain.financial_math.bond_metrics.accrued_interest import accrued_interest
-accrue_interest = accrued_interest
 from aip.domain.financial_math.bond_metrics.clean_dirty_price import clean_price, dirty_price
 from aip.domain.financial_math.bond_metrics.convexity import convexity
 from aip.domain.financial_math.bond_metrics.dv01 import dv01
@@ -11,12 +10,19 @@ from aip.domain.financial_math.bond_metrics.modified_duration import modified_du
 from aip.domain.financial_math.bond_metrics.pvbp import pvbp
 from aip.domain.financial_math.cashflows.cashflow import CashFlow
 from aip.domain.financial_math.cashflows.cashflow_series import CashFlowSeries
-from aip.domain.financial_math.discounting.compounding import accumulation_factor, discount_factor, equivalent_rate
 from aip.domain.financial_math.curves.bootstrap import BootstrapResult, bootstrap_zero_curve
 from aip.domain.financial_math.curves.curve_point import CurvePoint
-from aip.domain.financial_math.curves.nelson_siegel import nelson_siegel_curve, nelson_siegel_zero_rate
+from aip.domain.financial_math.curves.nelson_siegel import (
+    nelson_siegel_curve,
+    nelson_siegel_zero_rate,
+)
 from aip.domain.financial_math.curves.svensson import svensson_curve, svensson_zero_rate
 from aip.domain.financial_math.curves.yield_curve import YieldCurve
+from aip.domain.financial_math.discounting.compounding import (
+    accumulation_factor,
+    discount_factor,
+    equivalent_rate,
+)
 from aip.domain.financial_math.discounting.future_value import future_value, future_value_series
 from aip.domain.financial_math.discounting.present_value import present_value, present_value_series
 from aip.domain.financial_math.exceptions import (
@@ -45,6 +51,8 @@ from aip.domain.financial_math.yield_calculations.internal_rate_of_return import
     money_weighted_return,
 )
 from aip.domain.financial_math.yield_calculations.yield_to_maturity import yield_to_maturity
+
+accrue_interest = accrued_interest
 
 __all__ = [
     "CashFlow",

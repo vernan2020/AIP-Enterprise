@@ -1,14 +1,21 @@
 from __future__ import annotations
 
+from datetime import date
 from decimal import Decimal
+from typing import Iterable, cast
 
 from aip.domain.analytics.explainability.explanation_factor import ExplanationFactor
 from aip.domain.liquidity.cashflow.engine.cashflow_engine import CashFlowEngine
-from aip.domain.liquidity.cashflow.models.projected_cashflow import ProjectedCashFlow
 from aip.domain.liquidity.cashflow.models.projection_request import ProjectionRequest
 from aip.domain.liquidity.gap.aggregation.gap_aggregation import GapAggregation
 from aip.domain.liquidity.gap.analytics.gap_analytics import GapAnalytics
-from aip.domain.liquidity.gap.exceptions import AggregationError, CurrencyAggregationError, CurrencyMismatchError, GapProviderError, LiquidityGapError
+from aip.domain.liquidity.gap.exceptions import (
+    AggregationError,
+    CurrencyAggregationError,
+    CurrencyMismatchError,
+    GapProviderError,
+    LiquidityGapError,
+)
 from aip.domain.liquidity.gap.explainability.gap_explanation import GapExplanation
 from aip.domain.liquidity.gap.models.gap_request import GapRequest
 from aip.domain.liquidity.gap.models.gap_result import GapResult
@@ -185,7 +192,7 @@ class GapEngine:
         raw = config.get("bucket_configuration", ())
         if not raw:
             return ()
-        return tuple(raw)
+        return tuple(cast(Iterable[tuple[date, date, str]], raw))
 
     def _validate_bucket_configuration(self, bucket_configuration: tuple[tuple[date, date, str], ...]) -> None:
         for index, current in enumerate(bucket_configuration):

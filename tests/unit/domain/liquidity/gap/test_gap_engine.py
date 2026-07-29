@@ -77,7 +77,7 @@ def test_gap_engine_supports_contractual_behavioral_and_scenario_summary_values(
 
 
 def test_gap_engine_aggregates_deterministically_across_dimensions() -> None:
-    request = GapRequest(
+    GapRequest(
         valuation_date=date(2024, 1, 1),
         cashflow_request=ProjectionRequest(
             valuation_date=date(2024, 1, 1),

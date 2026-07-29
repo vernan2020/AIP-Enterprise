@@ -3,11 +3,10 @@
 import pytest
 
 from aip.core.di import (
-    Container,
-    ServiceLifetime,
-    ServiceNotFoundError,
     CircularDependencyError,
+    Container,
     ScopeNotActiveError,
+    ServiceNotFoundError,
 )
 
 

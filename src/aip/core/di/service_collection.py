@@ -5,7 +5,7 @@ the container is built and used for dependency resolution.
 """
 
 from collections.abc import Callable
-from typing import TypeVar, overload
+from typing import Any, TypeVar, overload
 
 from .exceptions import ServiceAlreadyRegisteredError
 from .lifetimes import ServiceLifetime
@@ -56,7 +56,7 @@ class ServiceCollection:
     def add_singleton(
         self,
         service_type: type[T],
-        implementation_type: type[T] | Callable[..., T] | None = None,
+        implementation_type: Any = None,
     ) -> "ServiceCollection":
         """Register a singleton service.
 
@@ -106,7 +106,7 @@ class ServiceCollection:
     def add_transient(
         self,
         service_type: type[T],
-        implementation_type: type[T] | Callable[..., T] | None = None,
+        implementation_type: Any = None,
     ) -> "ServiceCollection":
         """Register a transient service.
 
@@ -156,7 +156,7 @@ class ServiceCollection:
     def add_scoped(
         self,
         service_type: type[T],
-        implementation_type: type[T] | Callable[..., T] | None = None,
+        implementation_type: Any = None,
     ) -> "ServiceCollection":
         """Register a scoped service.
 

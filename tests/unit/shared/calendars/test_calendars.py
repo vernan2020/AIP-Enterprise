@@ -3,50 +3,50 @@
 Comprehensive tests for BusinessCalendar, DayCountConvention, and related types.
 """
 
-import pytest
 from datetime import date
 from decimal import Decimal
+
+import pytest
 
 from src.aip.shared.calendars import (
     CostaRicaCalendar,
     CostaRicaHolidayProvider,
     CostaRicaStatutoryHolidayProvider,
     InstitutionalHolidayProvider,
-    WeekendRules,
 )
 from src.aip.shared.conventions import (
+    BusinessDayConvention,
+    CouponConvention,
     DayCountConvention,
     Frequency,
-    CouponConvention,
-    BusinessDayConvention,
 )
 
 
 class TestCostaRicaHolidayProvider:
     """Tests for CostaRica holiday provider."""
-    
+
     def test_new_years_day_is_holiday(self) -> None:
         """Test January 1 is holiday."""
         provider = CostaRicaHolidayProvider()
         assert provider.is_holiday(date(2024, 1, 1)) is True
-    
+
     def test_christmas_day_is_holiday(self) -> None:
         """Test December 25 is holiday."""
         provider = CostaRicaHolidayProvider()
         assert provider.is_holiday(date(2024, 12, 25)) is True
-    
+
     def test_regular_day_is_not_holiday(self) -> None:
         """Test regular day is not holiday."""
         provider = CostaRicaHolidayProvider()
         assert provider.is_holiday(date(2024, 6, 15)) is False
-    
+
     def test_get_holidays_in_range(self) -> None:
         """Test getting holidays in date range."""
         provider = CostaRicaHolidayProvider()
         holidays = provider.get_holidays(date(2024, 1, 1), date(2024, 1, 31))
         assert len(holidays) > 0
         assert date(2024, 1, 1) in holidays
-    
+
     def test_easter_holidays_calculated(self) -> None:
         """Test Easter-based holidays are calculated."""
         provider = CostaRicaHolidayProvider()
@@ -111,31 +111,31 @@ class TestCostaRicaHolidayProviderSeparation:
 
 class TestCostaRicaCalendar:
     """Tests for Costa Rica business calendar."""
-    
+
     def test_monday_is_business_day(self) -> None:
         """Test Monday is business day."""
         calendar = CostaRicaCalendar()
         # 2024-07-29 is a Monday
         assert calendar.is_business_day(date(2024, 7, 29)) is True
-    
+
     def test_saturday_is_not_business_day(self) -> None:
         """Test Saturday is not business day."""
         calendar = CostaRicaCalendar()
         # 2024-07-27 is a Saturday
         assert calendar.is_business_day(date(2024, 7, 27)) is False
-    
+
     def test_sunday_is_not_business_day(self) -> None:
         """Test Sunday is not business day."""
         calendar = CostaRicaCalendar()
         # 2024-07-28 is a Sunday
         assert calendar.is_business_day(date(2024, 7, 28)) is False
-    
+
     def test_holiday_is_not_business_day(self) -> None:
         """Test holiday is not business day."""
         calendar = CostaRicaCalendar()
         # 2024-01-01 is New Year (Monday but holiday)
         assert calendar.is_business_day(date(2024, 1, 1)) is False
-    
+
     def test_next_business_day_from_friday(self) -> None:
         """Test next business day from Friday goes to Monday."""
         calendar = CostaRicaCalendar()
@@ -143,7 +143,7 @@ class TestCostaRicaCalendar:
         result = calendar.next_business_day(date(2024, 7, 26))
         # Should skip Saturday and Sunday, return Monday 2024-07-29
         assert result.weekday() == 0  # Monday
-    
+
     def test_previous_business_day_from_monday(self) -> None:
         """Test previous business day from Monday goes to Friday."""
         calendar = CostaRicaCalendar()
@@ -151,7 +151,7 @@ class TestCostaRicaCalendar:
         result = calendar.previous_business_day(date(2024, 7, 29))
         # Should skip Sunday and Saturday, return Friday 2024-07-26
         assert result.weekday() == 4  # Friday
-    
+
     def test_business_days_between(self) -> None:
         """Test counting business days between dates."""
         calendar = CostaRicaCalendar()
@@ -164,7 +164,7 @@ class TestCostaRicaCalendar:
 
 class TestDayCountConvention:
     """Tests for day count conventions."""
-    
+
     def test_actual_365_convention(self) -> None:
         """Test ACTUAL/365 day count."""
         convention = DayCountConvention.ACTUAL_365
@@ -174,7 +174,7 @@ class TestDayCountConvention:
         result = convention.calculate_year_fraction(start, end)
         expected = Decimal(10) / Decimal(365)
         assert abs(result - expected) < Decimal("0.001")
-    
+
     def test_actual_360_convention(self) -> None:
         """Test ACTUAL/360 day count."""
         convention = DayCountConvention.ACTUAL_360
@@ -183,7 +183,7 @@ class TestDayCountConvention:
         result = convention.calculate_year_fraction(start, end)
         expected = Decimal(10) / Decimal(360)
         assert abs(result - expected) < Decimal("0.001")
-    
+
     def test_thirty_360_convention(self) -> None:
         """Test 30/360 day count."""
         convention = DayCountConvention.THIRTY_360
@@ -196,25 +196,25 @@ class TestDayCountConvention:
 
 class TestFrequency:
     """Tests for Frequency enumeration."""
-    
+
     def test_annual_frequency(self) -> None:
         """Test annual frequency."""
         freq = Frequency.ANNUAL
         assert freq.months_between_payments() == 12
         assert freq.days_between_payments() == 360
-    
+
     def test_semi_annual_frequency(self) -> None:
         """Test semi-annual frequency."""
         freq = Frequency.SEMI_ANNUAL
         assert freq.months_between_payments() == 6
         assert freq.days_between_payments() == 180
-    
+
     def test_quarterly_frequency(self) -> None:
         """Test quarterly frequency."""
         freq = Frequency.QUARTERLY
         assert freq.months_between_payments() == 3
         assert freq.days_between_payments() == 90
-    
+
     def test_monthly_frequency(self) -> None:
         """Test monthly frequency."""
         freq = Frequency.MONTHLY
@@ -224,7 +224,7 @@ class TestFrequency:
 
 class TestCouponConvention:
     """Tests for CouponConvention."""
-    
+
     def test_coupon_convention_creation(self) -> None:
         """Test CouponConvention can be created."""
         coupon = CouponConvention(
@@ -234,7 +234,7 @@ class TestCouponConvention:
             basis_day=15,
         )
         assert coupon.frequency == Frequency.SEMI_ANNUAL
-    
+
     def test_next_coupon_date(self) -> None:
         """Test next coupon date calculation."""
         coupon = CouponConvention(
@@ -247,7 +247,7 @@ class TestCouponConvention:
         result = coupon.next_coupon_date(date(2024, 1, 15))
         assert result.month == 3
         assert result.day == 15
-    
+
     def test_previous_coupon_date(self) -> None:
         """Test previous coupon date calculation."""
         coupon = CouponConvention(
@@ -260,7 +260,7 @@ class TestCouponConvention:
         result = coupon.previous_coupon_date(date(2024, 5, 15))
         assert result.month == 3
         assert result.day == 15
-    
+
     def test_coupon_convention_invalid_month_raises_error(self) -> None:
         """Test invalid month raises error."""
         with pytest.raises(ValueError):
@@ -270,7 +270,7 @@ class TestCouponConvention:
                 basis_month=13,  # Invalid
                 basis_day=15,
             )
-    
+
     def test_coupon_convention_invalid_day_raises_error(self) -> None:
         """Test invalid day raises error."""
         with pytest.raises(ValueError):
@@ -284,30 +284,36 @@ class TestCouponConvention:
 
 class TestBusinessDayConvention:
     """Tests for BusinessDayConvention."""
-    
+
     def test_following_convention_advances_date(self) -> None:
         """Test FOLLOWING advances to next business day."""
         # 2024-07-27 is Saturday
         saturday = date(2024, 7, 27)
-        is_business_day = lambda d: d.weekday() < 5  # Mon-Fri
-        
+
+        def is_business_day(day: date) -> bool:
+            return day.weekday() < 5  # Mon-Fri
+
         result = BusinessDayConvention.FOLLOWING.adjust(saturday, is_business_day)
         assert result.weekday() == 0  # Monday
-    
+
     def test_preceding_convention_goes_back(self) -> None:
         """Test PRECEDING goes to previous business day."""
         # 2024-07-28 is Sunday
         sunday = date(2024, 7, 28)
-        is_business_day = lambda d: d.weekday() < 5  # Mon-Fri
-        
+
+        def is_business_day(day: date) -> bool:
+            return day.weekday() < 5  # Mon-Fri
+
         result = BusinessDayConvention.PRECEDING.adjust(sunday, is_business_day)
         assert result.weekday() == 4  # Friday
-    
+
     def test_unadjusted_convention_no_change(self) -> None:
         """Test UNADJUSTED doesn't change date."""
         saturday = date(2024, 7, 27)
-        is_business_day = lambda d: d.weekday() < 5
-        
+
+        def is_business_day(day: date) -> bool:
+            return day.weekday() < 5
+
         result = BusinessDayConvention.UNADJUSTED.adjust(saturday, is_business_day)
         assert result == saturday
 
@@ -317,7 +323,7 @@ class TestBusinessDayConvention:
         # Non-leap year
         result = convention.calculate_year_fraction(date(2023, 1, 1), date(2023, 12, 31))
         assert result == Decimal(364) / Decimal(365)
-    
+
     def test_actual_actual_convention_leap_year(self) -> None:
         """Test ACTUAL/ACTUAL for leap year."""
         convention = DayCountConvention.ACTUAL_ACTUAL
@@ -325,7 +331,7 @@ class TestBusinessDayConvention:
         result = convention.calculate_year_fraction(date(2024, 1, 1), date(2024, 12, 31))
         expected = Decimal(365) / Decimal(366)
         assert abs(result - expected) < Decimal("0.0000000001")
-    
+
     def test_thirty_360_convention(self) -> None:
         """Test 30/360 day count."""
         convention = DayCountConvention.THIRTY_360
@@ -334,7 +340,7 @@ class TestBusinessDayConvention:
         result = convention.calculate_year_fraction(start, end)
         # 30/360: (30-30) + 30 + 30 = 60 days / 360
         assert result > 0
-    
+
     def test_thirty_e_360_convention(self) -> None:
         """Test 30E/360 day count."""
         convention = DayCountConvention.THIRTY_E_360
@@ -342,7 +348,7 @@ class TestBusinessDayConvention:
         end = date(2024, 3, 31)
         result = convention.calculate_year_fraction(start, end)
         assert result > 0
-    
+
     def test_frequency_string_representation(self) -> None:
         """Test frequency enum string representation."""
         assert str(Frequency.ANNUAL) == "Frequency.ANNUAL"
@@ -396,9 +402,12 @@ class TestBusinessDayConvention:
     def test_adjust_returns_target_when_already_business_day(self) -> None:
         """Test adjust returns same date when target is already business day."""
         target = date(2024, 7, 29)
-        is_business_day = lambda d: d.weekday() < 5
+
+        def is_business_day(day: date) -> bool:
+            return day.weekday() < 5
+
         assert BusinessDayConvention.FOLLOWING.adjust(target, is_business_day) == target
-    
+
     def test_coupon_next_coupon_different_frequencies(self) -> None:
         """Test next coupon for different frequencies."""
         # Semi-annual
@@ -411,7 +420,7 @@ class TestBusinessDayConvention:
         # From June, next should be September
         result = coupon_semi.next_coupon_date(date(2024, 6, 15))
         assert result.month == 9
-    
+
     def test_coupon_quarterly(self) -> None:
         """Test quarterly coupon dates."""
         coupon_q = CouponConvention(

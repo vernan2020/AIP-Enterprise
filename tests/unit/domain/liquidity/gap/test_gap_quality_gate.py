@@ -8,15 +8,20 @@ import pytest
 from aip.domain.financial_math.cashflows.cashflow import CashFlow
 from aip.domain.liquidity.cashflow.models.behavioral_assumption import BehavioralAssumption
 from aip.domain.liquidity.cashflow.models.projection_request import ProjectionRequest
-from aip.domain.liquidity.gap.aggregation.gap_aggregation import GapAggregation
 from aip.domain.liquidity.gap.analytics.gap_analytics import GapAnalytics
 from aip.domain.liquidity.gap.engine.gap_engine import GapEngine
-from aip.domain.liquidity.gap.exceptions import AggregationError, CurrencyAggregationError, GapProviderError, LiquidityGapError
+from aip.domain.liquidity.gap.exceptions import (
+    AggregationError,
+    CurrencyAggregationError,
+    GapProviderError,
+)
 from aip.domain.liquidity.gap.models.gap_request import GapRequest
 from aip.domain.liquidity.gap.models.gap_value import GapValue
-from aip.domain.liquidity.gap.providers.exchange_rate_policy_provider import ExchangeRatePolicyProvider
-from aip.domain.liquidity.gap.providers.liquidity_policy_provider import LiquidityPolicyProvider
+from aip.domain.liquidity.gap.providers.exchange_rate_policy_provider import (
+    ExchangeRatePolicyProvider,
+)
 from aip.domain.liquidity.gap.providers.gap_provider import GapProvider
+from aip.domain.liquidity.gap.providers.liquidity_policy_provider import LiquidityPolicyProvider
 
 
 class _StaticGapProvider(GapProvider):

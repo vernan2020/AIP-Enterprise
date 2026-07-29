@@ -6,8 +6,15 @@ pydantic>=2.11
 platformdirs>=4.4
 
 [dev]
+black>=24.10
+build>=1.2
+coverage>=7.4
+isort>=5.13
+mypy>=1.17
+pip-audit>=2.7
+pre-commit>=4.0
+pyinstaller>=6.15
 pytest>=8.4
 pytest-cov>=7.0
 ruff>=0.12
-mypy>=1.17
-pyinstaller>=6.15
+bandit>=1.7

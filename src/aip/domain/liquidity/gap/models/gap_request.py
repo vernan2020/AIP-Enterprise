@@ -8,7 +8,9 @@ from typing import TYPE_CHECKING
 from aip.domain.liquidity.cashflow.models.projection_request import ProjectionRequest
 
 if TYPE_CHECKING:
-    from aip.domain.liquidity.gap.providers.exchange_rate_policy_provider import ExchangeRatePolicyProvider
+    from aip.domain.liquidity.gap.providers.exchange_rate_policy_provider import (
+        ExchangeRatePolicyProvider,
+    )
     from aip.domain.liquidity.gap.providers.gap_provider import GapProvider
     from aip.domain.liquidity.gap.providers.liquidity_policy_provider import LiquidityPolicyProvider
 

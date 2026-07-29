@@ -4,19 +4,32 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 
 import pytest
+
+import src.extensions.coopealianza.liquidity.mil.providers  # noqa: F401
 from aip.domain.policies.base.policy_context import PolicyContext
 from aip.domain.policies.metadata.policy_reference import PolicyReference
 from aip.domain.policies.severity.policy_severity import PolicySeverity
-from src.extensions.coopealianza.liquidity.mil.configuration.mil_policy_config import MilHaircutConfig, MilPolicyConfig
-from src.extensions.coopealianza.liquidity.mil.engine.mil_eligibility_engine import MilEligibilityEngine
-from src.extensions.coopealianza.liquidity.mil.enums.mil_eligibility_status import MilEligibilityStatus
-from src.extensions.coopealianza.liquidity.mil.exceptions import MilConfigurationError, MilEligibilityError, MilValuationError
+from src.extensions.coopealianza.liquidity.mil.configuration.mil_policy_config import (
+    MilHaircutConfig,
+    MilPolicyConfig,
+)
+from src.extensions.coopealianza.liquidity.mil.engine.mil_eligibility_engine import (
+    MilEligibilityEngine,
+)
+from src.extensions.coopealianza.liquidity.mil.enums.mil_eligibility_status import (
+    MilEligibilityStatus,
+)
+from src.extensions.coopealianza.liquidity.mil.exceptions import (
+    MilConfigurationError,
+    MilEligibilityError,
+    MilValuationError,
+)
 from src.extensions.coopealianza.liquidity.mil.models.mil_asset import MilAsset
 from src.extensions.coopealianza.liquidity.mil.models.mil_request import MilRequest
-from src.extensions.coopealianza.liquidity.mil.models.mil_result import MilResult
-from src.extensions.coopealianza.liquidity.mil.policies.availability_policy import AvailabilityPolicy
+from src.extensions.coopealianza.liquidity.mil.policies.availability_policy import (
+    AvailabilityPolicy,
+)
 from src.extensions.coopealianza.liquidity.mil.reports.mil_report_builder import MilReportBuilder
-import src.extensions.coopealianza.liquidity.mil.providers  # noqa: F401
 
 
 def make_config() -> MilPolicyConfig:

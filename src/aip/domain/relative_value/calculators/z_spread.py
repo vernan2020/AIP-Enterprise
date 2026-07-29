@@ -2,9 +2,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from aip.domain.financial_math.discounting.compounding import discount_factor
 from aip.domain.financial_math.curves.yield_curve import YieldCurve
-from aip.domain.instruments.base.financial_instrument import FinancialInstrument
 from aip.domain.relative_value.exceptions import SpreadCalculationError
 
 

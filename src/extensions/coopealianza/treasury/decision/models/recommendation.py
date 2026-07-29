@@ -3,7 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from decimal import Decimal
 
-from src.extensions.coopealianza.treasury.decision.enums.recommendation_type import RecommendationType
+from src.extensions.coopealianza.treasury.decision.enums.recommendation_type import (
+    RecommendationType,
+)
 from src.extensions.coopealianza.treasury.decision.models.impact_metrics import ImpactMetrics
 from src.extensions.coopealianza.treasury.decision.models.priority import PriorityLevel
 

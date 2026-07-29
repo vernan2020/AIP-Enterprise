@@ -7,29 +7,25 @@ from types import SimpleNamespace
 import pytest
 
 from aip.domain.analytics.enums.score_direction import ScoreDirection
-from aip.domain.analytics.exceptions import InvalidScoreBandError, InvalidWeightError
-from aip.domain.analytics.models.analytics_context import AnalyticsContext
-from aip.domain.analytics.ranking.rank_item import RankItem
+from aip.domain.analytics.exceptions import InvalidWeightError
 from aip.domain.analytics.scoring.score_band import ScoreBand
+from aip.domain.financial_math.curves.curve_point import CurvePoint
+from aip.domain.financial_math.curves.yield_curve import YieldCurve
 from aip.domain.instruments.bonds.government_bond import GovernmentBond
 from aip.domain.instruments.enums.payment_frequency import PaymentFrequency
 from aip.domain.instruments.issuers.credit_rating import CreditRating
 from aip.domain.instruments.issuers.issuer import Issuer
 from aip.domain.instruments.issuers.issuer_type import IssuerType
 from aip.domain.instruments.schedules.coupon_schedule import CouponSchedule
-from aip.domain.financial_math.curves.curve_point import CurvePoint
-from aip.domain.financial_math.curves.yield_curve import YieldCurve
-from aip.domain.policies.base.policy_context import PolicyContext
-from aip.domain.policies.metadata.policy_reference import PolicyReference
-from aip.domain.policies.registry.policy_registry import PolicyRegistry
-from aip.domain.policies.severity.policy_severity import PolicySeverity
 from aip.domain.relative_value.calculators.benchmark_spread import BenchmarkSpreadCalculator
+from aip.domain.relative_value.calculators.interpolated_curve_spread import (
+    InterpolatedCurveSpreadCalculator,
+)
 from aip.domain.relative_value.calculators.nominal_spread import NominalSpreadCalculator
-from aip.domain.relative_value.calculators.interpolated_curve_spread import InterpolatedCurveSpreadCalculator
 from aip.domain.relative_value.calculators.z_spread import ZSpreadCalculator
+from aip.domain.relative_value.engine.recommendation_engine import RecommendationEngine
 from aip.domain.relative_value.engine.relative_value_engine import RelativeValueEngine
 from aip.domain.relative_value.engine.spread_engine import SpreadEngine
-from aip.domain.relative_value.engine.recommendation_engine import RecommendationEngine
 from aip.domain.relative_value.enums.confidence_level import ConfidenceLevel
 from aip.domain.relative_value.enums.recommendation_type import RecommendationType
 from aip.domain.relative_value.enums.valuation_status import ValuationStatus
@@ -41,16 +37,18 @@ from aip.domain.relative_value.exceptions import (
     SpreadCalculationError,
     UnsupportedSpreadTypeError,
 )
+from aip.domain.relative_value.explainability.decision_matrix import DecisionMatrix
+from aip.domain.relative_value.explainability.recommendation_explanation import (
+    RecommendationExplanation,
+)
+from aip.domain.relative_value.models.investment_opportunity import InvestmentOpportunity
+from aip.domain.relative_value.models.recommendation import Recommendation
 from aip.domain.relative_value.models.relative_value_request import RelativeValueRequest
 from aip.domain.relative_value.models.relative_value_result import RelativeValueResult
-from aip.domain.relative_value.models.recommendation import Recommendation
-from aip.domain.relative_value.models.investment_opportunity import InvestmentOpportunity
 from aip.domain.relative_value.ranking.investment_ranking import InvestmentRanking
+from aip.domain.relative_value.scoring.confidence_score import ConfidenceScore
 from aip.domain.relative_value.scoring.relative_value_score import RelativeValueScore
 from aip.domain.relative_value.scoring.rich_cheap_score import RichCheapScore
-from aip.domain.relative_value.scoring.confidence_score import ConfidenceScore
-from aip.domain.relative_value.explainability.decision_matrix import DecisionMatrix
-from aip.domain.relative_value.explainability.recommendation_explanation import RecommendationExplanation
 
 
 def _build_instrument() -> GovernmentBond:

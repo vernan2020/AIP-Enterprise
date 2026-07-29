@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from aip.application.contracts.analysis_request import AnalysisRequest
+from aip.application.workflows.hqla_workflow import HQLAWorkflow
 from aip.application.workflows.liquidity_workflow import LiquidityWorkflow
 from aip.application.workflows.relative_value_workflow import RelativeValueWorkflow
-from aip.application.workflows.hqla_workflow import HQLAWorkflow
 
 
 def test_application_workflows_preserve_identifiers_and_steps(analysis_request, treasury_instrument) -> None:

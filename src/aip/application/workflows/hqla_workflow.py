@@ -7,7 +7,7 @@ from time import perf_counter
 from aip.application.contracts.analysis_request import AnalysisRequest
 from aip.application.contracts.analysis_result import AnalysisResult
 from aip.application.events.domain_event_dispatcher import DomainEventDispatcher
-from aip.application.exceptions import WorkflowExecutionError, translate_application_exception
+from aip.application.exceptions import translate_application_exception
 from aip.application.telemetry.execution_metrics import ExecutionMetrics
 from aip.application.workflows.base_workflow import BaseWorkflow
 from aip.domain.liquidity.hqla.engine.hqla_engine import HQLAEngine

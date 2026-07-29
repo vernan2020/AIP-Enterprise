@@ -5,24 +5,24 @@ from decimal import Decimal
 
 import pytest
 
+from aip.domain.instruments.bonds.floating_rate_bond import FloatingRateBond
 from aip.domain.instruments.bonds.government_bond import GovernmentBond
 from aip.domain.instruments.bonds.treasury_bill import TreasuryBill
 from aip.domain.instruments.bonds.zero_coupon_bond import ZeroCouponBond
-from aip.domain.instruments.bonds.floating_rate_bond import FloatingRateBond
 from aip.domain.instruments.cash.cash import Cash
 from aip.domain.instruments.enums.payment_frequency import PaymentFrequency
+from aip.domain.instruments.issuers.issuer import Issuer
+from aip.domain.instruments.issuers.issuer_type import IssuerType
 from aip.domain.instruments.money_market.certificate_of_deposit import CertificateOfDeposit
 from aip.domain.instruments.money_market.commercial_paper import CommercialPaper
 from aip.domain.instruments.money_market.repo import Repo
 from aip.domain.instruments.money_market.reverse_repo import ReverseRepo
-from aip.domain.instruments.issuers.issuer import Issuer
-from aip.domain.instruments.issuers.issuer_type import IssuerType
 from aip.domain.pricing import (
     PricingEngine,
+    PricingError,
     PricingMethod,
     PricingRequest,
     PricingResult,
-    PricingError,
 )
 
 

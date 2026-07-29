@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from decimal import Decimal, ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_UP
+from decimal import ROUND_CEILING, ROUND_FLOOR, Decimal
 
 from aip.domain.analytics.exceptions import StatisticsError
 

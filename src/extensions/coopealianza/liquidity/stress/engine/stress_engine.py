@@ -6,12 +6,23 @@ from typing import Any
 from aip.domain.liquidity.cashflow.models.projection_result import ProjectionResult
 from aip.domain.liquidity.gap.models.gap_result import GapResult
 from src.extensions.coopealianza.liquidity.stress.analytics.stress_analytics import StressAnalytics
-from src.extensions.coopealianza.liquidity.stress.configuration.stress_policy_config import StressPolicyConfig, StressScenarioConfig
-from src.extensions.coopealianza.liquidity.stress.exceptions import StressConfigurationError, StressEvaluationError, StressProviderError
+from src.extensions.coopealianza.liquidity.stress.configuration.stress_policy_config import (
+    StressPolicyConfig,
+    StressScenarioConfig,
+)
+from src.extensions.coopealianza.liquidity.stress.exceptions import (
+    StressConfigurationError,
+    StressEvaluationError,
+    StressProviderError,
+)
 from src.extensions.coopealianza.liquidity.stress.models.stress_request import StressRequest
 from src.extensions.coopealianza.liquidity.stress.models.stress_result import StressResult
-from src.extensions.coopealianza.liquidity.stress.models.stress_scenario_result import StressScenarioResult
-from src.extensions.coopealianza.liquidity.stress.providers.scenario_provider import StaticScenarioProvider
+from src.extensions.coopealianza.liquidity.stress.models.stress_scenario_result import (
+    StressScenarioResult,
+)
+from src.extensions.coopealianza.liquidity.stress.providers.scenario_provider import (
+    StaticScenarioProvider,
+)
 
 
 class StressEngine:

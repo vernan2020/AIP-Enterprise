@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from src.extensions.coopealianza.treasury.decision.models.decision_request import TreasuryDecisionRequest
+from src.extensions.coopealianza.treasury.decision.models.decision_request import (
+    TreasuryDecisionRequest,
+)
 from src.extensions.coopealianza.treasury.decision.models.recommendation import Recommendation
 
 

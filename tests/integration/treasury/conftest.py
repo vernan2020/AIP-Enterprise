@@ -15,11 +15,16 @@ from aip.domain.instruments.issuers.issuer import Issuer
 from aip.domain.instruments.issuers.issuer_type import IssuerType
 from aip.domain.liquidity.cashflow.models.projection_request import ProjectionRequest
 from aip.domain.policies.metadata.policy_reference import PolicyReference
-from aip.domain.policies.severity.policy_severity import PolicySeverity
 from aip.shared.conventions import DayCountConvention
-from src.extensions.coopealianza.liquidity.mil.configuration.mil_policy_config import MilHaircutConfig, MilPolicyConfig
+from src.extensions.coopealianza.liquidity.mil.configuration.mil_policy_config import (
+    MilHaircutConfig,
+    MilPolicyConfig,
+)
 from src.extensions.coopealianza.liquidity.mil.models.mil_asset import MilAsset
-from src.extensions.coopealianza.liquidity.stress.configuration.stress_policy_config import StressPolicyConfig, StressScenarioConfig
+from src.extensions.coopealianza.liquidity.stress.configuration.stress_policy_config import (
+    StressPolicyConfig,
+    StressScenarioConfig,
+)
 
 
 class TreasuryInstrument(GovernmentBond):

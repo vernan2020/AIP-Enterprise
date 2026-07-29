@@ -8,8 +8,7 @@ manages singleton instances with thread-safe access.
 import inspect
 import threading
 from abc import ABC, abstractmethod
-from collections.abc import Callable
-from typing import Any, Generic, TypeVar, get_type_hints
+from typing import Any, Generic, TypeVar, cast, get_type_hints
 
 from .exceptions import (
     CircularDependencyError,
@@ -17,7 +16,6 @@ from .exceptions import (
     ScopeNotActiveError,
     ServiceNotFoundError,
 )
-from .lifetimes import ServiceLifetime
 from .service_descriptor import ServiceDescriptor
 
 T = TypeVar("T")
@@ -216,13 +214,15 @@ class ServiceProvider(Generic[T]):
         if scope is None:
             raise ScopeNotActiveError(descriptor.service_type)
 
+        scoped_scope = cast(DefaultServiceScope, scope)
+
         # Check if instance exists in scope
-        if descriptor.service_type in scope._instances:
-            return scope._instances[descriptor.service_type]
+        if descriptor.service_type in scoped_scope._instances:
+            return cast(T, scoped_scope._instances[descriptor.service_type])
 
         # Create new instance for this scope
         instance = self._create_instance(descriptor, visited)
-        return scope.get_instance(descriptor.service_type, instance)
+        return scoped_scope.get_instance(descriptor.service_type, instance)
 
     def _resolve_transient(
         self,

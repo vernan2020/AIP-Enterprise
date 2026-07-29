@@ -4,7 +4,6 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 
 from aip.domain.analytics.explainability.explanation_factor import ExplanationFactor
-from aip.domain.financial_math.cashflows.cashflow import CashFlow
 from aip.domain.liquidity.cashflow.models.projected_cashflow import ProjectedCashFlow
 
 

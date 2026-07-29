@@ -11,7 +11,6 @@ from typing import TypeVar
 
 from .service_collection import ServiceCollection
 from .service_provider import ServiceProvider, ServiceScope
-from .lifetimes import ServiceLifetime
 
 T = TypeVar("T")
 """Type variable for service instances."""

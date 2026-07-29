@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable
 
 from aip.domain.analytics.enums.ranking_order import RankingOrder
 from aip.domain.analytics.exceptions import RankingError

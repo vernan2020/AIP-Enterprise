@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
 from decimal import Decimal
 
 from aip.domain.instruments.base.financial_instrument import FinancialInstrument

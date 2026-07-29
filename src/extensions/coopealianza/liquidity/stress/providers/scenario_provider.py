@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any
 
-from src.extensions.coopealianza.liquidity.stress.configuration.stress_policy_config import StressScenarioConfig
+from src.extensions.coopealianza.liquidity.stress.configuration.stress_policy_config import (
+    StressScenarioConfig,
+)
 
 
 class ScenarioProvider(ABC):

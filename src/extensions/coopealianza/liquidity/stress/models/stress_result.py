@@ -4,7 +4,9 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Any
 
-from src.extensions.coopealianza.liquidity.stress.models.stress_scenario_result import StressScenarioResult
+from src.extensions.coopealianza.liquidity.stress.models.stress_scenario_result import (
+    StressScenarioResult,
+)
 
 
 @dataclass(frozen=True, slots=True)

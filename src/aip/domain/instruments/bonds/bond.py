@@ -1,16 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
 from decimal import Decimal
 
 from aip.domain.instruments.base.fixed_income_instrument import FixedIncomeInstrument
-from aip.domain.instruments.enums.amortization_type import AmortizationType
-from aip.domain.instruments.enums.coupon_type import CouponType
-from aip.domain.instruments.enums.payment_frequency import PaymentFrequency
-from aip.domain.instruments.exceptions import InstrumentValidationError
 from aip.domain.instruments.schedules.coupon_schedule import CouponSchedule
-from aip.shared.conventions import DayCountConvention
 
 
 @dataclass(slots=True)

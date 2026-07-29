@@ -2,9 +2,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from aip.domain.policies.metadata.policy_reference import PolicyReference
 from aip.domain.policies.severity.policy_severity import PolicySeverity
+
+if TYPE_CHECKING:
+    from aip.domain.policies.base.policy_result import PolicyResult
 
 
 @dataclass(frozen=True, slots=True)
@@ -21,9 +25,9 @@ class EvaluationResult:
     context_id: str
 
     def to_policy_result(self) -> "PolicyResult":
-        from aip.domain.policies.base.policy_result import PolicyResult
+        from aip.domain.policies.base.policy_result import PolicyResult as PolicyResultType
 
-        return PolicyResult(
+        return PolicyResultType(
             policy_id=self.policy_id,
             status=self.status,
             message=self.message,

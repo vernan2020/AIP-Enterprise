@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 
 import pytest
 
@@ -12,8 +12,8 @@ from aip.domain.liquidity.hqla.enums import HQLAClassification
 from aip.domain.liquidity.hqla.exceptions import HQLAError, HQLAProviderError
 from aip.domain.liquidity.hqla.models.hqla_request import HQLARequest
 from aip.domain.liquidity.hqla.models.liquidity_asset import LiquidityAsset
-from aip.domain.policies.base.policy_context import PolicyContext
 from aip.domain.policies.base.policy import Policy
+from aip.domain.policies.base.policy_context import PolicyContext
 from aip.domain.policies.evaluation.evaluation_result import EvaluationResult
 from aip.domain.policies.metadata.policy_reference import PolicyReference
 from aip.domain.policies.severity.policy_severity import PolicySeverity

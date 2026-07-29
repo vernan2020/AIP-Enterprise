@@ -1,4 +1,5 @@
 from pathlib import Path
+
 from aip.infrastructure.configuration.models import DatabaseSettings
 from aip.infrastructure.database.manager import DatabaseManager
 

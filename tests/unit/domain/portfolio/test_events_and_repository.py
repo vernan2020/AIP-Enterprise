@@ -9,12 +9,12 @@ from src.aip.domain.portfolio.enums import PortfolioStatus, ValuationSource
 from src.aip.domain.portfolio.events import DomainEvent, PortfolioCreated
 from src.aip.domain.portfolio.repositories import PortfolioRepository
 from src.aip.domain.portfolio.value_objects import (
+    ISIN,
     AcquisitionCost,
     BookValue,
     Convexity,
     Duration,
     InstrumentName,
-    ISIN,
     MarketValue,
     NominalValue,
     PortfolioId,

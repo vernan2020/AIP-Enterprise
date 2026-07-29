@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-from decimal import Decimal
-
-from aip.domain.financial_math.cashflows.cashflow import CashFlow
 from aip.domain.liquidity.cashflow.exceptions import ProjectionError
 from aip.domain.liquidity.cashflow.models.projected_cashflow import ProjectedCashFlow
 from aip.domain.liquidity.cashflow.models.projection_request import ProjectionRequest

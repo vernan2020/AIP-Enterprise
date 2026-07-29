@@ -3,8 +3,12 @@ from __future__ import annotations
 from typing import Any
 
 from src.extensions.coopealianza.treasury.decision.exceptions import DecisionReportError
-from src.extensions.coopealianza.treasury.decision.models.decision_request import TreasuryDecisionRequest
-from src.extensions.coopealianza.treasury.decision.models.decision_result import TreasuryDecisionResult
+from src.extensions.coopealianza.treasury.decision.models.decision_request import (
+    TreasuryDecisionRequest,
+)
+from src.extensions.coopealianza.treasury.decision.models.decision_result import (
+    TreasuryDecisionResult,
+)
 
 
 class DecisionReportBuilder:

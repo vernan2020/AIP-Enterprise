@@ -399,7 +399,6 @@ src/extensions/coopealianza/liquidity/stress/providers/__init__.py
 src/extensions/coopealianza/liquidity/stress/providers/scenario_provider.py
 src/extensions/coopealianza/liquidity/stress/reports/__init__.py
 src/extensions/coopealianza/liquidity/stress/reports/stress_report_builder.py
-src/extensions/coopealianza/treasury/__init__.py
 src/extensions/coopealianza/treasury/decision/__init__.py
 src/extensions/coopealianza/treasury/decision/exceptions.py
 src/extensions/coopealianza/treasury/decision/analytics/decision_analytics.py

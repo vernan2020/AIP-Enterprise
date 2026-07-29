@@ -1,4 +1,5 @@
 from pathlib import Path
+
 from aip.infrastructure.configuration.manager import ConfigurationManager
 
 

@@ -1,16 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
 from decimal import Decimal
 
 from aip.domain.instruments.bonds.bond import Bond
-from aip.domain.instruments.enums.amortization_type import AmortizationType
-from aip.domain.instruments.enums.coupon_type import CouponType
-from aip.domain.instruments.enums.payment_frequency import PaymentFrequency
-from aip.domain.instruments.issuers.issuer import Issuer
-from aip.domain.instruments.schedules.coupon_schedule import CouponSchedule
-from aip.shared.conventions import DayCountConvention
 
 
 @dataclass(slots=True)

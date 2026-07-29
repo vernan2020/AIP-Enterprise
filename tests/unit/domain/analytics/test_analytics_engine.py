@@ -5,7 +5,6 @@ from decimal import Decimal
 
 import pytest
 
-from aip.domain.analytics.enums.normalization_method import NormalizationMethod
 from aip.domain.analytics.enums.outlier_method import OutlierMethod
 from aip.domain.analytics.enums.ranking_order import RankingOrder
 from aip.domain.analytics.enums.score_direction import ScoreDirection

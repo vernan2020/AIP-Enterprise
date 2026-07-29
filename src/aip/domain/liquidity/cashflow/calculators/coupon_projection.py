@@ -32,12 +32,16 @@ class CouponProjection:
         if str(coupon_type_name).lower() not in {"fixed", "coupon", "float", "floating"}:
             raise ProjectionError("Unsupported coupon instrument")
 
-        rate = getattr(instrument, "coupon_rate", None)
-        if rate is None:
+        instrument_rate = getattr(instrument, "coupon_rate", None)
+        if instrument_rate is None:
             raise ProjectionError("Coupon rate is required")
-        rate = Decimal(str(rate))
+        rate = Decimal(str(instrument_rate))
         if rate < 0:
             raise ProjectionError("Coupon rate cannot be negative")
 
-        total = sum((Decimal(str(coupon.amount)) for coupon in getattr(schedule, "coupons", ())), Decimal("0"))
+        total = Decimal("0")
+        for coupon in getattr(schedule, "coupons", ()):  # type: ignore[assignment]
+            coupon_amount = getattr(coupon, "amount", None)
+            if coupon_amount is not None:
+                total += Decimal(str(coupon_amount))
         return total

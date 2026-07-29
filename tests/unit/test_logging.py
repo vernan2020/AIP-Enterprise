@@ -1,4 +1,5 @@
 from pathlib import Path
+
 from aip.infrastructure.configuration.models import LoggingSettings
 from aip.infrastructure.logging.manager import LoggingManager
 

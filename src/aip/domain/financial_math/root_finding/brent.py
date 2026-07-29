@@ -27,7 +27,6 @@ def brent_solve(
         raise InvalidBracketError("Function values must have opposite signs at the bracket ends")
     a, b = lower, upper
     fa, fb = f_lower, f_upper
-    c, fc = a, fa
     for iteration in range(1, max_iterations + 1):
         if abs(fa) <= tolerance:
             return ConvergenceResult(root=a, iterations=iteration, converged=True, residual=abs(fa), method="brent")

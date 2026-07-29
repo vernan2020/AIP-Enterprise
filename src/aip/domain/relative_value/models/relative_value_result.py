@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 
-from aip.domain.analytics.explainability.explanation import Explanation
 from aip.domain.analytics.ranking.ranking_result import RankingResult
 from aip.domain.relative_value.enums.recommendation_type import RecommendationType
 from aip.domain.relative_value.enums.valuation_status import ValuationStatus

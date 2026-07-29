@@ -6,7 +6,9 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from aip.domain.relative_value.providers.hqla_eligibility_provider import HQLAEligibilityProvider
+    from aip.domain.relative_value.providers.hqla_eligibility_provider import (
+        HQLAEligibilityProvider,
+    )
 
 
 @dataclass(frozen=True, slots=True)

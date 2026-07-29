@@ -5,7 +5,9 @@ from decimal import Decimal
 
 from aip.domain.liquidity.hqla.engine.hqla_engine import HQLAEngine
 from aip.domain.liquidity.hqla.models.hqla_request import HQLARequest
-from src.extensions.coopealianza.liquidity.mil.engine.mil_eligibility_engine import MilEligibilityEngine
+from src.extensions.coopealianza.liquidity.mil.engine.mil_eligibility_engine import (
+    MilEligibilityEngine,
+)
 from src.extensions.coopealianza.liquidity.mil.models.mil_request import MilRequest
 
 

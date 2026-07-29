@@ -6,7 +6,7 @@ from decimal import Decimal
 import pytest
 
 from src.aip.domain.portfolio.entities import Portfolio, Position, Transaction
-from src.aip.domain.portfolio.enums import PortfolioStatus, TransactionType, ValuationSource
+from src.aip.domain.portfolio.enums import PortfolioStatus, ValuationSource
 from src.aip.domain.portfolio.exceptions import (
     DuplicatePositionError,
     PortfolioClosedError,
@@ -14,12 +14,12 @@ from src.aip.domain.portfolio.exceptions import (
 )
 from src.aip.domain.portfolio.services import PortfolioCalculationService
 from src.aip.domain.portfolio.value_objects import (
+    ISIN,
     AcquisitionCost,
     BookValue,
     Convexity,
     Duration,
     InstrumentName,
-    ISIN,
     MarketValue,
     NominalValue,
     PortfolioId,
@@ -31,7 +31,6 @@ from src.aip.domain.portfolio.value_objects import (
 )
 from src.aip.shared.calendars import CostaRicaCalendar
 from src.aip.shared.dates import BusinessDate
-from src.aip.shared.math import Percentage
 from src.aip.shared.money import Currency
 
 

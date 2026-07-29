@@ -3,14 +3,10 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 from types import SimpleNamespace
-from typing import Protocol
 
 import pytest
 
 from aip.domain.financial_math.cashflows.cashflow import CashFlow
-from aip.domain.liquidity.cashflow.aggregation.bucket_aggregation import BucketAggregation
-from aip.domain.liquidity.cashflow.aggregation.currency_aggregation import CurrencyAggregation
-from aip.domain.liquidity.cashflow.aggregation.scenario_aggregation import ScenarioAggregation
 from aip.domain.liquidity.cashflow.calculators.amortization_projection import AmortizationProjection
 from aip.domain.liquidity.cashflow.calculators.behavioral_projection import BehavioralProjection
 from aip.domain.liquidity.cashflow.calculators.contractual_projection import ContractualProjection
@@ -19,7 +15,10 @@ from aip.domain.liquidity.cashflow.calculators.rollover_projection import Rollov
 from aip.domain.liquidity.cashflow.engine.aggregation_engine import AggregationEngine
 from aip.domain.liquidity.cashflow.engine.cashflow_engine import CashFlowEngine
 from aip.domain.liquidity.cashflow.engine.projection_engine import ProjectionEngine
-from aip.domain.liquidity.cashflow.exceptions import AggregationError, BehavioralError, ProjectionError
+from aip.domain.liquidity.cashflow.exceptions import (
+    BehavioralError,
+    ProjectionError,
+)
 from aip.domain.liquidity.cashflow.models.behavioral_assumption import BehavioralAssumption
 from aip.domain.liquidity.cashflow.models.projection_request import ProjectionRequest
 from aip.domain.liquidity.cashflow.providers.behavioral_provider import BehavioralProvider

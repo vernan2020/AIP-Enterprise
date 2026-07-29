@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Sequence
 
 from aip.domain.policies.base.policy_result import PolicyResult
 

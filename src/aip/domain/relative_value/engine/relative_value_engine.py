@@ -6,17 +6,8 @@ from decimal import Decimal
 from aip.domain.analytics.enums.score_direction import ScoreDirection
 from aip.domain.analytics.explainability.explanation_builder import ExplanationBuilder
 from aip.domain.analytics.explainability.explanation_factor import ExplanationFactor
-from aip.domain.analytics.models.analytics_context import AnalyticsContext
-from aip.domain.financial_math.curves.yield_curve import YieldCurve
-from aip.domain.policies.base.policy_context import PolicyContext
-from aip.domain.relative_value.calculators.benchmark_spread import BenchmarkSpreadCalculator
-from aip.domain.relative_value.calculators.interpolated_curve_spread import InterpolatedCurveSpreadCalculator
-from aip.domain.relative_value.calculators.nominal_spread import NominalSpreadCalculator
-from aip.domain.relative_value.calculators.z_spread import ZSpreadCalculator
 from aip.domain.relative_value.engine.recommendation_engine import RecommendationEngine
 from aip.domain.relative_value.engine.spread_engine import SpreadEngine
-from aip.domain.relative_value.enums.recommendation_type import RecommendationType
-from aip.domain.relative_value.enums.valuation_status import ValuationStatus
 from aip.domain.relative_value.exceptions import CurveNotAvailableError, RelativeValueError
 from aip.domain.relative_value.models.relative_value_request import RelativeValueRequest
 from aip.domain.relative_value.models.relative_value_result import RelativeValueResult

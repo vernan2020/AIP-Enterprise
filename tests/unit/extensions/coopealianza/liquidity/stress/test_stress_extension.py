@@ -9,12 +9,26 @@ from aip.domain.liquidity.cashflow.models.projected_cashflow import ProjectedCas
 from aip.domain.liquidity.cashflow.models.projection_result import ProjectionResult
 from aip.domain.liquidity.gap.models.gap_result import GapResult
 from src.extensions.coopealianza.liquidity.stress.analytics.stress_analytics import StressAnalytics
-from src.extensions.coopealianza.liquidity.stress.configuration.stress_policy_config import StressPolicyConfig, StressScenarioConfig
+from src.extensions.coopealianza.liquidity.stress.configuration.stress_policy_config import (
+    StressPolicyConfig,
+    StressScenarioConfig,
+)
 from src.extensions.coopealianza.liquidity.stress.engine.stress_engine import StressEngine
-from src.extensions.coopealianza.liquidity.stress.exceptions import StressConfigurationError, StressEvaluationError, StressProviderError, StressReportError, StressScenarioError
+from src.extensions.coopealianza.liquidity.stress.exceptions import (
+    StressConfigurationError,
+    StressEvaluationError,
+    StressProviderError,
+    StressReportError,
+    StressScenarioError,
+)
 from src.extensions.coopealianza.liquidity.stress.models.stress_request import StressRequest
-from src.extensions.coopealianza.liquidity.stress.providers.scenario_provider import ScenarioProvider, StaticScenarioProvider
-from src.extensions.coopealianza.liquidity.stress.reports.stress_report_builder import StressReportBuilder
+from src.extensions.coopealianza.liquidity.stress.providers.scenario_provider import (
+    ScenarioProvider,
+    StaticScenarioProvider,
+)
+from src.extensions.coopealianza.liquidity.stress.reports.stress_report_builder import (
+    StressReportBuilder,
+)
 
 
 class FailingScenarioProvider(ScenarioProvider):

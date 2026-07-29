@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-from datetime import datetime
 from decimal import Decimal
 
 from aip.domain.analytics.explainability.explanation_factor import ExplanationFactor
 from aip.domain.analytics.statistics.descriptive_statistics import DescriptiveStatistics
-from aip.domain.liquidity.cashflow.exceptions import ScenarioError
-from aip.domain.liquidity.cashflow.models.projected_cashflow import ProjectedCashFlow
-from aip.domain.liquidity.cashflow.models.projection_request import ProjectionRequest
-from aip.domain.liquidity.cashflow.models.projection_result import ProjectionResult
 from aip.domain.liquidity.cashflow.engine.aggregation_engine import AggregationEngine
 from aip.domain.liquidity.cashflow.engine.projection_engine import ProjectionEngine
-from aip.domain.liquidity.cashflow.explainability.projection_explanation import ProjectionExplanation
+from aip.domain.liquidity.cashflow.exceptions import ScenarioError
+from aip.domain.liquidity.cashflow.explainability.projection_explanation import (
+    ProjectionExplanation,
+)
+from aip.domain.liquidity.cashflow.models.projection_request import ProjectionRequest
+from aip.domain.liquidity.cashflow.models.projection_result import ProjectionResult
 
 
 class CashFlowEngine:
@@ -37,7 +37,7 @@ class CashFlowEngine:
         factors = [
             ExplanationFactor(name="projected_amount", value=stats.sum(), direction="higher_is_better", contribution=stats.sum(), source_reference="cashflow"),
         ]
-        explanation = self._explanation.build(
+        self._explanation.build(
             "Projected cash flows derived from contractual and behavioral assumptions",
             factors,
             assumptions=request.behavioral_assumptions and tuple(assumption.name for assumption in request.behavioral_assumptions) or request.assumptions,

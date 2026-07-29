@@ -3,9 +3,15 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Any
 
-from src.extensions.coopealianza.treasury.decision.analytics.decision_analytics import DecisionAnalytics
-from src.extensions.coopealianza.treasury.decision.configuration.decision_config import DecisionConfig
-from src.extensions.coopealianza.treasury.decision.enums.recommendation_type import RecommendationType
+from src.extensions.coopealianza.treasury.decision.analytics.decision_analytics import (
+    DecisionAnalytics,
+)
+from src.extensions.coopealianza.treasury.decision.configuration.decision_config import (
+    DecisionConfig,
+)
+from src.extensions.coopealianza.treasury.decision.enums.recommendation_type import (
+    RecommendationType,
+)
 from src.extensions.coopealianza.treasury.decision.exceptions import (
     ConflictingRecommendationError,
     DecisionConfigurationError,
@@ -14,13 +20,21 @@ from src.extensions.coopealianza.treasury.decision.exceptions import (
     RecommendationError,
     TreasuryDecisionEvaluationError,
 )
-from src.extensions.coopealianza.treasury.decision.models.decision_request import TreasuryDecisionRequest
-from src.extensions.coopealianza.treasury.decision.models.decision_result import TreasuryDecisionResult
+from src.extensions.coopealianza.treasury.decision.models.decision_request import (
+    TreasuryDecisionRequest,
+)
+from src.extensions.coopealianza.treasury.decision.models.decision_result import (
+    TreasuryDecisionResult,
+)
 from src.extensions.coopealianza.treasury.decision.models.impact_metrics import ImpactMetrics
 from src.extensions.coopealianza.treasury.decision.models.priority import PriorityLevel
 from src.extensions.coopealianza.treasury.decision.models.recommendation import Recommendation
-from src.extensions.coopealianza.treasury.decision.models.recommendation_group import RecommendationGroup
-from src.extensions.coopealianza.treasury.decision.providers.recommendation_provider import RecommendationProvider
+from src.extensions.coopealianza.treasury.decision.models.recommendation_group import (
+    RecommendationGroup,
+)
+from src.extensions.coopealianza.treasury.decision.providers.recommendation_provider import (
+    RecommendationProvider,
+)
 
 
 class TreasuryDecisionEngine:

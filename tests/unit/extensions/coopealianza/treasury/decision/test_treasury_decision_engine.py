@@ -14,13 +14,24 @@ from aip.domain.liquidity.hqla.models.hqla_result import HQLAResult
 from aip.domain.policies.base.policy_result import PolicyResult
 from aip.domain.policies.metadata.policy_reference import PolicyReference
 from aip.domain.policies.severity.policy_severity import PolicySeverity
-from aip.domain.relative_value.enums.recommendation_type import RecommendationType as RelativeValueRecommendationType
+from aip.domain.relative_value.enums.recommendation_type import (
+    RecommendationType as RelativeValueRecommendationType,
+)
 from aip.domain.relative_value.models.relative_value_result import RelativeValueResult
+from src.extensions.coopealianza.liquidity.mil.models.mil_result import MilResult
 from src.extensions.coopealianza.liquidity.stress.models.stress_result import StressResult
-from src.extensions.coopealianza.treasury.decision.analytics.decision_analytics import DecisionAnalytics
-from src.extensions.coopealianza.treasury.decision.configuration.decision_config import DecisionConfig
-from src.extensions.coopealianza.treasury.decision.engine.decision_engine import TreasuryDecisionEngine
-from src.extensions.coopealianza.treasury.decision.enums.recommendation_type import RecommendationType
+from src.extensions.coopealianza.treasury.decision.analytics.decision_analytics import (
+    DecisionAnalytics,
+)
+from src.extensions.coopealianza.treasury.decision.configuration.decision_config import (
+    DecisionConfig,
+)
+from src.extensions.coopealianza.treasury.decision.engine.decision_engine import (
+    TreasuryDecisionEngine,
+)
+from src.extensions.coopealianza.treasury.decision.enums.recommendation_type import (
+    RecommendationType,
+)
 from src.extensions.coopealianza.treasury.decision.exceptions import (
     ConflictingRecommendationError,
     DecisionAnalyticsError,
@@ -33,15 +44,21 @@ from src.extensions.coopealianza.treasury.decision.exceptions import (
     TreasuryDecisionError,
     TreasuryDecisionEvaluationError,
 )
-from src.extensions.coopealianza.treasury.decision.models.decision_request import TreasuryDecisionRequest
-from src.extensions.coopealianza.treasury.decision.reports.decision_report_builder import DecisionReportBuilder
+from src.extensions.coopealianza.treasury.decision.models.decision_request import (
+    TreasuryDecisionRequest,
+)
+from src.extensions.coopealianza.treasury.decision.models.decision_result import (
+    TreasuryDecisionResult,
+)
 from src.extensions.coopealianza.treasury.decision.models.impact_metrics import ImpactMetrics
 from src.extensions.coopealianza.treasury.decision.models.priority import PriorityLevel
 from src.extensions.coopealianza.treasury.decision.models.recommendation import Recommendation
-from src.extensions.coopealianza.treasury.decision.models.recommendation_group import RecommendationGroup
-from src.extensions.coopealianza.treasury.decision.models.decision_result import TreasuryDecisionResult
-from src.extensions.coopealianza.treasury.decision.providers.recommendation_provider import RecommendationProvider
-from src.extensions.coopealianza.liquidity.mil.models.mil_result import MilResult
+from src.extensions.coopealianza.treasury.decision.providers.recommendation_provider import (
+    RecommendationProvider,
+)
+from src.extensions.coopealianza.treasury.decision.reports.decision_report_builder import (
+    DecisionReportBuilder,
+)
 
 
 def make_policy_result(status: str = "PASSED") -> PolicyResult:

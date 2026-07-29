@@ -10,12 +10,12 @@ from src.aip.domain.portfolio.enums.position_status import PositionStatus
 from src.aip.domain.portfolio.enums.valuation_source import ValuationSource
 from src.aip.domain.portfolio.exceptions import InvalidPositionError
 from src.aip.domain.portfolio.value_objects import (
+    ISIN,
     AcquisitionCost,
     BookValue,
     Convexity,
     Duration,
     InstrumentName,
-    ISIN,
     MarketValue,
     NominalValue,
     PositionId,

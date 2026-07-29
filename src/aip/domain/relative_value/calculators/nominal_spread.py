@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from aip.domain.relative_value.exceptions import SpreadCalculationError
-
 
 class NominalSpreadCalculator:
     """Calculate nominal spread as the difference between observed yield and benchmark yield."""

@@ -162,7 +162,7 @@ class TestServiceDescriptor:
         descriptor = ServiceDescriptor(MyService)
         assert descriptor != "not a descriptor"
         assert descriptor != 42
-        assert descriptor != None
+        assert descriptor is not None
 
     def test_service_descriptor_hash(self) -> None:
         """Test descriptor hashing."""

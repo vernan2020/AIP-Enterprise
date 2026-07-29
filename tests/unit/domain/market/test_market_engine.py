@@ -6,7 +6,6 @@ from decimal import Decimal
 import pytest
 
 from aip.domain.financial_math.curves.curve_point import CurvePoint
-from aip.domain.financial_math.curves.yield_curve import YieldCurve
 from aip.domain.instruments.bonds.government_bond import GovernmentBond
 from aip.domain.instruments.issuers.issuer import Issuer
 from aip.domain.instruments.issuers.issuer_type import IssuerType
@@ -18,7 +17,6 @@ from aip.domain.market.events.quote_updated import QuoteUpdated
 from aip.domain.market.events.snapshot_created import SnapshotCreated
 from aip.domain.market.exceptions import MarketDataError
 from aip.domain.market.providers.market_provider import MarketProvider
-from aip.domain.market.quotes.market_quote import MarketQuote
 from aip.domain.market.quotes.price_quote import PriceQuote
 from aip.domain.market.quotes.yield_quote import YieldQuote
 from aip.domain.market.repositories.market_repository import MarketRepository

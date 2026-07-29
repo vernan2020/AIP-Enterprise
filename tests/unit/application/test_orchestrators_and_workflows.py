@@ -8,10 +8,16 @@ import pytest
 
 from aip.application.contracts.analysis_request import AnalysisRequest
 from aip.application.contracts.analysis_result import AnalysisResult
-from aip.application.exceptions import OrchestratorExecutionError, WorkflowExecutionError
-from aip.application.orchestrators.investment_decision_orchestrator import InvestmentDecisionOrchestrator
-from aip.application.orchestrators.liquidity_analysis_orchestrator import LiquidityAnalysisOrchestrator
-from aip.application.orchestrators.portfolio_analysis_orchestrator import PortfolioAnalysisOrchestrator
+from aip.application.exceptions import OrchestratorExecutionError
+from aip.application.orchestrators.investment_decision_orchestrator import (
+    InvestmentDecisionOrchestrator,
+)
+from aip.application.orchestrators.liquidity_analysis_orchestrator import (
+    LiquidityAnalysisOrchestrator,
+)
+from aip.application.orchestrators.portfolio_analysis_orchestrator import (
+    PortfolioAnalysisOrchestrator,
+)
 from aip.application.orchestrators.pricing_orchestrator import PricingOrchestrator
 from aip.application.workflows.hqla_workflow import HQLAWorkflow
 from aip.application.workflows.liquidity_workflow import LiquidityWorkflow
@@ -107,7 +113,6 @@ def test_all_orchestrators_coordinate_successfully() -> None:
 
 def test_orchestrators_translate_domain_failures() -> None:
     request = _make_request()
-    failing = _StubWorkflow(AnalysisResult(workflow_id="wf", correlation_id="corr", status="COMPLETED", result={"ok": True}))
 
     class _FailingWorkflow:
         def execute(self, request: AnalysisRequest) -> AnalysisResult:

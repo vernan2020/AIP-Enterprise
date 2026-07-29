@@ -1,0 +1,13 @@
+from __future__ import annotations
+
+from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
+
+
+class NotificationPanel(QWidget):
+    """Dockable notification queue."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        layout = QVBoxLayout(self)
+        layout.addWidget(QLabel("Notifications"))
+        layout.addWidget(QLabel("No notifications"))

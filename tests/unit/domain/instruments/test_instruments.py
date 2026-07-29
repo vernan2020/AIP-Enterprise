@@ -1,8 +1,10 @@
-from datetime import date, datetime
+from datetime import date
 from decimal import Decimal
 
-import pytest
-
+from src.aip.domain.instruments.bonds.floating_rate_bond import FloatingRateBond
+from src.aip.domain.instruments.bonds.government_bond import GovernmentBond
+from src.aip.domain.instruments.bonds.treasury_bill import TreasuryBill
+from src.aip.domain.instruments.cash.cash import Cash
 from src.aip.domain.instruments.enums.amortization_type import AmortizationType
 from src.aip.domain.instruments.enums.coupon_type import CouponType
 from src.aip.domain.instruments.enums.instrument_type import InstrumentType
@@ -10,10 +12,6 @@ from src.aip.domain.instruments.enums.payment_frequency import PaymentFrequency
 from src.aip.domain.instruments.issuers.credit_rating import CreditRating
 from src.aip.domain.instruments.issuers.issuer import Issuer
 from src.aip.domain.instruments.issuers.issuer_type import IssuerType
-from src.aip.domain.instruments.bonds.government_bond import GovernmentBond
-from src.aip.domain.instruments.bonds.treasury_bill import TreasuryBill
-from src.aip.domain.instruments.bonds.floating_rate_bond import FloatingRateBond
-from src.aip.domain.instruments.cash.cash import Cash
 from src.aip.domain.instruments.schedules.coupon_schedule import CouponSchedule
 from src.aip.domain.instruments.services.instrument_factory import InstrumentFactory
 from src.aip.shared.conventions import DayCountConvention

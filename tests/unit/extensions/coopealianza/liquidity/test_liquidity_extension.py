@@ -9,12 +9,13 @@ import pytest
 
 from aip.domain.policies.base.policy_context import PolicyContext
 from aip.domain.policies.engine.policy_engine import PolicyEngine
-from aip.domain.policies.metadata.policy_reference import PolicyReference
 from aip.domain.policies.severity.policy_severity import PolicySeverity
-
-from src.extensions.coopealianza.liquidity.configuration.liquidity_policy_config import LiquidityPolicyConfig
-from src.extensions.coopealianza.liquidity.configuration.policy_reference_config import PolicyReferenceConfig
-from src.extensions.coopealianza.liquidity.configuration.thresholds import Thresholds
+from src.extensions.coopealianza.liquidity.configuration.liquidity_policy_config import (
+    LiquidityPolicyConfig,
+)
+from src.extensions.coopealianza.liquidity.configuration.policy_reference_config import (
+    PolicyReferenceConfig,
+)
 from src.extensions.coopealianza.liquidity.exceptions import (
     CoopealianzaLiquidityError,
     InstitutionalConfigurationError,

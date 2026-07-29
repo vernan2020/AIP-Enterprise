@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from datetime import datetime
 
+from aip.domain.analytics.exceptions import ExplainabilityError
 from aip.domain.analytics.explainability.explanation import Explanation
 from aip.domain.analytics.explainability.explanation_factor import ExplanationFactor
-from aip.domain.analytics.exceptions import ExplainabilityError
 
 
 class ExplanationBuilder:

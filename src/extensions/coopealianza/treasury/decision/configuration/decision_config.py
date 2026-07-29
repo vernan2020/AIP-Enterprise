@@ -5,7 +5,9 @@ from datetime import date
 from decimal import Decimal
 from typing import Any
 
-from src.extensions.coopealianza.treasury.decision.exceptions import DecisionConfigurationError, TreasuryDecisionConfigurationError
+from src.extensions.coopealianza.treasury.decision.exceptions import (
+    TreasuryDecisionConfigurationError,
+)
 
 
 @dataclass(frozen=True, slots=True)

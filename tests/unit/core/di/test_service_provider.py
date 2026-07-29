@@ -1,8 +1,9 @@
 """Unit tests for service provider."""
 
-import pytest
 import threading
 from typing import Any
+
+import pytest
 
 from aip.core.di.exceptions import (
     CircularDependencyError,
@@ -13,8 +14,8 @@ from aip.core.di.exceptions import (
 from aip.core.di.lifetimes import ServiceLifetime
 from aip.core.di.service_descriptor import ServiceDescriptor
 from aip.core.di.service_provider import (
-    ServiceProvider,
     DefaultServiceScope,
+    ServiceProvider,
 )
 
 

@@ -5,8 +5,12 @@ from typing import Any
 
 from aip.domain.liquidity.cashflow.models.projection_result import ProjectionResult
 from aip.domain.liquidity.gap.models.gap_result import GapResult
-from src.extensions.coopealianza.liquidity.stress.configuration.stress_policy_config import StressPolicyConfig
-from src.extensions.coopealianza.liquidity.stress.providers.scenario_provider import ScenarioProvider
+from src.extensions.coopealianza.liquidity.stress.configuration.stress_policy_config import (
+    StressPolicyConfig,
+)
+from src.extensions.coopealianza.liquidity.stress.providers.scenario_provider import (
+    ScenarioProvider,
+)
 
 
 @dataclass(frozen=True, slots=True)

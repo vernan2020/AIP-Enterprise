@@ -3,12 +3,20 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
-from typing import Callable, Iterable
+from typing import Callable, Iterable, Protocol
 
 from aip.domain.financial_math.cashflows.cashflow import CashFlow
 from aip.domain.financial_math.cashflows.cashflow_series import CashFlowSeries
 from aip.domain.financial_math.exceptions import ConvergenceError, InvalidCashFlowError
 from aip.domain.financial_math.root_finding.bisection import bisection_solve
+
+
+class SupportsConvergence(Protocol):
+    converged: bool
+    root: Decimal
+    iterations: int
+    residual: Decimal
+    method: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -27,7 +35,7 @@ def yield_to_maturity(
     settlement_date: date | None = None,
     tolerance: Decimal = Decimal("1e-10"),
     max_iterations: int = 100,
-    solver: Callable[[Callable[[Decimal], Decimal], Decimal, Decimal], object] | None = None,
+    solver: Callable[..., SupportsConvergence] | None = None,
 ) -> YieldSummary:
     if isinstance(cash_flow_series, CashFlowSeries):
         cash_flows = cash_flow_series.cash_flows

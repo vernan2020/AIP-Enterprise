@@ -6,12 +6,11 @@ from decimal import Decimal
 import pytest
 
 from aip.domain.financial_math import (
-    BootstrapError,
     CashFlow,
     CashFlowSeries,
     ConvergenceError,
-    CurveConstructionError,
     CurrencyMismatchError,
+    CurveConstructionError,
     EffectiveRate,
     ForwardRate,
     InterestRate,
@@ -22,22 +21,21 @@ from aip.domain.financial_math import (
     NominalRate,
     ZeroRate,
     accumulation_factor,
-    accrue_interest,
     bisection_solve,
-    brent_solve,
     bootstrap_zero_curve,
+    brent_solve,
     clean_price,
     convexity,
-    discount_factor,
     dirty_price,
+    discount_factor,
     dv01,
     effective_duration,
     equivalent_rate,
     future_value,
     future_value_series,
+    internal_rate_of_return,
     interpolate_linear,
     interpolate_logarithmic,
-    internal_rate_of_return,
     macaulay_duration,
     modified_duration,
     money_weighted_return,
@@ -51,10 +49,11 @@ from aip.domain.financial_math import (
     svensson_zero_rate,
     yield_to_maturity,
 )
-from aip.domain.financial_math.bond_metrics.accrued_interest import accrued_interest as accrued_interest_fn
+from aip.domain.financial_math.bond_metrics.accrued_interest import (
+    accrued_interest as accrued_interest_fn,
+)
 from aip.domain.financial_math.curves.curve_point import CurvePoint
 from aip.domain.financial_math.curves.yield_curve import YieldCurve
-from aip.domain.financial_math.root_finding.bisection import ConvergenceResult
 
 
 def test_cash_flow_and_series_behaviour() -> None:

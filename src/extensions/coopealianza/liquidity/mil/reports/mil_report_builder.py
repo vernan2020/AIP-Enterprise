@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from decimal import Decimal
 from typing import Any
 
 from src.extensions.coopealianza.liquidity.mil.models.mil_result import MilResult

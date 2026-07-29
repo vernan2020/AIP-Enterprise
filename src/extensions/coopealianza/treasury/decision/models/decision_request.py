@@ -10,7 +10,9 @@ from aip.domain.policies.base.policy_result import PolicyResult
 from aip.domain.relative_value.models.relative_value_result import RelativeValueResult
 from src.extensions.coopealianza.liquidity.mil.models.mil_result import MilResult
 from src.extensions.coopealianza.liquidity.stress.models.stress_result import StressResult
-from src.extensions.coopealianza.treasury.decision.configuration.decision_config import DecisionConfig
+from src.extensions.coopealianza.treasury.decision.configuration.decision_config import (
+    DecisionConfig,
+)
 
 
 @dataclass(frozen=True, slots=True)
