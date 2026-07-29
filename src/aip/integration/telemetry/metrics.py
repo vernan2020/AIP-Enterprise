@@ -1,0 +1,27 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any
+
+
+@dataclass(slots=True)
+class MetricsCollector:
+    """Lightweight telemetry collector for integration executions."""
+
+    counters: dict[str, float] = field(default_factory=dict)
+    gauges: dict[str, float] = field(default_factory=dict)
+
+    def increment(self, name: str, value: float = 1) -> None:
+        self.counters[name] = self.counters.get(name, 0.0) + value
+
+    def gauge(self, name: str, value: float) -> None:
+        self.gauges[name] = value
+
+    def snapshot(self) -> dict[str, Any]:
+        return {**self.counters, **self.gauges}
+
+
+class TelemetryMetrics(MetricsCollector):
+    """Backward-compatible alias for the metrics collector."""
+
+    pass
