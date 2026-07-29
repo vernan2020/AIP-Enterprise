@@ -3,9 +3,11 @@ from __future__ import annotations
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QDockWidget, QMainWindow, QSplitter, QTextEdit, QVBoxLayout, QWidget
 
+from aip.ui.modules.executive.views.executive_workspace import ExecutiveWorkspace
 from aip.ui.modules.liquidity.views.liquidity_view import LiquidityView
 from aip.ui.modules.market.views.market_view import MarketView
 from aip.ui.modules.portfolio.views.portfolio_view import PortfolioView
+from aip.ui.modules.treasury.views.treasury_view import TreasuryView
 
 from aip.core.version import APP_NAME, APP_VERSION
 from aip.ui.navigation.navigation_manager import NavigationManager
@@ -48,6 +50,7 @@ class MainWindow(QMainWindow):
             Route("market", "Market", "market"),
             Route("liquidity", "Liquidity", "liquidity"),
             Route("treasury", "Treasury", "treasury"),
+            Route("executive", "Executive", "executive"),
             Route("reports", "Reports", "reports"),
         ]
         self._navigation.register_many(routes)
@@ -121,6 +124,12 @@ class MainWindow(QMainWindow):
             return
         if route_id == "liquidity":
             self._workspace.open_tab("Liquidity", LiquidityView())
+            return
+        if route_id == "treasury":
+            self._workspace.open_tab("Treasury", TreasuryView())
+            return
+        if route_id == "executive":
+            self._workspace.open_tab("Executive", ExecutiveWorkspace())
             return
         self._workspace.open_tab(route_id.title(), QTextEdit(route_id))
 
