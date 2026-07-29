@@ -15,6 +15,8 @@ class SynchronizationEventType(str, Enum):
     FAILED = "failed"
     CANCELLED = "cancelled"
     RETRY = "retry"
+    CONNECTED = "connected"
+    DISCONNECTED = "disconnected"
 
 
 @dataclass(frozen=True, slots=True)
@@ -63,6 +65,46 @@ class SynchronizationEvent:
             connector_name=connector_name,
             execution_id=execution_id,
             details={"attempt": attempt},
+        )
+
+    @classmethod
+    def connected(cls, job_id: str, connector_name: str, execution_id: str) -> "SynchronizationEvent":
+        return cls(
+            event_type=SynchronizationEventType.CONNECTED,
+            job_id=job_id,
+            connector_name=connector_name,
+            execution_id=execution_id,
+            details={"phase": "connected"},
+        )
+
+    @classmethod
+    def disconnected(cls, job_id: str, connector_name: str, execution_id: str) -> "SynchronizationEvent":
+        return cls(
+            event_type=SynchronizationEventType.DISCONNECTED,
+            job_id=job_id,
+            connector_name=connector_name,
+            execution_id=execution_id,
+            details={"phase": "disconnected"},
+        )
+
+    @classmethod
+    def synchronization_started(cls, job_id: str, connector_name: str, execution_id: str) -> "SynchronizationEvent":
+        return cls(
+            event_type=SynchronizationEventType.STARTED,
+            job_id=job_id,
+            connector_name=connector_name,
+            execution_id=execution_id,
+            details={"phase": "synchronization_started"},
+        )
+
+    @classmethod
+    def synchronization_completed(cls, job_id: str, connector_name: str, execution_id: str) -> "SynchronizationEvent":
+        return cls(
+            event_type=SynchronizationEventType.COMPLETED,
+            job_id=job_id,
+            connector_name=connector_name,
+            execution_id=execution_id,
+            details={"phase": "synchronization_completed"},
         )
 
 
