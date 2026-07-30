@@ -1,9 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
-
-from aip.application.orchestrators.liquidity_analysis_orchestrator import LiquidityAnalysisOrchestrator
-from aip.application.orchestrators.portfolio_analysis_orchestrator import PortfolioAnalysisOrchestrator
+from aip.product.demo.bootstrap.application_factory import DemoApplicationFactory
 from aip.ui.modules.executive.models.executive_row import ExecutiveRow
 from aip.ui.modules.executive.viewmodels.executive_view_model import ExecutiveViewModel
 
@@ -11,51 +8,54 @@ from aip.ui.modules.executive.viewmodels.executive_view_model import ExecutiveVi
 class ExecutivePresenter:
     """Presenter that adapts application-layer outputs into an executive cockpit view model."""
 
-    def __init__(self, portfolio_orchestrator: PortfolioAnalysisOrchestrator | None = None, liquidity_orchestrator: LiquidityAnalysisOrchestrator | None = None) -> None:
-        self._portfolio_orchestrator = portfolio_orchestrator or PortfolioAnalysisOrchestrator()
-        self._liquidity_orchestrator = liquidity_orchestrator or LiquidityAnalysisOrchestrator()
+    def __init__(self, demo_factory: DemoApplicationFactory | None = None) -> None:
+        self._demo_factory = demo_factory or DemoApplicationFactory()
+        self._correlation_id = "corr-demo-executive"
 
     def build_view_model(self, *, theme: str = "light", filters: dict[str, str] | None = None, loading: bool = False, error: str | None = None) -> ExecutiveViewModel:
+        workflow_result = self._demo_factory.initial_load_workflow().execute(self._correlation_id)
+        portfolio = workflow_result["portfolio"]
+        liquidity = workflow_result["liquidity"]
+        market = workflow_result["market"]
         summary = (
-            "Portfolio Market Value: 1,250,000.00",
-            "Book Value: 1,220,000.00",
-            "Liquidity Position: 100.00",
-            "Liquidity Gap: 0.00",
-            "HQLA Capacity: 80.00",
-            "MIL Capacity: 60.00",
-            "Stress Status: Stable",
-            "Treasury Recommendation Status: Healthy",
+            f"Portfolio Market Value: {portfolio['market_value']:,.2f}",
+            f"Book Value: {portfolio['book_value']:,.2f}",
+            f"Liquidity Position: {liquidity['cash_position']:.2f}",
+            f"Liquidity Gap: {liquidity['liquidity_gap']:.2f}",
+            f"HQLA Capacity: {liquidity['hqla_capacity']:.2f}",
+            f"MIL Capacity: {liquidity['mil_eligible_capacity']:.2f}",
+            f"Stress Status: {liquidity['stress_result']}",
+            f"Treasury Recommendation Status: {portfolio['relative_value_opportunity']}",
         )
-        portfolio = (
-            "Market Value: 1,250,000.00",
-            "Yield: 4.20%",
-            "Modified Duration: 3.40",
-            "Concentration: Diversified",
-            "Asset Allocation: USD/EUR/GBP",
-            "Top Issuers: Acme Bank, Blue Ridge",
+        portfolio_view = (
+            f"Market Value: {portfolio['market_value']:,.2f}",
+            f"Yield: {portfolio['weighted_yield']:.2f}%",
+            f"Modified Duration: {portfolio['modified_duration']:.2f}",
+            f"Concentration: {portfolio['currency_distribution'][0]}",
+            f"Asset Allocation: {','.join(portfolio['currency_distribution'])}",
+            f"Top Issuers: {portfolio['positions'][0]['issuer']}, {portfolio['positions'][1]['issuer']}",
         )
-        liquidity = (
-            "Cash Position: 100.00",
-            "Gap: 0.00",
-            "Coverage: 98%",
-            "HQLA: 80.00",
-            "MIL: 60.00",
-            "Stress Result: Stable",
-            "Policy Compliance: Compliant",
+        liquidity_view = (
+            f"Cash Position: {liquidity['cash_position']:.2f}",
+            f"Gap: {liquidity['liquidity_gap']:.2f}",
+            f"Coverage: {liquidity['policy_status']}",
+            f"HQLA: {liquidity['hqla_capacity']:.2f}",
+            f"MIL: {liquidity['mil_eligible_capacity']:.2f}",
+            f"Stress Result: {liquidity['stress_result']}",
+            f"Policy Compliance: {liquidity['policy_status']}",
         )
-        market = (
-            "Yield Curves: USD 3M/6M/1Y",
-            "Relative Value Opportunities: 2",
-            "Spread Summary: 0.45",
-            "Market Status: Ready",
+        market_view = (
+            f"Yield Curves: {'/'.join(curve['label'] for curve in market['curves'])}",
+            f"Relative Value Opportunities: {market['relative_value_opportunities']}",
+            f"Spread Summary: {market['average_spread']:.2f}",
+            f"Market Status: {market['market_status']}",
         )
         recommendations = (
             ExecutiveRow(title="Treasury Buffer Review", detail="Maintain cash buffer ahead of next rollover", category="Treasury", severity="High", source="Treasury Ops"),
             ExecutiveRow(title="Funding Window", detail="Reprice term funding before rollover", category="Funding", severity="Medium", source="Funding Desk"),
         )
         alerts = (
-            ExecutiveRow(title="Critical Gap", detail="Near-term funding headroom remains tight", category="Liquidity", severity="Critical", source="Liquidity Monitor"),
-            ExecutiveRow(title="High Spread", detail="Relative value remains favorable but spread widened", category="Market", severity="High", source="Market Desk"),
+            ExecutiveRow(title="Demo Mode Badge", detail="Deterministic demo data is active", category="System", severity="Medium", source="Demo Platform"),
         )
         trends = (
             ("30 Days", ("92", "95", "97", "94")),
@@ -64,9 +64,9 @@ class ExecutivePresenter:
         )
         return ExecutiveViewModel(
             summary=summary,
-            portfolio=portfolio,
-            liquidity=liquidity,
-            market=market,
+            portfolio=portfolio_view,
+            liquidity=liquidity_view,
+            market=market_view,
             recommendations=recommendations,
             alerts=alerts,
             trends=trends,

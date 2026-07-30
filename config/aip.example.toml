@@ -1,0 +1,13 @@
+[application]
+name = "AIP Enterprise"
+environment = "demo"
+debug = true
+
+[database]
+engine = "duckdb"
+path = "~/.local/share/aip-enterprise/database/aip.duckdb"
+read_only = false
+
+[logging]
+level = "INFO"
+directory = "~/.local/share/aip-enterprise/logs"

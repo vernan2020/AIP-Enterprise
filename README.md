@@ -4,41 +4,55 @@ Plataforma de escritorio para la gestión integral del portafolio de inversiones
 
 ## Release
 
-**R0.1.0 – Foundation**
+**1.0 RC1 – Packaging and installation readiness**
 
-Incluye configuración YAML validada, logging con Loguru, inyección de dependencias, DuckDB, auditoría básica, interfaz PySide6 y pruebas unitarias.
+Incluye instalación editable, instalación estándar, punto de entrada canónico vía `python -m aip`, comando `aip-enterprise`, validación offscreen para Codespaces y base de empaquetado para Windows.
 
 ## Requisitos
 
-- Windows 10/11
 - Python 3.13
+- pip
+- PySide6 runtime support
 
-## Instalación en CMD
+## Instalación editable
 
-```cmd
-py -3.13 -m venv .venv
-.venv\Scripts\activate
-python -m pip install --upgrade pip
-pip install -e .[dev]
+```bash
+python -m pip install -e ".[dev]"
+```
+
+## Instalación estándar
+
+```bash
+python -m build
+python -m pip install dist/aip_enterprise-1.0.0rc1-py3-none-any.whl
 ```
 
 ## Ejecución
 
-```cmd
-python main.py
+```bash
+python -m aip
+aip-enterprise
 ```
+
+## Validación offscreen
+
+```bash
+QT_QPA_PLATFORM=offscreen timeout 10s aip-enterprise
+```
+
+La salida de código 124 indica que la aplicación permaneció activa hasta el timeout, lo cual es el resultado esperado en ambientes sin pantalla nativa.
 
 ## Pruebas
 
-```cmd
+```bash
 pytest
 ```
 
 ## Validación
 
-```cmd
-ruff check src tests
-mypy src
+```bash
+python -m compileall src tests
+python -m mypy src
 ```
 
 ## Licencia

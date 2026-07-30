@@ -1,2 +1,0 @@
-[console_scripts]
-aip-enterprise = aip.main:main

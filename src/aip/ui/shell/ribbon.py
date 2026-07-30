@@ -12,7 +12,7 @@ class Ribbon(QToolBar):
         self.setMovable(False)
         self.setFloatable(False)
         self._actions: dict[str, QAction] = {}
-        for label in ["Home", "Portfolio", "Market", "Liquidity", "Treasury", "Executive", "Reports", "Administration", "Help"]:
+        for label in ["Home", "Portfolio", "Market", "Liquidity", "Treasury", "Executive", "Refresh All", "Reports", "Administration", "Help"]:
             action = QAction(label, self)
             self.addAction(action)
             self._actions[label] = action

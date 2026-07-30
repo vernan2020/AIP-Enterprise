@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
-
-from aip.application.orchestrators.portfolio_analysis_orchestrator import PortfolioAnalysisOrchestrator
+from aip.product.demo.bootstrap.application_factory import DemoApplicationFactory
 from aip.ui.modules.portfolio.models.portfolio_row import PortfolioRow
 from aip.ui.modules.portfolio.models.portfolio_summary import PortfolioSummary
 from aip.ui.modules.portfolio.viewmodels.portfolio_view_model import PortfolioViewModel
@@ -11,38 +9,42 @@ from aip.ui.modules.portfolio.viewmodels.portfolio_view_model import PortfolioVi
 class PortfolioPresenter:
     """Presenter that adapts application-layer workflow results into a passive view model."""
 
-    def __init__(self, orchestrator: PortfolioAnalysisOrchestrator | None = None) -> None:
-        self._orchestrator = orchestrator or PortfolioAnalysisOrchestrator()
+    def __init__(self, demo_factory: DemoApplicationFactory | None = None) -> None:
+        self._demo_factory = demo_factory or DemoApplicationFactory()
+        self._correlation_id = "corr-demo-portfolio"
 
     def build_view_model(self, *, theme: str = "light", filters: dict[str, str] | None = None, selected_isin: str | None = None, loading: bool = False, error: str | None = None) -> PortfolioViewModel:
+        workflow_result = self._demo_factory.initial_load_workflow().execute(self._correlation_id)
+        portfolio = workflow_result["portfolio"]
+        rows = tuple(
+            PortfolioRow(
+                isin=position["isin"],
+                issuer=position["issuer"],
+                instrument=position["instrument"],
+                currency=position["currency"],
+                nominal=f"{position['nominal']:.0f}",
+                market_value=f"{position['market_value']:.2f}",
+                book_value=f"{position['book_value']:.2f}",
+                yield_value=f"{position['yield_value']:.2f}%",
+                modified_duration=f"{position['modified_duration']:.2f}",
+                classification=position["classification"],
+                hqla_status=position["hqla_status"],
+                mil_status=position["mil_status"],
+                recommendation=position["recommendation"],
+            )
+            for position in portfolio["positions"]
+        )
         summary = PortfolioSummary(
             portfolio_name="AIP Core Portfolio",
-            valuation_date="2026-07-29",
-            market_value="1,250,000.00",
-            book_value="1,220,000.00",
-            total_positions=12,
-            weighted_yield="4.20%",
-            modified_duration="3.40",
-            hqla_percent="68%",
-            mil_eligible_percent="82%",
-            currency_distribution=("USD", "EUR", "GBP"),
-        )
-        rows = (
-            PortfolioRow(
-                isin="US0000001",
-                issuer="Acme Bank",
-                instrument="Treasury Bill",
-                currency="USD",
-                nominal="1000000",
-                market_value="1000000.00",
-                book_value="980000.00",
-                yield_value="4.10%",
-                modified_duration="0.50",
-                classification="Govt",
-                hqla_status="Eligible",
-                mil_status="Eligible",
-                recommendation="Hold",
-            ),
+            valuation_date=portfolio["valuation_date"],
+            market_value=f"{portfolio['market_value']:,.2f}",
+            book_value=f"{portfolio['book_value']:,.2f}",
+            total_positions=len(portfolio["positions"]),
+            weighted_yield=f"{portfolio['weighted_yield']:.2f}%",
+            modified_duration=f"{portfolio['modified_duration']:.2f}",
+            hqla_percent=f"{portfolio['hqla_percent']:.0f}%",
+            mil_eligible_percent=f"{portfolio['mil_eligible_percent']:.0f}%",
+            currency_distribution=portfolio["currency_distribution"],
         )
         return PortfolioViewModel(
             summary=summary,
@@ -52,8 +54,8 @@ class PortfolioPresenter:
             theme=theme,
             status="loaded" if not error else "error",
             warnings=("Application workflow returned a warning",) if not loading and not error else (),
-            calculation_id="calc-portfolio",
-            correlation_id="corr-portfolio",
+            calculation_id=workflow_result["calculation_references"]["portfolio"],
+            correlation_id=self._correlation_id,
             loading=loading,
             error=error,
         )

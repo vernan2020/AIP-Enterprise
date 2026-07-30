@@ -9,10 +9,21 @@ __pycache__/
 .coverage
 coverage.xml
 htmlcov/
+*.log
+*.db
+*.duckdb
+*.sqlite
+*.sqlite3
 
 # Virtual environments
 .venv/
 venv/
+
+# Local secrets and environment files
+.env
+.env.local
+.env.*
+!.env.example
 
 # Build outputs
 build/

@@ -1,15 +1,16 @@
 # Changelog
 
-## 0.1.0 - 2026-07-29
+## 0.9.0 RC1 - 2026-07-29
 
 ### Added
-- Release engineering foundation
-- CI workflows for tests, quality, coverage, packaging, and security
-- Code quality configuration for Black, Ruff, isort, mypy, pytest, and pre-commit
-- Release process, versioning, and documentation automation scaffolding
+- AIP Enterprise Demo 0.9 RC1 desktop experience with deterministic demo data
+- Executive, Portfolio, Market, Liquidity, Treasury, and System Status workspace integration
+- Demo-mode startup flow, refresh-all workflow, and startup documentation
+- Packaging scaffold and release notes for Windows executable preparation
 
 ### Changed
-- Packaging metadata prepared for wheel and sdist builds
+- Main application entry point now starts the demo shell directly with a clear Demo Mode banner
+- Version metadata centralized in the application version module
 
 ### Notes
-- No business functionality changes were introduced in this release foundation sprint.
+- The release is read-only and intended for demonstration and validation rather than production transaction execution.

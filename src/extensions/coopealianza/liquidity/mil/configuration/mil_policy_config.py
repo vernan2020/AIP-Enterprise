@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import date
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from typing import Any
 
 from aip.domain.policies.metadata.policy_reference import PolicyReference
@@ -61,6 +61,8 @@ class MilPolicyConfig:
     priority: int = 0
 
     def __post_init__(self) -> None:
+        if self.minimum_remaining_maturity_days < 0:
+            raise ValueError("Minimum remaining maturity cannot be negative")
         self._validate()
 
     @classmethod
@@ -105,9 +107,6 @@ class MilPolicyConfig:
             recommended_action=str(mapping.get("recommended_action")) if mapping.get("recommended_action") is not None else None,
             priority=int(mapping.get("priority", 0)),
         )
-
-    def to_policy_reference(self) -> tuple[PolicyReference, ...]:
-        return tuple(self.policy_references)
 
     @classmethod
     def validate_configuration_collection(cls, configs: Sequence["MilPolicyConfig"]) -> None:
@@ -159,6 +158,9 @@ class MilPolicyConfig:
             return PolicySeverity[value]
         return PolicySeverity.MEDIUM
 
+    def to_policy_reference(self) -> tuple[PolicyReference, ...]:
+        return tuple(self.policy_references)
+
     def _validate(self) -> None:
         if not self.policy_id or not self.version or not self.name or not self.category:
             raise MilConfigurationError("Policy id, version, name, and category are required")
@@ -168,8 +170,6 @@ class MilPolicyConfig:
             raise MilConfigurationError("Warning concentration threshold cannot exceed blocking threshold")
         if self.valuation_freshness_limit_days < 0:
             raise MilConfigurationError("Valuation freshness limit cannot be negative")
-        if self.minimum_remaining_maturity_days < 0:
-            raise ValueError("Minimum remaining maturity cannot be negative")
         for selection in self.haircut_mappings:
             if selection.haircut is None:
                 continue

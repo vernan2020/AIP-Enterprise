@@ -14,6 +14,7 @@ class Workspace(QTabWidget):
 
     def add_tab(self, title: str, widget: QWidget) -> None:
         self.addTab(widget, title)
+        self.setCurrentWidget(widget)
 
     def open_tab(self, title: str, widget: QWidget) -> None:
         for index in range(self.count()):

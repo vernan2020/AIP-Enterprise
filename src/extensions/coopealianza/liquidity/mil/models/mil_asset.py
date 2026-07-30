@@ -33,8 +33,21 @@ class MilAsset:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        self._coerce_dates()
         self._validate()
         object.__setattr__(self, "metadata", dict(self.metadata))
+
+    def _coerce_dates(self) -> None:
+        for name in ("valuation_date", "market_price_date", "maturity_date"):
+            value = getattr(self, name)
+            if isinstance(value, str):
+                try:
+                    value = date.fromisoformat(value)
+                except ValueError as exc:
+                    raise MilValuationError(f"{name} must be a valid date") from exc
+                object.__setattr__(self, name, value)
+            elif not isinstance(value, date):
+                raise MilValuationError(f"{name} must be a date")
 
     def _validate(self) -> None:
         for name in ("position_id", "instrument_id", "isin", "issuer", "currency", "classification", "portfolio_reference"):
@@ -54,19 +67,6 @@ class MilAsset:
                 raise MilValuationError("nominal_amount cannot be negative")
             if name in {"market_value", "accounting_value"} and value < 0:
                 raise MilValuationError(f"{name} cannot be negative")
-        for name in ("valuation_date", "market_price_date", "maturity_date"):
-            value = getattr(self, name)
-            if isinstance(value, date):
-                continue
-            if isinstance(value, str):
-                try:
-                    parsed = date.fromisoformat(value)
-                except ValueError as exc:
-                    raise MilValuationError(f"{name} must be a valid date") from exc
-                object.__setattr__(self, name, parsed)
-            else:
-                raise MilValuationError(f"{name} must be a date")
-
         if self.valuation_date > self.market_price_date:
             raise MilValuationError("valuation_date cannot be after market_price_date")
         if self.market_price_date > self.maturity_date:
