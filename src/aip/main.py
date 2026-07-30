@@ -1,21 +1,12 @@
 from __future__ import annotations
 
-import sys
-
-from PySide6.QtWidgets import QApplication
-
-from aip.application.kernel import ApplicationKernel
-from aip.core.bootstrap import Bootstrap
-from aip.core.paths import ProjectPaths
-from aip.core.version import APP_NAME, APP_VERSION
+from aip.ui.application.main import main as _launch_rc1_application
 
 
-def main() -> int:
-    qt_app = QApplication(sys.argv)
-    qt_app.setApplicationName(APP_NAME)
-    qt_app.setApplicationVersion(APP_VERSION)
+def main(argv: list[str] | None = None) -> int:
+    """Launch the canonical RC1 desktop shell for production startup."""
+    return _launch_rc1_application(argv)
 
-    paths = ProjectPaths.discover()
-    services = Bootstrap(paths).initialize()
-    kernel = ApplicationKernel(qt_application=qt_app, services=services)
-    return kernel.run()
+
+if __name__ == "__main__":
+    raise SystemExit(main())
