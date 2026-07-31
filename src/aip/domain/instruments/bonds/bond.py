@@ -7,7 +7,7 @@ from aip.domain.instruments.base.fixed_income_instrument import FixedIncomeInstr
 from aip.domain.instruments.schedules.coupon_schedule import CouponSchedule
 
 
-@dataclass(slots=True)
+@dataclass
 class Bond(FixedIncomeInstrument):
     """Generic bond abstraction."""
 

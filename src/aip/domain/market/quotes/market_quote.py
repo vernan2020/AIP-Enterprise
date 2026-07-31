@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class MarketQuote:
     """Immutable quote carrying core market metrics for an instrument."""
 

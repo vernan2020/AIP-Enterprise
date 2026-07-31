@@ -7,7 +7,7 @@ from aip.domain.financial_math.discounting.compounding import accumulation_facto
 from aip.domain.financial_math.exceptions import InvalidRateError
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class InterestRate:
     """Immutable interest rate with explicit compounding and frequency."""
 

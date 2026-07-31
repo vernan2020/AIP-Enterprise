@@ -6,7 +6,7 @@ from decimal import Decimal
 from aip.domain.instruments.bonds.bond import Bond
 
 
-@dataclass(slots=True)
+@dataclass
 class GovernmentBond(Bond):
     """Government-issued bond, including Costa Rica sovereign bonds."""
 

@@ -5,6 +5,7 @@ from PySide6.QtWidgets import QApplication
 
 from aip.core.version import APP_NAME, APP_VERSION
 from aip.product.demo.bootstrap.application_factory import DemoApplicationFactory
+from aip.product.demo.configuration.environment_loader import EnvironmentLoader
 from aip.ui.shell.main_window import MainWindow
 
 
@@ -16,7 +17,7 @@ class AIPApplication:
         self._qt_app.setApplicationName(APP_NAME)
         self._qt_app.setApplicationVersion(APP_VERSION)
         self._window: MainWindow | None = None
-        self._factory = DemoApplicationFactory()
+        self._factory = DemoApplicationFactory(EnvironmentLoader().load())
 
     @property
     def qt_app(self) -> QCoreApplication:

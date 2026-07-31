@@ -11,7 +11,7 @@ from aip.domain.instruments.exceptions import InstrumentValidationError
 from aip.domain.instruments.schedules.coupon_schedule import CouponSchedule
 
 
-@dataclass(slots=True)
+@dataclass
 class FixedIncomeInstrument(FinancialInstrument):
     """Base class for fixed-income instruments."""
 

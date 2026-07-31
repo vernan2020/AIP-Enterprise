@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from aip.domain.financial_math.rates.interest_rate import InterestRate
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class EffectiveRate(InterestRate):
     """Effective annual rate value object."""
 

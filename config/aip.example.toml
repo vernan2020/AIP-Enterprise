@@ -1,7 +1,9 @@
 [application]
 name = "AIP Enterprise"
-environment = "demo"
+environment = "development"
 debug = true
+execution_mode = "CONFIGURED"
+demo_mode_enabled = false
 
 [database]
 engine = "duckdb"
@@ -11,3 +13,19 @@ read_only = false
 [logging]
 level = "INFO"
 directory = "~/.local/share/aip-enterprise/logs"
+
+[institutional_sources]
+sql_server_enabled = false
+sql_server_server = ""
+sql_server_database = ""
+sql_server_auth_mode = "windows"
+sql_server_view = "VISTA_1514_1515_1516"
+sql_server_scenarios = ["Reales", "Presupuesto 2026%"]
+portfolio_root = ""
+portfolio_master_pattern = "Inversiones\\{year}\\maestro\\{month}\\*.xls*"
+icl_root = ""
+icl_file_pattern = "ICL\\Reportes ICL\\*"
+curves_workbook = ""
+vector_path = ""
+bccr_enabled = false
+bccr_base_url = ""

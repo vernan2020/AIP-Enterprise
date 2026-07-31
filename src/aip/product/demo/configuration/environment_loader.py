@@ -4,9 +4,18 @@ import os
 from datetime import date
 from typing import Any
 
-from aip.product.configured.configuration.configured_source_config import BCCRSourceConfig, ConfiguredSourceConfig, FolderWatchSourceConfig, SQLServerSourceConfig
+from aip.product.configured.configuration.configured_source_config import BCCRSourceConfig, ConfiguredSourceConfig, CurvesSourceConfig, FolderWatchSourceConfig, SQLServerSourceConfig, VectorSourceConfig
 from aip.product.demo.configuration.demo_config import DemoConfig
 from aip.product.demo.exceptions import DemoConfigurationError
+
+
+def _normalize_path_value(value: str | None) -> str | None:
+    if not value:
+        return None
+    normalized = value.replace("/", "\\")
+    if normalized.startswith("\\\\"):
+        return normalized
+    return normalized.replace("\\\\", "\\")
 
 
 class EnvironmentLoader:
@@ -24,6 +33,8 @@ class EnvironmentLoader:
         environment_name = os.getenv("AIP_ENVIRONMENT") or os.getenv("AIP_DEMO_ENVIRONMENT", "demo")
         sql_source = self._read_sql_source_config()
         folder_source = self._read_folder_watch_config()
+        curves_source = self._read_curves_config()
+        vector_source = self._read_vector_config()
         bccr_source = self._read_bccr_config()
         configured_source_config = ConfiguredSourceConfig(
             sql_server=SQLServerSourceConfig(
@@ -33,10 +44,12 @@ class EnvironmentLoader:
                 authentication_mode=sql_source["authentication_mode"],
                 username_secret_ref=sql_source["username_secret_ref"],
                 password_secret_ref=sql_source["password_secret_ref"],
-                query_ref=sql_source["query_ref"],
+                view=sql_source["view"],
+                scenario_filters=sql_source["scenario_filters"],
                 connection_timeout_seconds=sql_source["connection_timeout_seconds"],
                 command_timeout_seconds=sql_source["command_timeout_seconds"],
                 retry_count=sql_source["retry_count"],
+                additional_query_filters=sql_source["additional_query_filters"],
             ),
             folder_watch=FolderWatchSourceConfig(
                 enabled=folder_source["enabled"],
@@ -44,9 +57,23 @@ class EnvironmentLoader:
                 icl_root=folder_source["icl_root"],
                 curves_path=folder_source["curves_path"],
                 vector_path=folder_source["vector_path"],
+                portfolio_master_pattern=folder_source["portfolio_master_pattern"],
+                icl_file_pattern=folder_source["icl_file_pattern"],
                 supported_extensions=folder_source["supported_extensions"],
                 recursive=folder_source["recursive"],
                 stale_data_threshold_seconds=folder_source["stale_data_threshold_seconds"],
+            ),
+            curves=CurvesSourceConfig(
+                enabled=curves_source["enabled"],
+                workbook=curves_source["workbook"],
+                sheet_mapping=curves_source["sheet_mapping"],
+                stale_data_threshold_seconds=curves_source["stale_data_threshold_seconds"],
+            ),
+            vector=VectorSourceConfig(
+                enabled=vector_source["enabled"],
+                path=vector_source["path"],
+                file_pattern=vector_source["file_pattern"],
+                stale_data_threshold_seconds=vector_source["stale_data_threshold_seconds"],
             ),
             bccr=BCCRSourceConfig(
                 enabled=bccr_source["enabled"],
@@ -55,6 +82,7 @@ class EnvironmentLoader:
                 retries=bccr_source["retries"],
                 cache_enabled=bccr_source["cache_enabled"],
                 indicator_configuration=bccr_source["indicator_configuration"],
+                series_config=bccr_source["series_config"],
             ),
         )
         return DemoConfig(
@@ -82,26 +110,48 @@ class EnvironmentLoader:
             "enabled": str(enabled_flag).lower() == "true",
             "server": os.getenv("AIP_SQLSERVER_SERVER"),
             "database": os.getenv("AIP_SQLSERVER_DATABASE"),
-            "authentication_mode": os.getenv("AIP_SQLSERVER_AUTH_MODE", "integrated"),
+            "authentication_mode": os.getenv("AIP_SQLSERVER_AUTH_MODE", "windows"),
             "username_secret_ref": os.getenv("AIP_SQLSERVER_USERNAME_SECRET"),
             "password_secret_ref": os.getenv("AIP_SQLSERVER_PASSWORD_SECRET"),
-            "query_ref": os.getenv("AIP_SQLSERVER_QUERY_REF"),
+            "view": os.getenv("AIP_SQLSERVER_VIEW", "VISTA_1514_1515_1516"),
+            "scenario_filters": tuple(filter(None, os.getenv("AIP_SQLSERVER_SCENARIOS", "Reales,Presupuesto 2026%").split(","))),
             "connection_timeout_seconds": int(os.getenv("AIP_SQLSERVER_CONNECTION_TIMEOUT", "30")),
             "command_timeout_seconds": int(os.getenv("AIP_SQLSERVER_COMMAND_TIMEOUT", "30")),
-            "retry_count": int(os.getenv("AIP_SQLSERVER_RETRY_COUNT", "1")),
+            "retry_count": int(os.getenv("AIP_SQLSERVER_RETRIES", "3")),
+            "additional_query_filters": tuple(filter(None, os.getenv("AIP_SQLSERVER_QUERY_FILTERS", "").split(","))),
         }
 
     def _read_folder_watch_config(self) -> dict[str, Any]:
         enabled_flag = os.getenv("AIP_FOLDERWATCH_ENABLED") or os.getenv("AIP_FOLDER_WATCH_ENABLED", "false")
         return {
             "enabled": str(enabled_flag).lower() == "true",
-            "portfolio_root": os.getenv("AIP_PORTFOLIO_ROOT"),
-            "icl_root": os.getenv("AIP_ICL_ROOT"),
-            "curves_path": os.getenv("AIP_CURVES_PATH"),
-            "vector_path": os.getenv("AIP_VECTOR_PATH"),
-            "supported_extensions": tuple(filter(None, os.getenv("AIP_SUPPORTED_EXTENSIONS", ".csv,.json").split(","))),
-            "recursive": os.getenv("AIP_FOLDERWATCH_RECURSIVE", "true").lower() == "true",
-            "stale_data_threshold_seconds": int(os.getenv("AIP_FOLDERWATCH_STALE_DATA_THRESHOLD", "3600")),
+            "portfolio_root": _normalize_path_value(os.getenv("AIP_PORTFOLIO_ROOT")),
+            "icl_root": _normalize_path_value(os.getenv("AIP_ICL_ROOT")),
+            "curves_path": _normalize_path_value(os.getenv("AIP_CURVES_WORKBOOK")),
+            "vector_path": _normalize_path_value(os.getenv("AIP_VECTOR_PATH")),
+            "portfolio_master_pattern": os.getenv("AIP_PORTFOLIO_MASTER_PATTERN", r"Inversiones\{year}\maestro\{month}\*.xls*"),
+            "icl_file_pattern": os.getenv("AIP_ICL_FILE_PATTERN", r"ICL\Reportes ICL\*"),
+            "supported_extensions": tuple(filter(None, os.getenv("AIP_PORTFOLIO_SUPPORTED_EXTENSIONS", ".xls,.xlsx").split(","))),
+            "recursive": os.getenv("AIP_PORTFOLIO_RECURSIVE", "true").lower() == "true",
+            "stale_data_threshold_seconds": int(os.getenv("AIP_PORTFOLIO_STALE_HOURS", "24")) * 3600,
+        }
+
+    def _read_curves_config(self) -> dict[str, Any]:
+        enabled_flag = os.getenv("AIP_CURVES_ENABLED", "false")
+        return {
+            "enabled": str(enabled_flag).lower() == "true",
+            "workbook": _normalize_path_value(os.getenv("AIP_CURVES_WORKBOOK")),
+            "sheet_mapping": tuple(filter(None, os.getenv("AIP_CURVES_SHEET_MAPPING", "Gobierno CRC,Gobierno USD,BCCR CRC").split(","))),
+            "stale_data_threshold_seconds": int(os.getenv("AIP_CURVES_STALE_HOURS", "24")) * 3600,
+        }
+
+    def _read_vector_config(self) -> dict[str, Any]:
+        enabled_flag = os.getenv("AIP_VECTOR_ENABLED", "false")
+        return {
+            "enabled": str(enabled_flag).lower() == "true",
+            "path": _normalize_path_value(os.getenv("AIP_VECTOR_PATH")),
+            "file_pattern": os.getenv("AIP_VECTOR_FILE_PATTERN"),
+            "stale_data_threshold_seconds": int(os.getenv("AIP_VECTOR_STALE_HOURS", "24")) * 3600,
         }
 
     def _read_bccr_config(self) -> dict[str, Any]:
@@ -109,8 +159,9 @@ class EnvironmentLoader:
         return {
             "enabled": str(enabled_flag).lower() == "true",
             "base_url": os.getenv("AIP_BCCR_BASE_URL"),
-            "timeout_seconds": float(os.getenv("AIP_BCCR_TIMEOUT_SECONDS", "10")),
-            "retries": int(os.getenv("AIP_BCCR_RETRIES", "2")),
+            "timeout_seconds": float(os.getenv("AIP_BCCR_TIMEOUT_SECONDS", "30")),
+            "retries": int(os.getenv("AIP_BCCR_RETRIES", "3")),
             "cache_enabled": os.getenv("AIP_BCCR_CACHE_ENABLED", "true").lower() == "true",
-            "indicator_configuration": tuple(filter(None, os.getenv("AIP_BCCR_INDICATORS", "FX").split(","))),
+            "indicator_configuration": tuple(filter(None, os.getenv("AIP_BCCR_SERIES_CONFIG", "FX").split(","))),
+            "series_config": tuple(filter(None, os.getenv("AIP_BCCR_SERIES_CONFIG", "FX").split(","))),
         }

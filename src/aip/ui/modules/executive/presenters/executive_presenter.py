@@ -27,13 +27,18 @@ class ExecutivePresenter:
             f"Stress Status: {liquidity['stress_result']}",
             f"Treasury Recommendation Status: {portfolio['relative_value_opportunity']}",
         )
+        currency_distribution = portfolio.get("currency_distribution", ()) or ()
+        positions = portfolio.get("positions", []) or []
+        top_issuers = ", ".join(
+            position.get("issuer", "N/A") for position in positions[:2]
+        ) if positions else "N/A"
         portfolio_view = (
             f"Market Value: {portfolio['market_value']:,.2f}",
             f"Yield: {portfolio['weighted_yield']:.2f}%",
             f"Modified Duration: {portfolio['modified_duration']:.2f}",
-            f"Concentration: {portfolio['currency_distribution'][0]}",
-            f"Asset Allocation: {','.join(portfolio['currency_distribution'])}",
-            f"Top Issuers: {portfolio['positions'][0]['issuer']}, {portfolio['positions'][1]['issuer']}",
+            f"Concentration: {currency_distribution[0] if currency_distribution else 'N/A'}",
+            f"Asset Allocation: {','.join(currency_distribution)}",
+            f"Top Issuers: {top_issuers}",
         )
         liquidity_view = (
             f"Cash Position: {liquidity['cash_position']:.2f}",

@@ -7,7 +7,7 @@ from aip.domain.instruments.bonds.bond import Bond
 from aip.domain.instruments.exceptions import InstrumentValidationError
 
 
-@dataclass(slots=True)
+@dataclass
 class TreasuryBill(Bond):
     """Short-term zero-coupon Treasury bill."""
 

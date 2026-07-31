@@ -9,6 +9,7 @@ from PySide6.QtWidgets import QApplication, QDialog, QDockWidget, QLabel, QMainW
 
 from aip.core.version import APP_DISPLAY_NAME, APP_DISPLAY_VERSION
 from aip.product.demo.bootstrap.application_factory import DemoApplicationFactory
+from aip.product.demo.configuration.environment_loader import EnvironmentLoader
 from aip.ui.dialogs.about_dialog import AboutDialog
 from aip.ui.modules.executive.views.executive_workspace import ExecutiveWorkspace
 from aip.ui.modules.liquidity.views.liquidity_view import LiquidityView
@@ -49,7 +50,8 @@ class MainWindow(QMainWindow):
         self._theme_service = ThemeService()
         self._navigation = NavigationManager()
         self._window_state = WindowStateManager()
-        self._demo_factory = DemoApplicationFactory()
+        self._config = EnvironmentLoader().load()
+        self._demo_factory = DemoApplicationFactory(self._config)
         self._workspace: Workspace | None = None
         self._system_status_text: QTextEdit | None = None
         self._diagnostic_mode = False
@@ -94,7 +96,8 @@ class MainWindow(QMainWindow):
         self._status_bar = StatusBar()
         execution_mode = self._demo_factory.config.execution_mode
         banner_label = "CONFIGURED MODE" if execution_mode == "CONFIGURED" else "DEMO MODE"
-        self._demo_banner = QLabel(f"{APP_DISPLAY_NAME}\n{banner_label} • Executive Workspace")
+        header_name = "AIP Enterprise — CONFIGURED MODE" if execution_mode == "CONFIGURED" else APP_DISPLAY_NAME
+        self._demo_banner = QLabel(f"{header_name}\n{banner_label} • Executive Workspace")
         self._demo_banner.setStyleSheet("background: #1f4e79; color: white; padding: 4px 8px; font-weight: bold;")
         self._demo_banner.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
@@ -336,6 +339,7 @@ class MainWindow(QMainWindow):
             f"Execution Mode: {status.execution_mode}",
             f"Demo Mode: {self._demo_factory.config.demo_mode_enabled}",
             f"Configured Mode: {status.execution_mode == 'CONFIGURED'}",
+            "Demo Badge: ABSENT" if status.execution_mode == "CONFIGURED" else "Demo Badge: PRESENT",
             f"Diagnostic Mode: {'ON' if self._diagnostic_mode else 'OFF'}",
             *[f"{name}: {state}" for name, state in component_states.items()],
         ]

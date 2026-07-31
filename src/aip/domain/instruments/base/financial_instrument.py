@@ -12,7 +12,7 @@ from aip.domain.instruments.schedules.coupon_schedule import CouponSchedule
 from aip.shared.conventions import BusinessDayConvention, DayCountConvention
 
 
-@dataclass(slots=True)
+@dataclass
 class FinancialInstrument(ABC):
     """Abstract base class for all financial instruments."""
 

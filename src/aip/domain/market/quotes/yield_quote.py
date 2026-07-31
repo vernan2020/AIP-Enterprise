@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from aip.domain.market.quotes.market_quote import MarketQuote
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class YieldQuote(MarketQuote):
     """Quote specialized for yield-based market observations."""
 

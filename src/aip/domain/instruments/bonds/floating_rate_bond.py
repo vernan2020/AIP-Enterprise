@@ -9,7 +9,7 @@ from aip.domain.instruments.exceptions import InstrumentValidationError
 from aip.domain.instruments.schedules.coupon_schedule import CouponSchedule
 
 
-@dataclass(slots=True)
+@dataclass
 class FloatingRateBond(Bond):
     """Bond whose coupon is linked to a floating reference rate."""
 

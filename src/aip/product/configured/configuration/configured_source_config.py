@@ -9,13 +9,15 @@ class SQLServerSourceConfig:
     enabled: bool = False
     server: str | None = None
     database: str | None = None
-    authentication_mode: str = "integrated"
+    authentication_mode: str = "windows"
     username_secret_ref: str | None = None
     password_secret_ref: str | None = None
-    query_ref: str | None = None
+    view: str = "VISTA_1514_1515_1516"
+    scenario_filters: tuple[str, ...] = ("Reales", "Presupuesto 2026%")
     connection_timeout_seconds: int = 30
     command_timeout_seconds: int = 30
-    retry_count: int = 1
+    retry_count: int = 3
+    additional_query_filters: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,8 +27,26 @@ class FolderWatchSourceConfig:
     icl_root: str | None = None
     curves_path: str | None = None
     vector_path: str | None = None
-    supported_extensions: tuple[str, ...] = (".csv", ".json")
+    portfolio_master_pattern: str = r"Inversiones\{year}\maestro\{month}\*.xls*"
+    icl_file_pattern: str = r"ICL\Reportes ICL\*"
+    supported_extensions: tuple[str, ...] = (".xls", ".xlsx")
     recursive: bool = True
+    stale_data_threshold_seconds: int = 3600
+
+
+@dataclass(frozen=True, slots=True)
+class CurvesSourceConfig:
+    enabled: bool = False
+    workbook: str | None = None
+    sheet_mapping: tuple[str, ...] = ("Gobierno CRC", "Gobierno USD", "BCCR CRC")
+    stale_data_threshold_seconds: int = 3600
+
+
+@dataclass(frozen=True, slots=True)
+class VectorSourceConfig:
+    enabled: bool = False
+    path: str | None = None
+    file_pattern: str | None = None
     stale_data_threshold_seconds: int = 3600
 
 
@@ -34,16 +54,19 @@ class FolderWatchSourceConfig:
 class BCCRSourceConfig:
     enabled: bool = False
     base_url: str | None = None
-    timeout_seconds: float = 10.0
-    retries: int = 2
+    timeout_seconds: float = 30.0
+    retries: int = 3
     cache_enabled: bool = True
     indicator_configuration: tuple[str, ...] = ("FX",)
+    series_config: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
 class ConfiguredSourceConfig:
     sql_server: SQLServerSourceConfig = field(default_factory=SQLServerSourceConfig)
     folder_watch: FolderWatchSourceConfig = field(default_factory=FolderWatchSourceConfig)
+    curves: CurvesSourceConfig = field(default_factory=CurvesSourceConfig)
+    vector: VectorSourceConfig = field(default_factory=VectorSourceConfig)
     bccr: BCCRSourceConfig = field(default_factory=BCCRSourceConfig)
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -54,16 +77,31 @@ class ConfiguredSourceConfig:
                 "server": self.sql_server.server,
                 "database": self.sql_server.database,
                 "authentication_mode": self.sql_server.authentication_mode,
+                "view": self.sql_server.view,
+                "scenario_filters": list(self.sql_server.scenario_filters),
             },
             "folder_watch": {
                 "enabled": self.folder_watch.enabled,
                 "portfolio_root": self.folder_watch.portfolio_root,
                 "icl_root": self.folder_watch.icl_root,
+                "portfolio_master_pattern": self.folder_watch.portfolio_master_pattern,
+                "icl_file_pattern": self.folder_watch.icl_file_pattern,
+            },
+            "curves": {
+                "enabled": self.curves.enabled,
+                "workbook": self.curves.workbook,
+                "sheet_mapping": list(self.curves.sheet_mapping),
+            },
+            "vector": {
+                "enabled": self.vector.enabled,
+                "path": self.vector.path,
+                "file_pattern": self.vector.file_pattern,
             },
             "bccr": {
                 "enabled": self.bccr.enabled,
                 "base_url": self.bccr.base_url,
                 "timeout_seconds": self.bccr.timeout_seconds,
                 "retries": self.bccr.retries,
+                "cache_enabled": self.bccr.cache_enabled,
             },
         }

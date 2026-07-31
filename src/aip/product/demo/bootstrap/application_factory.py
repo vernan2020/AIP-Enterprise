@@ -18,7 +18,15 @@ class DemoApplicationFactory:
     def __init__(self, config: DemoConfig | None = None) -> None:
         self._config = config or EnvironmentLoader().load()
         self._container = Container()
-        DemoDependencyComposition(self._config).compose(self._container)
+        if self._config.execution_mode == "CONFIGURED":
+            from aip.product.configured.bootstrap.configured_application_factory import ConfiguredApplicationFactory
+
+            self._configured_factory = ConfiguredApplicationFactory(self._config)
+            self._container = self._configured_factory.container
+            self._config = self._configured_factory.config
+        else:
+            self._configured_factory = None
+            DemoDependencyComposition(self._config).compose(self._container)
 
     @property
     def config(self) -> DemoConfig:
@@ -29,6 +37,8 @@ class DemoApplicationFactory:
         return self._container
 
     def build_system_status(self) -> SystemStatus:
+        if self._configured_factory is not None:
+            return self._configured_factory.build_system_status()
         return SystemStatus(
             execution_mode=self._config.execution_mode,
             environment=self._config.environment_name,
@@ -38,10 +48,16 @@ class DemoApplicationFactory:
         )
 
     def initial_load_workflow(self) -> InitialLoadWorkflow:
+        if self._configured_factory is not None:
+            return self._configured_factory.initial_load_workflow()
         return self._container.resolve(InitialLoadWorkflow)
 
     def refresh_all_workflow(self) -> RefreshAllWorkflow:
+        if self._configured_factory is not None:
+            return self._configured_factory.refresh_all_workflow()
         return self._container.resolve(RefreshAllWorkflow)
 
     def executive_refresh_workflow(self) -> ExecutiveRefreshWorkflow:
+        if self._configured_factory is not None:
+            return self._configured_factory.initial_load_workflow()  # type: ignore[return-value]
         return self._container.resolve(ExecutiveRefreshWorkflow)
