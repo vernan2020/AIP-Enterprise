@@ -4,6 +4,7 @@ import os
 from datetime import date
 from typing import Any
 
+from aip.product.configured.configuration.configured_source_config import BCCRSourceConfig, ConfiguredSourceConfig, FolderWatchSourceConfig, SQLServerSourceConfig
 from aip.product.demo.configuration.demo_config import DemoConfig
 from aip.product.demo.exceptions import DemoConfigurationError
 
@@ -12,17 +13,57 @@ class EnvironmentLoader:
     """Loads demo configuration from environment variables."""
 
     def load(self) -> DemoConfig:
-        execution_mode = os.getenv("AIP_DEMO_EXECUTION_MODE", "DEMO").upper()
-        demo_mode_enabled = os.getenv("AIP_DEMO_MODE_ENABLED", "true").lower() == "true"
+        execution_mode_value = os.getenv("AIP_EXECUTION_MODE") or os.getenv("AIP_DEMO_EXECUTION_MODE", "DEMO")
+        execution_mode = execution_mode_value.upper() if execution_mode_value is not None else "DEMO"
+        demo_mode_flag = os.getenv("AIP_DEMO_MODE_ENABLED", "true")
+        demo_mode_enabled = demo_mode_flag.lower() == "true"
         if execution_mode not in {"DEMO", "CONFIGURED"}:
             raise DemoConfigurationError("invalid execution mode")
+        if execution_mode == "DEMO":
+            demo_mode_enabled = True
+        environment_name = os.getenv("AIP_ENVIRONMENT") or os.getenv("AIP_DEMO_ENVIRONMENT", "demo")
+        sql_source = self._read_sql_source_config()
+        folder_source = self._read_folder_watch_config()
+        bccr_source = self._read_bccr_config()
+        configured_source_config = ConfiguredSourceConfig(
+            sql_server=SQLServerSourceConfig(
+                enabled=sql_source["enabled"],
+                server=sql_source["server"],
+                database=sql_source["database"],
+                authentication_mode=sql_source["authentication_mode"],
+                username_secret_ref=sql_source["username_secret_ref"],
+                password_secret_ref=sql_source["password_secret_ref"],
+                query_ref=sql_source["query_ref"],
+                connection_timeout_seconds=sql_source["connection_timeout_seconds"],
+                command_timeout_seconds=sql_source["command_timeout_seconds"],
+                retry_count=sql_source["retry_count"],
+            ),
+            folder_watch=FolderWatchSourceConfig(
+                enabled=folder_source["enabled"],
+                portfolio_root=folder_source["portfolio_root"],
+                icl_root=folder_source["icl_root"],
+                curves_path=folder_source["curves_path"],
+                vector_path=folder_source["vector_path"],
+                supported_extensions=folder_source["supported_extensions"],
+                recursive=folder_source["recursive"],
+                stale_data_threshold_seconds=folder_source["stale_data_threshold_seconds"],
+            ),
+            bccr=BCCRSourceConfig(
+                enabled=bccr_source["enabled"],
+                base_url=bccr_source["base_url"],
+                timeout_seconds=bccr_source["timeout_seconds"],
+                retries=bccr_source["retries"],
+                cache_enabled=bccr_source["cache_enabled"],
+                indicator_configuration=bccr_source["indicator_configuration"],
+            ),
+        )
         return DemoConfig(
-            environment_name=os.getenv("AIP_DEMO_ENVIRONMENT", "demo"),
+            environment_name=environment_name,
             execution_mode=execution_mode,
             demo_mode_enabled=demo_mode_enabled,
-            sql_connector_enabled=os.getenv("AIP_SQL_CONNECTOR_ENABLED", "false").lower() == "true",
-            folder_watch_enabled=os.getenv("AIP_FOLDER_WATCH_ENABLED", "false").lower() == "true",
-            bccr_enabled=os.getenv("AIP_BCCR_ENABLED", "false").lower() == "true",
+            sql_connector_enabled=sql_source["enabled"],
+            folder_watch_enabled=folder_source["enabled"],
+            bccr_enabled=bccr_source["enabled"],
             scheduler_enabled=os.getenv("AIP_SCHEDULER_ENABLED", "true").lower() == "true",
             notifications_enabled=os.getenv("AIP_NOTIFICATIONS_ENABLED", "true").lower() == "true",
             startup_timeout_seconds=int(os.getenv("AIP_STARTUP_TIMEOUT_SECONDS", "30")),
@@ -30,11 +71,46 @@ class EnvironmentLoader:
             default_theme=os.getenv("AIP_DEFAULT_THEME", "light"),
             default_workspace=os.getenv("AIP_DEFAULT_WORKSPACE", "executive"),
             data_cutoff_date=date.fromisoformat(os.getenv("AIP_DATA_CUTOFF_DATE", "2026-07-29")),
-            source_config={
-                "sql_server": os.getenv("AIP_SQL_SERVER", "demo"),
-                "folder_watch": os.getenv("AIP_FOLDER_WATCH_PATH", "./demo-data"),
-                "bccr": os.getenv("AIP_BCCR_SOURCE", "demo"),
-            },
+            source_config=configured_source_config.to_safe_dict(),
             observability={"level": os.getenv("AIP_OBSERVABILITY_LEVEL", "INFO")},
             feature_flags={"demo_badge": True},
         )
+
+    def _read_sql_source_config(self) -> dict[str, Any]:
+        enabled_flag = os.getenv("AIP_SQLSERVER_ENABLED") or os.getenv("AIP_SQL_CONNECTOR_ENABLED", "false")
+        return {
+            "enabled": str(enabled_flag).lower() == "true",
+            "server": os.getenv("AIP_SQLSERVER_SERVER"),
+            "database": os.getenv("AIP_SQLSERVER_DATABASE"),
+            "authentication_mode": os.getenv("AIP_SQLSERVER_AUTH_MODE", "integrated"),
+            "username_secret_ref": os.getenv("AIP_SQLSERVER_USERNAME_SECRET"),
+            "password_secret_ref": os.getenv("AIP_SQLSERVER_PASSWORD_SECRET"),
+            "query_ref": os.getenv("AIP_SQLSERVER_QUERY_REF"),
+            "connection_timeout_seconds": int(os.getenv("AIP_SQLSERVER_CONNECTION_TIMEOUT", "30")),
+            "command_timeout_seconds": int(os.getenv("AIP_SQLSERVER_COMMAND_TIMEOUT", "30")),
+            "retry_count": int(os.getenv("AIP_SQLSERVER_RETRY_COUNT", "1")),
+        }
+
+    def _read_folder_watch_config(self) -> dict[str, Any]:
+        enabled_flag = os.getenv("AIP_FOLDERWATCH_ENABLED") or os.getenv("AIP_FOLDER_WATCH_ENABLED", "false")
+        return {
+            "enabled": str(enabled_flag).lower() == "true",
+            "portfolio_root": os.getenv("AIP_PORTFOLIO_ROOT"),
+            "icl_root": os.getenv("AIP_ICL_ROOT"),
+            "curves_path": os.getenv("AIP_CURVES_PATH"),
+            "vector_path": os.getenv("AIP_VECTOR_PATH"),
+            "supported_extensions": tuple(filter(None, os.getenv("AIP_SUPPORTED_EXTENSIONS", ".csv,.json").split(","))),
+            "recursive": os.getenv("AIP_FOLDERWATCH_RECURSIVE", "true").lower() == "true",
+            "stale_data_threshold_seconds": int(os.getenv("AIP_FOLDERWATCH_STALE_DATA_THRESHOLD", "3600")),
+        }
+
+    def _read_bccr_config(self) -> dict[str, Any]:
+        enabled_flag = os.getenv("AIP_BCCR_ENABLED", "false")
+        return {
+            "enabled": str(enabled_flag).lower() == "true",
+            "base_url": os.getenv("AIP_BCCR_BASE_URL"),
+            "timeout_seconds": float(os.getenv("AIP_BCCR_TIMEOUT_SECONDS", "10")),
+            "retries": int(os.getenv("AIP_BCCR_RETRIES", "2")),
+            "cache_enabled": os.getenv("AIP_BCCR_CACHE_ENABLED", "true").lower() == "true",
+            "indicator_configuration": tuple(filter(None, os.getenv("AIP_BCCR_INDICATORS", "FX").split(","))),
+        }

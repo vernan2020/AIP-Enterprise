@@ -92,7 +92,9 @@ class MainWindow(QMainWindow):
         self._inspector = InspectorPanel()
         self._notifications_panel = NotificationPanel()
         self._status_bar = StatusBar()
-        self._demo_banner = QLabel(f"{APP_DISPLAY_NAME}\nDEMO MODE • Executive Workspace")
+        execution_mode = self._demo_factory.config.execution_mode
+        banner_label = "CONFIGURED MODE" if execution_mode == "CONFIGURED" else "DEMO MODE"
+        self._demo_banner = QLabel(f"{APP_DISPLAY_NAME}\n{banner_label} • Executive Workspace")
         self._demo_banner.setStyleSheet("background: #1f4e79; color: white; padding: 4px 8px; font-weight: bold;")
         self._demo_banner.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
@@ -333,6 +335,7 @@ class MainWindow(QMainWindow):
             f"Environment: {status.environment}",
             f"Execution Mode: {status.execution_mode}",
             f"Demo Mode: {self._demo_factory.config.demo_mode_enabled}",
+            f"Configured Mode: {status.execution_mode == 'CONFIGURED'}",
             f"Diagnostic Mode: {'ON' if self._diagnostic_mode else 'OFF'}",
             *[f"{name}: {state}" for name, state in component_states.items()],
         ]

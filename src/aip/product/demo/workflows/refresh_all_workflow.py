@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
+from aip.product.configured.protocols import MarketDataProvider, LiquidityDataProvider, PortfolioDataProvider, SourceHealthProvider
 from aip.product.demo.adapters.demo_health_provider import DemoHealthProvider
 from aip.product.demo.adapters.demo_liquidity_provider import DemoLiquidityProvider
 from aip.product.demo.adapters.demo_market_provider import DemoMarketProvider
@@ -17,10 +18,10 @@ class RefreshAllWorkflow:
     def __init__(
         self,
         config: DemoConfig,
-        portfolio_provider: DemoPortfolioProvider | None = None,
-        market_provider: DemoMarketProvider | None = None,
-        liquidity_provider: DemoLiquidityProvider | None = None,
-        health_provider: DemoHealthProvider | None = None,
+        portfolio_provider: PortfolioDataProvider | None = None,
+        market_provider: MarketDataProvider | None = None,
+        liquidity_provider: LiquidityDataProvider | None = None,
+        health_provider: SourceHealthProvider | None = None,
     ) -> None:
         self._config = config
         self._portfolio_provider = portfolio_provider or DemoPortfolioProvider()

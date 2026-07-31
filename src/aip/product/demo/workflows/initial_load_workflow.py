@@ -3,12 +3,12 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
+from aip.product.configured.protocols import MarketDataProvider, LiquidityDataProvider, PortfolioDataProvider, SourceHealthProvider
 from aip.product.demo.adapters.demo_health_provider import DemoHealthProvider
 from aip.product.demo.adapters.demo_liquidity_provider import DemoLiquidityProvider
 from aip.product.demo.adapters.demo_market_provider import DemoMarketProvider
 from aip.product.demo.adapters.demo_portfolio_provider import DemoPortfolioProvider
 from aip.product.demo.configuration.demo_config import DemoConfig
-from aip.product.demo.exceptions import DemoWorkflowError
 from aip.product.demo.status.source_status import SourceStatus
 
 
@@ -18,10 +18,10 @@ class InitialLoadWorkflow:
     def __init__(
         self,
         config: DemoConfig,
-        portfolio_provider: DemoPortfolioProvider | None = None,
-        market_provider: DemoMarketProvider | None = None,
-        liquidity_provider: DemoLiquidityProvider | None = None,
-        health_provider: DemoHealthProvider | None = None,
+        portfolio_provider: PortfolioDataProvider | None = None,
+        market_provider: MarketDataProvider | None = None,
+        liquidity_provider: LiquidityDataProvider | None = None,
+        health_provider: SourceHealthProvider | None = None,
     ) -> None:
         self._config = config
         self._portfolio_provider = portfolio_provider or DemoPortfolioProvider()
@@ -36,8 +36,6 @@ class InitialLoadWorkflow:
             SourceStatus(name=name, state=state, correlation_id=correlation_id)
             for name, state in health.items()
         )
-        if not self._config.demo_mode_enabled:
-            raise DemoWorkflowError("initial load requires demo mode")
         return {
             "execution_id": f"init-{correlation_id}",
             "correlation_id": correlation_id,

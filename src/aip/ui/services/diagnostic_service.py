@@ -46,8 +46,8 @@ class DiagnosticContext:
     execution_id: str = field(default_factory=lambda: f"exec-{uuid.uuid4().hex[:8]}")
     correlation_id: str = field(default_factory=lambda: f"corr-{uuid.uuid4().hex[:8]}")
     valuation_date: str = field(default_factory=lambda: datetime.now(timezone.utc).date().isoformat())
-    environment: str = field(default_factory=lambda: os.getenv("AIP_DEMO_ENVIRONMENT", "demo"))
-    execution_mode: str = field(default_factory=lambda: os.getenv("AIP_DEMO_EXECUTION_MODE", "DEMO"))
+    environment: str = field(default_factory=lambda: os.getenv("AIP_ENVIRONMENT") or os.getenv("AIP_DEMO_ENVIRONMENT", "demo"))
+    execution_mode: str = field(default_factory=lambda: (os.getenv("AIP_EXECUTION_MODE") or os.getenv("AIP_DEMO_EXECUTION_MODE", "DEMO")).upper())
     connector_status: dict[str, str] = field(default_factory=lambda: {"sql": "HEALTHY", "folder_watch": "HEALTHY", "bccr": "HEALTHY"})
     scheduler_jobs: list[str] = field(default_factory=lambda: ["refresh-all", "executive-sync"])
     last_refresh_duration: float = 0.0

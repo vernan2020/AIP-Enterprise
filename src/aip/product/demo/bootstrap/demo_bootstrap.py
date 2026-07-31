@@ -4,6 +4,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any
 
+from aip.product.configured.bootstrap.configured_application_factory import ConfiguredApplicationFactory
 from aip.product.demo.bootstrap.application_factory import DemoApplicationFactory
 from aip.product.demo.configuration.demo_config import DemoConfig
 from aip.product.demo.exceptions import DemoBootstrapError
@@ -15,7 +16,11 @@ class DemoBootstrap:
 
     def __init__(self, config: DemoConfig | None = None) -> None:
         self._config = config or DemoConfig()
-        self._factory = DemoApplicationFactory(self._config)
+        self._factory = (
+            ConfiguredApplicationFactory(self._config)
+            if self._config.execution_mode == "CONFIGURED"
+            else DemoApplicationFactory(self._config)
+        )
 
     @property
     def factory(self) -> DemoApplicationFactory:
