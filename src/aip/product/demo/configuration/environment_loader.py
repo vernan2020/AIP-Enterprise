@@ -72,7 +72,10 @@ class EnvironmentLoader:
             vector=VectorSourceConfig(
                 enabled=vector_source["enabled"],
                 path=vector_source["path"],
+                root=vector_source["root"],
+                directory_aliases=vector_source["directory_aliases"],
                 file_pattern=vector_source["file_pattern"],
+                supported_extensions=vector_source["supported_extensions"],
                 stale_data_threshold_seconds=vector_source["stale_data_threshold_seconds"],
             ),
             bccr=BCCRSourceConfig(
@@ -150,7 +153,10 @@ class EnvironmentLoader:
         return {
             "enabled": str(enabled_flag).lower() == "true",
             "path": _normalize_path_value(os.getenv("AIP_VECTOR_PATH")),
-            "file_pattern": os.getenv("AIP_VECTOR_FILE_PATTERN"),
+            "root": _normalize_path_value(os.getenv("AIP_VECTOR_ROOT")),
+            "directory_aliases": tuple(filter(None, os.getenv("AIP_VECTOR_DIRECTORY_ALIASES", "vector,Vector,Vector Pip,vector pipca").split(","))),
+            "file_pattern": os.getenv("AIP_VECTOR_FILE_PATTERN", "*.xls*"),
+            "supported_extensions": tuple(filter(None, os.getenv("AIP_VECTOR_SUPPORTED_EXTENSIONS", ".xls,.xlsx").split(","))),
             "stale_data_threshold_seconds": int(os.getenv("AIP_VECTOR_STALE_HOURS", "24")) * 3600,
         }
 

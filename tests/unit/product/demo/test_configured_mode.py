@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from aip.product.configured.adapters.configured_portfolio_provider import ConfiguredPortfolioProvider
@@ -107,6 +109,23 @@ def test_path_resolution_supports_spaces_and_unc(monkeypatch: pytest.MonkeyPatch
     assert joined == r"C:\Institutional Data\Inversiones\2026"
 
 
+def test_environment_loader_reads_vector_configuration_variables(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("AIP_EXECUTION_MODE", "CONFIGURED")
+    monkeypatch.setenv("AIP_DEMO_MODE_ENABLED", "false")
+    monkeypatch.setenv("AIP_VECTOR_ENABLED", "true")
+    monkeypatch.setenv("AIP_VECTOR_ROOT", r"C:\\Institutional Data\\Vector")
+    monkeypatch.setenv("AIP_VECTOR_DIRECTORY_ALIASES", "vector,Vector Pip,vector pipca")
+    monkeypatch.setenv("AIP_VECTOR_SUPPORTED_EXTENSIONS", ".xls,.xlsx")
+
+    config = EnvironmentLoader().load()
+    vector_config = config.source_config["vector"]
+
+    assert vector_config["enabled"] is True
+    assert vector_config["root"] == r"C:\Institutional Data\Vector"
+    assert vector_config["directory_aliases"] == ["vector", "Vector Pip", "vector pipca"]
+    assert vector_config["supported_extensions"] == [".xls", ".xlsx"]
+
+
 def test_configured_portfolio_provider_returns_empty_state_without_demo_data() -> None:
     config = DemoConfig(execution_mode="CONFIGURED", demo_mode_enabled=False)
     source_config = ConfiguredSourceConfig(
@@ -124,3 +143,106 @@ def test_configured_portfolio_provider_returns_empty_state_without_demo_data() -
     assert payload["mil_eligible_percent"] == 0.0
     assert "Acme Bank" not in str(payload)
     assert "Blue Ridge" not in str(payload)
+
+
+def test_portfolio_master_discovery_uses_canonical_maestro_path_and_ignores_unrelated_dirs(tmp_path: Path) -> None:
+    root = tmp_path / "institutional"
+    (root / "Inversiones" / "2026" / "maestro").mkdir(parents=True)
+    (root / "Inversiones" / "2026" / "cuadre").mkdir(parents=True)
+    (root / "Inversiones" / "2026" / "ESCRITORIO").mkdir(parents=True)
+    (root / "Inversiones" / "2026" / "informe").mkdir(parents=True)
+    (root / "Inversiones" / "2026" / "limites").mkdir(parents=True)
+    (root / "Inversiones" / "2026" / "maestro" / "31-12-2026.xls").write_text("x")
+    (root / "Inversiones" / "2026" / "cuadre" / "01-01-2026.xls").write_text("x")
+    (root / "Inversiones" / "2026" / "ESCRITORIO" / "02-02-2026.xls").write_text("x")
+    (root / "Inversiones" / "2026" / "informe" / "03-03-2026.xls").write_text("x")
+    (root / "Inversiones" / "2026" / "limites" / "04-04-2026.xls").write_text("x")
+
+    config = DemoConfig(execution_mode="CONFIGURED", demo_mode_enabled=False)
+    source_config = ConfiguredSourceConfig(
+        folder_watch=FolderWatchSourceConfig(enabled=True, portfolio_root=str(root)),
+    )
+
+    provider = ConfiguredPortfolioProvider(config, source_config)
+    payload = provider.get_portfolio()
+
+    assert payload["portfolio_master"]["status"] == "HEALTHY"
+    assert payload["portfolio_master"]["file_name"] == "31-12-2026.xls"
+    assert payload["portfolio_master"]["valuation_date"] == "2026-12-31"
+
+
+def test_portfolio_master_discovery_supports_root_already_at_inversiones(tmp_path: Path) -> None:
+    root = tmp_path / "Inversiones"
+    (root / "2024" / "maestro").mkdir(parents=True)
+    (root / "2024" / "maestro" / "31-12-2024.xlsx").write_text("x")
+
+    config = DemoConfig(execution_mode="CONFIGURED", demo_mode_enabled=False)
+    source_config = ConfiguredSourceConfig(
+        folder_watch=FolderWatchSourceConfig(enabled=True, portfolio_root=str(root)),
+    )
+
+    provider = ConfiguredPortfolioProvider(config, source_config)
+    payload = provider.get_portfolio()
+
+    assert payload["portfolio_master"]["status"] == "HEALTHY"
+    assert payload["portfolio_master"]["file_name"] == "31-12-2024.xlsx"
+    assert payload["portfolio_master"]["valuation_date"] == "2024-12-31"
+
+
+def test_portfolio_master_prefers_date_only_file_over_ambiguous_suffixes(tmp_path: Path) -> None:
+    root = tmp_path / "institutional"
+    (root / "Inversiones" / "2023" / "maestro").mkdir(parents=True)
+    (root / "Inversiones" / "2023" / "maestro" / "01-01-2023.xls").write_text("x")
+    (root / "Inversiones" / "2023" / "maestro" / "01-01-2023 maestro inversiones.xls").write_text("x")
+    (root / "Inversiones" / "2023" / "maestro" / "01-01-2023-2.xls").write_text("x")
+
+    config = DemoConfig(execution_mode="CONFIGURED", demo_mode_enabled=False)
+    source_config = ConfiguredSourceConfig(
+        folder_watch=FolderWatchSourceConfig(enabled=True, portfolio_root=str(root)),
+    )
+
+    provider = ConfiguredPortfolioProvider(config, source_config)
+    payload = provider.get_portfolio()
+
+    assert payload["portfolio_master"]["file_name"] == "01-01-2023.xls"
+    assert payload["portfolio_master"]["valuation_date"] == "2023-01-01"
+
+
+def test_vector_discovery_uses_supported_aliases_and_skips_maestro(tmp_path: Path) -> None:
+    root = tmp_path / "institutional"
+    (root / "Inversiones" / "2026" / "maestro").mkdir(parents=True)
+    (root / "Inversiones" / "2026" / "vector").mkdir(parents=True)
+    (root / "Inversiones" / "2026" / "maestro" / "31-12-2026.xls").write_text("x")
+    (root / "Inversiones" / "2026" / "vector" / "31-12-2026.xlsx").write_text("x")
+
+    config = DemoConfig(execution_mode="CONFIGURED", demo_mode_enabled=False)
+    source_config = ConfiguredSourceConfig(
+        folder_watch=FolderWatchSourceConfig(enabled=True, portfolio_root=str(root), vector_path=str(root / "Inversiones" / "2026" / "vector")),
+    )
+
+    provider = ConfiguredPortfolioProvider(config, source_config)
+    payload = provider.get_portfolio()
+
+    assert payload["price_vector"]["status"] == "HEALTHY"
+    assert payload["price_vector"]["file_name"] == "31-12-2026.xlsx"
+    assert payload["price_vector"]["valuation_date"] == "2026-12-31"
+    assert payload["price_vector"]["directory"] == str(root / "Inversiones" / "2026" / "vector")
+
+
+def test_vector_discovery_uses_explicit_root_precedence(tmp_path: Path) -> None:
+    root = tmp_path / "institutional"
+    explicit_root = root / "custom-vector"
+    explicit_root.mkdir(parents=True)
+    (explicit_root / "31-12-2026.xlsx").write_text("x")
+
+    config = DemoConfig(execution_mode="CONFIGURED", demo_mode_enabled=False)
+    source_config = ConfiguredSourceConfig(
+        folder_watch=FolderWatchSourceConfig(enabled=True, portfolio_root=str(root), vector_path=str(explicit_root)),
+    )
+
+    provider = ConfiguredPortfolioProvider(config, source_config)
+    payload = provider.get_portfolio()
+
+    assert payload["price_vector"]["status"] == "HEALTHY"
+    assert payload["price_vector"]["file_name"] == "31-12-2026.xlsx"
+    assert payload["price_vector"]["directory"] == str(explicit_root)

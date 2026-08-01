@@ -7,11 +7,11 @@ from typing import Any
 
 
 def _is_windows_path(value: str) -> bool:
-    return value.startswith("\\\\") or value.startswith("/") or len(value) >= 2 and value[1] == ":"
+    return value.startswith("\\\\") or len(value) >= 2 and value[1] == ":"
 
 
 def _normalize_path(value: str) -> str:
-    if _is_windows_path(value):
+    if value.startswith("\\\\") or len(value) >= 2 and value[1] == ":":
         return ntpath.normpath(value.replace("/", "\\"))
     return str(Path(value))
 

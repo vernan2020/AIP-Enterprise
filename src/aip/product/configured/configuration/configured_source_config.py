@@ -46,7 +46,10 @@ class CurvesSourceConfig:
 class VectorSourceConfig:
     enabled: bool = False
     path: str | None = None
+    root: str | None = None
+    directory_aliases: tuple[str, ...] = ("vector", "Vector", "Vector Pip", "vector pipca")
     file_pattern: str | None = None
+    supported_extensions: tuple[str, ...] = (".xls", ".xlsx")
     stale_data_threshold_seconds: int = 3600
 
 
@@ -95,7 +98,10 @@ class ConfiguredSourceConfig:
             "vector": {
                 "enabled": self.vector.enabled,
                 "path": self.vector.path,
+                "root": self.vector.root,
+                "directory_aliases": list(self.vector.directory_aliases),
                 "file_pattern": self.vector.file_pattern,
+                "supported_extensions": list(self.vector.supported_extensions),
             },
             "bccr": {
                 "enabled": self.bccr.enabled,
