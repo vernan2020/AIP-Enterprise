@@ -87,6 +87,10 @@ class EnvironmentLoader:
                 indicator_configuration=bccr_source["indicator_configuration"],
                 series_config=bccr_source["series_config"],
             ),
+            metadata={
+                "allow_prior_source_date": os.getenv("AIP_ALLOW_PRIOR_SOURCE_DATE", "false").strip().lower() in {"1", "true", "yes", "on"},
+                "data_cutoff_date": os.getenv("AIP_DATA_CUTOFF_DATE"),
+            },
         )
         return DemoConfig(
             environment_name=environment_name,

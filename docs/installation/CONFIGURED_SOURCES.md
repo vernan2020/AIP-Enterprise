@@ -26,6 +26,7 @@ This document captures the safe, configuration-driven source settings for the co
 - AIP_VECTOR_DIRECTORY_ALIASES=vector,Vector,Vector Pip,vector pipca
 - AIP_VECTOR_FILE_PATTERN=*.xls*
 - AIP_VECTOR_SUPPORTED_EXTENSIONS=.xls,.xlsx
+- AIP_ALLOW_PRIOR_SOURCE_DATE=false
 - AIP_BCCR_ENABLED=false
 - AIP_BCCR_BASE_URL=
 - AIP_BCCR_TIMEOUT_SECONDS=30
