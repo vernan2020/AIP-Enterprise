@@ -147,6 +147,52 @@ def test_diagnostic_cli_accepts_configured_mode_from_diagnostic_flag(tmp_path: P
     assert "CONFIGURED SOURCE DIAGNOSTIC" in captured.out
 
 
+def test_price_vector_discovery_filters_pipca_candidates_with_windows_path_and_cli(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    workspace_root = tmp_path / "Windows Root With Spaces"
+    portfolio_root = workspace_root / "Inversiones" / "2026"
+    vector_dir = portfolio_root / "vector" / "julio"
+    maestro_dir = portfolio_root / "maestro" / "julio"
+    vector_dir.mkdir(parents=True)
+    maestro_dir.mkdir(parents=True)
+
+    maestro_path = maestro_dir / "29-07-2026.xlsx"
+    workbook = openpyxl.Workbook()
+    worksheet = workbook.active
+    worksheet.title = "Maestro"
+    worksheet.append(["ISIN", "Emisor", "Valor de Mercado", "Valor en Libros"])
+    worksheet.append(["US1234567890", "Banco Central", 1000000, 980000])
+    workbook.save(maestro_path)
+
+    vector_path = vector_dir / "VectorPiPCA_20260729.txt"
+    vector_path.write_text("BCCR  BC12M120826 12/08/2026  100.0 100.008344  2.842 0.000000 0\n", encoding="utf-8")
+
+    monkeypatch.setenv("AIP_EXECUTION_MODE", "CONFIGURED")
+    monkeypatch.setenv("AIP_DEMO_MODE_ENABLED", "false")
+    monkeypatch.setenv("AIP_PORTFOLIO_ROOT", str(workspace_root))
+    monkeypatch.setenv("AIP_VECTOR_ENABLED", "true")
+    monkeypatch.setenv("AIP_VECTOR_PATH", str(vector_dir))
+    monkeypatch.setenv("AIP_CONFIGURED_DIAGNOSTIC_MODE", "true")
+    monkeypatch.setenv("AIP_DATA_CUTOFF_DATE", "2026-07-29")
+
+    config = EnvironmentLoader().load()
+    provider = ConfiguredPortfolioProvider(config, ConfiguredSourceConfig.from_safe_dict(config.source_config) if hasattr(ConfiguredSourceConfig, "from_safe_dict") else None)
+    payload = provider.get_portfolio()
+
+    assert payload["price_vector"]["file_name"] == "VectorPiPCA_20260729.txt"
+    assert payload["price_vector"]["valuation_date"] == "2026-07-29"
+    assert payload["price_vector"]["status"] == "HEALTHY"
+    assert payload["price_vector"]["diagnostics"]["pipca_candidate_count"] == 1
+    assert payload["price_vector"]["diagnostics"]["exact_date_match_count"] == 1
+    assert payload["price_vector"]["diagnostics"]["candidate_count"] == 1
+
+    exit_code = diagnose_main([])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "VectorPiPCA_20260729.txt" in captured.out
+    assert "Status: HEALTHY" in captured.out
+
+
 def test_master_reader_limits_detailed_trace_output(tmp_path: Path) -> None:
     master_path = tmp_path / "master.xlsx"
     workbook = openpyxl.Workbook()

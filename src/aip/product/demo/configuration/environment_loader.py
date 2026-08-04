@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ntpath
 import os
 from datetime import date
 from typing import Any
@@ -12,10 +13,12 @@ from aip.product.demo.exceptions import DemoConfigurationError
 def _normalize_path_value(value: str | None) -> str | None:
     if not value:
         return None
-    normalized = value.replace("/", "\\")
-    if normalized.startswith("\\\\"):
-        return normalized
-    return normalized.replace("\\\\", "\\")
+    normalized = value.strip()
+    if not normalized:
+        return None
+    if normalized.startswith("\\\\") or len(normalized) >= 2 and normalized[1] == ":":
+        return ntpath.normpath(normalized.replace("/", "\\"))
+    return os.path.normpath(normalized)
 
 
 def _parse_boolean_flag(value: str | None, *, default: bool = False) -> bool:

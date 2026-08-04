@@ -224,12 +224,26 @@ class ConfiguredPortfolioProvider:
             month_directory = None
             target_directory = vector_root
 
-        candidate_files = self._list_candidate_files(target_directory)
+        candidate_files, rejected_candidate_reasons = self._collect_candidate_files(target_directory)
         if not candidate_files:
             return self._source_result("DEGRADED", "No valid price-vector files were found in the resolved vector directory", expected_path=str(target_directory), file_name=None, directory=str(target_directory), valuation_date=None)
 
-        if self._is_pipca_vector_candidate(candidate_files):
-            matching_candidates = [candidate for candidate in candidate_files if candidate["valuation_date"] == cutoff_date]
+        pipca_candidates = [
+            candidate
+            for candidate in candidate_files
+            if self._is_pipca_vector_candidate(candidate)
+        ]
+
+        diagnostics_base = {
+            "candidate_count": len(candidate_files),
+            "pipca_candidate_count": len(pipca_candidates),
+            "exact_date_match_count": sum(1 for candidate in pipca_candidates if candidate["valuation_date"] == cutoff_date),
+            "rejected_candidate_reasons": rejected_candidate_reasons,
+            "directory_candidates": [str(path) for path in directory_candidates],
+        }
+
+        if pipca_candidates:
+            matching_candidates = [candidate for candidate in pipca_candidates if candidate["valuation_date"] == cutoff_date]
             if len(matching_candidates) > 1:
                 return self._source_result(
                     "DEGRADED",
@@ -238,21 +252,21 @@ class ConfiguredPortfolioProvider:
                     file_name=None,
                     directory=str(target_directory),
                     valuation_date=cutoff_date.isoformat(),
-                    diagnostics={"candidate_count": len(matching_candidates), "directory_candidates": [str(path) for path in directory_candidates]},
+                    diagnostics=diagnostics_base,
                 )
 
-            exact_match = self._select_candidate_by_date(candidate_files, cutoff_date)
+            exact_match = self._select_candidate_by_date(pipca_candidates, cutoff_date)
             if exact_match is not None:
                 return self._read_vector_result(
-                    self._source_result("HEALTHY", directory_message, expected_path=str(target_directory), file_name=exact_match["file_name"], directory=exact_match["directory"], valuation_date=exact_match["valuation_date"].isoformat(), diagnostics={"candidate_count": len(candidate_files), "directory_candidates": [str(path) for path in directory_candidates]}),
+                    self._source_result("HEALTHY", directory_message, expected_path=str(target_directory), file_name=exact_match["file_name"], directory=exact_match["directory"], valuation_date=exact_match["valuation_date"].isoformat(), diagnostics=diagnostics_base),
                     Path(exact_match["path"]),
                     cutoff_date,
                 )
 
             if not self._allow_prior_source_date():
-                return self._source_result("UNAVAILABLE", "No price-vector file matched the requested cutoff date", expected_path=str(target_directory), file_name=None, directory=str(target_directory), valuation_date=None, diagnostics={"candidate_count": len(candidate_files), "directory_candidates": [str(path) for path in directory_candidates]})
+                return self._source_result("UNAVAILABLE", "No price-vector file matched the requested cutoff date", expected_path=str(target_directory), file_name=None, directory=str(target_directory), valuation_date=None, diagnostics=diagnostics_base)
 
-            prior_match = self._select_prior_candidate(candidate_files, cutoff_date, same_year_only=True)
+            prior_match = self._select_prior_candidate(pipca_candidates, cutoff_date, same_year_only=True)
             if prior_match is not None:
                 age_days = (cutoff_date - prior_match["valuation_date"]).days
                 return self._read_vector_result(
@@ -263,7 +277,7 @@ class ConfiguredPortfolioProvider:
                         file_name=prior_match["file_name"],
                         directory=prior_match["directory"],
                         valuation_date=prior_match["valuation_date"].isoformat(),
-                        diagnostics={"candidate_count": len(candidate_files), "directory_candidates": [str(path) for path in directory_candidates], "selected_prior_date": prior_match["valuation_date"].isoformat(), "age_days": age_days},
+                        diagnostics={**diagnostics_base, "selected_prior_date": prior_match["valuation_date"].isoformat(), "age_days": age_days},
                     ),
                     Path(prior_match["path"]),
                     cutoff_date,
@@ -285,15 +299,15 @@ class ConfiguredPortfolioProvider:
                     file_name=prior_match["file_name"],
                     directory=prior_match["directory"],
                     valuation_date=prior_match["valuation_date"].isoformat(),
-                    diagnostics={"candidate_count": len(prior_files), "directory_candidates": [str(path) for path in directory_candidates], "selected_prior_date": prior_match["valuation_date"].isoformat(), "age_days": age_days},
+                    diagnostics={**diagnostics_base, "selected_prior_date": prior_match["valuation_date"].isoformat(), "age_days": age_days},
                 )
 
-            return self._source_result("UNAVAILABLE", "No price-vector file matched the requested cutoff date", expected_path=str(target_directory), file_name=None, directory=str(target_directory), valuation_date=None, diagnostics={"candidate_count": len(candidate_files), "directory_candidates": [str(path) for path in directory_candidates]})
+            return self._source_result("UNAVAILABLE", "No price-vector file matched the requested cutoff date", expected_path=str(target_directory), file_name=None, directory=str(target_directory), valuation_date=None, diagnostics=diagnostics_base)
 
         selected = self._select_latest_candidate(candidate_files)
         if selected is None:
-            return self._source_result("DEGRADED", "No valid price-vector files could be selected", expected_path=str(target_directory), file_name=None, directory=str(target_directory), valuation_date=None, diagnostics={"candidate_count": len(candidate_files), "directory_candidates": [str(path) for path in directory_candidates]})
-        return self._read_vector_result(self._source_result("HEALTHY", directory_message, expected_path=str(target_directory), file_name=selected["file_name"], directory=selected["directory"], valuation_date=selected["valuation_date"].isoformat(), diagnostics={"candidate_count": len(candidate_files), "directory_candidates": [str(path) for path in directory_candidates]}), Path(selected["path"]), cutoff_date)
+            return self._source_result("DEGRADED", "No valid price-vector files could be selected", expected_path=str(target_directory), file_name=None, directory=str(target_directory), valuation_date=None, diagnostics=diagnostics_base)
+        return self._read_vector_result(self._source_result("HEALTHY", directory_message, expected_path=str(target_directory), file_name=selected["file_name"], directory=selected["directory"], valuation_date=selected["valuation_date"].isoformat(), diagnostics=diagnostics_base), Path(selected["path"]), cutoff_date)
 
     def _discover_latest_master(self, investment_root: Path) -> dict[str, Any]:
         year_directories = [path for path in sorted(investment_root.iterdir(), key=lambda item: item.name) if path.is_dir() and path.name.isdigit()]
@@ -373,21 +387,30 @@ class ConfiguredPortfolioProvider:
         return top_candidates[0]
 
     def _list_candidate_files(self, directory: Path, *, include_all_files: bool = False) -> list[dict[str, Any]]:
+        candidates, _ = self._collect_candidate_files(directory, include_all_files=include_all_files)
+        return candidates
+
+    def _collect_candidate_files(self, directory: Path, *, include_all_files: bool = False) -> tuple[list[dict[str, Any]], list[str]]:
         if not directory.exists() or not directory.is_dir():
-            return []
+            return [], []
         candidates: list[dict[str, Any]] = []
+        rejected_candidate_reasons: list[str] = []
         for file_path in sorted(directory.iterdir(), key=lambda item: item.name):
             if not file_path.is_file():
                 continue
             if file_path.suffix.lower() not in self._SUPPORTED_EXTENSIONS:
+                rejected_candidate_reasons.append(f"{file_path.name}: unsupported extension")
                 continue
             normalized_name = self._normalize_name(file_path.name)
             if not include_all_files and not self._is_vector_candidate_name(normalized_name):
+                rejected_candidate_reasons.append(f"{file_path.name}: not a vector candidate")
                 continue
             parsed_date = self._parse_date_from_name(normalized_name)
             if parsed_date is None:
+                rejected_candidate_reasons.append(f"{file_path.name}: no parseable date")
                 continue
             if self._is_rejected_name(normalized_name):
+                rejected_candidate_reasons.append(f"{file_path.name}: rejected name")
                 continue
             candidates.append({
                 "file_name": file_path.name,
@@ -397,7 +420,7 @@ class ConfiguredPortfolioProvider:
                 "path": str(file_path),
                 "file_type": file_path.suffix.lower(),
             })
-        return candidates
+        return candidates, rejected_candidate_reasons
 
     def _parse_date_from_name(self, name: str) -> date | None:
         compact_match = re.search(r"(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})", name)
@@ -434,8 +457,8 @@ class ConfiguredPortfolioProvider:
             return True
         return False
 
-    def _is_pipca_vector_candidate(self, candidate_files: list[dict[str, Any]]) -> bool:
-        return any("pipca" in candidate["normalized_name"] for candidate in candidate_files)
+    def _is_pipca_vector_candidate(self, candidate: dict[str, Any]) -> bool:
+        return "pipca" in candidate.get("normalized_name", "")
 
     def _resolve_investment_root(self, portfolio_root: str | None) -> Path | None:
         if not portfolio_root:

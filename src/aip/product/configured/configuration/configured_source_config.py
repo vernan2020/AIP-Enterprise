@@ -131,3 +131,63 @@ class ConfiguredSourceConfig:
             },
             "diagnostic_mode": self.resolve_diagnostic_mode(),
         }
+
+    @classmethod
+    def from_safe_dict(cls, payload: dict[str, Any] | None) -> "ConfiguredSourceConfig":
+        source_config_payload = payload or {}
+        sql_payload = source_config_payload.get("sql_server") or {}
+        folder_payload = source_config_payload.get("folder_watch") or {}
+        curves_payload = source_config_payload.get("curves") or {}
+        vector_payload = source_config_payload.get("vector") or {}
+        bccr_payload = source_config_payload.get("bccr") or {}
+        return cls(
+            sql_server=SQLServerSourceConfig(
+                enabled=bool(sql_payload.get("enabled", False)),
+                server=sql_payload.get("server"),
+                database=sql_payload.get("database"),
+                authentication_mode=sql_payload.get("authentication_mode", "windows"),
+                view=sql_payload.get("view", "VISTA_1514_1515_1516"),
+                scenario_filters=tuple(sql_payload.get("scenario_filters", ())),
+            ),
+            folder_watch=FolderWatchSourceConfig(
+                enabled=bool(folder_payload.get("enabled", False)),
+                portfolio_root=folder_payload.get("portfolio_root"),
+                icl_root=folder_payload.get("icl_root"),
+                curves_path=folder_payload.get("curves_path"),
+                vector_path=folder_payload.get("vector_path"),
+                portfolio_master_pattern=folder_payload.get("portfolio_master_pattern", r"Inversiones\{year}\maestro\{month}\*.xls*"),
+                icl_file_pattern=folder_payload.get("icl_file_pattern", r"ICL\Reportes ICL\*"),
+                supported_extensions=tuple(folder_payload.get("supported_extensions", (".xls", ".xlsx"))),
+                recursive=bool(folder_payload.get("recursive", True)),
+                stale_data_threshold_seconds=int(folder_payload.get("stale_data_threshold_seconds", 3600)),
+            ),
+            curves=CurvesSourceConfig(
+                enabled=bool(curves_payload.get("enabled", False)),
+                workbook=curves_payload.get("workbook"),
+                sheet_mapping=tuple(curves_payload.get("sheet_mapping", ())),
+                stale_data_threshold_seconds=int(curves_payload.get("stale_data_threshold_seconds", 3600)),
+            ),
+            vector=VectorSourceConfig(
+                enabled=bool(vector_payload.get("enabled", False)),
+                path=vector_payload.get("path"),
+                root=vector_payload.get("root"),
+                directory_aliases=tuple(vector_payload.get("directory_aliases", ())),
+                file_pattern=vector_payload.get("file_pattern"),
+                supported_extensions=tuple(vector_payload.get("supported_extensions", (".txt", ".xls", ".xlsx"))),
+                stale_data_threshold_seconds=int(vector_payload.get("stale_data_threshold_seconds", 3600)),
+            ),
+            bccr=BCCRSourceConfig(
+                enabled=bool(bccr_payload.get("enabled", False)),
+                base_url=bccr_payload.get("base_url"),
+                timeout_seconds=float(bccr_payload.get("timeout_seconds", 30.0)),
+                retries=int(bccr_payload.get("retries", 3)),
+                cache_enabled=bool(bccr_payload.get("cache_enabled", True)),
+                indicator_configuration=tuple(bccr_payload.get("indicator_configuration", ("FX",))),
+                series_config=tuple(bccr_payload.get("series_config", ())),
+            ),
+            diagnostic_mode=bool(source_config_payload.get("diagnostic_mode", False)),
+            metadata={
+                "allow_prior_source_date": bool(source_config_payload.get("allow_prior_source_date", False)),
+                "data_cutoff_date": source_config_payload.get("data_cutoff_date"),
+            },
+        )
