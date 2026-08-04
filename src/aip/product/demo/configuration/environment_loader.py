@@ -18,6 +18,17 @@ def _normalize_path_value(value: str | None) -> str | None:
     return normalized.replace("\\\\", "\\")
 
 
+def _parse_boolean_flag(value: str | None, *, default: bool = False) -> bool:
+    if value is None:
+        return default
+    normalized = value.strip().lower()
+    if normalized in {"true", "1", "yes", "on"}:
+        return True
+    if normalized in {"false", "0", "no", "off", ""}:
+        return False
+    return default
+
+
 class EnvironmentLoader:
     """Loads demo configuration from environment variables."""
 
@@ -87,8 +98,9 @@ class EnvironmentLoader:
                 indicator_configuration=bccr_source["indicator_configuration"],
                 series_config=bccr_source["series_config"],
             ),
+            diagnostic_mode=_parse_boolean_flag(os.getenv("AIP_CONFIGURED_DIAGNOSTIC_MODE"), default=False),
             metadata={
-                "allow_prior_source_date": os.getenv("AIP_ALLOW_PRIOR_SOURCE_DATE", "false").strip().lower() in {"1", "true", "yes", "on"},
+                "allow_prior_source_date": _parse_boolean_flag(os.getenv("AIP_ALLOW_PRIOR_SOURCE_DATE"), default=False),
                 "data_cutoff_date": os.getenv("AIP_DATA_CUTOFF_DATE"),
             },
         )
@@ -159,8 +171,8 @@ class EnvironmentLoader:
             "path": _normalize_path_value(os.getenv("AIP_VECTOR_PATH")),
             "root": _normalize_path_value(os.getenv("AIP_VECTOR_ROOT")),
             "directory_aliases": tuple(filter(None, os.getenv("AIP_VECTOR_DIRECTORY_ALIASES", "vector,Vector,Vector Pip,vector pipca").split(","))),
-            "file_pattern": os.getenv("AIP_VECTOR_FILE_PATTERN", "*.xls*"),
-            "supported_extensions": tuple(filter(None, os.getenv("AIP_VECTOR_SUPPORTED_EXTENSIONS", ".xls,.xlsx").split(","))),
+            "file_pattern": os.getenv("AIP_VECTOR_FILE_PATTERNS") or os.getenv("AIP_VECTOR_FILE_PATTERN", "VectorPiPCA_{yyyymmdd}.txt"),
+            "supported_extensions": tuple(filter(None, os.getenv("AIP_VECTOR_SUPPORTED_EXTENSIONS", ".txt,.xls,.xlsx").split(","))),
             "stale_data_threshold_seconds": int(os.getenv("AIP_VECTOR_STALE_HOURS", "24")) * 3600,
         }
 

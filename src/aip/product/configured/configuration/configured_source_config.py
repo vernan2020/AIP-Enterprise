@@ -71,7 +71,26 @@ class ConfiguredSourceConfig:
     curves: CurvesSourceConfig = field(default_factory=CurvesSourceConfig)
     vector: VectorSourceConfig = field(default_factory=VectorSourceConfig)
     bccr: BCCRSourceConfig = field(default_factory=BCCRSourceConfig)
+    diagnostic_mode: bool | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
+
+    def resolve_diagnostic_mode(self) -> bool:
+        if "diagnostic_mode" in self.metadata:
+            value = self.metadata.get("diagnostic_mode")
+            if isinstance(value, bool):
+                return value
+            if isinstance(value, str):
+                normalized = value.strip().lower()
+                if normalized in {"true", "1", "yes", "on"}:
+                    return True
+                if normalized in {"false", "0", "no", "off", ""}:
+                    return False
+            if isinstance(value, (int, float)):
+                return bool(value)
+            return False
+        if self.diagnostic_mode is not None:
+            return bool(self.diagnostic_mode)
+        return False
 
     def to_safe_dict(self) -> dict[str, Any]:
         return {
@@ -110,4 +129,5 @@ class ConfiguredSourceConfig:
                 "retries": self.bccr.retries,
                 "cache_enabled": self.bccr.cache_enabled,
             },
+            "diagnostic_mode": self.resolve_diagnostic_mode(),
         }

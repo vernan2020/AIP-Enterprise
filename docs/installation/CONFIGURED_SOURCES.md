@@ -26,6 +26,7 @@ This document captures the safe, configuration-driven source settings for the co
 - AIP_VECTOR_DIRECTORY_ALIASES=vector,Vector,Vector Pip,vector pipca
 - AIP_VECTOR_FILE_PATTERN=*.xls*
 - AIP_VECTOR_SUPPORTED_EXTENSIONS=.xls,.xlsx
+- AIP_CONFIGURED_DIAGNOSTIC_MODE=false
 - AIP_ALLOW_PRIOR_SOURCE_DATE=false
 - AIP_BCCR_ENABLED=false
 - AIP_BCCR_BASE_URL=
@@ -43,6 +44,13 @@ This document captures the safe, configuration-driven source settings for the co
 - Resolve relative logical paths below AIP_INSTITUTIONAL_DATA_ROOT when provided.
 - For price-vector discovery, prefer AIP_VECTOR_ROOT when supplied; otherwise resolve the canonical year-based alias directory under the investment root.
 - Supported vector aliases are configurable through AIP_VECTOR_DIRECTORY_ALIASES and default to vector, Vector, Vector Pip, and vector pipca.
+
+## Windows CMD activation
+
+```cmd
+set AIP_CONFIGURED_DIAGNOSTIC_MODE=true
+python -m aip.tools.diagnose_configured_sources
+```
 
 ## Source responsibilities
 

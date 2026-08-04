@@ -24,6 +24,8 @@ dependencies = [
   "pydantic>=2.11",
   "platformdirs>=4.4",
   "importlib-resources>=6.0",
+  "xlrd>=2.0",
+  "openpyxl>=3.1",
 ]
 
 [project.optional-dependencies]

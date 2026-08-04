@@ -29,3 +29,4 @@ curves_workbook = ""
 vector_path = ""
 bccr_enabled = false
 bccr_base_url = ""
+diagnostic_mode = false

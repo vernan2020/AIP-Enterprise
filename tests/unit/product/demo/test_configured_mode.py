@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 
+import openpyxl
 import pytest
 
 from aip.product.configured.adapters.configured_portfolio_provider import ConfiguredPortfolioProvider
@@ -206,6 +208,51 @@ def test_portfolio_master_prefers_date_only_file_over_ambiguous_suffixes(tmp_pat
 
     assert payload["portfolio_master"]["file_name"] == "01-01-2023.xls"
     assert payload["portfolio_master"]["valuation_date"] == "2023-01-01"
+
+
+def test_provider_emits_full_diagnostics_and_enriches_positions(tmp_path: Path) -> None:
+    root = tmp_path / "institutional"
+    maestro_dir = root / "Inversiones" / "2026" / "maestro" / "julio"
+    vector_dir = root / "Inversiones" / "2026" / "vector" / "julio"
+    maestro_dir.mkdir(parents=True)
+    vector_dir.mkdir(parents=True)
+
+    maestro_path = maestro_dir / "29-07-2026.xlsx"
+    workbook = openpyxl.Workbook()
+    worksheet = workbook.active
+    worksheet.title = "Maestro"
+    worksheet.append(["Resumen institucional", ""])
+    worksheet.append(["", ""])
+    worksheet.append(["ISIN", "Emisor", "Valor de Mercado", "Valor en Libros"])
+    worksheet.append(["US1234567890", "Banco Central", 1000000, 980000])
+    worksheet.append(["", "Banco Central", 1000000, 980000])
+    workbook.save(maestro_path)
+
+    vector_path = vector_dir / "29-07-2026.txt"
+    vector_path.write_text(
+        "BCCR  BC12M120826 12/08/2026  100.0 100.008344  2.842 0.000000 0\n"
+        "bad line without enough fields\n",
+        encoding="utf-8",
+    )
+
+    config = DemoConfig(execution_mode="CONFIGURED", demo_mode_enabled=False, data_cutoff_date=date(2026, 7, 29))
+    source_config = ConfiguredSourceConfig(
+        folder_watch=FolderWatchSourceConfig(enabled=True, portfolio_root=str(root), vector_path=str(vector_dir)),
+        metadata={"diagnostic_mode": True},
+    )
+
+    provider = ConfiguredPortfolioProvider(config, source_config)
+    payload = provider.get_portfolio()
+
+    assert payload["positions"]
+    assert payload["positions"][0]["isin"] == "US1234567890"
+    assert payload["positions"][0]["vector_match"]["matched"] is False
+    assert payload["portfolio_master"]["diagnostics"]["trace"]["records_read"] == 2
+    assert payload["portfolio_master"]["diagnostics"]["trace"]["records_discarded"] == 0
+    assert payload["portfolio_master"]["diagnostics"]["trace"]["record_trace"][0]["status"] == "accepted"
+    assert payload["portfolio_master"]["diagnostics"]["trace"]["record_trace"][1]["status"] == "accepted"
+    assert payload["price_vector"]["diagnostics"]["trace"]["records_discarded"] == 1
+    assert payload["price_vector"]["diagnostics"]["trace"]["records_valid"] == 1
 
 
 def test_vector_discovery_uses_supported_aliases_and_skips_maestro(tmp_path: Path) -> None:
