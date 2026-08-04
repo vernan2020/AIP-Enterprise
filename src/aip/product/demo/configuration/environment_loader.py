@@ -33,12 +33,29 @@ class EnvironmentLoader:
     """Loads demo configuration from environment variables."""
 
     def load(self) -> DemoConfig:
-        execution_mode_value = os.getenv("AIP_EXECUTION_MODE") or os.getenv("AIP_DEMO_EXECUTION_MODE", "DEMO")
+        execution_mode_value = os.getenv("AIP_EXECUTION_MODE") or os.getenv("AIP_DEMO_EXECUTION_MODE")
         execution_mode = execution_mode_value.upper() if execution_mode_value is not None else "DEMO"
         demo_mode_flag = os.getenv("AIP_DEMO_MODE_ENABLED", "true")
         demo_mode_enabled = demo_mode_flag.lower() == "true"
+        configured_source_indicator = _parse_boolean_flag(os.getenv("AIP_CONFIGURED_DIAGNOSTIC_MODE"), default=False)
+        configured_source_env_present = any(
+            (os.getenv(env_name) or "").strip() not in {"", "false", "False", "FALSE"}
+            for env_name in (
+                "AIP_PORTFOLIO_ROOT",
+                "AIP_VECTOR_PATH",
+                "AIP_VECTOR_ROOT",
+                "AIP_VECTOR_ENABLED",
+                "AIP_FOLDERWATCH_ENABLED",
+                "AIP_FOLDER_WATCH_ENABLED",
+                "AIP_SQLSERVER_ENABLED",
+                "AIP_SQL_CONNECTOR_ENABLED",
+                "AIP_CURVES_ENABLED",
+            )
+        )
         if execution_mode not in {"DEMO", "CONFIGURED"}:
             raise DemoConfigurationError("invalid execution mode")
+        if execution_mode == "DEMO" and (configured_source_indicator or configured_source_env_present):
+            execution_mode = "CONFIGURED"
         if execution_mode == "DEMO":
             demo_mode_enabled = True
         environment_name = os.getenv("AIP_ENVIRONMENT") or os.getenv("AIP_DEMO_ENVIRONMENT", "demo")

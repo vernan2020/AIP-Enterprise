@@ -114,6 +114,39 @@ def test_diagnostic_cli_reports_safe_summary_and_exit_code(tmp_path: Path, monke
     assert "US1234567890" not in captured.out
 
 
+def test_diagnostic_cli_accepts_configured_mode_from_diagnostic_flag(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    root = tmp_path / "institutional"
+    maestro_dir = root / "Inversiones" / "2026" / "maestro" / "julio"
+    vector_dir = root / "Inversiones" / "2026" / "vector" / "julio"
+    maestro_dir.mkdir(parents=True)
+    vector_dir.mkdir(parents=True)
+
+    maestro_path = maestro_dir / "29-07-2026.xlsx"
+    workbook = openpyxl.Workbook()
+    worksheet = workbook.active
+    worksheet.title = "Maestro"
+    worksheet.append(["ISIN", "Emisor", "Valor de Mercado", "Valor en Libros"])
+    worksheet.append(["US1234567890", "Banco Central", 1000000, 980000])
+    workbook.save(maestro_path)
+
+    vector_path = vector_dir / "29-07-2026.txt"
+    vector_path.write_text("BCCR  BC12M120826 12/08/2026  100.0 100.008344  2.842 0.000000 0\n", encoding="utf-8")
+
+    monkeypatch.delenv("AIP_EXECUTION_MODE", raising=False)
+    monkeypatch.setenv("AIP_DEMO_MODE_ENABLED", "false")
+    monkeypatch.setenv("AIP_PORTFOLIO_ROOT", str(root))
+    monkeypatch.setenv("AIP_VECTOR_ENABLED", "true")
+    monkeypatch.setenv("AIP_VECTOR_PATH", str(vector_dir))
+    monkeypatch.setenv("AIP_CONFIGURED_DIAGNOSTIC_MODE", "true")
+    monkeypatch.setenv("AIP_DATA_CUTOFF_DATE", "2026-07-29")
+
+    exit_code = diagnose_main([])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "CONFIGURED SOURCE DIAGNOSTIC" in captured.out
+
+
 def test_master_reader_limits_detailed_trace_output(tmp_path: Path) -> None:
     master_path = tmp_path / "master.xlsx"
     workbook = openpyxl.Workbook()
