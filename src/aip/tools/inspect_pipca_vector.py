@@ -23,10 +23,32 @@ def main() -> None:
 
     trace = result.diagnostics.get("trace", {})
     if args.search:
-        for entry in trace.get("record_trace", []):
-            if args.search.lower() in str(entry.get("raw_identifier", "")).lower() or args.search.lower() in str(entry.get("issuer", "")).lower() or args.search.lower() in str(entry.get("series_or_security_code", "")).lower():
-                status = entry.get("status", "unknown")
-                print(f"line={entry.get('line')} status={status} reason={entry.get('reason')} branch={entry.get('branch')} field_widths={entry.get('field_widths')} raw_identifier={entry.get('raw_identifier')}")
+        matches = [
+            entry for entry in trace.get("line_diagnostics", [])
+            if args.search.lower() in str(entry.get("raw_line", "")).lower()
+        ]
+        if not matches:
+            print(f"No raw lines contained token '{args.search}'.")
+            return
+        for entry in matches:
+            issuer_slice = entry.get("issuer_slice", {})
+            product_series_slice = entry.get("product_series_slice", {})
+            maturity_slice = entry.get("maturity_slice", {})
+            print(f"line={entry.get('line')}")
+            print(f"raw_line_length={entry.get('raw_line_length')}")
+            print(f"masked_raw_line={entry.get('masked_raw_line')}")
+            print(f"parser_branch={entry.get('parser_branch', 'unknown')}")
+            print(f"issuer_slice[{issuer_slice.get('start')}:{issuer_slice.get('end')}]={issuer_slice.get('text', '')}")
+            print(f"product_series_slice[{product_series_slice.get('start')}:{product_series_slice.get('end')}]={product_series_slice.get('text', '')}")
+            print(f"maturity_slice[{maturity_slice.get('start')}:{maturity_slice.get('end')}]={maturity_slice.get('text', '')}")
+            print(f"parsed_issuer={entry.get('parsed_issuer', '')}")
+            print(f"parsed_product={entry.get('parsed_product', '')}")
+            print(f"parsed_series={entry.get('parsed_series', '')}")
+            print(f"raw_maturity={entry.get('raw_maturity', '')}")
+            print(f"parsed_maturity={entry.get('parsed_maturity', '')}")
+            print(f"status={entry.get('status', 'unknown')}")
+            print(f"reason={entry.get('reason', '')}")
+            print(f"raw_identifier={entry.get('raw_identifier', '')}")
         return
 
     print("examples:")

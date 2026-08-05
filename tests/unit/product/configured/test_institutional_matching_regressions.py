@@ -163,6 +163,45 @@ def test_inspect_pipca_vector_cli_search_reports_accepted_production_lines(tmp_p
     assert "raw_identifier" in captured.out
 
 
+def test_inspect_pipca_vector_cli_search_reports_rejected_production_lines(tmp_path, capsys) -> None:
+    path = tmp_path / "VectorPiPCA_20260729.txt"
+    path.write_text(
+        "G   tptbaB180429\n"
+        "G   tprasS240327   24/03/2027\n"
+        "G   tprasCRS240129 24/01/2029\n",
+        encoding="utf-8",
+    )
+
+    import sys
+    from aip.tools.inspect_pipca_vector import main
+
+    sys.argv = ["inspect_pipca_vector", str(path), "--search", "B180429"]
+    main()
+
+    captured = capsys.readouterr()
+    assert "status=rejected" in captured.out
+    assert "reason=missing maturity" in captured.out
+    assert "branch=maturity-scan" in captured.out
+    assert "parsed_series=B180429" in captured.out
+
+
+def test_inspect_pipca_vector_cli_search_reports_no_matching_raw_lines(tmp_path, capsys) -> None:
+    path = tmp_path / "VectorPiPCA_20260729.txt"
+    path.write_text(
+        "G   tptbaB180429   18/04/2029\n",
+        encoding="utf-8",
+    )
+
+    import sys
+    from aip.tools.inspect_pipca_vector import main
+
+    sys.argv = ["inspect_pipca_vector", str(path), "--search", "NOT_PRESENT"]
+    main()
+
+    captured = capsys.readouterr()
+    assert "No raw lines contained token 'NOT_PRESENT'" in captured.out
+
+
 def test_zero_isin_vector_matches_through_secondary_keys() -> None:
     service = InstitutionalPortfolioMatchingService()
     master_positions = [

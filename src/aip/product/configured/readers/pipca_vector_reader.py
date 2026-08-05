@@ -67,7 +67,11 @@ class InstitutionalPiPCAVectorReader:
         rejected_reason_counts: dict[str, int] = {}
         record_trace: list[dict[str, Any]] = []
         accepted_records: list[dict[str, Any]] = []
+        line_diagnostics: list[dict[str, Any]] = []
         for line_number, raw_line in enumerate(lines, start=1):
+            line_diagnostic = self._build_line_diagnostic(raw_line, source_line=line_number)
+            if diagnostic_mode:
+                line_diagnostics.append(line_diagnostic)
             try:
                 record = self._parse_line(raw_line, source_cutoff=source_cutoff, source_line=line_number)
             except PiPCAParseError as exc:
@@ -75,6 +79,12 @@ class InstitutionalPiPCAVectorReader:
                 reason = exc.reason
                 rejected_reason_counts[reason] = rejected_reason_counts.get(reason, 0) + 1
                 if diagnostic_mode:
+                    line_diagnostic.update({
+                        "status": "rejected",
+                        "reason": reason,
+                        "parser_branch": exc.branch,
+                        "raw_identifier": exc.raw_identifier,
+                    })
                     record_trace.append({
                         "line": line_number,
                         "status": "discarded",
@@ -90,11 +100,18 @@ class InstitutionalPiPCAVectorReader:
                 reason = str(exc)
                 rejected_reason_counts[reason] = rejected_reason_counts.get(reason, 0) + 1
                 if diagnostic_mode:
+                    line_diagnostic.update({"status": "rejected", "reason": reason, "parser_branch": None, "raw_identifier": None})
                     record_trace.append({"line": line_number, "status": "discarded", "reason": reason, "branch": None, "field_widths": [], "raw_identifier": None, "isin": None})
                 continue
             if record is not None:
                 records.append(record)
                 if diagnostic_mode:
+                    line_diagnostic.update({
+                        "status": "accepted",
+                        "reason": "parsed",
+                        "parser_branch": "accepted",
+                        "raw_identifier": self._extract_raw_identifier(normalized_line=raw_line),
+                    })
                     diagnostics_entry = {
                         "line": record.source_line,
                         "status": "accepted",
@@ -110,6 +127,8 @@ class InstitutionalPiPCAVectorReader:
                     }
                     record_trace.append(diagnostics_entry)
                     accepted_records.append(diagnostics_entry)
+            if diagnostic_mode and len(line_diagnostics) > 0:
+                line_diagnostics[-1] = line_diagnostic
         trace_payload = None
         if diagnostic_mode:
             trace_payload = {
@@ -120,6 +139,7 @@ class InstitutionalPiPCAVectorReader:
                 "rejected_reason_counts": rejected_reason_counts,
                 "isin_found": [record.isin_if_present for record in records if record.isin_if_present],
                 "accepted_records": accepted_records,
+                "line_diagnostics": line_diagnostics,
                 "record_trace": record_trace[-self._MAX_DIAGNOSTIC_TRACE_ENTRIES :],
             }
 
@@ -139,6 +159,38 @@ class InstitutionalPiPCAVectorReader:
             rejected_count=rejected_count,
             diagnostics=diagnostics,
         )
+
+    def _build_line_diagnostic(self, raw_line: str, *, source_line: int) -> dict[str, Any]:
+        maturity_match = re.search(r"\d{2}/\d{2}/\d{4}", raw_line)
+        maturity_start = maturity_match.start() if maturity_match else None
+        maturity_end = maturity_match.end() if maturity_match else None
+        maturity_text = maturity_match.group(0) if maturity_match else ""
+        combined_field_end = maturity_start if maturity_start is not None else len(raw_line)
+        issuer = self._extract_issuer(raw_line)
+        product_code = self._extract_mnemonic(raw_line)
+        series_code = self._extract_series(raw_line)
+        parsed_maturity = self._parse_date(maturity_text)
+        return {
+            "line": source_line,
+            "raw_line_length": len(raw_line),
+            "raw_line": raw_line,
+            "masked_raw_line": self._mask_text(raw_line),
+            "parser_branch": "pending",
+            "issuer_slice": {"start": 0, "end": 4, "text": raw_line[0:4]},
+            "product_series_slice": {"start": 4, "end": combined_field_end, "text": raw_line[4:combined_field_end]},
+            "maturity_slice": {"start": maturity_start, "end": maturity_end, "text": maturity_text},
+            "parsed_issuer": issuer,
+            "parsed_product": product_code,
+            "parsed_series": series_code,
+            "raw_maturity": maturity_text,
+            "parsed_maturity": parsed_maturity.isoformat() if parsed_maturity else None,
+            "status": "pending",
+            "reason": "pending",
+            "raw_identifier": self._extract_raw_identifier(normalized_line=raw_line),
+        }
+
+    def _mask_text(self, text: str) -> str:
+        return "".join(ch if ch.isspace() else "*" for ch in text)
 
     def _detect_encoding(self, path: Path) -> str:
         for encoding in ("utf-8-sig", "cp1252", "latin-1"):
