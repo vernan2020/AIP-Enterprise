@@ -70,6 +70,36 @@ def test_costa_rican_government_security_series_is_preserved() -> None:
     assert record.maturity_date_if_present == date(2029, 1, 24)
 
 
+def test_production_pipca_combined_product_series_layouts_are_split_correctly() -> None:
+    reader = InstitutionalPiPCAVectorReader()
+    samples = [
+        ("tptba", "B180429", "18/04/2029", "tptbaB180429"),
+        ("tpras", "S240327", "24/03/2027", "tprasS240327"),
+        ("tpras", "CRS240129", "24/01/2029", "tprasCRS240129"),
+    ]
+
+    for product_code, series_code, maturity_text, raw_field in samples:
+        line = f"BCCR{product_code}{series_code}{maturity_text}".ljust(120)
+        record = reader._parse_line(line, source_cutoff=date(2026, 7, 29), source_line=1)
+
+        print(f"raw: {raw_field}")
+        print(f"product: {record.instrument_type_or_mnemonic if record is not None else None}")
+        print(f"series: {record.series_or_security_code if record is not None else None}")
+        print(f"maturity: {maturity_text}")
+        print(f"issuer: {record.issuer if record is not None else None}")
+
+        assert record is not None
+        assert record.issuer == "BCCR"
+        assert record.instrument_type_or_mnemonic == product_code
+        assert record.series_or_security_code == series_code
+        if maturity_text == "18/04/2029":
+            assert record.maturity_date_if_present == date(2029, 4, 18)
+        elif maturity_text == "24/03/2027":
+            assert record.maturity_date_if_present == date(2027, 3, 24)
+        else:
+            assert record.maturity_date_if_present == date(2029, 1, 24)
+
+
 def test_zero_isin_vector_matches_through_secondary_keys() -> None:
     service = InstitutionalPortfolioMatchingService()
     master_positions = [

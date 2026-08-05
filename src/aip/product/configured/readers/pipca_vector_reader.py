@@ -186,20 +186,25 @@ class InstitutionalPiPCAVectorReader:
         return self._extract_token(line, 0, 4)
 
     def _extract_mnemonic(self, line: str) -> str:
-        return self._extract_token(line, 4, 10)
+        product_code, _ = self._extract_product_and_series(line)
+        return product_code
 
     def _extract_series(self, line: str) -> str:
-        prefix = self._extract_token(line, 10, 12)
-        remainder = line[12:].strip()
-        if not remainder:
-            return re.sub(r"[^A-Za-z0-9]+", "", prefix)
-        match = re.search(r"\d{2}/\d{2}/\d{4}", remainder)
+        _, series_code = self._extract_product_and_series(line)
+        return series_code
+
+    def _extract_product_and_series(self, line: str) -> tuple[str, str]:
+        combined_field = self._extract_token(line, 4, len(line))
+        if not combined_field:
+            return "", ""
+
+        match = re.search(r"\d{2}/\d{2}/\d{4}", combined_field)
         if match:
-            remainder = remainder[:match.start()].strip()
-        if not remainder:
-            return re.sub(r"[^A-Za-z0-9]+", "", prefix)
-        combined = f"{prefix}{remainder}".strip()
-        return re.sub(r"[^A-Za-z0-9]+", "", combined)
+            combined_field = combined_field[:match.start()].strip()
+
+        product_code = self._clean_text(combined_field[:5])
+        series_code = self._clean_text(combined_field[5:])
+        return product_code, series_code
 
     def _extract_maturity_date_field(self, line: str) -> str:
         match = re.search(r"\d{2}/\d{2}/\d{4}", line)
