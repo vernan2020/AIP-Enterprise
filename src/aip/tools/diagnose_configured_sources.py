@@ -30,6 +30,17 @@ def _safe_reference(value: Any) -> str:
     return Path(text).name or text
 
 
+def _redact_value(value: Any) -> str:
+    if value in (None, ""):
+        return ""
+    text = str(value)
+    if not text:
+        return ""
+    if len(text) <= 4:
+        return "***"
+    return f"{text[:2]}***{text[-2:]}"
+
+
 def _build_config() -> tuple[DemoConfig, ConfiguredSourceConfig]:
     loader = EnvironmentLoader()
     config = loader.load()
@@ -115,6 +126,14 @@ def main(argv: list[str] | None = None) -> int:
     print(f"ISIN count: {sum(1 for position in payload.get('positions', []) if position.get('isin'))}")
     warnings = payload['portfolio_master'].get('warnings', ())
     print(f"Warnings: {', '.join(warnings[:3]) if warnings else 'None'}")
+    first_rejected_row = payload['portfolio_master'].get('diagnostics', {}).get('first_rejected_row')
+    if first_rejected_row:
+        print("First rejected row:")
+        print(f"  row: {first_rejected_row.get('row')}")
+        print(f"  raw_row_values: {first_rejected_row.get('raw_row_values')}")
+        print(f"  required_fields: {first_rejected_row.get('required_fields')}")
+        print(f"  validation_result: {first_rejected_row.get('validation_result')}")
+        print(f"  rejection_reason: {first_rejected_row.get('rejection_reason')}")
     print()
     print("VECTOR")
     print(f"Status: {payload['price_vector'].get('status', 'UNKNOWN')}")
@@ -167,11 +186,11 @@ def main(argv: list[str] | None = None) -> int:
             print(
                 "  - line {line}: isin={isin} series={series} maturity={maturity} issuer={issuer} product={product} keys={keys}".format(
                     line=position.get('source_row', 'N/A'),
-                    isin=diagnostics.get('normalized_isin', ''),
-                    series=diagnostics.get('normalized_series', ''),
-                    maturity=diagnostics.get('maturity_date', ''),
-                    issuer=diagnostics.get('normalized_issuer', ''),
-                    product=diagnostics.get('normalized_product_code', ''),
+                    isin=_redact_value(position.get('isin', '')),
+                    series=position.get('series', ''),
+                    maturity=position.get('maturity_date', ''),
+                    issuer=position.get('issuer', ''),
+                    product=position.get('product_code', ''),
                     keys=diagnostics.get('matching_keys', {}),
                 )
             )

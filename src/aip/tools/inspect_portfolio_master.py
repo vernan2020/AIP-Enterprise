@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from aip.product.configured.readers.portfolio_master_reader import PortfolioMasterReader
+from aip.product.configured.readers.institutional_portfolio_master_reader import InstitutionalPortfolioMasterReader
 
 
 def main() -> None:
@@ -12,8 +12,8 @@ def main() -> None:
     args = parser.parse_args()
 
     path = Path(args.path)
-    reader = PortfolioMasterReader()
-    result = reader.read(path)
+    reader = InstitutionalPortfolioMasterReader()
+    result = reader.read(path, diagnostic_mode=True)
     print(f"workbook_type: {result.diagnostics.get('workbook_type', 'unknown')}")
     print(f"sheet_names: {result.diagnostics.get('sheets', [])}")
     print(f"sheet_selected: {result.sheet_selected}")
@@ -27,6 +27,14 @@ def main() -> None:
     print("detected_mappings:")
     for key, value in result.detected_column_mapping.items():
         print(f"  - {key}: {value}")
+    first_rejected_row = result.diagnostics.get("first_rejected_row")
+    if first_rejected_row:
+        print("first_rejected_row:")
+        print(f"  row: {first_rejected_row.get('row')}")
+        print(f"  raw_row_values: {first_rejected_row.get('raw_row_values')}")
+        print(f"  required_fields: {first_rejected_row.get('required_fields')}")
+        print(f"  validation_result: {first_rejected_row.get('validation_result')}")
+        print(f"  rejection_reason: {first_rejected_row.get('rejection_reason')}")
 
 
 if __name__ == "__main__":

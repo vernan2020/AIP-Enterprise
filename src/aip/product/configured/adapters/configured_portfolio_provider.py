@@ -647,6 +647,8 @@ class ConfiguredPortfolioProvider:
             payload.append({
                 "isin": position.get("isin", ""),
                 "issuer": position.get("issuer", ""),
+                "series": position.get("series", ""),
+                "product_code": position.get("product_code", ""),
                 "instrument": position.get("product_code") or position.get("series") or position.get("contract_number") or "Instrument",
                 "currency": str(position.get("currency", "USD")).upper(),
                 "nominal": float(position.get("traded_balance") or position.get("principal_balance") or 0.0),

@@ -193,6 +193,60 @@ def test_price_vector_discovery_filters_pipca_candidates_with_windows_path_and_c
     assert "Status: HEALTHY" in captured.out
 
 
+def test_configured_diagnostics_preserve_series_product_code_maturity_and_isin(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    root = tmp_path / "institutional"
+    maestro_dir = root / "Inversiones" / "2026" / "maestro" / "julio"
+    vector_dir = root / "Inversiones" / "2026" / "vector" / "julio"
+    maestro_dir.mkdir(parents=True)
+    vector_dir.mkdir(parents=True)
+
+    maestro_path = maestro_dir / "29-07-2026.xlsx"
+    workbook = openpyxl.Workbook()
+    worksheet = workbook.active
+    worksheet.title = "Maestro"
+    worksheet.append(["serie", "código producto", "fecha vencimiento", "isin", "Valor de Mercado", "Valor en Libros"])
+    worksheet.append(["ABC-001", "BONO", "2029-04-18", "CR123", 1000000, 980000])
+    workbook.save(maestro_path)
+
+    vector_path = vector_dir / "29-07-2026.txt"
+    vector_path.write_text("BCCR  BC12M120826 12/08/2026  100.0 100.008344  2.842 0.000000 0\n", encoding="utf-8")
+
+    monkeypatch.setenv("AIP_EXECUTION_MODE", "CONFIGURED")
+    monkeypatch.setenv("AIP_DEMO_MODE_ENABLED", "false")
+    monkeypatch.setenv("AIP_PORTFOLIO_ROOT", str(root))
+    monkeypatch.setenv("AIP_VECTOR_ENABLED", "true")
+    monkeypatch.setenv("AIP_VECTOR_PATH", str(vector_dir))
+    monkeypatch.setenv("AIP_CONFIGURED_DIAGNOSTIC_MODE", "true")
+    monkeypatch.setenv("AIP_DATA_CUTOFF_DATE", "2026-07-29")
+
+    reader = InstitutionalPortfolioMasterReader()
+    read_result = reader.read(maestro_path, valuation_date_override=date(2026, 7, 29), diagnostic_mode=True)
+    assert read_result.normalized_positions[0]["series"] == "ABC-001"
+    assert read_result.normalized_positions[0]["product_code"] == "BONO"
+    assert read_result.normalized_positions[0]["maturity_date"] == date(2029, 4, 18)
+    assert read_result.normalized_positions[0]["isin"] == "CR123"
+
+    config = DemoConfig(execution_mode="CONFIGURED", demo_mode_enabled=False, data_cutoff_date=date(2026, 7, 29))
+    source_config = ConfiguredSourceConfig(
+        folder_watch=FolderWatchSourceConfig(enabled=True, portfolio_root=str(root), vector_path=str(vector_dir)),
+        diagnostic_mode=True,
+    )
+    provider = ConfiguredPortfolioProvider(config, source_config)
+    payload = provider.get_portfolio()
+
+    assert payload["positions"][0]["series"] == "ABC-001"
+    assert payload["positions"][0]["product_code"] == "BONO"
+    assert payload["positions"][0]["maturity_date"] == date(2029, 4, 18)
+    assert payload["positions"][0]["isin"] == "CR123"
+
+    exit_code = diagnose_main([])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "series=ABC-001" in captured.out
+    assert "product=BONO" in captured.out
+
+
 def test_master_reader_limits_detailed_trace_output(tmp_path: Path) -> None:
     master_path = tmp_path / "master.xlsx"
     workbook = openpyxl.Workbook()

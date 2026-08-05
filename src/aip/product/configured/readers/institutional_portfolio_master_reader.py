@@ -131,9 +131,12 @@ class InstitutionalPortfolioMasterReader:
         identities: set[str] = set()
         duplicate_identities: list[str] = []
         record_trace: list[dict[str, Any]] = []
+        first_rejected_row: dict[str, Any] | None = None
         for row_index, row_values in enumerate(rows[header_index + 1 :], start=header_index + 2):
             if self._is_blank_row(row_values):
                 rejected_rows += 1
+                if diagnostic_mode and first_rejected_row is None:
+                    first_rejected_row = self._build_rejection_diagnostic(row_values, row_index, "blank_row", normalized_row=None)
                 if diagnostic_mode:
                     record_trace.append({"row": row_index, "status": "discarded", "reason": "blank_row", "isin": None})
                 continue
@@ -141,6 +144,8 @@ class InstitutionalPortfolioMasterReader:
             if normalized_row is None:
                 rejected_rows += 1
                 warnings.append(f"Rejected row {row_index}: blank row")
+                if diagnostic_mode and first_rejected_row is None:
+                    first_rejected_row = self._build_rejection_diagnostic(row_values, row_index, "blank_row", normalized_row=None)
                 if diagnostic_mode:
                     record_trace.append({"row": row_index, "status": "discarded", "reason": "blank_row", "isin": None})
                 continue
@@ -149,6 +154,8 @@ class InstitutionalPortfolioMasterReader:
             if position is None:
                 rejected_rows += 1
                 warnings.append(f"Rejected row {row_index}: malformed position")
+                if diagnostic_mode and first_rejected_row is None:
+                    first_rejected_row = self._build_rejection_diagnostic(row_values, row_index, "malformed_position", normalized_row=normalized_row, position=position)
                 if diagnostic_mode:
                     record_trace.append({"row": row_index, "status": "discarded", "reason": "malformed_position", "isin": None})
                 continue
@@ -158,6 +165,8 @@ class InstitutionalPortfolioMasterReader:
                 rejected_rows += 1
                 duplicate_identities.append(position_identity)
                 warnings.append(f"Duplicate identity detected for row {row_index}: {position_identity}")
+                if diagnostic_mode and first_rejected_row is None:
+                    first_rejected_row = self._build_rejection_diagnostic(row_values, row_index, "duplicate_identity", normalized_row=normalized_row, position=position)
                 if diagnostic_mode:
                     record_trace.append({"row": row_index, "status": "discarded", "reason": "duplicate_identity", "isin": position.get("isin")})
                 continue
@@ -208,8 +217,12 @@ class InstitutionalPortfolioMasterReader:
             "duplicate_identities": duplicate_identities,
             "source_reference": self._safe_diagnostic_reference(file_path),
         }
+        if first_rejected_row is not None:
+            diagnostics["first_rejected_row"] = first_rejected_row
         if trace_payload is not None:
             diagnostics["trace"] = trace_payload
+            if first_rejected_row is not None:
+                trace_payload["first_rejected_row"] = first_rejected_row
         return InstitutionalPortfolioMasterReadResult(
             source_file=str(file_path),
             valuation_date=valuation_date,
@@ -481,6 +494,26 @@ class InstitutionalPortfolioMasterReader:
                 "normalized_value": normalized_value,
             }
         return diagnostics
+
+    def _build_rejection_diagnostic(self, row_values: list[Any], row_number: int, reason: str, *, normalized_row: dict[str, Any] | None, position: dict[str, Any] | None = None) -> dict[str, Any]:
+        normalized_cells = {self._normalize_header(key): value for key, value in (normalized_row or {}).items()}
+        validation_result = {
+            "accepted": position is not None,
+            "required_fields": {
+                field: {
+                    "present": self._coerce_text(self._find_field(normalized_cells, field)) != "",
+                    "value": self._stringify(self._find_field(normalized_cells, field)),
+                }
+                for field in self._REQUIRED_COLUMNS
+            },
+        }
+        return {
+            "row": row_number,
+            "raw_row_values": [self._stringify(value) for value in row_values],
+            "required_fields": list(self._REQUIRED_COLUMNS),
+            "validation_result": validation_result,
+            "rejection_reason": reason,
+        }
 
     def _normalize_currency(self, value: str) -> str:
         cleaned = self._coerce_text(value).upper()
