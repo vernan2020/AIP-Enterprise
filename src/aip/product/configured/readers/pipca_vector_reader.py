@@ -9,6 +9,19 @@ from pathlib import Path
 from typing import Any
 
 
+class PiPCAParseError(ValueError):
+    """Raised when a PiPCA line cannot be parsed into a vector record."""
+
+    def __init__(self, reason: str, *, line: str, source_line: int | None = None, branch: str | None = None, field_widths: tuple[int, ...] | None = None, raw_identifier: str | None = None) -> None:
+        self.reason = reason
+        self.line = line
+        self.source_line = source_line
+        self.branch = branch
+        self.field_widths = field_widths or ()
+        self.raw_identifier = raw_identifier
+        super().__init__(reason)
+
+
 @dataclass(frozen=True, slots=True)
 class InstitutionalVectorRecord:
     issuer: str
@@ -57,12 +70,27 @@ class InstitutionalPiPCAVectorReader:
         for line_number, raw_line in enumerate(lines, start=1):
             try:
                 record = self._parse_line(raw_line, source_cutoff=source_cutoff, source_line=line_number)
+            except PiPCAParseError as exc:
+                rejected_count += 1
+                reason = exc.reason
+                rejected_reason_counts[reason] = rejected_reason_counts.get(reason, 0) + 1
+                if diagnostic_mode:
+                    record_trace.append({
+                        "line": line_number,
+                        "status": "discarded",
+                        "reason": reason,
+                        "branch": exc.branch,
+                        "field_widths": list(exc.field_widths),
+                        "raw_identifier": exc.raw_identifier,
+                        "isin": None,
+                    })
+                continue
             except ValueError as exc:
                 rejected_count += 1
                 reason = str(exc)
                 rejected_reason_counts[reason] = rejected_reason_counts.get(reason, 0) + 1
                 if diagnostic_mode:
-                    record_trace.append({"line": line_number, "status": "discarded", "reason": reason, "isin": None})
+                    record_trace.append({"line": line_number, "status": "discarded", "reason": reason, "branch": None, "field_widths": [], "raw_identifier": None, "isin": None})
                 continue
             if record is not None:
                 records.append(record)
@@ -78,6 +106,7 @@ class InstitutionalPiPCAVectorReader:
                         "normalized_series_key": record.normalized_series_key,
                         "normalized_issuer_key": record.normalized_issuer_key,
                         "isin": record.isin_if_present or None,
+                        "raw_identifier": self._extract_raw_identifier(normalized_line=raw_line),
                     }
                     record_trace.append(diagnostics_entry)
                     accepted_records.append(diagnostics_entry)
@@ -136,7 +165,7 @@ class InstitutionalPiPCAVectorReader:
             return None
         normalized_line = line.strip()
         if len(normalized_line) < 10:
-            raise ValueError("line too short")
+            raise PiPCAParseError("line too short", line=line, source_line=source_line, branch="length-check")
 
         issuer = self._extract_issuer(normalized_line)
         instrument_type_or_mnemonic = self._extract_mnemonic(normalized_line)
@@ -150,11 +179,13 @@ class InstitutionalPiPCAVectorReader:
 
         maturity_date = self._parse_date(maturity_date_field)
         if not issuer and not instrument_type_or_mnemonic and not series_or_security_code:
-            raise ValueError("empty record")
-        if len(series_or_security_code) < 2 and not issuer:
-            raise ValueError("malformed record")
+            raise PiPCAParseError("empty record", line=line, source_line=source_line, branch="empty-record", field_widths=(len(normalized_line),), raw_identifier="")
         if not re.search(r"\d{2}/\d{2}/\d{4}", normalized_line):
-            raise ValueError("malformed record")
+            raise PiPCAParseError("missing maturity", line=line, source_line=source_line, branch="maturity-scan", field_widths=(len(normalized_line),), raw_identifier=normalized_line[:20])
+        if not issuer or not instrument_type_or_mnemonic or not series_or_security_code:
+            raise PiPCAParseError("unsupported layout", line=line, source_line=source_line, branch="field-scan", field_widths=(len(normalized_line),), raw_identifier=normalized_line[:20])
+        if len(series_or_security_code) < 2:
+            raise PiPCAParseError("combined product-series parse failure", line=line, source_line=source_line, branch="series-split", field_widths=(len(normalized_line),), raw_identifier=normalized_line[:20])
 
         isin_if_present = ""
         if "isin" in normalized_line.lower() or len(normalized_line) > 30 and normalized_line[20:30].isdigit():
@@ -204,7 +235,16 @@ class InstitutionalPiPCAVectorReader:
 
         product_code = self._clean_text(combined_field[:5])
         series_code = self._clean_text(combined_field[5:])
+        if not product_code and not series_code:
+            return "", ""
+        if not series_code and len(combined_field) > 5:
+            series_code = self._clean_text(combined_field[5:])
+        if not product_code and len(combined_field) > 5:
+            product_code = self._clean_text(combined_field[:5])
         return product_code, series_code
+
+    def _extract_raw_identifier(self, normalized_line: str) -> str:
+        return self._clean_text(self._extract_token(normalized_line, 4, len(normalized_line)))
 
     def _extract_maturity_date_field(self, line: str) -> str:
         match = re.search(r"\d{2}/\d{2}/\d{4}", line)

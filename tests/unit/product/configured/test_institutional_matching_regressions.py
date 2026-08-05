@@ -100,6 +100,69 @@ def test_production_pipca_combined_product_series_layouts_are_split_correctly() 
             assert record.maturity_date_if_present == date(2029, 1, 24)
 
 
+def test_public_reader_accepts_production_fixed_width_lines_and_matches_by_series_maturity(tmp_path) -> None:
+    path = tmp_path / "VectorPiPCA_20260729.txt"
+    path.write_text(
+        "G   tptbaB180429   18/04/2029\n"
+        "G   tprasS240327   24/03/2027\n"
+        "G   tprasCRS240129 24/01/2029\n",
+        encoding="utf-8",
+    )
+
+    result = InstitutionalPiPCAVectorReader().read(path, source_cutoff=date(2026, 7, 29), diagnostic_mode=True)
+
+    assert result.accepted_count == 3
+    assert result.rejected_count == 0
+    assert [record.issuer for record in result.records] == ["G", "G", "G"]
+    assert [record.instrument_type_or_mnemonic for record in result.records] == ["tptba", "tpras", "tpras"]
+    assert [record.series_or_security_code for record in result.records] == ["B180429", "S240327", "CRS240129"]
+    assert [record.maturity_date_if_present for record in result.records] == [
+        date(2029, 4, 18),
+        date(2027, 3, 24),
+        date(2029, 1, 24),
+    ]
+
+    service = InstitutionalPortfolioMatchingService()
+    records_for_matching = [
+        {
+            "issuer": record.issuer,
+            "instrument_type_or_mnemonic": record.instrument_type_or_mnemonic,
+            "series_or_security_code": record.series_or_security_code,
+            "maturity_date_if_present": record.maturity_date_if_present,
+            "source_line": record.source_line,
+        }
+        for record in result.records
+    ]
+    enriched_positions, summary = service.enrich_positions(
+        [{"isin": "", "series": "B180429", "maturity_date": date(2029, 4, 18), "issuer": "Banco Central", "product_code": "tptba"}],
+        records_for_matching,
+    )
+
+    assert summary["series_maturity_matches"] == 1
+    assert enriched_positions[0]["vector_match"]["matched"] is True
+    assert enriched_positions[0]["vector_match"]["match_method"] == "SERIES_MATURITY"
+
+
+def test_inspect_pipca_vector_cli_search_reports_accepted_production_lines(tmp_path, capsys) -> None:
+    path = tmp_path / "VectorPiPCA_20260729.txt"
+    path.write_text(
+        "G   tptbaB180429   18/04/2029\n"
+        "G   tprasS240327   24/03/2027\n"
+        "G   tprasCRS240129 24/01/2029\n",
+        encoding="utf-8",
+    )
+
+    import sys
+    from aip.tools.inspect_pipca_vector import main
+
+    sys.argv = ["inspect_pipca_vector", str(path), "--search", "B180429"]
+    main()
+
+    captured = capsys.readouterr()
+    assert "status=accepted" in captured.out
+    assert "raw_identifier" in captured.out
+
+
 def test_zero_isin_vector_matches_through_secondary_keys() -> None:
     service = InstitutionalPortfolioMatchingService()
     master_positions = [
