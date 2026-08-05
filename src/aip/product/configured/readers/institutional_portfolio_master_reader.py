@@ -67,6 +67,7 @@ class InstitutionalPortfolioMasterReader:
 
     _REQUIRED_COLUMNS = ("isin", "market_value", "book_value")
     _MAX_DIAGNOSTIC_TRACE_ENTRIES = 20
+    _MAX_ACCEPTED_FIELD_DIAGNOSTICS = 3
 
     def read(self, path: str | Path, *, valuation_date_override: date | None = None, diagnostic_mode: bool = False) -> InstitutionalPortfolioMasterReadResult:
         file_path = Path(path)
@@ -108,7 +109,7 @@ class InstitutionalPortfolioMasterReader:
                 diagnostics={"workbook_type": workbook_type, "error": str(exc), "sheet_count": 0},
             )
 
-        sheet_index, header_index, header_values, normalized_headers, column_map = self._select_sheet(sheet_names, sheet_rows)
+        sheet_index, header_index, header_values, normalized_headers, column_map, column_indices = self._select_sheet(sheet_names, sheet_rows)
         if sheet_index is None or header_index is None:
             return InstitutionalPortfolioMasterReadResult(
                 source_file=str(file_path),
@@ -126,6 +127,7 @@ class InstitutionalPortfolioMasterReader:
         positions: list[dict[str, Any]] = []
         warnings: list[str] = []
         rejected_rows = 0
+        accepted_field_diagnostics: list[dict[str, Any]] = []
         identities: set[str] = set()
         duplicate_identities: list[str] = []
         record_trace: list[dict[str, Any]] = []
@@ -164,6 +166,10 @@ class InstitutionalPortfolioMasterReader:
             positions.append(position)
             if diagnostic_mode:
                 record_trace.append({"row": row_index, "status": "accepted", "reason": "parsed", "isin": position.get("isin")})
+                if len(accepted_field_diagnostics) < self._MAX_ACCEPTED_FIELD_DIAGNOSTICS:
+                    accepted_field_diagnostics.append(
+                        self._build_field_diagnostics(row_values, header_values, column_indices, row_index)
+                    )
 
         missing_columns = [column for column in self._REQUIRED_COLUMNS if column not in column_map]
         if missing_columns:
@@ -184,6 +190,7 @@ class InstitutionalPortfolioMasterReader:
                 "records_discarded": rejected_rows,
                 "isin_found": [position.get("isin") for position in positions if position.get("isin")],
                 "record_trace": record_trace[-self._MAX_DIAGNOSTIC_TRACE_ENTRIES :],
+                "first_accepted_row_field_diagnostics": accepted_field_diagnostics,
             }
 
         diagnostics = {
@@ -195,6 +202,7 @@ class InstitutionalPortfolioMasterReader:
             "rows_accepted": len(positions),
             "rows_rejected": rejected_rows,
             "column_mapping": column_map,
+            "column_indices": column_indices,
             "normalized_headers": normalized_headers,
             "missing_columns": missing_columns,
             "duplicate_identities": duplicate_identities,
@@ -253,9 +261,9 @@ class InstitutionalPortfolioMasterReader:
             rows.append(list(row_values))
         return rows
 
-    def _select_sheet(self, sheet_names: list[str], sheet_rows: list[list[list[Any]]]) -> tuple[int | None, int | None, list[str], list[str], dict[str, str]]:
+    def _select_sheet(self, sheet_names: list[str], sheet_rows: list[list[list[Any]]]) -> tuple[int | None, int | None, list[str], list[str], dict[str, str], dict[str, int]]:
         best_score = -1
-        best_selection: tuple[int | None, int | None, list[str], list[str], dict[str, str]] | None = None
+        best_selection: tuple[int | None, int | None, list[str], list[str], dict[str, str], dict[str, int]] | None = None
         for sheet_index, rows in enumerate(sheet_rows):
             for header_index, header_row in enumerate(rows[: min(len(rows), 20)]):
                 normalized_headers = [self._normalize_header(self._stringify(value)) for value in header_row]
@@ -265,19 +273,14 @@ class InstitutionalPortfolioMasterReader:
                 score = sum(1 for _, _ in matches)
                 if score < 3:
                     continue
-                column_map: dict[str, str] = {}
-                for canonical, aliases in self._CANONICAL_ALIASES.items():
-                    for index, header in enumerate(normalized_headers):
-                        if self._matches_alias(header, aliases):
-                            column_map[canonical] = self._stringify(header_row[index])
-                            break
+                column_map, column_indices = self._build_column_mapping(header_row, normalized_headers)
                 if score >= 5:
-                    return sheet_index, header_index, [self._stringify(value) for value in header_row], normalized_headers, column_map
+                    return sheet_index, header_index, [self._stringify(value) for value in header_row], normalized_headers, column_map, column_indices
                 if score > best_score:
                     best_score = score
-                    best_selection = (sheet_index, header_index, [self._stringify(value) for value in header_row], normalized_headers, column_map)
+                    best_selection = (sheet_index, header_index, [self._stringify(value) for value in header_row], normalized_headers, column_map, column_indices)
         if best_selection is None:
-            return None, None, [], [], {}
+            return None, None, [], [], {}, {}
         return best_selection
 
     def _match_header_row(self, normalized_headers: list[str]) -> list[tuple[str, str]]:
@@ -289,12 +292,29 @@ class InstitutionalPortfolioMasterReader:
                     break
         return matches
 
+    def _build_column_mapping(self, header_values: list[str], normalized_headers: list[str]) -> tuple[dict[str, str], dict[str, int]]:
+        column_map: dict[str, str] = {}
+        column_indices: dict[str, int] = {}
+        for canonical, aliases in self._CANONICAL_ALIASES.items():
+            for index, header in enumerate(normalized_headers):
+                if self._matches_alias(header, aliases):
+                    column_map[canonical] = self._stringify(header_values[index])
+                    column_indices[canonical] = index
+                    break
+        return column_map, column_indices
+
     def _normalize_header(self, value: str) -> str:
-        text = str(value).strip().lower()
+        text = self._stringify(value)
+        text = text.replace("\ufeff", "")
+        text = text.replace("\u00a0", " ")
+        text = text.replace("_", " ")
+        text = re.sub(r"[\u200b\u200c\u200d\ufeff\u2060]", "", text)
+        text = text.strip().lower()
         normalized = unicodedata.normalize("NFKD", text)
         ascii_text = normalized.encode("ascii", "ignore").decode("ascii")
         ascii_text = re.sub(r"\s+", " ", ascii_text)
-        return re.sub(r"[^a-z0-9]+", " ", ascii_text).strip()
+        ascii_text = re.sub(r"[^a-z0-9]+", " ", ascii_text)
+        return re.sub(r"\s+", " ", ascii_text).strip()
 
     def _matches_alias(self, header: str, aliases: tuple[str, ...]) -> bool:
         normalized_header = self._normalize_header(header)
@@ -433,6 +453,34 @@ class InstitutionalPortfolioMasterReader:
             return ""
         text = self._stringify(value).strip()
         return re.sub(r"\s+", " ", text)
+
+    def _build_field_diagnostics(self, row_values: list[Any], header_values: list[str], column_indices: dict[str, int], row_number: int) -> dict[str, Any]:
+        diagnostics: dict[str, Any] = {"row": row_number, "fields": {}}
+        for display_name, canonical in (("serie", "series"), ("codigo producto", "product_code"), ("fecha vencimiento", "maturity_date"), ("ISIN", "isin")):
+            index = column_indices.get(canonical)
+            if index is None:
+                diagnostics["fields"][display_name] = {
+                    "excel_column_index": None,
+                    "excel_column_header": None,
+                    "raw_cell_value": None,
+                    "normalized_value": None,
+                }
+                continue
+
+            header_value = header_values[index] if index < len(header_values) else None
+            raw_value = row_values[index] if index < len(row_values) else None
+            if canonical == "maturity_date":
+                normalized_value = self._serialize_date(self._parse_date(raw_value))
+            else:
+                normalized_value = self._coerce_text(raw_value)
+
+            diagnostics["fields"][display_name] = {
+                "excel_column_index": index + 1,
+                "excel_column_header": self._stringify(header_value),
+                "raw_cell_value": self._stringify(raw_value),
+                "normalized_value": normalized_value,
+            }
+        return diagnostics
 
     def _normalize_currency(self, value: str) -> str:
         cleaned = self._coerce_text(value).upper()
