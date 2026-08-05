@@ -14,6 +14,8 @@ class InstitutionalVectorRecord:
     issuer: str
     instrument_type_or_mnemonic: str
     series_or_security_code: str
+    normalized_issuer_key: str
+    normalized_series_key: str
     isin_if_present: str
     maturity_date_if_present: date | None
     coupon_or_reference_value: Decimal | None
@@ -49,19 +51,36 @@ class InstitutionalPiPCAVectorReader:
         lines = [line.rstrip("\n") for line in content.splitlines() if line.strip()]
         records: list[InstitutionalVectorRecord] = []
         rejected_count = 0
+        rejected_reason_counts: dict[str, int] = {}
         record_trace: list[dict[str, Any]] = []
+        accepted_records: list[dict[str, Any]] = []
         for line_number, raw_line in enumerate(lines, start=1):
             try:
                 record = self._parse_line(raw_line, source_cutoff=source_cutoff, source_line=line_number)
             except ValueError as exc:
                 rejected_count += 1
+                reason = str(exc)
+                rejected_reason_counts[reason] = rejected_reason_counts.get(reason, 0) + 1
                 if diagnostic_mode:
-                    record_trace.append({"line": line_number, "status": "discarded", "reason": str(exc), "isin": None})
+                    record_trace.append({"line": line_number, "status": "discarded", "reason": reason, "isin": None})
                 continue
             if record is not None:
                 records.append(record)
                 if diagnostic_mode:
-                    record_trace.append({"line": line_number, "status": "accepted", "reason": "parsed", "isin": record.isin_if_present or None})
+                    diagnostics_entry = {
+                        "line": record.source_line,
+                        "status": "accepted",
+                        "reason": "parsed",
+                        "issuer": record.issuer,
+                        "mnemonic": record.instrument_type_or_mnemonic,
+                        "series_or_security_code": record.series_or_security_code,
+                        "maturity_date": record.maturity_date_if_present.isoformat() if record.maturity_date_if_present else None,
+                        "normalized_series_key": record.normalized_series_key,
+                        "normalized_issuer_key": record.normalized_issuer_key,
+                        "isin": record.isin_if_present or None,
+                    }
+                    record_trace.append(diagnostics_entry)
+                    accepted_records.append(diagnostics_entry)
         trace_payload = None
         if diagnostic_mode:
             trace_payload = {
@@ -69,7 +88,9 @@ class InstitutionalPiPCAVectorReader:
                 "records_read": len(lines),
                 "records_valid": len(records),
                 "records_discarded": rejected_count,
+                "rejected_reason_counts": rejected_reason_counts,
                 "isin_found": [record.isin_if_present for record in records if record.isin_if_present],
+                "accepted_records": accepted_records,
                 "record_trace": record_trace[-self._MAX_DIAGNOSTIC_TRACE_ENTRIES :],
             }
 
@@ -143,6 +164,8 @@ class InstitutionalPiPCAVectorReader:
             issuer=self._clean_text(issuer),
             instrument_type_or_mnemonic=self._clean_text(instrument_type_or_mnemonic),
             series_or_security_code=self._clean_text(series_or_security_code),
+            normalized_issuer_key=self._normalize_key(issuer),
+            normalized_series_key=self._normalize_key(series_or_security_code),
             isin_if_present=isin_if_present,
             maturity_date_if_present=maturity_date,
             coupon_or_reference_value=coupon_or_reference_value,
@@ -169,14 +192,14 @@ class InstitutionalPiPCAVectorReader:
         prefix = self._extract_token(line, 10, 12)
         remainder = line[12:].strip()
         if not remainder:
-            return prefix
+            return re.sub(r"[^A-Za-z0-9]+", "", prefix)
         match = re.search(r"\d{2}/\d{2}/\d{4}", remainder)
         if match:
             remainder = remainder[:match.start()].strip()
         if not remainder:
-            return prefix
+            return re.sub(r"[^A-Za-z0-9]+", "", prefix)
         combined = f"{prefix}{remainder}".strip()
-        return combined if combined else ""
+        return re.sub(r"[^A-Za-z0-9]+", "", combined)
 
     def _extract_maturity_date_field(self, line: str) -> str:
         match = re.search(r"\d{2}/\d{2}/\d{4}", line)
@@ -197,6 +220,12 @@ class InstitutionalPiPCAVectorReader:
         text = unicodedata.normalize("NFKD", value)
         ascii_text = text.encode("ascii", "ignore").decode("ascii")
         return re.sub(r"\s+", " ", ascii_text).strip()
+
+    def _normalize_key(self, value: str) -> str:
+        text = self._clean_text(value)
+        if not text:
+            return ""
+        return re.sub(r"\s+", "", text).casefold()
 
     def _parse_date(self, value: str) -> date | None:
         cleaned = value.strip()

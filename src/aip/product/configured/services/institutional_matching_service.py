@@ -34,6 +34,7 @@ class InstitutionalPortfolioMatchingService:
         for position in master_positions:
             match_result = self._match_position(position, normalized_vector_records)
             enriched_position = dict(position)
+            enriched_position["matching_diagnostics"] = self._build_position_diagnostics(position)
             enriched_position["vector_match"] = {
                 "match_method": match_result.match_method,
                 "confidence": match_result.confidence,
@@ -58,6 +59,11 @@ class InstitutionalPortfolioMatchingService:
             if diagnostic_mode:
                 match_trace.append({
                     "isin": position.get("isin"),
+                    "normalized_isin": self._normalize_text(position.get("isin", "")),
+                    "normalized_series": self._normalize_text(position.get("series", "")),
+                    "normalized_issuer": self._normalize_text(position.get("issuer", "")),
+                    "normalized_product_code": self._normalize_text(position.get("product_code", "")),
+                    "maturity_date": self._serialize_date(position.get("maturity_date")),
                     "status": "matched" if match_result.matched_vector_record is not None else "unmatched",
                     "match_method": match_result.match_method,
                     "ambiguous": match_result.ambiguous,
@@ -78,16 +84,19 @@ class InstitutionalPortfolioMatchingService:
             "issuer": self._normalize_text(record.get("issuer", "")),
             "instrument_type_or_mnemonic": self._normalize_text(record.get("instrument_type_or_mnemonic", "")),
             "series_or_security_code": self._normalize_text(record.get("series_or_security_code", "")),
+            "normalized_issuer_key": self._normalize_text(record.get("issuer", "")),
+            "normalized_series_key": self._normalize_text(record.get("series_or_security_code", "")),
             "isin_if_present": self._normalize_text(record.get("isin_if_present", "")),
             "maturity_date_if_present": record.get("maturity_date_if_present"),
             "source_index": record.get("source_index"),
+            "source_line": record.get("source_line"),
             "raw": record,
         }
 
     def _match_position(self, position: dict[str, Any], vector_records: list[dict[str, Any]]) -> InstitutionalMatchResult:
         isin = self._normalize_text(position.get("isin", ""))
         series = self._normalize_text(position.get("series", ""))
-        maturity_date = position.get("maturity_date")
+        maturity_date = self._coerce_date(position.get("maturity_date"))
         issuer = self._normalize_text(position.get("issuer", ""))
         product_code = self._normalize_text(position.get("product_code", ""))
         if isin:
@@ -95,23 +104,68 @@ class InstitutionalPortfolioMatchingService:
             if len(candidates) == 1:
                 return InstitutionalMatchResult("EXACT_ISIN", 1.0, candidates[0], False, False)
             if len(candidates) > 1:
-                return InstitutionalMatchResult("EXACT_ISIN", 0.9, None, True, False)
+                return InstitutionalMatchResult("EXACT_ISIN", 0.9, None, True, True)
 
         if series and maturity_date:
             candidates = [record for record in vector_records if self._normalize_text(record.get("series_or_security_code", "")) == series and record.get("maturity_date_if_present") == maturity_date]
             if len(candidates) == 1:
                 return InstitutionalMatchResult("SERIES_MATURITY", 0.8, candidates[0], False, False)
             if len(candidates) > 1:
-                return InstitutionalMatchResult("SERIES_MATURITY", 0.7, None, True, False)
+                return InstitutionalMatchResult("SERIES_MATURITY", 0.7, None, True, True)
 
         if issuer and product_code and maturity_date:
             candidates = [record for record in vector_records if self._normalize_text(record.get("issuer", "")) == issuer and self._normalize_text(record.get("instrument_type_or_mnemonic", "")) == product_code and record.get("maturity_date_if_present") == maturity_date]
             if len(candidates) == 1:
                 return InstitutionalMatchResult("ISSUER_PRODUCT_MATURITY", 0.6, candidates[0], False, False)
             if len(candidates) > 1:
-                return InstitutionalMatchResult("ISSUER_PRODUCT_MATURITY", 0.5, None, True, False)
+                return InstitutionalMatchResult("ISSUER_PRODUCT_MATURITY", 0.5, None, True, True)
 
         return InstitutionalMatchResult("NO_VECTOR_MATCH", 0.0, None, False, True)
+
+    def _build_position_diagnostics(self, position: dict[str, Any]) -> dict[str, Any]:
+        maturity_date = self._coerce_date(position.get("maturity_date"))
+        normalized_isin = self._normalize_text(position.get("isin", ""))
+        normalized_series = self._normalize_text(position.get("series", ""))
+        normalized_issuer = self._normalize_text(position.get("issuer", ""))
+        normalized_product_code = self._normalize_text(position.get("product_code", ""))
+        return {
+            "normalized_isin": normalized_isin,
+            "normalized_series": normalized_series,
+            "normalized_issuer": normalized_issuer,
+            "normalized_product_code": normalized_product_code,
+            "maturity_date": maturity_date.isoformat() if maturity_date else None,
+            "matching_keys": {
+                "exact_isin": normalized_isin,
+                "series_maturity": self._compose_key(normalized_series, maturity_date),
+                "issuer_product_maturity": self._compose_key(normalized_issuer, normalized_product_code, maturity_date),
+            },
+        }
+
+    def _compose_key(self, *parts: Any) -> str:
+        values: list[str] = []
+        for part in parts:
+            if part in (None, ""):
+                continue
+            if isinstance(part, date):
+                values.append(part.isoformat())
+            else:
+                values.append(self._normalize_text(part))
+        return "|".join(value for value in values if value)
+
+    def _coerce_date(self, value: Any) -> date | None:
+        if isinstance(value, date):
+            return value
+        if isinstance(value, str):
+            try:
+                return date.fromisoformat(value)
+            except ValueError:
+                return None
+        return None
+
+    def _serialize_date(self, value: Any) -> str | None:
+        if isinstance(value, date):
+            return value.isoformat()
+        return None
 
     def _normalize_text(self, value: Any) -> str:
         if value is None:

@@ -378,9 +378,9 @@ class InstitutionalPortfolioMasterReader:
             "contract_number": contract_number,
             "broker": broker,
             "currency": currency or "CRC",
-            "acquisition_date": self._serialize_date(acquisition_date),
-            "issue_date": self._serialize_date(issue_date),
-            "maturity_date": self._serialize_date(maturity_date),
+            "acquisition_date": acquisition_date,
+            "issue_date": issue_date,
+            "maturity_date": maturity_date,
             "days_to_maturity": float(days_to_maturity) if days_to_maturity is not None else None,
             "product_code": product_code,
             "classification": classification,
@@ -398,7 +398,7 @@ class InstitutionalPortfolioMasterReader:
             "nominal_rate": float(nominal_rate) if nominal_rate is not None else None,
             "periodicity": periodicity,
             "accrued_interest": float(accrued_interest) if accrued_interest is not None else None,
-            "last_interest_payment_date": self._serialize_date(last_interest_payment_date),
+            "last_interest_payment_date": last_interest_payment_date,
             "participation_quantity": float(participation_quantity) if participation_quantity is not None else None,
             "portfolio_yield": float(portfolio_yield) if portfolio_yield is not None else None,
             "variable_rate_flag": variable_rate_flag,
@@ -474,20 +474,15 @@ class InstitutionalPortfolioMasterReader:
             return None
         if isinstance(value, datetime):
             parsed_date = value.date()
-            if parsed_date in {date(1899, 12, 31), date(1900, 1, 1)}:
-                return None
-            return parsed_date
+            return None if self._is_excel_sentinel_date(parsed_date) else parsed_date
         if isinstance(value, date) and not isinstance(value, datetime):
-            if value in {date(1899, 12, 31), date(1900, 1, 1)}:
-                return None
-            return value
+            return None if self._is_excel_sentinel_date(value) else value
         if isinstance(value, (int, float)) and not isinstance(value, bool):
             if math.isfinite(float(value)):
                 try:
                     parsed = datetime(1899, 12, 30) + timedelta(days=int(value))
-                    if parsed.year == 1900 and parsed.month == 1 and parsed.day == 1:
-                        return None
-                    return parsed.date()
+                    parsed_date = parsed.date()
+                    return None if self._is_excel_sentinel_date(parsed_date) else parsed_date
                 except ValueError:
                     return None
         text = self._stringify(value).strip()
@@ -496,14 +491,19 @@ class InstitutionalPortfolioMasterReader:
         if text.lower() in {"1900-01-01", "01/01/1900", "1/1/1900", "1900-1-1"}:
             return None
         try:
-            return date.fromisoformat(text)
+            parsed_date = date.fromisoformat(text)
+            return None if self._is_excel_sentinel_date(parsed_date) else parsed_date
         except ValueError:
             for fmt in ("%d-%m-%Y", "%d/%m/%Y", "%Y-%m-%d", "%Y/%m/%d"):
                 try:
-                    return datetime.strptime(text, fmt).date()
+                    parsed_date = datetime.strptime(text, fmt).date()
+                    return None if self._is_excel_sentinel_date(parsed_date) else parsed_date
                 except ValueError:
                     continue
             return None
+
+    def _is_excel_sentinel_date(self, value: date) -> bool:
+        return value in {date(1899, 12, 31), date(1900, 1, 1)}
 
     def _serialize_date(self, value: date | None) -> str | None:
         if value is None:

@@ -125,6 +125,28 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Records accepted: {payload['price_vector'].get('accepted_count', 'N/A')}")
     print(f"Records rejected: {payload['price_vector'].get('rejected_count', 'N/A')}")
     print(f"ISIN count: {len(payload['price_vector'].get('diagnostics', {}).get('trace', {}).get('isin_found', []))}")
+    rejected_reason_counts = payload['price_vector'].get('diagnostics', {}).get('trace', {}).get('rejected_reason_counts', {})
+    if rejected_reason_counts:
+        print("Rejected reasons:")
+        for reason, count in sorted(rejected_reason_counts.items(), key=lambda item: (-item[1], item[0])):
+            print(f"  - {reason}: {count}")
+    else:
+        print("Rejected reasons: None")
+    accepted_records = payload['price_vector'].get('diagnostics', {}).get('trace', {}).get('accepted_records', [])
+    if accepted_records:
+        print("Accepted vector diagnostics:")
+        for entry in accepted_records[:3]:
+            print(
+                "  - line {line}: issuer={issuer} mnemonic={mnemonic} series={series} maturity={maturity} normalized_series={nseries} normalized_issuer={nissuer}".format(
+                    line=entry.get('line', 'N/A'),
+                    issuer=entry.get('issuer', ''),
+                    mnemonic=entry.get('mnemonic', ''),
+                    series=entry.get('series_or_security_code', ''),
+                    maturity=entry.get('maturity_date', ''),
+                    nseries=entry.get('normalized_series_key', ''),
+                    nissuer=entry.get('normalized_issuer_key', ''),
+                )
+            )
     print("Warnings: None")
     print()
     print("MATCHING")
@@ -138,6 +160,21 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Ambiguous: {match_summary.get('ambiguous_matches', 0)}")
     print(f"Unmatched: {match_summary.get('unmatched_positions', 0)}")
     print(f"Match percentage: {match_summary.get('match_percentage', 0.0)}")
+    if payload.get('positions'):
+        print("Position diagnostics:")
+        for position in payload['positions'][:3]:
+            diagnostics = position.get('matching_diagnostics', {})
+            print(
+                "  - line {line}: isin={isin} series={series} maturity={maturity} issuer={issuer} product={product} keys={keys}".format(
+                    line=position.get('source_row', 'N/A'),
+                    isin=diagnostics.get('normalized_isin', ''),
+                    series=diagnostics.get('normalized_series', ''),
+                    maturity=diagnostics.get('maturity_date', ''),
+                    issuer=diagnostics.get('normalized_issuer', ''),
+                    product=diagnostics.get('normalized_product_code', ''),
+                    keys=diagnostics.get('matching_keys', {}),
+                )
+            )
     print()
     print("ALIGNMENT")
     print(f"Master cutoff: {payload['portfolio_master'].get('valuation_date', 'N/A')}")

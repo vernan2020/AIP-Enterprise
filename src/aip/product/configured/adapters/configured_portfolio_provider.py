@@ -496,29 +496,47 @@ class ConfiguredPortfolioProvider:
         if not year_dir.exists() or not year_dir.is_dir():
             return []
         alias_candidates: list[Path] = []
+        seen_candidates: set[str] = set()
         aliases = self._vector_aliases()
         for alias in aliases:
             alias_dir = year_dir / alias
             if alias_dir.exists() and alias_dir.is_dir():
+                normalized_path = str(alias_dir).casefold()
+                if normalized_path in seen_candidates:
+                    continue
+                seen_candidates.add(normalized_path)
                 alias_candidates.append(alias_dir)
         return alias_candidates
 
     def _vector_aliases(self) -> list[str]:
         config_aliases = self._source_config.vector.directory_aliases
         if config_aliases:
-            return [self._normalize_alias(item) for item in config_aliases if self._normalize_alias(item)]
+            return self._dedupe_aliases([self._normalize_alias(item) for item in config_aliases])
         metadata_aliases = self._source_config.metadata.get("vector_directory_aliases") if self._source_config.metadata else None
         if isinstance(metadata_aliases, str):
-            return [self._normalize_alias(item) for item in metadata_aliases.split(",") if self._normalize_alias(item)]
+            return self._dedupe_aliases([self._normalize_alias(item) for item in metadata_aliases.split(",")])
         if isinstance(metadata_aliases, (list, tuple)):
-            return [self._normalize_alias(item) for item in metadata_aliases if self._normalize_alias(item)]
-        return [self._normalize_alias(item) for item in self._DEFAULT_VECTOR_ALIASES if self._normalize_alias(item)]
+            return self._dedupe_aliases([self._normalize_alias(item) for item in metadata_aliases])
+        return self._dedupe_aliases([self._normalize_alias(item) for item in self._DEFAULT_VECTOR_ALIASES])
 
     def _normalize_alias(self, value: Any) -> str:
         text = str(value).strip()
         if not text:
             return ""
         return re.sub(r"\s+", " ", text)
+
+    def _dedupe_aliases(self, aliases: list[str]) -> list[str]:
+        deduped: list[str] = []
+        seen: set[str] = set()
+        for alias in aliases:
+            if not alias:
+                continue
+            normalized = alias.casefold()
+            if normalized in seen:
+                continue
+            seen.add(normalized)
+            deduped.append(alias)
+        return deduped
 
     def _allow_prior_source_date(self) -> bool:
         value = self._source_config.metadata.get("allow_prior_source_date") if self._source_config.metadata else None
@@ -614,6 +632,8 @@ class ConfiguredPortfolioProvider:
             "issuer": data.get("issuer", ""),
             "instrument_type_or_mnemonic": data.get("instrument_type_or_mnemonic", ""),
             "series_or_security_code": data.get("series_or_security_code", ""),
+            "normalized_issuer_key": data.get("normalized_issuer_key", ""),
+            "normalized_series_key": data.get("normalized_series_key", ""),
             "isin_if_present": data.get("isin_if_present", ""),
             "maturity_date_if_present": data.get("maturity_date_if_present"),
             "source_index": data.get("source_index"),
