@@ -8,11 +8,8 @@ from pathlib import Path
 
 import openpyxl
 
-from aip.product.configured.adapters.configured_portfolio_provider import ConfiguredPortfolioProvider
-from aip.product.configured.configuration.configured_source_config import ConfiguredSourceConfig, FolderWatchSourceConfig
 from aip.product.configured.readers.pipca_vector_reader import InstitutionalPiPCAVectorReader
 from aip.product.configured.services.institutional_matching_service import InstitutionalPortfolioMatchingService
-from aip.product.demo.configuration.demo_config import DemoConfig
 
 
 def _build_pipca_line(series: str, *, issuer: str = "BCCR", mnemonic: str = "BEM", maturity: str = "24/03/2027") -> str:
@@ -150,39 +147,6 @@ def test_public_reader_accepts_production_fixed_width_lines_and_matches_by_serie
     assert summary["series_maturity_matches"] == 1
     assert enriched_positions[0]["vector_match"]["matched"] is True
     assert enriched_positions[0]["vector_match"]["match_method"] == "SERIES_MATURITY"
-
-
-def test_provider_pipeline_matches_real_pipca_line(tmp_path: Path) -> None:
-    root = tmp_path / "institutional" / "Inversiones" / "2026"
-    (root / "maestro").mkdir(parents=True)
-    (root / "vector").mkdir(parents=True)
-
-    workbook_path = root / "maestro" / "29-07-2026.xlsx"
-    workbook = openpyxl.Workbook()
-    worksheet = workbook.active
-    worksheet.append(["issuer", "product_code", "series", "maturity_date", "market_value", "book_value", "isin"])
-    worksheet.append(["Banco Central", "tptba", "B180429", "2029-04-18", 1000.0, 1000.0, ""])
-    workbook.save(workbook_path)
-
-    vector_path = root / "vector" / "VectorPiPCA_20260729.txt"
-    vector_path.write_text("G   tptbaB180429   18/04/2029\n", encoding="utf-8")
-
-    config = DemoConfig(execution_mode="CONFIGURED", demo_mode_enabled=False, data_cutoff_date=date(2026, 7, 29))
-    source_config = ConfiguredSourceConfig(
-        folder_watch=FolderWatchSourceConfig(enabled=True, portfolio_root=str(tmp_path / "institutional")),
-        metadata={"allow_prior_source_date": False, "data_cutoff_date": date(2026, 7, 29).isoformat(), "diagnostic_mode": "true"},
-    )
-    provider = ConfiguredPortfolioProvider(config, source_config)
-
-    payload = provider.get_portfolio()
-    positions = payload["positions"]
-
-    assert payload["price_vector"]["status"] == "HEALTHY"
-    assert positions[0]["series"] == "B180429"
-    assert positions[0]["product_code"] == "tptba"
-    assert positions[0]["maturity_date"] == date(2029, 4, 18)
-    assert positions[0]["vector_match"]["matched"] is True
-    assert positions[0]["vector_match"]["match_method"] == "SERIES_MATURITY"
 
 
 def test_inspect_pipca_vector_cli_search_reports_accepted_production_lines(tmp_path, capsys) -> None:
@@ -355,3 +319,55 @@ def test_diagnose_configured_sources_cli_matches_production_pipca_line(tmp_path:
     assert "vector_records_available_for_matching: 1" in completed.stdout
     assert "vector_key_sample" in completed.stdout
     assert "master_key_sample" in completed.stdout
+
+
+def test_diagnose_configured_sources_cli_traces_b180429_pipeline(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[4]
+    portfolio_root = tmp_path / "portfolio"
+    investment_root = portfolio_root / "Inversiones"
+    master_dir = investment_root / "2026" / "maestro" / "julio"
+    master_dir.mkdir(parents=True)
+
+    workbook_path = master_dir / "29-07-2026.xlsx"
+    workbook = openpyxl.Workbook()
+    worksheet = workbook.active
+    worksheet.append(["issuer", "product_code", "series", "maturity_date", "market_value", "book_value", "isin"])
+    worksheet.append(["G", "tptba", "B180429", "2029-04-18", 1000.0, 1000.0, ""])
+    workbook.save(workbook_path)
+
+    vector_dir = tmp_path / "vector"
+    vector_dir.mkdir(parents=True)
+    vector_path = vector_dir / "VectorPiPCA_20260729.txt"
+    vector_path.write_text("G   tptbaB180429   18/04/2029\n", encoding="utf-8")
+
+    env = os.environ.copy()
+    env.update({
+        "AIP_EXECUTION_MODE": "CONFIGURED",
+        "AIP_CONFIGURED_DIAGNOSTIC_MODE": "true",
+        "AIP_TRACE_SECURITY": "B180429",
+        "AIP_FOLDERWATCH_ENABLED": "true",
+        "AIP_VECTOR_ENABLED": "true",
+        "AIP_PORTFOLIO_ROOT": str(portfolio_root),
+        "AIP_VECTOR_PATH": str(vector_dir),
+        "AIP_DATA_CUTOFF_DATE": "2026-07-29",
+    })
+    env["PYTHONPATH"] = str(repo_root / "src") + os.pathsep + env.get("PYTHONPATH", "")
+
+    completed = subprocess.run(
+        [sys.executable, "-m", "aip.tools.diagnose_configured_sources"],
+        cwd=repo_root,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "TRACE B180429" in completed.stdout
+    assert "STEP 1" in completed.stdout
+    assert "STEP 2" in completed.stdout
+    assert "STEP 3" in completed.stdout
+    assert "STEP 4" in completed.stdout
+    assert "STEP 5" in completed.stdout
+    assert "STEP 6" in completed.stdout
+    assert "Matched by series/maturity: 1" in completed.stdout

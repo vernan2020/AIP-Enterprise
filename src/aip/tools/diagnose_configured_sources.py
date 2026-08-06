@@ -6,6 +6,8 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
+from aip.product.configured.services.institutional_matching_service import InstitutionalPortfolioMatchingService
+
 from aip.product.configured.adapters.configured_portfolio_provider import ConfiguredPortfolioProvider
 from aip.product.configured.configuration.configured_source_config import (
     BCCRSourceConfig,
@@ -92,6 +94,61 @@ def _build_config() -> tuple[DemoConfig, ConfiguredSourceConfig]:
     return config, source_config
 
 
+def _trace_security(payload: dict[str, Any], *, trace_security: str | None) -> None:
+    if not trace_security:
+        return
+    print()
+    print(f"TRACE {trace_security}")
+    vector_records = payload.get('price_vector', {}).get('records', [])
+    vector_matches = [record for record in vector_records if str(record.get('series_or_security_code', '')).upper() == trace_security.upper()]
+    print("STEP 1")
+    print(f"accepted_records_count: {payload['price_vector'].get('accepted_count', 0)}")
+    if vector_matches:
+        record = vector_matches[0]
+        print(f"issuer: {record.get('issuer', '')}")
+        print(f"product_code: {record.get('instrument_type_or_mnemonic', '')}")
+        print(f"series: {record.get('series_or_security_code', '')}")
+        print(f"maturity_date: {record.get('maturity_date_if_present')}")
+    print("STEP 2")
+    print(f"len(price_vector.positions): {len(payload.get('positions', []))}")
+    for position in payload.get('positions', []):
+        if str(position.get('series', '')).upper() == trace_security.upper():
+            print(f"issuer: {position.get('issuer', '')}")
+            print(f"product_code: {position.get('product_code', '')}")
+            print(f"series: {position.get('series', '')}")
+            print(f"maturity_date: {position.get('maturity_date')}")
+            break
+    print("STEP 3")
+    matching = payload.get('portfolio_master', {}).get('diagnostics', {}).get('matching', {})
+    if not matching:
+        matching = payload.get('diagnostics', {}).get('portfolio_master', {}).get('matching', {})
+    if matching:
+        trace = matching.get('trace', [])
+        if trace:
+            print(f"len(vector_positions): {len(trace)}")
+            for item in trace:
+                if str(item.get('normalized_series', '')).upper() == trace_security.upper():
+                    print(item)
+                    break
+    print("STEP 4")
+    print(f"series_maturity: {matching.get('master_key_sample', {}).get('series_maturity') if isinstance(matching.get('master_key_sample'), dict) else None}")
+    print(f"issuer_product_maturity: {matching.get('master_key_sample', {}).get('issuer_product_maturity') if isinstance(matching.get('master_key_sample'), dict) else None}")
+    print("STEP 5")
+    print(f"master_keys: {matching.get('master_key_sample')}")
+    print("STEP 6")
+    lookup_result = matching.get('lookup_result') or {}
+    if isinstance(lookup_result, dict):
+        print(f"lookup(series_maturity): {lookup_result.get('series_maturity')}")
+        print(f"lookup(issuer_product_maturity): {lookup_result.get('issuer_product_maturity')}")
+    else:
+        print("lookup(series_maturity): None")
+        print("lookup(issuer_product_maturity): None")
+    print("STEP 7")
+    print(f"matched_by_series_maturity: {matching.get('series_maturity_matches', 0)}")
+    print("STEP 8")
+    print("trace_complete: true")
+
+
 def main(argv: list[str] | None = None) -> int:
     del argv
     try:
@@ -108,6 +165,8 @@ def main(argv: list[str] | None = None) -> int:
     payload = provider.get_portfolio()
     status = payload.get("data_quality_status", "DEGRADED")
     cutoff_date = config.data_cutoff_date
+    trace_security = os.getenv("AIP_TRACE_SECURITY")
+    _trace_security(payload, trace_security=trace_security)
 
     print("CONFIGURED SOURCE DIAGNOSTIC")
     print(f"Execution mode: {config.execution_mode}")
