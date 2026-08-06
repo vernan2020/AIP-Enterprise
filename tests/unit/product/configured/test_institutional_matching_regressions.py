@@ -1,6 +1,12 @@
 from __future__ import annotations
 
+import os
+import subprocess
+import sys
 from datetime import date
+from pathlib import Path
+
+import openpyxl
 
 from aip.product.configured.readers.pipca_vector_reader import InstitutionalPiPCAVectorReader
 from aip.product.configured.services.institutional_matching_service import InstitutionalPortfolioMatchingService
@@ -266,3 +272,50 @@ def test_ambiguous_secondary_matches_are_not_silently_selected() -> None:
     assert enriched_positions[0]["vector_match"]["matched"] is False
     assert enriched_positions[0]["vector_match"]["ambiguous"] is True
     assert enriched_positions[0]["vector_match"]["match_method"] == "NO_VECTOR_MATCH"
+
+
+def test_diagnose_configured_sources_cli_matches_production_pipca_line(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[4]
+    portfolio_root = tmp_path / "portfolio"
+    investment_root = portfolio_root / "Inversiones"
+    master_dir = investment_root / "2026" / "maestro" / "julio"
+    master_dir.mkdir(parents=True)
+
+    workbook_path = master_dir / "29-07-2026.xlsx"
+    workbook = openpyxl.Workbook()
+    worksheet = workbook.active
+    worksheet.append(["issuer", "product_code", "series", "maturity_date", "market_value", "book_value", "isin"])
+    worksheet.append(["Banco Central", "tptba", "B180429", "2029-04-18", 1000.0, 1000.0, ""])
+    workbook.save(workbook_path)
+
+    vector_dir = tmp_path / "vector"
+    vector_dir.mkdir(parents=True)
+    vector_path = vector_dir / "VectorPiPCA_20260729.txt"
+    vector_path.write_text("G   tptbaB180429   18/04/2029\n", encoding="utf-8")
+
+    env = os.environ.copy()
+    env.update({
+        "AIP_EXECUTION_MODE": "CONFIGURED",
+        "AIP_CONFIGURED_DIAGNOSTIC_MODE": "true",
+        "AIP_FOLDERWATCH_ENABLED": "true",
+        "AIP_VECTOR_ENABLED": "true",
+        "AIP_PORTFOLIO_ROOT": str(portfolio_root),
+        "AIP_VECTOR_PATH": str(vector_dir),
+        "AIP_DATA_CUTOFF_DATE": "2026-07-29",
+    })
+    env["PYTHONPATH"] = str(repo_root / "src") + os.pathsep + env.get("PYTHONPATH", "")
+
+    completed = subprocess.run(
+        [sys.executable, "-m", "aip.tools.diagnose_configured_sources"],
+        cwd=repo_root,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "Matched by series/maturity: 1" in completed.stdout
+    assert "vector_records_available_for_matching: 1" in completed.stdout
+    assert "vector_key_sample" in completed.stdout
+    assert "master_key_sample" in completed.stdout

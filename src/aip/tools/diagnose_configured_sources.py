@@ -179,6 +179,18 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Ambiguous: {match_summary.get('ambiguous_matches', 0)}")
     print(f"Unmatched: {match_summary.get('unmatched_positions', 0)}")
     print(f"Match percentage: {match_summary.get('match_percentage', 0.0)}")
+    print(f"vector_records_available_for_matching: {payload['price_vector'].get('accepted_count', 0)}")
+    print(f"vector_keys_generated: {match_summary.get('vector_keys_generated', 0)}")
+    print(f"vector_key_collisions: {match_summary.get('vector_key_collisions', 0)}")
+    vector_key_sample = match_summary.get('vector_key_sample') or {}
+    if isinstance(vector_key_sample, dict):
+        print(f"vector_key_sample: {vector_key_sample}")
+    master_key_sample = match_summary.get('master_key_sample') or {}
+    if isinstance(master_key_sample, dict):
+        print(f"master_key_sample: {master_key_sample}")
+    lookup_result = match_summary.get('lookup_result') or {}
+    if isinstance(lookup_result, dict):
+        print(f"lookup_result: {lookup_result}")
     if payload.get('positions'):
         print("Position diagnostics:")
         for position in payload['positions'][:3]:

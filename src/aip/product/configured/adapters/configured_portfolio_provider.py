@@ -70,6 +70,14 @@ class ConfiguredPortfolioProvider:
             portfolio_master["positions"] = positions
             if diagnostic_mode:
                 portfolio_master.setdefault("diagnostics", {})["matching"] = match_summary
+                portfolio_master.setdefault("diagnostics", {})["vector_matching_context"] = {
+                    "vector_records_available_for_matching": len(vector_records),
+                    "vector_keys_generated": match_summary.get("vector_keys_generated", 0),
+                    "vector_key_collisions": match_summary.get("vector_key_collisions", 0),
+                    "vector_key_sample": match_summary.get("vector_key_sample") if isinstance(match_summary.get("vector_key_sample"), dict) else None,
+                    "master_key_sample": match_summary.get("master_key_sample") if isinstance(match_summary.get("master_key_sample"), dict) else None,
+                    "lookup_result": match_summary.get("lookup_result"),
+                }
         market_value = self._sum_metric(positions, "market_value")
         book_value = self._sum_metric(positions, "book_value")
         weighted_yield = self._weighted_average(positions, "yield_value")
@@ -622,6 +630,8 @@ class ConfiguredPortfolioProvider:
     def _normalize_vector_record(self, record: dict[str, Any] | Any) -> dict[str, Any]:
         if isinstance(record, dict):
             data = record
+        elif hasattr(record, "__slots__"):
+            data = {name: getattr(record, name) for name in getattr(record, "__slots__", ()) if hasattr(record, name)}
         elif hasattr(record, "__dict__"):
             data = record.__dict__
         elif hasattr(record, "_asdict"):
@@ -630,12 +640,12 @@ class ConfiguredPortfolioProvider:
             data = {}
         return {
             "issuer": data.get("issuer", ""),
-            "instrument_type_or_mnemonic": data.get("instrument_type_or_mnemonic", ""),
-            "series_or_security_code": data.get("series_or_security_code", ""),
+            "instrument_type_or_mnemonic": data.get("instrument_type_or_mnemonic", "") or data.get("instrument_type_or_mnemonic", "") or data.get("mnemonic", ""),
+            "series_or_security_code": data.get("series_or_security_code", "") or data.get("series", "") or data.get("security_code", ""),
             "normalized_issuer_key": data.get("normalized_issuer_key", ""),
             "normalized_series_key": data.get("normalized_series_key", ""),
             "isin_if_present": data.get("isin_if_present", ""),
-            "maturity_date_if_present": data.get("maturity_date_if_present"),
+            "maturity_date_if_present": data.get("maturity_date_if_present", data.get("maturity_date", None)),
             "source_index": data.get("source_index"),
             "source_line": data.get("source_line"),
             "raw": data,

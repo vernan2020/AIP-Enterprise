@@ -27,9 +27,25 @@ class InstitutionalPortfolioMatchingService:
             "unmatched_positions": 0,
             "unused_vector_records": 0,
             "match_percentage": 0.0,
+            "vector_keys_generated": 0,
+            "vector_key_collisions": 0,
+            "vector_key_sample": None,
+            "master_key_sample": None,
+            "lookup_result": None,
         }
         used_vector_indexes: set[int] = set()
         match_trace: list[dict[str, Any]] = []
+
+        key_index: dict[str, list[dict[str, Any]]] = {}
+        for record in normalized_vector_records:
+            series_key = self._compose_key(self._normalize_text(record.get("series_or_security_code", "")), self._coerce_date(record.get("maturity_date_if_present")))
+            issuer_product_key = self._compose_key(self._normalize_text(record.get("issuer", "")), self._normalize_text(record.get("instrument_type_or_mnemonic", "")), self._coerce_date(record.get("maturity_date_if_present")))
+            if series_key:
+                match_summary["vector_keys_generated"] += 1
+                key_index.setdefault(series_key, []).append(record)
+            if issuer_product_key:
+                match_summary["vector_keys_generated"] += 1
+                key_index.setdefault(issuer_product_key, []).append(record)
 
         for position in master_positions:
             match_result = self._match_position(position, normalized_vector_records)
@@ -77,6 +93,29 @@ class InstitutionalPortfolioMatchingService:
             match_summary["match_percentage"] = round((total_positions - match_summary["unmatched_positions"]) / total_positions * 100.0, 2)
         if diagnostic_mode:
             match_summary["trace"] = match_trace
+
+        if master_positions:
+            sample_position = master_positions[0]
+            series_key = self._compose_key(self._normalize_text(sample_position.get("series", "")), self._coerce_date(sample_position.get("maturity_date")))
+            issuer_product_key = self._compose_key(self._normalize_text(sample_position.get("issuer", "")), self._normalize_text(sample_position.get("product_code", "")), self._coerce_date(sample_position.get("maturity_date")))
+            match_summary["master_key_sample"] = {
+                "series_maturity": series_key,
+                "issuer_product_maturity": issuer_product_key,
+            }
+            if series_key:
+                match_summary["lookup_result"] = {
+                    "series_maturity": key_index.get(series_key, []),
+                    "issuer_product_maturity": key_index.get(issuer_product_key, []),
+                }
+
+        if match_summary.get("vector_keys_generated", 0):
+            match_summary["vector_key_collisions"] = sum(1 for items in key_index.values() if len(items) > 1)
+            sample_key = next(iter(key_index), None)
+            if sample_key is not None:
+                match_summary["vector_key_sample"] = {
+                    "series_maturity": sample_key,
+                    "records": [record.get("raw", record) for record in key_index[sample_key][:3]],
+                }
         return enriched_positions, match_summary
 
     def _normalize_vector_record(self, record: dict[str, Any]) -> dict[str, Any]:
