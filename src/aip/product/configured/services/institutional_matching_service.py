@@ -19,17 +19,6 @@ class InstitutionalMatchResult:
 class InstitutionalPortfolioMatchingService:
     def enrich_positions(self, master_positions: list[dict[str, Any]], vector_records: list[dict[str, Any]], *, diagnostic_mode: bool = False) -> tuple[list[dict[str, Any]], dict[str, Any]]:
         normalized_vector_records = [self._normalize_vector_record(record) for record in vector_records]
-        print(f"[instrumentation] InstitutionalMatchingService.enrich_positions vector_records_len={len(vector_records)}", flush=True)
-        print(f"[instrumentation] STEP3 len(vector_positions)={len(normalized_vector_records)}", flush=True)
-        self._emit_b180429_trace("STEP3", normalized_vector_records)
-        if normalized_vector_records:
-            first_record = normalized_vector_records[0]
-            print(
-                f"[instrumentation] first_accepted_record issuer={first_record.get('issuer', '')} product_code={first_record.get('instrument_type_or_mnemonic', '')} series={first_record.get('series_or_security_code', '')} maturity_date={self._serialize_date(first_record.get('maturity_date_if_present'))}",
-                flush=True,
-            )
-        else:
-            print("[instrumentation] first_accepted_record=None", flush=True)
         enriched_positions: list[dict[str, Any]] = []
         match_summary: dict[str, Any] = {
             "exact_isin_matches": 0,
@@ -60,27 +49,9 @@ class InstitutionalPortfolioMatchingService:
                 match_summary["vector_keys_generated"] += 1
                 key_index.setdefault(issuer_product_key, []).append(record)
 
-        lookup_keys_for_b180429 = [key for key in key_index if "b180429" in key.lower() or "tptba" in key.lower() or "g|" in key.lower()]
-        print(f"[instrumentation] generated_lookup_keys_for_B180429={lookup_keys_for_b180429}", flush=True)
         for position in master_positions:
             if self._normalize_text(position.get("series", "")) != "b180429":
                 continue
-            maturity_date = self._coerce_date(position.get("maturity_date"))
-            normalized_series = self._normalize_text(position.get("series", ""))
-            series_maturity_key = self._compose_key(normalized_series, maturity_date)
-            issuer_product_maturity_key = self._compose_key(self._normalize_text(position.get("issuer", "")), self._normalize_text(position.get("product_code", "")), maturity_date)
-            print(f"[instrumentation] STEP4 series_maturity={series_maturity_key}", flush=True)
-            print(f"[instrumentation] STEP4 issuer_product_maturity={issuer_product_maturity_key}", flush=True)
-            print(f"[instrumentation] STEP5 master_series_maturity_key={series_maturity_key}", flush=True)
-            print(f"[instrumentation] STEP5 master_issuer_product_maturity_key={issuer_product_maturity_key}", flush=True)
-            lookup_series = key_index.get(series_maturity_key)
-            lookup_issuer_product = key_index.get(issuer_product_maturity_key)
-            print(f"[instrumentation] STEP6 lookup(series_maturity)={lookup_series if lookup_series is not None else None}", flush=True)
-            print(f"[instrumentation] STEP6 lookup(issuer_product_maturity)={lookup_issuer_product if lookup_issuer_product is not None else None}", flush=True)
-            if lookup_series is None:
-                print(f"[instrumentation] STEP6 reason=series_maturity key '{series_maturity_key}' missing from lookup index", flush=True)
-            if lookup_issuer_product is None:
-                print(f"[instrumentation] STEP6 reason=issuer_product_maturity key '{issuer_product_maturity_key}' missing from lookup index", flush=True)
             break
 
         reconciliation = self._build_reconciliation(master_positions, normalized_vector_records)
@@ -88,10 +59,6 @@ class InstitutionalPortfolioMatchingService:
 
         for position in master_positions:
             match_result = self._match_position(position, normalized_vector_records)
-            if self._normalize_text(position.get("series", "")) == "b180429" and match_result.unmatched:
-                print("[instrumentation] STEP7 B180429 disappeared in _match_position", flush=True)
-            elif self._normalize_text(position.get("series", "")) == "b180429":
-                print(f"[instrumentation] STEP7 B180429 survived in _match_position via {match_result.match_method}", flush=True)
             enriched_position = dict(position)
             enriched_position["matching_diagnostics"] = self._build_position_diagnostics(position)
             enriched_position["vector_match"] = {
@@ -159,21 +126,6 @@ class InstitutionalPortfolioMatchingService:
                     "series_maturity": sample_key,
                     "records": [record.get("raw", record) for record in key_index[sample_key][:3]],
                 }
-        for position in master_positions:
-            normalized_series = self._normalize_text(position.get("series", ""))
-            if normalized_series != "b180429":
-                continue
-            maturity_date = self._coerce_date(position.get("maturity_date"))
-            series_maturity_key = self._compose_key(normalized_series, maturity_date)
-            lookup = key_index.get(series_maturity_key)
-            print(f"[instrumentation] lookup.get({series_maturity_key}) -> {lookup if lookup is not None else None}", flush=True)
-            if lookup is None:
-                first_record = normalized_vector_records[0] if normalized_vector_records else None
-                print(
-                    f"[instrumentation] key_disappeared_reason: series_maturity_key='{series_maturity_key}' was not present in key_index. normalized_vector_records={len(normalized_vector_records)}; first_record_series={first_record.get('series_or_security_code', '') if first_record else None}; first_record_maturity={self._serialize_date(first_record.get('maturity_date_if_present')) if first_record else None}; built_series_key_from_first_record={self._compose_key(self._normalize_text(first_record.get('series_or_security_code', '')), self._coerce_date(first_record.get('maturity_date_if_present'))) if first_record else None}; available_lookup_keys={sorted(key_index.keys())[:10]}",
-                    flush=True,
-                )
-
         return enriched_positions, match_summary
 
     def _build_reconciliation(self, master_positions: list[dict[str, Any]], vector_records: list[dict[str, Any]]) -> dict[str, Any]:
@@ -404,15 +356,6 @@ class InstitutionalPortfolioMatchingService:
             return False
         return True
 
-    def _emit_b180429_trace(self, step: str, records: list[dict[str, Any]]) -> None:
-        for record in records:
-            if self._normalize_text(record.get("series_or_security_code", "")) != "b180429":
-                continue
-            print(
-                f"[instrumentation] {step} issuer={record.get('issuer', '')} product_code={record.get('instrument_type_or_mnemonic', '')} series={record.get('series_or_security_code', '')} maturity_date={self._serialize_date(record.get('maturity_date_if_present'))}",
-                flush=True,
-            )
-
     def _normalize_vector_record(self, record: dict[str, Any]) -> dict[str, Any]:
         return {
             "issuer": self._normalize_text(record.get("issuer", "")),
@@ -433,13 +376,8 @@ class InstitutionalPortfolioMatchingService:
         maturity_date = self._coerce_date(position.get("maturity_date"))
         issuer = self._normalize_text(position.get("issuer", ""))
         product_code = self._normalize_text(position.get("product_code", ""))
-        print(
-            f"[instrumentation] matching_position series={series} maturity={maturity_date.isoformat() if maturity_date else None} issuer={issuer} product_code={product_code} isin={isin}",
-            flush=True,
-        )
         if isin:
             candidates = [record for record in vector_records if self._normalize_text(record.get("isin_if_present", "")) == isin]
-            print(f"[instrumentation] exact_isin_candidates={len(candidates)}", flush=True)
             if len(candidates) == 1:
                 return InstitutionalMatchResult("EXACT_ISIN", 1.0, candidates[0], False, False)
             if len(candidates) > 1:
@@ -447,7 +385,6 @@ class InstitutionalPortfolioMatchingService:
 
         if series and maturity_date:
             candidates = [record for record in vector_records if self._normalize_text(record.get("series_or_security_code", "")) == series and record.get("maturity_date_if_present") == maturity_date]
-            print(f"[instrumentation] series_maturity_candidates={len(candidates)}", flush=True)
             if len(candidates) == 1:
                 return InstitutionalMatchResult("SERIES_MATURITY", 0.8, candidates[0], False, False)
             if len(candidates) > 1:
@@ -455,7 +392,6 @@ class InstitutionalPortfolioMatchingService:
 
         if issuer and product_code and maturity_date:
             candidates = [record for record in vector_records if self._normalize_text(record.get("issuer", "")) == issuer and self._normalize_text(record.get("instrument_type_or_mnemonic", "")) == product_code and record.get("maturity_date_if_present") == maturity_date]
-            print(f"[instrumentation] issuer_product_maturity_candidates={len(candidates)}", flush=True)
             if len(candidates) == 1:
                 return InstitutionalMatchResult("ISSUER_PRODUCT_MATURITY", 0.6, candidates[0], False, False)
             if len(candidates) > 1:
