@@ -440,3 +440,12 @@ def test_diagnose_configured_sources_cli_matches_production_pipca_line(tmp_path:
     assert "vector_records_available_for_matching: 1" in completed.stdout
     assert "vector_key_sample" in completed.stdout
     assert "master_key_sample" in completed.stdout
+    assert "RECONCILIATION" in completed.stdout
+    assert "total_master_positions:" in completed.stdout
+    assert "raw_match_percentage:" in completed.stdout
+    assert "eligible_match_percentage:" in completed.stdout
+    assert "vector_key_collisions:" in completed.stdout
+    assert "collisions_affecting_portfolio:" in completed.stdout
+    assert "UNMATCHED REASON SUMMARY" in completed.stdout
+    assert "REQUIRES REVIEW" in completed.stdout
+    assert "COLLISION SUMMARY" in completed.stdout
