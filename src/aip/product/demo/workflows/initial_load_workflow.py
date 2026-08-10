@@ -36,6 +36,12 @@ class InitialLoadWorkflow:
             SourceStatus(name=name, state=state, correlation_id=correlation_id)
             for name, state in health.items()
         )
+        portfolio = self._portfolio_provider.get_portfolio()
+        print(
+            f"[portfolio-runtime] application-service portfolio_type={type(portfolio).__name__} "
+            f"positions={len(portfolio.get('positions', []))} valuation_date={portfolio.get('valuation_date')} "
+            f"first_position={portfolio.get('positions', [{}])[0] if portfolio.get('positions') else None}"
+        )
         return {
             "execution_id": f"init-{correlation_id}",
             "correlation_id": correlation_id,
@@ -51,7 +57,7 @@ class InitialLoadWorkflow:
             "errors": (),
             "calculation_references": {"portfolio": "calc-portfolio-demo", "market": "calc-market-demo", "liquidity": "calc-liquidity-demo"},
             "application_readiness": "READY",
-            "portfolio": self._portfolio_provider.get_portfolio(),
+            "portfolio": portfolio,
             "market": self._market_provider.get_market(),
             "liquidity": self._liquidity_provider.get_liquidity(),
         }

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from aip.product.demo.bootstrap.application_factory import DemoApplicationFactory
+from aip.product.demo.configuration.demo_config import DemoConfig
 from aip.ui.modules.liquidity.models.liquidity_row import LiquidityRow
 from aip.ui.modules.liquidity.viewmodels.liquidity_view_model import LiquidityViewModel
 
@@ -9,7 +10,7 @@ class LiquidityPresenter:
     """Presenter that adapts application-layer liquidity results into an immutable view model."""
 
     def __init__(self, demo_factory: DemoApplicationFactory | None = None) -> None:
-        self._demo_factory = demo_factory or DemoApplicationFactory()
+        self._demo_factory = demo_factory or DemoApplicationFactory(DemoConfig(execution_mode="DEMO", demo_mode_enabled=True))
         self._correlation_id = "corr-demo-liquidity"
 
     def build_view_model(self, *, theme: str = "light", filters: dict[str, str] | None = None, selected_section: str | None = None, loading: bool = False, error: str | None = None) -> LiquidityViewModel:

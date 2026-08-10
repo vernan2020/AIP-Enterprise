@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from aip.product.demo.bootstrap.application_factory import DemoApplicationFactory
+from aip.product.demo.configuration.demo_config import DemoConfig
 from aip.ui.modules.market.models.curve_point import CurvePoint
 from aip.ui.modules.market.models.market_row import MarketRow
 from aip.ui.modules.market.viewmodels.market_view_model import MarketViewModel
@@ -10,7 +11,7 @@ class MarketPresenter:
     """Presenter for rendering application-layer market data in the UI."""
 
     def __init__(self, demo_factory: DemoApplicationFactory | None = None) -> None:
-        self._demo_factory = demo_factory or DemoApplicationFactory()
+        self._demo_factory = demo_factory or DemoApplicationFactory(DemoConfig(execution_mode="DEMO", demo_mode_enabled=True))
         self._correlation_id = "corr-demo-market"
 
     def build_view_model(self, *, theme: str = "light", filters: dict[str, str] | None = None, selected_curve: str | None = None, loading: bool = False, error: str | None = None) -> MarketViewModel:

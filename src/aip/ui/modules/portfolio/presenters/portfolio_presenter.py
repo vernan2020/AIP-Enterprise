@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from aip.product.configured.protocols import PortfolioDataProvider
 from aip.product.demo.bootstrap.application_factory import DemoApplicationFactory
+from aip.product.demo.configuration.demo_config import DemoConfig
 from aip.ui.modules.portfolio.models.portfolio_row import PortfolioRow
 from aip.ui.modules.portfolio.models.portfolio_summary import PortfolioSummary
 from aip.ui.modules.portfolio.viewmodels.portfolio_view_model import PortfolioViewModel
@@ -10,12 +12,34 @@ class PortfolioPresenter:
     """Presenter that adapts application-layer workflow results into a passive view model."""
 
     def __init__(self, demo_factory: DemoApplicationFactory | None = None) -> None:
-        self._demo_factory = demo_factory or DemoApplicationFactory()
+        self._demo_factory = demo_factory or DemoApplicationFactory(DemoConfig(execution_mode="DEMO", demo_mode_enabled=True))
         self._correlation_id = "corr-demo-portfolio"
+        self._trace_configuration()
+
+    def _trace_configuration(self) -> None:
+        config = getattr(self._demo_factory, "config", None)
+        execution_mode = getattr(config, "execution_mode", "UNKNOWN")
+        if execution_mode != "CONFIGURED":
+            return
+        try:
+            provider = self._demo_factory.container.resolve(PortfolioDataProvider)
+        except Exception:  # pragma: no cover - defensive UI tracing
+            provider = None
+        print(
+            f"[portfolio-runtime] startup execution_mode={execution_mode} "
+            f"provider_class={type(provider).__name__ if provider is not None else 'unavailable'} "
+            f"provider_object_type={type(provider) if provider is not None else None}"
+        )
 
     def build_view_model(self, *, theme: str = "light", filters: dict[str, str] | None = None, selected_isin: str | None = None, loading: bool = False, error: str | None = None) -> PortfolioViewModel:
+        print("[portfolio-runtime] presenter.method=build_view_model")
         workflow_result = self._demo_factory.initial_load_workflow().execute(self._correlation_id)
         portfolio = workflow_result["portfolio"]
+        print(
+            f"[portfolio-runtime] presenter payload_type={type(portfolio).__name__} "
+            f"positions={len(portfolio.get('positions', []))} valuation_date={portfolio.get('valuation_date')} "
+            f"first_position={portfolio.get('positions', [{}])[0] if portfolio.get('positions') else None}"
+        )
         rows = tuple(
             PortfolioRow(
                 isin=position["isin"],
@@ -46,7 +70,7 @@ class PortfolioPresenter:
             mil_eligible_percent=f"{portfolio['mil_eligible_percent']:.0f}%",
             currency_distribution=portfolio["currency_distribution"],
         )
-        return PortfolioViewModel(
+        view_model = PortfolioViewModel(
             summary=summary,
             rows=rows,
             filters=filters or {},
@@ -59,6 +83,11 @@ class PortfolioPresenter:
             loading=loading,
             error=error,
         )
+        print(
+            f"[portfolio-runtime] presenter view_model summary_total_positions={view_model.summary.total_positions} "
+            f"summary_valuation_date={view_model.summary.valuation_date} rows={len(view_model.rows)}"
+        )
+        return view_model
 
     def refresh(self, *, theme: str = "light", filters: dict[str, str] | None = None, selected_isin: str | None = None) -> PortfolioViewModel:
         return self.build_view_model(theme=theme, filters=filters, selected_isin=selected_isin)

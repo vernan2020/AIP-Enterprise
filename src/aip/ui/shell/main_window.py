@@ -14,6 +14,7 @@ from aip.ui.dialogs.about_dialog import AboutDialog
 from aip.ui.modules.executive.views.executive_workspace import ExecutiveWorkspace
 from aip.ui.modules.liquidity.views.liquidity_view import LiquidityView
 from aip.ui.modules.market.views.market_view import MarketView
+from aip.ui.modules.portfolio.presenters.portfolio_presenter import PortfolioPresenter
 from aip.ui.modules.portfolio.views.portfolio_view import PortfolioView
 from aip.ui.modules.treasury.views.treasury_view import TreasuryView
 from aip.ui.navigation.navigation_manager import NavigationManager
@@ -88,7 +89,7 @@ class MainWindow(QMainWindow):
 
         self._add_operational_menu_actions()
 
-        self._sidebar = Sidebar(self._navigation)
+        self._sidebar = Sidebar(self._navigation, self._demo_factory)
         self._workspace = Workspace()
         self._sidebar.set_workspace(self._workspace)
         self._inspector = InspectorPanel()
@@ -254,7 +255,7 @@ class MainWindow(QMainWindow):
         if self._workspace is None:
             raise RuntimeError("Workspace not initialized")
         if route_id == "portfolio":
-            self._workspace.open_tab("Portfolio", PortfolioView())
+            self._workspace.open_tab("Portfolio", PortfolioView(presenter=PortfolioPresenter(self._demo_factory)))
             return
         if route_id == "market":
             self._workspace.open_tab("Market", MarketView())
