@@ -15,13 +15,17 @@ from aip.product.demo.workflows.refresh_all_workflow import RefreshAllWorkflow
 class DemoApplicationFactory:
     """Creates application-facing demo services for the shell."""
 
-    def __init__(self, config: DemoConfig | None = None) -> None:
+    def __init__(self, config: DemoConfig | None = None, source_config: Any | None = None) -> None:
         self._config = config or EnvironmentLoader().load()
         self._container = Container()
         if self._config.execution_mode == "CONFIGURED":
             from aip.product.configured.bootstrap.configured_application_factory import ConfiguredApplicationFactory
+            from aip.product.configured.configuration.configured_source_config import ConfiguredSourceConfig
 
-            self._configured_factory = ConfiguredApplicationFactory(self._config)
+            configured_source_config = source_config or self._config.source_config
+            if isinstance(configured_source_config, dict):
+                configured_source_config = ConfiguredSourceConfig.from_safe_dict(configured_source_config)
+            self._configured_factory = ConfiguredApplicationFactory(self._config, configured_source_config)
             self._container = self._configured_factory.container
             self._config = self._configured_factory.config
         else:

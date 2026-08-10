@@ -1,5 +1,14 @@
 from __future__ import annotations
 
+from datetime import date
+from pathlib import Path
+
+import openpyxl
+
+from aip.product.configured.adapters.configured_portfolio_provider import ConfiguredPortfolioProvider
+from aip.product.configured.configuration.configured_source_config import ConfiguredSourceConfig, FolderWatchSourceConfig
+from aip.product.demo.bootstrap.application_factory import DemoApplicationFactory
+from aip.product.demo.configuration.demo_config import DemoConfig
 from aip.ui.modules.portfolio.models.portfolio_row import PortfolioRow
 from aip.ui.modules.portfolio.models.portfolio_summary import PortfolioSummary
 from aip.ui.modules.portfolio.presenters.portfolio_presenter import PortfolioPresenter
@@ -103,3 +112,47 @@ def test_portfolio_view_updates_from_view_model(qt_app) -> None:
     assert view.view_model() is view_model
     assert view.view_model().summary.portfolio_name == "Portfolio"
     assert view.view_model().warnings[0] == "warning"
+
+
+def test_configured_bootstrap_nav_and_presenter_populate_viewmodel_and_table(tmp_path, qt_app) -> None:
+    root = tmp_path / "institutional"
+    maestro_dir = root / "Inversiones" / "2026" / "maestro" / "julio"
+    vector_dir = root / "Inversiones" / "2026" / "vector" / "julio"
+    maestro_dir.mkdir(parents=True)
+    vector_dir.mkdir(parents=True)
+
+    workbook = openpyxl.Workbook()
+    worksheet = workbook.active
+    worksheet.title = "Maestro"
+    worksheet.append(["Resumen institucional", ""])
+    worksheet.append(["", ""])
+    worksheet.append(["ISIN", "Emisor", "Valor de Mercado", "Valor en Libros"])
+    worksheet.append(["US0000001", "Issuer One", 1000000, 980000])
+    worksheet.append(["US0000002", "Issuer Two", 2000000, 1960000])
+    workbook.save(maestro_dir / "29-07-2026.xlsx")
+    (vector_dir / "29-07-2026.txt").write_text(
+        "BCCR  BC12M120826 12/08/2026  100.0 100.008344  2.842 0.000000 0\n",
+        encoding="utf-8",
+    )
+
+    config = DemoConfig(execution_mode="CONFIGURED", demo_mode_enabled=False, data_cutoff_date=date(2026, 7, 29))
+    source_config = ConfiguredSourceConfig(
+        folder_watch=FolderWatchSourceConfig(enabled=True, portfolio_root=str(root), vector_path=str(vector_dir)),
+    )
+    provider = ConfiguredPortfolioProvider(config, source_config)
+    payload = provider.get_portfolio()
+    assert len(payload["positions"]) == 2
+
+    factory = DemoApplicationFactory(config, source_config)
+    workflow = factory.initial_load_workflow()
+    workflow_result = workflow.execute("corr-bootstrap")
+    workflow_positions = workflow_result["portfolio"]["positions"]
+    assert len(workflow_positions) == 2
+
+    presenter = PortfolioPresenter(factory)
+    view_model = presenter.build_view_model()
+    assert view_model.summary.total_positions == 2
+
+    view = PortfolioView(presenter=presenter)
+    assert len(view.view_model().rows) == 2
+    assert view._positions._table.rowCount() == 2
