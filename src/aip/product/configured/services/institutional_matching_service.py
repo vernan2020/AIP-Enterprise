@@ -50,14 +50,6 @@ class InstitutionalPortfolioMatchingService:
                 key_index.setdefault(issuer_product_key, []).append(record)
 
         for position in master_positions:
-            if self._normalize_text(position.get("series", "")) != "b180429":
-                continue
-            break
-
-        reconciliation = self._build_reconciliation(master_positions, normalized_vector_records)
-        match_summary["reconciliation"] = reconciliation
-
-        for position in master_positions:
             match_result = self._match_position(position, normalized_vector_records)
             enriched_position = dict(position)
             enriched_position["matching_diagnostics"] = self._build_position_diagnostics(position)
@@ -67,6 +59,11 @@ class InstitutionalPortfolioMatchingService:
                 "ambiguous": match_result.ambiguous,
                 "matched": not match_result.unmatched,
             }
+            enriched_position["match_status"] = "MATCHED" if not match_result.unmatched else "UNMATCHED"
+            enriched_position["match_method"] = match_result.match_method
+            enriched_position["matched_vector_record"] = match_result.matched_vector_record
+            enriched_position["matching_keys"] = enriched_position["matching_diagnostics"]["matching_keys"]
+            enriched_position["ambiguity_status"] = "AMBIGUOUS" if match_result.ambiguous else "UNAMBIGUOUS"
             if match_result.matched_vector_record is not None:
                 enriched_position["vector_record"] = match_result.matched_vector_record
                 if match_result.match_method == "EXACT_ISIN":
@@ -98,6 +95,7 @@ class InstitutionalPortfolioMatchingService:
             enriched_positions.append(enriched_position)
 
         match_summary["unused_vector_records"] = len(normalized_vector_records) - len(used_vector_indexes)
+        match_summary["reconciliation"] = self._build_reconciliation(enriched_positions, normalized_vector_records)
         total_positions = len(enriched_positions)
         if total_positions:
             match_summary["match_percentage"] = round((total_positions - match_summary["unmatched_positions"]) / total_positions * 100.0, 2)
@@ -128,7 +126,7 @@ class InstitutionalPortfolioMatchingService:
                 }
         return enriched_positions, match_summary
 
-    def _build_reconciliation(self, master_positions: list[dict[str, Any]], vector_records: list[dict[str, Any]]) -> dict[str, Any]:
+    def _build_reconciliation(self, enriched_positions: list[dict[str, Any]], vector_records: list[dict[str, Any]]) -> dict[str, Any]:
         eligible_positions = []
         position_reconciliation: list[dict[str, Any]] = []
         unmatched_reason_groups: dict[str, int] = {
@@ -155,9 +153,9 @@ class InstitutionalPortfolioMatchingService:
                 "number_of_records": len(records),
                 "true_duplicates": self._is_duplicate_group(records),
                 "price_or_yield_differs": self._has_conflicting_values(records),
-                "uses_matched_master_position": self._collision_affects_master_position(master_positions, series_key),
+                "uses_matched_master_position": self._collision_affects_master_position(enriched_positions, series_key),
             })
-        for position in master_positions:
+        for position in enriched_positions:
             series = self._normalize_text(position.get("series", ""))
             maturity = self._coerce_date(position.get("maturity_date"))
             issuer = self._normalize_text(position.get("issuer", ""))
@@ -167,11 +165,11 @@ class InstitutionalPortfolioMatchingService:
                 eligible_positions.append(position)
             classification = "MATCHED"
             reason = ""
-            if self._normalize_text(position.get("isin", "")):
-                matched = any(self._normalize_text(record.get("isin_if_present", "")) == self._normalize_text(position.get("isin", "")) for record in vector_records)
-                if not matched:
-                    classification = "UNMATCHED_REQUIRES_REVIEW"
-                    reason = "parsing/normalization issue"
+            if position.get("match_status") == "MATCHED":
+                classification = "MATCHED"
+            elif position.get("ambiguity_status") == "AMBIGUOUS":
+                classification = "UNMATCHED_REQUIRES_REVIEW"
+                reason = "parsing/normalization issue"
             elif self._is_no_maturity_or_fund(position):
                 classification = "UNMATCHED_EXPECTED"
                 reason = "no maturity / perpetual / fund"
@@ -184,31 +182,18 @@ class InstitutionalPortfolioMatchingService:
             elif self._is_instrument_not_expected_in_pipca(position):
                 classification = "UNMATCHED_EXPECTED"
                 reason = "instrument not expected in PiPCA"
+            elif self._is_series_placeholder(position):
+                classification = "UNMATCHED_REQUIRES_REVIEW"
+                reason = "other"
             elif not series:
                 classification = "UNMATCHED_REQUIRES_REVIEW"
-                reason = "parsing/normalization issue"
+                reason = "other"
             elif not maturity:
                 classification = "UNMATCHED_EXPECTED"
                 reason = "no maturity / perpetual / fund"
             else:
-                matching_key = self._compose_key(series, maturity)
-                matching_records = [record for record in vector_records if self._normalize_text(record.get("series_or_security_code", "")) == series and self._coerce_date(record.get("maturity_date_if_present")) == maturity]
-                if not matching_records:
-                    classification = "UNMATCHED_REQUIRES_REVIEW"
-                    reason = "series absent from vector"
-                else:
-                    deduped_records = self._deduplicate_records(matching_records)
-                    if len(deduped_records) > 1:
-                        if self._is_duplicate_group(deduped_records) and self._has_conflicting_values(deduped_records) is False:
-                            classification = "MATCHED"
-                        else:
-                            classification = "UNMATCHED_REQUIRES_REVIEW"
-                            reason = "parsing/normalization issue"
-                    else:
-                        classification = "MATCHED"
-            if classification == "MATCHED" and not is_eligible_fixed_income:
-                classification = "UNMATCHED_EXPECTED"
-                reason = "instrument not expected in PiPCA"
+                classification = "UNMATCHED_REQUIRES_REVIEW"
+                reason = "series absent from vector"
             if classification != "MATCHED" and reason:
                 unmatched_reason_groups[self._reason_group(reason)] += 1
             position_reconciliation.append({
@@ -220,14 +205,25 @@ class InstitutionalPortfolioMatchingService:
                 "maturity_date": self._serialize_date(maturity),
                 "market_value": position.get("market_value"),
                 "reason_no_match": reason,
+                "match_status": position.get("match_status"),
+                "match_method": position.get("match_method"),
+                "matched_vector_record": position.get("matched_vector_record"),
+                "matching_keys": position.get("matching_keys"),
+                "ambiguity_status": position.get("ambiguity_status"),
             })
         matched_positions = sum(1 for item in position_reconciliation if item["classification"] == "MATCHED")
         expected_unmatched = sum(1 for item in position_reconciliation if item["classification"] == "UNMATCHED_EXPECTED")
         review_required = sum(1 for item in position_reconciliation if item["classification"] == "UNMATCHED_REQUIRES_REVIEW")
-        raw_match_percentage = round((matched_positions / len(master_positions) * 100.0) if master_positions else 0.0, 1)
-        eligible_match_percentage = round((matched_positions / len(eligible_positions) * 100.0) if eligible_positions else 0.0, 1)
+        eligible_matched_positions = sum(1 for item in position_reconciliation if item["classification"] == "MATCHED" and self._is_eligible_fixed_income({
+            "series": item.get("series"),
+            "maturity_date": self._coerce_date(item.get("maturity_date")),
+            "issuer": item.get("issuer"),
+            "product_code": item.get("product_code"),
+        }))
+        raw_match_percentage = round((matched_positions / len(enriched_positions) * 100.0) if enriched_positions else 0.0, 1)
+        eligible_match_percentage = round((eligible_matched_positions / len(eligible_positions) * 100.0) if eligible_positions else 0.0, 1)
         return {
-            "total_master_positions": len(master_positions),
+            "total_master_positions": len(enriched_positions),
             "eligible_fixed_income_positions": len(eligible_positions),
             "matched_positions": matched_positions,
             "expected_unmatched_positions": expected_unmatched,
@@ -343,7 +339,11 @@ class InstitutionalPortfolioMatchingService:
 
     def _is_instrument_not_expected_in_pipca(self, position: dict[str, Any]) -> bool:
         product_code = self._normalize_text(position.get("product_code", ""))
-        return product_code in {"fund", "fondo", "equity", "acciones", "participation"}
+        return product_code in {"fund", "fondo", "equity", "acciones", "participation", "inm3", "fiprc"}
+
+    def _is_series_placeholder(self, position: dict[str, Any]) -> bool:
+        series = self._normalize_text(position.get("series", ""))
+        return series in {"no", "none", "n/a", "na", "null"}
 
     def _is_eligible_fixed_income(self, position: dict[str, Any]) -> bool:
         if self._is_no_maturity_or_fund(position):
