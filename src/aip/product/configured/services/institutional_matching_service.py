@@ -160,28 +160,32 @@ class InstitutionalPortfolioMatchingService:
             maturity = self._coerce_date(position.get("maturity_date"))
             issuer = self._normalize_text(position.get("issuer", ""))
             product_code = self._normalize_text(position.get("product_code", ""))
+            requires_market_price = self._requires_pipca_market_price(position)
             is_eligible_fixed_income = self._is_eligible_fixed_income(position)
             if is_eligible_fixed_income:
                 eligible_positions.append(position)
             classification = "MATCHED"
             reason = ""
-            if position.get("match_status") == "MATCHED":
+            if self._is_amortized_cost_position(position):
+                classification = "UNMATCHED_EXPECTED"
+                reason = "amortized cost / market price not required"
+            elif not requires_market_price:
+                classification = "UNMATCHED_EXPECTED"
+                if self._is_no_maturity_or_fund(position):
+                    reason = "no maturity / perpetual / fund"
+                elif self._is_equity_or_participation(position):
+                    reason = "equity or participation instrument"
+                elif self._is_closed_position(position):
+                    reason = "closed position"
+                elif self._is_instrument_not_expected_in_pipca(position):
+                    reason = "instrument not expected in PiPCA"
+                else:
+                    reason = "other"
+            elif position.get("match_status") == "MATCHED":
                 classification = "MATCHED"
             elif position.get("ambiguity_status") == "AMBIGUOUS":
                 classification = "UNMATCHED_REQUIRES_REVIEW"
                 reason = "parsing/normalization issue"
-            elif self._is_no_maturity_or_fund(position):
-                classification = "UNMATCHED_EXPECTED"
-                reason = "no maturity / perpetual / fund"
-            elif self._is_equity_or_participation(position):
-                classification = "UNMATCHED_EXPECTED"
-                reason = "equity or participation instrument"
-            elif self._is_closed_position(position):
-                classification = "UNMATCHED_EXPECTED"
-                reason = "closed position"
-            elif self._is_instrument_not_expected_in_pipca(position):
-                classification = "UNMATCHED_EXPECTED"
-                reason = "instrument not expected in PiPCA"
             elif self._is_series_placeholder(position):
                 classification = "UNMATCHED_REQUIRES_REVIEW"
                 reason = "other"
@@ -337,6 +341,20 @@ class InstitutionalPortfolioMatchingService:
     def _is_closed_position(self, position: dict[str, Any]) -> bool:
         return self._normalize_text(position.get("classification", "")) in {"cerrado", "closed", "closed_position"}
 
+    def _is_amortized_cost_position(self, position: dict[str, Any]) -> bool:
+        candidate_values: list[str] = []
+        classification = position.get("classification")
+        if classification is not None:
+            candidate_values.append(str(classification))
+        accounting_fields = position.get("accounting_fields")
+        if isinstance(accounting_fields, dict):
+            for key in ("classification", "treatment", "accounting_classification", "accounting_treatment"):
+                value = accounting_fields.get(key)
+                if value is not None:
+                    candidate_values.append(str(value))
+        joined_text = " ".join(self._normalize_text(value) for value in candidate_values)
+        return bool(re.search(r"amortiz|costo amortiz|amortized cost", joined_text))
+
     def _is_instrument_not_expected_in_pipca(self, position: dict[str, Any]) -> bool:
         product_code = self._normalize_text(position.get("product_code", ""))
         return product_code in {"fund", "fondo", "equity", "acciones", "participation", "inm3", "fiprc"}
@@ -345,16 +363,21 @@ class InstitutionalPortfolioMatchingService:
         series = self._normalize_text(position.get("series", ""))
         return series in {"no", "none", "n/a", "na", "null"}
 
-    def _is_eligible_fixed_income(self, position: dict[str, Any]) -> bool:
+    def _requires_pipca_market_price(self, position: dict[str, Any]) -> bool:
         if self._is_no_maturity_or_fund(position):
             return False
         if self._is_equity_or_participation(position):
             return False
         if self._is_closed_position(position):
             return False
+        if self._is_amortized_cost_position(position):
+            return False
         if self._is_instrument_not_expected_in_pipca(position):
             return False
         return True
+
+    def _is_eligible_fixed_income(self, position: dict[str, Any]) -> bool:
+        return self._requires_pipca_market_price(position)
 
     def _normalize_vector_record(self, record: dict[str, Any]) -> dict[str, Any]:
         return {

@@ -151,6 +151,7 @@ def test_reconciliation_keeps_successful_matches_for_expected_exclusions() -> No
             "maturity_date": date(2026, 1, 1),
             "issuer": "Banco Central",
             "product_code": "inm3",
+            "classification": "costo amortizado",
             "market_value": 1000.0,
         }
     ]
@@ -160,6 +161,82 @@ def test_reconciliation_keeps_successful_matches_for_expected_exclusions() -> No
             "instrument_type_or_mnemonic": "inm3",
             "series_or_security_code": "BCRSF",
             "maturity_date_if_present": date(2026, 1, 1),
+            "source_index": 0,
+        }
+    ]
+
+    enriched_positions, summary = service.enrich_positions(master_positions, vector_records)
+    reconciliation = summary["reconciliation"]
+
+    assert enriched_positions[0]["match_status"] == "MATCHED"
+    assert reconciliation["matched_positions"] == 0
+    assert reconciliation["position_reconciliation"][0]["classification"] == "UNMATCHED_EXPECTED"
+    assert reconciliation["position_reconciliation"][0]["reason_no_match"] == "amortized cost / market price not required"
+
+
+def test_amortized_cost_position_is_expected_unmatched_from_accounting_classification() -> None:
+    service = InstitutionalPortfolioMatchingService()
+    master_positions = [
+        {
+            "isin": "",
+            "series": "NO",
+            "maturity_date": date(2026, 1, 1),
+            "issuer": "Banco Central",
+            "product_code": "CDP-CI",
+            "classification": "costo amortizado",
+            "market_value": 1000.0,
+        }
+    ]
+    vector_records = []
+
+    _, summary = service.enrich_positions(master_positions, vector_records)
+    reconciliation = summary["reconciliation"]
+
+    assert reconciliation["matched_positions"] == 0
+    assert reconciliation["position_reconciliation"][0]["classification"] == "UNMATCHED_EXPECTED"
+    assert reconciliation["position_reconciliation"][0]["reason_no_match"] == "amortized cost / market price not required"
+
+
+def test_market_priced_position_without_vector_is_review_required() -> None:
+    service = InstitutionalPortfolioMatchingService()
+    master_positions = [
+        {
+            "isin": "",
+            "series": "S240327",
+            "maturity_date": date(2027, 3, 24),
+            "issuer": "Banco Central",
+            "product_code": "tpras",
+            "market_value": 1000.0,
+        }
+    ]
+    vector_records = []
+
+    _, summary = service.enrich_positions(master_positions, vector_records)
+    reconciliation = summary["reconciliation"]
+
+    assert reconciliation["matched_positions"] == 0
+    assert reconciliation["position_reconciliation"][0]["classification"] == "UNMATCHED_REQUIRES_REVIEW"
+    assert reconciliation["position_reconciliation"][0]["reason_no_match"] == "series absent from vector"
+
+
+def test_market_priced_position_with_vector_is_matched() -> None:
+    service = InstitutionalPortfolioMatchingService()
+    master_positions = [
+        {
+            "isin": "",
+            "series": "S240327",
+            "maturity_date": date(2027, 3, 24),
+            "issuer": "Banco Central",
+            "product_code": "tpras",
+            "market_value": 1000.0,
+        }
+    ]
+    vector_records = [
+        {
+            "issuer": "G",
+            "instrument_type_or_mnemonic": "tpras",
+            "series_or_security_code": "S240327",
+            "maturity_date_if_present": date(2027, 3, 24),
             "source_index": 0,
         }
     ]
