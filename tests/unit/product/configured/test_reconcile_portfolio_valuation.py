@@ -24,9 +24,34 @@ def test_reconcile_portfolio_valuation_cli_writes_csv_and_reports_summaries(tmp_
     workbook = openpyxl.Workbook()
     worksheet = workbook.active
     worksheet.title = "Maestro"
-    worksheet.append(["Emisor", "ISIN", "Serie", "Código Producto", "Clasificación", "Reserva Liquidez", "Moneda", "Valor Mercado Colonizado", "Saldo Principal", "Saldo Valor Compra", "Saldo Valor Mercado", "TIR", "Fecha Vencimiento"])
-    worksheet.append(["Banco Central", "CR1234567890", "S240327", "TPTBA", "V.C", "S", "CRC", 1000000.0, 1000000.0, 1000000.0, 980000.0, 5.2, "2027-03-24"])
-    worksheet.append(["Banco Central", "CR1234567891", "B180429", "TPTBA", "costo amortizado", "S", "CRC", 250000.0, 250000.0, 250000.0, 250000.0, 4.8, "2029-04-18"])
+    worksheet.append([
+        "Emisor",
+        "ISIN",
+        "Serie",
+        "Código Producto",
+        "Clasificación",
+        "Reserva Liquidez",
+        "Moneda",
+        "Valor Mercado Colonizado",
+        "Saldo Principal",
+        "Saldo Valor Transado",
+        "Saldo Valor Compra",
+        "Saldo Valor Mercado",
+        "Porcentaje Valor Compra",
+        "Valuacion Acumulada",
+        "Amortizacion Acumulada",
+        "Interes Por Cobrar",
+        "Cantidad Participaciones",
+        "Monto Estimacion",
+        "Monto Deterioro",
+        "TIR",
+        "Duracion",
+        "DV01",
+        "HHI",
+        "Fecha Vencimiento",
+    ])
+    worksheet.append(["Banco Central", "CR1234567890", "S240327", "TPTBA", "V.C", "S", "CRC", 1000000.0, 1000000.0, 1000000.0, 1000000.0, 980000.0, 95.0, 100000.0, 20000.0, 5000.0, 3000.0, 50.0, 1000.0, 200.0, 5.2, 3.5, 10000.0, 2500.0, "2027-03-24"])
+    worksheet.append(["Banco Central", "CR1234567891", "B180429", "TPTBA", "costo amortizado", "S", "USD", 250000.0, 250000.0, 250000.0, 250000.0, 250000.0, 100.0, 120000.0, 30000.0, 6000.0, 4000.0, 1500.0, 400.0, 4.8, 4.2, 12000.0, 3100.0, "2029-04-18"])
     workbook.save(workbook_path)
 
     vector_path = vector_root / "VectorPiPCA_20260729.txt"
@@ -70,4 +95,7 @@ def test_reconcile_portfolio_valuation_cli_writes_csv_and_reports_summaries(tmp_
     assert completed.returncode == 0
     assert "RECONCILIATION REPORT" in completed.stdout
     assert "AGGREGATE TOTALS" in completed.stdout
+    assert "MONETARY FIELDS FROM MASTER" in completed.stdout
+    assert "VALUE BRIDGE" in completed.stdout
+    assert "TOP 30 USD POSITIONS" in completed.stdout
     assert "TOP 30 DIFFERENCES" in completed.stdout
