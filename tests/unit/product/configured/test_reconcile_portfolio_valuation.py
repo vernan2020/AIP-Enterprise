@@ -11,7 +11,7 @@ from pathlib import Path
 
 import openpyxl
 
-from aip.tools.reconcile_portfolio_valuation import _print_difference_rows, main
+from aip.tools.reconcile_portfolio_valuation import _build_reconciliation_rows, _print_difference_rows, main
 
 
 def test_print_difference_rows_handles_tied_difference_values() -> None:

@@ -60,14 +60,14 @@ class ConfiguredPortfolioProvider:
         source_status = self._health_provider.get_health() if self._health_provider is not None else {}
         portfolio_master = self._discover_portfolio_master()
         price_vector = self._discover_price_vector()
-        positions = [position for position in portfolio_master.get("positions", []) if isinstance(position, dict)]
+        positions = [self._apply_position_payload_fields(position) for position in portfolio_master.get("positions", []) if isinstance(position, dict)]
         diagnostic_mode = self._source_config.resolve_diagnostic_mode()
         vector_records_available_for_matching = len([self._normalize_vector_record(record) for record in price_vector.get("records", []) if isinstance(record, dict)])
         if positions:
             vector_records = [self._normalize_vector_record(record) for record in price_vector.get("records", []) if isinstance(record, dict)]
             matching_service = InstitutionalPortfolioMatchingService()
             enriched_positions, match_summary = matching_service.enrich_positions(positions, vector_records, diagnostic_mode=diagnostic_mode)
-            positions = enriched_positions
+            positions = [self._apply_position_payload_fields(position) for position in enriched_positions]
             portfolio_master["positions"] = positions
             if diagnostic_mode:
                 portfolio_master.setdefault("diagnostics", {})["matching"] = match_summary
@@ -79,7 +79,7 @@ class ConfiguredPortfolioProvider:
                     "master_key_sample": match_summary.get("master_key_sample") if isinstance(match_summary.get("master_key_sample"), dict) else None,
                     "lookup_result": match_summary.get("lookup_result"),
                 }
-        market_value = self._sum_metric(positions, "market_value")
+        market_value = self._sum_metric(positions, "market_value_crc")
         book_value = self._sum_metric(positions, "book_value")
         weighted_yield = self._weighted_average(positions, "yield_value")
         modified_duration = self._weighted_average(positions, "modified_duration")
@@ -698,6 +698,12 @@ class ConfiguredPortfolioProvider:
     def _build_position_payload(self, normalized_positions: list[dict[str, Any]]) -> list[dict[str, Any]]:
         payload: list[dict[str, Any]] = []
         for position in normalized_positions:
+            market_value_local = position.get("market_value")
+            market_value_crc = position.get("market_value_crc")
+            if market_value_crc in (None, ""):
+                market_value_crc = market_value_local
+            if market_value_local is None and market_value_crc is not None:
+                market_value_local = market_value_crc
             payload.append({
                 "isin": position.get("isin", ""),
                 "issuer": position.get("issuer", ""),
@@ -706,7 +712,9 @@ class ConfiguredPortfolioProvider:
                 "instrument": position.get("product_code") or position.get("series") or position.get("contract_number") or "Instrument",
                 "currency": str(position.get("currency", "USD")).upper(),
                 "nominal": float(position.get("traded_balance") or position.get("principal_balance") or 0.0),
-                "market_value": float(position.get("market_value", 0.0) or 0.0),
+                "market_value": float(market_value_local or 0.0),
+                "market_value_local": float(market_value_local or 0.0),
+                "market_value_crc": float(market_value_crc or 0.0),
                 "book_value": float(position.get("book_value", 0.0) or 0.0),
                 "yield_value": float(position.get("portfolio_yield", 0.0) or 0.0),
                 "modified_duration": 0.0,
@@ -722,6 +730,39 @@ class ConfiguredPortfolioProvider:
                 "source_values": position.get("source_values", {}),
             })
         return payload
+
+    def _apply_position_payload_fields(self, position: dict[str, Any]) -> dict[str, Any]:
+        if not isinstance(position, dict):
+            return position
+
+        market_value_local = position.get("market_value_local")
+        if market_value_local is None:
+            market_value_local = position.get("market_value")
+        if market_value_local is None:
+            market_value_local = position.get("market_value_crc")
+
+        market_value_crc = position.get("market_value_crc")
+        if market_value_crc in (None, ""):
+            market_value_crc = position.get("market_value")
+        if market_value_crc in (None, ""):
+            market_value_crc = market_value_local
+
+        if market_value_local is None and market_value_crc is not None:
+            market_value_local = market_value_crc
+        if market_value_crc is None and market_value_local is not None:
+            market_value_crc = market_value_local
+
+        position["market_value_local"] = float(market_value_local or 0.0)
+        position["market_value_crc"] = float(market_value_crc or 0.0)
+        position["market_value"] = float(market_value_local or 0.0)
+
+        vector_match = position.get("vector_match") if isinstance(position.get("vector_match"), dict) else {}
+        matched = bool(vector_match.get("matched", False))
+        position["match_status"] = "MATCHED" if matched else "UNMATCHED"
+        position["match_method"] = vector_match.get("match_method", "NO_VECTOR_MATCH")
+        if not matched and "reason_no_match" not in position:
+            position["reason_no_match"] = "no_vector_match"
+        return position
 
     def _safe_source_reference(self, value: Any) -> str:
         if not value:

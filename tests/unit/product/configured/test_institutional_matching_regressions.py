@@ -10,10 +10,42 @@ from pathlib import Path
 import openpyxl
 
 from aip.product.configured.adapters.configured_portfolio_provider import ConfiguredPortfolioProvider
-from aip.product.configured.configuration.configured_source_config import ConfiguredSourceConfig, FolderWatchSourceConfig
+from aip.product.configured.configuration.configured_source_config import ConfiguredSourceConfig, FolderWatchSourceConfig, VectorSourceConfig
 from aip.product.configured.readers.pipca_vector_reader import InstitutionalPiPCAVectorReader
 from aip.product.configured.services.institutional_matching_service import InstitutionalPortfolioMatchingService
 from aip.product.demo.configuration.demo_config import DemoConfig
+from aip.tools.reconcile_portfolio_valuation import _build_reconciliation_rows
+
+
+def _build_configured_provider(tmp_path: Path, *, row_values: list[list[object]]) -> ConfiguredPortfolioProvider:
+    master_root = tmp_path / "institutional" / "Inversiones" / "2026"
+    master_dir = master_root / "maestro"
+    master_dir.mkdir(parents=True, exist_ok=True)
+    workbook_path = master_dir / "29-07-2026.xlsx"
+    workbook = openpyxl.Workbook()
+    worksheet = workbook.active
+    worksheet.append([
+        "issuer",
+        "product_code",
+        "series",
+        "maturity_date",
+        "market_value",
+        "book_value",
+        "isin",
+        "currency",
+        "valor mercado colonizado",
+    ])
+    for row in row_values:
+        worksheet.append(row)
+    workbook.save(workbook_path)
+
+    config = DemoConfig(execution_mode="CONFIGURED", demo_mode_enabled=False, data_cutoff_date=date(2026, 7, 29))
+    source_config = ConfiguredSourceConfig(
+        folder_watch=FolderWatchSourceConfig(enabled=True, portfolio_root=str(tmp_path / "institutional")),
+        vector=VectorSourceConfig(enabled=True, path=str(tmp_path / "vector")),
+        metadata={"allow_prior_source_date": False, "data_cutoff_date": date(2026, 7, 29).isoformat(), "diagnostic_mode": "false"},
+    )
+    return ConfiguredPortfolioProvider(config, source_config)
 
 
 def _build_pipca_line(series: str, *, issuer: str = "BCCR", mnemonic: str = "BEM", maturity: str = "24/03/2027") -> str:
@@ -393,6 +425,79 @@ def test_ambiguous_secondary_matches_are_not_silently_selected() -> None:
     assert enriched_positions[0]["vector_match"]["matched"] is False
     assert enriched_positions[0]["vector_match"]["ambiguous"] is True
     assert enriched_positions[0]["vector_match"]["match_method"] == "NO_VECTOR_MATCH"
+
+
+def test_configured_provider_uses_colonized_market_value_for_crc_positions(tmp_path: Path) -> None:
+    provider = _build_configured_provider(
+        tmp_path,
+        row_values=[["Banco Central", "tptba", "S240327", "2027-03-24", 1500.0, 1400.0, "", "CRC", 1500.0]],
+    )
+
+    payload = provider.get_portfolio()
+    position = payload["positions"][0]
+
+    assert position["market_value_crc"] == 1500.0
+    assert position["market_value_local"] == 1500.0
+    assert payload["market_value"] == 1500.0
+
+
+def test_configured_provider_uses_colonized_market_value_for_usd_positions(tmp_path: Path) -> None:
+    provider = _build_configured_provider(
+        tmp_path,
+        row_values=[["Banco Central", "tptba", "B180429", "2029-04-18", 2500.0, 2400.0, "", "USD", 180000.0]],
+    )
+
+    payload = provider.get_portfolio()
+    position = payload["positions"][0]
+
+    assert position["currency"] == "USD"
+    assert position["market_value_local"] == 2500.0
+    assert position["market_value_crc"] == 180000.0
+    assert payload["market_value"] == 180000.0
+
+
+def test_configured_provider_falls_back_when_colonized_value_is_missing(tmp_path: Path) -> None:
+    provider = _build_configured_provider(
+        tmp_path,
+        row_values=[["Banco Central", "tptba", "CRS240129", "2029-01-24", 750.0, 700.0, "", "CRC", None]],
+    )
+
+    payload = provider.get_portfolio()
+    position = payload["positions"][0]
+
+    assert position["market_value_local"] == 750.0
+    assert position["market_value_crc"] == 750.0
+    assert payload["market_value"] == 750.0
+
+
+def test_configured_provider_preserves_match_status_for_reconciliation(tmp_path: Path) -> None:
+    master_root = tmp_path / "institutional" / "Inversiones" / "2026"
+    vector_root = tmp_path / "vector"
+    vector_root.mkdir(parents=True, exist_ok=True)
+    (master_root / "maestro").mkdir(parents=True, exist_ok=True)
+    workbook_path = master_root / "maestro" / "29-07-2026.xlsx"
+    workbook = openpyxl.Workbook()
+    worksheet = workbook.active
+    worksheet.append(["issuer", "product_code", "series", "maturity_date", "market_value", "book_value", "isin", "currency"])
+    worksheet.append(["Banco Central", "tptba", "B180429", "2029-04-18", 1000.0, 1000.0, "", "USD"])
+    workbook.save(workbook_path)
+
+    vector_path = vector_root / "VectorPiPCA_20260729.txt"
+    vector_path.write_text("G   tptbaB180429   18/04/2029\n", encoding="utf-8")
+
+    config = DemoConfig(execution_mode="CONFIGURED", demo_mode_enabled=False, data_cutoff_date=date(2026, 7, 29))
+    source_config = ConfiguredSourceConfig(
+        folder_watch=FolderWatchSourceConfig(enabled=True, portfolio_root=str(tmp_path / "institutional")),
+        vector=VectorSourceConfig(enabled=True, path=str(vector_root)),
+        metadata={"allow_prior_source_date": False, "data_cutoff_date": date(2026, 7, 29).isoformat(), "diagnostic_mode": "false"},
+    )
+    provider = ConfiguredPortfolioProvider(config, source_config)
+
+    payload = provider.get_portfolio()
+    row = _build_reconciliation_rows(payload["positions"])[0]
+
+    assert payload["positions"][0]["match_status"] == "MATCHED"
+    assert row["matched_status"] == "MATCHED"
 
 
 def test_diagnose_configured_sources_cli_matches_production_pipca_line(tmp_path: Path) -> None:

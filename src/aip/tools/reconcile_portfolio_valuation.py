@@ -189,7 +189,7 @@ def _build_reconciliation_rows(enriched_positions: list[dict[str, Any]]) -> list
         if isinstance(vector_record, dict):
             pipca_price = vector_record.get("market_price")
             pipca_yield = vector_record.get("market_yield")
-        master_market_value = _coerce_decimal(position.get("market_value"))
+        master_market_value = _coerce_decimal(position.get("market_value_local"))
         aip_market_value = master_market_value
         if position.get("market_value_crc") not in (None, 0):
             aip_market_value = _coerce_decimal(position.get("market_value_crc"))
@@ -212,7 +212,7 @@ def _build_reconciliation_rows(enriched_positions: list[dict[str, Any]]) -> list
             "nominal": _coerce_decimal(position.get("nominal")),
             "book_value": _coerce_decimal(position.get("book_value")),
             "master_market_value": master_market_value,
-            "matched_status": position.get("match_status", "UNMATCHED"),
+            "matched_status": position.get("match_status") or position.get("vector_match", {}).get("match_status") or "UNMATCHED",
             "match_method": position.get("match_method", "NO_VECTOR_MATCH"),
             "pipca_price": _coerce_decimal(pipca_price) if pipca_price is not None else Decimal("0"),
             "pipca_yield": _coerce_decimal(pipca_yield) if pipca_yield is not None else Decimal("0"),
