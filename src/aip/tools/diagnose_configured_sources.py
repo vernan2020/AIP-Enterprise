@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import re
 import sys
 from datetime import date
 from pathlib import Path
@@ -150,140 +149,6 @@ def _trace_security(payload: dict[str, Any], *, trace_security: str | None) -> N
     print("trace_complete: true")
 
 
-def _extract_match_summary(payload: dict[str, Any]) -> dict[str, Any]:
-    match_summary = payload.get("portfolio_master", {}).get("diagnostics", {}).get("matching", {})
-    if not match_summary:
-        match_summary = payload.get("diagnostics", {}).get("portfolio_master", {}).get("matching", {})
-    return match_summary if isinstance(match_summary, dict) else {}
-
-
-def _normalize_report_text(value: Any) -> str:
-    if value is None:
-        return ""
-    text = str(value).strip()
-    return re.sub(r"\s+", "", text).casefold()
-
-
-def _compose_report_key(series: Any, maturity_date: Any) -> str:
-    values: list[str] = []
-    series_text = _normalize_report_text(series)
-    if series_text:
-        values.append(series_text)
-    if isinstance(maturity_date, date):
-        values.append(maturity_date.isoformat())
-    elif maturity_date is not None and str(maturity_date).strip():
-        values.append(str(maturity_date).strip())
-    return "|".join(values)
-
-
-def _print_reconciliation_sections(payload: dict[str, Any], match_summary: dict[str, Any], *, diagnostic_mode: bool) -> None:
-    reconciliation = match_summary.get("reconciliation", {}) if isinstance(match_summary.get("reconciliation", {}), dict) else {}
-    print()
-    print("RECONCILIATION")
-    for field_name in (
-        "total_master_positions",
-        "eligible_fixed_income_positions",
-        "matched_positions",
-        "expected_unmatched_positions",
-        "review_required_positions",
-        "raw_match_percentage",
-        "eligible_match_percentage",
-        "vector_key_collisions",
-        "collisions_affecting_portfolio",
-    ):
-        print(f"{field_name}: {reconciliation.get(field_name, 0)}")
-
-    print()
-    print("UNMATCHED REASON SUMMARY")
-    unmatched_reason_groups = reconciliation.get("unmatched_reason_groups", {}) or {}
-    rendered_reasons = [
-        f"{reason} -> {count}"
-        for reason, count in sorted(unmatched_reason_groups.items(), key=lambda item: (item[1] == 0, item[0]))
-        if count
-    ]
-    if rendered_reasons:
-        for line in rendered_reasons:
-            print(line)
-    else:
-        print("None")
-
-    print()
-    print("REQUIRES REVIEW")
-    review_positions = [
-        item for item in reconciliation.get("position_reconciliation", [])
-        if isinstance(item, dict) and item.get("classification") == "UNMATCHED_REQUIRES_REVIEW"
-    ]
-    if review_positions:
-        for position in review_positions:
-            print(f"issuer: {position.get('issuer', '')}")
-            print(f"product_code: {position.get('product_code', '')}")
-            print(f"classification: {position.get('classification', '')}")
-            print(f"series: {position.get('series', '')}")
-            print(f"masked ISIN: {_redact_value(position.get('isin', ''))}")
-            print(f"maturity_date: {position.get('maturity_date', '')}")
-            print(f"market_value: {position.get('market_value', '')}")
-            print(f"reason_no_match: {position.get('reason_no_match', '')}")
-            print()
-    else:
-        print("None")
-
-    print()
-    print("COLLISION SUMMARY")
-    print(f"total_vector_collisions: {reconciliation.get('vector_key_collisions', 0)}")
-    print(f"collisions_affecting_portfolio: {reconciliation.get('collisions_affecting_portfolio', 0)}")
-    collision_details = [item for item in reconciliation.get("collision_details", []) if isinstance(item, dict)]
-    affected_collisions = [item for item in collision_details if item.get("uses_matched_master_position")]
-    if affected_collisions:
-        for item in affected_collisions:
-            price_values = []
-            yield_values = []
-            affected_series = []
-            collision_key = item.get("key")
-            for record in payload.get("price_vector", {}).get("records", []):
-                if not isinstance(record, dict):
-                    continue
-                record_key = _compose_report_key(record.get("series_or_security_code", ""), record.get("maturity_date_if_present"))
-                if record_key != collision_key:
-                    continue
-                price_values.append(record.get("market_price"))
-                yield_values.append(record.get("market_yield"))
-            for position in payload.get("positions", []):
-                if not isinstance(position, dict):
-                    continue
-                if _compose_report_key(position.get("series", ""), position.get("maturity_date")) != collision_key:
-                    continue
-                affected_series.append(str(position.get("series", "")))
-            economically_identical = bool(item.get("true_duplicates") and not item.get("price_or_yield_differs"))
-            print(f"key: {item.get('key', '')}")
-            print(f"record_count: {item.get('number_of_records', 0)}")
-            print(f"economically_identical: {'yes' if economically_identical else 'no'}")
-            print(f"market_price values: {price_values}")
-            print(f"market_yield values: {yield_values}")
-            print(f"affected portfolio series: {', '.join(affected_series) if affected_series else 'None'}")
-            print()
-    else:
-        print("None")
-
-    if diagnostic_mode:
-        expected_unmatched = [
-            item for item in reconciliation.get("position_reconciliation", [])
-            if isinstance(item, dict) and item.get("classification") == "UNMATCHED_EXPECTED"
-        ]
-        if expected_unmatched:
-            print()
-            print("EXPECTED UNMATCHED")
-            for position in expected_unmatched:
-                print(f"issuer: {position.get('issuer', '')}")
-                print(f"product_code: {position.get('product_code', '')}")
-                print(f"classification: {position.get('classification', '')}")
-                print(f"series: {position.get('series', '')}")
-                print(f"masked ISIN: {_redact_value(position.get('isin', ''))}")
-                print(f"maturity_date: {position.get('maturity_date', '')}")
-                print(f"market_value: {position.get('market_value', '')}")
-                print(f"reason_no_match: {position.get('reason_no_match', '')}")
-                print()
-
-
 def main(argv: list[str] | None = None) -> int:
     del argv
     try:
@@ -363,7 +228,9 @@ def main(argv: list[str] | None = None) -> int:
     print("Warnings: None")
     print()
     print("MATCHING")
-    match_summary = _extract_match_summary(payload)
+    match_summary = payload.get('portfolio_master', {}).get('diagnostics', {}).get('matching', {})
+    if not match_summary:
+        match_summary = payload.get('diagnostics', {}).get('portfolio_master', {}).get('matching', {})
     print(f"Positions: {len(payload.get('positions', []))}")
     print(f"Matched by ISIN: {match_summary.get('exact_isin_matches', 0)}")
     print(f"Matched by series/maturity: {match_summary.get('series_maturity_matches', 0)}")
@@ -398,7 +265,6 @@ def main(argv: list[str] | None = None) -> int:
                     keys=diagnostics.get('matching_keys', {}),
                 )
             )
-    _print_reconciliation_sections(payload, match_summary, diagnostic_mode=source_config.resolve_diagnostic_mode())
     print()
     print("ALIGNMENT")
     print(f"Master cutoff: {payload['portfolio_master'].get('valuation_date', 'N/A')}")

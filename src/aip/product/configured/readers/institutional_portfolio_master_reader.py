@@ -11,8 +11,15 @@ from pathlib import Path
 from typing import Any
 
 import openpyxl
-import xlrd
 from openpyxl.utils.exceptions import InvalidFileException
+
+try:
+    import xlrd
+except ImportError:  # pragma: no cover - exercised when xlrd is unavailable
+    xlrd = None
+    XLRDError = ValueError
+else:
+    XLRDError = xlrd.biffh.XLRDError
 
 
 @dataclass(frozen=True, slots=True)
@@ -88,6 +95,8 @@ class InstitutionalPortfolioMasterReader:
         workbook_type = self._detect_workbook_type(file_path)
         try:
             if workbook_type == "xls":
+                if xlrd is None:
+                    raise RuntimeError("xlrd is required to read .xls files")
                 workbook = xlrd.open_workbook(file_path)
                 sheet_names = workbook.sheet_names()
                 sheet_rows = [self._read_xls_sheet(sheet) for sheet in workbook.sheets()]
@@ -96,7 +105,7 @@ class InstitutionalPortfolioMasterReader:
                 sheet_names = workbook.sheetnames
                 sheet_rows = [self._read_xlsx_sheet(sheet) for sheet in workbook.worksheets]
                 workbook.close()
-        except (InvalidFileException, xlrd.biffh.XLRDError, zipfile.BadZipFile, ValueError, OSError) as exc:
+        except (InvalidFileException, XLRDError, zipfile.BadZipFile, ValueError, OSError, RuntimeError) as exc:
             return InstitutionalPortfolioMasterReadResult(
                 source_file=str(file_path),
                 valuation_date=valuation_date,

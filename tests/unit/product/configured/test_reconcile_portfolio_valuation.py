@@ -3,12 +3,78 @@ from __future__ import annotations
 import csv
 import subprocess
 import sys
+from contextlib import redirect_stdout
 from datetime import date
+from decimal import Decimal
+from io import StringIO
 from pathlib import Path
 
 import openpyxl
 
-from aip.tools.reconcile_portfolio_valuation import main
+from aip.tools.reconcile_portfolio_valuation import _print_difference_rows, main
+
+
+def test_print_difference_rows_handles_tied_difference_values() -> None:
+    rows = [
+        {
+            "issuer": "Issuer A",
+            "series": "S1",
+            "product_code": "P1",
+            "source_values": {
+                "valor mercado colonizado": Decimal("100"),
+                "saldo valor mercado": Decimal("50"),
+            },
+        },
+        {
+            "issuer": "Issuer B",
+            "series": "S2",
+            "product_code": "P2",
+            "source_values": {
+                "valor mercado colonizado": Decimal("200"),
+                "saldo valor mercado": Decimal("150"),
+            },
+        },
+    ]
+
+    output = StringIO()
+    with redirect_stdout(output):
+        _print_difference_rows(rows)
+
+    report = output.getvalue()
+    assert "TOP 30 POSITIONS CONTRIBUTING TO DIFFERENCE" in report
+    assert "Issuer A" in report
+    assert "Issuer B" in report
+
+
+def test_print_difference_rows_handles_all_zero_differences() -> None:
+    rows = [
+        {
+            "issuer": "Issuer A",
+            "series": "S1",
+            "product_code": "P1",
+            "source_values": {
+                "valor mercado colonizado": Decimal("100"),
+                "saldo valor mercado": Decimal("100"),
+            },
+        },
+        {
+            "issuer": "Issuer B",
+            "series": "S2",
+            "product_code": "P2",
+            "source_values": {
+                "valor mercado colonizado": Decimal("200"),
+                "saldo valor mercado": Decimal("200"),
+            },
+        },
+    ]
+
+    output = StringIO()
+    with redirect_stdout(output):
+        _print_difference_rows(rows)
+
+    report = output.getvalue()
+    assert "TOP 30 POSITIONS CONTRIBUTING TO DIFFERENCE" in report
+    assert "difference=0.00" in report
 
 
 def test_reconcile_portfolio_valuation_cli_writes_csv_and_reports_summaries(tmp_path: Path, monkeypatch) -> None:

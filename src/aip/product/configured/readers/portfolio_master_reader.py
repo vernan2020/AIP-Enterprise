@@ -11,8 +11,15 @@ from typing import Any
 import zipfile
 
 import openpyxl
-import xlrd
 from openpyxl.utils.exceptions import InvalidFileException
+
+try:
+    import xlrd
+except ImportError:  # pragma: no cover - exercised when xlrd is unavailable
+    xlrd = None
+    XLRDError = ValueError
+else:
+    XLRDError = xlrd.biffh.XLRDError
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,15 +41,28 @@ class PortfolioMasterReader:
         "issuer": ("issuer", "emisor", "issuer name", "nombre emisor"),
         "instrument": ("instrument", "instrumento", "security", "nombre instrumento"),
         "currency": ("currency", "moneda", "ccy", "curr"),
-        "nominal_value": ("nominal", "nominal value", "nominal valor", "nominales"),
-        "market_value": ("market value", "valor de mercado", "valor mercado", "mercado"),
-        "book_value": ("book value", "valor en libros", "valor libro", "libros"),
-        "purchase_value": ("purchase value", "valor compra", "valor de compra"),
+        "nominal_value": ("nominal", "nominal value", "nominal valor", "nominales", "saldo principal"),
+        "market_value": (
+            "market value",
+            "valor de mercado",
+            "valor mercado",
+            "mercado",
+            "saldo valor mercado",
+            "valor mercado colonizado",
+        ),
+        "book_value": ("book value", "valor en libros", "valor libro", "libros", "saldo valor compra"),
+        "purchase_value": ("purchase value", "valor compra", "valor de compra", "saldo valor transado"),
         "market_price": ("market price", "precio mercado", "precio de mercado"),
         "acquisition_price": ("acquisition price", "precio adquisicion", "precio de adquisición"),
-        "yield_value": ("yield", "rendimiento", "yield value", "market yield", "rendimiento mercado"),
+        "yield_value": ("yield", "rendimiento", "yield value", "market yield", "rendimiento mercado", "tir"),
         "nominal_rate": ("nominal rate", "tasa nominal", "rate"),
-        "modified_duration": ("modified duration", "duracion modificada", "duración modificada", "duration"),
+        "modified_duration": (
+            "modified duration",
+            "duracion modificada",
+            "duración modificada",
+            "duration",
+            "duracion",
+        ),
         "maturity_date": ("maturity date", "fecha vencimiento", "fecha de vencimiento", "vencimiento"),
         "next_coupon_date": ("next coupon date", "proxima cupon", "próxima cupón", "fecha proximo cupon"),
         "rate_type": ("rate type", "tipo tasa", "tipo de tasa"),
@@ -77,6 +97,8 @@ class PortfolioMasterReader:
         workbook_type = self._detect_workbook_type(file_path)
         try:
             if workbook_type == "xls":
+                if xlrd is None:
+                    raise RuntimeError("xlrd is required to read .xls files")
                 workbook = xlrd.open_workbook(file_path)
                 sheets = workbook.sheets()
                 sheet_data = [self._read_xls_sheet(sheet) for sheet in sheets]
@@ -86,7 +108,7 @@ class PortfolioMasterReader:
                 sheet_names = workbook.sheetnames
                 sheet_data = [self._read_xlsx_sheet(sheet) for sheet in workbook.worksheets]
                 workbook.close()
-        except (InvalidFileException, xlrd.biffh.XLRDError, zipfile.BadZipFile, ValueError, OSError) as exc:
+        except (InvalidFileException, XLRDError, zipfile.BadZipFile, ValueError, OSError, RuntimeError) as exc:
             return PortfolioMasterReadResult(
                 source_file=str(file_path),
                 valuation_date=valuation_date,
@@ -140,7 +162,7 @@ class PortfolioMasterReader:
             seen_identities.add(position_identity)
             positions.append(position)
 
-        missing_columns = [name for name in ("isin", "market_value", "book_value") if name not in column_map]
+        missing_columns = [name for name in ("isin", "market_value") if name not in column_map]
         if missing_columns:
             warnings.append(f"Missing expected columns: {', '.join(missing_columns)}")
 
@@ -296,7 +318,7 @@ class PortfolioMasterReader:
         maturity_date = self._parse_date(self._find_field(normalized_cells, "maturity_date"))
         classification = self._coerce_text(self._find_field(normalized_cells, "classification"))
         account = self._coerce_text(self._find_field(normalized_cells, "accounting_account"))
-        if not isin and not issuer and not instrument and not market_value and not book_value:
+        if not isin and not issuer and not instrument and not market_value and not book_value and not nominal_value:
             return None
         if not isin and not issuer and not instrument:
             return None

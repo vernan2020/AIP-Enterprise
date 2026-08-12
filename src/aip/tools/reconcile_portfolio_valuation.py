@@ -379,7 +379,7 @@ def _print_difference_rows(rows: list[dict[str, Any]]) -> None:
         colonized = _field_value(row, "valor mercado colonizado")
         market_value = _field_value(row, "saldo valor mercado")
         differences.append((abs(colonized - market_value), row))
-    differences.sort(reverse=True)
+    differences.sort(key=lambda item: item[0], reverse=True)
     print("TOP 30 POSITIONS CONTRIBUTING TO DIFFERENCE")
     for index, (_, row) in enumerate(differences[:30], start=1):
         source_values = row.get("source_values", {}) or {}

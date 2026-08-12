@@ -85,6 +85,10 @@ class ConfiguredPortfolioProvider:
         modified_duration = self._weighted_average(positions, "modified_duration")
         currency_distribution = tuple(sorted({str(position.get("currency", "")).upper() for position in positions if position.get("currency")}))
         data_quality_status = "HEALTHY" if portfolio_master["status"] == "HEALTHY" and price_vector["status"] in {"HEALTHY", "DISABLED"} else "DEGRADED"
+        price_vector_positions = price_vector.get("positions", price_vector.get("records", []))
+        print(f"[instrumentation] STEP2 len(price_vector.positions)={len(price_vector_positions)}", flush=True)
+        self._emit_b180429_trace("STEP2", price_vector_positions)
+        print(f"[instrumentation] ConfiguredPortfolioProvider returning with vector_records_available_for_matching={vector_records_available_for_matching}", flush=True)
         return {
             "portfolio_name": f"{self._config.environment_name.title()} Configured Portfolio",
             "valuation_date": portfolio_master.get("valuation_date") or self._config.data_cutoff_date.isoformat(),
@@ -622,6 +626,8 @@ class ConfiguredPortfolioProvider:
         diagnostic_mode = self._source_config.resolve_diagnostic_mode()
         read_result = reader.read(file_path, source_cutoff=cutoff_date, diagnostic_mode=diagnostic_mode)
         normalized_vector_records = [self._normalize_vector_record(record) for record in read_result.records]
+        print(f"[instrumentation] STEP1 accepted_records_count={read_result.accepted_count}", flush=True)
+        self._emit_b180429_trace("STEP1", [record for record in read_result.records if hasattr(record, "issuer")], use_raw=True)
         base_result.update({
             "path": self._safe_source_reference(file_path),
             "records": normalized_vector_records,
@@ -657,6 +663,24 @@ class ConfiguredPortfolioProvider:
             "source_line": data.get("source_line"),
             "raw": data,
         }
+
+    def _emit_b180429_trace(self, step: str, positions: list[Any], *, use_raw: bool = False) -> None:
+        for item in positions:
+            if not isinstance(item, dict):
+                if use_raw and hasattr(item, "issuer"):
+                    issuer = getattr(item, "issuer", "")
+                    series = getattr(item, "series_or_security_code", "")
+                    product_code = getattr(item, "instrument_type_or_mnemonic", "")
+                    maturity = getattr(item, "maturity_date_if_present", None)
+                    if self._normalize_text(series) == "b180429":
+                        print(f"[instrumentation] {step} issuer={issuer} product_code={product_code} series={series} maturity_date={self._serialize_date(maturity)}", flush=True)
+                continue
+            issuer = item.get("issuer", "")
+            product_code = item.get("instrument_type_or_mnemonic", "") or item.get("product_code", "")
+            series = item.get("series_or_security_code", "") or item.get("series", "")
+            maturity = item.get("maturity_date_if_present", item.get("maturity_date", None))
+            if self._normalize_text(series) == "b180429":
+                print(f"[instrumentation] {step} issuer={issuer} product_code={product_code} series={series} maturity_date={self._serialize_date(maturity)}", flush=True)
 
     def _normalize_text(self, value: Any) -> str:
         if value is None:
