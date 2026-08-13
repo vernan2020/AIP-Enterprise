@@ -163,14 +163,46 @@ class PortfolioCalculationService:
         if isinstance(raw_currency, Currency):
             return raw_currency
         if isinstance(raw_currency, str) and raw_currency:
+            normalized_currency = PortfolioCalculationService._normalize_institutional_currency(raw_currency)
+            if normalized_currency is None:
+                return None
+            if isinstance(normalized_currency, Currency):
+                return normalized_currency
             try:
-                return Currency[raw_currency.upper()]
+                return Currency[normalized_currency.upper()]
             except KeyError:
                 try:
-                    return Currency.from_code(raw_currency)
+                    return Currency.from_code(normalized_currency)
                 except ValueError:
                     return None
         return None
+
+    @staticmethod
+    def _normalize_institutional_currency(value: object) -> str | Currency | None:
+        if value is None:
+            return None
+        if isinstance(value, Currency):
+            return value
+        text = str(value).strip()
+        if not text:
+            return None
+
+        normalized_text = re.sub(r"\s+", " ", text).strip().casefold()
+        normalized_text = normalized_text.replace("ó", "o").replace("ú", "u").replace("á", "a").replace("é", "e").replace("í", "i")
+        normalized_text = normalized_text.replace("$", "").strip()
+        normalized_text = re.sub(r"[^a-z]+", "", normalized_text)
+        normalized_text = normalized_text.replace("costarricense", "").replace("costarricenses", "")
+
+        if normalized_text in {"crc", "usd"}:
+            return normalized_text.upper()
+        if normalized_text in {"us", "usd", "dolar", "dolares"}:
+            return "USD"
+        if normalized_text in {"crc", "colon", "colones", "coloncostarricense", "colonescostarricenses"}:
+            return "CRC"
+        try:
+            return Currency.from_code(text).value
+        except Exception:
+            return None
 
     @staticmethod
     def _resolve_weight(position: object) -> Decimal | None:
