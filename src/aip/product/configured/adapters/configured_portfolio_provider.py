@@ -14,6 +14,8 @@ from aip.product.configured.readers.institutional_portfolio_master_reader import
 from aip.product.configured.readers.pipca_vector_reader import InstitutionalPiPCAVectorReader
 from aip.product.configured.services.institutional_matching_service import InstitutionalPortfolioMatchingService
 from aip.product.demo.configuration.demo_config import DemoConfig
+from aip.shared.money import Currency
+from aip.domain.portfolio.services.portfolio_calculation_service import PortfolioCalculationService
 
 
 class ConfiguredPortfolioProvider:
@@ -81,7 +83,7 @@ class ConfiguredPortfolioProvider:
                 }
         market_value = self._sum_metric(positions, "market_value_crc")
         book_value = self._sum_metric(positions, "book_value")
-        weighted_yield = self._weighted_average(positions, "yield_value")
+        weighted_yield = PortfolioCalculationService.weighted_average_effective_yield(positions, Currency.CRC)
         modified_duration = self._weighted_average(positions, "modified_duration")
         currency_distribution = tuple(sorted({str(position.get("currency", "")).upper() for position in positions if position.get("currency")}))
         data_quality_status = "HEALTHY" if portfolio_master["status"] == "HEALTHY" and price_vector["status"] in {"HEALTHY", "DISABLED"} else "DEGRADED"

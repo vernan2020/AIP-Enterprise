@@ -182,6 +182,26 @@ def test_aggregate_calculations_and_weighted_metrics() -> None:
     assert portfolio.weighted_convexity() == Decimal("13")
 
 
+def test_weighted_average_effective_yield_prefers_master_tir_and_uses_crc_weights() -> None:
+    positions = [
+        {"currency": Currency.CRC, "market_value_crc": Decimal("100"), "market_value": Decimal("40"), "classification": "active", "portfolio_yield": Decimal("5"), "nominal_rate": Decimal("4")},
+        {"currency": Currency.CRC, "market_value_crc": Decimal("200"), "market_value": Decimal("80"), "classification": "active", "portfolio_yield": Decimal("0"), "nominal_rate": Decimal("4")},
+        {"currency": Currency.CRC, "market_value_crc": Decimal("300"), "market_value": Decimal("120"), "classification": "active", "portfolio_yield": None, "nominal_rate": None},
+    ]
+
+    assert PortfolioCalculationService.weighted_average_effective_yield(positions, Currency.CRC) == Decimal("4.333333333333333333333333333")
+
+
+def test_weighted_average_effective_yield_falls_back_and_excludes_closed_and_missing_rates() -> None:
+    positions = [
+        {"currency": Currency.CRC, "market_value_crc": Decimal("100"), "market_value": Decimal("100"), "classification": "active", "portfolio_yield": Decimal("0"), "nominal_rate": Decimal("4")},
+        {"currency": Currency.CRC, "market_value_crc": Decimal("100"), "market_value": Decimal("100"), "classification": "active", "portfolio_yield": None, "nominal_rate": None},
+        {"currency": Currency.CRC, "market_value_crc": Decimal("100"), "market_value": Decimal("100"), "classification": "closed", "portfolio_yield": Decimal("9"), "nominal_rate": Decimal("9")},
+    ]
+
+    assert PortfolioCalculationService.weighted_average_effective_yield(positions, Currency.CRC) == Decimal("4")
+
+
 def test_currency_exposure_and_mixed_currency_guard() -> None:
     p1 = _position(market="100")
     p2 = Position.create(

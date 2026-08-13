@@ -1,5 +1,6 @@
 """Portfolio calculation domain service."""
 
+import re
 from decimal import Decimal
 from typing import Sequence
 
@@ -71,6 +72,32 @@ class PortfolioCalculationService:
         return weighted_sum / total_weight
 
     @staticmethod
+    def weighted_average_effective_yield(positions: Sequence[object], base_currency: Currency | None = None) -> Decimal:
+        """Calculate portfolio weighted yield using the validated effective-rate rule."""
+        weighted_sum = Decimal("0")
+        total_weight = Decimal("0")
+
+        for position in positions:
+            if PortfolioCalculationService._is_closed_position(position):
+                continue
+
+            currency = PortfolioCalculationService._resolve_currency(position)
+            if base_currency is not None and currency is not None and currency != base_currency:
+                continue
+
+            weight = PortfolioCalculationService._resolve_weight(position)
+            effective_rate = PortfolioCalculationService._resolve_effective_rate(position)
+            if weight is None or effective_rate is None or effective_rate <= Decimal("0"):
+                continue
+
+            weighted_sum += effective_rate * weight
+            total_weight += weight
+
+        if total_weight == Decimal("0"):
+            return Decimal("0")
+        return weighted_sum / total_weight
+
+    @staticmethod
     def weighted_average_duration(positions: Sequence[object], base_currency: Currency) -> Decimal:
         """Calculate weighted average duration using market value as weight base."""
         weighted_sum, total_weight = PortfolioCalculationService._weighted_sum(
@@ -125,3 +152,107 @@ class PortfolioCalculationService:
             weighted_sum += metric_getter(position) * weight
 
         return weighted_sum, total_weight
+
+    @staticmethod
+    def _resolve_currency(position: object) -> Currency | None:
+        if isinstance(position, dict):
+            raw_currency = position.get("currency")
+        else:
+            raw_currency = getattr(position, "currency", None)
+
+        if isinstance(raw_currency, Currency):
+            return raw_currency
+        if isinstance(raw_currency, str) and raw_currency:
+            try:
+                return Currency[raw_currency.upper()]
+            except KeyError:
+                try:
+                    return Currency.from_code(raw_currency)
+                except ValueError:
+                    return None
+        return None
+
+    @staticmethod
+    def _resolve_weight(position: object) -> Decimal | None:
+        if isinstance(position, dict):
+            raw_weight = position.get("market_value_crc")
+            if raw_weight in (None, ""):
+                raw_weight = position.get("market_value")
+            if raw_weight in (None, ""):
+                raw_weight = position.get("market_value_local")
+        else:
+            raw_weight = getattr(position, "market_value_crc", None)
+            if raw_weight in (None, ""):
+                raw_weight = getattr(position, "market_value", None)
+            if raw_weight in (None, ""):
+                raw_weight = getattr(position, "market_value_local", None)
+
+        if raw_weight is None:
+            return None
+        return PortfolioCalculationService._coerce_decimal(raw_weight)
+
+    @staticmethod
+    def _resolve_effective_rate(position: object) -> Decimal | None:
+        master_tir = PortfolioCalculationService._resolve_position_value(position, "master_tir", "portfolio_yield", "yield_value", "tir")
+        facial_rate = PortfolioCalculationService._resolve_position_value(position, "facial_rate", "nominal_rate", "rate", "tasa nominal")
+
+        master_tir_value = PortfolioCalculationService._coerce_decimal(master_tir)
+        facial_rate_value = PortfolioCalculationService._coerce_decimal(facial_rate)
+
+        if master_tir_value is not None and master_tir_value > Decimal("0") and master_tir_value.is_finite():
+            return master_tir_value
+        if facial_rate_value is not None and facial_rate_value > Decimal("0") and facial_rate_value.is_finite():
+            return facial_rate_value
+        return None
+
+    @staticmethod
+    def _resolve_position_value(position: object, *keys: str) -> object | None:
+        if isinstance(position, dict):
+            for key in keys:
+                if key in position and position.get(key) not in (None, ""):
+                    return position.get(key)
+
+            source_values = position.get("source_values") or {}
+            if isinstance(source_values, dict):
+                normalized_source_values = {PortfolioCalculationService._normalize_lookup_key(key): value for key, value in source_values.items()}
+                for key in keys:
+                    normalized_key = PortfolioCalculationService._normalize_lookup_key(key)
+                    if normalized_key in normalized_source_values and normalized_source_values[normalized_key] not in (None, ""):
+                        return normalized_source_values[normalized_key]
+            return None
+
+        for key in keys:
+            value = getattr(position, key, None)
+            if value not in (None, ""):
+                return value
+        return None
+
+    @staticmethod
+    def _normalize_lookup_key(value: str) -> str:
+        return re.sub(r"\s+", "", str(value)).casefold()
+
+    @staticmethod
+    def _coerce_decimal(value: object) -> Decimal | None:
+        if value is None or value == "":
+            return None
+        if isinstance(value, Decimal):
+            return value
+        if isinstance(value, bool):
+            return None
+        try:
+            decimal_value = Decimal(str(value))
+        except (ArithmeticError, ValueError, TypeError):
+            return None
+        return decimal_value
+
+    @staticmethod
+    def _is_closed_position(position: object) -> bool:
+        if isinstance(position, dict):
+            classification = position.get("classification")
+        else:
+            classification = getattr(position, "classification", None)
+
+        if classification is None:
+            return False
+        normalized = str(classification).strip().casefold()
+        return "cerrado" in normalized or "closed" in normalized or "closed_position" in normalized

@@ -4,12 +4,13 @@ from datetime import date
 
 import openpyxl
 
-from aip.product.configured.adapters.configured_portfolio_provider import ConfiguredPortfolioProvider
 from aip.product.configured.configuration.configured_source_config import ConfiguredSourceConfig, FolderWatchSourceConfig
 from aip.product.demo.configuration.demo_config import DemoConfig
 from aip.ui.modules.portfolio.presenters.portfolio_presenter import PortfolioPresenter
 from aip.ui.modules.portfolio.viewmodels.portfolio_view_model import PortfolioViewModel
 from aip.ui.modules.portfolio.views.portfolio_view import PortfolioView
+
+from aip.product.configured.adapters.configured_portfolio_provider import ConfiguredPortfolioProvider
 
 
 class FakeWorkflow:
@@ -118,6 +119,41 @@ def test_presenter_handles_loading_empty_and_error_states() -> None:
     assert loading_view_model.loading is True
     assert empty_view_model.status == "empty"
     assert error_view_model.error == "workflow failure"
+
+
+def test_configured_provider_yield_reaches_presenter_summary(tmp_path, qt_app) -> None:
+    root = tmp_path / "institutional"
+    maestro_dir = root / "Inversiones" / "2026" / "maestro" / "julio"
+    vector_dir = root / "Inversiones" / "2026" / "vector" / "julio"
+    maestro_dir.mkdir(parents=True)
+    vector_dir.mkdir(parents=True)
+
+    workbook = openpyxl.Workbook()
+    worksheet = workbook.active
+    worksheet.title = "Maestro"
+    worksheet.append(["Resumen institucional", ""])
+    worksheet.append(["", ""])
+    worksheet.append(["ISIN", "Emisor", "Valor de Mercado", "Valor Mercado Colonizado", "Valor en Libros", "TIR", "Tasa Nominal"])
+    worksheet.append(["US0000001", "Issuer One", 1000000, 1000000, 980000, 5.0, 4.0])
+    worksheet.append(["US0000002", "Issuer Two", 2000000, 2000000, 1960000, 0.0, 4.0])
+    workbook.save(maestro_dir / "29-07-2026.xlsx")
+    (vector_dir / "29-07-2026.txt").write_text(
+        "BCCR  BC12M120826 12/08/2026  100.0 100.008344  2.842 0.000000 0\n",
+        encoding="utf-8",
+    )
+
+    config = DemoConfig(execution_mode="CONFIGURED", demo_mode_enabled=False, data_cutoff_date=date(2026, 7, 29))
+    source_config = ConfiguredSourceConfig(
+        folder_watch=FolderWatchSourceConfig(enabled=True, portfolio_root=str(root), vector_path=str(vector_dir)),
+    )
+    provider = ConfiguredPortfolioProvider(config, source_config)
+    payload = provider.get_portfolio()
+
+    presenter = PortfolioPresenter(FakeApplicationFactory((payload,)))
+    view_model = presenter.build_view_model()
+
+    assert payload["weighted_yield"] == 4.333333333333333
+    assert view_model.summary.weighted_yield == "4.33%"
 
 
 def test_configured_provider_payload_reaches_presenter_and_table_model(tmp_path, qt_app) -> None:
