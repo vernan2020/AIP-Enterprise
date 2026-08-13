@@ -110,9 +110,84 @@ def _normalize_classification(value: str | None) -> str:
     return re.sub(r"\s+", " ", str(value).strip().lower())
 
 
-def _is_amortized_cost_classification(classification: str | None) -> bool:
-    normalized = _normalize_classification(classification)
-    return "amort" in normalized or "costo amortizado" in normalized
+def _normalize_lookup_key(value: Any) -> str:
+    if value is None:
+        return ""
+    text = str(value).strip().lower()
+    text = re.sub(r"[^a-z0-9]+", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _resolve_position_value(position: dict[str, Any], *keys: str) -> Any:
+    for key in keys:
+        if key in position:
+            value = position.get(key)
+            if value not in (None, ""):
+                return value
+
+    source_values = position.get("source_values") or {}
+    if not isinstance(source_values, dict):
+        return None
+
+    normalized_source_values = {_normalize_lookup_key(key): value for key, value in source_values.items()}
+    for key in keys:
+        normalized_key = _normalize_lookup_key(key)
+        if normalized_key in normalized_source_values:
+            value = normalized_source_values[normalized_key]
+            if value not in (None, ""):
+                return value
+    return None
+
+
+def _is_valid_rate(value: Any) -> bool:
+    decimal_value = _coerce_decimal(value)
+    return decimal_value != Decimal("0") and decimal_value.is_finite()
+
+
+def _is_implausible_rate(value: Any) -> bool:
+    decimal_value = _coerce_decimal(value)
+    return abs(decimal_value) > Decimal("1000")
+
+
+def _classify_rate_source(position: dict[str, Any]) -> tuple[str, Decimal | None, str, str, str]:
+    classification = str(position.get("classification", "") or "")
+    normalized_classification = _normalize_classification(classification)
+    is_excluded = False
+    exclusion_reason = ""
+    if not normalized_classification:
+        is_excluded = True
+        exclusion_reason = "missing_classification"
+    elif "cerrado" in normalized_classification or "closed" in normalized_classification:
+        is_excluded = True
+        exclusion_reason = "closed_position"
+
+    master_tir = _resolve_position_value(position, "portfolio_yield", "yield_value", "master_tir", "tir")
+    facial_rate = _resolve_position_value(position, "nominal_rate", "facial_rate", "rate", "tasa nominal")
+    master_tir_value = _coerce_decimal(master_tir)
+    facial_rate_value = _coerce_decimal(facial_rate)
+
+    rate_source = "EXCLUDED"
+    effective_rate: Decimal | None = None
+    rate_detail = ""
+    if is_excluded:
+        return rate_source, effective_rate, "", exclusion_reason, ""
+
+    if _is_valid_rate(master_tir_value):
+        rate_source = "MASTER_TIR"
+        effective_rate = master_tir_value
+        rate_detail = "master_tir"
+    elif _is_valid_rate(facial_rate_value):
+        rate_source = "FACIAL_RATE_FALLBACK"
+        effective_rate = facial_rate_value
+        rate_detail = "facial_rate"
+    else:
+        rate_source = "MISSING_RATE_REVIEW"
+        rate_detail = "missing_rate"
+
+    if rate_source in {"MASTER_TIR", "FACIAL_RATE_FALLBACK"} and _is_implausible_rate(effective_rate):
+        rate_source = "MISSING_RATE_REVIEW"
+        rate_detail = "implausible_rate"
+    return rate_source, effective_rate, rate_detail, exclusion_reason, classification
 
 
 def _read_master_positions(master_path: str | Path, *, cutoff_date: date, provider: ConfiguredPortfolioProvider) -> list[dict[str, Any]]:
@@ -158,26 +233,13 @@ def _build_tir_rows(positions: list[dict[str, Any]]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for position in positions:
         classification = str(position.get("classification", "") or "")
-        is_amortized = _is_amortized_cost_classification(classification)
         weight_value = _coerce_decimal(position.get("market_value_crc") or position.get("market_value") or position.get("book_value"))
-        rate_value = Decimal("0")
-        rate_source = "none"
-        if is_amortized:
-            rate_value = _coerce_decimal(position.get("nominal_rate") or position.get("portfolio_yield") or position.get("yield_value"))
-            rate_source = "nominal_rate" if _coerce_decimal(position.get("nominal_rate") or position.get("portfolio_yield") or position.get("yield_value")) != Decimal("0") else "portfolio_yield"
-        else:
-            rate_value = _coerce_decimal(position.get("portfolio_yield") or position.get("yield_value") or position.get("nominal_rate"))
-            rate_source = "master_tir" if _coerce_decimal(position.get("portfolio_yield") or position.get("yield_value") or position.get("nominal_rate")) != Decimal("0") else "nominal_rate"
 
-        is_excluded = False
-        exclusion_reason = ""
-        normalized_classification = _normalize_classification(classification)
-        if not normalized_classification:
-            is_excluded = True
-            exclusion_reason = "missing_classification"
-        elif "cerrado" in normalized_classification or "closed" in normalized_classification:
-            is_excluded = True
-            exclusion_reason = "closed_position"
+        rate_source, effective_rate, _, exclusion_reason, _ = _classify_rate_source(position)
+        master_tir = _resolve_position_value(position, "portfolio_yield", "yield_value", "master_tir", "tir")
+        facial_rate = _resolve_position_value(position, "nominal_rate", "facial_rate", "rate", "tasa nominal")
+        master_tir_value = _coerce_decimal(master_tir)
+        facial_rate_value = _coerce_decimal(facial_rate)
 
         rows.append(
             {
@@ -188,45 +250,79 @@ def _build_tir_rows(positions: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "product_code": position.get("product_code", ""),
                 "currency": position.get("currency", ""),
                 "classification": classification,
-                "nominal": _coerce_decimal(position.get("nominal") or position.get("traded_balance") or position.get("principal_balance")),
-                "book_value": _coerce_decimal(position.get("book_value")),
-                "market_value": _coerce_decimal(position.get("market_value")),
-                "market_value_crc": _coerce_decimal(position.get("market_value_crc") or position.get("market_value")),
-                "weight_value": weight_value,
-                "rate": rate_value,
+                "master_tir": master_tir_value,
+                "facial_rate": facial_rate_value,
+                "effective_rate": effective_rate,
                 "rate_source": rate_source,
-                "is_amortized_cost": is_amortized,
-                "is_eligible": not is_excluded,
+                "market_value_crc": _coerce_decimal(position.get("market_value_crc") or position.get("market_value")),
+                "weighted_rate_contribution": effective_rate * weight_value if rate_source in {"MASTER_TIR", "FACIAL_RATE_FALLBACK"} and effective_rate is not None else Decimal("0"),
+                "included_in_portfolio_tir": rate_source in {"MASTER_TIR", "FACIAL_RATE_FALLBACK"},
                 "exclusion_reason": exclusion_reason,
             }
         )
     return rows
 
 
-def _print_summary(label: str, rows: list[dict[str, Any]]) -> None:
-    eligible_rows = [row for row in rows if row.get("is_eligible")]
-    if not eligible_rows:
+def _print_rate_bucket(label: str, rows: list[dict[str, Any]], *, rate_source: str) -> None:
+    bucket_rows = [row for row in rows if row.get("rate_source") == rate_source]
+    if not bucket_rows:
         print(f"{label}")
         print("  positions: 0")
-        print("  total_weight: 0.00")
-        print("  weighted_rate: 0.00")
+        print("  CRC weight: 0.00")
+        print("  weighted rate: 0.00")
         return
-    total_weight = sum((_coerce_decimal(row.get("weight_value")) for row in eligible_rows), Decimal("0"))
-    weighted_rate = sum((_coerce_decimal(row.get("rate")) * _coerce_decimal(row.get("weight_value")) for row in eligible_rows), Decimal("0")) / total_weight if total_weight else Decimal("0")
+    total_weight = sum((_coerce_decimal(row.get("market_value_crc")) for row in bucket_rows), Decimal("0"))
+    weighted_rate = sum((_coerce_decimal(row.get("effective_rate")) * _coerce_decimal(row.get("market_value_crc")) for row in bucket_rows), Decimal("0")) / total_weight if total_weight else Decimal("0")
     print(f"{label}")
-    print(f"  positions: {len(eligible_rows)}")
-    print(f"  total_weight: {_format_decimal(total_weight)}")
-    print(f"  weighted_rate: {_format_decimal(weighted_rate)}")
+    print(f"  positions: {len(bucket_rows)}")
+    print(f"  CRC weight: {_format_decimal(total_weight)}")
+    print(f"  weighted rate: {_format_decimal(weighted_rate)}")
 
 
 def _print_excluded_summary(rows: list[dict[str, Any]]) -> None:
-    excluded_rows = [row for row in rows if not row.get("is_eligible")]
-    total_weight = sum((_coerce_decimal(row.get("weight_value")) for row in excluded_rows), Decimal("0"))
-    print("EXCLUDED SUMMARY")
+    excluded_rows = [row for row in rows if row.get("rate_source") == "EXCLUDED"]
+    total_weight = sum((_coerce_decimal(row.get("market_value_crc")) for row in excluded_rows), Decimal("0"))
+    print("EXCLUDED")
     print(f"  positions: {len(excluded_rows)}")
-    print(f"  total_weight: {_format_decimal(total_weight)}")
+    print(f"  CRC weight: {_format_decimal(total_weight)}")
     if excluded_rows:
-        print("  reasons: " + ", ".join(sorted({row.get("exclusion_reason", "") for row in excluded_rows if row.get("exclusion_reason")})))
+        reasons = sorted({row.get("exclusion_reason", "") for row in excluded_rows if row.get("exclusion_reason")})
+        print("  reasons: " + ", ".join(reasons))
+
+
+def _print_rate_quality_diagnostics(rows: list[dict[str, Any]]) -> None:
+    summary = {
+        "null_master_tir": 0,
+        "zero_master_tir": 0,
+        "null_facial_rate": 0,
+        "zero_facial_rate": 0,
+        "implausible_rate": 0,
+        "inconsistent_rate_scale": 0,
+    }
+    for row in rows:
+        master_tir = row.get("master_tir")
+        facial_rate = row.get("facial_rate")
+        if master_tir is None:
+            summary["null_master_tir"] += 1
+        elif _coerce_decimal(master_tir) == Decimal("0"):
+            summary["zero_master_tir"] += 1
+        if facial_rate is None:
+            summary["null_facial_rate"] += 1
+        elif _coerce_decimal(facial_rate) == Decimal("0"):
+            summary["zero_facial_rate"] += 1
+        if _is_implausible_rate(master_tir) or _is_implausible_rate(facial_rate):
+            summary["implausible_rate"] += 1
+        if master_tir is not None and facial_rate is not None:
+            master_value = _coerce_decimal(master_tir)
+            facial_value = _coerce_decimal(facial_rate)
+            if master_value != Decimal("0") and facial_value != Decimal("0") and (
+                (abs(master_value) < Decimal("1") and abs(facial_value) > Decimal("1"))
+                or (abs(facial_value) < Decimal("1") and abs(master_value) > Decimal("1"))
+            ):
+                summary["inconsistent_rate_scale"] += 1
+    print("RATE QUALITY DIAGNOSTICS")
+    for label, count in summary.items():
+        print(f"  {label}: {count}")
 
 
 def _write_csv(rows: list[dict[str, Any]], output_path: Path) -> None:
@@ -239,15 +335,13 @@ def _write_csv(rows: list[dict[str, Any]], output_path: Path) -> None:
         "product_code",
         "currency",
         "classification",
-        "nominal",
-        "book_value",
-        "market_value",
-        "market_value_crc",
-        "weight_value",
-        "rate",
+        "master_tir",
+        "facial_rate",
+        "effective_rate",
         "rate_source",
-        "is_amortized_cost",
-        "is_eligible",
+        "market_value_crc",
+        "weighted_rate_contribution",
+        "included_in_portfolio_tir",
         "exclusion_reason",
     ]
     with output_path.open("w", newline="", encoding="utf-8") as handle:
@@ -256,11 +350,14 @@ def _write_csv(rows: list[dict[str, Any]], output_path: Path) -> None:
         for row in rows:
             writer.writerow({
                 key: (
-                    _format_decimal(_coerce_decimal(value))
-                    if key in {"nominal", "book_value", "market_value", "market_value_crc", "weight_value", "rate"}
+                    ""
+                    if key in {"master_tir", "facial_rate", "effective_rate", "market_value_crc", "weighted_rate_contribution"} and value in {None, ""}
+                    else _format_decimal(_coerce_decimal(value))
+                    if key in {"master_tir", "facial_rate", "effective_rate", "market_value_crc", "weighted_rate_contribution"}
                     else value
                 )
                 for key, value in row.items()
+                if key in fieldnames
             })
 
 
@@ -270,25 +367,63 @@ def _print_report(rows: list[dict[str, Any]], *, output_path: Path, cutoff_date:
     print(f"Output: {output_path}")
     print(f"Rows written: {len(rows)}")
     print()
-    print("MARKET-VALUED SUMMARY")
-    market_rows = [row for row in rows if row.get("is_eligible") and not row.get("is_amortized_cost")]
-    _print_summary("MARKET-VALUED SUMMARY", market_rows)
+    _print_rate_quality_diagnostics(rows)
     print()
-    print("AMORTIZED-COST SUMMARY")
-    amortized_rows = [row for row in rows if row.get("is_eligible") and row.get("is_amortized_cost")]
-    _print_summary("AMORTIZED-COST SUMMARY", amortized_rows)
+    print("MASTER TIR SOURCE")
+    _print_rate_bucket("MASTER TIR SOURCE", rows, rate_source="MASTER_TIR")
     print()
-    print("COMBINED ELIGIBLE FIXED INCOME SUMMARY")
-    eligible_rows = [row for row in rows if row.get("is_eligible")]
-    _print_summary("COMBINED ELIGIBLE FIXED INCOME SUMMARY", eligible_rows)
+    print("FACIAL RATE FALLBACK")
+    _print_rate_bucket("FACIAL RATE FALLBACK", rows, rate_source="FACIAL_RATE_FALLBACK")
+    print()
+    print("MISSING RATE REVIEW")
+    missing_rows = [row for row in rows if row.get("rate_source") == "MISSING_RATE_REVIEW"]
+    total_weight = sum((_coerce_decimal(row.get("market_value_crc")) for row in missing_rows), Decimal("0"))
+    print(f"  positions: {len(missing_rows)}")
+    print(f"  CRC weight: {_format_decimal(total_weight)}")
+    for row in missing_rows[:20]:
+        print(f"    {row.get('issuer')} | {row.get('classification')} | {row.get('isin')} | crc={_format_decimal(_coerce_decimal(row.get('market_value_crc')))}")
     print()
     _print_excluded_summary(rows)
     print()
-    print("POSITION DETAIL")
-    for row in rows:
-        print(
-            f"{row.get('issuer')} | {row.get('classification')} | weight={_format_decimal(_coerce_decimal(row.get('weight_value')))} | rate={_format_decimal(_coerce_decimal(row.get('rate')))} | source={row.get('rate_source')}"
-        )
+    included_rows = [row for row in rows if row.get("included_in_portfolio_tir")]
+    total_weight = sum((_coerce_decimal(row.get("market_value_crc")) for row in included_rows), Decimal("0"))
+    weighted_effective_tir = sum((_coerce_decimal(row.get("effective_rate")) * _coerce_decimal(row.get("market_value_crc")) for row in included_rows), Decimal("0")) / total_weight if total_weight else Decimal("0")
+    print("COMBINED PORTFOLIO TIR")
+    print(f"  included positions: {len(included_rows)}")
+    print(f"  CRC denominator: {_format_decimal(total_weight)}")
+    print(f"  weighted effective TIR: {_format_decimal(weighted_effective_tir)}")
+    print()
+    print("BY CURRENCY")
+    by_currency: dict[str, list[dict[str, Any]]] = {}
+    for row in included_rows:
+        by_currency.setdefault(str(row.get("currency", "")).strip().upper() or "UNKNOWN", []).append(row)
+    for currency, bucket_rows in sorted(by_currency.items()):
+        bucket_weight = sum((_coerce_decimal(row.get("market_value_crc")) for row in bucket_rows), Decimal("0"))
+        print(f"  {currency}: positions={len(bucket_rows)} weight={_format_decimal(bucket_weight)}")
+    print()
+    print("BY ISSUER")
+    by_issuer: dict[str, list[dict[str, Any]]] = {}
+    for row in included_rows:
+        by_issuer.setdefault(str(row.get("issuer", "")).strip() or "UNKNOWN", []).append(row)
+    for issuer, bucket_rows in sorted(by_issuer.items()):
+        bucket_weight = sum((_coerce_decimal(row.get("market_value_crc")) for row in bucket_rows), Decimal("0"))
+        print(f"  {issuer}: positions={len(bucket_rows)} weight={_format_decimal(bucket_weight)}")
+    print()
+    print("BY PRODUCT")
+    by_product: dict[str, list[dict[str, Any]]] = {}
+    for row in included_rows:
+        by_product.setdefault(str(row.get("product_code", "")).strip() or "UNKNOWN", []).append(row)
+    for product_code, bucket_rows in sorted(by_product.items()):
+        bucket_weight = sum((_coerce_decimal(row.get("market_value_crc")) for row in bucket_rows), Decimal("0"))
+        print(f"  {product_code}: positions={len(bucket_rows)} weight={_format_decimal(bucket_weight)}")
+    print()
+    print("BY CLASSIFICATION")
+    by_classification: dict[str, list[dict[str, Any]]] = {}
+    for row in included_rows:
+        by_classification.setdefault(str(row.get("classification", "")).strip() or "UNKNOWN", []).append(row)
+    for classification, bucket_rows in sorted(by_classification.items()):
+        bucket_weight = sum((_coerce_decimal(row.get("market_value_crc")) for row in bucket_rows), Decimal("0"))
+        print(f"  {classification}: positions={len(bucket_rows)} weight={_format_decimal(bucket_weight)}")
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:

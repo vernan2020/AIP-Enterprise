@@ -47,13 +47,15 @@ def test_reconcile_portfolio_tir_cli_writes_csv_and_reports_tir_summary(tmp_path
         "Monto Estimacion",
         "Monto Deterioro",
         "TIR",
+        "Tasa Nominal",
         "Duracion",
         "DV01",
         "HHI",
         "Fecha Vencimiento",
     ])
-    worksheet.append(["Banco Central", "CR1234567890", "S240327", "TPTBA", "V.C", "S", "CRC", 1000000.0, 1000000.0, 1000000.0, 1000000.0, 980000.0, 95.0, 100000.0, 20000.0, 5000.0, 3000.0, 50.0, 1000.0, 200.0, 5.2, 3.5, 10000.0, 2500.0, "2027-03-24"])
-    worksheet.append(["Banco Central", "CR1234567891", "B180429", "TPTBA", "costo amortizado", "S", "USD", 250000.0, 250000.0, 250000.0, 250000.0, 250000.0, 100.0, 120000.0, 30000.0, 6000.0, 4000.0, 1500.0, 400.0, 4.8, 4.2, 12000.0, 3100.0, "2029-04-18"])
+    worksheet.append(["Banco Central", "CR1234567890", "S240327", "TPTBA", "V.C", "S", "CRC", 1000000.0, 1000000.0, 1000000.0, 1000000.0, 980000.0, 95.0, 100000.0, 20000.0, 5000.0, 3000.0, 50.0, 1000.0, 5.2, 4.3, 3.5, 10000.0, 2500.0, "2027-03-24"])
+    worksheet.append(["Banco Central", "CR1234567891", "B180429", "TPTBA", "costo amortizado", "S", "USD", 250000.0, 250000.0, 250000.0, 250000.0, 250000.0, 100.0, 120000.0, 30000.0, 6000.0, 4000.0, 1500.0, 400.0, None, 6.1, 4.2, 12000.0, 3100.0, "2029-04-18"])
+    worksheet.append(["Banco Central", "CR1234567892", "S240328", "TPTBA", "V.C", "S", "CRC", 500000.0, 500000.0, 500000.0, 500000.0, 480000.0, 95.0, 100000.0, 20000.0, 5000.0, 3000.0, 50.0, 1000.0, None, None, 3.5, 10000.0, 2500.0, "2027-03-24"])
     workbook.save(workbook_path)
 
     vector_path = vector_root / "VectorPiPCA_20260729.txt"
@@ -82,18 +84,24 @@ def test_reconcile_portfolio_tir_cli_writes_csv_and_reports_tir_summary(tmp_path
     with output_path.open(newline="", encoding="utf-8") as handle:
         rows = list(csv.DictReader(handle))
 
-    assert len(rows) == 2
-    assert rows[0]["rate_source"] == "master_tir"
-    assert rows[1]["rate_source"] == "nominal_rate"
-    assert rows[0]["weight_value"]
-    assert rows[1]["weight_value"]
+    assert len(rows) == 3
+    assert rows[0]["rate_source"] == "MASTER_TIR"
+    assert rows[1]["rate_source"] == "FACIAL_RATE_FALLBACK"
+    assert rows[2]["rate_source"] == "MISSING_RATE_REVIEW"
+    assert rows[0]["effective_rate"] == "5.20"
+    assert rows[1]["effective_rate"] == "6.10"
+    assert rows[2]["effective_rate"] == ""
+    assert rows[0]["market_value_crc"]
+    assert rows[1]["market_value_crc"]
+    assert rows[2]["market_value_crc"]
 
     report = buffer.getvalue()
     assert "TIR RECONCILIATION REPORT" in report
-    assert "MARKET-VALUED SUMMARY" in report
-    assert "AMORTIZED-COST SUMMARY" in report
-    assert "COMBINED ELIGIBLE FIXED INCOME SUMMARY" in report
-    assert "EXCLUDED SUMMARY" in report
+    assert "MASTER TIR SOURCE" in report
+    assert "FACIAL RATE FALLBACK" in report
+    assert "MISSING RATE REVIEW" in report
+    assert "EXCLUDED" in report
+    assert "COMBINED PORTFOLIO TIR" in report
 
     completed = subprocess.run(
         [sys.executable, "-m", "aip.tools.reconcile_portfolio_tir", "--output", str(output_path)],
