@@ -4,7 +4,6 @@ import time
 from datetime import datetime, timezone
 from typing import Any
 
-from aip.product.configured.bootstrap.configured_application_factory import ConfiguredApplicationFactory
 from aip.product.demo.bootstrap.application_factory import DemoApplicationFactory
 from aip.product.demo.configuration.demo_config import DemoConfig
 from aip.product.demo.exceptions import DemoBootstrapError
@@ -14,12 +13,19 @@ from aip.product.demo.status.startup_status import StartupStatus
 class DemoBootstrap:
     """Bootstraps the demo product slice with startup status tracking."""
 
-    def __init__(self, config: DemoConfig | None = None) -> None:
+    def __init__(
+        self,
+        config: DemoConfig | None = None,
+        *,
+        source_config: Any | None = None,
+    ) -> None:
         self._config = config or DemoConfig()
-        self._factory = (
-            ConfiguredApplicationFactory(self._config)
-            if self._config.execution_mode == "CONFIGURED"
-            else DemoApplicationFactory(self._config)
+        # A single application-facing factory owns mode delegation.  This
+        # keeps DEMO and CONFIGURED startup on the same composition path and
+        # prevents a second, disconnected container from being created.
+        self._factory = DemoApplicationFactory(
+            self._config,
+            source_config=source_config,
         )
 
     @property
