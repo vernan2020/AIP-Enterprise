@@ -13,7 +13,7 @@ This manifest records the canonical recovered local artifacts that remain to be 
 | `src/aip/product/configured/adapters/configured_market_provider.py` | 23773 | `45edf8adef92ba9455c51833e400cd9f2e5dca5a65fcf1dd1537b4acc84cf5ad` |
 | `src/aip/product/configured/adapters/configured_liquidity_provider.py` | 28676 | `4c7ef50773c7be00475bf2c8f683e29de4a13847c021427e3968faa41d9a8e68` |
 | `src/aip/product/configured/services/configured_portfolio_var_service.py` | 51134 | `37ef70a7d328f1d6a2629200776332ae2c4989e87f2b707e3e7286012fa49011` |
-| `src/aip/ui/shell/main_window.py` | 44945 | `ae596c94a064ceea802771a5182782de9f88ccb66db46538518b9de2f8f97526` |
+| `src/aip/ui/shell/main_window.py` | 45165 | `b86dec86fee2c8feaebec6c0435728f82789c72256071f8ea48c7658e22435d5` |
 | `src/aip/ui/modules/macro_intelligence/views/macro_intelligence_view.py` | 32129 | `a6190980e4fe925c3e35c6b7825b87d61f4610f476d7df331e45d064ca53e496` |
 
 ## Recovery rules
@@ -27,6 +27,8 @@ This manifest records the canonical recovered local artifacts that remain to be 
 ## Current local hardening after manifest hash
 
 The recovered Macro Intelligence view was additionally hardened so a refresh requested while a BCCR worker is running is coalesced and executed immediately after the active worker finishes. This prevents a valuation-date change from being silently skipped during an in-flight macro refresh. The Macro file hash above already includes this hardening.
+
+The recovered MainWindow was additionally hardened so the Treasury route injects `TreasuryPresenter(self._demo_factory)` instead of constructing `TreasuryView()` with an implicit presenter/factory. This prevents the production shell from creating a second independent `DemoApplicationFactory` when Treasury is opened. The MainWindow hash above includes this hardening and preserves the source file's CRLF line endings.
 
 ## Important branch state
 
