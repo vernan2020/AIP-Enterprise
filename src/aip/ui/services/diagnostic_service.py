@@ -55,9 +55,14 @@ class DiagnosticContext:
 
 
 class ProductionReadinessService:
-    def __init__(self, *, iterations: int = 100) -> None:
+    def __init__(
+        self,
+        *,
+        iterations: int = 100,
+        application_factory: DemoApplicationFactory | None = None,
+    ) -> None:
         self._iterations = iterations
-        self._factory = DemoApplicationFactory()
+        self._factory = application_factory or DemoApplicationFactory()
         self._metrics = DiagnosticMetricsStore()
 
     def run_stability_check(self) -> dict[str, Any]:
@@ -85,16 +90,17 @@ class ProductionReadinessService:
     def diagnostic_snapshot(self) -> dict[str, Any]:
         status = self._factory.build_system_status()
         context = DiagnosticContext()
+        config = self._factory.config
         return {
             "application_name": APP_NAME,
             "version": APP_VERSION,
             "release": APP_RELEASE,
             "diagnostic_mode": self._metrics.diagnostic_mode,
-            "environment": context.environment,
-            "execution_mode": context.execution_mode,
+            "environment": config.environment_name,
+            "execution_mode": config.execution_mode,
             "execution_id": context.execution_id,
             "correlation_id": context.correlation_id,
-            "valuation_date": context.valuation_date,
+            "valuation_date": config.data_cutoff_date.isoformat(),
             "connector_status": context.connector_status,
             "scheduler_jobs": context.scheduler_jobs,
             "last_refresh_duration": self._metrics.last_refresh_duration_ms,
