@@ -32,6 +32,9 @@ from aip.product.configured.services.configured_portfolio_rate_shock_service imp
 from aip.product.configured.services.configured_portfolio_var_service import (
     ConfiguredPortfolioVaRService,
 )
+from aip.product.configured.services.configured_macro_intelligence_service import (
+    ConfiguredMacroIntelligenceService,
+)
 from aip.product.configured.protocols import (
     EconomicIndicatorsProvider,
     LiquidityDataProvider,
@@ -40,6 +43,7 @@ from aip.product.configured.protocols import (
     SourceHealthProvider,
 )
 from aip.product.demo.configuration.demo_config import DemoConfig
+from aip.product.demo.workflows.executive_refresh_workflow import ExecutiveRefreshWorkflow
 from aip.product.demo.workflows.initial_load_workflow import (
     InitialLoadWorkflow,
 )
@@ -57,42 +61,16 @@ class ConfiguredDependencyComposition:
         source_config: ConfiguredSourceConfig | None = None,
     ) -> None:
         self._config = config
-        self._source_config = (
-            source_config
-            or ConfiguredSourceConfig()
-        )
+        self._source_config = source_config or ConfiguredSourceConfig()
 
-    def compose(
-        self,
-        container: Container,
-    ) -> Container:
-        # =========================================================
-        # CONFIGURATION
-        # =========================================================
+    def compose(self, container: Container) -> Container:
+        container.register_instance(DemoConfig, self._config)
+        container.register_instance(ConfiguredSourceConfig, self._source_config)
 
-        container.register_instance(
-            DemoConfig,
-            self._config,
-        )
-
-        container.register_instance(
-            ConfiguredSourceConfig,
-            self._source_config,
-        )
-
-        # =========================================================
-        # INFRASTRUCTURE / DATA PROVIDERS
-        # =========================================================
-
-        health_provider = ConfiguredHealthProvider(
-            self._source_config
-        )
+        health_provider = ConfiguredHealthProvider(self._source_config)
 
         bccr_config = BCCRConfig(
-            base_url=(
-                self._source_config.bccr.base_url
-                or "https://apim.bccr.fi.cr"
-            ),
+            base_url=self._source_config.bccr.base_url or "https://apim.bccr.fi.cr",
             indicators=list(
                 self._source_config.bccr.series_config
                 or self._source_config.bccr.indicator_configuration
@@ -110,16 +88,11 @@ class ConfiguredDependencyComposition:
             config=bccr_config,
             provider=UrllibHTTPProvider(),
         )
-
-        economic_indicators_provider = (
-            ConfiguredEconomicIndicatorsProvider(
-                bccr_config=bccr_config,
-            )
+        economic_indicators_provider = ConfiguredEconomicIndicatorsProvider(
+            bccr_config=bccr_config,
         )
 
-        valuation_date_context = ValuationDateContext(
-            self._config.data_cutoff_date
-        )
+        valuation_date_context = ValuationDateContext(self._config.data_cutoff_date)
 
         portfolio_provider = ConfiguredPortfolioProvider(
             self._config,
@@ -127,27 +100,14 @@ class ConfiguredDependencyComposition:
             health_provider,
             valuation_date_context=valuation_date_context,
         )
-
-        portfolio_var_service = (
-            ConfiguredPortfolioVaRService(
-                self._config,
-                self._source_config,
-                portfolio_provider,
-                valuation_date_context=valuation_date_context,
-            )
+        portfolio_var_service = ConfiguredPortfolioVaRService(
+            self._config,
+            self._source_config,
+            portfolio_provider,
+            valuation_date_context=valuation_date_context,
         )
-
-        portfolio_dv01_service = (
-            ConfiguredPortfolioDV01Service(
-                portfolio_provider
-            )
-        )
-
-        portfolio_rate_shock_service = (
-            ConfiguredPortfolioRateShockService(
-                portfolio_provider
-            )
-        )
+        portfolio_dv01_service = ConfiguredPortfolioDV01Service(portfolio_provider)
+        portfolio_rate_shock_service = ConfiguredPortfolioRateShockService(portfolio_provider)
 
         market_provider = ConfiguredMarketProvider(
             self._config,
@@ -156,7 +116,6 @@ class ConfiguredDependencyComposition:
             portfolio_provider=portfolio_provider,
             valuation_date_context=valuation_date_context,
         )
-
         liquidity_provider = ConfiguredLiquidityProvider(
             self._config,
             self._source_config,
@@ -165,132 +124,54 @@ class ConfiguredDependencyComposition:
             valuation_date_context=valuation_date_context,
         )
 
+        container.register_instance(ValuationDateContext, valuation_date_context)
+        container.register_instance(SourceHealthProvider, health_provider)
+        container.register_instance(PortfolioDataProvider, portfolio_provider)
+        container.register_instance(MarketDataProvider, market_provider)
+        container.register_instance(LiquidityDataProvider, liquidity_provider)
+        container.register_instance(EconomicIndicatorsProvider, economic_indicators_provider)
+
+        container.register_instance(ConfiguredHealthProvider, health_provider)
+        container.register_instance(ConfiguredEconomicIndicatorsProvider, economic_indicators_provider)
+        container.register_instance(BCCRConfig, bccr_config)
+        container.register_instance(BCCRConnector, bccr_connector)
+        container.register_instance(ConfiguredPortfolioProvider, portfolio_provider)
+        container.register_instance(ConfiguredMarketProvider, market_provider)
+        container.register_instance(ConfiguredLiquidityProvider, liquidity_provider)
+        container.register_instance(ConfiguredPortfolioVaRService, portfolio_var_service)
+        container.register_instance(ConfiguredPortfolioDV01Service, portfolio_dv01_service)
+        container.register_instance(ConfiguredPortfolioRateShockService, portfolio_rate_shock_service)
         container.register_instance(
-            ValuationDateContext,
-            valuation_date_context,
+            ConfiguredMacroIntelligenceService,
+            ConfiguredMacroIntelligenceService(),
         )
-
-        # =========================================================
-        # PROTOCOL REGISTRATIONS
-        # =========================================================
-
-        container.register_instance(
-            SourceHealthProvider,
-            health_provider,
-        )
-
-        container.register_instance(
-            PortfolioDataProvider,
-            portfolio_provider,
-        )
-
-        container.register_instance(
-            MarketDataProvider,
-            market_provider,
-        )
-
-        container.register_instance(
-            LiquidityDataProvider,
-            liquidity_provider,
-        )
-
-        container.register_instance(
-            EconomicIndicatorsProvider,
-            economic_indicators_provider,
-        )
-
-        # =========================================================
-        # CONCRETE REGISTRATIONS
-        # =========================================================
-
-        container.register_instance(
-            ConfiguredHealthProvider,
-            health_provider,
-        )
-
-        container.register_instance(
-            ConfiguredEconomicIndicatorsProvider,
-            economic_indicators_provider,
-        )
-
-        container.register_instance(
-            BCCRConfig,
-            bccr_config,
-        )
-
-        container.register_instance(
-            BCCRConnector,
-            bccr_connector,
-        )
-
-        container.register_instance(
-            ConfiguredPortfolioProvider,
-            portfolio_provider,
-        )
-
-        container.register_instance(
-            ConfiguredMarketProvider,
-            market_provider,
-        )
-
-        container.register_instance(
-            ConfiguredLiquidityProvider,
-            liquidity_provider,
-        )
-        container.register_instance(
-            ConfiguredPortfolioVaRService,
-            portfolio_var_service,
-        )
-
-        container.register_instance(
-            ConfiguredPortfolioDV01Service,
-            portfolio_dv01_service,
-        )
-
-        container.register_instance(
-            ConfiguredPortfolioRateShockService,
-            portfolio_rate_shock_service,
-        )
-
-        # =========================================================
-        # WORKFLOWS
-        # =========================================================
 
         container.register_factory(
             InitialLoadWorkflow,
             lambda _container: InitialLoadWorkflow(
                 self._config,
-                portfolio_provider=_container.resolve(
-                    PortfolioDataProvider
-                ),
-                market_provider=_container.resolve(
-                    MarketDataProvider
-                ),
-                liquidity_provider=_container.resolve(
-                    LiquidityDataProvider
-                ),
-                health_provider=_container.resolve(
-                    SourceHealthProvider
-                ),
+                portfolio_provider=_container.resolve(PortfolioDataProvider),
+                market_provider=_container.resolve(MarketDataProvider),
+                liquidity_provider=_container.resolve(LiquidityDataProvider),
+                health_provider=_container.resolve(SourceHealthProvider),
             ),
         )
-
         container.register_factory(
             RefreshAllWorkflow,
             lambda _container: RefreshAllWorkflow(
                 self._config,
-                portfolio_provider=_container.resolve(
-                    PortfolioDataProvider
-                ),
-                market_provider=_container.resolve(
-                    MarketDataProvider
-                ),
-                liquidity_provider=_container.resolve(
-                    LiquidityDataProvider
-                ),
-                health_provider=_container.resolve(
-                    SourceHealthProvider
-                ),
+                portfolio_provider=_container.resolve(PortfolioDataProvider),
+                market_provider=_container.resolve(MarketDataProvider),
+                liquidity_provider=_container.resolve(LiquidityDataProvider),
+                health_provider=_container.resolve(SourceHealthProvider),
+                valuation_date_context=_container.resolve(ValuationDateContext),
+            ),
+        )
+        container.register_factory(
+            ExecutiveRefreshWorkflow,
+            lambda _container: ExecutiveRefreshWorkflow(
+                self._config,
+                valuation_date_context=_container.resolve(ValuationDateContext),
             ),
         )
 
@@ -299,13 +180,6 @@ class ConfiguredDependencyComposition:
 
     @staticmethod
     def _validate_required_services(container: Container) -> None:
-        """Fail fast when the CONFIGURED composition is incomplete.
-
-        The desktop shell must never discover a missing institutional
-        dependency only when a user opens a module.  Resolving the required
-        registrations here validates the composition without performing
-        network I/O or portfolio calculations.
-        """
         required_services = (
             SourceHealthProvider,
             PortfolioDataProvider,
@@ -315,9 +189,12 @@ class ConfiguredDependencyComposition:
             ConfiguredPortfolioVaRService,
             ConfiguredPortfolioDV01Service,
             ConfiguredPortfolioRateShockService,
+            ConfiguredMacroIntelligenceService,
             BCCRConfig,
             BCCRConnector,
             ValuationDateContext,
+            RefreshAllWorkflow,
+            ExecutiveRefreshWorkflow,
         )
         for service_type in required_services:
             container.resolve(service_type)
