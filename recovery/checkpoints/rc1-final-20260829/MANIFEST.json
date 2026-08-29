@@ -1,7 +1,7 @@
 {
   "checkpoint": "AIP Enterprise RC1 final recovered runtime",
   "checkpoint_directory": "recovery/checkpoints/rc1-final-20260829",
-  "payload_sha256": "d88798ab1ccc83742fd6e62dccbf07d86d3b4e85d7a9bb9ee78161665d05e373",
+  "payload_sha256": "5c245fb32d1d0977e637bca5263c25fe519c6dc6bd109ae98823c5c31b2120ae",
   "encoding": "base64",
   "archive_detection": "tarfile r:*",
   "part_pattern": "runtime_final.part*.b64",
@@ -23,12 +23,14 @@
     "no secret values are stored in the checkpoint manifest",
     "restore rejects absolute paths and parent traversal",
     "restore verifies SHA-256 before extraction",
+    "restore validates critical production members before extraction",
     "launcher restores only when critical runtime modules are absent",
     "launcher performs configured preflight before opening the UI"
   ],
   "qa": {
     "python_compileall": "PASS",
     "internal_aip_import_graph_missing": 0,
-    "liquidity_treasury_relative_value_tests": "175 passed"
+    "liquidity_treasury_relative_value_tests": "175 passed",
+    "canonical_checkpoint_digest_validation": "PASS"
   }
 }
