@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from aip.product.configured.protocols import PortfolioDataProvider
 from aip.product.demo.bootstrap.application_factory import DemoApplicationFactory
 from aip.product.demo.configuration.demo_config import DemoConfig
@@ -15,8 +17,23 @@ class PortfolioPresenter:
         self._demo_factory = demo_factory or DemoApplicationFactory(
             DemoConfig(execution_mode="DEMO", demo_mode_enabled=True)
         )
-        self._correlation_id = "corr-demo-portfolio"
+        self._correlation_id = "corr-portfolio"
         self._trace_configuration()
+
+    @staticmethod
+    def _format_optional_number(
+        value: Any,
+        *,
+        decimals: int = 2,
+        suffix: str = "",
+    ) -> str:
+        """Format optional presentation values without silently imputing missing data."""
+        if value is None or value == "":
+            return "N/D"
+        try:
+            return f"{float(value):.{decimals}f}{suffix}"
+        except (TypeError, ValueError):
+            return "N/D"
 
     def _trace_configuration(self) -> None:
         config = getattr(self._demo_factory, "config", None)
@@ -60,7 +77,7 @@ class PortfolioPresenter:
                 market_value=f"{position['market_value']:.2f}",
                 book_value=f"{position['book_value']:.2f}",
                 yield_value=f"{position['yield_value']:.2f}%",
-                modified_duration=f"{position['modified_duration']:.2f}",
+                modified_duration=self._format_optional_number(position.get("modified_duration")),
                 classification=position["classification"],
                 hqla_status=position["hqla_status"],
                 mil_status=position["mil_status"],
@@ -75,7 +92,7 @@ class PortfolioPresenter:
             book_value=f"{portfolio['book_value']:,.2f}",
             total_positions=len(portfolio["positions"]),
             weighted_yield=f"{portfolio['weighted_yield']:.2f}%",
-            modified_duration=f"{portfolio['modified_duration']:.2f}",
+            modified_duration=self._format_optional_number(portfolio.get("modified_duration")),
             hqla_percent=f"{portfolio['hqla_percent']:.0f}%",
             mil_eligible_percent=f"{portfolio['mil_eligible_percent']:.0f}%",
             currency_distribution=portfolio["currency_distribution"],
@@ -132,14 +149,14 @@ class PortfolioPresenter:
         return PortfolioViewModel(
             summary=PortfolioSummary(
                 portfolio_name="AIP Core Portfolio",
-                valuation_date="2026-07-29",
+                valuation_date="N/D",
                 market_value="0.00",
                 book_value="0.00",
                 total_positions=0,
-                weighted_yield="0.00%",
-                modified_duration="0.00",
-                hqla_percent="0%",
-                mil_eligible_percent="0%",
+                weighted_yield="N/D",
+                modified_duration="N/D",
+                hqla_percent="N/D",
+                mil_eligible_percent="N/D",
                 currency_distribution=(),
             ),
             rows=(),
