@@ -6,7 +6,7 @@ import io
 import tarfile
 from pathlib import Path
 
-EXPECTED_SHA256 = "1d210c7d571dba45feaf26518f8539fe423a6a54382635d168d4895a6dbe36ab"
+EXPECTED_SHA256 = "7c5b57dc71450cdd3dd4fbe58964ae44b55083009e10b88bb0c0200f45b2c06d"
 CHECKPOINT_DIR = Path("recovery/checkpoints/rc1-20260829")
 PART_PATTERN = "runtime_src.part*.b64"
 
