@@ -16,11 +16,10 @@ from aip.product.demo.adapters.demo_market_provider import DemoMarketProvider
 from aip.product.demo.adapters.demo_portfolio_provider import DemoPortfolioProvider
 from aip.product.demo.configuration.demo_config import DemoConfig
 from aip.product.demo.status.source_status import SourceStatus
-from aip.product.demo.workflows.portfolio_liquidity_composer import PortfolioLiquidityComposer
 
 
 class RefreshAllWorkflow:
-    """Application-wide refresh workflow for the demo product slice."""
+    """Application-wide refresh workflow for the product slice."""
 
     def __init__(
         self,
@@ -46,9 +45,7 @@ class RefreshAllWorkflow:
             for name, state in health.items()
         )
         portfolio = self._portfolio_provider.get_portfolio()
-        liquidity = PortfolioLiquidityComposer.compose(
-            portfolio, self._liquidity_provider.get_liquidity()
-        )
+        liquidity = self._liquidity_provider.get_liquidity()
         return {
             "execution_id": f"refresh-{correlation_id}",
             "correlation_id": correlation_id,
