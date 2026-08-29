@@ -1,5 +1,6 @@
 name: Apply Controlled Runtime Quality Fixes
 
+# Re-run after safe Ruff cleanup on the frozen materialized source.
 on:
   push:
     branches:
@@ -48,40 +49,21 @@ jobs:
               del lines[matches[0]]
               p.write_text(''.join(lines), encoding='utf-8')
 
-          # Preserve normalization call because it may validate/normalize even though its return is not consumed here.
           replace_once(
               'src/aip/integration/folderwatch/connector/folder_connector.py',
               '            normalized = self.normalizer.normalize(request.to_dict())\n',
               '            self.normalizer.normalize(request.to_dict())\n',
           )
-
-          # Preserve ObservabilityConfig construction/validation semantics, but make intentional discard explicit.
           replace_once(
               'src/aip/platform/observability/logging/logger_factory.py',
               '        effective = config or ObservabilityConfig()\n',
               '        _ = config or ObservabilityConfig()\n',
           )
-
-          # Product version has one authoritative source.
           remove_line_containing('src/aip/product/__init__.py', 'from aip.product.demo import __version__ as __version__')
-
-          # Remove genuinely unused duplicate calculations/locals; no business result consumed them.
-          remove_line_containing(
-              'src/aip/product/configured/adapters/configured_portfolio_provider.py',
-              'vector_records_available_for_matching =',
-          )
-          remove_line_containing(
-              'src/aip/product/configured/adapters/configured_portfolio_provider.py',
-              'price_vector_positions =',
-          )
-          remove_line_containing(
-              'src/aip/product/configured/adapters/configured_portfolio_provider.py',
-              'directory_name = vector_root.name',
-          )
-          remove_line_containing(
-              'src/aip/product/configured/services/institutional_matching_service.py',
-              'matching_key = self._compose_key(series, maturity)',
-          )
+          remove_line_containing('src/aip/product/configured/adapters/configured_portfolio_provider.py', 'vector_records_available_for_matching =')
+          remove_line_containing('src/aip/product/configured/adapters/configured_portfolio_provider.py', 'price_vector_positions =')
+          remove_line_containing('src/aip/product/configured/adapters/configured_portfolio_provider.py', 'directory_name = vector_root.name')
+          remove_line_containing('src/aip/product/configured/services/institutional_matching_service.py', 'matching_key = self._compose_key(series, maturity)')
           replace_once(
               'src/aip/tools/reconcile_portfolio_valuation.py',
               '    print("TOP 30 POSITIONS CONTRIBUTING TO DIFFERENCE")\n'
@@ -97,7 +79,6 @@ jobs:
               'amortized = sum(1 for row in rows if "amort" in str(row.get("classification", "")).lower())',
           )
 
-          # Fix real valuation-date runtime dependency used on interactive cutoff changes.
           app_factory = Path('src/aip/product/demo/bootstrap/application_factory.py')
           app_text = app_factory.read_text(encoding='utf-8')
           import_line = 'from aip.product.configured.context.valuation_date_context import ValuationDateContext\n'
@@ -108,7 +89,6 @@ jobs:
               app_text = app_text.replace(anchor, anchor + import_line, 1)
               app_factory.write_text(app_text, encoding='utf-8')
 
-          # Resolve forward type safely without introducing a runtime circular import.
           mil_request = Path('src/extensions/coopealianza/liquidity/mil/models/mil_request.py')
           mil_text = mil_request.read_text(encoding='utf-8')
           if 'from typing import TYPE_CHECKING, Any\n' not in mil_text:
@@ -124,7 +104,6 @@ jobs:
               mil_text = mil_text.replace(anchor, anchor + type_block, 1)
           mil_request.write_text(mil_text, encoding='utf-8')
 
-          # The local positions fixture in this test is dead: assertions exercise normalization directly.
           test_path = Path('tests/unit/domain/portfolio/test_portfolio.py')
           test_text = test_path.read_text(encoding='utf-8')
           function_marker = 'def test_institutional_currency_normalization_handles_usd_and_crc_variants() -> None:\n'
