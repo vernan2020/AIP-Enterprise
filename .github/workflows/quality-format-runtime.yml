@@ -1,5 +1,6 @@
 name: Format Certified Runtime
 
+# Ruff is the canonical import sorter; Black is the canonical formatter.
 on:
   push:
     branches:
@@ -30,15 +31,15 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e .[dev]
-      - name: Normalize imports and formatting
+      - name: Normalize formatting and imports
         run: |
-          isort src tests
+          black src tests
+          ruff check src tests --select I --fix
           black src tests
       - name: Validate deterministic quality gates
         run: |
           ruff check src tests
           black --check src tests
-          isort --check-only src tests
           python -m compileall -q src tests
       - name: Run institutional regression after formatting
         run: |
