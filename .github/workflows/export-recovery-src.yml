@@ -1,26 +1,54 @@
-name: Export Recovery Source
+name: Materialize Recovery Source
 
 on:
   push:
     branches:
       - recovery/full-runtime-rc1-20260829
+    paths:
+      - ".github/workflows/export-recovery-src.yml"
+      - "recovery/checkpoints/rc1-final-20260829/**"
+      - "scripts/recovery/restore_runtime_checkpoint.py"
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  export-src:
+  materialize-src:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout recovery branch
         uses: actions/checkout@v4
         with:
           ref: recovery/full-runtime-rc1-20260829
-      - name: Upload current source tree
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Verify and restore certified runtime
+        run: python scripts/recovery/restore_runtime_checkpoint.py
+
+      - name: Commit materialized source tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src
+          if git diff --cached --quiet; then
+            echo "Certified runtime already materialized in src."
+            exit 0
+          fi
+          git commit -m "Materialize certified RC1 runtime source tree"
+          git push origin HEAD:recovery/full-runtime-rc1-20260829
+
+      - name: Upload materialized source tree
         uses: actions/upload-artifact@v4
         with:
-          name: recovery-src-${{ github.sha }}
+          name: certified-recovery-src-${{ github.sha }}
           path: src
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 3
