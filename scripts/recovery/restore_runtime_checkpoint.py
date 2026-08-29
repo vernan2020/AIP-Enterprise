@@ -6,7 +6,7 @@ import io
 import tarfile
 from pathlib import Path
 
-EXPECTED_SHA256 = "74bfaa04d2709ac903e4d315b46cf2c74e9aa62a7749286e0110c86fde11c6c4"
+EXPECTED_SHA256 = "1d210c7d571dba45feaf26518f8539fe423a6a54382635d168d4895a6dbe36ab"
 CHECKPOINT_DIR = Path("recovery/checkpoints/rc1-20260829")
 PART_PATTERN = "runtime_src.part*.b64"
 
@@ -32,7 +32,7 @@ def main() -> int:
     if digest != EXPECTED_SHA256:
         raise RuntimeError(f"Checkpoint checksum mismatch: {digest}")
 
-    with tarfile.open(fileobj=io.BytesIO(payload), mode="r:gz") as archive:
+    with tarfile.open(fileobj=io.BytesIO(payload), mode="r:xz") as archive:
         archive.extractall(root, members=_safe_members(archive))
 
     print(f"AIP runtime checkpoint restored: {digest}")
