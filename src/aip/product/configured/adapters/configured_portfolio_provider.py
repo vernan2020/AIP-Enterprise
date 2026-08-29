@@ -7,22 +7,19 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
-from aip.domain.portfolio.services.portfolio_calculation_service import PortfolioCalculationService
-from aip.domain.portfolio.services.portfolio_duration_service import PortfolioDurationService
-from aip.domain.portfolio.services.portfolio_hqla_service import PortfolioHQLAService
-from aip.domain.portfolio.services.portfolio_mil_service import PortfolioMILService
 from aip.product.configured.configuration.configured_source_config import ConfiguredSourceConfig
 from aip.product.configured.configuration.institutional_paths import resolve_institutional_path
 from aip.product.configured.context.valuation_date_context import ValuationDateContext
 from aip.product.configured.protocols import SourceHealthProvider
-from aip.product.configured.readers.institutional_portfolio_master_reader import (
-    InstitutionalPortfolioMasterReader,
-)
+from aip.product.configured.readers.institutional_portfolio_master_reader import InstitutionalPortfolioMasterReader
 from aip.product.configured.readers.pipca_vector_reader import InstitutionalPiPCAVectorReader
-from aip.product.configured.services.institutional_matching_service import (
-    InstitutionalPortfolioMatchingService,
-)
+from aip.product.configured.services.institutional_matching_service import InstitutionalPortfolioMatchingService
 from aip.product.demo.configuration.demo_config import DemoConfig
+from aip.shared.money import Currency
+from aip.domain.portfolio.services.portfolio_calculation_service import PortfolioCalculationService
+from aip.domain.portfolio.services.portfolio_hqla_service import PortfolioHQLAService
+from aip.domain.portfolio.services.portfolio_mil_service import PortfolioMILService
+from aip.domain.portfolio.services.portfolio_duration_service import PortfolioDurationService
 
 
 class ConfiguredPortfolioProvider:

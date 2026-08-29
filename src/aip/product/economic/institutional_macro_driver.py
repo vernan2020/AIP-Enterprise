@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 
+
 EXPECTED_MACRO_DRIVER_CODES: tuple[str, ...] = (
     "FX_SELL",
     "TPM",

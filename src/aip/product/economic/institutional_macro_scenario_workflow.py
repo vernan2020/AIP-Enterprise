@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Literal
 
+
 ScenarioWorkflowEventType = Literal[
     "CREATED",
     "REVIEW_RESOLVED",

@@ -6,14 +6,13 @@ from datetime import date
 from aip.product.configured.repositories.economic_historical_repository import (
     EconomicHistoricalRepository,
 )
-
+from aip.product.economic.economic_history import (
+    EconomicHistoricalObservation,
+)
 from aip.product.economic.econometric_dataset import (
     EconometricDataPoint,
     EconometricMonthlyDataset,
     EconometricMonthlyRow,
-)
-from aip.product.economic.economic_history import (
-    EconomicHistoricalObservation,
 )
 
 

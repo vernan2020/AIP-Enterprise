@@ -1,16 +1,14 @@
 from __future__ import annotations
 
 from aip.core.container import Container
-from aip.product.configured.bootstrap.configured_dependency_composition import (
-    ConfiguredDependencyComposition,
-)
+from aip.product.configured.bootstrap.configured_dependency_composition import ConfiguredDependencyComposition
 from aip.product.configured.configuration.configured_source_config import ConfiguredSourceConfig
 from aip.product.demo.bootstrap.application_factory import DemoApplicationFactory
 from aip.product.demo.configuration.demo_config import DemoConfig
 from aip.product.demo.status.system_status import SystemStatus
-from aip.product.demo.workflows.executive_refresh_workflow import ExecutiveRefreshWorkflow
 from aip.product.demo.workflows.initial_load_workflow import InitialLoadWorkflow
 from aip.product.demo.workflows.refresh_all_workflow import RefreshAllWorkflow
+from aip.product.demo.workflows.executive_refresh_workflow import ExecutiveRefreshWorkflow
 
 
 class ConfiguredApplicationFactory(DemoApplicationFactory):

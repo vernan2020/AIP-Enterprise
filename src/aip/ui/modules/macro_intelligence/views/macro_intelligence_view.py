@@ -5,9 +5,9 @@ from decimal import Decimal
 from PySide6.QtCore import (
     QObject,
     QRunnable,
-    Qt,
     QThreadPool,
     QTimer,
+    Qt,
     Signal,
     Slot,
 )

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Literal
 
+
 InstitutionalForecastStatus = Literal[
     "APPROVED",
     "APPROVED_WITH_WARNINGS",

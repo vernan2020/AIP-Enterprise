@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
+
 IntegrationOrder = Literal[
     "I(0)",
     "I(1)",
