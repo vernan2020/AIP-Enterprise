@@ -1,0 +1,50 @@
+name: Materialize Recovered Runtime
+
+on:
+  push:
+    branches:
+      - recovery/full-runtime-rc1-20260829
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: ${{ !contains(github.event.head_commit.message, '[skip materialize]') }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout recovery branch
+        uses: actions/checkout@v4
+        with:
+          ref: recovery/full-runtime-rc1-20260829
+          fetch-depth: 0
+
+      - name: Preserve post-checkpoint hardening
+        run: |
+          mkdir -p /tmp/aip-preserve/product/demo/configuration
+          mkdir -p /tmp/aip-preserve/tools
+          mkdir -p /tmp/aip-preserve/extensions/coopealianza/liquidity/mil/models
+          cp src/aip/product/demo/configuration/environment_loader.py /tmp/aip-preserve/product/demo/configuration/environment_loader.py
+          cp src/aip/tools/preflight_runtime.py /tmp/aip-preserve/tools/preflight_runtime.py
+          cp src/extensions/coopealianza/liquidity/mil/models/mil_request.py /tmp/aip-preserve/extensions/coopealianza/liquidity/mil/models/mil_request.py
+
+      - name: Verify and materialize certified runtime checkpoint
+        run: python scripts/recovery/restore_runtime_checkpoint.py
+
+      - name: Restore post-checkpoint hardening
+        run: |
+          cp /tmp/aip-preserve/product/demo/configuration/environment_loader.py src/aip/product/demo/configuration/environment_loader.py
+          cp /tmp/aip-preserve/tools/preflight_runtime.py src/aip/tools/preflight_runtime.py
+          cp /tmp/aip-preserve/extensions/coopealianza/liquidity/mil/models/mil_request.py src/extensions/coopealianza/liquidity/mil/models/mil_request.py
+
+      - name: Commit materialized production runtime
+        run: |
+          if git diff --quiet -- src; then
+            echo "Runtime tree already matches the certified checkpoint."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src
+          git commit -m "recovery: materialize certified production runtime [skip materialize]"
+          git push origin HEAD:recovery/full-runtime-rc1-20260829
