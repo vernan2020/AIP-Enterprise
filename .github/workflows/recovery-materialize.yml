@@ -22,9 +22,11 @@ jobs:
       - name: Preserve post-checkpoint hardening
         run: |
           mkdir -p /tmp/aip-preserve/product/demo/configuration
+          mkdir -p /tmp/aip-preserve/product/demo/workflows
           mkdir -p /tmp/aip-preserve/tools
           mkdir -p /tmp/aip-preserve/extensions/coopealianza/liquidity/mil/models
           cp src/aip/product/demo/configuration/environment_loader.py /tmp/aip-preserve/product/demo/configuration/environment_loader.py
+          cp src/aip/product/demo/workflows/refresh_all_workflow.py /tmp/aip-preserve/product/demo/workflows/refresh_all_workflow.py
           cp src/aip/tools/preflight_runtime.py /tmp/aip-preserve/tools/preflight_runtime.py
           cp src/extensions/coopealianza/liquidity/mil/models/mil_request.py /tmp/aip-preserve/extensions/coopealianza/liquidity/mil/models/mil_request.py
 
@@ -34,13 +36,14 @@ jobs:
       - name: Restore post-checkpoint hardening
         run: |
           cp /tmp/aip-preserve/product/demo/configuration/environment_loader.py src/aip/product/demo/configuration/environment_loader.py
+          cp /tmp/aip-preserve/product/demo/workflows/refresh_all_workflow.py src/aip/product/demo/workflows/refresh_all_workflow.py
           cp /tmp/aip-preserve/tools/preflight_runtime.py src/aip/tools/preflight_runtime.py
           cp /tmp/aip-preserve/extensions/coopealianza/liquidity/mil/models/mil_request.py src/extensions/coopealianza/liquidity/mil/models/mil_request.py
 
       - name: Commit materialized production runtime
         run: |
           if git diff --quiet -- src; then
-            echo "Runtime tree already matches the certified checkpoint."
+            echo "Runtime tree already matches the certified checkpoint plus hardening."
             exit 0
           fi
           git config user.name "github-actions[bot]"
