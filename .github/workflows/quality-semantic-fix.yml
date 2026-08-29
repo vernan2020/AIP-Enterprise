@@ -49,20 +49,13 @@ jobs:
               del lines[matches[0]]
               p.write_text(''.join(lines), encoding='utf-8')
 
-          replace_once(
-              'src/aip/integration/folderwatch/connector/folder_connector.py',
-              '            normalized = self.normalizer.normalize(request.to_dict())\n',
-              '            self.normalizer.normalize(request.to_dict())\n',
-          )
-          replace_once(
-              'src/aip/platform/observability/logging/logger_factory.py',
-              '        effective = config or ObservabilityConfig()\n',
-              '        _ = config or ObservabilityConfig()\n',
-          )
+          replace_once('src/aip/integration/folderwatch/connector/folder_connector.py', '            normalized = self.normalizer.normalize(request.to_dict())\n', '            self.normalizer.normalize(request.to_dict())\n')
+          replace_once('src/aip/platform/observability/logging/logger_factory.py', '        effective = config or ObservabilityConfig()\n', '        _ = config or ObservabilityConfig()\n')
           remove_line_containing('src/aip/product/__init__.py', 'from aip.product.demo import __version__ as __version__')
           remove_line_containing('src/aip/product/configured/adapters/configured_portfolio_provider.py', 'vector_records_available_for_matching =')
           remove_line_containing('src/aip/product/configured/adapters/configured_portfolio_provider.py', 'price_vector_positions =')
           remove_line_containing('src/aip/product/configured/adapters/configured_portfolio_provider.py', 'directory_name = vector_root.name')
+          remove_line_containing('src/aip/product/configured/adapters/configured_portfolio_provider.py', 'directory_name = str(vector_root)')
           remove_line_containing('src/aip/product/configured/services/institutional_matching_service.py', 'matching_key = self._compose_key(series, maturity)')
           replace_once(
               'src/aip/tools/reconcile_portfolio_valuation.py',
@@ -74,10 +67,7 @@ jobs:
               '    for index, (_, row) in enumerate(differences[:30], start=1):\n'
               '        colonized = _field_value(row, "valor mercado colonizado")\n',
           )
-          remove_line_containing(
-              'src/aip/tools/reconcile_portfolio_valuation.py',
-              'amortized = sum(1 for row in rows if "amort" in str(row.get("classification", "")).lower())',
-          )
+          remove_line_containing('src/aip/tools/reconcile_portfolio_valuation.py', 'amortized = sum(1 for row in rows if "amort" in str(row.get("classification", "")).lower())')
 
           app_factory = Path('src/aip/product/demo/bootstrap/application_factory.py')
           app_text = app_factory.read_text(encoding='utf-8')
@@ -95,10 +85,7 @@ jobs:
               if 'from typing import Any\n' not in mil_text:
                   raise SystemExit('mil_request.py: typing import anchor not found')
               mil_text = mil_text.replace('from typing import Any\n', 'from typing import TYPE_CHECKING, Any\n', 1)
-          type_block = (
-              '\nif TYPE_CHECKING:\n'
-              '    from src.extensions.coopealianza.liquidity.mil.models.mil_asset import MilAsset\n'
-          )
+          type_block = ('\nif TYPE_CHECKING:\n' '    from src.extensions.coopealianza.liquidity.mil.models.mil_asset import MilAsset\n')
           if 'if TYPE_CHECKING:' not in mil_text:
               anchor = 'from typing import TYPE_CHECKING, Any\n'
               mil_text = mil_text.replace(anchor, anchor + type_block, 1)
