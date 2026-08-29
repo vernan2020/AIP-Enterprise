@@ -1,5 +1,6 @@
 name: CI
 
+# Certification run for the frozen, Ruff-clean recovered RC1 runtime.
 on:
   pull_request:
   push:
