@@ -113,6 +113,19 @@ def main() -> int:
         corruption = f"{type(exc).__name__}: {exc}"
 
     missing_critical = sorted(item for item in critical if not (root / item).is_file())
+
+    # Emit forensic metrics before enforcing acceptance criteria.  These
+    # diagnostics are required to decide whether the damaged transport can
+    # be used as a temporary source-recovery aid; they do not weaken any
+    # acceptance criterion below.
+    print(f"Verified corrupt checkpoint payload SHA-256: {digest}")
+    print(f"Extracted members before corruption/end: {len(extracted)}")
+    print(f"Extracted Python files: {python_files}")
+    print(f"Critical members present: {len(critical) - len(missing_critical)}/{len(critical)}")
+    print(f"Compression status: {corruption or 'stream completed without corruption'}")
+    if missing_critical:
+        print("Missing critical members: " + ", ".join(missing_critical))
+
     if missing_critical:
         raise RuntimeError(
             "Salvage is incomplete; critical runtime members are missing: "
@@ -123,11 +136,7 @@ def main() -> int:
             f"Salvage extracted only {python_files} Python files; minimum is {MINIMUM_PYTHON_FILES}"
         )
 
-    print(f"Verified corrupt checkpoint payload SHA-256: {digest}")
-    print(f"Extracted members before corruption/end: {len(extracted)}")
-    print(f"Extracted Python files: {python_files}")
     print(f"Validated critical members: {len(critical)}")
-    print(f"Compression status: {corruption or 'stream completed without corruption'}")
     print("Temporary salvage accepted for source materialization only.")
     return 0
 
