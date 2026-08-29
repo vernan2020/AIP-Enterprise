@@ -14,5 +14,5 @@ class LoggerFactory:
         provider: LogProvider | None = None,
         config: ObservabilityConfig | None = None,
     ) -> Logger:
-        effective = config or ObservabilityConfig()
+        _ = config or ObservabilityConfig()
         return Logger(provider=provider or NullProvider())

@@ -85,7 +85,7 @@ class FolderWatchConnector(Connector):
             validation_result = self.validator.validate(request)
             if not validation_result.ok:
                 raise IntegrationError("Validation failed")
-            normalized = self.normalizer.normalize(request.to_dict())
+            self.normalizer.normalize(request.to_dict())
             self.metrics.increment("files")
             self.health_monitor.record_processed(self.name, 1)
             return ExecutionResult(

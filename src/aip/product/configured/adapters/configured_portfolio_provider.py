@@ -84,7 +84,6 @@ class ConfiguredPortfolioProvider:
         price_vector = self._discover_price_vector()
         positions = [self._apply_position_payload_fields(position) for position in portfolio_master.get("positions", []) if isinstance(position, dict)]
         diagnostic_mode = self._source_config.resolve_diagnostic_mode()
-        vector_records_available_for_matching = len([self._normalize_vector_record(record) for record in price_vector.get("records", []) if isinstance(record, dict)])
         if positions:
             vector_records = [self._normalize_vector_record(record) for record in price_vector.get("records", []) if isinstance(record, dict)]
             matching_service = InstitutionalPortfolioMatchingService()
@@ -140,7 +139,6 @@ class ConfiguredPortfolioProvider:
         mil_eligible_percent = (mil_value_crc / market_value * Decimal("100")) if market_value > 0 else Decimal("0")
         currency_distribution = tuple(sorted({str(position.get("currency", "")).upper() for position in positions if position.get("currency")}))
         data_quality_status = "HEALTHY" if portfolio_master["status"] == "HEALTHY" and price_vector["status"] in {"HEALTHY", "DISABLED"} else "DEGRADED"
-        price_vector_positions = price_vector.get("positions", price_vector.get("records", []))
         return {
             "portfolio_name": f"{self._config.environment_name.title()} Configured Portfolio",
             "valuation_date": portfolio_master.get("valuation_date") or self._current_cutoff_date().isoformat(),
@@ -261,7 +259,6 @@ class ConfiguredPortfolioProvider:
             vector_root = Path(resolve_institutional_path(explicit_root) or explicit_root)
             directory_candidates = [vector_root]
             directory_message = f"Using explicit vector root {vector_root}"
-            directory_name = str(vector_root)
         else:
             portfolio_root = self._source_config.folder_watch.portfolio_root
             if not portfolio_root:
@@ -280,7 +277,6 @@ class ConfiguredPortfolioProvider:
             vector_root = alias_candidates[0]
             directory_candidates = [vector_root]
             directory_message = f"Resolved vector directory {vector_root}"
-            directory_name = vector_root.name
 
         if not vector_root.exists() or not vector_root.is_dir():
             return self._source_result("UNAVAILABLE", "Vector directory does not exist", expected_path=str(vector_root), file_name=None, directory=str(vector_root), valuation_date=None)

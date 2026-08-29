@@ -339,7 +339,6 @@ class InstitutionalPortfolioMatchingService:
                 classification = "UNMATCHED_EXPECTED"
                 reason = "no maturity / perpetual / fund"
             else:
-                matching_key = self._compose_key(series, maturity)
                 matching_records = [
                     record
                     for record in vector_records

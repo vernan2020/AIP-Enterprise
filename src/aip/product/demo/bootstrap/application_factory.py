@@ -5,6 +5,7 @@ from datetime import date
 from typing import Any
 
 from aip.core.container import Container
+from aip.product.configured.context.valuation_date_context import ValuationDateContext
 from aip.product.demo.bootstrap.dependency_composition import (
     DemoDependencyComposition,
 )

@@ -496,7 +496,6 @@ def _print_difference_rows(rows: list[dict[str, Any]]) -> None:
     differences.sort(key=lambda item: item[0], reverse=True)
     print("TOP 30 POSITIONS CONTRIBUTING TO DIFFERENCE")
     for index, (_, row) in enumerate(differences[:30], start=1):
-        source_values = row.get("source_values", {}) or {}
         colonized = _field_value(row, "valor mercado colonizado")
         market_value = _field_value(row, "saldo valor mercado")
         print(
@@ -570,7 +569,6 @@ def _print_report(rows: list[dict[str, Any]], *, output_path: Path, cutoff_date:
         print(f"{key}: rows={count} total_market_value={_format_decimal(total)}")
     print()
     print("AMORTIZED COST VS MARKET PRICED")
-    amortized = sum(1 for row in rows if "amort" in str(row.get("classification", "")).lower())
     market_priced = 139
     other_expected_exclusions = 8
     print("amortized_cost_positions: 45")

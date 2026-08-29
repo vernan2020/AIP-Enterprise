@@ -251,57 +251,6 @@ def test_weighted_average_effective_yield_falls_back_and_excludes_closed_and_mis
 
 
 def test_institutional_currency_normalization_handles_usd_and_crc_variants() -> None:
-    positions = [
-        {
-            "currency": "DOLAR",
-            "market_value_crc": Decimal("100"),
-            "market_value": Decimal("100"),
-            "classification": "active",
-            "portfolio_yield": Decimal("5"),
-            "nominal_rate": Decimal("4"),
-        },
-        {
-            "currency": "  dolares  ",
-            "market_value_crc": Decimal("100"),
-            "market_value": Decimal("100"),
-            "classification": "active",
-            "portfolio_yield": Decimal("3"),
-            "nominal_rate": Decimal("2"),
-        },
-        {
-            "currency": "USD",
-            "market_value_crc": Decimal("100"),
-            "market_value": Decimal("100"),
-            "classification": "active",
-            "portfolio_yield": Decimal("4"),
-            "nominal_rate": Decimal("3"),
-        },
-        {
-            "currency": "colon",
-            "market_value_crc": Decimal("100"),
-            "market_value": Decimal("100"),
-            "classification": "active",
-            "portfolio_yield": Decimal("6"),
-            "nominal_rate": Decimal("5"),
-        },
-        {
-            "currency": "colones",
-            "market_value_crc": Decimal("100"),
-            "market_value": Decimal("100"),
-            "classification": "active",
-            "portfolio_yield": Decimal("7"),
-            "nominal_rate": Decimal("6"),
-        },
-        {
-            "currency": "CRC",
-            "market_value_crc": Decimal("100"),
-            "market_value": Decimal("100"),
-            "classification": "active",
-            "portfolio_yield": Decimal("8"),
-            "nominal_rate": Decimal("7"),
-        },
-    ]
-
     assert PortfolioCalculationService._normalize_institutional_currency("DOLAR") == "USD"
     assert PortfolioCalculationService._normalize_institutional_currency("  dolares  ") == "USD"
     assert PortfolioCalculationService._normalize_institutional_currency("USD") == "USD"
