@@ -28,13 +28,10 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Verify canonical recovered runtime checkpoint
-        run: python scripts/recovery/verify_runtime_checkpoint.py
+      - name: Salvage canonical recovered runtime with strict acceptance criteria
+        run: python scripts/recovery/salvage_runtime_checkpoint.py
 
-      - name: Restore canonical recovered runtime checkpoint
-        run: python scripts/recovery/restore_runtime_checkpoint.py
-
-      - name: Compile restored production source
+      - name: Compile salvaged production source
         run: python -m compileall -q src
 
       - name: Validate critical production modules
@@ -79,14 +76,14 @@ jobs:
             exit 1
           fi
 
-      - name: Materialize canonical runtime in branch
+      - name: Materialize accepted salvaged runtime in branch
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add src
           if git diff --cached --quiet; then
-            echo 'Visible src already matches canonical recovered runtime.'
+            echo 'Visible src already contains the accepted salvaged runtime.'
           else
-            git commit -m 'Materialize certified RC1 runtime from canonical checkpoint'
+            git commit -m 'Materialize accepted RC1 runtime salvage'
             git push origin HEAD:recovery/full-runtime-rc1-20260829
           fi
