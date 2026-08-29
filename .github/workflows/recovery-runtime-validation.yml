@@ -85,11 +85,17 @@ jobs:
           import base64, hashlib, io, tarfile
           from pathlib import Path
           root = Path.cwd()
-          closure = root / 'recovery/checkpoints/rc1-critical-closure-20260829/runtime_closure.b64'
+          closure_dir = root / 'recovery/checkpoints/rc1-critical-closure-20260829'
+          parts = [
+              closure_dir / 'var_closure.part00.b64',
+              closure_dir / 'var_closure.part01.b64',
+              closure_dir / 'var_closure.part02.b64',
+          ]
           expected_archive = 'acfaca6509e2fbc3894457555e76c751d35345718407789f4f05f2914ef86d26'
           expected_source = 'c10f12e3026838a18d131d669910f3453136ce2ee5eb775deaa054c146c324d7'
           expected_path = 'src/aip/product/configured/services/configured_portfolio_var_service.py'
-          payload = base64.b64decode(closure.read_text(encoding='ascii').strip(), validate=True)
+          encoded = ''.join(part.read_text(encoding='ascii').strip() for part in parts)
+          payload = base64.b64decode(encoded, validate=True)
           archive_digest = hashlib.sha256(payload).hexdigest()
           if archive_digest != expected_archive:
               raise SystemExit(
@@ -102,8 +108,7 @@ jobs:
                   raise SystemExit(f'VaR closure paths mismatch: {sorted(names)}')
               if not all(m.isfile() for m in members):
                   raise SystemExit('VaR closure contains unsupported members')
-              member = members[0]
-              source = archive.extractfile(member)
+              source = archive.extractfile(members[0])
               data = source.read() if source is not None else None
               if data is None:
                   raise SystemExit('VaR closure source could not be read')
