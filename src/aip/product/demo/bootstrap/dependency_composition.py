@@ -23,13 +23,7 @@ class DemoDependencyComposition:
         container.register_instance(DemoMarketProvider, DemoMarketProvider())
         container.register_instance(DemoLiquidityProvider, DemoLiquidityProvider())
         container.register_instance(DemoHealthProvider, DemoHealthProvider())
-        container.register_factory(
-            InitialLoadWorkflow, lambda _container: InitialLoadWorkflow(self._config)
-        )
-        container.register_factory(
-            RefreshAllWorkflow, lambda _container: RefreshAllWorkflow(self._config)
-        )
-        container.register_factory(
-            ExecutiveRefreshWorkflow, lambda _container: ExecutiveRefreshWorkflow(self._config)
-        )
+        container.register_factory(InitialLoadWorkflow, lambda _container: InitialLoadWorkflow(self._config))
+        container.register_factory(RefreshAllWorkflow, lambda _container: RefreshAllWorkflow(self._config))
+        container.register_factory(ExecutiveRefreshWorkflow, lambda _container: ExecutiveRefreshWorkflow(self._config))
         return container

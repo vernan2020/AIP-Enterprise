@@ -5,12 +5,7 @@ from threading import RLock
 
 
 class ValuationDateContext:
-    """Thread-safe session context for the active institutional valuation date.
-
-    The context is deliberately independent from the Qt/UI layer so configured
-    application services can share one authoritative cutoff without rebuilding
-    the dependency container.
-    """
+    """Thread-safe mutable session context for the active valuation date."""
 
     def __init__(self, initial_date: date) -> None:
         if not isinstance(initial_date, date):

@@ -26,9 +26,7 @@ class StressReportBuilder:
                     "stressed_inflow": str(item.stressed_inflow),
                     "effect": str(item.effect),
                     "assumptions": list(item.assumptions),
-                    "stressed_parameters": {
-                        key: str(value) for key, value in sorted(item.stressed_parameters.items())
-                    },
+                    "stressed_parameters": {key: str(value) for key, value in sorted(item.stressed_parameters.items())},
                     "policy_references": list(item.policy_references),
                     "warnings": list(item.warnings),
                     "affected_assets": list(item.affected_assets),
@@ -42,31 +40,17 @@ class StressReportBuilder:
                 for key, value in result.summary.items()
             },
             "assumptions": list(result.assumptions),
-            "stressed_parameters": {
-                key: str(value) for key, value in sorted(result.stressed_parameters.items())
-            },
+            "stressed_parameters": {key: str(value) for key, value in sorted(result.stressed_parameters.items())},
             "policy_references": list(result.policy_references),
             "warnings": list(result.warnings),
             "affected_assets": list(result.affected_assets),
             "affected_buckets": list(result.affected_buckets),
             "calculation_id": result.calculation_identifier,
             "explanation": {
-                "conclusion": (
-                    result.explanation.concise_conclusion
-                    if result.explanation is not None
-                    else "Stress evaluation completed"
-                ),
-                "supporting_factors": (
-                    [
-                        {
-                            "name": factor.name,
-                            "value": str(factor.value),
-                            "contribution": str(factor.contribution),
-                        }
-                        for factor in result.explanation.supporting_factors
-                    ]
-                    if result.explanation is not None
-                    else []
-                ),
+                "conclusion": result.explanation.concise_conclusion if result.explanation is not None else "Stress evaluation completed",
+                "supporting_factors": [
+                    {"name": factor.name, "value": str(factor.value), "contribution": str(factor.contribution)}
+                    for factor in result.explanation.supporting_factors
+                ] if result.explanation is not None else [],
             },
         }

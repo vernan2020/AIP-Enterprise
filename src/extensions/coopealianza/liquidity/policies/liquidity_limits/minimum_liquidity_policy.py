@@ -15,9 +15,7 @@ class MinimumLiquidityPolicy(InstitutionalPolicy):
     """Evaluate a supplied liquidity metric against configured thresholds."""
 
     def __init__(self, config: LiquidityPolicyConfig) -> None:
-        super().__init__(
-            config, description="Ensure liquidity metric stays above configured thresholds"
-        )
+        super().__init__(config, description="Ensure liquidity metric stays above configured thresholds")
 
     def _evaluate_impl(self, context: PolicyContext) -> EvaluationResult:
         asset = self._coerce_asset(context)

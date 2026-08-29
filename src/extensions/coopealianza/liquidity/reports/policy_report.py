@@ -48,9 +48,7 @@ class CoopealianzaLiquidityPolicyReport:
                 value=Decimal("1") if outcome.status == "PASS" else Decimal("0"),
                 direction="higher_is_better",
                 contribution=Decimal("1") if outcome.status == "PASS" else Decimal("0"),
-                source_reference=(
-                    outcome.reference.identifier if outcome.reference else outcome.policy_id
-                ),
+                source_reference=outcome.reference.identifier if outcome.reference else outcome.policy_id,
             )
             for outcome in resolved_outcomes
         ]
@@ -58,9 +56,7 @@ class CoopealianzaLiquidityPolicyReport:
             concise_conclusion=evaluation_report.message,
             factors=factors,
             assumptions=("Policies are evaluated through the shared policy engine",),
-            warnings=tuple(
-                outcome.message for outcome in resolved_outcomes if outcome.status == "WARNING"
-            ),
+            warnings=tuple(outcome.message for outcome in resolved_outcomes if outcome.status == "WARNING"),
             source_references=tuple(outcome.policy_id for outcome in resolved_outcomes),
         )
         return cls(report=evaluation_report, outcomes=resolved_outcomes, explanation=explanation)

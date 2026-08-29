@@ -39,13 +39,7 @@ class InstitutionalPortfolioMasterReader:
     _CANONICAL_ALIASES: dict[str, tuple[str, ...]] = {
         "source_row": ("#", "source row", "source_row", "row"),
         "issuer": ("emisor", "issuer", "issuer name", "nombre emisor"),
-        "contract_number": (
-            "numero contrato",
-            "numero de contrato",
-            "numero contrato",
-            "número contrato",
-            "contract number",
-        ),
+        "contract_number": ("numero contrato", "numero de contrato", "numero contrato", "número contrato", "contract number"),
         "broker": ("puesto bolsa", "broker", "brokerage", "puesto"),
         "currency": ("moneda", "currency", "ccy"),
         "acquisition_date": ("fecha ingreso", "fecha de ingreso", "acquisition date"),
@@ -64,29 +58,15 @@ class InstitutionalPortfolioMasterReader:
         "purchase_price_percentage": ("porcentaje valor compra", "purchase price percentage"),
         "book_value": ("saldo valor compra", "book value", "valor en libros", "valor libro"),
         "market_price_percentage": ("porcentaje valor mercado", "market price percentage"),
-        "market_value": (
-            "saldo valor mercado",
-            "market value",
-            "valor de mercado",
-            "valor mercado",
-        ),
+        "market_value": ("saldo valor mercado", "market value", "valor de mercado", "valor mercado"),
         "nominal_rate": ("tasa nominal", "nominal rate"),
         "periodicity": ("periodicidad", "periodicity"),
         "accrued_interest": ("interes por cobrar", "interés por cobrar", "accrued interest"),
-        "last_interest_payment_date": (
-            "fecha ultimo pago intereses",
-            "fecha último pago intereses",
-            "last interest payment date",
-        ),
+        "last_interest_payment_date": ("fecha ultimo pago intereses", "fecha último pago intereses", "last interest payment date"),
         "participation_quantity": ("cantidad participaciones", "participation quantity"),
         "portfolio_yield": ("tir", "portfolio yield", "yield"),
         "variable_rate_flag": ("indicador tasa variable", "indicator rate variable"),
-        "public_private_indicator": (
-            "indicador pulblico",
-            "indicador publico",
-            "indicador público",
-            "public private indicator",
-        ),
+        "public_private_indicator": ("indicador pulblico", "indicador publico", "indicador público", "public private indicator"),
         "estimated_loss": ("monto estimacion", "monto estimación", "estimated loss"),
         "impairment_amount": ("monto deterioro", "impairment amount"),
         "custodian": ("custodio", "custodian"),
@@ -96,13 +76,7 @@ class InstitutionalPortfolioMasterReader:
     _MAX_DIAGNOSTIC_TRACE_ENTRIES = 20
     _MAX_ACCEPTED_FIELD_DIAGNOSTICS = 3
 
-    def read(
-        self,
-        path: str | Path,
-        *,
-        valuation_date_override: date | None = None,
-        diagnostic_mode: bool = False,
-    ) -> InstitutionalPortfolioMasterReadResult:
+    def read(self, path: str | Path, *, valuation_date_override: date | None = None, diagnostic_mode: bool = False) -> InstitutionalPortfolioMasterReadResult:
         file_path = Path(path)
         if not file_path.exists():
             return InstitutionalPortfolioMasterReadResult(
@@ -131,14 +105,7 @@ class InstitutionalPortfolioMasterReader:
                 sheet_names = workbook.sheetnames
                 sheet_rows = [self._read_xlsx_sheet(sheet) for sheet in workbook.worksheets]
                 workbook.close()
-        except (
-            InvalidFileException,
-            XLRDError,
-            zipfile.BadZipFile,
-            ValueError,
-            OSError,
-            RuntimeError,
-        ) as exc:
+        except (InvalidFileException, XLRDError, zipfile.BadZipFile, ValueError, OSError, RuntimeError) as exc:
             return InstitutionalPortfolioMasterReadResult(
                 source_file=str(file_path),
                 valuation_date=valuation_date,
@@ -151,9 +118,7 @@ class InstitutionalPortfolioMasterReader:
                 diagnostics={"workbook_type": workbook_type, "error": str(exc), "sheet_count": 0},
             )
 
-        sheet_index, header_index, header_values, normalized_headers, column_map, column_indices = (
-            self._select_sheet(sheet_names, sheet_rows)
-        )
+        sheet_index, header_index, header_values, normalized_headers, column_map, column_indices = self._select_sheet(sheet_names, sheet_rows)
         if sheet_index is None or header_index is None:
             return InstitutionalPortfolioMasterReadResult(
                 source_file=str(file_path),
@@ -164,11 +129,7 @@ class InstitutionalPortfolioMasterReader:
                 rejected_row_count=0,
                 source_status="UNAVAILABLE",
                 detected_column_mapping={},
-                diagnostics={
-                    "workbook_type": workbook_type,
-                    "sheet_count": len(sheet_names),
-                    "sheets": sheet_names,
-                },
+                diagnostics={"workbook_type": workbook_type, "sheet_count": len(sheet_names), "sheets": sheet_names},
             )
 
         rows = sheet_rows[sheet_index]
@@ -184,36 +145,18 @@ class InstitutionalPortfolioMasterReader:
             if self._is_blank_row(row_values):
                 rejected_rows += 1
                 if diagnostic_mode and first_rejected_row is None:
-                    first_rejected_row = self._build_rejection_diagnostic(
-                        row_values, row_index, "blank_row", normalized_row=None
-                    )
+                    first_rejected_row = self._build_rejection_diagnostic(row_values, row_index, "blank_row", normalized_row=None)
                 if diagnostic_mode:
-                    record_trace.append(
-                        {
-                            "row": row_index,
-                            "status": "discarded",
-                            "reason": "blank_row",
-                            "isin": None,
-                        }
-                    )
+                    record_trace.append({"row": row_index, "status": "discarded", "reason": "blank_row", "isin": None})
                 continue
             normalized_row = self._normalize_row(row_values, header_values)
             if normalized_row is None:
                 rejected_rows += 1
                 warnings.append(f"Rejected row {row_index}: blank row")
                 if diagnostic_mode and first_rejected_row is None:
-                    first_rejected_row = self._build_rejection_diagnostic(
-                        row_values, row_index, "blank_row", normalized_row=None
-                    )
+                    first_rejected_row = self._build_rejection_diagnostic(row_values, row_index, "blank_row", normalized_row=None)
                 if diagnostic_mode:
-                    record_trace.append(
-                        {
-                            "row": row_index,
-                            "status": "discarded",
-                            "reason": "blank_row",
-                            "isin": None,
-                        }
-                    )
+                    record_trace.append({"row": row_index, "status": "discarded", "reason": "blank_row", "isin": None})
                 continue
 
             position = self._build_position(normalized_row, row_index, file_path.name)
@@ -221,66 +164,29 @@ class InstitutionalPortfolioMasterReader:
                 rejected_rows += 1
                 warnings.append(f"Rejected row {row_index}: malformed position")
                 if diagnostic_mode and first_rejected_row is None:
-                    first_rejected_row = self._build_rejection_diagnostic(
-                        row_values,
-                        row_index,
-                        "malformed_position",
-                        normalized_row=normalized_row,
-                        position=position,
-                    )
+                    first_rejected_row = self._build_rejection_diagnostic(row_values, row_index, "malformed_position", normalized_row=normalized_row, position=position)
                 if diagnostic_mode:
-                    record_trace.append(
-                        {
-                            "row": row_index,
-                            "status": "discarded",
-                            "reason": "malformed_position",
-                            "isin": None,
-                        }
-                    )
+                    record_trace.append({"row": row_index, "status": "discarded", "reason": "malformed_position", "isin": None})
                 continue
 
             position_identity = self._build_position_identity(position)
             if position_identity in identities:
                 rejected_rows += 1
                 duplicate_identities.append(position_identity)
-                warnings.append(
-                    f"Duplicate identity detected for row {row_index}: {position_identity}"
-                )
+                warnings.append(f"Duplicate identity detected for row {row_index}: {position_identity}")
                 if diagnostic_mode and first_rejected_row is None:
-                    first_rejected_row = self._build_rejection_diagnostic(
-                        row_values,
-                        row_index,
-                        "duplicate_identity",
-                        normalized_row=normalized_row,
-                        position=position,
-                    )
+                    first_rejected_row = self._build_rejection_diagnostic(row_values, row_index, "duplicate_identity", normalized_row=normalized_row, position=position)
                 if diagnostic_mode:
-                    record_trace.append(
-                        {
-                            "row": row_index,
-                            "status": "discarded",
-                            "reason": "duplicate_identity",
-                            "isin": position.get("isin"),
-                        }
-                    )
+                    record_trace.append({"row": row_index, "status": "discarded", "reason": "duplicate_identity", "isin": position.get("isin")})
                 continue
 
             identities.add(position_identity)
             positions.append(position)
             if diagnostic_mode:
-                record_trace.append(
-                    {
-                        "row": row_index,
-                        "status": "accepted",
-                        "reason": "parsed",
-                        "isin": position.get("isin"),
-                    }
-                )
+                record_trace.append({"row": row_index, "status": "accepted", "reason": "parsed", "isin": position.get("isin")})
                 if len(accepted_field_diagnostics) < self._MAX_ACCEPTED_FIELD_DIAGNOSTICS:
                     accepted_field_diagnostics.append(
-                        self._build_field_diagnostics(
-                            row_values, header_values, column_indices, row_index
-                        )
+                        self._build_field_diagnostics(row_values, header_values, column_indices, row_index)
                     )
 
         missing_columns = [column for column in self._REQUIRED_COLUMNS if column not in column_map]
@@ -300,9 +206,7 @@ class InstitutionalPortfolioMasterReader:
                 "records_read": len(rows[header_index + 1 :]),
                 "records_valid": len(positions),
                 "records_discarded": rejected_rows,
-                "isin_found": [
-                    position.get("isin") for position in positions if position.get("isin")
-                ],
+                "isin_found": [position.get("isin") for position in positions if position.get("isin")],
                 "record_trace": record_trace[-self._MAX_DIAGNOSTIC_TRACE_ENTRIES :],
                 "first_accepted_row_field_diagnostics": accepted_field_diagnostics,
             }
@@ -379,47 +283,24 @@ class InstitutionalPortfolioMasterReader:
             rows.append(list(row_values))
         return rows
 
-    def _select_sheet(
-        self, sheet_names: list[str], sheet_rows: list[list[list[Any]]]
-    ) -> tuple[int | None, int | None, list[str], list[str], dict[str, str], dict[str, int]]:
+    def _select_sheet(self, sheet_names: list[str], sheet_rows: list[list[list[Any]]]) -> tuple[int | None, int | None, list[str], list[str], dict[str, str], dict[str, int]]:
         best_score = -1
-        best_selection: (
-            tuple[int | None, int | None, list[str], list[str], dict[str, str], dict[str, int]]
-            | None
-        ) = None
+        best_selection: tuple[int | None, int | None, list[str], list[str], dict[str, str], dict[str, int]] | None = None
         for sheet_index, rows in enumerate(sheet_rows):
             for header_index, header_row in enumerate(rows[: min(len(rows), 20)]):
-                normalized_headers = [
-                    self._normalize_header(self._stringify(value)) for value in header_row
-                ]
+                normalized_headers = [self._normalize_header(self._stringify(value)) for value in header_row]
                 if not normalized_headers:
                     continue
                 matches = self._match_header_row(normalized_headers)
                 score = sum(1 for _, _ in matches)
                 if score < 3:
                     continue
-                column_map, column_indices = self._build_column_mapping(
-                    header_row, normalized_headers
-                )
+                column_map, column_indices = self._build_column_mapping(header_row, normalized_headers)
                 if score >= 5:
-                    return (
-                        sheet_index,
-                        header_index,
-                        [self._stringify(value) for value in header_row],
-                        normalized_headers,
-                        column_map,
-                        column_indices,
-                    )
+                    return sheet_index, header_index, [self._stringify(value) for value in header_row], normalized_headers, column_map, column_indices
                 if score > best_score:
                     best_score = score
-                    best_selection = (
-                        sheet_index,
-                        header_index,
-                        [self._stringify(value) for value in header_row],
-                        normalized_headers,
-                        column_map,
-                        column_indices,
-                    )
+                    best_selection = (sheet_index, header_index, [self._stringify(value) for value in header_row], normalized_headers, column_map, column_indices)
         if best_selection is None:
             return None, None, [], [], {}, {}
         return best_selection
@@ -433,9 +314,7 @@ class InstitutionalPortfolioMasterReader:
                     break
         return matches
 
-    def _build_column_mapping(
-        self, header_values: list[str], normalized_headers: list[str]
-    ) -> tuple[dict[str, str], dict[str, int]]:
+    def _build_column_mapping(self, header_values: list[str], normalized_headers: list[str]) -> tuple[dict[str, str], dict[str, int]]:
         column_map: dict[str, str] = {}
         column_indices: dict[str, int] = {}
         for canonical, aliases in self._CANONICAL_ALIASES.items():
@@ -467,11 +346,7 @@ class InstitutionalPortfolioMasterReader:
             alias_normalized = self._normalize_header(alias)
             if not alias_normalized:
                 continue
-            if (
-                normalized_header == alias_normalized
-                or normalized_header.startswith(alias_normalized)
-                or alias_normalized.startswith(normalized_header)
-            ):
+            if normalized_header == alias_normalized or normalized_header.startswith(alias_normalized) or alias_normalized.startswith(normalized_header):
                 return True
         return False
 
@@ -486,9 +361,7 @@ class InstitutionalPortfolioMasterReader:
             return str(value)
         return str(value)
 
-    def _normalize_row(
-        self, row_values: list[Any], header_values: list[str]
-    ) -> dict[str, Any] | None:
+    def _normalize_row(self, row_values: list[Any], header_values: list[str]) -> dict[str, Any] | None:
         values = [self._stringify(value) for value in row_values]
         if not any(value.strip() for value in values):
             return None
@@ -502,67 +375,39 @@ class InstitutionalPortfolioMasterReader:
     def _is_blank_row(self, row_values: list[Any]) -> bool:
         return not any(self._stringify(value).strip() for value in row_values)
 
-    def _build_position(
-        self, row_data: dict[str, Any], row_number: int, file_name: str
-    ) -> dict[str, Any] | None:
+    def _build_position(self, row_data: dict[str, Any], row_number: int, file_name: str) -> dict[str, Any] | None:
         normalized_cells = {self._normalize_header(key): value for key, value in row_data.items()}
         isin = self._coerce_text(self._find_field(normalized_cells, "isin"))
         issuer = self._coerce_text(self._find_field(normalized_cells, "issuer"))
         contract_number = self._coerce_text(self._find_field(normalized_cells, "contract_number"))
         broker = self._coerce_text(self._find_field(normalized_cells, "broker"))
-        currency = self._normalize_currency(
-            self._coerce_text(self._find_field(normalized_cells, "currency"))
-        )
+        currency = self._normalize_currency(self._coerce_text(self._find_field(normalized_cells, "currency")))
         acquisition_date = self._parse_date(self._find_field(normalized_cells, "acquisition_date"))
         issue_date = self._parse_date(self._find_field(normalized_cells, "issue_date"))
         maturity_date = self._parse_date(self._find_field(normalized_cells, "maturity_date"))
-        days_to_maturity = self._parse_number(
-            self._find_field(normalized_cells, "days_to_maturity")
-        )
+        days_to_maturity = self._parse_number(self._find_field(normalized_cells, "days_to_maturity"))
         product_code = self._coerce_text(self._find_field(normalized_cells, "product_code"))
         classification = self._coerce_text(self._find_field(normalized_cells, "classification"))
         risk_rating = self._coerce_text(self._find_field(normalized_cells, "risk_rating"))
-        liquidity_reserve_flag = self._coerce_text(
-            self._find_field(normalized_cells, "liquidity_reserve_flag")
-        )
+        liquidity_reserve_flag = self._coerce_text(self._find_field(normalized_cells, "liquidity_reserve_flag"))
         series = self._coerce_text(self._find_field(normalized_cells, "series"))
-        market_value_crc = self._parse_number(
-            self._find_field(normalized_cells, "market_value_crc")
-        )
+        market_value_crc = self._parse_number(self._find_field(normalized_cells, "market_value_crc"))
         traded_balance = self._parse_number(self._find_field(normalized_cells, "traded_balance"))
-        principal_balance = self._parse_number(
-            self._find_field(normalized_cells, "principal_balance")
-        )
-        purchase_price_percentage = self._parse_number(
-            self._find_field(normalized_cells, "purchase_price_percentage")
-        )
+        principal_balance = self._parse_number(self._find_field(normalized_cells, "principal_balance"))
+        purchase_price_percentage = self._parse_number(self._find_field(normalized_cells, "purchase_price_percentage"))
         book_value = self._parse_number(self._find_field(normalized_cells, "book_value"))
-        market_price_percentage = self._parse_number(
-            self._find_field(normalized_cells, "market_price_percentage")
-        )
+        market_price_percentage = self._parse_number(self._find_field(normalized_cells, "market_price_percentage"))
         market_value = self._parse_number(self._find_field(normalized_cells, "market_value"))
         nominal_rate = self._parse_number(self._find_field(normalized_cells, "nominal_rate"))
         periodicity = self._coerce_text(self._find_field(normalized_cells, "periodicity"))
-        accrued_interest = self._parse_number(
-            self._find_field(normalized_cells, "accrued_interest")
-        )
-        last_interest_payment_date = self._parse_date(
-            self._find_field(normalized_cells, "last_interest_payment_date")
-        )
-        participation_quantity = self._parse_number(
-            self._find_field(normalized_cells, "participation_quantity")
-        )
+        accrued_interest = self._parse_number(self._find_field(normalized_cells, "accrued_interest"))
+        last_interest_payment_date = self._parse_date(self._find_field(normalized_cells, "last_interest_payment_date"))
+        participation_quantity = self._parse_number(self._find_field(normalized_cells, "participation_quantity"))
         portfolio_yield = self._parse_number(self._find_field(normalized_cells, "portfolio_yield"))
-        variable_rate_flag = self._coerce_text(
-            self._find_field(normalized_cells, "variable_rate_flag")
-        )
-        public_private_indicator = self._coerce_text(
-            self._find_field(normalized_cells, "public_private_indicator")
-        )
+        variable_rate_flag = self._coerce_text(self._find_field(normalized_cells, "variable_rate_flag"))
+        public_private_indicator = self._coerce_text(self._find_field(normalized_cells, "public_private_indicator"))
         estimated_loss = self._parse_number(self._find_field(normalized_cells, "estimated_loss"))
-        impairment_amount = self._parse_number(
-            self._find_field(normalized_cells, "impairment_amount")
-        )
+        impairment_amount = self._parse_number(self._find_field(normalized_cells, "impairment_amount"))
         custodian = self._coerce_text(self._find_field(normalized_cells, "custodian"))
 
         if not any([isin, issuer, contract_number, market_value, book_value]):
@@ -587,31 +432,21 @@ class InstitutionalPortfolioMasterReader:
             "market_value_crc": float(market_value_crc) if market_value_crc is not None else None,
             "isin": isin,
             "traded_balance": float(traded_balance) if traded_balance is not None else None,
-            "principal_balance": (
-                float(principal_balance) if principal_balance is not None else None
-            ),
-            "purchase_price_percentage": (
-                float(purchase_price_percentage) if purchase_price_percentage is not None else None
-            ),
+            "principal_balance": float(principal_balance) if principal_balance is not None else None,
+            "purchase_price_percentage": float(purchase_price_percentage) if purchase_price_percentage is not None else None,
             "book_value": float(book_value) if book_value is not None else None,
-            "market_price_percentage": (
-                float(market_price_percentage) if market_price_percentage is not None else None
-            ),
+            "market_price_percentage": float(market_price_percentage) if market_price_percentage is not None else None,
             "market_value": float(market_value) if market_value is not None else None,
             "nominal_rate": float(nominal_rate) if nominal_rate is not None else None,
             "periodicity": periodicity,
             "accrued_interest": float(accrued_interest) if accrued_interest is not None else None,
             "last_interest_payment_date": last_interest_payment_date,
-            "participation_quantity": (
-                float(participation_quantity) if participation_quantity is not None else None
-            ),
+            "participation_quantity": float(participation_quantity) if participation_quantity is not None else None,
             "portfolio_yield": float(portfolio_yield) if portfolio_yield is not None else None,
             "variable_rate_flag": variable_rate_flag,
             "public_private_indicator": public_private_indicator,
             "estimated_loss": float(estimated_loss) if estimated_loss is not None else None,
-            "impairment_amount": (
-                float(impairment_amount) if impairment_amount is not None else None
-            ),
+            "impairment_amount": float(impairment_amount) if impairment_amount is not None else None,
             "custodian": custodian,
             "accounting_fields": {},
             "source_values": {key: self._stringify(value) for key, value in row_data.items()},
@@ -641,20 +476,9 @@ class InstitutionalPortfolioMasterReader:
         text = self._stringify(value).strip()
         return re.sub(r"\s+", " ", text)
 
-    def _build_field_diagnostics(
-        self,
-        row_values: list[Any],
-        header_values: list[str],
-        column_indices: dict[str, int],
-        row_number: int,
-    ) -> dict[str, Any]:
+    def _build_field_diagnostics(self, row_values: list[Any], header_values: list[str], column_indices: dict[str, int], row_number: int) -> dict[str, Any]:
         diagnostics: dict[str, Any] = {"row": row_number, "fields": {}}
-        for display_name, canonical in (
-            ("serie", "series"),
-            ("codigo producto", "product_code"),
-            ("fecha vencimiento", "maturity_date"),
-            ("ISIN", "isin"),
-        ):
+        for display_name, canonical in (("serie", "series"), ("codigo producto", "product_code"), ("fecha vencimiento", "maturity_date"), ("ISIN", "isin")):
             index = column_indices.get(canonical)
             if index is None:
                 diagnostics["fields"][display_name] = {
@@ -680,18 +504,8 @@ class InstitutionalPortfolioMasterReader:
             }
         return diagnostics
 
-    def _build_rejection_diagnostic(
-        self,
-        row_values: list[Any],
-        row_number: int,
-        reason: str,
-        *,
-        normalized_row: dict[str, Any] | None,
-        position: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        normalized_cells = {
-            self._normalize_header(key): value for key, value in (normalized_row or {}).items()
-        }
+    def _build_rejection_diagnostic(self, row_values: list[Any], row_number: int, reason: str, *, normalized_row: dict[str, Any] | None, position: dict[str, Any] | None = None) -> dict[str, Any]:
+        normalized_cells = {self._normalize_header(key): value for key, value in (normalized_row or {}).items()}
         validation_result = {
             "accepted": position is not None,
             "required_fields": {

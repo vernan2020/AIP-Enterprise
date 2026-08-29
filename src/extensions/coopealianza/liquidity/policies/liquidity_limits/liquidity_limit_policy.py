@@ -61,11 +61,7 @@ class LiquidityLimitPolicy(Policy):
         outcome = self.evaluate_outcome(context)
         return EvaluationResult(
             policy_id=self.policy_id,
-            status=(
-                "PASSED"
-                if outcome.status == "PASS"
-                else "FAIL" if outcome.status == "FAIL" else outcome.status
-            ),
+            status="PASSED" if outcome.status == "PASS" else "FAIL" if outcome.status == "FAIL" else outcome.status,
             message=outcome.message,
             severity=outcome.severity,
             references=(outcome.reference,) if outcome.reference else (),

@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import date
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from typing import Any
 
 from aip.domain.policies.metadata.policy_reference import PolicyReference
@@ -68,14 +68,9 @@ class MilPolicyConfig:
     @classmethod
     def from_mapping(cls, mapping: Mapping[str, Any]) -> "MilPolicyConfig":
         references = tuple(
-            (
-                PolicyReference(
-                    source=reference.get("source", "coopealianza"),
-                    identifier=reference.get("identifier", ""),
-                )
-                if isinstance(reference, Mapping)
-                else reference
-            )
+            PolicyReference(source=reference.get("source", "coopealianza"), identifier=reference.get("identifier", ""))
+            if isinstance(reference, Mapping)
+            else reference
             for reference in mapping.get("policy_references", ())
         )
         return cls(
@@ -87,67 +82,29 @@ class MilPolicyConfig:
             effective_date=cls._parse_date(mapping.get("effective_date")),
             expiration_date=cls._parse_date(mapping.get("expiration_date")),
             severity=cls._parse_severity(mapping.get("severity")),
-            excluded_classification_prefixes=tuple(
-                str(item) for item in mapping.get("excluded_classification_prefixes", ()) or ()
-            ),
-            eligible_issuer_categories=tuple(
-                str(item) for item in mapping.get("eligible_issuer_categories", ()) or ()
-            ),
+            excluded_classification_prefixes=tuple(str(item) for item in mapping.get("excluded_classification_prefixes", ()) or ()),
+            eligible_issuer_categories=tuple(str(item) for item in mapping.get("eligible_issuer_categories", ()) or ()),
             reserve_liquidity_treatment=str(mapping.get("reserve_liquidity_treatment", "exclude")),
-            acceptable_settlement_rules=tuple(
-                str(item) for item in mapping.get("acceptable_settlement_rules", ()) or ()
-            ),
+            acceptable_settlement_rules=tuple(str(item) for item in mapping.get("acceptable_settlement_rules", ()) or ()),
             valuation_freshness_limit_days=int(mapping.get("valuation_freshness_limit_days", 1)),
             minimum_remaining_maturity_days=int(mapping.get("minimum_remaining_maturity_days", 0)),
             haircut_mappings=tuple(
                 MilHaircutConfig(
-                    issuer_category=(
-                        str(item.get("issuer_category"))
-                        if item.get("issuer_category") is not None
-                        else None
-                    ),
-                    instrument_category=(
-                        str(item.get("instrument_category"))
-                        if item.get("instrument_category") is not None
-                        else None
-                    ),
-                    currency=(
-                        str(item.get("currency")) if item.get("currency") is not None else None
-                    ),
-                    maturity_band=(
-                        str(item.get("maturity_band"))
-                        if item.get("maturity_band") is not None
-                        else None
-                    ),
-                    classification=(
-                        str(item.get("classification"))
-                        if item.get("classification") is not None
-                        else None
-                    ),
+                    issuer_category=str(item.get("issuer_category")) if item.get("issuer_category") is not None else None,
+                    instrument_category=str(item.get("instrument_category")) if item.get("instrument_category") is not None else None,
+                    currency=str(item.get("currency")) if item.get("currency") is not None else None,
+                    maturity_band=str(item.get("maturity_band")) if item.get("maturity_band") is not None else None,
+                    classification=str(item.get("classification")) if item.get("classification") is not None else None,
                     haircut=cls._parse_decimal(item.get("haircut")),
                 )
                 for item in mapping.get("haircut_mappings", ()) or ()
             ),
-            warning_concentration_threshold=cls._parse_decimal(
-                mapping.get("warning_concentration_threshold")
-            ),
-            blocking_concentration_threshold=cls._parse_decimal(
-                mapping.get("blocking_concentration_threshold")
-            ),
-            issuer_limits=tuple(
-                (str(key), cls._parse_decimal(value) or Decimal("0"))
-                for key, value in mapping.get("issuer_limits", ()) or ()
-            ),
-            currency_limits=tuple(
-                (str(key), cls._parse_decimal(value) or Decimal("0"))
-                for key, value in mapping.get("currency_limits", ()) or ()
-            ),
+            warning_concentration_threshold=cls._parse_decimal(mapping.get("warning_concentration_threshold")),
+            blocking_concentration_threshold=cls._parse_decimal(mapping.get("blocking_concentration_threshold")),
+            issuer_limits=tuple((str(key), cls._parse_decimal(value) or Decimal("0")) for key, value in mapping.get("issuer_limits", ()) or ()),
+            currency_limits=tuple((str(key), cls._parse_decimal(value) or Decimal("0")) for key, value in mapping.get("currency_limits", ()) or ()),
             policy_references=references,
-            recommended_action=(
-                str(mapping.get("recommended_action"))
-                if mapping.get("recommended_action") is not None
-                else None
-            ),
+            recommended_action=str(mapping.get("recommended_action")) if mapping.get("recommended_action") is not None else None,
             priority=int(mapping.get("priority", 0)),
         )
 
@@ -168,9 +125,7 @@ class MilPolicyConfig:
                 if category in seen_categories:
                     raise MilConfigurationError("Duplicate issuer categories are not allowed")
                 seen_categories.add(category)
-            if config.policy_references and not all(
-                reference.identifier for reference in config.policy_references
-            ):
+            if config.policy_references and not all(reference.identifier for reference in config.policy_references):
                 raise MilConfigurationError("Policy references must include identifiers")
 
     @classmethod
@@ -209,20 +164,10 @@ class MilPolicyConfig:
     def _validate(self) -> None:
         if not self.policy_id or not self.version or not self.name or not self.category:
             raise MilConfigurationError("Policy id, version, name, and category are required")
-        if (
-            self.effective_date
-            and self.expiration_date
-            and self.expiration_date < self.effective_date
-        ):
+        if self.effective_date and self.expiration_date and self.expiration_date < self.effective_date:
             raise MilConfigurationError("Expiration date must be on or after effective date")
-        if (
-            self.warning_concentration_threshold is not None
-            and self.blocking_concentration_threshold is not None
-            and self.warning_concentration_threshold > self.blocking_concentration_threshold
-        ):
-            raise MilConfigurationError(
-                "Warning concentration threshold cannot exceed blocking threshold"
-            )
+        if self.warning_concentration_threshold is not None and self.blocking_concentration_threshold is not None and self.warning_concentration_threshold > self.blocking_concentration_threshold:
+            raise MilConfigurationError("Warning concentration threshold cannot exceed blocking threshold")
         if self.valuation_freshness_limit_days < 0:
             raise MilConfigurationError("Valuation freshness limit cannot be negative")
         for selection in self.haircut_mappings:
@@ -238,23 +183,13 @@ class MilPolicyConfig:
         for _, limit in self.currency_limits:
             if limit < 0:
                 raise MilConfigurationError("Currency limits cannot be negative")
-        if self.policy_references and not all(
-            isinstance(reference, PolicyReference) for reference in self.policy_references
-        ):
+        if self.policy_references and not all(isinstance(reference, PolicyReference) for reference in self.policy_references):
             raise MilConfigurationError("Policy references must be PolicyReference instances")
         if self.reserve_liquidity_treatment not in {"exclude", "conditional", "allow"}:
-            raise MilConfigurationError(
-                "Reserve liquidity treatment must be exclude, conditional, or allow"
-            )
-        if (
-            self.warning_concentration_threshold is not None
-            and self.warning_concentration_threshold < 0
-        ):
+            raise MilConfigurationError("Reserve liquidity treatment must be exclude, conditional, or allow")
+        if self.warning_concentration_threshold is not None and self.warning_concentration_threshold < 0:
             raise MilConfigurationError("Warning concentration threshold cannot be negative")
-        if (
-            self.blocking_concentration_threshold is not None
-            and self.blocking_concentration_threshold < 0
-        ):
+        if self.blocking_concentration_threshold is not None and self.blocking_concentration_threshold < 0:
             raise MilConfigurationError("Blocking concentration threshold cannot be negative")
         if self.enabled is False:
             return

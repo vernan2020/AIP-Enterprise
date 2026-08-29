@@ -29,8 +29,8 @@ class DemoApplicationFactory:
     Creates application-facing services for AIP Enterprise.
 
     En modo CONFIGURED mantiene una instancia de ConfiguredSourceConfig
-    y un único container de sesión. Los cambios de fecha se propagan mediante
-    un contexto de valoración compartido sin reconstruir infraestructura.
+    y permite reconstruir el container cuando cambia la fecha global
+    de valoración.
     """
 
     def __init__(
@@ -38,18 +38,30 @@ class DemoApplicationFactory:
         config: DemoConfig | None = None,
         source_config: Any | None = None,
     ) -> None:
-        self._config = config or EnvironmentLoader().load()
+        self._config = (
+            config
+            or EnvironmentLoader().load()
+        )
 
         self._container = Container()
 
         self._configured_factory = None
         self._configured_source_config = None
 
-        if self._config.execution_mode == "CONFIGURED":
-            self._configure_configured_mode(source_config)
+        if (
+            self._config.execution_mode
+            == "CONFIGURED"
+        ):
+            self._configure_configured_mode(
+                source_config
+            )
 
         else:
-            DemoDependencyComposition(self._config).compose(self._container)
+            DemoDependencyComposition(
+                self._config
+            ).compose(
+                self._container
+            )
 
     # =============================================================
     # CONFIGURED MODE
@@ -74,27 +86,42 @@ class DemoApplicationFactory:
         )
 
         configured_source_config = (
-            source_config if source_config is not None else self._config.source_config
+            source_config
+            if source_config is not None
+            else self._config.source_config
         )
 
         if isinstance(
             configured_source_config,
             dict,
         ):
-            configured_source_config = ConfiguredSourceConfig.from_safe_dict(
-                configured_source_config
+            configured_source_config = (
+                ConfiguredSourceConfig
+                .from_safe_dict(
+                    configured_source_config
+                )
             )
 
-        self._configured_source_config = configured_source_config
-
-        self._configured_factory = ConfiguredApplicationFactory(
-            self._config,
-            configured_source_config,
+        self._configured_source_config = (
+            configured_source_config
         )
 
-        self._container = self._configured_factory.container
+        self._configured_factory = (
+            ConfiguredApplicationFactory(
+                self._config,
+                configured_source_config,
+            )
+        )
 
-        self._config = self._configured_factory.config
+        self._container = (
+            self._configured_factory
+            .container
+        )
+
+        self._config = (
+            self._configured_factory
+            .config
+        )
 
     # =============================================================
     # VALUATION DATE
@@ -104,16 +131,7 @@ class DemoApplicationFactory:
         self,
         value: date,
     ) -> None:
-        """Change the active valuation date without rebuilding CONFIGURED.
-
-        CONFIGURED mode keeps the dependency container and long-lived caches
-        alive.  A shared ValuationDateContext is the authoritative runtime
-        cutoff for providers and valuation-sensitive services.  Immutable
-        configuration objects are still replaced so status/diagnostics expose
-        the current date, but no infrastructure or historical repository is
-        recreated.
-        """
-
+        """Change the authoritative valuation date without rebuilding CONFIGURED services."""
         if not isinstance(value, date):
             raise TypeError("value must be datetime.date")
 
@@ -129,8 +147,8 @@ class DemoApplicationFactory:
             return
 
         configured_source_config = self._configured_source_config
-        if configured_source_config is None:
-            raise RuntimeError("Configured source configuration is not available")
+        if configured_source_config is None or self._configured_factory is None:
+            raise RuntimeError("Configured runtime is not available")
 
         metadata = dict(configured_source_config.metadata or {})
         metadata["data_cutoff_date"] = value.isoformat()
@@ -149,20 +167,12 @@ class DemoApplicationFactory:
                 source_config=new_source_payload,
             )
 
-        if self._configured_factory is None:
-            raise RuntimeError("Configured application factory is not available")
-
-        # Preserve the container and all long-lived service instances.
-        from aip.product.configured.context.valuation_date_context import (
-            ValuationDateContext,
-        )
-
         valuation_context = self._container.resolve(ValuationDateContext)
         valuation_context.set(value)
-
-        # Keep factory metadata synchronized for status and diagnostics only.
-        self._configured_factory._config = self._config
-        self._configured_factory._source_config = configured_source_config
+        self._configured_factory.update_runtime_metadata(
+            config=self._config,
+            source_config=configured_source_config,
+        )
 
     # =============================================================
     # PUBLIC PROPERTIES
@@ -193,12 +203,24 @@ class DemoApplicationFactory:
     def build_system_status(
         self,
     ) -> SystemStatus:
-        if self._configured_factory is not None:
-            return self._configured_factory.build_system_status()
+        if (
+            self._configured_factory
+            is not None
+        ):
+            return (
+                self._configured_factory
+                .build_system_status()
+            )
 
         return SystemStatus(
-            execution_mode=(self._config.execution_mode),
-            environment=(self._config.environment_name),
+            execution_mode=(
+                self._config
+                .execution_mode
+            ),
+            environment=(
+                self._config
+                .environment_name
+            ),
             source_states={
                 "sql_server": "HEALTHY",
                 "folder_watch": "HEALTHY",
@@ -206,8 +228,14 @@ class DemoApplicationFactory:
             },
             last_refresh=None,
             component_details={
-                "mode": (self._config.execution_mode),
-                "demo_mode_enabled": (self._config.demo_mode_enabled),
+                "mode": (
+                    self._config
+                    .execution_mode
+                ),
+                "demo_mode_enabled": (
+                    self._config
+                    .demo_mode_enabled
+                ),
             },
         )
 
@@ -218,23 +246,38 @@ class DemoApplicationFactory:
     def initial_load_workflow(
         self,
     ) -> InitialLoadWorkflow:
-        if self._configured_factory is not None:
-            return self._configured_factory.initial_load_workflow()
+        if (
+            self._configured_factory
+            is not None
+        ):
+            return (
+                self._configured_factory
+                .initial_load_workflow()
+            )
 
-        return self._container.resolve(InitialLoadWorkflow)
+        return self._container.resolve(
+            InitialLoadWorkflow
+        )
 
     def refresh_all_workflow(
         self,
     ) -> RefreshAllWorkflow:
-        if self._configured_factory is not None:
-            return self._configured_factory.refresh_all_workflow()
+        if (
+            self._configured_factory
+            is not None
+        ):
+            return (
+                self._configured_factory
+                .refresh_all_workflow()
+            )
 
-        return self._container.resolve(RefreshAllWorkflow)
+        return self._container.resolve(
+            RefreshAllWorkflow
+        )
 
     def executive_refresh_workflow(
         self,
     ) -> ExecutiveRefreshWorkflow:
-        if self._configured_factory is not None:
-            return self._configured_factory.initial_load_workflow()  # type: ignore[return-value]
-
-        return self._container.resolve(ExecutiveRefreshWorkflow)
+        return self._container.resolve(
+            ExecutiveRefreshWorkflow
+        )

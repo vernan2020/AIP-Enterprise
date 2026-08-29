@@ -4,9 +4,7 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Any
 
-from src.extensions.coopealianza.liquidity.mil.enums.mil_eligibility_status import (
-    MilEligibilityStatus,
-)
+from src.extensions.coopealianza.liquidity.mil.enums.mil_eligibility_status import MilEligibilityStatus
 
 
 @dataclass(frozen=True, slots=True)

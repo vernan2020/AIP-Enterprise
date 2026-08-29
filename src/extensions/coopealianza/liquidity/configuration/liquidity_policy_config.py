@@ -63,44 +63,20 @@ class LiquidityPolicyConfig:
             effective_date=cls._parse_date(mapping.get("effective_date")),
             expiration_date=cls._parse_date(mapping.get("expiration_date")),
             severity=severity or PolicySeverity.MEDIUM,
-            issuer_categories=tuple(
-                str(item) for item in mapping.get("issuer_categories", ()) or ()
-            ),
-            instrument_classifications=tuple(
-                str(item) for item in mapping.get("instrument_classifications", ()) or ()
-            ),
-            excluded_classification_prefixes=tuple(
-                str(item) for item in mapping.get("excluded_classification_prefixes", ()) or ()
-            ),
+            issuer_categories=tuple(str(item) for item in mapping.get("issuer_categories", ()) or ()),
+            instrument_classifications=tuple(str(item) for item in mapping.get("instrument_classifications", ()) or ()),
+            excluded_classification_prefixes=tuple(str(item) for item in mapping.get("excluded_classification_prefixes", ()) or ()),
             issuer_limit=cls._parse_decimal(mapping.get("issuer_limit")),
-            concentration_warning_limit=cls._parse_decimal(
-                mapping.get("concentration_warning_limit")
-            ),
-            concentration_blocking_limit=cls._parse_decimal(
-                mapping.get("concentration_blocking_limit")
-            ),
+            concentration_warning_limit=cls._parse_decimal(mapping.get("concentration_warning_limit")),
+            concentration_blocking_limit=cls._parse_decimal(mapping.get("concentration_blocking_limit")),
             minimum_liquidity_warning=cls._parse_decimal(mapping.get("minimum_liquidity_warning")),
-            minimum_liquidity_blocking=cls._parse_decimal(
-                mapping.get("minimum_liquidity_blocking")
-            ),
-            minimum_marketability_score=cls._parse_decimal(
-                mapping.get("minimum_marketability_score")
-            ),
-            minimum_price_availability_score=cls._parse_decimal(
-                mapping.get("minimum_price_availability_score")
-            ),
-            required_marketability_attributes=tuple(
-                str(item) for item in mapping.get("required_marketability_attributes", ()) or ()
-            ),
-            required_encumbrance_status=tuple(
-                str(item) for item in mapping.get("required_encumbrance_status", ()) or ()
-            ),
+            minimum_liquidity_blocking=cls._parse_decimal(mapping.get("minimum_liquidity_blocking")),
+            minimum_marketability_score=cls._parse_decimal(mapping.get("minimum_marketability_score")),
+            minimum_price_availability_score=cls._parse_decimal(mapping.get("minimum_price_availability_score")),
+            required_marketability_attributes=tuple(str(item) for item in mapping.get("required_marketability_attributes", ()) or ()),
+            required_encumbrance_status=tuple(str(item) for item in mapping.get("required_encumbrance_status", ()) or ()),
             policy_references=references,
-            recommended_action=(
-                str(mapping.get("recommended_action"))
-                if mapping.get("recommended_action") is not None
-                else None
-            ),
+            recommended_action=str(mapping.get("recommended_action")) if mapping.get("recommended_action") is not None else None,
             priority=int(mapping.get("priority", 0)),
         )
 
@@ -114,16 +90,10 @@ class LiquidityPolicyConfig:
             seen_ids.add(config.policy_id)
             for category in config.issuer_categories:
                 if category in seen_categories:
-                    raise InstitutionalConfigurationError(
-                        "Duplicate issuer categories are not allowed"
-                    )
+                    raise InstitutionalConfigurationError("Duplicate issuer categories are not allowed")
                 seen_categories.add(category)
-            if config.policy_references and not all(
-                reference.identifier for reference in config.policy_references
-            ):
-                raise InstitutionalConfigurationError(
-                    "Policy references must include an identifier"
-                )
+            if config.policy_references and not all(reference.identifier for reference in config.policy_references):
+                raise InstitutionalConfigurationError("Policy references must include an identifier")
 
     @classmethod
     def _parse_date(cls, value: Any) -> date | None:
@@ -145,66 +115,32 @@ class LiquidityPolicyConfig:
             return Decimal(value)
         if isinstance(value, (int, float)):
             return Decimal(str(value))
-        raise InstitutionalConfigurationError(
-            "Decimal values must be Decimal, string, int, or float"
-        )
+        raise InstitutionalConfigurationError("Decimal values must be Decimal, string, int, or float")
 
     def _validate(self) -> None:
         if not self.policy_id or not self.version or not self.name or not self.category:
-            raise InstitutionalConfigurationError(
-                "Policy id, version, name, and category are required"
-            )
+            raise InstitutionalConfigurationError("Policy id, version, name, and category are required")
         if self.issuer_limit is not None and self.issuer_limit < 0:
             raise InstitutionalConfigurationError("Issuer limit cannot be negative")
         if self.concentration_warning_limit is not None and self.concentration_warning_limit < 0:
             raise InstitutionalConfigurationError("Concentration warning limit cannot be negative")
         if self.concentration_blocking_limit is not None and self.concentration_blocking_limit < 0:
             raise InstitutionalConfigurationError("Concentration blocking limit cannot be negative")
-        if (
-            self.minimum_marketability_score is not None
-            and self.minimum_marketability_score > Decimal("1")
-        ):
+        if self.minimum_marketability_score is not None and self.minimum_marketability_score > Decimal("1"):
             raise InstitutionalConfigurationError("Marketability threshold cannot exceed 100%")
-        if (
-            self.minimum_price_availability_score is not None
-            and self.minimum_price_availability_score > Decimal("1")
-        ):
+        if self.minimum_price_availability_score is not None and self.minimum_price_availability_score > Decimal("1"):
             raise InstitutionalConfigurationError("Price availability threshold cannot exceed 100%")
-        if (
-            self.effective_date
-            and self.expiration_date
-            and self.expiration_date < self.effective_date
-        ):
-            raise InstitutionalConfigurationError(
-                "Expiration date must be on or after effective date"
-            )
-        if (
-            self.concentration_warning_limit is not None
-            and self.concentration_blocking_limit is not None
-            and self.concentration_blocking_limit < self.concentration_warning_limit
-        ):
-            raise InstitutionalConfigurationError(
-                "Blocking concentration limit cannot be lower than warning limit"
-            )
-        if (
-            self.minimum_liquidity_warning is not None
-            and self.minimum_liquidity_blocking is not None
-            and self.minimum_liquidity_blocking > self.minimum_liquidity_warning
-        ):
-            raise InstitutionalConfigurationError(
-                "Blocking liquidity threshold cannot be above warning threshold"
-            )
-        if self.policy_references and not all(
-            isinstance(reference, PolicyReferenceConfig) for reference in self.policy_references
-        ):
-            raise InstitutionalConfigurationError(
-                "Policy references must be PolicyReferenceConfig instances"
-            )
+        if self.effective_date and self.expiration_date and self.expiration_date < self.effective_date:
+            raise InstitutionalConfigurationError("Expiration date must be on or after effective date")
+        if self.concentration_warning_limit is not None and self.concentration_blocking_limit is not None and self.concentration_blocking_limit < self.concentration_warning_limit:
+            raise InstitutionalConfigurationError("Blocking concentration limit cannot be lower than warning limit")
+        if self.minimum_liquidity_warning is not None and self.minimum_liquidity_blocking is not None and self.minimum_liquidity_blocking > self.minimum_liquidity_warning:
+            raise InstitutionalConfigurationError("Blocking liquidity threshold cannot be above warning threshold")
+        if self.policy_references and not all(isinstance(reference, PolicyReferenceConfig) for reference in self.policy_references):
+            raise InstitutionalConfigurationError("Policy references must be PolicyReferenceConfig instances")
 
     def to_policy_reference(self) -> tuple[PolicyReference, ...]:
         return tuple(
-            PolicyReference(
-                source=reference.source, identifier=reference.identifier, url=reference.url
-            )
+            PolicyReference(source=reference.source, identifier=reference.identifier, url=reference.url)
             for reference in self.policy_references
         )

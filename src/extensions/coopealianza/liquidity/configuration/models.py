@@ -11,9 +11,7 @@ class LiquidityPolicyThresholds(BaseModel):
     model_config = ConfigDict(frozen=True)
     hqla_minimum_score: Decimal = Field(default=Decimal("0.75"), ge=Decimal("0"), le=Decimal("1"))
     mil_minimum_ratio: Decimal = Field(default=Decimal("1.25"), ge=Decimal("0"))
-    liquidity_limit_ratio: Decimal = Field(
-        default=Decimal("0.80"), ge=Decimal("0"), le=Decimal("1")
-    )
+    liquidity_limit_ratio: Decimal = Field(default=Decimal("0.80"), ge=Decimal("0"), le=Decimal("1"))
     issuer_limit_ratio: Decimal = Field(default=Decimal("0.15"), ge=Decimal("0"), le=Decimal("1"))
     concentration_ratio: Decimal = Field(default=Decimal("0.10"), ge=Decimal("0"), le=Decimal("1"))
 

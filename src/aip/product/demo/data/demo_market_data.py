@@ -16,20 +16,10 @@ class DemoMarketData:
                 {"label": "USD 1Y", "value": 3.35, "tenor": "1Y"},
             ],
             "pricing_results": [
-                {
-                    "issuer": "Acme Bank",
-                    "instrument": "Treasury Bill",
-                    "market_value": 100.00,
-                    "benchmark_yield": 3.10,
-                },
+                {"issuer": "Acme Bank", "instrument": "Treasury Bill", "market_value": 100.00, "benchmark_yield": 3.10},
             ],
             "relative_value_results": [
-                {
-                    "issuer": "Blue Ridge",
-                    "recommendation": "BUY",
-                    "confidence": "High",
-                    "spread": 0.45,
-                },
+                {"issuer": "Blue Ridge", "recommendation": "BUY", "confidence": "High", "spread": 0.45},
             ],
             "market_status": "Ready",
             "average_yield": 3.10,

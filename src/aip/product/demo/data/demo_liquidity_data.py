@@ -18,40 +18,16 @@ class DemoLiquidityData:
             "stress_result": "Stable",
             "policy_status": "Compliant",
             "cashflows": [
-                {
-                    "section": "cashflow",
-                    "label": "Inflows",
-                    "value": "100.00",
-                    "bucket": "T+0",
-                    "status": "Healthy",
-                },
+                {"section": "cashflow", "label": "Inflows", "value": "100.00", "bucket": "T+0", "status": "Healthy"},
             ],
             "gaps": [
-                {
-                    "section": "gap",
-                    "label": "Gap",
-                    "value": "0.00",
-                    "bucket": "T+1",
-                    "status": "Balanced",
-                },
+                {"section": "gap", "label": "Gap", "value": "0.00", "bucket": "T+1", "status": "Balanced"},
             ],
             "hqla_rows": [
-                {
-                    "section": "hqla",
-                    "label": "Eligible",
-                    "value": "80.00",
-                    "policy_reference": "POL-1",
-                    "status": "Eligible",
-                },
+                {"section": "hqla", "label": "Eligible", "value": "80.00", "policy_reference": "POL-1", "status": "Eligible"},
             ],
             "mil_rows": [
-                {
-                    "section": "mil",
-                    "label": "Eligible Assets",
-                    "value": "60.00",
-                    "policy_reference": "POL-2",
-                    "status": "Eligible",
-                },
+                {"section": "mil", "label": "Eligible Assets", "value": "60.00", "policy_reference": "POL-2", "status": "Eligible"},
             ],
             "stress_rows": [
                 {"section": "stress", "label": "Scenario", "value": "Baseline", "status": "Stable"},

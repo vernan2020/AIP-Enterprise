@@ -19,10 +19,7 @@ class ClassificationExclusionPolicy(InstitutionalPolicy):
         classification = str(asset.get("classification", ""))
         if not classification:
             return self._result(context, "NOT_APPLICABLE", "Classification is missing")
-        if any(
-            classification.startswith(prefix)
-            for prefix in self._config.excluded_classification_prefixes
-        ):
+        if any(classification.startswith(prefix) for prefix in self._config.excluded_classification_prefixes):
             return self._result(context, "FAILED", "Classification is excluded")
         return self._result(context, "PASSED", "Classification is allowed")
 

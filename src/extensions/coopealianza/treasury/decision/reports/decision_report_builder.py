@@ -14,9 +14,7 @@ from src.extensions.coopealianza.treasury.decision.models.decision_result import
 class DecisionReportBuilder:
     """Build a serializable report payload from a decision result."""
 
-    def build(
-        self, request: TreasuryDecisionRequest, result: TreasuryDecisionResult
-    ) -> dict[str, Any]:
+    def build(self, request: TreasuryDecisionRequest, result: TreasuryDecisionResult) -> dict[str, Any]:
         if not request.portfolio_reference:
             raise DecisionReportError("Portfolio reference is required")
         if not result.recommendations:
