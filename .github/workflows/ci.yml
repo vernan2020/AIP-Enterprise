@@ -14,22 +14,6 @@ env:
   PYTHONPATH: src
 
 jobs:
-  recovery-checkpoint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-      - name: Recover checkpoint source when present
-        run: |
-          if [ -f recovery/checkpoints/rc1-final-20260829/MANIFEST.json ]; then
-            python scripts/recovery/salvage_runtime_checkpoint.py
-            python -m compileall -q src
-          else
-            echo "No recovery checkpoint on this ref; nothing to recover."
-          fi
-
   quality:
     runs-on: ubuntu-latest
     steps:
@@ -38,11 +22,6 @@ jobs:
         with:
           python-version: '3.13'
           cache: 'pip'
-      - name: Recover checkpoint source when present
-        run: |
-          if [ -f recovery/checkpoints/rc1-final-20260829/MANIFEST.json ]; then
-            python scripts/recovery/salvage_runtime_checkpoint.py
-          fi
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -70,11 +49,6 @@ jobs:
         with:
           python-version: '3.13'
           cache: 'pip'
-      - name: Recover checkpoint source when present
-        run: |
-          if [ -f recovery/checkpoints/rc1-final-20260829/MANIFEST.json ]; then
-            python scripts/recovery/salvage_runtime_checkpoint.py
-          fi
       - name: Install Qt runtime libraries
         run: |
           sudo apt-get update
@@ -98,11 +72,6 @@ jobs:
         with:
           python-version: '3.13'
           cache: 'pip'
-      - name: Recover checkpoint source when present
-        run: |
-          if [ -f recovery/checkpoints/rc1-final-20260829/MANIFEST.json ]; then
-            python scripts/recovery/salvage_runtime_checkpoint.py
-          fi
       - name: Install Qt runtime libraries
         run: |
           sudo apt-get update
@@ -124,11 +93,6 @@ jobs:
         with:
           python-version: '3.13'
           cache: 'pip'
-      - name: Recover checkpoint source when present
-        run: |
-          if [ -f recovery/checkpoints/rc1-final-20260829/MANIFEST.json ]; then
-            python scripts/recovery/salvage_runtime_checkpoint.py
-          fi
       - name: Install build dependencies
         run: |
           python -m pip install --upgrade pip
