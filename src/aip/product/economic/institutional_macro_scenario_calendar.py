@@ -32,20 +32,11 @@ def add_months_end(
     month-end date.
     """
     if months < 0:
-        raise ValueError(
-            "months must be >= 0"
-        )
+        raise ValueError("months must be >= 0")
 
-    normalized = month_end(
-        value
-    )
+    normalized = month_end(value)
 
-    absolute_month = (
-        normalized.year * 12
-        + normalized.month
-        - 1
-        + months
-    )
+    absolute_month = normalized.year * 12 + normalized.month - 1 + months
 
     year = absolute_month // 12
     month = absolute_month % 12 + 1
@@ -81,21 +72,16 @@ def build_scenario_calendar(
         2026-09-30 ... 2027-08-31
     """
     if horizon_months < 1:
-        raise ValueError(
-            "horizon_months must be >= 1"
-        )
+        raise ValueError("horizon_months must be >= 1")
 
-    anchor = month_end(
-        dataset_as_of_date
-    )
+    anchor = month_end(dataset_as_of_date)
 
     return tuple(
         add_months_end(
             anchor,
             offset,
         )
-        for offset
-        in range(
+        for offset in range(
             1,
             horizon_months + 1,
         )
@@ -115,30 +101,16 @@ def months_between(
         2026-07-31 -> 2027-08-31 = 13
         2026-06-30 -> 2027-08-31 = 14
     """
-    normalized_origin = month_end(
-        origin
-    )
+    normalized_origin = month_end(origin)
 
-    normalized_target = month_end(
-        target
-    )
+    normalized_target = month_end(target)
 
-    difference = (
-        (
-            normalized_target.year
-            - normalized_origin.year
-        )
-        * 12
-        + (
-            normalized_target.month
-            - normalized_origin.month
-        )
+    difference = (normalized_target.year - normalized_origin.year) * 12 + (
+        normalized_target.month - normalized_origin.month
     )
 
     if difference < 0:
-        raise ValueError(
-            "target must not precede origin"
-        )
+        raise ValueError("target must not precede origin")
 
     return difference
 
@@ -154,9 +126,7 @@ def required_projection_horizon(
     scenario calendar.
     """
     if not scenario_calendar:
-        raise ValueError(
-            "scenario_calendar cannot be empty"
-        )
+        raise ValueError("scenario_calendar cannot be empty")
 
     return months_between(
         forecast_origin_period,

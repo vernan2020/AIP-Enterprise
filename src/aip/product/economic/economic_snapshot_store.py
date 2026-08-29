@@ -48,15 +48,9 @@ class EconomicSnapshotStore:
                 )
             )
 
-            storage_path = (
-                cache_root
-                / "economic"
-                / self._FILE_NAME
-            )
+            storage_path = cache_root / "economic" / self._FILE_NAME
 
-        self._storage_path = Path(
-            storage_path
-        )
+        self._storage_path = Path(storage_path)
 
     @property
     def storage_path(self) -> Path:
@@ -78,35 +72,20 @@ class EconomicSnapshotStore:
         válido almacenado.
         """
         if not snapshot.available:
-            logger.warning(
-                "Economic snapshot was not persisted because "
-                "it is not available."
-            )
+            logger.warning("Economic snapshot was not persisted because " "it is not available.")
             return False
 
         document = {
             "schema_version": self._SCHEMA_VERSION,
-            "saved_at": (
-                datetime.now(timezone.utc)
-                .isoformat()
-            ),
+            "saved_at": (datetime.now(timezone.utc).isoformat()),
             "snapshot": asdict(snapshot),
         }
 
-        serialized = JsonSerializer.serialize(
-            document
-        )
+        serialized = JsonSerializer.serialize(document)
 
-        directory = (
-            self._storage_path.parent
-        )
+        directory = self._storage_path.parent
 
-        temporary_path = (
-            self._storage_path.with_suffix(
-                self._storage_path.suffix
-                + ".tmp"
-            )
-        )
+        temporary_path = self._storage_path.with_suffix(self._storage_path.suffix + ".tmp")
 
         try:
             directory.mkdir(
@@ -119,9 +98,7 @@ class EconomicSnapshotStore:
                 encoding="utf-8",
             )
 
-            temporary_path.replace(
-                self._storage_path
-            )
+            temporary_path.replace(self._storage_path)
 
         except OSError:
             logger.exception(
@@ -130,13 +107,10 @@ class EconomicSnapshotStore:
             )
 
             try:
-                temporary_path.unlink(
-                    missing_ok=True
-                )
+                temporary_path.unlink(missing_ok=True)
             except OSError:
                 logger.exception(
-                    "Unable to remove temporary economic "
-                    "snapshot file %s",
+                    "Unable to remove temporary economic " "snapshot file %s",
                     temporary_path,
                 )
 
@@ -165,66 +139,36 @@ class EconomicSnapshotStore:
             return None
 
         try:
-            raw_document = (
-                self._storage_path.read_text(
-                    encoding="utf-8"
-                )
-            )
+            raw_document = self._storage_path.read_text(encoding="utf-8")
 
-            document = (
-                JsonSerializer.deserialize(
-                    raw_document
-                )
-            )
+            document = JsonSerializer.deserialize(raw_document)
 
             if not isinstance(
                 document,
                 dict,
             ):
-                raise ValueError(
-                    "Economic snapshot document "
-                    "must be an object."
-                )
+                raise ValueError("Economic snapshot document " "must be an object.")
 
-            schema_version = (
-                document.get(
-                    "schema_version"
-                )
-            )
+            schema_version = document.get("schema_version")
 
-            if (
-                schema_version
-                != self._SCHEMA_VERSION
-            ):
+            if schema_version != self._SCHEMA_VERSION:
                 logger.warning(
-                    "Economic snapshot schema version "
-                    "is incompatible. Expected=%s Actual=%s",
+                    "Economic snapshot schema version " "is incompatible. Expected=%s Actual=%s",
                     self._SCHEMA_VERSION,
                     schema_version,
                 )
 
                 return None
 
-            raw_snapshot = (
-                document.get(
-                    "snapshot"
-                )
-            )
+            raw_snapshot = document.get("snapshot")
 
             if not isinstance(
                 raw_snapshot,
                 dict,
             ):
-                raise ValueError(
-                    "Economic snapshot payload "
-                    "is missing or invalid."
-                )
+                raise ValueError("Economic snapshot payload " "is missing or invalid.")
 
-            snapshot = (
-                self._deserialize_snapshot(
-                    raw_snapshot
-                )
-            )
+            snapshot = self._deserialize_snapshot(raw_snapshot)
 
         except (
             OSError,
@@ -232,8 +176,7 @@ class EconomicSnapshotStore:
             TypeError,
         ):
             logger.exception(
-                "Unable to load persisted economic "
-                "snapshot from %s",
+                "Unable to load persisted economic " "snapshot from %s",
                 self._storage_path,
             )
 
@@ -249,9 +192,7 @@ class EconomicSnapshotStore:
     def delete(self) -> bool:
         """Elimina el snapshot persistido."""
         try:
-            self._storage_path.unlink(
-                missing_ok=True
-            )
+            self._storage_path.unlink(missing_ok=True)
         except OSError:
             logger.exception(
                 "Unable to delete economic snapshot %s",
@@ -269,33 +210,17 @@ class EconomicSnapshotStore:
     ) -> EconomicSnapshot:
         market_snapshot = tuple(
             cls._deserialize_card(item)
-            for item in cls._as_dict_list(
-                payload.get(
-                    "market_snapshot"
-                )
-            )
+            for item in cls._as_dict_list(payload.get("market_snapshot"))
         )
 
         tri_crc_curve = tuple(
-            cls._deserialize_curve_point(
-                item
-            )
-            for item in cls._as_dict_list(
-                payload.get(
-                    "tri_crc_curve"
-                )
-            )
+            cls._deserialize_curve_point(item)
+            for item in cls._as_dict_list(payload.get("tri_crc_curve"))
         )
 
         tri_usd_curve = tuple(
-            cls._deserialize_curve_point(
-                item
-            )
-            for item in cls._as_dict_list(
-                payload.get(
-                    "tri_usd_curve"
-                )
-            )
+            cls._deserialize_curve_point(item)
+            for item in cls._as_dict_list(payload.get("tri_usd_curve"))
         )
 
         raw_diagnostics = payload.get(
@@ -322,25 +247,11 @@ class EconomicSnapshotStore:
                     "UNKNOWN",
                 )
             ),
-            cutoff_date=cls._as_date(
-                payload.get(
-                    "cutoff_date"
-                )
-            ),
-            market_snapshot=(
-                market_snapshot
-            ),
-            tri_crc_curve=(
-                tri_crc_curve
-            ),
-            tri_usd_curve=(
-                tri_usd_curve
-            ),
-            diagnostics=tuple(
-                str(item)
-                for item
-                in raw_diagnostics
-            ),
+            cutoff_date=cls._as_date(payload.get("cutoff_date")),
+            market_snapshot=(market_snapshot),
+            tri_crc_curve=(tri_crc_curve),
+            tri_usd_curve=(tri_usd_curve),
+            diagnostics=tuple(str(item) for item in raw_diagnostics),
             cache_entries=cls._as_int(
                 payload.get(
                     "cache_entries",
@@ -367,45 +278,17 @@ class EconomicSnapshotStore:
                     "",
                 )
             ),
-            value=cls._as_decimal(
-                payload.get(
-                    "value"
-                )
-            ),
-            previous_value=(
-                cls._as_decimal(
-                    payload.get(
-                        "previous_value"
-                    )
-                )
-            ),
-            absolute_change=(
-                cls._as_decimal(
-                    payload.get(
-                        "absolute_change"
-                    )
-                )
-            ),
-            relative_change_percent=(
-                cls._as_decimal(
-                    payload.get(
-                        "relative_change_percent"
-                    )
-                )
-            ),
+            value=cls._as_decimal(payload.get("value")),
+            previous_value=(cls._as_decimal(payload.get("previous_value"))),
+            absolute_change=(cls._as_decimal(payload.get("absolute_change"))),
+            relative_change_percent=(cls._as_decimal(payload.get("relative_change_percent"))),
             trend=str(
                 payload.get(
                     "trend",
                     "UNKNOWN",
                 )
             ),
-            observation_date=(
-                cls._as_date(
-                    payload.get(
-                        "observation_date"
-                    )
-                )
-            ),
+            observation_date=(cls._as_date(payload.get("observation_date"))),
             unit=str(
                 payload.get(
                     "unit",
@@ -418,33 +301,15 @@ class EconomicSnapshotStore:
                     "",
                 )
             ),
-            source_series_code=(
-                cls._as_optional_string(
-                    payload.get(
-                        "source_series_code"
-                    )
-                )
-            ),
+            source_series_code=(cls._as_optional_string(payload.get("source_series_code"))),
             derived=bool(
                 payload.get(
                     "derived",
                     False,
                 )
             ),
-            currency=(
-                cls._as_optional_string(
-                    payload.get(
-                        "currency"
-                    )
-                )
-            ),
-            tenor=(
-                cls._as_optional_string(
-                    payload.get(
-                        "tenor"
-                    )
-                )
-            ),
+            currency=(cls._as_optional_string(payload.get("currency"))),
+            tenor=(cls._as_optional_string(payload.get("tenor"))),
         )
 
     @classmethod
@@ -465,45 +330,17 @@ class EconomicSnapshotStore:
                     "",
                 )
             ),
-            value=cls._as_decimal(
-                payload.get(
-                    "value"
-                )
-            ),
-            previous_value=(
-                cls._as_decimal(
-                    payload.get(
-                        "previous_value"
-                    )
-                )
-            ),
-            absolute_change=(
-                cls._as_decimal(
-                    payload.get(
-                        "absolute_change"
-                    )
-                )
-            ),
+            value=cls._as_decimal(payload.get("value")),
+            previous_value=(cls._as_decimal(payload.get("previous_value"))),
+            absolute_change=(cls._as_decimal(payload.get("absolute_change"))),
             trend=str(
                 payload.get(
                     "trend",
                     "UNKNOWN",
                 )
             ),
-            observation_date=(
-                cls._as_date(
-                    payload.get(
-                        "observation_date"
-                    )
-                )
-            ),
-            source_series_code=(
-                cls._as_optional_string(
-                    payload.get(
-                        "source_series_code"
-                    )
-                )
-            ),
+            observation_date=(cls._as_date(payload.get("observation_date"))),
+            source_series_code=(cls._as_optional_string(payload.get("source_series_code"))),
         )
 
     @staticmethod
@@ -539,9 +376,7 @@ class EconomicSnapshotStore:
             return value
 
         try:
-            return Decimal(
-                str(value)
-            )
+            return Decimal(str(value))
         except (
             InvalidOperation,
             ValueError,
@@ -569,9 +404,7 @@ class EconomicSnapshotStore:
             return None
 
         try:
-            return date.fromisoformat(
-                value
-            )
+            return date.fromisoformat(value)
         except ValueError:
             return None
 
@@ -582,15 +415,9 @@ class EconomicSnapshotStore:
         if value is None:
             return None
 
-        normalized = str(
-            value
-        ).strip()
+        normalized = str(value).strip()
 
-        return (
-            normalized
-            if normalized
-            else None
-        )
+        return normalized if normalized else None
 
     @staticmethod
     def _as_int(

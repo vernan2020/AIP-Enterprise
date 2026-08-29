@@ -97,10 +97,7 @@ class EconomicSnapshot:
 
     @property
     def available(self) -> bool:
-        return (
-            self.status == "AVAILABLE"
-            and bool(self.market_snapshot)
-        )
+        return self.status == "AVAILABLE" and bool(self.market_snapshot)
 
 
 class EconomicViewModel:
@@ -144,9 +141,7 @@ class EconomicViewModel:
         Obtiene y transforma el estado macroeconómico actual.
         """
 
-        payload = (
-            self._provider.get_indicators()
-        )
+        payload = self._provider.get_indicators()
 
         status = str(
             payload.get(
@@ -191,9 +186,7 @@ class EconomicViewModel:
         }
 
         market_snapshot = tuple(
-            self._build_card(
-                indicator_map[code]
-            )
+            self._build_card(indicator_map[code])
             for code in self._SNAPSHOT_ORDER
             if code in indicator_map
         )
@@ -212,42 +205,28 @@ class EconomicViewModel:
             else {}
         )
 
-        tri_crc_curve = (
-            self._build_curve(
-                tri_curves.get(
-                    "CRC",
-                    [],
-                )
+        tri_crc_curve = self._build_curve(
+            tri_curves.get(
+                "CRC",
+                [],
             )
         )
 
-        tri_usd_curve = (
-            self._build_curve(
-                tri_curves.get(
-                    "USD",
-                    [],
-                )
+        tri_usd_curve = self._build_curve(
+            tri_curves.get(
+                "USD",
+                [],
             )
         )
 
-        diagnostics = (
-            self._build_diagnostics(
-                payload
-            )
-        )
+        diagnostics = self._build_diagnostics(payload)
 
-        cache_entries = (
-            self._extract_cache_entries(
-                payload
-            )
-        )
+        cache_entries = self._extract_cache_entries(payload)
 
-        cutoff_date = (
-            self._determine_cutoff_date(
-                market_snapshot,
-                tri_crc_curve,
-                tri_usd_curve,
-            )
+        cutoff_date = self._determine_cutoff_date(
+            market_snapshot,
+            tri_crc_curve,
+            tri_usd_curve,
         )
 
         return EconomicSnapshot(
@@ -278,37 +257,11 @@ class EconomicViewModel:
                     "",
                 )
             ),
-            value=(
-                EconomicViewModel
-                ._as_decimal(
-                    payload.get(
-                        "value"
-                    )
-                )
-            ),
-            previous_value=(
-                EconomicViewModel
-                ._as_decimal(
-                    payload.get(
-                        "previous_value"
-                    )
-                )
-            ),
-            absolute_change=(
-                EconomicViewModel
-                ._as_decimal(
-                    payload.get(
-                        "absolute_change"
-                    )
-                )
-            ),
+            value=(EconomicViewModel._as_decimal(payload.get("value"))),
+            previous_value=(EconomicViewModel._as_decimal(payload.get("previous_value"))),
+            absolute_change=(EconomicViewModel._as_decimal(payload.get("absolute_change"))),
             relative_change_percent=(
-                EconomicViewModel
-                ._as_decimal(
-                    payload.get(
-                        "relative_change_percent"
-                    )
-                )
+                EconomicViewModel._as_decimal(payload.get("relative_change_percent"))
             ),
             trend=str(
                 payload.get(
@@ -316,14 +269,7 @@ class EconomicViewModel:
                     "UNKNOWN",
                 )
             ),
-            observation_date=(
-                EconomicViewModel
-                ._as_date(
-                    payload.get(
-                        "date"
-                    )
-                )
-            ),
+            observation_date=(EconomicViewModel._as_date(payload.get("date"))),
             unit=str(
                 payload.get(
                     "unit",
@@ -337,12 +283,7 @@ class EconomicViewModel:
                 )
             ),
             source_series_code=(
-                EconomicViewModel
-                ._as_optional_string(
-                    payload.get(
-                        "source_series_code"
-                    )
-                )
+                EconomicViewModel._as_optional_string(payload.get("source_series_code"))
             ),
             derived=bool(
                 payload.get(
@@ -350,22 +291,8 @@ class EconomicViewModel:
                     False,
                 )
             ),
-            currency=(
-                EconomicViewModel
-                ._as_optional_string(
-                    payload.get(
-                        "currency"
-                    )
-                )
-            ),
-            tenor=(
-                EconomicViewModel
-                ._as_optional_string(
-                    payload.get(
-                        "tenor"
-                    )
-                )
-            ),
+            currency=(EconomicViewModel._as_optional_string(payload.get("currency"))),
+            tenor=(EconomicViewModel._as_optional_string(payload.get("tenor"))),
         )
 
     @staticmethod
@@ -381,9 +308,7 @@ class EconomicViewModel:
         ):
             return ()
 
-        result: list[
-            EconomicCurvePoint
-        ] = []
+        result: list[EconomicCurvePoint] = []
 
         for item in payload:
             if not isinstance(
@@ -406,97 +331,47 @@ class EconomicViewModel:
                 )
             )
 
-            if (
-                not code
-                or not tenor
-            ):
+            if not code or not tenor:
                 continue
 
             result.append(
                 EconomicCurvePoint(
                     code=code,
                     tenor=tenor,
-                    value=(
-                        EconomicViewModel
-                        ._as_decimal(
-                            item.get(
-                                "value"
-                            )
-                        )
-                    ),
-                    previous_value=(
-                        EconomicViewModel
-                        ._as_decimal(
-                            item.get(
-                                "previous_value"
-                            )
-                        )
-                    ),
-                    absolute_change=(
-                        EconomicViewModel
-                        ._as_decimal(
-                            item.get(
-                                "absolute_change"
-                            )
-                        )
-                    ),
+                    value=(EconomicViewModel._as_decimal(item.get("value"))),
+                    previous_value=(EconomicViewModel._as_decimal(item.get("previous_value"))),
+                    absolute_change=(EconomicViewModel._as_decimal(item.get("absolute_change"))),
                     trend=str(
                         item.get(
                             "trend",
                             "UNKNOWN",
                         )
                     ),
-                    observation_date=(
-                        EconomicViewModel
-                        ._as_date(
-                            item.get(
-                                "date"
-                            )
-                        )
-                    ),
+                    observation_date=(EconomicViewModel._as_date(item.get("date"))),
                     source_series_code=(
-                        EconomicViewModel
-                        ._as_optional_string(
-                            item.get(
-                                "source_series_code"
-                            )
-                        )
+                        EconomicViewModel._as_optional_string(item.get("source_series_code"))
                     ),
                 )
             )
 
-        return tuple(
-            result
-        )
+        return tuple(result)
 
     @staticmethod
     def _build_diagnostics(
         payload: dict[str, Any],
     ) -> tuple[str, ...]:
-        raw_diagnostics = (
-            payload.get(
-                "diagnostics"
-            )
-        )
+        raw_diagnostics = payload.get("diagnostics")
 
         if isinstance(
             raw_diagnostics,
             list,
         ):
-            return tuple(
-                str(item)
-                for item
-                in raw_diagnostics
-            )
+            return tuple(str(item) for item in raw_diagnostics)
 
-        diagnostic = payload.get(
-            "diagnostic"
-        )
+        diagnostic = payload.get("diagnostic")
 
         if diagnostic:
-            return (
-                str(diagnostic),
-            )
+            return (str(diagnostic),)
 
         return ()
 
@@ -504,9 +379,7 @@ class EconomicViewModel:
     def _extract_cache_entries(
         payload: dict[str, Any],
     ) -> int:
-        cache = payload.get(
-            "cache"
-        )
+        cache = payload.get("cache")
 
         if not isinstance(
             cache,
@@ -520,9 +393,7 @@ class EconomicViewModel:
         )
 
         try:
-            return int(
-                entries
-            )
+            return int(entries)
 
         except (
             TypeError,
@@ -558,32 +429,17 @@ class EconomicViewModel:
         dates: list[date] = []
 
         for indicator in market_snapshot:
-            if (
-                indicator.observation_date
-                is not None
-            ):
-                dates.append(
-                    indicator.observation_date
-                )
+            if indicator.observation_date is not None:
+                dates.append(indicator.observation_date)
 
-        for point in (
-            tri_crc_curve
-            + tri_usd_curve
-        ):
-            if (
-                point.observation_date
-                is not None
-            ):
-                dates.append(
-                    point.observation_date
-                )
+        for point in tri_crc_curve + tri_usd_curve:
+            if point.observation_date is not None:
+                dates.append(point.observation_date)
 
         if not dates:
             return None
 
-        return max(
-            dates
-        )
+        return max(dates)
 
     @staticmethod
     def _as_decimal(
@@ -599,9 +455,7 @@ class EconomicViewModel:
             return value
 
         try:
-            return Decimal(
-                str(value)
-            )
+            return Decimal(str(value))
 
         except (
             ValueError,
@@ -627,9 +481,7 @@ class EconomicViewModel:
             str,
         ):
             try:
-                return date.fromisoformat(
-                    value
-                )
+                return date.fromisoformat(value)
 
             except ValueError:
                 return None
@@ -643,12 +495,6 @@ class EconomicViewModel:
         if value is None:
             return None
 
-        normalized = str(
-            value
-        ).strip()
+        normalized = str(value).strip()
 
-        return (
-            normalized
-            if normalized
-            else None
-        )
+        return normalized if normalized else None

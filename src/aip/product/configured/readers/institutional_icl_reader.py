@@ -118,7 +118,9 @@ class InstitutionalICLReader:
             warnings=tuple(warnings),
         )
 
-    def _read_required_rows(self, worksheet: Any) -> tuple[dict[int, int], dict[int, tuple[Decimal, Decimal, Decimal]]]:
+    def _read_required_rows(
+        self, worksheet: Any
+    ) -> tuple[dict[int, int], dict[int, tuple[Decimal, Decimal, Decimal]]]:
         required_codes = {
             self._CODE_ICL,
             self._CODE_LIQUID_ASSET_FUND,
@@ -160,7 +162,9 @@ class InstitutionalICLReader:
         for index, label in enumerate(labels):
             expected = total_outflows[index] - total_inflows[index]
             if abs(expected - net_outflow[index]) > Decimal("1"):
-                warnings.append(f"Net outflow reconciliation difference for {label}: expected={expected} reported={net_outflow[index]}")
+                warnings.append(
+                    f"Net outflow reconciliation difference for {label}: expected={expected} reported={net_outflow[index]}"
+                )
 
     def _validate_icl_ratio(self, liquid_asset_fund, net_outflow, icl, warnings) -> None:
         labels = ("TOTAL", "MN", "ME")
@@ -171,11 +175,18 @@ class InstitutionalICLReader:
                 continue
             expected = liquid_asset_fund[index] / denominator
             if abs(expected - icl[index]) > Decimal("0.0001"):
-                warnings.append(f"ICL reconciliation difference for {label}: expected={expected} reported={icl[index]}")
+                warnings.append(
+                    f"ICL reconciliation difference for {label}: expected={expected} reported={icl[index]}"
+                )
 
     @staticmethod
     def _trace_cells(row_number: int) -> dict[str, str]:
-        return {"code": f"K{row_number}", "consolidated": f"AA{row_number}", "mn": f"AB{row_number}", "me": f"AC{row_number}"}
+        return {
+            "code": f"K{row_number}",
+            "consolidated": f"AA{row_number}",
+            "mn": f"AB{row_number}",
+            "me": f"AC{row_number}",
+        }
 
     @staticmethod
     def _decimal(value: Any) -> Decimal:

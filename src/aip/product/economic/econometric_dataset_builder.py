@@ -105,30 +105,18 @@ class EconometricDatasetBuilder:
         ] = {}
 
         for code in self.MONTHLY_INDICATORS:
-            historical = (
-                self._repository.get_series(
-                    code,
-                    from_date=from_date,
-                    to_date=to_date,
-                )
+            historical = self._repository.get_series(
+                code,
+                from_date=from_date,
+                to_date=to_date,
             )
 
-            series_points[
-                code
-            ] = self._monthly_points(
+            series_points[code] = self._monthly_points(
                 code,
                 historical.observations,
             )
 
-        periods = sorted(
-            {
-                period
-                for points
-                in series_points.values()
-                for period
-                in points
-            }
-        )
+        periods = sorted({period for points in series_points.values() for period in points})
 
         rows = tuple(
             self._build_monthly_row(
@@ -139,21 +127,11 @@ class EconometricDatasetBuilder:
         )
 
         if not include_incomplete:
-            rows = tuple(
-                row
-                for row in rows
-                if row.complete
-            )
+            rows = tuple(row for row in rows if row.complete)
 
         data_points = tuple(
             sorted(
-                (
-                    point
-                    for points
-                    in series_points.values()
-                    for point
-                    in points.values()
-                ),
+                (point for points in series_points.values() for point in points.values()),
                 key=lambda point: (
                     point.period,
                     point.indicator_code,
@@ -164,22 +142,10 @@ class EconometricDatasetBuilder:
 
         return EconometricMonthlyDataset(
             rows=rows,
-            indicator_codes=(
-                self.MONTHLY_INDICATORS
-            ),
-            first_period=(
-                rows[0].period
-                if rows
-                else None
-            ),
-            last_period=(
-                rows[-1].period
-                if rows
-                else None
-            ),
-            data_points=(
-                data_points
-            ),
+            indicator_codes=(self.MONTHLY_INDICATORS),
+            first_period=(rows[0].period if rows else None),
+            last_period=(rows[-1].period if rows else None),
+            data_points=(data_points),
         )
 
     def _monthly_points(
@@ -193,32 +159,21 @@ class EconometricDatasetBuilder:
         date,
         EconometricDataPoint,
     ]:
-        code = (
-            indicator_code
-            .strip()
-            .upper()
-        )
+        code = indicator_code.strip().upper()
 
         if code in self.DAILY_TO_MONTH_END:
-            return (
-                self._aggregate_last_observation_by_month(
-                    code,
-                    observations,
-                )
+            return self._aggregate_last_observation_by_month(
+                code,
+                observations,
             )
 
         if code in self.NATURAL_MONTHLY:
-            return (
-                self._aggregate_monthly_observations(
-                    code,
-                    observations,
-                )
+            return self._aggregate_monthly_observations(
+                code,
+                observations,
             )
 
-        raise ValueError(
-            "Unsupported monthly econometric indicator: "
-            f"{indicator_code}"
-        )
+        raise ValueError("Unsupported monthly econometric indicator: " f"{indicator_code}")
 
     @staticmethod
     def _aggregate_last_observation_by_month(
@@ -252,18 +207,10 @@ class EconometricDatasetBuilder:
                 observation.observation_date.month,
             )
 
-            current = selected.get(
-                key
-            )
+            current = selected.get(key)
 
-            if (
-                current is None
-                or observation.observation_date
-                > current.observation_date
-            ):
-                selected[key] = (
-                    observation
-                )
+            if current is None or observation.observation_date > current.observation_date:
+                selected[key] = observation
 
         result: dict[
             date,
@@ -274,29 +221,18 @@ class EconometricDatasetBuilder:
             year,
             month,
         ), observation in selected.items():
-            period = (
-                EconometricDatasetBuilder
-                ._month_end(
-                    year,
-                    month,
-                )
+            period = EconometricDatasetBuilder._month_end(
+                year,
+                month,
             )
 
-            result[
-                period
-            ] = EconometricDataPoint(
-                indicator_code=(
-                    indicator_code
-                ),
+            result[period] = EconometricDataPoint(
+                indicator_code=(indicator_code),
                 period=period,
                 value=observation.value,
-                observation_date=(
-                    observation.observation_date
-                ),
+                observation_date=(observation.observation_date),
                 source=observation.source,
-                source_series_code=(
-                    observation.source_series_code
-                ),
+                source_series_code=(observation.source_series_code),
             )
 
         return result
@@ -334,18 +270,10 @@ class EconometricDatasetBuilder:
                 observation.observation_date.month,
             )
 
-            current = selected.get(
-                key
-            )
+            current = selected.get(key)
 
-            if (
-                current is None
-                or observation.observation_date
-                > current.observation_date
-            ):
-                selected[key] = (
-                    observation
-                )
+            if current is None or observation.observation_date > current.observation_date:
+                selected[key] = observation
 
         result: dict[
             date,
@@ -356,29 +284,18 @@ class EconometricDatasetBuilder:
             year,
             month,
         ), observation in selected.items():
-            period = (
-                EconometricDatasetBuilder
-                ._month_end(
-                    year,
-                    month,
-                )
+            period = EconometricDatasetBuilder._month_end(
+                year,
+                month,
             )
 
-            result[
-                period
-            ] = EconometricDataPoint(
-                indicator_code=(
-                    indicator_code
-                ),
+            result[period] = EconometricDataPoint(
+                indicator_code=(indicator_code),
                 period=period,
                 value=observation.value,
-                observation_date=(
-                    observation.observation_date
-                ),
+                observation_date=(observation.observation_date),
                 source=observation.source,
-                source_series_code=(
-                    observation.source_series_code
-                ),
+                source_series_code=(observation.source_series_code),
             )
 
         return result
@@ -397,46 +314,22 @@ class EconometricDatasetBuilder:
         def value(
             code: str,
         ):
-            point = (
-                series_points
-                .get(
-                    code,
-                    {},
-                )
-                .get(
-                    period
-                )
-            )
+            point = series_points.get(
+                code,
+                {},
+            ).get(period)
 
-            return (
-                point.value
-                if point is not None
-                else None
-            )
+            return point.value if point is not None else None
 
         return EconometricMonthlyRow(
             period=period,
-            fx_sell=value(
-                "FX_SELL"
-            ),
-            tpm=value(
-                "TPM"
-            ),
-            tbp=value(
-                "TBP"
-            ),
-            tri_crc_12m=value(
-                "TRI_CRC_12M"
-            ),
-            tri_usd_12m=value(
-                "TRI_USD_12M"
-            ),
-            inflation=value(
-                "INFLATION"
-            ),
-            imae=value(
-                "IMAE"
-            ),
+            fx_sell=value("FX_SELL"),
+            tpm=value("TPM"),
+            tbp=value("TBP"),
+            tri_crc_12m=value("TRI_CRC_12M"),
+            tri_usd_12m=value("TRI_USD_12M"),
+            inflation=value("INFLATION"),
+            imae=value("IMAE"),
         )
 
     @staticmethod

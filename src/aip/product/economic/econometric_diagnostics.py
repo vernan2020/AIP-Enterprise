@@ -62,9 +62,7 @@ class EconometricDiagnosticsResult:
         self,
     ) -> tuple[str, ...]:
         return tuple(
-            item.indicator_code
-            for item in self.diagnostics
-            if item.integration_order == "I(0)"
+            item.indicator_code for item in self.diagnostics if item.integration_order == "I(0)"
         )
 
     @property
@@ -72,9 +70,7 @@ class EconometricDiagnosticsResult:
         self,
     ) -> tuple[str, ...]:
         return tuple(
-            item.indicator_code
-            for item in self.diagnostics
-            if item.integration_order == "I(1)"
+            item.indicator_code for item in self.diagnostics if item.integration_order == "I(1)"
         )
 
     @property
@@ -84,6 +80,5 @@ class EconometricDiagnosticsResult:
         return tuple(
             item.indicator_code
             for item in self.diagnostics
-            if item.integration_order
-            == "UNDETERMINED"
+            if item.integration_order == "UNDETERMINED"
         )

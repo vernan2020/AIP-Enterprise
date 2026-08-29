@@ -28,10 +28,7 @@ class InstitutionalMacroScenarioWorkflowService:
         *,
         repository: InstitutionalMacroScenarioRepository | None = None,
     ) -> None:
-        self._repository = (
-            repository
-            or InstitutionalMacroScenarioRepository()
-        )
+        self._repository = repository or InstitutionalMacroScenarioRepository()
 
     @property
     def repository(
@@ -46,9 +43,7 @@ class InstitutionalMacroScenarioWorkflowService:
         normalized = actor.strip()
 
         if not normalized:
-            raise ValueError(
-                "actor cannot be empty"
-            )
+            raise ValueError("actor cannot be empty")
 
         return normalized
 
@@ -61,9 +56,7 @@ class InstitutionalMacroScenarioWorkflowService:
         normalized = value.strip()
 
         if not normalized:
-            raise ValueError(
-                f"{field_name} cannot be empty"
-            )
+            raise ValueError(f"{field_name} cannot be empty")
 
         return normalized
 
@@ -84,91 +77,49 @@ class InstitutionalMacroScenarioWorkflowService:
         )
 
         if scenario is None:
-            raise ValueError(
-                "Scenario version does not exist: "
-                f"{scenario_id} v{version}"
-            )
+            raise ValueError("Scenario version does not exist: " f"{scenario_id} v{version}")
 
         if scenario.status != "DRAFT":
-            raise ValueError(
-                "Review resolution is only permitted "
-                "while scenario is DRAFT"
-            )
+            raise ValueError("Review resolution is only permitted " "while scenario is DRAFT")
 
-        code = (
-            indicator_code
-            .strip()
-            .upper()
-        )
+        code = indicator_code.strip().upper()
 
-        indicator = scenario.indicator(
-            code
-        )
+        indicator = scenario.indicator(code)
 
         if indicator is None:
-            raise ValueError(
-                "Indicator does not exist in scenario: "
-                f"{code}"
-            )
+            raise ValueError("Indicator does not exist in scenario: " f"{code}")
 
-        if (
-            indicator.institutional_status
-            != "REVIEW_REQUIRED"
-        ):
-            raise ValueError(
-                "Indicator does not require review: "
-                f"{code}"
-            )
+        if indicator.institutional_status != "REVIEW_REQUIRED":
+            raise ValueError("Indicator does not require review: " f"{code}")
 
-        normalized_resolution = (
-            resolution
-            .strip()
-            .upper()
-        )
+        normalized_resolution = resolution.strip().upper()
 
         if normalized_resolution not in {
             "ACCEPTED_FOR_SCENARIO",
             "OVERRIDDEN",
             "REJECTED",
         }:
-            raise ValueError(
-                "Unsupported review resolution: "
-                f"{resolution}"
-            )
+            raise ValueError("Unsupported review resolution: " f"{resolution}")
 
-        normalized_actor = (
-            self._normalize_actor(
-                actor
-            )
+        normalized_actor = self._normalize_actor(actor)
+
+        normalized_comment = self._require_text(
+            comment,
+            field_name="comment",
         )
 
-        normalized_comment = (
-            self._require_text(
-                comment,
-                field_name="comment",
-            )
+        normalized_reason = self._require_text(
+            reason,
+            field_name="reason",
         )
 
-        normalized_reason = (
-            self._require_text(
-                reason,
-                field_name="reason",
-            )
-        )
-
-        now = datetime.now(
-            timezone.utc
-        )
+        now = datetime.now(timezone.utc)
 
         review = ScenarioReviewResolution(
-            scenario_id=(
-                scenario.scenario_id
-            ),
+            scenario_id=(scenario.scenario_id),
             version=scenario.version,
             indicator_code=code,
-            resolution=(
-                normalized_resolution
-            ),
+            resolution=(normalized_resolution),
             actor=normalized_actor,
             resolved_at=now,
             comment=normalized_comment,
@@ -177,9 +128,7 @@ class InstitutionalMacroScenarioWorkflowService:
 
         event = ScenarioWorkflowEvent(
             event_id=uuid4().hex,
-            scenario_id=(
-                scenario.scenario_id
-            ),
+            scenario_id=(scenario.scenario_id),
             version=scenario.version,
             event_type="REVIEW_RESOLVED",
             from_status=scenario.status,
@@ -187,11 +136,7 @@ class InstitutionalMacroScenarioWorkflowService:
             actor=normalized_actor,
             event_at=now,
             comment=normalized_comment,
-            reason=(
-                f"{code}: "
-                f"{normalized_resolution}; "
-                f"{normalized_reason}"
-            ),
+            reason=(f"{code}: " f"{normalized_resolution}; " f"{normalized_reason}"),
         )
 
         self._repository.save_review_resolution(
@@ -216,41 +161,27 @@ class InstitutionalMacroScenarioWorkflowService:
         )
 
         if scenario is None:
-            raise ValueError(
-                "Scenario version does not exist: "
-                f"{scenario_id} v{version}"
-            )
+            raise ValueError("Scenario version does not exist: " f"{scenario_id} v{version}")
 
         if scenario.status != "DRAFT":
-            raise ValueError(
-                "Only DRAFT scenarios can be approved"
-            )
+            raise ValueError("Only DRAFT scenarios can be approved")
 
-        normalized_actor = (
-            self._normalize_actor(
-                actor
-            )
+        normalized_actor = self._normalize_actor(actor)
+
+        normalized_comment = self._require_text(
+            comment,
+            field_name="comment",
         )
 
-        normalized_comment = (
-            self._require_text(
-                comment,
-                field_name="comment",
-            )
-        )
-
-        normalized_reason = (
-            self._require_text(
-                reason,
-                field_name="reason",
-            )
+        normalized_reason = self._require_text(
+            reason,
+            field_name="reason",
         )
 
         resolutions = {
             item.indicator_code: item
             for item in (
-                self._repository
-                .review_resolutions(
+                self._repository.review_resolutions(
                     scenario.scenario_id,
                     scenario.version,
                 )
@@ -260,41 +191,23 @@ class InstitutionalMacroScenarioWorkflowService:
         blockers = []
 
         for indicator in scenario.indicators:
-            if (
-                indicator.institutional_status
-                != "REVIEW_REQUIRED"
-            ):
+            if indicator.institutional_status != "REVIEW_REQUIRED":
                 continue
 
-            resolution = resolutions.get(
-                indicator.indicator_code
-            )
+            resolution = resolutions.get(indicator.indicator_code)
 
             if resolution is None:
-                blockers.append(
-                    f"{indicator.indicator_code}: "
-                    "review unresolved"
-                )
+                blockers.append(f"{indicator.indicator_code}: " "review unresolved")
 
                 continue
 
             if not resolution.permits_approval:
-                blockers.append(
-                    f"{indicator.indicator_code}: "
-                    f"{resolution.resolution}"
-                )
+                blockers.append(f"{indicator.indicator_code}: " f"{resolution.resolution}")
 
         if blockers:
-            raise ValueError(
-                "Scenario cannot be approved. "
-                + "; ".join(
-                    blockers
-                )
-            )
+            raise ValueError("Scenario cannot be approved. " + "; ".join(blockers))
 
-        now = datetime.now(
-            timezone.utc
-        )
+        now = datetime.now(timezone.utc)
 
         approved_event = ScenarioWorkflowEvent(
             event_id=uuid4().hex,
@@ -311,16 +224,9 @@ class InstitutionalMacroScenarioWorkflowService:
 
         superseded_events = []
 
-        approved_versions = (
-            self._repository
-            .approved_versions_for_scenario(
-                scenario_id=(
-                    scenario.scenario_id
-                ),
-                scenario_type=(
-                    scenario.scenario_type
-                ),
-            )
+        approved_versions = self._repository.approved_versions_for_scenario(
+            scenario_id=(scenario.scenario_id),
+            scenario_type=(scenario.scenario_type),
         )
 
         for (
@@ -328,49 +234,35 @@ class InstitutionalMacroScenarioWorkflowService:
             previous_version,
         ) in approved_versions:
             if (
-                previous_scenario_id
-                == scenario.scenario_id
-                and previous_version
-                == scenario.version
+                previous_scenario_id == scenario.scenario_id
+                and previous_version == scenario.version
             ):
                 continue
 
             superseded_events.append(
                 ScenarioWorkflowEvent(
                     event_id=uuid4().hex,
-                    scenario_id=(
-                        previous_scenario_id
-                    ),
-                    version=(
-                        previous_version
-                    ),
+                    scenario_id=(previous_scenario_id),
+                    version=(previous_version),
                     event_type="SUPERSEDED",
                     from_status="APPROVED",
                     to_status="SUPERSEDED",
                     actor=normalized_actor,
                     event_at=now,
-                    comment=(
-                        "Superseded by "
-                        f"{scenario.scenario_id} "
-                        f"v{scenario.version}"
-                    ),
+                    comment=("Superseded by " f"{scenario.scenario_id} " f"v{scenario.version}"),
                     reason=normalized_reason,
                 )
             )
 
         self._repository.approve_version(
-            scenario_id=(
-                scenario.scenario_id
-            ),
+            scenario_id=(scenario.scenario_id),
             version=scenario.version,
             actor=normalized_actor,
             approved_at=now,
             comment=normalized_comment,
             reason=normalized_reason,
             approved_event=approved_event,
-            superseded_events=tuple(
-                superseded_events
-            ),
+            superseded_events=tuple(superseded_events),
         )
 
         loaded = self._repository.get(
@@ -379,9 +271,6 @@ class InstitutionalMacroScenarioWorkflowService:
         )
 
         if loaded is None:
-            raise RuntimeError(
-                "Approved scenario could not be "
-                "read back"
-            )
+            raise RuntimeError("Approved scenario could not be " "read back")
 
         return loaded

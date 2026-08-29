@@ -62,10 +62,7 @@ class ConfiguredDependencyComposition:
         source_config: ConfiguredSourceConfig | None = None,
     ) -> None:
         self._config = config
-        self._source_config = (
-            source_config
-            or ConfiguredSourceConfig()
-        )
+        self._source_config = source_config or ConfiguredSourceConfig()
 
     def compose(
         self,
@@ -89,17 +86,12 @@ class ConfiguredDependencyComposition:
         # INFRASTRUCTURE / DATA PROVIDERS
         # =========================================================
 
-        health_provider = ConfiguredHealthProvider(
-            self._source_config
-        )
+        health_provider = ConfiguredHealthProvider(self._source_config)
 
         macro_intelligence_service = ConfiguredMacroIntelligenceService()
 
         bccr_config = BCCRConfig(
-            base_url=(
-                self._source_config.bccr.base_url
-                or "https://apim.bccr.fi.cr"
-            ),
+            base_url=(self._source_config.bccr.base_url or "https://apim.bccr.fi.cr"),
             indicators=list(
                 self._source_config.bccr.series_config
                 or self._source_config.bccr.indicator_configuration
@@ -118,15 +110,11 @@ class ConfiguredDependencyComposition:
             provider=UrllibHTTPProvider(),
         )
 
-        economic_indicators_provider = (
-            ConfiguredEconomicIndicatorsProvider(
-                bccr_config=bccr_config,
-            )
+        economic_indicators_provider = ConfiguredEconomicIndicatorsProvider(
+            bccr_config=bccr_config,
         )
 
-        valuation_date_context = ValuationDateContext(
-            self._config.data_cutoff_date
-        )
+        valuation_date_context = ValuationDateContext(self._config.data_cutoff_date)
 
         portfolio_provider = ConfiguredPortfolioProvider(
             self._config,
@@ -135,26 +123,16 @@ class ConfiguredDependencyComposition:
             valuation_date_context=valuation_date_context,
         )
 
-        portfolio_var_service = (
-            ConfiguredPortfolioVaRService(
-                self._config,
-                self._source_config,
-                portfolio_provider,
-                valuation_date_context=valuation_date_context,
-            )
+        portfolio_var_service = ConfiguredPortfolioVaRService(
+            self._config,
+            self._source_config,
+            portfolio_provider,
+            valuation_date_context=valuation_date_context,
         )
 
-        portfolio_dv01_service = (
-            ConfiguredPortfolioDV01Service(
-                portfolio_provider
-            )
-        )
+        portfolio_dv01_service = ConfiguredPortfolioDV01Service(portfolio_provider)
 
-        portfolio_rate_shock_service = (
-            ConfiguredPortfolioRateShockService(
-                portfolio_provider
-            )
-        )
+        portfolio_rate_shock_service = ConfiguredPortfolioRateShockService(portfolio_provider)
 
         market_provider = ConfiguredMarketProvider(
             self._config,
@@ -272,18 +250,10 @@ class ConfiguredDependencyComposition:
             InitialLoadWorkflow,
             lambda _container: InitialLoadWorkflow(
                 self._config,
-                portfolio_provider=_container.resolve(
-                    PortfolioDataProvider
-                ),
-                market_provider=_container.resolve(
-                    MarketDataProvider
-                ),
-                liquidity_provider=_container.resolve(
-                    LiquidityDataProvider
-                ),
-                health_provider=_container.resolve(
-                    SourceHealthProvider
-                ),
+                portfolio_provider=_container.resolve(PortfolioDataProvider),
+                market_provider=_container.resolve(MarketDataProvider),
+                liquidity_provider=_container.resolve(LiquidityDataProvider),
+                health_provider=_container.resolve(SourceHealthProvider),
             ),
         )
 
@@ -291,21 +261,11 @@ class ConfiguredDependencyComposition:
             RefreshAllWorkflow,
             lambda _container: RefreshAllWorkflow(
                 self._config,
-                portfolio_provider=_container.resolve(
-                    PortfolioDataProvider
-                ),
-                market_provider=_container.resolve(
-                    MarketDataProvider
-                ),
-                liquidity_provider=_container.resolve(
-                    LiquidityDataProvider
-                ),
-                health_provider=_container.resolve(
-                    SourceHealthProvider
-                ),
-                valuation_date_context=_container.resolve(
-                    ValuationDateContext
-                ),
+                portfolio_provider=_container.resolve(PortfolioDataProvider),
+                market_provider=_container.resolve(MarketDataProvider),
+                liquidity_provider=_container.resolve(LiquidityDataProvider),
+                health_provider=_container.resolve(SourceHealthProvider),
+                valuation_date_context=_container.resolve(ValuationDateContext),
             ),
         )
 
@@ -313,9 +273,7 @@ class ConfiguredDependencyComposition:
             ExecutiveRefreshWorkflow,
             lambda _container: ExecutiveRefreshWorkflow(
                 self._config,
-                valuation_date_context=_container.resolve(
-                    ValuationDateContext
-                ),
+                valuation_date_context=_container.resolve(ValuationDateContext),
             ),
         )
 
@@ -325,11 +283,19 @@ class ConfiguredDependencyComposition:
     @staticmethod
     def _validate_required_services(container: Container) -> None:
         required_services = (
-            SourceHealthProvider, PortfolioDataProvider, MarketDataProvider,
-            LiquidityDataProvider, EconomicIndicatorsProvider,
-            ConfiguredPortfolioVaRService, ConfiguredPortfolioDV01Service,
-            ConfiguredPortfolioRateShockService, BCCRConfig, BCCRConnector,
-            ValuationDateContext, RefreshAllWorkflow, ExecutiveRefreshWorkflow,
+            SourceHealthProvider,
+            PortfolioDataProvider,
+            MarketDataProvider,
+            LiquidityDataProvider,
+            EconomicIndicatorsProvider,
+            ConfiguredPortfolioVaRService,
+            ConfiguredPortfolioDV01Service,
+            ConfiguredPortfolioRateShockService,
+            BCCRConfig,
+            BCCRConnector,
+            ValuationDateContext,
+            RefreshAllWorkflow,
+            ExecutiveRefreshWorkflow,
         )
         for service_type in required_services:
             container.resolve(service_type)

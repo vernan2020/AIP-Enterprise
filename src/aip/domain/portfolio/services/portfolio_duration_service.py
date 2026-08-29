@@ -89,9 +89,7 @@ class PortfolioDurationService:
         )
 
     @classmethod
-    def _maturity_proxy(
-        cls, position: dict[str, Any], valuation_date: date
-    ) -> DurationResult:
+    def _maturity_proxy(cls, position: dict[str, Any], valuation_date: date) -> DurationResult:
         maturity = cls._as_date(position.get("maturity_date"))
         if maturity is None:
             return DurationResult(
@@ -108,9 +106,7 @@ class PortfolioDurationService:
         )
 
     @classmethod
-    def _fixed_rate_duration(
-        cls, position: dict[str, Any], valuation_date: date
-    ) -> DurationResult:
+    def _fixed_rate_duration(cls, position: dict[str, Any], valuation_date: date) -> DurationResult:
         market_yield = cls._decimal(position.get("market_yield"))
         coupon_rate = cls._decimal(position.get("nominal_rate"))
         nominal = cls._decimal(position.get("nominal"))
@@ -124,7 +120,13 @@ class PortfolioDurationService:
                 "PIPCA_MARKET_YIELD",
                 diagnostic="PiPCA market yield is unavailable",
             )
-        if coupon_rate is None or nominal is None or nominal <= 0 or maturity is None or months is None:
+        if (
+            coupon_rate is None
+            or nominal is None
+            or nominal <= 0
+            or maturity is None
+            or months is None
+        ):
             return DurationResult(
                 None,
                 "MARKET_DURATION_UNAVAILABLE",

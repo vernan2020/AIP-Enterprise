@@ -39,11 +39,14 @@ class _CandidateSpecification:
 
     ar_lags: int | None = None
 
-    arima_order: tuple[
-        int,
-        int,
-        int,
-    ] | None = None
+    arima_order: (
+        tuple[
+            int,
+            int,
+            int,
+        ]
+        | None
+    ) = None
 
 
 class EconometricModelSelectionService:
@@ -84,75 +87,46 @@ class EconometricModelSelectionService:
         rmse_equivalence_tolerance: float = 1e-6,
     ) -> None:
         if minimum_training_observations < 24:
-            raise ValueError(
-                "minimum_training_observations must be >= 24"
-            )
+            raise ValueError("minimum_training_observations must be >= 24")
 
         if forecast_horizon != 1:
             raise ValueError(
-                "Initial model-selection engine "
-                "supports one-step-ahead backtesting only"
+                "Initial model-selection engine " "supports one-step-ahead backtesting only"
             )
 
         if minimum_backtest_observations < 6:
-            raise ValueError(
-                "minimum_backtest_observations must be >= 6"
-            )
+            raise ValueError("minimum_backtest_observations must be >= 6")
 
-        self._minimum_training_observations = (
-            minimum_training_observations
-        )
+        self._minimum_training_observations = minimum_training_observations
 
-        self._forecast_horizon = (
-            forecast_horizon
-        )
+        self._forecast_horizon = forecast_horizon
 
-        self._minimum_backtest_observations = (
-            minimum_backtest_observations
-        )
+        self._minimum_backtest_observations = minimum_backtest_observations
 
         if not 0.0 <= minimum_rmse_improvement < 1.0:
-            raise ValueError(
-                "minimum_rmse_improvement must be between 0 and 1"
-            )
+            raise ValueError("minimum_rmse_improvement must be between 0 and 1")
 
         if rmse_equivalence_tolerance < 0.0:
-            raise ValueError(
-                "rmse_equivalence_tolerance must be non-negative"
-            )
+            raise ValueError("rmse_equivalence_tolerance must be non-negative")
 
-        self._minimum_rmse_improvement = (
-            minimum_rmse_improvement
-        )
+        self._minimum_rmse_improvement = minimum_rmse_improvement
 
-        self._rmse_equivalence_tolerance = (
-            rmse_equivalence_tolerance
-        )
+        self._rmse_equivalence_tolerance = rmse_equivalence_tolerance
 
-        self._frame_builder = (
-            EconometricDiagnosticsService()
-        )
+        self._frame_builder = EconometricDiagnosticsService()
 
     def select(
         self,
         dataset: EconometricMonthlyDataset,
         indicator_code: str,
     ) -> EconometricModelSelectionResult:
-        code = (
-            indicator_code
-            .strip()
-            .upper()
-        )
+        code = indicator_code.strip().upper()
 
         if code not in self._COLUMN_MAPPING:
-            raise ValueError(
-                "Unsupported econometric indicator: "
-                f"{indicator_code}"
-            )
+            raise ValueError("Unsupported econometric indicator: " f"{indicator_code}")
 
         series = (
-            self._frame_builder
-            .build_series(
+            self._frame_builder.build_series(
                 dataset,
                 code,
             )
@@ -174,16 +148,10 @@ class EconometricModelSelectionService:
                 selected_model_name=None,
                 selected_model_family=None,
                 selection_metric="RMSE",
-                diagnostic=(
-                    "Indicator unavailable in dataset"
-                ),
+                diagnostic=("Indicator unavailable in dataset"),
             )
 
-        specifications = (
-            self._candidate_specifications(
-                code
-            )
-        )
+        specifications = self._candidate_specifications(code)
 
         candidates = tuple(
             self._backtest_candidate(
@@ -191,8 +159,7 @@ class EconometricModelSelectionService:
                 series=series,
                 specification=specification,
             )
-            for specification
-            in specifications
+            for specification in specifications
         )
 
         available = tuple(
@@ -204,8 +171,7 @@ class EconometricModelSelectionService:
                     "AVAILABLE",
                     "AVAILABLE_WITH_WARNINGS",
                 )
-                and candidate.metrics.rmse
-                is not None
+                and candidate.metrics.rmse is not None
             )
         )
 
@@ -216,54 +182,29 @@ class EconometricModelSelectionService:
                 selected_model_name=None,
                 selected_model_family=None,
                 selection_metric="RMSE",
-                diagnostic=(
-                    "No model produced sufficient "
-                    "out-of-sample forecasts"
-                ),
+                diagnostic=("No model produced sufficient " "out-of-sample forecasts"),
             )
 
         best_rmse_candidate = min(
             available,
             key=lambda candidate: (
-                float(
-                    candidate.metrics.rmse
-                ),
-                float(
-                    candidate.metrics.mae
-                    if candidate.metrics.mae
-                    is not None
-                    else math.inf
-                ),
-                self._complexity_score(
-                    candidate.model_name
-                ),
+                float(candidate.metrics.rmse),
+                float(candidate.metrics.mae if candidate.metrics.mae is not None else math.inf),
+                self._complexity_score(candidate.model_name),
             ),
         )
 
-        best_rmse = float(
-            best_rmse_candidate
-            .metrics
-            .rmse
-        )
+        best_rmse = float(best_rmse_candidate.metrics.rmse)
 
         equivalent_candidates = tuple(
             candidate
             for candidate in available
             if (
-                candidate.metrics.rmse
-                is not None
-                and abs(
-                    float(
-                        candidate.metrics.rmse
-                    )
-                    - best_rmse
-                )
+                candidate.metrics.rmse is not None
+                and abs(float(candidate.metrics.rmse) - best_rmse)
                 <= max(
                     self._rmse_equivalence_tolerance,
-                    abs(
-                        best_rmse
-                    )
-                    * self._rmse_equivalence_tolerance,
+                    abs(best_rmse) * self._rmse_equivalence_tolerance,
                 )
             )
         )
@@ -271,27 +212,13 @@ class EconometricModelSelectionService:
         best_candidate = min(
             equivalent_candidates,
             key=lambda candidate: (
-                self._complexity_score(
-                    candidate.model_name
-                ),
-                float(
-                    candidate.metrics.mae
-                    if candidate.metrics.mae
-                    is not None
-                    else math.inf
-                ),
+                self._complexity_score(candidate.model_name),
+                float(candidate.metrics.mae if candidate.metrics.mae is not None else math.inf),
             ),
         )
 
         naive = next(
-            (
-                candidate
-                for candidate in available
-                if (
-                    candidate.model_name
-                    == "NAIVE"
-                )
-            ),
+            (candidate for candidate in available if (candidate.model_name == "NAIVE")),
             None,
         )
 
@@ -300,30 +227,16 @@ class EconometricModelSelectionService:
 
         if (
             naive is not None
-            and naive.metrics.rmse
-            is not None
-            and best_candidate.model_name
-            != "NAIVE"
+            and naive.metrics.rmse is not None
+            and best_candidate.model_name != "NAIVE"
         ):
-            naive_rmse = float(
-                naive.metrics.rmse
-            )
+            naive_rmse = float(naive.metrics.rmse)
 
-            candidate_rmse = float(
-                best_candidate
-                .metrics
-                .rmse
-            )
+            candidate_rmse = float(best_candidate.metrics.rmse)
 
-            improvement = (
-                naive_rmse
-                - candidate_rmse
-            ) / naive_rmse
+            improvement = (naive_rmse - candidate_rmse) / naive_rmse
 
-            if (
-                improvement
-                < self._minimum_rmse_improvement
-            ):
+            if improvement < self._minimum_rmse_improvement:
                 winner = naive
 
                 selection_diagnostic = (
@@ -347,12 +260,8 @@ class EconometricModelSelectionService:
         return EconometricModelSelectionResult(
             indicator_code=code,
             candidates=candidates,
-            selected_model_name=(
-                winner.model_name
-            ),
-            selected_model_family=(
-                winner.model_family
-            ),
+            selected_model_name=(winner.model_name),
+            selected_model_family=(winner.model_family),
             selection_metric="RMSE",
             diagnostic=selection_diagnostic,
         )
@@ -443,87 +352,45 @@ class EconometricModelSelectionService:
         series: pd.Series,
         specification: _CandidateSpecification,
     ) -> EconometricModelCandidateResult:
-        observations = len(
-            series
-        )
+        observations = len(series)
 
-        if (
-            observations
-            <= self._minimum_training_observations
-        ):
+        if observations <= self._minimum_training_observations:
             return EconometricModelCandidateResult(
                 indicator_code=indicator_code,
-                model_name=(
-                    specification.name
-                ),
-                model_family=(
-                    specification.family
-                ),
-                parameters=(
-                    self._parameters(
-                        specification
-                    )
-                ),
-                status=(
-                    "INSUFFICIENT_DATA"
-                ),
-                metrics=(
-                    self._empty_metrics()
-                ),
+                model_name=(specification.name),
+                model_family=(specification.family),
+                parameters=(self._parameters(specification)),
+                status=("INSUFFICIENT_DATA"),
+                metrics=(self._empty_metrics()),
                 forecasts=(),
-                diagnostic=(
-                    "Insufficient observations "
-                    "for backtesting"
-                ),
+                diagnostic=("Insufficient observations " "for backtesting"),
             )
 
-        forecasts: list[
-            EconometricForecastPoint
-        ] = []
+        forecasts: list[EconometricForecastPoint] = []
 
-        failures: list[
-            str
-        ] = []
+        failures: list[str] = []
 
-        estimation_warnings: list[
-            EconometricEstimationWarning
-        ] = []
+        estimation_warnings: list[EconometricEstimationWarning] = []
 
         for target_index in range(
             self._minimum_training_observations,
             observations,
         ):
-            training = (
-                series.iloc[
-                    :target_index
-                ]
-            )
+            training = series.iloc[:target_index]
 
-            target_period = (
-                series.index[
-                    target_index
-                ]
-            )
+            target_period = series.index[target_index]
 
-            actual = float(
-                series.iloc[
-                    target_index
-                ]
-            )
+            actual = float(series.iloc[target_index])
 
             try:
-                with warnings.catch_warnings(
-                    record=True
-                ) as warning_records:
+                with warnings.catch_warnings(record=True) as warning_records:
                     # Warnings econométricos conocidos se
                     # registran y permiten continuar.
                     #
                     # Cualquier warning no gobernado conserva
                     # comportamiento estricto y se convierte
                     # en excepción.
-                    warnings.simplefilter(
-                        "error"
-                    )
+                    warnings.simplefilter("error")
 
                     warnings.simplefilter(
                         "always",
@@ -540,19 +407,13 @@ class EconometricModelSelectionService:
                         EstimationWarning,
                     )
 
-                    forecast = (
-                        self._forecast_one_step(
-                            training=training,
-                            specification=(
-                                specification
-                            ),
-                        )
+                    forecast = self._forecast_one_step(
+                        training=training,
+                        specification=(specification),
                     )
 
                 for item in warning_records:
-                    category = (
-                        item.category
-                    )
+                    category = item.category
 
                     if not issubclass(
                         category,
@@ -566,20 +427,10 @@ class EconometricModelSelectionService:
 
                     estimation_warnings.append(
                         EconometricEstimationWarning(
-                            forecast_origin=(
-                                training.index[
-                                    -1
-                                ].date()
-                            ),
-                            target_period=(
-                                target_period.date()
-                            ),
-                            warning_type=(
-                                category.__name__
-                            ),
-                            message=str(
-                                item.message
-                            ),
+                            forecast_origin=(training.index[-1].date()),
+                            target_period=(target_period.date()),
+                            warning_type=(category.__name__),
+                            message=str(item.message),
                         )
                     )
 
@@ -589,151 +440,68 @@ class EconometricModelSelectionService:
                 np.linalg.LinAlgError,
                 RuntimeError,
             ) as exc:
-                failures.append(
-                    f"{target_period}: "
-                    f"{type(exc).__name__}: "
-                    f"{exc}"
-                )
+                failures.append(f"{target_period}: " f"{type(exc).__name__}: " f"{exc}")
 
                 continue
 
-            if not math.isfinite(
-                forecast
-            ):
-                failures.append(
-                    f"{target_period}: "
-                    "non-finite forecast"
-                )
+            if not math.isfinite(forecast):
+                failures.append(f"{target_period}: " "non-finite forecast")
 
                 continue
 
-            error = (
-                forecast
-                - actual
-            )
+            error = forecast - actual
 
             forecasts.append(
                 EconometricForecastPoint(
-                    forecast_origin=(
-                        training.index[
-                            -1
-                        ].date()
-                    ),
-                    target_period=(
-                        target_period.date()
-                    ),
+                    forecast_origin=(training.index[-1].date()),
+                    target_period=(target_period.date()),
                     actual=actual,
                     forecast=forecast,
                     error=error,
-                    absolute_error=abs(
-                        error
-                    ),
-                    squared_error=(
-                        error
-                        * error
-                    ),
+                    absolute_error=abs(error),
+                    squared_error=(error * error),
                 )
             )
 
-        if (
-            len(
-                forecasts
-            )
-            < self._minimum_backtest_observations
-        ):
-            diagnostic = (
-                "Insufficient successful "
-                "backtest forecasts"
-            )
+        if len(forecasts) < self._minimum_backtest_observations:
+            diagnostic = "Insufficient successful " "backtest forecasts"
 
             if failures:
-                diagnostic += (
-                    f"; failures={len(failures)}"
-                )
+                diagnostic += f"; failures={len(failures)}"
 
             return EconometricModelCandidateResult(
                 indicator_code=indicator_code,
-                model_name=(
-                    specification.name
-                ),
-                model_family=(
-                    specification.family
-                ),
-                parameters=(
-                    self._parameters(
-                        specification
-                    )
-                ),
+                model_name=(specification.name),
+                model_family=(specification.family),
+                parameters=(self._parameters(specification)),
                 status="FAILED",
-                metrics=(
-                    self._metrics(
-                        forecasts
-                    )
-                ),
-                forecasts=tuple(
-                    forecasts
-                ),
-                warnings=tuple(
-                    estimation_warnings
-                ),
+                metrics=(self._metrics(forecasts)),
+                forecasts=tuple(forecasts),
+                warnings=tuple(estimation_warnings),
                 diagnostic=diagnostic,
             )
 
-        diagnostic_parts: list[
-            str
-        ] = []
+        diagnostic_parts: list[str] = []
 
         if failures:
-            diagnostic_parts.append(
-                f"{len(failures)} "
-                "rolling estimations failed"
-            )
+            diagnostic_parts.append(f"{len(failures)} " "rolling estimations failed")
 
         if estimation_warnings:
-            diagnostic_parts.append(
-                f"{len(estimation_warnings)} "
-                "estimation warnings captured"
-            )
+            diagnostic_parts.append(f"{len(estimation_warnings)} " "estimation warnings captured")
 
-        diagnostic = (
-            "; ".join(
-                diagnostic_parts
-            )
-            if diagnostic_parts
-            else None
-        )
+        diagnostic = "; ".join(diagnostic_parts) if diagnostic_parts else None
 
-        status = (
-            "AVAILABLE_WITH_WARNINGS"
-            if estimation_warnings
-            else "AVAILABLE"
-        )
+        status = "AVAILABLE_WITH_WARNINGS" if estimation_warnings else "AVAILABLE"
 
         return EconometricModelCandidateResult(
             indicator_code=indicator_code,
-            model_name=(
-                specification.name
-            ),
-            model_family=(
-                specification.family
-            ),
-            parameters=(
-                self._parameters(
-                    specification
-                )
-            ),
+            model_name=(specification.name),
+            model_family=(specification.family),
+            parameters=(self._parameters(specification)),
             status=status,
-            metrics=(
-                self._metrics(
-                    forecasts
-                )
-            ),
-            forecasts=tuple(
-                forecasts
-            ),
-            warnings=tuple(
-                estimation_warnings
-            ),
+            metrics=(self._metrics(forecasts)),
+            forecasts=tuple(forecasts),
+            warnings=tuple(estimation_warnings),
             diagnostic=diagnostic,
         )
 
@@ -743,195 +511,92 @@ class EconometricModelSelectionService:
         training: pd.Series,
         specification: _CandidateSpecification,
     ) -> float:
-        values = training.to_numpy(
-            dtype=float
-        )
+        values = training.to_numpy(dtype=float)
 
         if specification.family == "NAIVE":
-            return float(
-                values[
-                    -1
-                ]
-            )
+            return float(values[-1])
 
         if specification.family == "DRIFT":
-            if len(
-                values
-            ) < 2:
-                raise ValueError(
-                    "DRIFT requires at least "
-                    "two observations"
-                )
+            if len(values) < 2:
+                raise ValueError("DRIFT requires at least " "two observations")
 
-            drift = (
-                values[
-                    -1
-                ]
-                - values[
-                    0
-                ]
-            ) / (
-                len(
-                    values
-                )
-                - 1
-            )
+            drift = (values[-1] - values[0]) / (len(values) - 1)
 
-            return float(
-                values[
-                    -1
-                ]
-                + drift
-            )
+            return float(values[-1] + drift)
 
         if specification.family == "AR":
             if specification.ar_lags is None:
-                raise ValueError(
-                    "AR lag configuration missing"
-                )
+                raise ValueError("AR lag configuration missing")
 
             model = AutoReg(
                 values,
-                lags=(
-                    specification.ar_lags
-                ),
+                lags=(specification.ar_lags),
                 trend="ct",
             )
 
             fitted = model.fit()
 
             forecast = fitted.predict(
-                start=len(
-                    values
-                ),
-                end=len(
-                    values
-                ),
+                start=len(values),
+                end=len(values),
                 dynamic=False,
             )
 
-            return float(
-                forecast[
-                    0
-                ]
-            )
+            return float(forecast[0])
 
         if specification.family == "ARIMA":
-            if (
-                specification.arima_order
-                is None
-            ):
-                raise ValueError(
-                    "ARIMA order missing"
-                )
+            if specification.arima_order is None:
+                raise ValueError("ARIMA order missing")
 
             model = ARIMA(
                 values,
-                order=(
-                    specification
-                    .arima_order
-                ),
-                trend=(
-                    "t"
-                    if (
-                        specification
-                        .arima_order[
-                            1
-                        ]
-                        > 0
-                    )
-                    else "ct"
-                ),
+                order=(specification.arima_order),
+                trend=("t" if (specification.arima_order[1] > 0) else "ct"),
             )
 
             fitted = model.fit()
 
-            forecast = fitted.forecast(
-                steps=1
-            )
+            forecast = fitted.forecast(steps=1)
 
-            return float(
-                forecast[
-                    0
-                ]
-            )
+            return float(forecast[0])
 
-        raise ValueError(
-            "Unsupported model family: "
-            f"{specification.family}"
-        )
+        raise ValueError("Unsupported model family: " f"{specification.family}")
 
     @staticmethod
     def _metrics(
-        forecasts: list[
-            EconometricForecastPoint
-        ],
+        forecasts: list[EconometricForecastPoint],
     ) -> EconometricModelMetrics:
         if not forecasts:
-            return (
-                EconometricModelSelectionService
-                ._empty_metrics()
-            )
+            return EconometricModelSelectionService._empty_metrics()
 
         absolute_errors = np.asarray(
-            [
-                item.absolute_error
-                for item in forecasts
-            ],
+            [item.absolute_error for item in forecasts],
             dtype=float,
         )
 
         squared_errors = np.asarray(
-            [
-                item.squared_error
-                for item in forecasts
-            ],
+            [item.squared_error for item in forecasts],
             dtype=float,
         )
 
         errors = np.asarray(
-            [
-                item.error
-                for item in forecasts
-            ],
+            [item.error for item in forecasts],
             dtype=float,
         )
 
         percentage_errors = []
 
         for item in forecasts:
-            if abs(
-                item.actual
-            ) <= 1e-12:
+            if abs(item.actual) <= 1e-12:
                 continue
 
-            percentage_errors.append(
-                abs(
-                    item.error
-                    / item.actual
-                )
-                * 100.0
-            )
+            percentage_errors.append(abs(item.error / item.actual) * 100.0)
 
-        mae = float(
-            np.mean(
-                absolute_errors
-            )
-        )
+        mae = float(np.mean(absolute_errors))
 
-        rmse = float(
-            np.sqrt(
-                np.mean(
-                    squared_errors
-                )
-            )
-        )
+        rmse = float(np.sqrt(np.mean(squared_errors)))
 
-        bias = float(
-            np.mean(
-                errors
-            )
-        )
+        bias = float(np.mean(errors))
 
         mape = (
             float(
@@ -947,9 +612,7 @@ class EconometricModelSelectionService:
         )
 
         return EconometricModelMetrics(
-            observations=len(
-                forecasts
-            ),
+            observations=len(forecasts),
             mae=mae,
             rmse=rmse,
             mape=mape,
@@ -957,8 +620,7 @@ class EconometricModelSelectionService:
         )
 
     @staticmethod
-    def _empty_metrics(
-    ) -> EconometricModelMetrics:
+    def _empty_metrics() -> EconometricModelMetrics:
         return EconometricModelMetrics(
             observations=0,
             mae=None,
@@ -984,37 +646,23 @@ class EconometricModelSelectionService:
             ]
         ] = []
 
-        if (
-            specification.ar_lags
-            is not None
-        ):
+        if specification.ar_lags is not None:
             output.append(
                 (
                     "lags",
-                    str(
-                        specification
-                        .ar_lags
-                    ),
+                    str(specification.ar_lags),
                 )
             )
 
-        if (
-            specification.arima_order
-            is not None
-        ):
+        if specification.arima_order is not None:
             output.append(
                 (
                     "order",
-                    str(
-                        specification
-                        .arima_order
-                    ),
+                    str(specification.arima_order),
                 )
             )
 
-        return tuple(
-            output
-        )
+        return tuple(output)
 
     @staticmethod
     def _complexity_score(

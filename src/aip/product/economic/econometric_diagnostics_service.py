@@ -43,27 +43,15 @@ class EconometricDiagnosticsService:
         significance_level: float = 0.05,
         minimum_observations: int = 24,
     ) -> None:
-        if not (
-            0.0
-            < significance_level
-            < 1.0
-        ):
-            raise ValueError(
-                "significance_level must be between 0 and 1"
-            )
+        if not (0.0 < significance_level < 1.0):
+            raise ValueError("significance_level must be between 0 and 1")
 
         if minimum_observations < 12:
-            raise ValueError(
-                "minimum_observations must be at least 12"
-            )
+            raise ValueError("minimum_observations must be at least 12")
 
-        self._significance_level = (
-            significance_level
-        )
+        self._significance_level = significance_level
 
-        self._minimum_observations = (
-            minimum_observations
-        )
+        self._minimum_observations = minimum_observations
 
     def build_frame(
         self,
@@ -75,9 +63,7 @@ class EconometricDiagnosticsService:
         No realiza imputación ni forward-fill.
         """
 
-        records: list[
-            dict[str, float]
-        ] = []
+        records: list[dict[str, float]] = []
 
         periods = []
 
@@ -85,35 +71,17 @@ class EconometricDiagnosticsService:
             if not row.complete:
                 continue
 
-            periods.append(
-                pd.Timestamp(
-                    row.period
-                )
-            )
+            periods.append(pd.Timestamp(row.period))
 
             records.append(
                 {
-                    "FX_SELL": float(
-                        row.fx_sell
-                    ),
-                    "TPM": float(
-                        row.tpm
-                    ),
-                    "TBP": float(
-                        row.tbp
-                    ),
-                    "TRI_CRC_12M": float(
-                        row.tri_crc_12m
-                    ),
-                    "TRI_USD_12M": float(
-                        row.tri_usd_12m
-                    ),
-                    "INFLATION": float(
-                        row.inflation
-                    ),
-                    "IMAE": float(
-                        row.imae
-                    ),
+                    "FX_SELL": float(row.fx_sell),
+                    "TPM": float(row.tpm),
+                    "TBP": float(row.tbp),
+                    "TRI_CRC_12M": float(row.tri_crc_12m),
+                    "TRI_USD_12M": float(row.tri_usd_12m),
+                    "INFLATION": float(row.inflation),
+                    "IMAE": float(row.imae),
                 }
             )
 
@@ -126,7 +94,6 @@ class EconometricDiagnosticsService:
         )
 
         return frame.sort_index()
-
 
     def build_series(
         self,
@@ -150,11 +117,7 @@ class EconometricDiagnosticsService:
         - mantiene la fecha mensual normalizada del dataset.
         """
 
-        code = (
-            indicator_code
-            .strip()
-            .upper()
-        )
+        code = indicator_code.strip().upper()
 
         attribute_mapping = {
             "FX_SELL": "fx_sell",
@@ -166,25 +129,14 @@ class EconometricDiagnosticsService:
             "IMAE": "imae",
         }
 
-        attribute_name = (
-            attribute_mapping.get(
-                code
-            )
-        )
+        attribute_name = attribute_mapping.get(code)
 
         if attribute_name is None:
-            raise ValueError(
-                "Unsupported econometric indicator: "
-                f"{indicator_code}"
-            )
+            raise ValueError("Unsupported econometric indicator: " f"{indicator_code}")
 
-        periods: list[
-            pd.Timestamp
-        ] = []
+        periods: list[pd.Timestamp] = []
 
-        values: list[
-            float
-        ] = []
+        values: list[float] = []
 
         for row in dataset.rows:
             value = getattr(
@@ -195,24 +147,14 @@ class EconometricDiagnosticsService:
             if value is None:
                 continue
 
-            numeric_value = float(
-                value
-            )
+            numeric_value = float(value)
 
-            if not np.isfinite(
-                numeric_value
-            ):
+            if not np.isfinite(numeric_value):
                 continue
 
-            periods.append(
-                pd.Timestamp(
-                    row.period
-                )
-            )
+            periods.append(pd.Timestamp(row.period))
 
-            values.append(
-                numeric_value
-            )
+            values.append(numeric_value)
 
         series = pd.Series(
             values,
@@ -230,9 +172,7 @@ class EconometricDiagnosticsService:
         self,
         dataset: EconometricMonthlyDataset,
     ) -> EconometricDiagnosticsResult:
-        frame = self.build_frame(
-            dataset
-        )
+        frame = self.build_frame(dataset)
 
         diagnostics = tuple(
             self._diagnose_series(
@@ -253,8 +193,7 @@ class EconometricDiagnosticsService:
         series: pd.Series,
     ) -> StationarityDiagnostic:
         clean = (
-            series
-            .replace(
+            series.replace(
                 [
                     np.inf,
                     -np.inf,
@@ -265,20 +204,16 @@ class EconometricDiagnosticsService:
             .astype(float)
         )
 
-        level_result = (
-            self._run_adf(
-                indicator_code=indicator_code,
-                transformation="LEVEL",
-                series=clean,
-            )
+        level_result = self._run_adf(
+            indicator_code=indicator_code,
+            transformation="LEVEL",
+            series=clean,
         )
 
-        difference_result = (
-            self._run_adf(
-                indicator_code=indicator_code,
-                transformation="FIRST_DIFFERENCE",
-                series=clean.diff().dropna(),
-            )
+        difference_result = self._run_adf(
+            indicator_code=indicator_code,
+            transformation="FIRST_DIFFERENCE",
+            series=clean.diff().dropna(),
         )
 
         if level_result.stationary:
@@ -288,9 +223,7 @@ class EconometricDiagnosticsService:
             integration_order = "I(1)"
 
         else:
-            integration_order = (
-                "UNDETERMINED"
-            )
+            integration_order = "UNDETERMINED"
 
         return StationarityDiagnostic(
             indicator_code=indicator_code,
@@ -306,14 +239,9 @@ class EconometricDiagnosticsService:
         transformation: str,
         series: pd.Series,
     ) -> ADFTestResult:
-        observations = len(
-            series
-        )
+        observations = len(series)
 
-        if (
-            observations
-            < self._minimum_observations
-        ):
+        if observations < self._minimum_observations:
             return ADFTestResult(
                 indicator_code=indicator_code,
                 transformation=transformation,
@@ -325,9 +253,7 @@ class EconometricDiagnosticsService:
                 critical_value_5pct=None,
                 critical_value_10pct=None,
                 stationary=False,
-                diagnostic=(
-                    "Insufficient observations"
-                ),
+                diagnostic=("Insufficient observations"),
             )
 
         if series.nunique() <= 1:
@@ -342,16 +268,12 @@ class EconometricDiagnosticsService:
                 critical_value_5pct=None,
                 critical_value_10pct=None,
                 stationary=False,
-                diagnostic=(
-                    "Constant series"
-                ),
+                diagnostic=("Constant series"),
             )
 
         try:
             result = adfuller(
-                series.to_numpy(
-                    dtype=float
-                ),
+                series.to_numpy(dtype=float),
                 regression="c",
                 autolag="AIC",
                 result_object=False,
@@ -372,27 +294,16 @@ class EconometricDiagnosticsService:
                 critical_value_5pct=None,
                 critical_value_10pct=None,
                 stationary=False,
-                diagnostic=(
-                    f"{type(exc).__name__}: "
-                    f"{exc}"
-                ),
+                diagnostic=(f"{type(exc).__name__}: " f"{exc}"),
             )
 
-        statistic = float(
-            result[0]
-        )
+        statistic = float(result[0])
 
-        p_value = float(
-            result[1]
-        )
+        p_value = float(result[1])
 
-        lags_used = int(
-            result[2]
-        )
+        lags_used = int(result[2])
 
-        critical_values = (
-            result[4]
-        )
+        critical_values = result[4]
 
         return ADFTestResult(
             indicator_code=indicator_code,
@@ -419,9 +330,6 @@ class EconometricDiagnosticsService:
                     np.nan,
                 )
             ),
-            stationary=(
-                p_value
-                < self._significance_level
-            ),
+            stationary=(p_value < self._significance_level),
             diagnostic=None,
         )

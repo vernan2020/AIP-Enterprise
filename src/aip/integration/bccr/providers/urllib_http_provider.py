@@ -50,33 +50,21 @@ class UrllibHTTPProvider(HTTPProvider):
                     )
                 )
 
-                response_headers = (
-                    self._normalize_headers(
-                        response.headers
-                    )
-                )
+                response_headers = self._normalize_headers(response.headers)
 
-                content_type = (
-                    response_headers.get(
-                        "Content-Type",
-                        "",
-                    )
+                content_type = response_headers.get(
+                    "Content-Type",
+                    "",
                 )
 
                 raw_body = response.read()
 
         except HTTPError as exc:
-            response_headers = (
-                self._normalize_headers(
-                    exc.headers
-                )
-            )
+            response_headers = self._normalize_headers(exc.headers)
 
-            content_type = (
-                response_headers.get(
-                    "Content-Type",
-                    "",
-                )
+            content_type = response_headers.get(
+                "Content-Type",
+                "",
             )
 
             raw_error = exc.read()
@@ -88,22 +76,14 @@ class UrllibHTTPProvider(HTTPProvider):
             )
 
             return {
-                "status_code": int(
-                    exc.code
-                ),
-                "content_type": (
-                    content_type
-                ),
-                "headers": (
-                    response_headers
-                ),
+                "status_code": int(exc.code),
+                "content_type": (content_type),
+                "headers": (response_headers),
                 "body": body,
             }
 
         except URLError as exc:
-            raise ConnectionError(
-                f"HTTP connection failed: {exc}"
-            ) from exc
+            raise ConnectionError(f"HTTP connection failed: {exc}") from exc
 
         body = self._decode_body(
             raw_body,
@@ -113,12 +93,8 @@ class UrllibHTTPProvider(HTTPProvider):
 
         return {
             "status_code": status_code,
-            "content_type": (
-                content_type
-            ),
-            "headers": (
-                response_headers
-            ),
+            "content_type": (content_type),
+            "headers": (response_headers),
             "body": body,
         }
 
@@ -139,11 +115,7 @@ class UrllibHTTPProvider(HTTPProvider):
         except AttributeError:
             return {}
 
-        return {
-            str(key): str(value)
-            for key, value
-            in items
-        }
+        return {str(key): str(value) for key, value in items}
 
     @staticmethod
     def _decode_body(
@@ -170,21 +142,14 @@ class UrllibHTTPProvider(HTTPProvider):
             errors="replace",
         )
 
-        if (
-            "json"
-            not in content_type.casefold()
-        ):
+        if "json" not in content_type.casefold():
             return text
 
         try:
-            return json.loads(
-                text
-            )
+            return json.loads(text)
 
         except json.JSONDecodeError as exc:
             if strict_json:
-                raise ValueError(
-                    "Invalid JSON response"
-                ) from exc
+                raise ValueError("Invalid JSON response") from exc
 
             return text

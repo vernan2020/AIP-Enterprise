@@ -120,12 +120,8 @@ class EconometricRelationshipDiagnosticsResult:
 
         ordered = sorted(
             self.lagged_relationships,
-            key=lambda item: abs(
-                item.coefficient
-            ),
+            key=lambda item: abs(item.coefficient),
             reverse=True,
         )
 
-        return tuple(
-            ordered[:limit]
-        )
+        return tuple(ordered[:limit])

@@ -106,12 +106,7 @@ class EconometricForecastResult:
     def available(
         self,
     ) -> bool:
-        return (
-            self.status == "AVAILABLE"
-            and bool(
-                self.points
-            )
-        )
+        return self.status == "AVAILABLE" and bool(self.points)
 
     def point_at_horizon(
         self,

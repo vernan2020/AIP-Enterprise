@@ -101,57 +101,30 @@ class InstitutionalMacroScenario:
 
     @property
     def indicator_count(self) -> int:
-        return len(
-            self.indicators
-        )
+        return len(self.indicators)
 
     @property
     def approved_indicator_count(self) -> int:
-        return sum(
-            1
-            for item in self.indicators
-            if item.approved_for_base_scenario
-        )
+        return sum(1 for item in self.indicators if item.approved_for_base_scenario)
 
     @property
     def review_required_count(self) -> int:
         return sum(
-            1
-            for item in self.indicators
-            if (
-                item.institutional_status
-                == "REVIEW_REQUIRED"
-            )
+            1 for item in self.indicators if (item.institutional_status == "REVIEW_REQUIRED")
         )
 
     @property
     def unavailable_count(self) -> int:
-        return sum(
-            1
-            for item in self.indicators
-            if (
-                item.institutional_status
-                == "UNAVAILABLE"
-            )
-        )
+        return sum(1 for item in self.indicators if (item.institutional_status == "UNAVAILABLE"))
 
     def indicator(
         self,
         indicator_code: str,
     ) -> InstitutionalMacroScenarioIndicator | None:
-        code = (
-            indicator_code
-            .strip()
-            .upper()
-        )
+        code = indicator_code.strip().upper()
 
         for item in self.indicators:
-            if (
-                item.indicator_code
-                .strip()
-                .upper()
-                == code
-            ):
+            if item.indicator_code.strip().upper() == code:
                 return item
 
         return None

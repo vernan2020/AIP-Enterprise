@@ -101,31 +101,20 @@ class InstitutionalForecastResult:
 
     @property
     def available(self) -> bool:
-        return bool(
-            self.points
-        )
+        return bool(self.points)
 
     @property
     def approved_for_base_scenario(
         self,
     ) -> bool:
-        return (
-            self.status
-            in (
-                "APPROVED",
-                "APPROVED_WITH_WARNINGS",
-            )
-            and bool(
-                self.points
-            )
-        )
+        return self.status in (
+            "APPROVED",
+            "APPROVED_WITH_WARNINGS",
+        ) and bool(self.points)
 
     @property
     def requires_review(self) -> bool:
-        return (
-            self.status
-            == "REVIEW_REQUIRED"
-        )
+        return self.status == "REVIEW_REQUIRED"
 
     def point_at_horizon(
         self,

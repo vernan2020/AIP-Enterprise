@@ -50,9 +50,7 @@ class EconomicHistoricalSeries:
     def observation_count(
         self,
     ) -> int:
-        return len(
-            self.observations
-        )
+        return len(self.observations)
 
     @property
     def first_date(
@@ -61,11 +59,7 @@ class EconomicHistoricalSeries:
         if not self.observations:
             return None
 
-        return (
-            self.observations[
-                0
-            ].observation_date
-        )
+        return self.observations[0].observation_date
 
     @property
     def last_date(
@@ -74,11 +68,7 @@ class EconomicHistoricalSeries:
         if not self.observations:
             return None
 
-        return (
-            self.observations[
-                -1
-            ].observation_date
-        )
+        return self.observations[-1].observation_date
 
 
 @dataclass(

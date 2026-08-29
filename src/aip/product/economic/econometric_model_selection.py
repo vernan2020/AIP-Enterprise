@@ -61,7 +61,6 @@ class EconometricModelMetrics:
     bias: float | None
 
 
-
 @dataclass(
     frozen=True,
     slots=True,
@@ -121,9 +120,7 @@ class EconometricModelCandidateResult:
     def warning_count(
         self,
     ) -> int:
-        return len(
-            self.warnings
-        )
+        return len(self.warnings)
 
 
 @dataclass(
@@ -153,10 +150,7 @@ class EconometricModelSelectionResult:
             return None
 
         for candidate in self.candidates:
-            if (
-                candidate.model_name
-                == self.selected_model_name
-            ):
+            if candidate.model_name == self.selected_model_name:
                 return candidate
 
         return None

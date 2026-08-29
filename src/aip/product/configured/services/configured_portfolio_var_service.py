@@ -260,13 +260,9 @@ class ConfiguredPortfolioVaRService:
 
         self._config = config
 
-        self._source_config = (
-            source_config
-        )
+        self._source_config = source_config
 
-        self._portfolio_provider = (
-            portfolio_provider
-        )
+        self._portfolio_provider = portfolio_provider
 
         self._valuation_date_context = valuation_date_context
 
@@ -285,13 +281,9 @@ class ConfiguredPortfolioVaRService:
         # invocado por el modulo Riesgo de Precio.
         # ========================================================
 
-        self._historical_repository: (
-            PiPCAHistoricalPriceRepository | None
-        ) = None
+        self._historical_repository: PiPCAHistoricalPriceRepository | None = None
 
-        self._master_historical_repository: (
-            MasterHistoricalPriceRepository | None
-        ) = None
+        self._master_historical_repository: MasterHistoricalPriceRepository | None = None
 
         # ========================================================
         # VER RESULT CACHE
@@ -334,28 +326,16 @@ class ConfiguredPortfolioVaRService:
         """
 
         if (
-            self._historical_repository
-            is not None
-            and self._master_historical_repository
-            is not None
+            self._historical_repository is not None
+            and self._master_historical_repository is not None
         ):
             return
 
-        investment_root = (
-            self._resolve_investment_root()
-        )
+        investment_root = self._resolve_investment_root()
 
-        self._historical_repository = (
-            PiPCAHistoricalPriceRepository(
-                investment_root
-            )
-        )
+        self._historical_repository = PiPCAHistoricalPriceRepository(investment_root)
 
-        self._master_historical_repository = (
-            MasterHistoricalPriceRepository(
-                investment_root
-            )
-        )
+        self._master_historical_repository = MasterHistoricalPriceRepository(investment_root)
 
     # =============================================================
     # PUBLIC API
@@ -394,27 +374,16 @@ class ConfiguredPortfolioVaRService:
             effective_date = valuation_date
 
         else:
-            portfolio = (
-                self._portfolio_provider
-                .get_portfolio()
-            )
+            portfolio = self._portfolio_provider.get_portfolio()
 
-            effective_date = (
-                self._resolve_valuation_date(
-                    portfolio
-                )
-            )
+            effective_date = self._resolve_valuation_date(portfolio)
 
         # --------------------------------------------------------
         # CACHE HIT
         # --------------------------------------------------------
 
         if not force_refresh:
-            cached = (
-                self._result_cache.get(
-                    effective_date
-                )
-            )
+            cached = self._result_cache.get(effective_date)
 
             if cached is not None:
                 return cached
@@ -423,15 +392,9 @@ class ConfiguredPortfolioVaRService:
         # CACHE MISS
         # --------------------------------------------------------
 
-        result = (
-            self._calculate_uncached(
-                valuation_date=effective_date
-            )
-        )
+        result = self._calculate_uncached(valuation_date=effective_date)
 
-        self._result_cache[
-            effective_date
-        ] = result
+        self._result_cache[effective_date] = result
 
         return result
 
@@ -463,11 +426,7 @@ class ConfiguredPortfolioVaRService:
         Devuelve las fechas actualmente disponibles en cache.
         """
 
-        return tuple(
-            sorted(
-                self._result_cache
-            )
-        )
+        return tuple(sorted(self._result_cache))
 
     def _calculate_uncached(
         self,
@@ -493,10 +452,7 @@ class ConfiguredPortfolioVaRService:
         # CURRENT PORTFOLIO
         # ========================================================
 
-        portfolio = (
-            self._portfolio_provider
-            .get_portfolio()
-        )
+        portfolio = self._portfolio_provider.get_portfolio()
 
         positions = [
             position
@@ -510,25 +466,14 @@ class ConfiguredPortfolioVaRService:
             )
         ]
 
-        effective_date = (
-            valuation_date
-            or self._resolve_valuation_date(
-                portfolio
-            )
-        )
+        effective_date = valuation_date or self._resolve_valuation_date(portfolio)
 
         # ========================================================
         # TOTAL PORTFOLIO MARKET VALUE
         # ========================================================
 
         source_market_value_crc = sum(
-            (
-                self._position_market_value(
-                    position
-                )
-                for position
-                in positions
-            ),
+            (self._position_market_value(position) for position in positions),
             Decimal("0"),
         )
 
@@ -536,39 +481,23 @@ class ConfiguredPortfolioVaRService:
         # VER ELIGIBILITY
         # ========================================================
 
-        eligible_positions: list[
-            dict[str, Any]
-        ] = []
+        eligible_positions: list[dict[str, Any]] = []
 
-        policy_exclusions: list[
-            ConfiguredPortfolioVaRPolicyExclusion
-        ] = []
+        policy_exclusions: list[ConfiguredPortfolioVaRPolicyExclusion] = []
 
         for position in positions:
 
-            market_value_crc = (
-                self._position_market_value(
-                    position
-                )
-            )
+            market_value_crc = self._position_market_value(position)
 
-            exclusion_reason = (
-                self._policy_exclusion_reason(
-                    position
-                )
-            )
+            exclusion_reason = self._policy_exclusion_reason(position)
 
             if exclusion_reason is not None:
 
                 policy_exclusions.append(
                     self._build_policy_exclusion(
                         position=position,
-                        market_value_crc=(
-                            market_value_crc
-                        ),
-                        reason=(
-                            exclusion_reason
-                        ),
+                        market_value_crc=(market_value_crc),
+                        reason=(exclusion_reason),
                     )
                 )
 
@@ -579,38 +508,22 @@ class ConfiguredPortfolioVaRService:
                 policy_exclusions.append(
                     self._build_policy_exclusion(
                         position=position,
-                        market_value_crc=(
-                            market_value_crc
-                        ),
-                        reason=(
-                            "NON_POSITIVE_MARKET_VALUE"
-                        ),
+                        market_value_crc=(market_value_crc),
+                        reason=("NON_POSITIVE_MARKET_VALUE"),
                     )
                 )
 
                 continue
 
-            eligible_positions.append(
-                position
-            )
+            eligible_positions.append(position)
 
         eligible_market_value_crc = sum(
-            (
-                self._position_market_value(
-                    position
-                )
-                for position
-                in eligible_positions
-            ),
+            (self._position_market_value(position) for position in eligible_positions),
             Decimal("0"),
         )
 
         policy_excluded_market_value_crc = sum(
-            (
-                exclusion.market_value_crc
-                for exclusion
-                in policy_exclusions
-            ),
+            (exclusion.market_value_crc for exclusion in policy_exclusions),
             Decimal("0"),
         )
 
@@ -618,11 +531,7 @@ class ConfiguredPortfolioVaRService:
         # GROUP ELIGIBLE POSITIONS BY SECURITY
         # ========================================================
 
-        grouped_titles = (
-            self._group_positions(
-                eligible_positions
-            )
-        )
+        grouped_titles = self._group_positions(eligible_positions)
 
         # ========================================================
         # COMMON PiPCA MARKET CALENDAR
@@ -631,99 +540,36 @@ class ConfiguredPortfolioVaRService:
         # historical market window.
         # ========================================================
 
-        available_dates = (
-            self._historical_repository
-            .available_vector_dates(
-                cutoff_date=(
-                    effective_date
-                )
-            )
+        available_dates = self._historical_repository.available_vector_dates(
+            cutoff_date=(effective_date)
         )
 
-        if (
-            len(available_dates)
-            < self.REQUIRED_PRICES
-        ):
+        if len(available_dates) < self.REQUIRED_PRICES:
 
             return ConfiguredPortfolioVaRResult(
-                valuation_date=(
-                    effective_date
-                ),
-
-                source_position_count=len(
-                    positions
-                ),
-
-                eligible_position_count=len(
-                    eligible_positions
-                ),
-
-                policy_excluded_position_count=len(
-                    policy_exclusions
-                ),
-
-                grouped_title_count=len(
-                    grouped_titles
-                ),
-
+                valuation_date=(effective_date),
+                source_position_count=len(positions),
+                eligible_position_count=len(eligible_positions),
+                policy_excluded_position_count=len(policy_exclusions),
+                grouped_title_count=len(grouped_titles),
                 calculated_title_count=0,
-
                 excluded_title_count=0,
-
-                source_market_value_crc=(
-                    source_market_value_crc
-                ),
-
-                eligible_market_value_crc=(
-                    eligible_market_value_crc
-                ),
-
-                policy_excluded_market_value_crc=(
-                    policy_excluded_market_value_crc
-                ),
-
-                calculated_market_value_crc=(
-                    Decimal("0")
-                ),
-
-                excluded_market_value_crc=(
-                    eligible_market_value_crc
-                ),
-
-                coverage_percent=(
-                    Decimal("0")
-                ),
-
-                vector_dates_available=len(
-                    available_dates
-                ),
-
+                source_market_value_crc=(source_market_value_crc),
+                eligible_market_value_crc=(eligible_market_value_crc),
+                policy_excluded_market_value_crc=(policy_excluded_market_value_crc),
+                calculated_market_value_crc=(Decimal("0")),
+                excluded_market_value_crc=(eligible_market_value_crc),
+                coverage_percent=(Decimal("0")),
+                vector_dates_available=len(available_dates),
                 window_start_date=None,
-
                 window_end_date=None,
-
-                required_prices=(
-                    self.REQUIRED_PRICES
-                ),
-
+                required_prices=(self.REQUIRED_PRICES),
                 scenario_count=0,
-
-                horizon_observations=(
-                    self.HORIZON_OBSERVATIONS
-                ),
-
+                horizon_observations=(self.HORIZON_OBSERVATIONS),
                 portfolio_var=None,
-
                 excluded_titles=(),
-
-                policy_exclusions=tuple(
-                    policy_exclusions
-                ),
-
-                status=(
-                    "INSUFFICIENT_MARKET_HISTORY"
-                ),
-
+                policy_exclusions=tuple(policy_exclusions),
+                status=("INSUFFICIENT_MARKET_HISTORY"),
                 diagnostic=(
                     "PiPCA history contains "
                     f"{len(available_dates)} dates; "
@@ -731,23 +577,15 @@ class ConfiguredPortfolioVaRService:
                 ),
             )
 
-        target_dates = tuple(
-            available_dates[
-                -self.REQUIRED_PRICES:
-            ]
-        )
+        target_dates = tuple(available_dates[-self.REQUIRED_PRICES :])
 
         # ========================================================
         # HISTORICAL SERIES
         # ========================================================
 
-        var_positions: list[
-            PortfolioVaRPosition
-        ] = []
+        var_positions: list[PortfolioVaRPosition] = []
 
-        excluded_titles: list[
-            ConfiguredPortfolioVaRExcludedTitle
-        ] = []
+        excluded_titles: list[ConfiguredPortfolioVaRExcludedTitle] = []
 
         for title in grouped_titles:
 
@@ -755,34 +593,17 @@ class ConfiguredPortfolioVaRService:
             # DEFENSIVE MARKET VALUE CONTROL
             # ----------------------------------------------------
 
-            if (
-                title.market_value_crc
-                <= 0
-            ):
+            if title.market_value_crc <= 0:
 
                 excluded_titles.append(
                     ConfiguredPortfolioVaRExcludedTitle(
-                        isin=(
-                            title.isin
-                        ),
-                        series=(
-                            title.series
-                        ),
-                        issuer=(
-                            title.issuer
-                        ),
-                        currency=(
-                            title.currency
-                        ),
-                        maturity_date=(
-                            title.maturity_date
-                        ),
-                        market_value_crc=(
-                            title.market_value_crc
-                        ),
-                        reason=(
-                            "NON_POSITIVE_MARKET_VALUE"
-                        ),
+                        isin=(title.isin),
+                        series=(title.series),
+                        issuer=(title.issuer),
+                        currency=(title.currency),
+                        maturity_date=(title.maturity_date),
+                        market_value_crc=(title.market_value_crc),
+                        reason=("NON_POSITIVE_MARKET_VALUE"),
                     )
                 )
 
@@ -795,34 +616,17 @@ class ConfiguredPortfolioVaRService:
             # has no useful series.
             # ----------------------------------------------------
 
-            if (
-                not title.isin
-                and not title.series
-            ):
+            if not title.isin and not title.series:
 
                 excluded_titles.append(
                     ConfiguredPortfolioVaRExcludedTitle(
-                        isin=(
-                            title.isin
-                        ),
-                        series=(
-                            title.series
-                        ),
-                        issuer=(
-                            title.issuer
-                        ),
-                        currency=(
-                            title.currency
-                        ),
-                        maturity_date=(
-                            title.maturity_date
-                        ),
-                        market_value_crc=(
-                            title.market_value_crc
-                        ),
-                        reason=(
-                            "SECURITY_IDENTIFIER_UNAVAILABLE"
-                        ),
+                        isin=(title.isin),
+                        series=(title.series),
+                        issuer=(title.issuer),
+                        currency=(title.currency),
+                        maturity_date=(title.maturity_date),
+                        market_value_crc=(title.market_value_crc),
+                        reason=("SECURITY_IDENTIFIER_UNAVAILABLE"),
                     )
                 )
 
@@ -832,41 +636,20 @@ class ConfiguredPortfolioVaRService:
             # SOURCE 1: PiPCA
             # ====================================================
 
-            pipca_history = (
-                self._historical_repository
-                .get_observations(
-                    series=(
-                        title.series
-                    ),
-                    issuer=(
-                        title.issuer
-                    ),
-                    product_code=(
-                        title.product_code
-                    ),
-                    maturity_date=(
-                        title.maturity_date
-                    ),
-                    cutoff_date=(
-                        effective_date
-                    ),
-                    limit=(
-                        self.REQUIRED_PRICES
-                    ),
-                )
+            pipca_history = self._historical_repository.get_observations(
+                series=(title.series),
+                issuer=(title.issuer),
+                product_code=(title.product_code),
+                maturity_date=(title.maturity_date),
+                cutoff_date=(effective_date),
+                limit=(self.REQUIRED_PRICES),
             )
 
-            historical_observations = list(
-                pipca_history.observations
-            )
+            historical_observations = list(pipca_history.observations)
 
-            historical_source = (
-                "PIPCA"
-            )
+            historical_source = "PIPCA"
 
-            historical_diagnostic = (
-                pipca_history.diagnostic
-            )
+            historical_diagnostic = pipca_history.diagnostic
 
             # ====================================================
             # SOURCE 2: MASTER HISTORICAL FALLBACK
@@ -874,77 +657,38 @@ class ConfiguredPortfolioVaRService:
             # Only invoked when PiPCA provides no observations.
             # ====================================================
 
-            if (
-                not historical_observations
-            ):
+            if not historical_observations:
 
-                master_history = (
-                    self._master_historical_repository
-                    .get_observations(
-                        isin=(
-                            title.isin
-                        ),
-                        series=(
-                            title.series
-                        ),
-                        issuer=(
-                            title.issuer
-                        ),
-                        cutoff_date=(
-                            effective_date
-                        ),
-                        limit=(
-                            self.REQUIRED_PRICES
-                        ),
-                    )
+                master_history = self._master_historical_repository.get_observations(
+                    isin=(title.isin),
+                    series=(title.series),
+                    issuer=(title.issuer),
+                    cutoff_date=(effective_date),
+                    limit=(self.REQUIRED_PRICES),
                 )
 
-                historical_observations = list(
-                    master_history.observations
-                )
+                historical_observations = list(master_history.observations)
 
-                historical_source = (
-                    "MASTER"
-                )
+                historical_source = "MASTER"
 
-                historical_diagnostic = (
-                    master_history.diagnostic
-                )
+                historical_diagnostic = master_history.diagnostic
 
             # ====================================================
             # HISTORY UNAVAILABLE IN BOTH SOURCES
             # ====================================================
 
-            if (
-                not historical_observations
-            ):
+            if not historical_observations:
 
                 excluded_titles.append(
                     ConfiguredPortfolioVaRExcludedTitle(
-                        isin=(
-                            title.isin
-                        ),
-                        series=(
-                            title.series
-                        ),
-                        issuer=(
-                            title.issuer
-                        ),
-                        currency=(
-                            title.currency
-                        ),
-                        maturity_date=(
-                            title.maturity_date
-                        ),
-                        market_value_crc=(
-                            title.market_value_crc
-                        ),
-                        reason=(
-                            "MARKET_HISTORY_UNAVAILABLE"
-                        ),
-                        diagnostic=(
-                            historical_diagnostic
-                        ),
+                        isin=(title.isin),
+                        series=(title.series),
+                        issuer=(title.issuer),
+                        currency=(title.currency),
+                        maturity_date=(title.maturity_date),
+                        market_value_crc=(title.market_value_crc),
+                        reason=("MARKET_HISTORY_UNAVAILABLE"),
+                        diagnostic=(historical_diagnostic),
                     )
                 )
 
@@ -974,24 +718,15 @@ class ConfiguredPortfolioVaRService:
             # market value remains unchanged.
             # ====================================================
 
-            effective_market_value_crc = (
-                title.market_value_crc
-            )
+            effective_market_value_crc = title.market_value_crc
 
-            normalized_currency = (
-                title.currency
-                .strip()
-                .upper()
-            )
+            normalized_currency = title.currency.strip().upper()
 
-            is_crc_currency = (
-                normalized_currency
-                in {
-                    "CRC",
-                    "COLON",
-                    "COLONES",
-                }
-            )
+            is_crc_currency = normalized_currency in {
+                "CRC",
+                "COLON",
+                "COLONES",
+            }
 
             if (
                 title.maturity_date is None
@@ -1003,13 +738,9 @@ class ConfiguredPortfolioVaRService:
                 cutoff_price = next(
                     (
                         observation.market_price
-                        for observation
-                        in reversed(
-                            historical_observations
-                        )
+                        for observation in reversed(historical_observations)
                         if (
-                            observation.valuation_date
-                            == effective_date
+                            observation.valuation_date == effective_date
                             and observation.market_price > 0
                         )
                     ),
@@ -1018,10 +749,7 @@ class ConfiguredPortfolioVaRService:
 
                 if cutoff_price is not None:
 
-                    effective_market_value_crc = (
-                        title.quantity_participations
-                        * cutoff_price
-                    )
+                    effective_market_value_crc = title.quantity_participations * cutoff_price
 
             # ====================================================
             # NORMALIZE TO COMMON 521-DATE WINDOW
@@ -1029,22 +757,11 @@ class ConfiguredPortfolioVaRService:
 
             try:
 
-                price_series = (
-                    HistoricalPriceSeriesService
-                    .build(
-                        security_key=(
-                            title.security_key
-                        ),
-                        observations=(
-                            historical_observations
-                        ),
-                        valuation_date=(
-                            effective_date
-                        ),
-                        target_dates=(
-                            target_dates
-                        ),
-                    )
+                price_series = HistoricalPriceSeriesService.build(
+                    security_key=(title.security_key),
+                    observations=(historical_observations),
+                    valuation_date=(effective_date),
+                    target_dates=(target_dates),
                 )
 
             except (
@@ -1054,31 +771,14 @@ class ConfiguredPortfolioVaRService:
 
                 excluded_titles.append(
                     ConfiguredPortfolioVaRExcludedTitle(
-                        isin=(
-                            title.isin
-                        ),
-                        series=(
-                            title.series
-                        ),
-                        issuer=(
-                            title.issuer
-                        ),
-                        currency=(
-                            title.currency
-                        ),
-                        maturity_date=(
-                            title.maturity_date
-                        ),
-                        market_value_crc=(
-                            title.market_value_crc
-                        ),
-                        reason=(
-                            "HISTORICAL_SERIES_ERROR"
-                        ),
-                        diagnostic=(
-                            f"{historical_source}: "
-                            f"{exc}"
-                        ),
+                        isin=(title.isin),
+                        series=(title.series),
+                        issuer=(title.issuer),
+                        currency=(title.currency),
+                        maturity_date=(title.maturity_date),
+                        market_value_crc=(title.market_value_crc),
+                        reason=("HISTORICAL_SERIES_ERROR"),
+                        diagnostic=(f"{historical_source}: " f"{exc}"),
                     )
                 )
 
@@ -1090,24 +790,12 @@ class ConfiguredPortfolioVaRService:
 
             var_positions.append(
                 PortfolioVaRPosition(
-                    security_key=(
-                        title.security_key
-                    ),
-                    series=(
-                        title.series
-                    ),
-                    issuer=(
-                        title.issuer
-                    ),
-                    currency=(
-                        title.currency
-                    ),
-                    market_value_crc=(
-                        effective_market_value_crc
-                    ),
-                    price_series=(
-                        price_series
-                    ),
+                    security_key=(title.security_key),
+                    series=(title.series),
+                    issuer=(title.issuer),
+                    currency=(title.currency),
+                    market_value_crc=(effective_market_value_crc),
+                    price_series=(price_series),
                 )
             )
 
@@ -1121,20 +809,12 @@ class ConfiguredPortfolioVaRService:
         # ========================================================
 
         calculated_market_value_crc = sum(
-            (
-                position.market_value_crc
-                for position
-                in var_positions
-            ),
+            (position.market_value_crc for position in var_positions),
             Decimal("0"),
         )
 
         excluded_market_value_crc = sum(
-            (
-                title.market_value_crc
-                for title
-                in excluded_titles
-            ),
+            (title.market_value_crc for title in excluded_titles),
             Decimal("0"),
         )
 
@@ -1162,22 +842,12 @@ class ConfiguredPortfolioVaRService:
 
         covered_source_market_value_crc = max(
             Decimal("0"),
-            (
-                eligible_market_value_crc
-                - excluded_market_value_crc
-            ),
+            (eligible_market_value_crc - excluded_market_value_crc),
         )
 
         coverage_percent = (
-            (
-                covered_source_market_value_crc
-                / eligible_market_value_crc
-                * Decimal("100")
-            )
-            if (
-                eligible_market_value_crc
-                > 0
-            )
+            (covered_source_market_value_crc / eligible_market_value_crc * Decimal("100"))
+            if (eligible_market_value_crc > 0)
             else Decimal("0")
         )
 
@@ -1196,92 +866,29 @@ class ConfiguredPortfolioVaRService:
         if not var_positions:
 
             return ConfiguredPortfolioVaRResult(
-                valuation_date=(
-                    effective_date
-                ),
-
-                source_position_count=len(
-                    positions
-                ),
-
-                eligible_position_count=len(
-                    eligible_positions
-                ),
-
-                policy_excluded_position_count=len(
-                    policy_exclusions
-                ),
-
-                grouped_title_count=len(
-                    grouped_titles
-                ),
-
+                valuation_date=(effective_date),
+                source_position_count=len(positions),
+                eligible_position_count=len(eligible_positions),
+                policy_excluded_position_count=len(policy_exclusions),
+                grouped_title_count=len(grouped_titles),
                 calculated_title_count=0,
-
-                excluded_title_count=len(
-                    excluded_titles
-                ),
-
-                source_market_value_crc=(
-                    source_market_value_crc
-                ),
-
-                eligible_market_value_crc=(
-                    eligible_market_value_crc
-                ),
-
-                policy_excluded_market_value_crc=(
-                    policy_excluded_market_value_crc
-                ),
-
-                calculated_market_value_crc=(
-                    Decimal("0")
-                ),
-
-                excluded_market_value_crc=(
-                    excluded_market_value_crc
-                ),
-
-                coverage_percent=(
-                    Decimal("0")
-                ),
-
-                vector_dates_available=len(
-                    available_dates
-                ),
-
-                window_start_date=(
-                    target_dates[0]
-                ),
-
-                window_end_date=(
-                    target_dates[-1]
-                ),
-
-                required_prices=(
-                    self.REQUIRED_PRICES
-                ),
-
+                excluded_title_count=len(excluded_titles),
+                source_market_value_crc=(source_market_value_crc),
+                eligible_market_value_crc=(eligible_market_value_crc),
+                policy_excluded_market_value_crc=(policy_excluded_market_value_crc),
+                calculated_market_value_crc=(Decimal("0")),
+                excluded_market_value_crc=(excluded_market_value_crc),
+                coverage_percent=(Decimal("0")),
+                vector_dates_available=len(available_dates),
+                window_start_date=(target_dates[0]),
+                window_end_date=(target_dates[-1]),
+                required_prices=(self.REQUIRED_PRICES),
                 scenario_count=0,
-
-                horizon_observations=(
-                    self.HORIZON_OBSERVATIONS
-                ),
-
+                horizon_observations=(self.HORIZON_OBSERVATIONS),
                 portfolio_var=None,
-
-                excluded_titles=tuple(
-                    excluded_titles
-                ),
-
-                policy_exclusions=tuple(
-                    policy_exclusions
-                ),
-
-                status=(
-                    "NO_ELIGIBLE_TITLES_WITH_HISTORY"
-                ),
-
+                excluded_titles=tuple(excluded_titles),
+                policy_exclusions=tuple(policy_exclusions),
+                status=("NO_ELIGIBLE_TITLES_WITH_HISTORY"),
                 diagnostic=(
                     "No VER-eligible title could "
                     "be incorporated into the "
@@ -1293,139 +900,52 @@ class ConfiguredPortfolioVaRService:
         # CONSOLIDATED HISTORICAL VER
         # ========================================================
 
-        portfolio_var = (
-            PortfolioHistoricalVaRService
-            .calculate(
-                positions=tuple(
-                    var_positions
-                )
-            )
-        )
+        portfolio_var = PortfolioHistoricalVaRService.calculate(positions=tuple(var_positions))
 
         # ========================================================
         # STATUS
         # ========================================================
 
-        if (
-            len(excluded_titles)
-            == 0
-        ):
+        if len(excluded_titles) == 0:
 
-            status = (
-                "CALCULATED"
-            )
+            status = "CALCULATED"
 
-        elif (
-            coverage_percent
-            >= Decimal("99.5")
-        ):
+        elif coverage_percent >= Decimal("99.5"):
 
-            status = (
-                "CALCULATED_WITH_MINOR_HISTORY_EXCLUSIONS"
-            )
+            status = "CALCULATED_WITH_MINOR_HISTORY_EXCLUSIONS"
 
         else:
 
-            status = (
-                "PARTIAL_HISTORY_COVERAGE"
-            )
+            status = "PARTIAL_HISTORY_COVERAGE"
 
         # ========================================================
         # RESULT
         # ========================================================
 
         return ConfiguredPortfolioVaRResult(
-            valuation_date=(
-                effective_date
-            ),
-
-            source_position_count=len(
-                positions
-            ),
-
-            eligible_position_count=len(
-                eligible_positions
-            ),
-
-            policy_excluded_position_count=len(
-                policy_exclusions
-            ),
-
-            grouped_title_count=len(
-                grouped_titles
-            ),
-
-            calculated_title_count=len(
-                var_positions
-            ),
-
-            excluded_title_count=len(
-                excluded_titles
-            ),
-
-            source_market_value_crc=(
-                source_market_value_crc
-            ),
-
-            eligible_market_value_crc=(
-                eligible_market_value_crc
-            ),
-
-            policy_excluded_market_value_crc=(
-                policy_excluded_market_value_crc
-            ),
-
-            calculated_market_value_crc=(
-                calculated_market_value_crc
-            ),
-
-            excluded_market_value_crc=(
-                excluded_market_value_crc
-            ),
-
-            coverage_percent=(
-                coverage_percent
-            ),
-
-            vector_dates_available=len(
-                available_dates
-            ),
-
-            window_start_date=(
-                target_dates[0]
-            ),
-
-            window_end_date=(
-                target_dates[-1]
-            ),
-
-            required_prices=(
-                self.REQUIRED_PRICES
-            ),
-
-            scenario_count=(
-                portfolio_var
-                .scenario_count
-            ),
-
-            horizon_observations=(
-                self.HORIZON_OBSERVATIONS
-            ),
-
-            portfolio_var=(
-                portfolio_var
-            ),
-
-            excluded_titles=tuple(
-                excluded_titles
-            ),
-
-            policy_exclusions=tuple(
-                policy_exclusions
-            ),
-
+            valuation_date=(effective_date),
+            source_position_count=len(positions),
+            eligible_position_count=len(eligible_positions),
+            policy_excluded_position_count=len(policy_exclusions),
+            grouped_title_count=len(grouped_titles),
+            calculated_title_count=len(var_positions),
+            excluded_title_count=len(excluded_titles),
+            source_market_value_crc=(source_market_value_crc),
+            eligible_market_value_crc=(eligible_market_value_crc),
+            policy_excluded_market_value_crc=(policy_excluded_market_value_crc),
+            calculated_market_value_crc=(calculated_market_value_crc),
+            excluded_market_value_crc=(excluded_market_value_crc),
+            coverage_percent=(coverage_percent),
+            vector_dates_available=len(available_dates),
+            window_start_date=(target_dates[0]),
+            window_end_date=(target_dates[-1]),
+            required_prices=(self.REQUIRED_PRICES),
+            scenario_count=(portfolio_var.scenario_count),
+            horizon_observations=(self.HORIZON_OBSERVATIONS),
+            portfolio_var=(portfolio_var),
+            excluded_titles=tuple(excluded_titles),
+            policy_exclusions=tuple(policy_exclusions),
             status=status,
-
             diagnostic=None,
         )
 
@@ -1455,34 +975,15 @@ class ConfiguredPortfolioVaRService:
         El resto permanece elegible, sujeto a VM > 0.
         """
 
-        classification = str(
-            position.get(
-                "classification"
-            )
-            or ""
-        ).strip().upper()
+        classification = str(position.get("classification") or "").strip().upper()
 
-        product_code = str(
-            position.get(
-                "product_code"
-            )
-            or ""
-        ).strip().upper()
+        product_code = str(position.get("product_code") or "").strip().upper()
 
-        if classification.startswith(
-            "C.A"
-        ):
-            return (
-                "COST_AMORTIZED"
-            )
+        if classification.startswith("C.A"):
+            return "COST_AMORTIZED"
 
-        if (
-            product_code
-            == "MIL"
-        ):
-            return (
-                "MIL_OPERATION"
-            )
+        if product_code == "MIL":
+            return "MIL_OPERATION"
 
         return None
 
@@ -1499,55 +1000,14 @@ class ConfiguredPortfolioVaRService:
     ) -> ConfiguredPortfolioVaRPolicyExclusion:
 
         return ConfiguredPortfolioVaRPolicyExclusion(
-            isin=str(
-                position.get(
-                    "isin"
-                )
-                or ""
-            ).strip(),
-
-            series=str(
-                position.get(
-                    "series"
-                )
-                or ""
-            ).strip(),
-
-            issuer=str(
-                position.get(
-                    "issuer"
-                )
-                or ""
-            ).strip(),
-
-            currency=str(
-                position.get(
-                    "currency"
-                )
-                or ""
-            ).strip(),
-
-            product_code=str(
-                position.get(
-                    "product_code"
-                )
-                or ""
-            ).strip(),
-
-            classification=str(
-                position.get(
-                    "classification"
-                )
-                or ""
-            ).strip(),
-
-            market_value_crc=(
-                market_value_crc
-            ),
-
-            reason=(
-                reason
-            ),
+            isin=str(position.get("isin") or "").strip(),
+            series=str(position.get("series") or "").strip(),
+            issuer=str(position.get("issuer") or "").strip(),
+            currency=str(position.get("currency") or "").strip(),
+            product_code=str(position.get("product_code") or "").strip(),
+            classification=str(position.get("classification") or "").strip(),
+            market_value_crc=(market_value_crc),
+            reason=(reason),
         )
 
     # =============================================================
@@ -1556,9 +1016,7 @@ class ConfiguredPortfolioVaRService:
 
     def _group_positions(
         self,
-        positions: list[
-            dict[str, Any]
-        ],
+        positions: list[dict[str, Any]],
     ) -> tuple[
         _GroupedTitle,
         ...,
@@ -1586,146 +1044,63 @@ class ConfiguredPortfolioVaRService:
 
         for position in positions:
 
-            isin = str(
-                position.get(
-                    "isin"
-                )
-                or ""
-            ).strip()
+            isin = str(position.get("isin") or "").strip()
 
             series = str(
-                position.get(
-                    "series"
-                )
-                or position.get(
-                    "series_or_security_code"
-                )
-                or ""
+                position.get("series") or position.get("series_or_security_code") or ""
             ).strip()
 
-            issuer = str(
-                position.get(
-                    "issuer"
-                )
-                or ""
-            ).strip()
+            issuer = str(position.get("issuer") or "").strip()
 
-            currency = str(
-                position.get(
-                    "currency"
-                )
-                or ""
-            ).strip()
+            currency = str(position.get("currency") or "").strip()
 
-            product_code = str(
-                position.get(
-                    "product_code"
-                )
-                or ""
-            ).strip()
+            product_code = str(position.get("product_code") or "").strip()
 
-            maturity_date = (
-                self._as_date(
-                    position.get(
-                        "maturity_date"
-                    )
-                    or position.get(
-                        "maturity_date_if_present"
-                    )
-                )
+            maturity_date = self._as_date(
+                position.get("maturity_date") or position.get("maturity_date_if_present")
             )
 
-            market_value_crc = (
-                self._position_market_value(
-                    position
-                )
+            market_value_crc = self._position_market_value(position)
+
+            source_values = position.get("source_values") or {}
+
+            quantity_participations = self._decimal_value(
+                source_values.get("cantidad participaciones") or position.get("quantity")
             )
 
-            source_values = (
-                position.get(
-                    "source_values"
-                )
-                or {}
+            key = self._title_key(
+                isin=isin,
+                series=series,
+                issuer=issuer,
+                maturity_date=(maturity_date),
             )
 
-            quantity_participations = (
-                self._decimal_value(
-                    source_values.get(
-                        "cantidad participaciones"
-                    )
-                    or position.get(
-                        "quantity"
-                    )
-                )
-            )
-
-            key = (
-                self._title_key(
-                    isin=isin,
-                    series=series,
-                    issuer=issuer,
-                    maturity_date=(
-                        maturity_date
-                    ),
-                )
-            )
-
-            existing = (
-                grouped.get(
-                    key
-                )
-            )
+            existing = grouped.get(key)
 
             if existing is None:
 
-                grouped[
-                    key
-                ] = _GroupedTitle(
-                    security_key=(
-                        key
-                    ),
-                    isin=(
-                        isin
-                    ),
-                    series=(
-                        series
-                    ),
-                    issuer=(
-                        issuer
-                    ),
-                    currency=(
-                        currency
-                    ),
-                    product_code=(
-                        product_code
-                    ),
-                    maturity_date=(
-                        maturity_date
-                    ),
-                    market_value_crc=(
-                        market_value_crc
-                    ),
-                    quantity_participations=(
-                        quantity_participations
-                    ),
+                grouped[key] = _GroupedTitle(
+                    security_key=(key),
+                    isin=(isin),
+                    series=(series),
+                    issuer=(issuer),
+                    currency=(currency),
+                    product_code=(product_code),
+                    maturity_date=(maturity_date),
+                    market_value_crc=(market_value_crc),
+                    quantity_participations=(quantity_participations),
                     position_count=1,
                 )
 
             else:
 
-                existing.market_value_crc += (
-                    market_value_crc
-                )
+                existing.market_value_crc += market_value_crc
 
-                existing.quantity_participations += (
-                    quantity_participations
-                )
+                existing.quantity_participations += quantity_participations
 
                 existing.position_count += 1
 
-        return tuple(
-            grouped.values()
-        )
+        return tuple(grouped.values())
 
     # =============================================================
     # CONFIGURATION
@@ -1742,22 +1117,15 @@ class ConfiguredPortfolioVaRService:
         y resuelven internamente la subcarpeta Inversiones.
         """
 
-        configured_root = (
-            self._source_config
-            .folder_watch
-            .portfolio_root
-        )
+        configured_root = self._source_config.folder_watch.portfolio_root
 
         if not configured_root:
 
             raise RuntimeError(
-                "Portfolio root is not configured; "
-                "historical VER cannot be calculated"
+                "Portfolio root is not configured; " "historical VER cannot be calculated"
             )
 
-        return Path(
-            configured_root
-        )
+        return Path(configured_root)
 
     def _resolve_valuation_date(
         self,
@@ -1770,29 +1138,17 @@ class ConfiguredPortfolioVaRService:
         Resuelve la fecha efectiva del portafolio.
         """
 
-        raw_value = (
-            portfolio.get(
-                "valuation_date"
-            )
-            or (
-                self._valuation_date_context.value
-                if self._valuation_date_context is not None
-                else self._config.data_cutoff_date
-            )
+        raw_value = portfolio.get("valuation_date") or (
+            self._valuation_date_context.value
+            if self._valuation_date_context is not None
+            else self._config.data_cutoff_date
         )
 
-        resolved = (
-            self._as_date(
-                raw_value
-            )
-        )
+        resolved = self._as_date(raw_value)
 
         if resolved is None:
 
-            raise ValueError(
-                "Portfolio valuation date "
-                "could not be resolved"
-            )
+            raise ValueError("Portfolio valuation date " "could not be resolved")
 
         return resolved
 
@@ -1814,23 +1170,13 @@ class ConfiguredPortfolioVaRService:
         ISIN tiene prioridad absoluta.
         """
 
-        normalized_isin = (
-            isin
-            .strip()
-            .casefold()
-        )
+        normalized_isin = isin.strip().casefold()
 
         if normalized_isin:
 
-            return (
-                f"isin:{normalized_isin}"
-            )
+            return f"isin:{normalized_isin}"
 
-        maturity_text = (
-            maturity_date.isoformat()
-            if maturity_date is not None
-            else ""
-        )
+        maturity_text = maturity_date.isoformat() if maturity_date is not None else ""
 
         return (
             f"series:"
@@ -1853,14 +1199,7 @@ class ConfiguredPortfolioVaRService:
         Retorna el valor de mercado colonizado.
         """
 
-        return cls._decimal_value(
-            position.get(
-                "market_value_crc"
-            )
-            or position.get(
-                "market_value"
-            )
-        )
+        return cls._decimal_value(position.get("market_value_crc") or position.get("market_value"))
 
     @staticmethod
     def _decimal_value(
@@ -1871,9 +1210,7 @@ class ConfiguredPortfolioVaRService:
         """
 
         if value is None:
-            return Decimal(
-                "0"
-            )
+            return Decimal("0")
 
         if isinstance(
             value,
@@ -1883,20 +1220,14 @@ class ConfiguredPortfolioVaRService:
 
         try:
 
-            return Decimal(
-                str(
-                    value
-                )
-            )
+            return Decimal(str(value))
 
         except (
             ValueError,
             TypeError,
         ):
 
-            return Decimal(
-                "0"
-            )
+            return Decimal("0")
 
     @staticmethod
     def _as_date(
@@ -1913,9 +1244,7 @@ class ConfiguredPortfolioVaRService:
             value,
             datetime,
         ):
-            return (
-                value.date()
-            )
+            return value.date()
 
         if isinstance(
             value,
@@ -1923,18 +1252,14 @@ class ConfiguredPortfolioVaRService:
         ):
             return value
 
-        text = str(
-            value
-        ).strip()
+        text = str(value).strip()
 
         if not text:
             return None
 
         try:
 
-            return date.fromisoformat(
-                text[:10]
-            )
+            return date.fromisoformat(text[:10])
 
         except ValueError:
 

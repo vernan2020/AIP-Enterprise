@@ -12,7 +12,16 @@ from typing import Any
 class PiPCAParseError(ValueError):
     """Raised when a PiPCA line cannot be parsed into a vector record."""
 
-    def __init__(self, reason: str, *, line: str, source_line: int | None = None, branch: str | None = None, field_widths: tuple[int, ...] | None = None, raw_identifier: str | None = None) -> None:
+    def __init__(
+        self,
+        reason: str,
+        *,
+        line: str,
+        source_line: int | None = None,
+        branch: str | None = None,
+        field_widths: tuple[int, ...] | None = None,
+        raw_identifier: str | None = None,
+    ) -> None:
         self.reason = reason
         self.line = line
         self.source_line = source_line
@@ -54,7 +63,9 @@ class InstitutionalPiPCAVectorReadResult:
 class InstitutionalPiPCAVectorReader:
     _MAX_DIAGNOSTIC_TRACE_ENTRIES = 20
 
-    def read(self, path: str | Path, *, source_cutoff: date | None = None, diagnostic_mode: bool = False) -> InstitutionalPiPCAVectorReadResult:
+    def read(
+        self, path: str | Path, *, source_cutoff: date | None = None, diagnostic_mode: bool = False
+    ) -> InstitutionalPiPCAVectorReadResult:
         file_path = Path(path)
         if not file_path.exists():
             raise FileNotFoundError(f"PiPCA vector file does not exist: {file_path}")
@@ -73,45 +84,72 @@ class InstitutionalPiPCAVectorReader:
             if diagnostic_mode:
                 line_diagnostics.append(line_diagnostic)
             try:
-                record = self._parse_line(raw_line, source_cutoff=source_cutoff, source_line=line_number)
+                record = self._parse_line(
+                    raw_line, source_cutoff=source_cutoff, source_line=line_number
+                )
             except PiPCAParseError as exc:
                 rejected_count += 1
                 reason = exc.reason
                 rejected_reason_counts[reason] = rejected_reason_counts.get(reason, 0) + 1
                 if diagnostic_mode:
-                    line_diagnostic.update({
-                        "status": "rejected",
-                        "reason": reason,
-                        "parser_branch": exc.branch,
-                        "raw_identifier": exc.raw_identifier,
-                    })
-                    record_trace.append({
-                        "line": line_number,
-                        "status": "discarded",
-                        "reason": reason,
-                        "branch": exc.branch,
-                        "field_widths": list(exc.field_widths),
-                        "raw_identifier": exc.raw_identifier,
-                        "isin": None,
-                    })
+                    line_diagnostic.update(
+                        {
+                            "status": "rejected",
+                            "reason": reason,
+                            "parser_branch": exc.branch,
+                            "raw_identifier": exc.raw_identifier,
+                        }
+                    )
+                    record_trace.append(
+                        {
+                            "line": line_number,
+                            "status": "discarded",
+                            "reason": reason,
+                            "branch": exc.branch,
+                            "field_widths": list(exc.field_widths),
+                            "raw_identifier": exc.raw_identifier,
+                            "isin": None,
+                        }
+                    )
                 continue
             except ValueError as exc:
                 rejected_count += 1
                 reason = str(exc)
                 rejected_reason_counts[reason] = rejected_reason_counts.get(reason, 0) + 1
                 if diagnostic_mode:
-                    line_diagnostic.update({"status": "rejected", "reason": reason, "parser_branch": None, "raw_identifier": None})
-                    record_trace.append({"line": line_number, "status": "discarded", "reason": reason, "branch": None, "field_widths": [], "raw_identifier": None, "isin": None})
+                    line_diagnostic.update(
+                        {
+                            "status": "rejected",
+                            "reason": reason,
+                            "parser_branch": None,
+                            "raw_identifier": None,
+                        }
+                    )
+                    record_trace.append(
+                        {
+                            "line": line_number,
+                            "status": "discarded",
+                            "reason": reason,
+                            "branch": None,
+                            "field_widths": [],
+                            "raw_identifier": None,
+                            "isin": None,
+                        }
+                    )
                 continue
             if record is not None:
                 records.append(record)
                 if diagnostic_mode:
-                    line_diagnostic.update({
-                        "status": "accepted",
-                        "reason": "parsed",
-                        "parser_branch": "accepted",
-                        "raw_identifier": self._extract_raw_identifier(normalized_line=raw_line),
-                    })
+                    line_diagnostic.update(
+                        {
+                            "status": "accepted",
+                            "reason": "parsed",
+                            "parser_branch": "accepted",
+                            "raw_identifier": self._extract_raw_identifier(
+                                normalized_line=raw_line
+                            ),
+                        }
+                    )
                     diagnostics_entry = {
                         "line": record.source_line,
                         "status": "accepted",
@@ -119,7 +157,11 @@ class InstitutionalPiPCAVectorReader:
                         "issuer": record.issuer,
                         "mnemonic": record.instrument_type_or_mnemonic,
                         "series_or_security_code": record.series_or_security_code,
-                        "maturity_date": record.maturity_date_if_present.isoformat() if record.maturity_date_if_present else None,
+                        "maturity_date": (
+                            record.maturity_date_if_present.isoformat()
+                            if record.maturity_date_if_present
+                            else None
+                        ),
                         "normalized_series_key": record.normalized_series_key,
                         "normalized_issuer_key": record.normalized_issuer_key,
                         "isin": record.isin_if_present or None,
@@ -137,7 +179,9 @@ class InstitutionalPiPCAVectorReader:
                 "records_valid": len(records),
                 "records_discarded": rejected_count,
                 "rejected_reason_counts": rejected_reason_counts,
-                "isin_found": [record.isin_if_present for record in records if record.isin_if_present],
+                "isin_found": [
+                    record.isin_if_present for record in records if record.isin_if_present
+                ],
                 "accepted_records": accepted_records,
                 "line_diagnostics": line_diagnostics,
                 "record_trace": record_trace[-self._MAX_DIAGNOSTIC_TRACE_ENTRIES :],
@@ -177,7 +221,11 @@ class InstitutionalPiPCAVectorReader:
             "masked_raw_line": self._mask_text(raw_line),
             "parser_branch": "pending",
             "issuer_slice": {"start": 0, "end": 4, "text": raw_line[0:4]},
-            "product_series_slice": {"start": 4, "end": combined_field_end, "text": raw_line[4:combined_field_end]},
+            "product_series_slice": {
+                "start": 4,
+                "end": combined_field_end,
+                "text": raw_line[4:combined_field_end],
+            },
             "maturity_slice": {"start": maturity_start, "end": maturity_end, "text": maturity_text},
             "parsed_issuer": issuer,
             "parsed_product": product_code,
@@ -238,9 +286,7 @@ class InstitutionalPiPCAVectorReader:
         if not line.strip():
             return None
 
-        normalized_line = (
-            line.strip()
-        )
+        normalized_line = line.strip()
 
         if len(normalized_line) < 10:
             raise PiPCAParseError(
@@ -261,77 +307,43 @@ class InstitutionalPiPCAVectorReader:
 
         if maturity_match is not None:
 
-            issuer = (
-                self._extract_token(
-                    normalized_line,
-                    0,
-                    4,
-                )
+            issuer = self._extract_token(
+                normalized_line,
+                0,
+                4,
             )
 
-            instrument_type_or_mnemonic = (
-                self._extract_mnemonic(
-                    normalized_line
-                )
+            instrument_type_or_mnemonic = self._extract_mnemonic(normalized_line)
+
+            series_or_security_code = self._extract_series(normalized_line)
+
+            maturity_date_field = maturity_match.group(0)
+
+            financial_tokens = normalized_line[maturity_match.end() :].strip().split()
+
+            coupon_or_reference_value = self._decimal_from_token(
+                financial_tokens,
+                0,
             )
 
-            series_or_security_code = (
-                self._extract_series(
-                    normalized_line
-                )
+            market_price = self._decimal_from_token(
+                financial_tokens,
+                1,
             )
 
-            maturity_date_field = (
-                maturity_match.group(0)
+            market_yield = self._decimal_from_token(
+                financial_tokens,
+                2,
             )
 
-            financial_tokens = (
-                normalized_line[
-                    maturity_match.end():
-                ]
-                .strip()
-                .split()
+            spread_or_auxiliary_value = self._decimal_from_token(
+                financial_tokens,
+                3,
             )
 
-            coupon_or_reference_value = (
-                self._decimal_from_token(
-                    financial_tokens,
-                    0,
-                )
-            )
+            record_status = financial_tokens[4] if len(financial_tokens) > 4 else ""
 
-            market_price = (
-                self._decimal_from_token(
-                    financial_tokens,
-                    1,
-                )
-            )
-
-            market_yield = (
-                self._decimal_from_token(
-                    financial_tokens,
-                    2,
-                )
-            )
-
-            spread_or_auxiliary_value = (
-                self._decimal_from_token(
-                    financial_tokens,
-                    3,
-                )
-            )
-
-            record_status = (
-                financial_tokens[4]
-                if len(financial_tokens) > 4
-                else ""
-            )
-
-            maturity_date = (
-                self._parse_date(
-                    maturity_date_field
-                )
-            )
+            maturity_date = self._parse_date(maturity_date_field)
 
         # ========================================================
         # NON-MATURITY / FUND PiPCA RECORD
@@ -345,9 +357,7 @@ class InstitutionalPiPCAVectorReader:
                     instrument_type_or_mnemonic,
                     series_or_security_code,
                     financial_tokens,
-                ) = self._parse_non_maturity_layout(
-                    normalized_line
-                )
+                ) = self._parse_non_maturity_layout(normalized_line)
             except PiPCAParseError as exc:
                 # A traditional fixed-income identifier can be structurally
                 # recognizable even when its mandatory maturity field is
@@ -375,166 +385,88 @@ class InstitutionalPiPCAVectorReader:
             #
             # reference | auxiliary | yield | market price | status
 
-            coupon_or_reference_value = (
-                self._decimal_from_token(
-                    financial_tokens,
-                    0,
-                )
+            coupon_or_reference_value = self._decimal_from_token(
+                financial_tokens,
+                0,
             )
 
-            spread_or_auxiliary_value = (
-                self._decimal_from_token(
-                    financial_tokens,
-                    1,
-                )
+            spread_or_auxiliary_value = self._decimal_from_token(
+                financial_tokens,
+                1,
             )
 
-            market_yield = (
-                self._decimal_from_token(
-                    financial_tokens,
-                    2,
-                )
+            market_yield = self._decimal_from_token(
+                financial_tokens,
+                2,
             )
 
-            market_price = (
-                self._decimal_from_token(
-                    financial_tokens,
-                    3,
-                )
+            market_price = self._decimal_from_token(
+                financial_tokens,
+                3,
             )
 
-            record_status = (
-                financial_tokens[4]
-                if len(financial_tokens) > 4
-                else ""
-            )
+            record_status = financial_tokens[4] if len(financial_tokens) > 4 else ""
 
         # ========================================================
         # VALIDATION
         # ========================================================
 
-        if (
-            not issuer
-            and not instrument_type_or_mnemonic
-            and not series_or_security_code
-        ):
+        if not issuer and not instrument_type_or_mnemonic and not series_or_security_code:
             raise PiPCAParseError(
                 "empty record",
                 line=line,
                 source_line=source_line,
                 branch="empty-record",
-                field_widths=(
-                    len(normalized_line),
-                ),
+                field_widths=(len(normalized_line),),
                 raw_identifier="",
             )
 
-        if (
-            not issuer
-            or not instrument_type_or_mnemonic
-            or not series_or_security_code
-        ):
+        if not issuer or not instrument_type_or_mnemonic or not series_or_security_code:
             raise PiPCAParseError(
                 "unsupported layout",
                 line=line,
                 source_line=source_line,
                 branch="field-scan",
-                field_widths=(
-                    len(normalized_line),
-                ),
-                raw_identifier=(
-                    normalized_line[:30]
-                ),
+                field_widths=(len(normalized_line),),
+                raw_identifier=(normalized_line[:30]),
             )
 
-        if (
-            len(series_or_security_code)
-            < 2
-        ):
+        if len(series_or_security_code) < 2:
             raise PiPCAParseError(
                 "combined product-series parse failure",
                 line=line,
                 source_line=source_line,
                 branch="series-split",
-                field_widths=(
-                    len(normalized_line),
-                ),
-                raw_identifier=(
-                    normalized_line[:30]
-                ),
+                field_widths=(len(normalized_line),),
+                raw_identifier=(normalized_line[:30]),
             )
 
         isin_if_present = ""
 
-        if (
-            "isin"
-            in normalized_line.lower()
-            or (
-                len(normalized_line) > 30
-                and normalized_line[
-                    20:30
-                ].isdigit()
-            )
+        if "isin" in normalized_line.lower() or (
+            len(normalized_line) > 30 and normalized_line[20:30].isdigit()
         ):
-            isin_if_present = (
-                self._extract_token(
-                    normalized_line,
-                    20,
-                    36,
-                )
+            isin_if_present = self._extract_token(
+                normalized_line,
+                20,
+                36,
             )
 
         return InstitutionalVectorRecord(
-            issuer=self._clean_text(
-                issuer
-            ),
-            instrument_type_or_mnemonic=(
-                self._clean_text(
-                    instrument_type_or_mnemonic
-                )
-            ),
-            series_or_security_code=(
-                self._clean_text(
-                    series_or_security_code
-                )
-            ),
-            normalized_issuer_key=(
-                self._normalize_key(
-                    issuer
-                )
-            ),
-            normalized_series_key=(
-                self._normalize_key(
-                    series_or_security_code
-                )
-            ),
-            isin_if_present=(
-                isin_if_present
-            ),
-            maturity_date_if_present=(
-                maturity_date
-            ),
-            coupon_or_reference_value=(
-                coupon_or_reference_value
-            ),
-            market_price=(
-                market_price
-            ),
-            market_yield=(
-                market_yield
-            ),
-            spread_or_auxiliary_value=(
-                spread_or_auxiliary_value
-            ),
-            record_status=self._clean_text(
-                record_status
-            ),
-            source_cutoff=(
-                source_cutoff
-            ),
-            source_line=(
-                source_line
-            ),
+            issuer=self._clean_text(issuer),
+            instrument_type_or_mnemonic=(self._clean_text(instrument_type_or_mnemonic)),
+            series_or_security_code=(self._clean_text(series_or_security_code)),
+            normalized_issuer_key=(self._normalize_key(issuer)),
+            normalized_series_key=(self._normalize_key(series_or_security_code)),
+            isin_if_present=(isin_if_present),
+            maturity_date_if_present=(maturity_date),
+            coupon_or_reference_value=(coupon_or_reference_value),
+            market_price=(market_price),
+            market_yield=(market_yield),
+            spread_or_auxiliary_value=(spread_or_auxiliary_value),
+            record_status=self._clean_text(record_status),
+            source_cutoff=(source_cutoff),
+            source_line=(source_line),
         )
 
     def _parse_non_maturity_layout(
@@ -582,16 +514,10 @@ class InstitutionalPiPCAVectorReader:
                 "unsupported non-maturity layout",
                 line=line,
                 branch="non-maturity-layout",
-                raw_identifier=(
-                    line[:40]
-                ),
+                raw_identifier=(line[:40]),
             )
 
-        identifier = (
-            match.group(
-                "identifier"
-            )
-        )
+        identifier = match.group("identifier")
 
         financial_tokens = [
             match.group("f0"),
@@ -606,37 +532,16 @@ class InstitutionalPiPCAVectorReader:
         # five-character issuer + five-character product
         # --------------------------------------------------------
 
-        issuer_5 = (
-            identifier[:5]
-            if len(identifier) >= 15
-            else ""
-        )
+        issuer_5 = identifier[:5] if len(identifier) >= 15 else ""
 
-        product_5 = (
-            identifier[5:10]
-            if len(identifier) >= 15
-            else ""
-        )
+        product_5 = identifier[5:10] if len(identifier) >= 15 else ""
 
-        series_5 = (
-            identifier[10:]
-            if len(identifier) >= 15
-            else ""
-        )
+        series_5 = identifier[10:] if len(identifier) >= 15 else ""
 
         # Fund vectors observed institutionally use the fund
         # mnemonic as issuer and series, e.g. PRSFI ... PRSFI.
 
-        if (
-            issuer_5
-            and series_5
-            and self._normalize_key(
-                issuer_5
-            )
-            == self._normalize_key(
-                series_5
-            )
-        ):
+        if issuer_5 and series_5 and self._normalize_key(issuer_5) == self._normalize_key(series_5):
             return (
                 issuer_5,
                 product_5,
@@ -651,23 +556,13 @@ class InstitutionalPiPCAVectorReader:
 
         if len(identifier) >= 11:
 
-            issuer_4 = (
-                identifier[:4]
-            )
+            issuer_4 = identifier[:4]
 
-            product_4 = (
-                identifier[4:9]
-            )
+            product_4 = identifier[4:9]
 
-            series_4 = (
-                identifier[9:]
-            )
+            series_4 = identifier[9:]
 
-            if (
-                issuer_4
-                and product_4
-                and series_4
-            ):
+            if issuer_4 and product_4 and series_4:
                 return (
                     issuer_4,
                     product_4,
@@ -679,9 +574,7 @@ class InstitutionalPiPCAVectorReader:
             "non-maturity identifier parse failure",
             line=line,
             branch="non-maturity-identifier",
-            raw_identifier=(
-                identifier
-            ),
+            raw_identifier=(identifier),
         )
 
     def _extract_token(self, line: str, start: int, end: int) -> str:
@@ -723,7 +616,7 @@ class InstitutionalPiPCAVectorReader:
         maturity_match = re.search(r"\d{2}/\d{2}/\d{4}", remainder)
 
         if maturity_match is not None:
-            combined_field = remainder[:maturity_match.start()].strip()
+            combined_field = remainder[: maturity_match.start()].strip()
         else:
             combined_field = self._extract_non_maturity_identifier(remainder)
 
@@ -764,7 +657,7 @@ class InstitutionalPiPCAVectorReader:
         )
 
         if financial_match is not None:
-            return stripped[:financial_match.start()].strip()
+            return stripped[: financial_match.start()].strip()
 
         return stripped
 
@@ -784,7 +677,7 @@ class InstitutionalPiPCAVectorReader:
         maturity_match = re.search(r"\d{2}/\d{2}/\d{4}", line)
 
         if maturity_match is not None:
-            return line[maturity_match.end():].strip().split()
+            return line[maturity_match.end() :].strip().split()
 
         remainder = line[4:] if len(line) > 4 else ""
         identifier = self._extract_non_maturity_identifier(remainder)

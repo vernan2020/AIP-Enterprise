@@ -43,21 +43,36 @@ class InitialLoadWorkflow:
             for name, state in health.items()
         )
         portfolio = self._portfolio_provider.get_portfolio()
-        liquidity = PortfolioLiquidityComposer.compose(portfolio, self._liquidity_provider.get_liquidity())
+        liquidity = PortfolioLiquidityComposer.compose(
+            portfolio, self._liquidity_provider.get_liquidity()
+        )
         return {
             "execution_id": f"init-{correlation_id}",
             "correlation_id": correlation_id,
             "started_at": started_at.isoformat(),
             "completed_at": datetime.now(timezone.utc).isoformat(),
             "source_statuses": [
-                {"name": status.name, "state": status.state, "details": status.details, "correlation_id": status.correlation_id}
+                {
+                    "name": status.name,
+                    "state": status.state,
+                    "details": status.details,
+                    "correlation_id": status.correlation_id,
+                }
                 for status in source_statuses
             ],
             "data_quality_status": "HEALTHY",
-            "workflow_statuses": {"portfolio": "COMPLETED", "market": "COMPLETED", "liquidity": "COMPLETED"},
+            "workflow_statuses": {
+                "portfolio": "COMPLETED",
+                "market": "COMPLETED",
+                "liquidity": "COMPLETED",
+            },
             "warnings": (),
             "errors": (),
-            "calculation_references": {"portfolio": "calc-portfolio-demo", "market": "calc-market-demo", "liquidity": "calc-liquidity-demo"},
+            "calculation_references": {
+                "portfolio": "calc-portfolio-demo",
+                "market": "calc-market-demo",
+                "liquidity": "calc-liquidity-demo",
+            },
             "application_readiness": "READY",
             "portfolio": portfolio,
             "market": self._market_provider.get_market(),

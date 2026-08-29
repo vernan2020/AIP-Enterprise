@@ -77,14 +77,10 @@ class _MacroLoadWorker(QRunnable):
         try:
             snapshot = self._viewmodel.load()
 
-            self.signals.completed.emit(
-                snapshot
-            )
+            self.signals.completed.emit(snapshot)
 
         except Exception as exc:
-            self.signals.failed.emit(
-                f"{type(exc).__name__}: {exc}"
-            )
+            self.signals.failed.emit(f"{type(exc).__name__}: {exc}")
 
 
 class MacroMetricCard(QFrame):
@@ -97,13 +93,9 @@ class MacroMetricCard(QFrame):
     ) -> None:
         super().__init__(parent)
 
-        self.setObjectName(
-            "macroMetricCard"
-        )
+        self.setObjectName("macroMetricCard")
 
-        self.setFrameShape(
-            QFrame.Shape.StyledPanel
-        )
+        self.setFrameShape(QFrame.Shape.StyledPanel)
 
         self.setMinimumHeight(112)
 
@@ -120,68 +112,42 @@ class MacroMetricCard(QFrame):
 
         self._title = QLabel(title)
 
-        self._title.setObjectName(
-            "macroMetricTitle"
-        )
+        self._title.setObjectName("macroMetricTitle")
 
         self._value = QLabel("N/D")
 
-        self._value.setObjectName(
-            "macroMetricValue"
-        )
+        self._value.setObjectName("macroMetricValue")
 
         value_font = QFont()
 
         value_font.setPointSize(18)
         value_font.setBold(True)
 
-        self._value.setFont(
-            value_font
-        )
+        self._value.setFont(value_font)
 
         self._change = QLabel("—")
 
-        self._change.setObjectName(
-            "macroMetricChange"
-        )
+        self._change.setObjectName("macroMetricChange")
 
-        self._date = QLabel(
-            "Sin dato"
-        )
+        self._date = QLabel("Sin dato")
 
-        self._date.setObjectName(
-            "macroMetricDate"
-        )
+        self._date.setObjectName("macroMetricDate")
 
-        self._source = QLabel(
-            "BCCR"
-        )
+        self._source = QLabel("BCCR")
 
-        self._source.setObjectName(
-            "macroMetricSource"
-        )
+        self._source.setObjectName("macroMetricSource")
 
-        layout.addWidget(
-            self._title
-        )
+        layout.addWidget(self._title)
 
-        layout.addWidget(
-            self._value
-        )
+        layout.addWidget(self._value)
 
-        layout.addWidget(
-            self._change
-        )
+        layout.addWidget(self._change)
 
         layout.addStretch(1)
 
-        layout.addWidget(
-            self._date
-        )
+        layout.addWidget(self._date)
 
-        layout.addWidget(
-            self._source
-        )
+        layout.addWidget(self._source)
 
     def set_indicator(
         self,
@@ -191,62 +157,33 @@ class MacroMetricCard(QFrame):
             self.clear()
             return
 
-        self._value.setText(
-            self._format_value(
-                indicator
-            )
-        )
+        self._value.setText(self._format_value(indicator))
 
-        self._change.setText(
-            self._format_change(
-                indicator
-            )
-        )
+        self._change.setText(self._format_change(indicator))
 
-        observation_date = (
-            indicator.observation_date
-        )
+        observation_date = indicator.observation_date
 
         if observation_date is None:
-            self._date.setText(
-                "Sin fecha"
-            )
+            self._date.setText("Sin fecha")
 
         else:
-            self._date.setText(
-                observation_date.strftime(
-                    "%d/%m/%Y"
-                )
-            )
+            self._date.setText(observation_date.strftime("%d/%m/%Y"))
 
-        source = (
-            indicator.source
-            or "BCCR"
-        )
+        source = indicator.source or "BCCR"
 
         if indicator.derived:
             source += " · derivado"
 
-        self._source.setText(
-            source
-        )
+        self._source.setText(source)
 
     def clear(self) -> None:
-        self._value.setText(
-            "N/D"
-        )
+        self._value.setText("N/D")
 
-        self._change.setText(
-            "—"
-        )
+        self._change.setText("—")
 
-        self._date.setText(
-            "Sin dato"
-        )
+        self._date.setText("Sin dato")
 
-        self._source.setText(
-            "BCCR"
-        )
+        self._source.setText("BCCR")
 
     @staticmethod
     def _format_value(
@@ -258,26 +195,18 @@ class MacroMetricCard(QFrame):
             return "N/D"
 
         if indicator.code == "FX_SELL":
-            return (
-                f"₡{value:,.2f}"
-            )
+            return f"₡{value:,.2f}"
 
         if indicator.unit == "%":
-            return (
-                f"{value:.2f}%"
-            )
+            return f"{value:.2f}%"
 
-        return (
-            f"{value:,.2f}"
-        )
+        return f"{value:,.2f}"
 
     @staticmethod
     def _format_change(
         indicator: EconomicIndicatorCard,
     ) -> str:
-        change = (
-            indicator.absolute_change
-        )
+        change = indicator.absolute_change
 
         if change is None:
             return "—"
@@ -292,15 +221,9 @@ class MacroMetricCard(QFrame):
         )
 
         if indicator.code == "FX_SELL":
-            return (
-                f"{symbol} "
-                f"{change:+.2f}"
-            )
+            return f"{symbol} " f"{change:+.2f}"
 
-        return (
-            f"{symbol} "
-            f"{change:+.2f} pp"
-        )
+        return f"{symbol} " f"{change:+.2f} pp"
 
 
 class MacroPlaceholderPanel(QFrame):
@@ -317,13 +240,9 @@ class MacroPlaceholderPanel(QFrame):
     ) -> None:
         super().__init__(parent)
 
-        self.setObjectName(
-            "macroPlaceholderPanel"
-        )
+        self.setObjectName("macroPlaceholderPanel")
 
-        self.setFrameShape(
-            QFrame.Shape.StyledPanel
-        )
+        self.setFrameShape(QFrame.Shape.StyledPanel)
 
         layout = QVBoxLayout(self)
 
@@ -334,62 +253,38 @@ class MacroPlaceholderPanel(QFrame):
             12,
         )
 
-        title_label = QLabel(
-            title
-        )
+        title_label = QLabel(title)
 
-        title_label.setObjectName(
-            "macroSectionTitle"
-        )
+        title_label.setObjectName("macroSectionTitle")
 
         title_font = QFont()
 
         title_font.setBold(True)
 
-        title_label.setFont(
-            title_font
-        )
+        title_label.setFont(title_font)
 
-        status = QLabel(
-            "N/D"
-        )
+        status = QLabel("N/D")
 
-        status.setObjectName(
-            "macroPlaceholderValue"
-        )
+        status.setObjectName("macroPlaceholderValue")
 
         status_font = QFont()
 
         status_font.setPointSize(20)
         status_font.setBold(True)
 
-        status.setFont(
-            status_font
-        )
+        status.setFont(status_font)
 
-        description_label = QLabel(
-            description
-        )
+        description_label = QLabel(description)
 
-        description_label.setWordWrap(
-            True
-        )
+        description_label.setWordWrap(True)
 
-        description_label.setObjectName(
-            "macroSecondaryText"
-        )
+        description_label.setObjectName("macroSecondaryText")
 
-        layout.addWidget(
-            title_label
-        )
+        layout.addWidget(title_label)
 
-        layout.addWidget(
-            status
-        )
+        layout.addWidget(status)
 
-        layout.addWidget(
-            description_label
-        )
+        layout.addWidget(description_label)
 
         layout.addStretch(1)
 
@@ -451,32 +346,20 @@ class MacroIntelligenceView(QWidget):
     ) -> None:
         super().__init__(parent)
 
-        self.setObjectName(
-            "macroIntelligenceView"
-        )
+        self.setObjectName("macroIntelligenceView")
 
-        self._application_factory = (
-            application_factory
-        )
+        self._application_factory = application_factory
 
-        self._snapshot_store = (
-            EconomicSnapshotStore()
-        )
+        self._snapshot_store = EconomicSnapshotStore()
 
-        self._thread_pool = (
-            QThreadPool.globalInstance()
-        )
+        self._thread_pool = QThreadPool.globalInstance()
 
         self._loading = False
         self._refresh_pending = False
 
-        self._active_worker: (
-            _MacroLoadWorker | None
-        ) = None
+        self._active_worker: _MacroLoadWorker | None = None
 
-        self._snapshot: (
-            EconomicSnapshot | None
-        ) = None
+        self._snapshot: EconomicSnapshot | None = None
 
         self._cards: dict[
             str,
@@ -514,9 +397,7 @@ class MacroIntelligenceView(QWidget):
         This method never performs network I/O.
         """
 
-        snapshot = (
-            self._snapshot_store.load()
-        )
+        snapshot = self._snapshot_store.load()
 
         if snapshot is None:
             return
@@ -540,23 +421,10 @@ class MacroIntelligenceView(QWidget):
 
         self._snapshot = snapshot
 
-        by_code = {
-            item.code: item
-            for item
-            in snapshot.market_snapshot
-        }
+        by_code = {item.code: item for item in snapshot.market_snapshot}
 
-        for (
-            code,
-            _
-        ) in self._CARD_DEFINITIONS:
-            self._cards[
-                code
-            ].set_indicator(
-                by_code.get(
-                    code
-                )
-            )
+        for code, _ in self._CARD_DEFINITIONS:
+            self._cards[code].set_indicator(by_code.get(code))
 
         self._populate_curve(
             self._tri_crc_table,
@@ -569,52 +437,25 @@ class MacroIntelligenceView(QWidget):
         )
 
         cutoff_text = (
-            snapshot.cutoff_date.strftime(
-                "%d/%m/%Y"
-            )
-            if snapshot.cutoff_date
-            is not None
-            else "N/D"
+            snapshot.cutoff_date.strftime("%d/%m/%Y") if snapshot.cutoff_date is not None else "N/D"
         )
 
         status_parts = [
-            (
-                f"Fuente: "
-                f"{snapshot.source}"
-            ),
-            (
-                f"Última información: "
-                f"{cutoff_text}"
-            ),
+            (f"Fuente: " f"{snapshot.source}"),
+            (f"Última información: " f"{cutoff_text}"),
         ]
 
         if persisted:
-            status_parts.append(
-                "Snapshot local"
-            )
+            status_parts.append("Snapshot local")
         else:
-            status_parts.append(
-                f"Cache: "
-                f"{snapshot.cache_entries} entradas"
-            )
+            status_parts.append(f"Cache: " f"{snapshot.cache_entries} entradas")
 
         if snapshot.diagnostics:
-            status_parts.append(
-                (
-                    f"Diagnósticos: "
-                    f"{len(snapshot.diagnostics)}"
-                )
-            )
+            status_parts.append((f"Diagnósticos: " f"{len(snapshot.diagnostics)}"))
         else:
-            status_parts.append(
-                "Diagnósticos: OK"
-            )
+            status_parts.append("Diagnósticos: OK")
 
-        self._status_label.setText(
-            " · ".join(
-                status_parts
-            )
-        )
+        self._status_label.setText(" · ".join(status_parts))
 
     @Slot()
     def refresh(
@@ -632,48 +473,26 @@ class MacroIntelligenceView(QWidget):
             return
 
         self._refresh_pending = False
-        self._set_loading(
-            True
-        )
+        self._set_loading(True)
 
-        self._status_label.setText(
-            "Actualizando información BCCR..."
-        )
+        self._status_label.setText("Actualizando información BCCR...")
 
         try:
-            provider = (
-                self._application_factory
-                .container
-                .resolve(
-                    EconomicIndicatorsProvider
-                )
-            )
-            viewmodel = EconomicViewModel(
-                provider
-            )
+            provider = self._application_factory.container.resolve(EconomicIndicatorsProvider)
+            viewmodel = EconomicViewModel(provider)
         except Exception as exc:
-            self._handle_load_error(
-                f"{type(exc).__name__}: {exc}"
-            )
+            self._handle_load_error(f"{type(exc).__name__}: {exc}")
             return
 
-        worker = _MacroLoadWorker(
-            viewmodel
-        )
+        worker = _MacroLoadWorker(viewmodel)
 
-        worker.signals.completed.connect(
-            self._handle_snapshot
-        )
+        worker.signals.completed.connect(self._handle_snapshot)
 
-        worker.signals.failed.connect(
-            self._handle_load_error
-        )
+        worker.signals.failed.connect(self._handle_load_error)
 
         self._active_worker = worker
 
-        self._thread_pool.start(
-            worker
-        )
+        self._thread_pool.start(worker)
 
     # ============================================================
     # BUILD UI
@@ -682,9 +501,7 @@ class MacroIntelligenceView(QWidget):
     def _build_ui(
         self,
     ) -> None:
-        root_layout = QVBoxLayout(
-            self
-        )
+        root_layout = QVBoxLayout(self)
 
         root_layout.setContentsMargins(
             0,
@@ -693,29 +510,19 @@ class MacroIntelligenceView(QWidget):
             0,
         )
 
-        root_layout.setSpacing(
-            0
-        )
+        root_layout.setSpacing(0)
 
         scroll = QScrollArea()
 
-        scroll.setWidgetResizable(
-            True
-        )
+        scroll.setWidgetResizable(True)
 
-        scroll.setFrameShape(
-            QFrame.Shape.NoFrame
-        )
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
 
         content = QWidget()
 
-        content.setObjectName(
-            "macroIntelligenceContent"
-        )
+        content.setObjectName("macroIntelligenceContent")
 
-        layout = QVBoxLayout(
-            content
-        )
+        layout = QVBoxLayout(content)
 
         layout.setContentsMargins(
             14,
@@ -724,56 +531,34 @@ class MacroIntelligenceView(QWidget):
             16,
         )
 
-        layout.setSpacing(
-            12
-        )
+        layout.setSpacing(12)
 
-        layout.addWidget(
-            self._build_header()
-        )
+        layout.addWidget(self._build_header())
 
-        layout.addWidget(
-            self._build_metric_strip()
-        )
+        layout.addWidget(self._build_metric_strip())
 
-        layout.addWidget(
-            self._build_projection_section()
-        )
+        layout.addWidget(self._build_projection_section())
 
-        layout.addLayout(
-            self._build_middle_section()
-        )
+        layout.addLayout(self._build_middle_section())
 
-        layout.addWidget(
-            self._build_transmission_section()
-        )
+        layout.addWidget(self._build_transmission_section())
 
-        layout.addWidget(
-            self._build_tri_section()
-        )
+        layout.addWidget(self._build_tri_section())
 
         layout.addStretch(1)
 
-        scroll.setWidget(
-            content
-        )
+        scroll.setWidget(content)
 
-        root_layout.addWidget(
-            scroll
-        )
+        root_layout.addWidget(scroll)
 
     def _build_header(
         self,
     ) -> QWidget:
         frame = QFrame()
 
-        frame.setObjectName(
-            "macroHeader"
-        )
+        frame.setObjectName("macroHeader")
 
-        layout = QHBoxLayout(
-            frame
-        )
+        layout = QHBoxLayout(frame)
 
         layout.setContentsMargins(
             14,
@@ -784,9 +569,7 @@ class MacroIntelligenceView(QWidget):
 
         title_container = QWidget()
 
-        title_layout = QVBoxLayout(
-            title_container
-        )
+        title_layout = QVBoxLayout(title_container)
 
         title_layout.setContentsMargins(
             0,
@@ -795,62 +578,36 @@ class MacroIntelligenceView(QWidget):
             0,
         )
 
-        title_layout.setSpacing(
-            1
-        )
+        title_layout.setSpacing(1)
 
-        title = QLabel(
-            "MACRO INTELLIGENCE"
-        )
+        title = QLabel("MACRO INTELLIGENCE")
 
-        title.setObjectName(
-            "macroMainTitle"
-        )
+        title.setObjectName("macroMainTitle")
 
         title_font = QFont()
 
-        title_font.setPointSize(
-            16
-        )
+        title_font.setPointSize(16)
 
-        title_font.setBold(
-            True
-        )
+        title_font.setBold(True)
 
-        title.setFont(
-            title_font
-        )
+        title.setFont(title_font)
 
-        self._status_label = QLabel(
-            "Pendiente de actualización"
-        )
+        self._status_label = QLabel("Pendiente de actualización")
 
-        self._status_label.setObjectName(
-            "macroStatusLabel"
-        )
+        self._status_label.setObjectName("macroStatusLabel")
 
-        title_layout.addWidget(
-            title
-        )
+        title_layout.addWidget(title)
 
-        title_layout.addWidget(
-            self._status_label
-        )
+        title_layout.addWidget(self._status_label)
 
         layout.addWidget(
             title_container,
             1,
         )
 
-        layout.addWidget(
-            QLabel(
-                "Escenario:"
-            )
-        )
+        layout.addWidget(QLabel("Escenario:"))
 
-        self._scenario_combo = (
-            QComboBox()
-        )
+        self._scenario_combo = QComboBox()
 
         self._scenario_combo.addItems(
             [
@@ -860,28 +617,15 @@ class MacroIntelligenceView(QWidget):
             ]
         )
 
-        self._scenario_combo.setEnabled(
-            False
-        )
+        self._scenario_combo.setEnabled(False)
 
-        self._scenario_combo.setToolTip(
-            "Disponible cuando se implemente "
-            "Scenario Engine."
-        )
+        self._scenario_combo.setToolTip("Disponible cuando se implemente " "Scenario Engine.")
 
-        layout.addWidget(
-            self._scenario_combo
-        )
+        layout.addWidget(self._scenario_combo)
 
-        layout.addWidget(
-            QLabel(
-                "Horizonte:"
-            )
-        )
+        layout.addWidget(QLabel("Horizonte:"))
 
-        self._horizon_combo = (
-            QComboBox()
-        )
+        self._horizon_combo = QComboBox()
 
         self._horizon_combo.addItems(
             [
@@ -891,49 +635,25 @@ class MacroIntelligenceView(QWidget):
             ]
         )
 
-        self._horizon_combo.setCurrentText(
-            "12 meses"
-        )
+        self._horizon_combo.setCurrentText("12 meses")
 
-        self._horizon_combo.setEnabled(
-            False
-        )
+        self._horizon_combo.setEnabled(False)
 
-        layout.addWidget(
-            self._horizon_combo
-        )
+        layout.addWidget(self._horizon_combo)
 
-        self._simulate_button = (
-            QPushButton(
-                "SIMULAR"
-            )
-        )
+        self._simulate_button = QPushButton("SIMULAR")
 
-        self._simulate_button.setEnabled(
-            False
-        )
+        self._simulate_button.setEnabled(False)
 
-        self._simulate_button.setToolTip(
-            "Pendiente del motor econométrico."
-        )
+        self._simulate_button.setToolTip("Pendiente del motor econométrico.")
 
-        layout.addWidget(
-            self._simulate_button
-        )
+        layout.addWidget(self._simulate_button)
 
-        self._refresh_button = (
-            QPushButton(
-                "ACTUALIZAR"
-            )
-        )
+        self._refresh_button = QPushButton("ACTUALIZAR")
 
-        self._refresh_button.clicked.connect(
-            self.refresh
-        )
+        self._refresh_button.clicked.connect(self.refresh)
 
-        layout.addWidget(
-            self._refresh_button
-        )
+        layout.addWidget(self._refresh_button)
 
         return frame
 
@@ -942,13 +662,9 @@ class MacroIntelligenceView(QWidget):
     ) -> QWidget:
         frame = QFrame()
 
-        frame.setObjectName(
-            "macroMetricStrip"
-        )
+        frame.setObjectName("macroMetricStrip")
 
-        layout = QGridLayout(
-            frame
-        )
+        layout = QGridLayout(frame)
 
         layout.setContentsMargins(
             0,
@@ -957,39 +673,21 @@ class MacroIntelligenceView(QWidget):
             0,
         )
 
-        layout.setHorizontalSpacing(
-            8
-        )
+        layout.setHorizontalSpacing(8)
 
-        layout.setVerticalSpacing(
-            8
-        )
+        layout.setVerticalSpacing(8)
 
         for index, (
             code,
             title,
-        ) in enumerate(
-            self._CARD_DEFINITIONS
-        ):
-            card = MacroMetricCard(
-                title
-            )
+        ) in enumerate(self._CARD_DEFINITIONS):
+            card = MacroMetricCard(title)
 
-            self._cards[
-                code
-            ] = card
+            self._cards[code] = card
 
-            row = (
-                0
-                if index < 4
-                else 1
-            )
+            row = 0 if index < 4 else 1
 
-            column = (
-                index
-                if index < 4
-                else index - 4
-            )
+            column = index if index < 4 else index - 4
 
             layout.addWidget(
                 card,
@@ -1002,50 +700,29 @@ class MacroIntelligenceView(QWidget):
     def _build_projection_section(
         self,
     ) -> QWidget:
-        group = QGroupBox(
-            "PROYECCIÓN MACROECONÓMICA MULTIVARIADA"
-        )
+        group = QGroupBox("PROYECCIÓN MACROECONÓMICA MULTIVARIADA")
 
-        group.setObjectName(
-            "macroProjectionGroup"
-        )
+        group.setObjectName("macroProjectionGroup")
 
-        layout = QVBoxLayout(
-            group
-        )
+        layout = QVBoxLayout(group)
 
         self._projection_status = QLabel(
-            "Motor econométrico no implementado\n\n"
-            "BASE / FAVORABLE / ADVERSO · N/D"
+            "Motor econométrico no implementado\n\n" "BASE / FAVORABLE / ADVERSO · N/D"
         )
 
-        self._projection_status.setAlignment(
-            Qt.AlignmentFlag.AlignCenter
-        )
+        self._projection_status.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self._projection_status.setMinimumHeight(
-            170
-        )
+        self._projection_status.setMinimumHeight(170)
 
-        self._projection_status.setObjectName(
-            "macroProjectionPlaceholder"
-        )
+        self._projection_status.setObjectName("macroProjectionPlaceholder")
 
-        self._projection_status.setWordWrap(
-            True
-        )
+        self._projection_status.setWordWrap(True)
 
-        layout.addWidget(
-            self._projection_status
-        )
+        layout.addWidget(self._projection_status)
 
-        selector_layout = (
-            QHBoxLayout()
-        )
+        selector_layout = QHBoxLayout()
 
-        selector_layout.addStretch(
-            1
-        )
+        selector_layout.addStretch(1)
 
         for label in (
             "TPM",
@@ -1056,25 +733,15 @@ class MacroIntelligenceView(QWidget):
             "IMAE",
             "USD/CRC",
         ):
-            button = QPushButton(
-                label
-            )
+            button = QPushButton(label)
 
-            button.setEnabled(
-                False
-            )
+            button.setEnabled(False)
 
-            selector_layout.addWidget(
-                button
-            )
+            selector_layout.addWidget(button)
 
-        selector_layout.addStretch(
-            1
-        )
+        selector_layout.addStretch(1)
 
-        layout.addLayout(
-            selector_layout
-        )
+        layout.addLayout(selector_layout)
 
         return group
 
@@ -1083,31 +750,25 @@ class MacroIntelligenceView(QWidget):
     ) -> QHBoxLayout:
         layout = QHBoxLayout()
 
-        layout.setSpacing(
-            10
+        layout.setSpacing(10)
+
+        driver_panel = MacroPlaceholderPanel(
+            "DRIVERS / CORRELACIONES",
+            (
+                "Pendiente del motor econométrico. "
+                "Los coeficientes aparecerán únicamente "
+                "cuando hayan sido estimados, validados "
+                "y documentados."
+            ),
         )
 
-        driver_panel = (
-            MacroPlaceholderPanel(
-                "DRIVERS / CORRELACIONES",
-                (
-                    "Pendiente del motor econométrico. "
-                    "Los coeficientes aparecerán únicamente "
-                    "cuando hayan sido estimados, validados "
-                    "y documentados."
-                ),
-            )
-        )
-
-        impact_panel = (
-            MacroPlaceholderPanel(
-                "IMPACTO COOPERATIVA",
-                (
-                    "Pendiente del Cooperative Impact Engine: "
-                    "margen financiero, resultado neto, NIM, "
-                    "ΔEVE, ΔNII, ROA y suficiencia patrimonial."
-                ),
-            )
+        impact_panel = MacroPlaceholderPanel(
+            "IMPACTO COOPERATIVA",
+            (
+                "Pendiente del Cooperative Impact Engine: "
+                "margen financiero, resultado neto, NIM, "
+                "ΔEVE, ΔNII, ROA y suficiencia patrimonial."
+            ),
         )
 
         layout.addWidget(
@@ -1135,34 +796,20 @@ class MacroIntelligenceView(QWidget):
             ),
         )
 
-        panel.setMinimumHeight(
-            145
-        )
+        panel.setMinimumHeight(145)
 
         return panel
 
     def _build_tri_section(
         self,
     ) -> QWidget:
-        group = QGroupBox(
-            "CURVAS TRI · INFORMACIÓN DE MERCADO"
-        )
+        group = QGroupBox("CURVAS TRI · INFORMACIÓN DE MERCADO")
 
-        layout = QHBoxLayout(
-            group
-        )
+        layout = QHBoxLayout(group)
 
-        self._tri_crc_table = (
-            self._create_curve_table(
-                "CRC"
-            )
-        )
+        self._tri_crc_table = self._create_curve_table("CRC")
 
-        self._tri_usd_table = (
-            self._create_curve_table(
-                "USD"
-            )
-        )
+        self._tri_usd_table = self._create_curve_table("USD")
 
         layout.addWidget(
             self._table_container(
@@ -1191,9 +838,7 @@ class MacroIntelligenceView(QWidget):
             5,
         )
 
-        table.setObjectName(
-            f"tri{currency}Table"
-        )
+        table.setObjectName(f"tri{currency}Table")
 
         table.setHorizontalHeaderLabels(
             [
@@ -1205,29 +850,17 @@ class MacroIntelligenceView(QWidget):
             ]
         )
 
-        table.horizontalHeader().setSectionResizeMode(
-            QHeaderView.ResizeMode.Stretch
-        )
+        table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
 
-        table.verticalHeader().setVisible(
-            False
-        )
+        table.verticalHeader().setVisible(False)
 
-        table.setAlternatingRowColors(
-            True
-        )
+        table.setAlternatingRowColors(True)
 
-        table.setEditTriggers(
-            QTableWidget.EditTrigger.NoEditTriggers
-        )
+        table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
 
-        table.setSelectionBehavior(
-            QTableWidget.SelectionBehavior.SelectRows
-        )
+        table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
 
-        table.setMinimumHeight(
-            255
-        )
+        table.setMinimumHeight(255)
 
         return table
 
@@ -1238,9 +871,7 @@ class MacroIntelligenceView(QWidget):
     ) -> QWidget:
         container = QWidget()
 
-        layout = QVBoxLayout(
-            container
-        )
+        layout = QVBoxLayout(container)
 
         layout.setContentsMargins(
             0,
@@ -1249,27 +880,17 @@ class MacroIntelligenceView(QWidget):
             0,
         )
 
-        title_label = QLabel(
-            title
-        )
+        title_label = QLabel(title)
 
         font = QFont()
 
-        font.setBold(
-            True
-        )
+        font.setBold(True)
 
-        title_label.setFont(
-            font
-        )
+        title_label.setFont(font)
 
-        layout.addWidget(
-            title_label
-        )
+        layout.addWidget(title_label)
 
-        layout.addWidget(
-            table
-        )
+        layout.addWidget(table)
 
         return container
 
@@ -1286,9 +907,7 @@ class MacroIntelligenceView(QWidget):
             snapshot,
             EconomicSnapshot,
         ):
-            self._handle_load_error(
-                "Respuesta inesperada del EconomicViewModel"
-            )
+            self._handle_load_error("Respuesta inesperada del EconomicViewModel")
             return
 
         try:
@@ -1297,9 +916,7 @@ class MacroIntelligenceView(QWidget):
                 persisted=False,
             )
 
-            self._snapshot_store.save(
-                snapshot
-            )
+            self._snapshot_store.save(snapshot)
 
         finally:
             self._finish_refresh_cycle()
@@ -1319,25 +936,14 @@ class MacroIntelligenceView(QWidget):
                     )
                 )
             else:
-                self._status_label.setText(
-                    (
-                        "Macro Intelligence no disponible · "
-                        f"{message}"
-                    )
-                )
+                self._status_label.setText(("Macro Intelligence no disponible · " f"{message}"))
 
-                for card in (
-                    self._cards.values()
-                ):
+                for card in self._cards.values():
                     card.clear()
 
-                self._tri_crc_table.setRowCount(
-                    0
-                )
+                self._tri_crc_table.setRowCount(0)
 
-                self._tri_usd_table.setRowCount(
-                    0
-                )
+                self._tri_usd_table.setRowCount(0)
 
         finally:
             self._finish_refresh_cycle()
@@ -1345,9 +951,7 @@ class MacroIntelligenceView(QWidget):
     def _finish_refresh_cycle(
         self,
     ) -> None:
-        self._set_loading(
-            False
-        )
+        self._set_loading(False)
         self._active_worker = None
 
         if not self._refresh_pending:
@@ -1363,19 +967,11 @@ class MacroIntelligenceView(QWidget):
         self,
         loading: bool,
     ) -> None:
-        self._loading = (
-            loading
-        )
+        self._loading = loading
 
-        self._refresh_button.setEnabled(
-            not loading
-        )
+        self._refresh_button.setEnabled(not loading)
 
-        self._refresh_button.setText(
-            "ACTUALIZANDO..."
-            if loading
-            else "ACTUALIZAR"
-        )
+        self._refresh_button.setText("ACTUALIZANDO..." if loading else "ACTUALIZAR")
 
     @staticmethod
     def _populate_curve(
@@ -1385,47 +981,22 @@ class MacroIntelligenceView(QWidget):
             ...,
         ],
     ) -> None:
-        table.setRowCount(
-            len(curve)
-        )
+        table.setRowCount(len(curve))
 
-        for row, point in enumerate(
-            curve
-        ):
+        for row, point in enumerate(curve):
             values = (
                 point.tenor,
-                MacroIntelligenceView
-                ._format_decimal(
-                    point.value
-                ),
-                MacroIntelligenceView
-                ._format_decimal(
-                    point.previous_value
-                ),
-                MacroIntelligenceView
-                ._format_change_value(
-                    point.absolute_change
-                ),
-                MacroIntelligenceView
-                ._format_trend(
-                    point.trend
-                ),
+                MacroIntelligenceView._format_decimal(point.value),
+                MacroIntelligenceView._format_decimal(point.previous_value),
+                MacroIntelligenceView._format_change_value(point.absolute_change),
+                MacroIntelligenceView._format_trend(point.trend),
             )
 
-            for column, value in enumerate(
-                values
-            ):
-                item = QTableWidgetItem(
-                    value
-                )
+            for column, value in enumerate(values):
+                item = QTableWidgetItem(value)
 
                 if column > 0:
-                    item.setTextAlignment(
-                        int(
-                            Qt.AlignmentFlag
-                            .AlignCenter
-                        )
-                    )
+                    item.setTextAlignment(int(Qt.AlignmentFlag.AlignCenter))
 
                 table.setItem(
                     row,
@@ -1440,9 +1011,7 @@ class MacroIntelligenceView(QWidget):
         if value is None:
             return "N/D"
 
-        return (
-            f"{value:.2f}%"
-        )
+        return f"{value:.2f}%"
 
     @staticmethod
     def _format_change_value(
@@ -1451,9 +1020,7 @@ class MacroIntelligenceView(QWidget):
         if value is None:
             return "N/D"
 
-        return (
-            f"{value:+.2f} pp"
-        )
+        return f"{value:+.2f} pp"
 
     @staticmethod
     def _format_trend(
@@ -1475,8 +1042,7 @@ class MacroIntelligenceView(QWidget):
     def _apply_local_styles(
         self,
     ) -> None:
-        self.setStyleSheet(
-            """
+        self.setStyleSheet("""
             #macroIntelligenceContent {
                 background: transparent;
             }
@@ -1545,5 +1111,4 @@ class MacroIntelligenceView(QWidget):
             QTableWidget {
                 border: 1px solid rgba(120, 130, 140, 70);
             }
-            """
-        )
+            """)

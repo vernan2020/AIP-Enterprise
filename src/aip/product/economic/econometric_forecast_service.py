@@ -45,11 +45,14 @@ class _SelectedSpecification:
 
     ar_lags: int | None = None
 
-    arima_order: tuple[
-        int,
-        int,
-        int,
-    ] | None = None
+    arima_order: (
+        tuple[
+            int,
+            int,
+            int,
+        ]
+        | None
+    ) = None
 
 
 class EconometricForecastService:
@@ -84,49 +87,31 @@ class EconometricForecastService:
     def __init__(
         self,
         *,
-        model_selection_service: (
-            EconometricModelSelectionService
-            | None
-        ) = None,
+        model_selection_service: EconometricModelSelectionService | None = None,
         confidence_level: float = 0.95,
         minimum_horizon: int = 1,
         maximum_horizon: int = 12,
     ) -> None:
         if not 0.50 < confidence_level < 1.0:
-            raise ValueError(
-                "confidence_level must be between 0.50 and 1.0"
-            )
+            raise ValueError("confidence_level must be between 0.50 and 1.0")
 
         if minimum_horizon < 1:
-            raise ValueError(
-                "minimum_horizon must be >= 1"
-            )
+            raise ValueError("minimum_horizon must be >= 1")
 
         if maximum_horizon < minimum_horizon:
-            raise ValueError(
-                "maximum_horizon must be >= minimum_horizon"
-            )
+            raise ValueError("maximum_horizon must be >= minimum_horizon")
 
         self._model_selection_service = (
-            model_selection_service
-            or EconometricModelSelectionService()
+            model_selection_service or EconometricModelSelectionService()
         )
 
-        self._confidence_level = (
-            confidence_level
-        )
+        self._confidence_level = confidence_level
 
-        self._minimum_horizon = (
-            minimum_horizon
-        )
+        self._minimum_horizon = minimum_horizon
 
-        self._maximum_horizon = (
-            maximum_horizon
-        )
+        self._maximum_horizon = maximum_horizon
 
-        self._frame_builder = (
-            EconometricDiagnosticsService()
-        )
+        self._frame_builder = EconometricDiagnosticsService()
 
     def forecast(
         self,
@@ -142,28 +127,19 @@ class EconometricForecastService:
         institucional de model selection.
         """
 
-        code = (
-            indicator_code
-            .strip()
-            .upper()
-        )
+        code = indicator_code.strip().upper()
 
-        self._validate_horizon(
-            horizon_months
-        )
+        self._validate_horizon(horizon_months)
 
         if code not in self._SUPPORTED_INDICATORS:
             return self._failed_result(
                 indicator_code=code,
                 horizon_months=horizon_months,
-                diagnostic=(
-                    "Unsupported indicator"
-                ),
+                diagnostic=("Unsupported indicator"),
             )
 
         series = (
-            self._frame_builder
-            .build_series(
+            self._frame_builder.build_series(
                 dataset,
                 code,
             )
@@ -182,59 +158,33 @@ class EconometricForecastService:
             return self._failed_result(
                 indicator_code=code,
                 horizon_months=horizon_months,
-                diagnostic=(
-                    "No historical observations available"
-                ),
+                diagnostic=("No historical observations available"),
                 status="INSUFFICIENT_DATA",
             )
 
-        selection = (
-            self._model_selection_service
-            .select(
-                dataset,
-                code,
-            )
+        selection = self._model_selection_service.select(
+            dataset,
+            code,
         )
 
-        selected = (
-            selection.selected_candidate
-        )
+        selected = selection.selected_candidate
 
         if selected is None:
             return self._failed_result(
                 indicator_code=code,
                 horizon_months=horizon_months,
-                diagnostic=(
-                    selection.diagnostic
-                    or "No model selected"
-                ),
-                historical_observations=len(
-                    series
-                ),
-                forecast_origin=(
-                    series.index[
-                        -1
-                    ].date()
-                ),
+                diagnostic=(selection.diagnostic or "No model selected"),
+                historical_observations=len(series),
+                forecast_origin=(series.index[-1].date()),
             )
 
-        specification = (
-            self._specification_from_candidate(
-                selected
-            )
-        )
+        specification = self._specification_from_candidate(selected)
 
-        estimation_warnings: list[
-            EconometricForecastWarning
-        ] = []
+        estimation_warnings: list[EconometricForecastWarning] = []
 
         try:
-            with warnings.catch_warnings(
-                record=True
-            ) as warning_records:
-                warnings.simplefilter(
-                    "error"
-                )
+            with warnings.catch_warnings(record=True) as warning_records:
+                warnings.simplefilter("error")
 
                 warnings.simplefilter(
                     "always",
@@ -251,20 +201,14 @@ class EconometricForecastService:
                     EstimationWarning,
                 )
 
-                forecasts = (
-                    self._forecast_multi_step(
-                        series=series,
-                        specification=specification,
-                        horizon_months=(
-                            horizon_months
-                        ),
-                    )
+                forecasts = self._forecast_multi_step(
+                    series=series,
+                    specification=specification,
+                    horizon_months=(horizon_months),
                 )
 
             for item in warning_records:
-                category = (
-                    item.category
-                )
+                category = item.category
 
                 if not issubclass(
                     category,
@@ -278,12 +222,8 @@ class EconometricForecastService:
 
                 estimation_warnings.append(
                     EconometricForecastWarning(
-                        warning_type=(
-                            category.__name__
-                        ),
-                        message=str(
-                            item.message
-                        ),
+                        warning_type=(category.__name__),
+                        message=str(item.message),
                     )
                 )
 
@@ -296,260 +236,111 @@ class EconometricForecastService:
             return self._failed_result(
                 indicator_code=code,
                 horizon_months=horizon_months,
-                diagnostic=(
-                    f"{type(exc).__name__}: {exc}"
-                ),
-                historical_observations=len(
-                    series
-                ),
-                forecast_origin=(
-                    series.index[
-                        -1
-                    ].date()
-                ),
-                model_name=(
-                    selected.model_name
-                ),
-                model_family=(
-                    selected.model_family
-                ),
-                parameters=(
-                    selected.parameters
-                ),
-                warnings_result=tuple(
-                    estimation_warnings
-                ),
+                diagnostic=(f"{type(exc).__name__}: {exc}"),
+                historical_observations=len(series),
+                forecast_origin=(series.index[-1].date()),
+                model_name=(selected.model_name),
+                model_family=(selected.model_family),
+                parameters=(selected.parameters),
+                warnings_result=tuple(estimation_warnings),
                 candidate=selected,
             )
 
-        if len(
-            forecasts
-        ) != horizon_months:
+        if len(forecasts) != horizon_months:
             return self._failed_result(
                 indicator_code=code,
                 horizon_months=horizon_months,
                 diagnostic=(
-                    "Forecast engine returned an unexpected "
-                    "number of projection points"
+                    "Forecast engine returned an unexpected " "number of projection points"
                 ),
-                historical_observations=len(
-                    series
-                ),
-                forecast_origin=(
-                    series.index[
-                        -1
-                    ].date()
-                ),
-                model_name=(
-                    selected.model_name
-                ),
-                model_family=(
-                    selected.model_family
-                ),
-                parameters=(
-                    selected.parameters
-                ),
-                warnings_result=tuple(
-                    estimation_warnings
-                ),
+                historical_observations=len(series),
+                forecast_origin=(series.index[-1].date()),
+                model_name=(selected.model_name),
+                model_family=(selected.model_family),
+                parameters=(selected.parameters),
+                warnings_result=tuple(estimation_warnings),
                 candidate=selected,
             )
 
-        if not all(
-            math.isfinite(
-                value
-            )
-            for value in forecasts
-        ):
+        if not all(math.isfinite(value) for value in forecasts):
             return self._failed_result(
                 indicator_code=code,
                 horizon_months=horizon_months,
-                diagnostic=(
-                    "Forecast contains non-finite values"
-                ),
-                historical_observations=len(
-                    series
-                ),
-                forecast_origin=(
-                    series.index[
-                        -1
-                    ].date()
-                ),
-                model_name=(
-                    selected.model_name
-                ),
-                model_family=(
-                    selected.model_family
-                ),
-                parameters=(
-                    selected.parameters
-                ),
-                warnings_result=tuple(
-                    estimation_warnings
-                ),
+                diagnostic=("Forecast contains non-finite values"),
+                historical_observations=len(series),
+                forecast_origin=(series.index[-1].date()),
+                model_name=(selected.model_name),
+                model_family=(selected.model_family),
+                parameters=(selected.parameters),
+                warnings_result=tuple(estimation_warnings),
                 candidate=selected,
             )
 
-        forecast_origin = (
-            series.index[
-                -1
-            ]
-        )
+        forecast_origin = series.index[-1]
 
-        rmse = (
-            selected.metrics.rmse
-        )
+        rmse = selected.metrics.rmse
 
-        z_score = (
-            self._normal_quantile(
-                self._confidence_level
-            )
-        )
+        z_score = self._normal_quantile(self._confidence_level)
 
-        points: list[
-            EconometricProjectionPoint
-        ] = []
+        points: list[EconometricProjectionPoint] = []
 
         for index, forecast_value in enumerate(
             forecasts,
             start=1,
         ):
-            target_period = (
-                forecast_origin
-                + MonthEnd(
-                    index
-                )
-            )
+            target_period = forecast_origin + MonthEnd(index)
 
             lower_bound: float | None = None
             upper_bound: float | None = None
 
-            if (
-                rmse is not None
-                and math.isfinite(
-                    float(
-                        rmse
-                    )
-                )
-                and rmse >= 0.0
-            ):
-                interval_scale = (
-                    float(
-                        rmse
-                    )
-                    * math.sqrt(
-                        index
-                    )
-                )
+            if rmse is not None and math.isfinite(float(rmse)) and rmse >= 0.0:
+                interval_scale = float(rmse) * math.sqrt(index)
 
-                margin = (
-                    z_score
-                    * interval_scale
-                )
+                margin = z_score * interval_scale
 
-                lower_bound = (
-                    float(
-                        forecast_value
-                    )
-                    - margin
-                )
+                lower_bound = float(forecast_value) - margin
 
-                upper_bound = (
-                    float(
-                        forecast_value
-                    )
-                    + margin
-                )
+                upper_bound = float(forecast_value) + margin
 
             points.append(
                 EconometricProjectionPoint(
                     horizon=index,
-                    forecast_origin=(
-                        forecast_origin.date()
-                    ),
-                    target_period=(
-                        target_period.date()
-                    ),
-                    point_forecast=float(
-                        forecast_value
-                    ),
-                    lower_bound=(
-                        lower_bound
-                    ),
-                    upper_bound=(
-                        upper_bound
-                    ),
-                    confidence_level=(
-                        self._confidence_level
-                    ),
+                    forecast_origin=(forecast_origin.date()),
+                    target_period=(target_period.date()),
+                    point_forecast=float(forecast_value),
+                    lower_bound=(lower_bound),
+                    upper_bound=(upper_bound),
+                    confidence_level=(self._confidence_level),
                 )
             )
 
-        diagnostic_parts: list[
-            str
-        ] = []
+        diagnostic_parts: list[str] = []
 
         if selection.diagnostic:
-            diagnostic_parts.append(
-                selection.diagnostic
-            )
+            diagnostic_parts.append(selection.diagnostic)
 
         if estimation_warnings:
             diagnostic_parts.append(
-                "Final estimation produced "
-                f"{len(estimation_warnings)} "
-                "governed warning(s)"
+                "Final estimation produced " f"{len(estimation_warnings)} " "governed warning(s)"
             )
 
         return EconometricForecastResult(
             indicator_code=code,
             status="AVAILABLE",
-            model_name=(
-                selected.model_name
-            ),
-            model_family=(
-                selected.model_family
-            ),
-            parameters=(
-                selected.parameters
-            ),
-            forecast_origin=(
-                forecast_origin.date()
-            ),
-            historical_observations=len(
-                series
-            ),
-            horizon_months=(
-                horizon_months
-            ),
-            confidence_level=(
-                self._confidence_level
-            ),
-            backtest_observations=(
-                selected.metrics.observations
-            ),
-            backtest_rmse=(
-                selected.metrics.rmse
-            ),
-            backtest_mae=(
-                selected.metrics.mae
-            ),
-            backtest_bias=(
-                selected.metrics.bias
-            ),
-            points=tuple(
-                points
-            ),
-            warnings=tuple(
-                estimation_warnings
-            ),
-            diagnostic=(
-                "; ".join(
-                    diagnostic_parts
-                )
-                if diagnostic_parts
-                else None
-            ),
+            model_name=(selected.model_name),
+            model_family=(selected.model_family),
+            parameters=(selected.parameters),
+            forecast_origin=(forecast_origin.date()),
+            historical_observations=len(series),
+            horizon_months=(horizon_months),
+            confidence_level=(self._confidence_level),
+            backtest_observations=(selected.metrics.observations),
+            backtest_rmse=(selected.metrics.rmse),
+            backtest_mae=(selected.metrics.mae),
+            backtest_bias=(selected.metrics.bias),
+            points=tuple(points),
+            warnings=tuple(estimation_warnings),
+            diagnostic=("; ".join(diagnostic_parts) if diagnostic_parts else None),
         )
 
     def forecast_all(
@@ -561,125 +352,75 @@ class EconometricForecastService:
         EconometricForecastResult,
         ...,
     ]:
-        self._validate_horizon(
-            horizon_months
-        )
+        self._validate_horizon(horizon_months)
 
         return tuple(
             self.forecast(
                 dataset,
                 code,
-                horizon_months=(
-                    horizon_months
-                ),
+                horizon_months=(horizon_months),
             )
-            for code
-            in self._SUPPORTED_INDICATORS
+            for code in self._SUPPORTED_INDICATORS
         )
 
     @staticmethod
     def _specification_from_candidate(
         candidate: EconometricModelCandidateResult,
     ) -> _SelectedSpecification:
-        parameters = {
-            key: value
-            for key, value
-            in candidate.parameters
-        }
+        parameters = {key: value for key, value in candidate.parameters}
 
-        family = (
-            candidate.model_family
-        )
+        family = candidate.model_family
 
         if family == "NAIVE":
             return _SelectedSpecification(
-                model_name=(
-                    candidate.model_name
-                ),
+                model_name=(candidate.model_name),
                 family=family,
             )
 
         if family == "DRIFT":
             return _SelectedSpecification(
-                model_name=(
-                    candidate.model_name
-                ),
+                model_name=(candidate.model_name),
                 family=family,
             )
 
         if family == "AR":
-            raw_lags = (
-                parameters.get(
-                    "lags"
-                )
-                or parameters.get(
-                    "ar_lags"
-                )
-            )
+            raw_lags = parameters.get("lags") or parameters.get("ar_lags")
 
             if raw_lags is None:
-                raw_lags = (
-                    EconometricForecastService
-                    ._infer_ar_lags_from_name(
-                        candidate.model_name
-                    )
-                )
+                raw_lags = EconometricForecastService._infer_ar_lags_from_name(candidate.model_name)
 
             try:
-                lags = int(
-                    raw_lags
-                )
+                lags = int(raw_lags)
             except (
                 TypeError,
                 ValueError,
             ) as exc:
-                raise ValueError(
-                    "Invalid AR lag configuration"
-                ) from exc
+                raise ValueError("Invalid AR lag configuration") from exc
 
             return _SelectedSpecification(
-                model_name=(
-                    candidate.model_name
-                ),
+                model_name=(candidate.model_name),
                 family=family,
                 ar_lags=lags,
             )
 
         if family == "ARIMA":
-            raw_order = (
-                parameters.get(
-                    "order"
-                )
-            )
+            raw_order = parameters.get("order")
 
             if raw_order is None:
-                order = (
-                    EconometricForecastService
-                    ._infer_arima_order_from_name(
-                        candidate.model_name
-                    )
+                order = EconometricForecastService._infer_arima_order_from_name(
+                    candidate.model_name
                 )
 
             else:
-                order = (
-                    EconometricForecastService
-                    ._parse_arima_order(
-                        raw_order
-                    )
-                )
+                order = EconometricForecastService._parse_arima_order(raw_order)
 
             return _SelectedSpecification(
-                model_name=(
-                    candidate.model_name
-                ),
+                model_name=(candidate.model_name),
                 family=family,
                 arima_order=order,
             )
 
-        raise ValueError(
-            "Unsupported selected model family: "
-            f"{family}"
-        )
+        raise ValueError("Unsupported selected model family: " f"{family}")
 
     @staticmethod
     def _forecast_multi_step(
@@ -691,103 +432,50 @@ class EconometricForecastService:
         float,
         ...,
     ]:
-        values = (
-            series.to_numpy(
-                dtype=float
-            )
-        )
+        values = series.to_numpy(dtype=float)
 
         if specification.family == "NAIVE":
-            last_value = float(
-                values[
-                    -1
-                ]
-            )
+            last_value = float(values[-1])
 
-            return tuple(
-                last_value
-                for _ in range(
-                    horizon_months
-                )
-            )
+            return tuple(last_value for _ in range(horizon_months))
 
         if specification.family == "DRIFT":
-            if len(
-                values
-            ) < 2:
-                raise ValueError(
-                    "DRIFT requires at least two observations"
-                )
+            if len(values) < 2:
+                raise ValueError("DRIFT requires at least two observations")
 
-            drift = (
-                values[
-                    -1
-                ]
-                - values[
-                    0
-                ]
-            ) / (
-                len(
-                    values
-                )
-                - 1
-            )
+            drift = (values[-1] - values[0]) / (len(values) - 1)
 
-            last_value = float(
-                values[
-                    -1
-                ]
-            )
+            last_value = float(values[-1])
 
             return tuple(
-                float(
-                    last_value
-                    + drift
-                    * horizon
-                )
+                float(last_value + drift * horizon)
                 for horizon in range(
                     1,
-                    horizon_months
-                    + 1,
+                    horizon_months + 1,
                 )
             )
 
         if specification.family == "AR":
             if specification.ar_lags is None:
-                raise ValueError(
-                    "AR lag configuration missing"
-                )
+                raise ValueError("AR lag configuration missing")
 
             model = AutoReg(
                 values,
-                lags=(
-                    specification.ar_lags
-                ),
+                lags=(specification.ar_lags),
                 trend="ct",
             )
 
             fitted = model.fit()
 
             forecast = fitted.predict(
-                start=len(
-                    values
-                ),
-                end=(
-                    len(
-                        values
-                    )
-                    + horizon_months
-                    - 1
-                ),
+                start=len(values),
+                end=(len(values) + horizon_months - 1),
                 dynamic=False,
             )
 
             return tuple(
-                float(
-                    value
-                )
-                for value
-                in np.asarray(
+                float(value)
+                for value in np.asarray(
                     forecast,
                     dtype=float,
                 )
@@ -795,75 +483,38 @@ class EconometricForecastService:
 
         if specification.family == "ARIMA":
             if specification.arima_order is None:
-                raise ValueError(
-                    "ARIMA order missing"
-                )
+                raise ValueError("ARIMA order missing")
 
             model = ARIMA(
                 values,
-                order=(
-                    specification.arima_order
-                ),
-                trend=(
-                    "t"
-                    if (
-                        specification
-                        .arima_order[
-                            1
-                        ]
-                        > 0
-                    )
-                    else "ct"
-                ),
+                order=(specification.arima_order),
+                trend=("t" if (specification.arima_order[1] > 0) else "ct"),
             )
 
             fitted = model.fit()
 
-            forecast = fitted.forecast(
-                steps=(
-                    horizon_months
-                )
-            )
+            forecast = fitted.forecast(steps=(horizon_months))
 
             return tuple(
-                float(
-                    value
-                )
-                for value
-                in np.asarray(
+                float(value)
+                for value in np.asarray(
                     forecast,
                     dtype=float,
                 )
             )
 
-        raise ValueError(
-            "Unsupported model family: "
-            f"{specification.family}"
-        )
+        raise ValueError("Unsupported model family: " f"{specification.family}")
 
     @staticmethod
     def _infer_ar_lags_from_name(
         model_name: str,
     ) -> str:
-        normalized = (
-            model_name
-            .strip()
-            .upper()
-        )
+        normalized = model_name.strip().upper()
 
-        if normalized.startswith(
-            "AR("
-        ) and normalized.endswith(
-            ")"
-        ):
-            return normalized[
-                3:-1
-            ]
+        if normalized.startswith("AR(") and normalized.endswith(")"):
+            return normalized[3:-1]
 
-        raise ValueError(
-            "AR lag configuration missing "
-            f"for {model_name}"
-        )
+        raise ValueError("AR lag configuration missing " f"for {model_name}")
 
     @staticmethod
     def _infer_arima_order_from_name(
@@ -873,33 +524,12 @@ class EconometricForecastService:
         int,
         int,
     ]:
-        normalized = (
-            model_name
-            .strip()
-            .upper()
-        )
+        normalized = model_name.strip().upper()
 
-        if not (
-            normalized.startswith(
-                "ARIMA("
-            )
-            and normalized.endswith(
-                ")"
-            )
-        ):
-            raise ValueError(
-                "ARIMA order configuration missing "
-                f"for {model_name}"
-            )
+        if not (normalized.startswith("ARIMA(") and normalized.endswith(")")):
+            raise ValueError("ARIMA order configuration missing " f"for {model_name}")
 
-        return (
-            EconometricForecastService
-            ._parse_arima_order(
-                normalized[
-                    6:-1
-                ]
-            )
-        )
+        return EconometricForecastService._parse_arima_order(normalized[6:-1])
 
     @staticmethod
     def _parse_arima_order(
@@ -913,9 +543,7 @@ class EconometricForecastService:
             raw_order,
             tuple,
         ):
-            parts = list(
-                raw_order
-            )
+            parts = list(raw_order)
 
         elif isinstance(
             raw_order,
@@ -925,9 +553,7 @@ class EconometricForecastService:
 
         else:
             normalized = (
-                str(
-                    raw_order
-                )
+                str(raw_order)
                 .strip()
                 .replace(
                     "(",
@@ -943,55 +569,26 @@ class EconometricForecastService:
                 )
             )
 
-            parts = (
-                normalized
-                .split(
-                    ","
-                )
-            )
+            parts = normalized.split(",")
 
-        if len(
-            parts
-        ) != 3:
-            raise ValueError(
-                "ARIMA order must contain p,d,q"
-            )
+        if len(parts) != 3:
+            raise ValueError("ARIMA order must contain p,d,q")
 
         try:
-            order = tuple(
-                int(
-                    value
-                )
-                for value
-                in parts
-            )
+            order = tuple(int(value) for value in parts)
         except (
             TypeError,
             ValueError,
         ) as exc:
-            raise ValueError(
-                "Invalid ARIMA order"
-            ) from exc
+            raise ValueError("Invalid ARIMA order") from exc
 
-        if any(
-            value < 0
-            for value
-            in order
-        ):
-            raise ValueError(
-                "ARIMA order values must be non-negative"
-            )
+        if any(value < 0 for value in order):
+            raise ValueError("ARIMA order values must be non-negative")
 
         return (
-            order[
-                0
-            ],
-            order[
-                1
-            ],
-            order[
-                2
-            ],
+            order[0],
+            order[1],
+            order[2],
         )
 
     @staticmethod
@@ -1022,24 +619,13 @@ class EconometricForecastService:
 
         from statistics import NormalDist
 
-        return float(
-            NormalDist()
-            .inv_cdf(
-                0.5
-                + confidence_level
-                / 2.0
-            )
-        )
+        return float(NormalDist().inv_cdf(0.5 + confidence_level / 2.0))
 
     def _validate_horizon(
         self,
         horizon_months: int,
     ) -> None:
-        if not (
-            self._minimum_horizon
-            <= horizon_months
-            <= self._maximum_horizon
-        ):
+        if not (self._minimum_horizon <= horizon_months <= self._maximum_horizon):
             raise ValueError(
                 "horizon_months must be between "
                 f"{self._minimum_horizon} and "
@@ -1068,58 +654,23 @@ class EconometricForecastService:
             EconometricForecastWarning,
             ...,
         ] = (),
-        candidate: (
-            EconometricModelCandidateResult
-            | None
-        ) = None,
+        candidate: EconometricModelCandidateResult | None = None,
     ) -> EconometricForecastResult:
         return EconometricForecastResult(
-            indicator_code=(
-                indicator_code
-            ),
+            indicator_code=(indicator_code),
             status=status,
             model_name=model_name,
-            model_family=(
-                model_family
-            ),
+            model_family=(model_family),
             parameters=parameters,
-            forecast_origin=(
-                forecast_origin
-            ),
-            historical_observations=(
-                historical_observations
-            ),
-            horizon_months=(
-                horizon_months
-            ),
-            confidence_level=(
-                self._confidence_level
-            ),
-            backtest_observations=(
-                candidate.metrics.observations
-                if candidate is not None
-                else 0
-            ),
-            backtest_rmse=(
-                candidate.metrics.rmse
-                if candidate is not None
-                else None
-            ),
-            backtest_mae=(
-                candidate.metrics.mae
-                if candidate is not None
-                else None
-            ),
-            backtest_bias=(
-                candidate.metrics.bias
-                if candidate is not None
-                else None
-            ),
+            forecast_origin=(forecast_origin),
+            historical_observations=(historical_observations),
+            horizon_months=(horizon_months),
+            confidence_level=(self._confidence_level),
+            backtest_observations=(candidate.metrics.observations if candidate is not None else 0),
+            backtest_rmse=(candidate.metrics.rmse if candidate is not None else None),
+            backtest_mae=(candidate.metrics.mae if candidate is not None else None),
+            backtest_bias=(candidate.metrics.bias if candidate is not None else None),
             points=(),
-            warnings=(
-                warnings_result
-            ),
-            diagnostic=(
-                diagnostic
-            ),
+            warnings=(warnings_result),
+            diagnostic=(diagnostic),
         )

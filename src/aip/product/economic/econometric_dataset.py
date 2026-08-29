@@ -114,11 +114,7 @@ class EconometricMonthlyDataset:
         if not self.data_points:
             return None
 
-        return max(
-            point.observation_date
-            for point
-            in self.data_points
-        )
+        return max(point.observation_date for point in self.data_points)
 
     def latest_data_point(
         self,
@@ -129,22 +125,10 @@ class EconometricMonthlyDataset:
         un indicador, preservando observation_date y period.
         """
 
-        code = (
-            indicator_code
-            .strip()
-            .upper()
-        )
+        code = indicator_code.strip().upper()
 
         candidates = (
-            point
-            for point
-            in self.data_points
-            if (
-                point.indicator_code
-                .strip()
-                .upper()
-                == code
-            )
+            point for point in self.data_points if (point.indicator_code.strip().upper() == code)
         )
 
         return max(
@@ -160,28 +144,19 @@ class EconometricMonthlyDataset:
     def row_count(
         self,
     ) -> int:
-        return len(
-            self.rows
-        )
+        return len(self.rows)
 
     @property
     def complete_row_count(
         self,
     ) -> int:
-        return sum(
-            1
-            for row in self.rows
-            if row.complete
-        )
+        return sum(1 for row in self.rows if row.complete)
 
     @property
     def incomplete_row_count(
         self,
     ) -> int:
-        return (
-            self.row_count
-            - self.complete_row_count
-        )
+        return self.row_count - self.complete_row_count
 
     def complete_rows(
         self,
@@ -189,8 +164,4 @@ class EconometricMonthlyDataset:
         EconometricMonthlyRow,
         ...,
     ]:
-        return tuple(
-            row
-            for row in self.rows
-            if row.complete
-        )
+        return tuple(row for row in self.rows if row.complete)

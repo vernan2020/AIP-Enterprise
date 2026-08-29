@@ -61,14 +61,8 @@ class ScenarioReviewResolution:
         OVERRIDDEN remains blocked until a replacement
         trajectory is actually persisted and governed.
         """
-        return (
-            self.resolution
-            == "ACCEPTED_FOR_SCENARIO"
-        )
+        return self.resolution == "ACCEPTED_FOR_SCENARIO"
 
     @property
     def requires_override_trajectory(self) -> bool:
-        return (
-            self.resolution
-            == "OVERRIDDEN"
-        )
+        return self.resolution == "OVERRIDDEN"

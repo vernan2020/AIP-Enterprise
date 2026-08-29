@@ -41,9 +41,7 @@ from aip.product.configured.protocols import (
 )
 
 
-class ConfiguredEconomicIndicatorsProvider(
-    EconomicIndicatorsProvider
-):
+class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
     """Provider configurado de indicadores económicos BCCR."""
 
     _FX_CHART_CODE = "1"
@@ -92,31 +90,19 @@ class ConfiguredEconomicIndicatorsProvider(
             provider=UrllibHTTPProvider(),
         )
 
-        self._mapper = (
-            build_official_indicator_mapper()
-        )
+        self._mapper = build_official_indicator_mapper()
 
-        self._parser = (
-            BCCREconomicSeriesParser(
-                self._mapper
-            )
-        )
+        self._parser = BCCREconomicSeriesParser(self._mapper)
 
-        self._cache = BCCRCache(
-            ttl_seconds=300
-        )
+        self._cache = BCCRCache(ttl_seconds=300)
 
     def get_indicators(
         self,
     ) -> dict[str, Any]:
         if not self._bccr_config.token:
-            return self._historical_fallback(
-                reason="BCCR token is unavailable"
-            )
+            return self._historical_fallback(reason="BCCR token is unavailable")
 
-        indicators: list[
-            dict[str, Any]
-        ] = []
+        indicators: list[dict[str, Any]] = []
 
         diagnostics: list[str] = []
 
@@ -139,54 +125,39 @@ class ConfiguredEconomicIndicatorsProvider(
         # ----------------------------------------------------
 
         try:
-            fx_observations = (
-                self._get_or_fetch_grouped_chart_observations(
-                    chart_code=self._FX_CHART_CODE,
-                    logical_codes=self._FX_INDICATORS,
-                    history_days=45,
-                    ttl_seconds=self._FX_TTL_SECONDS,
-                )
+            fx_observations = self._get_or_fetch_grouped_chart_observations(
+                chart_code=self._FX_CHART_CODE,
+                logical_codes=self._FX_INDICATORS,
+                history_days=45,
+                ttl_seconds=self._FX_TTL_SECONDS,
             )
 
             for logical_code in self._FX_INDICATORS:
-                observations = (
-                    fx_observations.get(
-                        logical_code,
-                        (),
-                    )
+                observations = fx_observations.get(
+                    logical_code,
+                    (),
                 )
 
-                observations_by_code[
-                    logical_code
-                ] = observations
+                observations_by_code[logical_code] = observations
 
                 if not observations:
-                    diagnostics.append(
-                        f"{logical_code}: no observations"
-                    )
+                    diagnostics.append(f"{logical_code}: no observations")
                     continue
 
-                indicator = (
-                    self._build_indicator_payload(
-                        logical_code,
-                        observations,
-                    )
+                indicator = self._build_indicator_payload(
+                    logical_code,
+                    observations,
                 )
 
                 if indicator is not None:
-                    indicators.append(
-                        indicator
-                    )
+                    indicators.append(indicator)
 
         except (
             ConnectionError,
             TimeoutError,
             ValueError,
         ) as exc:
-            diagnostics.append(
-                "FX: "
-                f"{type(exc).__name__}: {exc}"
-            )
+            diagnostics.append("FX: " f"{type(exc).__name__}: {exc}")
 
         # ----------------------------------------------------
         # Indicators that remain official standalone BCCR
@@ -195,43 +166,28 @@ class ConfiguredEconomicIndicatorsProvider(
 
         for logical_code in self._CORE_INDICATORS:
             try:
-                observations = (
-                    self._get_or_fetch_observations(
-                        logical_code
-                    )
-                )
+                observations = self._get_or_fetch_observations(logical_code)
 
-                observations_by_code[
-                    logical_code
-                ] = observations
+                observations_by_code[logical_code] = observations
 
                 if not observations:
-                    diagnostics.append(
-                        f"{logical_code}: no observations"
-                    )
+                    diagnostics.append(f"{logical_code}: no observations")
                     continue
 
-                indicator = (
-                    self._build_indicator_payload(
-                        logical_code,
-                        observations,
-                    )
+                indicator = self._build_indicator_payload(
+                    logical_code,
+                    observations,
                 )
 
                 if indicator is not None:
-                    indicators.append(
-                        indicator
-                    )
+                    indicators.append(indicator)
 
             except (
                 ConnectionError,
                 TimeoutError,
                 ValueError,
             ) as exc:
-                diagnostics.append(
-                    f"{logical_code}: "
-                    f"{type(exc).__name__}: {exc}"
-                )
+                diagnostics.append(f"{logical_code}: " f"{type(exc).__name__}: {exc}")
 
         # ----------------------------------------------------
         # Labor market
@@ -244,111 +200,71 @@ class ConfiguredEconomicIndicatorsProvider(
         # ----------------------------------------------------
 
         try:
-            labor_observations = (
-                self._get_or_fetch_grouped_chart_observations(
-                    chart_code=self._LABOR_CHART_CODE,
-                    logical_codes=self._LABOR_INPUTS,
-                    history_days=400,
-                    ttl_seconds=self._LABOR_TTL_SECONDS,
-                )
+            labor_observations = self._get_or_fetch_grouped_chart_observations(
+                chart_code=self._LABOR_CHART_CODE,
+                logical_codes=self._LABOR_INPUTS,
+                history_days=400,
+                ttl_seconds=self._LABOR_TTL_SECONDS,
             )
 
             for logical_code in self._LABOR_INPUTS:
-                observations = (
-                    labor_observations.get(
-                        logical_code,
-                        (),
-                    )
+                observations = labor_observations.get(
+                    logical_code,
+                    (),
                 )
 
-                observations_by_code[
-                    logical_code
-                ] = observations
+                observations_by_code[logical_code] = observations
 
                 if not observations:
-                    diagnostics.append(
-                        f"{logical_code}: no observations"
-                    )
+                    diagnostics.append(f"{logical_code}: no observations")
                     continue
 
-                indicator = (
-                    self._build_indicator_payload(
-                        logical_code,
-                        observations,
-                    )
+                indicator = self._build_indicator_payload(
+                    logical_code,
+                    observations,
                 )
 
                 if indicator is not None:
-                    indicators.append(
-                        indicator
-                    )
+                    indicators.append(indicator)
 
         except (
             ConnectionError,
             TimeoutError,
             ValueError,
         ) as exc:
-            diagnostics.append(
-                "LABOR: "
-                f"{type(exc).__name__}: {exc}"
-            )
+            diagnostics.append("LABOR: " f"{type(exc).__name__}: {exc}")
 
         try:
-            tri_observations = (
-                self._get_or_fetch_tri_observations()
-            )
+            tri_observations = self._get_or_fetch_tri_observations()
 
-            for logical_code, observations in (
-                tri_observations.items()
-            ):
-                observations_by_code[
-                    logical_code
-                ] = observations
+            for logical_code, observations in tri_observations.items():
+                observations_by_code[logical_code] = observations
 
-                indicator = (
-                    self._build_indicator_payload(
-                        logical_code,
-                        observations,
-                    )
+                indicator = self._build_indicator_payload(
+                    logical_code,
+                    observations,
                 )
 
                 if indicator is not None:
-                    indicators.append(
-                        indicator
-                    )
+                    indicators.append(indicator)
 
         except (
             ConnectionError,
             TimeoutError,
             ValueError,
         ) as exc:
-            diagnostics.append(
-                "TRI: "
-                f"{type(exc).__name__}: {exc}"
-            )
+            diagnostics.append("TRI: " f"{type(exc).__name__}: {exc}")
 
-        unemployment = (
-            self._build_unemployment_indicator(
-                observations_by_code
-            )
-        )
+        unemployment = self._build_unemployment_indicator(observations_by_code)
 
         if unemployment is not None:
-            indicators.append(
-                unemployment
-            )
+            indicators.append(unemployment)
         else:
-            diagnostics.append(
-                "UNEMPLOYMENT: derived calculation unavailable"
-            )
+            diagnostics.append("UNEMPLOYMENT: derived calculation unavailable")
 
         if not indicators:
             return self._historical_fallback(
-                reason=(
-                    "; ".join(diagnostics)
-                    if diagnostics
-                    else "BCCR live data unavailable"
-                )
+                reason=("; ".join(diagnostics) if diagnostics else "BCCR live data unavailable")
             )
 
         return {
@@ -394,8 +310,7 @@ class ConfiguredEconomicIndicatorsProvider(
         tri_codes = sorted(
             code
             for code in available_codes
-            if code.startswith("TRI_CRC_")
-            or code.startswith("TRI_USD_")
+            if code.startswith("TRI_CRC_") or code.startswith("TRI_USD_")
         )
 
         for logical_code in (*requested_codes, *tri_codes):
@@ -450,13 +365,9 @@ class ConfiguredEconomicIndicatorsProvider(
         EconomicIndicatorObservation,
         ...,
     ]:
-        cache_key = (
-            f"indicator:{logical_code}"
-        )
+        cache_key = f"indicator:{logical_code}"
 
-        cached = self._cache.get(
-            cache_key
-        )
+        cached = self._cache.get(cache_key)
 
         if isinstance(
             cached,
@@ -464,17 +375,11 @@ class ConfiguredEconomicIndicatorsProvider(
         ):
             return cached
 
-        observations = (
-            self._fetch_observations(
-                logical_code
-            )
-        )
+        observations = self._fetch_observations(logical_code)
 
-        ttl_seconds = (
-            self._TTL_BY_CODE.get(
-                logical_code,
-                300,
-            )
+        ttl_seconds = self._TTL_BY_CODE.get(
+            logical_code,
+            300,
         )
 
         if observations:
@@ -509,13 +414,9 @@ class ConfiguredEconomicIndicatorsProvider(
         contained in the requested group.
         """
 
-        cache_key = (
-            f"chart:{chart_code}"
-        )
+        cache_key = f"chart:{chart_code}"
 
-        cached = self._cache.get(
-            cache_key
-        )
+        cached = self._cache.get(cache_key)
 
         if isinstance(
             cached,
@@ -528,16 +429,13 @@ class ConfiguredEconomicIndicatorsProvider(
                         (),
                     )
                 )
-                for logical_code
-                in logical_codes
+                for logical_code in logical_codes
             }
 
-        observations = (
-            self._fetch_grouped_chart_observations(
-                chart_code=chart_code,
-                logical_codes=logical_codes,
-                history_days=history_days,
-            )
+        observations = self._fetch_grouped_chart_observations(
+            chart_code=chart_code,
+            logical_codes=logical_codes,
+            history_days=history_days,
         )
 
         if observations:
@@ -568,38 +466,19 @@ class ConfiguredEconomicIndicatorsProvider(
         """
 
         if history_days <= 0:
-            raise ValueError(
-                "history_days must be greater than zero"
-            )
+            raise ValueError("history_days must be greater than zero")
 
         to_date = date.today()
 
-        from_date = (
-            to_date
-            - timedelta(
-                days=history_days
-            )
+        from_date = to_date - timedelta(days=history_days)
+
+        response = self._client.fetch_chart_series(
+            chart_code=chart_code,
+            from_date=(from_date.strftime("%Y/%m/%d")),
+            to_date=(to_date.strftime("%Y/%m/%d")),
         )
 
-        response = (
-            self._client.fetch_chart_series(
-                chart_code=chart_code,
-                from_date=(
-                    from_date.strftime(
-                        "%Y/%m/%d"
-                    )
-                ),
-                to_date=(
-                    to_date.strftime(
-                        "%Y/%m/%d"
-                    )
-                ),
-            )
-        )
-
-        body = response.get(
-            "body"
-        )
+        body = response.get("body")
 
         if not isinstance(
             body,
@@ -607,59 +486,33 @@ class ConfiguredEconomicIndicatorsProvider(
         ):
             return {}
 
-        normalized_body = (
-            self._normalize_chart_payload(
-                body
-            )
-        )
+        normalized_body = self._normalize_chart_payload(body)
 
-        parsed = self._parser.parse(
-            normalized_body
-        )
+        parsed = self._parser.parse(normalized_body)
 
-        requested_codes = set(
-            logical_codes
-        )
+        requested_codes = set(logical_codes)
 
         grouped: dict[
             str,
-            list[
-                EconomicIndicatorObservation
-            ],
-        ] = {
-            logical_code: []
-            for logical_code
-            in logical_codes
-        }
+            list[EconomicIndicatorObservation],
+        ] = {logical_code: [] for logical_code in logical_codes}
 
         for observation in parsed:
-            logical_code = (
-                observation.indicator_code
-            )
+            logical_code = observation.indicator_code
 
-            if (
-                logical_code
-                not in requested_codes
-            ):
+            if logical_code not in requested_codes:
                 continue
 
-            grouped[
-                logical_code
-            ].append(
-                observation
-            )
+            grouped[logical_code].append(observation)
 
         return {
             logical_code: tuple(
                 sorted(
                     items,
-                    key=lambda item: (
-                        item.observation_date
-                    ),
+                    key=lambda item: (item.observation_date),
                 )
             )
-            for logical_code, items
-            in grouped.items()
+            for logical_code, items in grouped.items()
             if items
         }
 
@@ -672,13 +525,9 @@ class ConfiguredEconomicIndicatorsProvider(
             ...,
         ],
     ]:
-        cache_key = (
-            f"chart:{self._TRI_CHART_CODE}"
-        )
+        cache_key = f"chart:{self._TRI_CHART_CODE}"
 
-        cached = self._cache.get(
-            cache_key
-        )
+        cached = self._cache.get(cache_key)
 
         if isinstance(
             cached,
@@ -686,17 +535,13 @@ class ConfiguredEconomicIndicatorsProvider(
         ):
             return cached
 
-        observations = (
-            self._fetch_tri_observations()
-        )
+        observations = self._fetch_tri_observations()
 
         if observations:
             self._cache.set(
                 cache_key,
                 observations,
-                ttl_seconds=(
-                    self._TRI_TTL_SECONDS
-                ),
+                ttl_seconds=(self._TRI_TTL_SECONDS),
             )
 
         return observations
@@ -716,45 +561,22 @@ class ConfiguredEconomicIndicatorsProvider(
         if mapping is None:
             return ()
 
-        definition = (
-            get_indicator_definition(
-                logical_code
-            )
-        )
+        definition = get_indicator_definition(logical_code)
 
         if definition is None:
             return ()
 
         to_date = date.today()
 
-        from_date = (
-            to_date
-            - self._history_window(
-                definition.frequency
-            )
+        from_date = to_date - self._history_window(definition.frequency)
+
+        response = self._client.fetch_series(
+            indicator_code=(mapping.source_series_code),
+            from_date=(from_date.strftime("%Y/%m/%d")),
+            to_date=(to_date.strftime("%Y/%m/%d")),
         )
 
-        response = (
-            self._client.fetch_series(
-                indicator_code=(
-                    mapping.source_series_code
-                ),
-                from_date=(
-                    from_date.strftime(
-                        "%Y/%m/%d"
-                    )
-                ),
-                to_date=(
-                    to_date.strftime(
-                        "%Y/%m/%d"
-                    )
-                ),
-            )
-        )
-
-        body = response.get(
-            "body"
-        )
+        body = response.get("body")
 
         if not isinstance(
             body,
@@ -762,20 +584,12 @@ class ConfiguredEconomicIndicatorsProvider(
         ):
             return ()
 
-        observations = (
-            self._parser.parse(
-                body
-            )
-        )
+        observations = self._parser.parse(body)
 
         return tuple(
             observation
-            for observation
-            in observations
-            if (
-                observation.indicator_code
-                == logical_code
-            )
+            for observation in observations
+            if (observation.indicator_code == logical_code)
         )
 
     def _fetch_tri_observations(
@@ -789,34 +603,15 @@ class ConfiguredEconomicIndicatorsProvider(
     ]:
         to_date = date.today()
 
-        from_date = (
-            to_date
-            - timedelta(
-                days=45
-            )
+        from_date = to_date - timedelta(days=45)
+
+        response = self._client.fetch_chart_series(
+            chart_code=(self._TRI_CHART_CODE),
+            from_date=(from_date.strftime("%Y/%m/%d")),
+            to_date=(to_date.strftime("%Y/%m/%d")),
         )
 
-        response = (
-            self._client.fetch_chart_series(
-                chart_code=(
-                    self._TRI_CHART_CODE
-                ),
-                from_date=(
-                    from_date.strftime(
-                        "%Y/%m/%d"
-                    )
-                ),
-                to_date=(
-                    to_date.strftime(
-                        "%Y/%m/%d"
-                    )
-                ),
-            )
-        )
-
-        body = response.get(
-            "body"
-        )
+        body = response.get("body")
 
         if not isinstance(
             body,
@@ -824,63 +619,42 @@ class ConfiguredEconomicIndicatorsProvider(
         ):
             return {}
 
-        normalized_body = (
-            self._normalize_chart_payload(
-                body
-            )
-        )
+        normalized_body = self._normalize_chart_payload(body)
 
-        observations = (
-            self._parser.parse(
-                normalized_body
-            )
-        )
+        observations = self._parser.parse(normalized_body)
 
         grouped: dict[
             str,
-            list[
-                EconomicIndicatorObservation
-            ],
+            list[EconomicIndicatorObservation],
         ] = {}
 
         for observation in observations:
             if not (
-                observation.indicator_code.startswith(
-                    "TRI_CRC_"
-                )
-                or observation.indicator_code.startswith(
-                    "TRI_USD_"
-                )
+                observation.indicator_code.startswith("TRI_CRC_")
+                or observation.indicator_code.startswith("TRI_USD_")
             ):
                 continue
 
             grouped.setdefault(
                 observation.indicator_code,
                 [],
-            ).append(
-                observation
-            )
+            ).append(observation)
 
         return {
             logical_code: tuple(
                 sorted(
                     items,
-                    key=lambda item: (
-                        item.observation_date
-                    ),
+                    key=lambda item: (item.observation_date),
                 )
             )
-            for logical_code, items
-            in grouped.items()
+            for logical_code, items in grouped.items()
         }
 
     @staticmethod
     def _normalize_chart_payload(
         payload: dict[str, Any],
     ) -> dict[str, Any]:
-        if payload.get(
-            "estado"
-        ) is not True:
+        if payload.get("estado") is not True:
             raise ValueError(
                 str(
                     payload.get(
@@ -890,21 +664,15 @@ class ConfiguredEconomicIndicatorsProvider(
                 )
             )
 
-        raw_data = payload.get(
-            "datos"
-        )
+        raw_data = payload.get("datos")
 
         if not isinstance(
             raw_data,
             list,
         ):
-            raise ValueError(
-                "BCCR chart payload does not contain datos list"
-            )
+            raise ValueError("BCCR chart payload does not contain datos list")
 
-        indicators: list[
-            dict[str, Any]
-        ] = []
+        indicators: list[dict[str, Any]] = []
 
         for chart in raw_data:
             if not isinstance(
@@ -913,11 +681,9 @@ class ConfiguredEconomicIndicatorsProvider(
             ):
                 continue
 
-            raw_indicators = (
-                chart.get(
-                    "indicadores",
-                    [],
-                )
+            raw_indicators = chart.get(
+                "indicadores",
+                [],
             )
 
             if not isinstance(
@@ -956,14 +722,8 @@ class ConfiguredEconomicIndicatorsProvider(
 
                 indicators.append(
                     {
-                        "codigoIndicador": (
-                            source_code
-                        ),
-                        "nombreIndicador": (
-                            indicator.get(
-                                "nombreIndicador"
-                            )
-                        ),
+                        "codigoIndicador": (source_code),
+                        "nombreIndicador": (indicator.get("nombreIndicador")),
                         "series": series,
                     }
                 )
@@ -983,33 +743,16 @@ class ConfiguredEconomicIndicatorsProvider(
     def _history_window(
         frequency: EconomicIndicatorFrequency,
     ) -> timedelta:
-        if (
-            frequency
-            == EconomicIndicatorFrequency.DAILY
-        ):
-            return timedelta(
-                days=45
-            )
+        if frequency == EconomicIndicatorFrequency.DAILY:
+            return timedelta(days=45)
 
-        if (
-            frequency
-            == EconomicIndicatorFrequency.MONTHLY
-        ):
-            return timedelta(
-                days=450
-            )
+        if frequency == EconomicIndicatorFrequency.MONTHLY:
+            return timedelta(days=450)
 
-        if (
-            frequency
-            == EconomicIndicatorFrequency.QUARTERLY
-        ):
-            return timedelta(
-                days=800
-            )
+        if frequency == EconomicIndicatorFrequency.QUARTERLY:
+            return timedelta(days=800)
 
-        return timedelta(
-            days=365
-        )
+        return timedelta(days=365)
 
     @staticmethod
     def _build_indicator_payload(
@@ -1019,11 +762,7 @@ class ConfiguredEconomicIndicatorsProvider(
             ...,
         ],
     ) -> dict[str, Any] | None:
-        definition = (
-            get_indicator_definition(
-                logical_code
-            )
-        )
+        definition = get_indicator_definition(logical_code)
 
         if definition is None:
             return None
@@ -1042,33 +781,19 @@ class ConfiguredEconomicIndicatorsProvider(
         return {
             "code": logical_code,
             "name": definition.name,
-            "category": (
-                definition.category.value
-            ),
-            "frequency": (
-                definition.frequency.value
-            ),
+            "category": (definition.category.value),
+            "frequency": (definition.frequency.value),
             "unit": definition.unit,
             "currency": definition.currency,
             "tenor": definition.tenor,
             "source": "BCCR",
             "derived": definition.derived,
-            "source_series_code": (
-                latest.source_series_code
-            ),
+            "source_series_code": (latest.source_series_code),
             "date": latest.observation_date,
             "value": latest.value,
-            "previous_value": (
-                previous.value
-                if previous
-                else None
-            ),
-            "absolute_change": (
-                series.absolute_change
-            ),
-            "relative_change_percent": (
-                series.relative_change_percent
-            ),
+            "previous_value": (previous.value if previous else None),
+            "absolute_change": (series.absolute_change),
+            "relative_change_percent": (series.relative_change_percent),
             "trend": series.trend,
             "observations": observations,
         }
@@ -1093,74 +818,35 @@ class ConfiguredEconomicIndicatorsProvider(
             (),
         )
 
-        if (
-            not labor_force
-            or not employed
-        ):
+        if not labor_force or not employed:
             return None
 
-        labor_by_date = {
-            item.observation_date: item
-            for item
-            in labor_force
-        }
+        labor_by_date = {item.observation_date: item for item in labor_force}
 
-        employed_by_date = {
-            item.observation_date: item
-            for item
-            in employed
-        }
+        employed_by_date = {item.observation_date: item for item in employed}
 
-        common_dates = sorted(
-            set(labor_by_date)
-            & set(employed_by_date)
-        )
+        common_dates = sorted(set(labor_by_date) & set(employed_by_date))
 
-        derived_observations: list[
-            EconomicIndicatorObservation
-        ] = []
+        derived_observations: list[EconomicIndicatorObservation] = []
 
         for observation_date in common_dates:
-            labor_value = (
-                labor_by_date[
-                    observation_date
-                ].value
-            )
+            labor_value = labor_by_date[observation_date].value
 
-            employed_value = (
-                employed_by_date[
-                    observation_date
-                ].value
-            )
+            employed_value = employed_by_date[observation_date].value
 
             if labor_value <= 0:
                 continue
 
-            unemployment_rate = (
-                (
-                    labor_value
-                    - employed_value
-                )
-                / labor_value
-                * Decimal("100")
-            )
+            unemployment_rate = (labor_value - employed_value) / labor_value * Decimal("100")
 
             derived_observations.append(
                 EconomicIndicatorObservation(
-                    indicator_code=(
-                        "UNEMPLOYMENT"
-                    ),
-                    observation_date=(
-                        observation_date
-                    ),
-                    value=(
-                        unemployment_rate
-                    ),
+                    indicator_code=("UNEMPLOYMENT"),
+                    observation_date=(observation_date),
+                    value=(unemployment_rate),
                     source="BCCR",
                     unit="%",
-                    source_series_code=(
-                        "DERIVED:22786-22787"
-                    ),
+                    source_series_code=("DERIVED:22786-22787"),
                     quality_status="VALID",
                     is_preliminary=False,
                 )
@@ -1169,13 +855,9 @@ class ConfiguredEconomicIndicatorsProvider(
         if not derived_observations:
             return None
 
-        return (
-            self._build_indicator_payload(
-                "UNEMPLOYMENT",
-                tuple(
-                    derived_observations
-                ),
-            )
+        return self._build_indicator_payload(
+            "UNEMPLOYMENT",
+            tuple(derived_observations),
         )
 
     @staticmethod
@@ -1197,51 +879,24 @@ class ConfiguredEconomicIndicatorsProvider(
 
         curve = [
             {
-                "code": indicator.get(
-                    "code"
-                ),
-                "tenor": indicator.get(
-                    "tenor"
-                ),
-                "value": indicator.get(
-                    "value"
-                ),
-                "previous_value": (
-                    indicator.get(
-                        "previous_value"
-                    )
-                ),
-                "absolute_change": (
-                    indicator.get(
-                        "absolute_change"
-                    )
-                ),
-                "trend": indicator.get(
-                    "trend"
-                ),
-                "date": indicator.get(
-                    "date"
-                ),
-                "source_series_code": (
-                    indicator.get(
-                        "source_series_code"
-                    )
-                ),
+                "code": indicator.get("code"),
+                "tenor": indicator.get("tenor"),
+                "value": indicator.get("value"),
+                "previous_value": (indicator.get("previous_value")),
+                "absolute_change": (indicator.get("absolute_change")),
+                "trend": indicator.get("trend"),
+                "date": indicator.get("date"),
+                "source_series_code": (indicator.get("source_series_code")),
             }
             for indicator in indicators
             if (
-                indicator.get(
-                    "currency"
-                )
-                == currency
+                indicator.get("currency") == currency
                 and str(
                     indicator.get(
                         "code",
                         "",
                     )
-                ).startswith(
-                    f"TRI_{currency}_"
-                )
+                ).startswith(f"TRI_{currency}_")
             )
         ]
 

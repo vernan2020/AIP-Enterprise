@@ -99,9 +99,7 @@ class InstitutionalMacroDriverSet:
     def row_count(
         self,
     ) -> int:
-        return len(
-            self.rows
-        )
+        return len(self.rows)
 
     @property
     def first_period(

@@ -30,8 +30,6 @@ def _normalize_path_value(value: str | None) -> str | None:
     return os.path.normpath(normalized)
 
 
-
-
 def _first_existing_path(*candidates: Path) -> str | None:
     for candidate in candidates:
         try:
@@ -48,10 +46,7 @@ def _institutional_defaults() -> dict[str, str | None]:
     coopealianza = home / "COOPEALIANZA R.L"
     investment_root = coopealianza / "Seidy Fonseca Hernandez - inversiones"
     analytics_root = (
-        coopealianza
-        / "Liquidez e Inversiones - Documentos"
-        / "General"
-        / "Análisis Financiero"
+        coopealianza / "Liquidez e Inversiones - Documentos" / "General" / "Análisis Financiero"
     )
     cutoff_year = os.getenv("AIP_DATA_CUTOFF_DATE", "")[:4]
     if not cutoff_year.isdigit():
@@ -111,7 +106,9 @@ class EnvironmentLoader:
 
     def load(self) -> DemoConfig:
         defaults = _institutional_defaults()
-        execution_mode_value = os.getenv("AIP_EXECUTION_MODE") or os.getenv("AIP_DEMO_EXECUTION_MODE")
+        execution_mode_value = os.getenv("AIP_EXECUTION_MODE") or os.getenv(
+            "AIP_DEMO_EXECUTION_MODE"
+        )
         if execution_mode_value is None:
             execution_mode = "CONFIGURED" if defaults["portfolio_root"] else "DEMO"
         else:
@@ -121,7 +118,9 @@ class EnvironmentLoader:
             "false" if execution_mode == "CONFIGURED" else "true",
         )
         demo_mode_enabled = demo_mode_flag.lower() == "true"
-        configured_source_indicator = _parse_boolean_flag(os.getenv("AIP_CONFIGURED_DIAGNOSTIC_MODE"), default=False)
+        configured_source_indicator = _parse_boolean_flag(
+            os.getenv("AIP_CONFIGURED_DIAGNOSTIC_MODE"), default=False
+        )
         configured_source_env_present = any(
             (os.getenv(env_name) or "").strip() not in {"", "false", "False", "FALSE"}
             for env_name in (
@@ -138,7 +137,9 @@ class EnvironmentLoader:
         )
         if execution_mode not in {"DEMO", "CONFIGURED"}:
             raise DemoConfigurationError("invalid execution mode")
-        if execution_mode == "DEMO" and (configured_source_indicator or configured_source_env_present):
+        if execution_mode == "DEMO" and (
+            configured_source_indicator or configured_source_env_present
+        ):
             execution_mode = "CONFIGURED"
         if execution_mode == "DEMO":
             demo_mode_enabled = True
@@ -206,9 +207,13 @@ class EnvironmentLoader:
                 email=bccr_source["email"],
                 token=bccr_source["token"],
             ),
-            diagnostic_mode=_parse_boolean_flag(os.getenv("AIP_CONFIGURED_DIAGNOSTIC_MODE"), default=False),
+            diagnostic_mode=_parse_boolean_flag(
+                os.getenv("AIP_CONFIGURED_DIAGNOSTIC_MODE"), default=False
+            ),
             metadata={
-                "allow_prior_source_date": _parse_boolean_flag(os.getenv("AIP_ALLOW_PRIOR_SOURCE_DATE"), default=True),
+                "allow_prior_source_date": _parse_boolean_flag(
+                    os.getenv("AIP_ALLOW_PRIOR_SOURCE_DATE"), default=True
+                ),
                 "icl_max_prior_days": int(os.getenv("AIP_ICL_MAX_PRIOR_DAYS", "7")),
                 "data_cutoff_date": effective_cutoff,
             },
@@ -317,7 +322,9 @@ class EnvironmentLoader:
         )
 
     def _read_sql_source_config(self) -> dict[str, Any]:
-        enabled_flag = os.getenv("AIP_SQLSERVER_ENABLED") or os.getenv("AIP_SQL_CONNECTOR_ENABLED", "false")
+        enabled_flag = os.getenv("AIP_SQLSERVER_ENABLED") or os.getenv(
+            "AIP_SQL_CONNECTOR_ENABLED", "false"
+        )
         return {
             "enabled": str(enabled_flag).lower() == "true",
             "server": os.getenv("AIP_SQLSERVER_SERVER"),
@@ -326,11 +333,18 @@ class EnvironmentLoader:
             "username_secret_ref": os.getenv("AIP_SQLSERVER_USERNAME_SECRET"),
             "password_secret_ref": os.getenv("AIP_SQLSERVER_PASSWORD_SECRET"),
             "view": os.getenv("AIP_SQLSERVER_VIEW", "VISTA_1514_1515_1516"),
-            "scenario_filters": tuple(filter(None, os.getenv("AIP_SQLSERVER_SCENARIOS", "Reales,Presupuesto 2026%").split(","))),
+            "scenario_filters": tuple(
+                filter(
+                    None,
+                    os.getenv("AIP_SQLSERVER_SCENARIOS", "Reales,Presupuesto 2026%").split(","),
+                )
+            ),
             "connection_timeout_seconds": int(os.getenv("AIP_SQLSERVER_CONNECTION_TIMEOUT", "30")),
             "command_timeout_seconds": int(os.getenv("AIP_SQLSERVER_COMMAND_TIMEOUT", "30")),
             "retry_count": int(os.getenv("AIP_SQLSERVER_RETRIES", "3")),
-            "additional_query_filters": tuple(filter(None, os.getenv("AIP_SQLSERVER_QUERY_FILTERS", "").split(","))),
+            "additional_query_filters": tuple(
+                filter(None, os.getenv("AIP_SQLSERVER_QUERY_FILTERS", "").split(","))
+            ),
         }
 
     def _read_folder_watch_config(self) -> dict[str, Any]:
@@ -349,11 +363,18 @@ class EnvironmentLoader:
             "icl_root": _normalize_path_value(icl_root),
             "curves_path": _normalize_path_value(os.getenv("AIP_CURVES_WORKBOOK")),
             "vector_path": _normalize_path_value(vector_path),
-            "portfolio_master_pattern": os.getenv("AIP_PORTFOLIO_MASTER_PATTERN", r"Inversiones\{year}\maestro\{month}\*.xls*"),
+            "portfolio_master_pattern": os.getenv(
+                "AIP_PORTFOLIO_MASTER_PATTERN", r"Inversiones\{year}\maestro\{month}\*.xls*"
+            ),
             "icl_file_pattern": os.getenv("AIP_ICL_FILE_PATTERN", r"ICL\Reportes ICL\*"),
-            "supported_extensions": tuple(filter(None, os.getenv("AIP_PORTFOLIO_SUPPORTED_EXTENSIONS", ".xls,.xlsx").split(","))),
+            "supported_extensions": tuple(
+                filter(
+                    None, os.getenv("AIP_PORTFOLIO_SUPPORTED_EXTENSIONS", ".xls,.xlsx").split(",")
+                )
+            ),
             "recursive": os.getenv("AIP_PORTFOLIO_RECURSIVE", "true").lower() == "true",
-            "stale_data_threshold_seconds": int(os.getenv("AIP_PORTFOLIO_STALE_HOURS", "24")) * 3600,
+            "stale_data_threshold_seconds": int(os.getenv("AIP_PORTFOLIO_STALE_HOURS", "24"))
+            * 3600,
         }
 
     def _read_curves_config(self) -> dict[str, Any]:
@@ -361,7 +382,14 @@ class EnvironmentLoader:
         return {
             "enabled": str(enabled_flag).lower() == "true",
             "workbook": _normalize_path_value(os.getenv("AIP_CURVES_WORKBOOK")),
-            "sheet_mapping": tuple(filter(None, os.getenv("AIP_CURVES_SHEET_MAPPING", "Gobierno CRC,Gobierno USD,BCCR CRC").split(","))),
+            "sheet_mapping": tuple(
+                filter(
+                    None,
+                    os.getenv(
+                        "AIP_CURVES_SHEET_MAPPING", "Gobierno CRC,Gobierno USD,BCCR CRC"
+                    ).split(","),
+                )
+            ),
             "stale_data_threshold_seconds": int(os.getenv("AIP_CURVES_STALE_HOURS", "24")) * 3600,
         }
 
@@ -376,9 +404,21 @@ class EnvironmentLoader:
             "enabled": str(enabled_flag).lower() == "true",
             "path": _normalize_path_value(vector_path),
             "root": _normalize_path_value(os.getenv("AIP_VECTOR_ROOT")),
-            "directory_aliases": tuple(filter(None, os.getenv("AIP_VECTOR_DIRECTORY_ALIASES", "vector,Vector,Vector Pip,vector pipca").split(","))),
-            "file_pattern": os.getenv("AIP_VECTOR_FILE_PATTERNS") or os.getenv("AIP_VECTOR_FILE_PATTERN", "VectorPiPCA_{yyyymmdd}.txt"),
-            "supported_extensions": tuple(filter(None, os.getenv("AIP_VECTOR_SUPPORTED_EXTENSIONS", ".txt,.xls,.xlsx").split(","))),
+            "directory_aliases": tuple(
+                filter(
+                    None,
+                    os.getenv(
+                        "AIP_VECTOR_DIRECTORY_ALIASES", "vector,Vector,Vector Pip,vector pipca"
+                    ).split(","),
+                )
+            ),
+            "file_pattern": os.getenv("AIP_VECTOR_FILE_PATTERNS")
+            or os.getenv("AIP_VECTOR_FILE_PATTERN", "VectorPiPCA_{yyyymmdd}.txt"),
+            "supported_extensions": tuple(
+                filter(
+                    None, os.getenv("AIP_VECTOR_SUPPORTED_EXTENSIONS", ".txt,.xls,.xlsx").split(",")
+                )
+            ),
             "stale_data_threshold_seconds": int(os.getenv("AIP_VECTOR_STALE_HOURS", "24")) * 3600,
         }
 
@@ -390,8 +430,12 @@ class EnvironmentLoader:
             "timeout_seconds": float(os.getenv("AIP_BCCR_TIMEOUT_SECONDS", "30")),
             "retries": int(os.getenv("AIP_BCCR_RETRIES", "3")),
             "cache_enabled": os.getenv("AIP_BCCR_CACHE_ENABLED", "true").lower() == "true",
-            "indicator_configuration": tuple(filter(None, os.getenv("AIP_BCCR_SERIES_CONFIG", "FX").split(","))),
-            "series_config": tuple(filter(None, os.getenv("AIP_BCCR_SERIES_CONFIG", "FX").split(","))),
+            "indicator_configuration": tuple(
+                filter(None, os.getenv("AIP_BCCR_SERIES_CONFIG", "FX").split(","))
+            ),
+            "series_config": tuple(
+                filter(None, os.getenv("AIP_BCCR_SERIES_CONFIG", "FX").split(","))
+            ),
             "name": os.getenv("AIP_BCCR_NAME"),
             "email": os.getenv("AIP_BCCR_EMAIL"),
             "token": os.getenv("AIP_BCCR_TOKEN"),

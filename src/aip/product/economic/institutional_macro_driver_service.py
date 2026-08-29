@@ -37,13 +37,9 @@ class InstitutionalMacroDriverService:
     def __init__(
         self,
         *,
-        repository: InstitutionalMacroScenarioRepository
-        | None = None,
+        repository: InstitutionalMacroScenarioRepository | None = None,
     ) -> None:
-        self._repository = (
-            repository
-            or InstitutionalMacroScenarioRepository()
-        )
+        self._repository = repository or InstitutionalMacroScenarioRepository()
 
     def build(
         self,
@@ -57,29 +53,20 @@ class InstitutionalMacroDriverService:
         )
 
         if scenario is None:
-            raise ValueError(
-                "Institutional macro scenario "
-                f"not found: {scenario_id} v{version}"
-            )
+            raise ValueError("Institutional macro scenario " f"not found: {scenario_id} v{version}")
 
-        return self.build_from_scenario(
-            scenario
-        )
+        return self.build_from_scenario(scenario)
 
     def build_from_scenario(
         self,
         scenario: InstitutionalMacroScenario,
     ) -> InstitutionalMacroDriverSet:
-        self._validate_scenario(
-            scenario
-        )
+        self._validate_scenario(scenario)
 
         points_by_period: dict[
             date,
             dict[str, float],
-        ] = defaultdict(
-            dict
-        )
+        ] = defaultdict(dict)
 
         periods_by_indicator: dict[
             str,
@@ -87,16 +74,9 @@ class InstitutionalMacroDriverService:
         ] = {}
 
         for indicator in scenario.indicators:
-            code = (
-                indicator.indicator_code
-                .strip()
-                .upper()
-            )
+            code = indicator.indicator_code.strip().upper()
 
-            if (
-                code
-                not in EXPECTED_MACRO_DRIVER_CODES
-            ):
+            if code not in EXPECTED_MACRO_DRIVER_CODES:
                 continue
 
             indicator_periods: list[date] = []
@@ -104,103 +84,50 @@ class InstitutionalMacroDriverService:
             for point in indicator.points:
                 period = point.target_period
 
-                if (
-                    code
-                    in points_by_period[period]
-                ):
+                if code in points_by_period[period]:
                     raise ValueError(
-                        "Duplicate macro driver point: "
-                        f"{code} {period.isoformat()}"
+                        "Duplicate macro driver point: " f"{code} {period.isoformat()}"
                     )
 
-                points_by_period[
-                    period
-                ][code] = float(
-                    point.point_forecast
-                )
+                points_by_period[period][code] = float(point.point_forecast)
 
-                indicator_periods.append(
-                    period
-                )
+                indicator_periods.append(period)
 
-            periods_by_indicator[
-                code
-            ] = tuple(
-                indicator_periods
-            )
+            periods_by_indicator[code] = tuple(indicator_periods)
 
         self._validate_period_alignment(
             scenario=scenario,
-            periods_by_indicator=(
-                periods_by_indicator
-            ),
+            periods_by_indicator=(periods_by_indicator),
         )
 
-        ordered_periods = sorted(
-            points_by_period
-        )
+        ordered_periods = sorted(points_by_period)
 
-        rows: list[
-            InstitutionalMonthlyMacroDrivers
-        ] = []
+        rows: list[InstitutionalMonthlyMacroDrivers] = []
 
         for period in ordered_periods:
-            values = points_by_period[
-                period
-            ]
+            values = points_by_period[period]
 
-            missing = [
-                code
-                for code
-                in EXPECTED_MACRO_DRIVER_CODES
-                if code not in values
-            ]
+            missing = [code for code in EXPECTED_MACRO_DRIVER_CODES if code not in values]
 
             if missing:
                 raise ValueError(
-                    "Incomplete macro driver period "
-                    f"{period.isoformat()}: "
-                    + ", ".join(
-                        missing
-                    )
+                    "Incomplete macro driver period " f"{period.isoformat()}: " + ", ".join(missing)
                 )
 
             rows.append(
                 InstitutionalMonthlyMacroDrivers(
-                    scenario_id=(
-                        scenario.scenario_id
-                    ),
-                    scenario_version=(
-                        scenario.version
-                    ),
-                    scenario_type=(
-                        scenario.scenario_type
-                    ),
-                    dataset_as_of_date=(
-                        scenario.dataset_as_of_date
-                    ),
+                    scenario_id=(scenario.scenario_id),
+                    scenario_version=(scenario.version),
+                    scenario_type=(scenario.scenario_type),
+                    dataset_as_of_date=(scenario.dataset_as_of_date),
                     period=period,
-                    fx_sell=values[
-                        "FX_SELL"
-                    ],
-                    tpm=values[
-                        "TPM"
-                    ],
-                    tbp=values[
-                        "TBP"
-                    ],
-                    tri_crc_12m=values[
-                        "TRI_CRC_12M"
-                    ],
-                    tri_usd_12m=values[
-                        "TRI_USD_12M"
-                    ],
-                    inflation=values[
-                        "INFLATION"
-                    ],
-                    imae=values[
-                        "IMAE"
-                    ],
+                    fx_sell=values["FX_SELL"],
+                    tpm=values["TPM"],
+                    tbp=values["TBP"],
+                    tri_crc_12m=values["TRI_CRC_12M"],
+                    tri_usd_12m=values["TRI_USD_12M"],
+                    inflation=values["INFLATION"],
+                    imae=values["IMAE"],
                 )
             )
 
@@ -212,27 +139,13 @@ class InstitutionalMacroDriverService:
             )
 
         return InstitutionalMacroDriverSet(
-            scenario_id=(
-                scenario.scenario_id
-            ),
-            scenario_version=(
-                scenario.version
-            ),
-            scenario_type=(
-                scenario.scenario_type
-            ),
-            scenario_status=(
-                scenario.status
-            ),
-            dataset_as_of_date=(
-                scenario.dataset_as_of_date
-            ),
-            horizon=(
-                scenario.horizon_months
-            ),
-            rows=tuple(
-                rows
-            ),
+            scenario_id=(scenario.scenario_id),
+            scenario_version=(scenario.version),
+            scenario_type=(scenario.scenario_type),
+            scenario_status=(scenario.status),
+            dataset_as_of_date=(scenario.dataset_as_of_date),
+            horizon=(scenario.horizon_months),
+            rows=tuple(rows),
         )
 
     @staticmethod
@@ -247,60 +160,34 @@ class InstitutionalMacroDriverService:
             )
 
         indicator_codes = {
-            indicator.indicator_code
-            .strip()
-            .upper()
-            for indicator
-            in scenario.indicators
+            indicator.indicator_code.strip().upper() for indicator in scenario.indicators
         }
 
-        missing = [
-            code
-            for code
-            in EXPECTED_MACRO_DRIVER_CODES
-            if code not in indicator_codes
-        ]
+        missing = [code for code in EXPECTED_MACRO_DRIVER_CODES if code not in indicator_codes]
 
         if missing:
             raise ValueError(
-                "Approved scenario is missing "
-                "required macro indicators: "
-                + ", ".join(
-                    missing
-                )
+                "Approved scenario is missing " "required macro indicators: " + ", ".join(missing)
             )
 
         duplicates = [
             code
-            for code
-            in EXPECTED_MACRO_DRIVER_CODES
+            for code in EXPECTED_MACRO_DRIVER_CODES
             if sum(
                 1
-                for indicator
-                in scenario.indicators
-                if (
-                    indicator.indicator_code
-                    .strip()
-                    .upper()
-                    == code
-                )
+                for indicator in scenario.indicators
+                if (indicator.indicator_code.strip().upper() == code)
             )
             > 1
         ]
 
         if duplicates:
             raise ValueError(
-                "Approved scenario contains "
-                "duplicate indicators: "
-                + ", ".join(
-                    duplicates
-                )
+                "Approved scenario contains " "duplicate indicators: " + ", ".join(duplicates)
             )
 
         if scenario.horizon_months < 1:
-            raise ValueError(
-                "Scenario horizon must be positive."
-            )
+            raise ValueError("Scenario horizon must be positive.")
 
     @staticmethod
     def _validate_period_alignment(
@@ -311,10 +198,13 @@ class InstitutionalMacroDriverService:
             tuple[date, ...],
         ],
     ) -> None:
-        reference: tuple[
-            date,
-            ...,
-        ] | None = None
+        reference: (
+            tuple[
+                date,
+                ...,
+            ]
+            | None
+        ) = None
 
         reference_code: str | None = None
 
@@ -332,23 +222,10 @@ class InstitutionalMacroDriverService:
                     f"received {len(periods)}."
                 )
 
-            if len(
-                set(
-                    periods
-                )
-            ) != len(
-                periods
-            ):
-                raise ValueError(
-                    "Duplicate target periods "
-                    f"for {code}."
-                )
+            if len(set(periods)) != len(periods):
+                raise ValueError("Duplicate target periods " f"for {code}.")
 
-            ordered = tuple(
-                sorted(
-                    periods
-                )
-            )
+            ordered = tuple(sorted(periods))
 
             if reference is None:
                 reference = ordered
