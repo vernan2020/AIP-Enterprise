@@ -17,9 +17,9 @@ if not defined AIP_BCCR_ENABLED set "AIP_BCCR_ENABLED=true"
 if not defined AIP_BCCR_BASE_URL set "AIP_BCCR_BASE_URL=https://apim.bccr.fi.cr"
 if not defined AIP_ALLOW_PRIOR_SOURCE_DATE set "AIP_ALLOW_PRIOR_SOURCE_DATE=true"
 
-if not exist "src\aip\product\configured\services\configured_portfolio_var_service.py" goto restore_runtime
-if not exist "src\aip\ui\modules\macro_intelligence\views\macro_intelligence_view.py" goto restore_runtime
-if not exist "src\aip\product\economic\economic_snapshot_store.py" goto restore_runtime
+REM A present-but-stale source tree must not bypass recovery.
+python scripts\recovery\runtime_checkpoint_status.py >nul 2>&1
+if errorlevel 1 goto restore_runtime
 goto preflight
 
 :restore_runtime
