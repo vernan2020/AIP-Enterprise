@@ -105,17 +105,16 @@ jobs:
       - name: Apply validated Macro Intelligence closure
         shell: python
         run: |
-          import base64, hashlib, io, tarfile
+          import hashlib, tarfile
           from pathlib import Path
           root = Path.cwd()
-          closure = root / 'recovery/checkpoints/rc1-macro-closure-20260829/macro_view.b64'
+          closure = root / 'recovery/checkpoints/rc1-macro-closure-20260829/macro_view.tar.gz'
           expected = '5ebad4ae0e9c67edcd850b76a5fa254a04a729f41a559517b88465f6074a6ed7'
           expected_path = 'src/aip/ui/modules/macro_intelligence/views/macro_intelligence_view.py'
-          payload = base64.b64decode(closure.read_text(encoding='ascii').strip(), validate=True)
-          digest = hashlib.sha256(payload).hexdigest()
+          digest = hashlib.sha256(closure.read_bytes()).hexdigest()
           if digest != expected:
               raise SystemExit(f'Macro closure SHA-256 mismatch: expected {expected}, got {digest}')
-          with tarfile.open(fileobj=io.BytesIO(payload), mode='r:gz') as archive:
+          with tarfile.open(closure, mode='r:gz') as archive:
               members = archive.getmembers()
               names = {m.name for m in members}
               if names != {expected_path}:
