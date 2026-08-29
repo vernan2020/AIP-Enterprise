@@ -86,12 +86,15 @@ jobs:
           from pathlib import Path
           root = Path.cwd()
           closure = root / 'recovery/checkpoints/rc1-critical-closure-20260829/runtime_closure.b64'
-          expected = 'f7b4c5c15165383be2469abe03119502a86ed7b3a941dbbbc5d32a4c19ea6f1a'
+          expected_archive = 'acfaca6509e2fbc3894457555e76c751d35345718407789f4f05f2914ef86d26'
+          expected_source = 'c10f12e3026838a18d131d669910f3453136ce2ee5eb775deaa054c146c324d7'
           expected_path = 'src/aip/product/configured/services/configured_portfolio_var_service.py'
           payload = base64.b64decode(closure.read_text(encoding='ascii').strip(), validate=True)
-          digest = hashlib.sha256(payload).hexdigest()
-          if digest != expected:
-              raise SystemExit(f'VaR closure SHA-256 mismatch: expected {expected}, got {digest}')
+          archive_digest = hashlib.sha256(payload).hexdigest()
+          if archive_digest != expected_archive:
+              raise SystemExit(
+                  f'VaR closure SHA-256 mismatch: expected {expected_archive}, got {archive_digest}'
+              )
           with tarfile.open(fileobj=io.BytesIO(payload), mode='r:gz') as archive:
               members = archive.getmembers()
               names = {m.name for m in members}
@@ -99,8 +102,25 @@ jobs:
                   raise SystemExit(f'VaR closure paths mismatch: {sorted(names)}')
               if not all(m.isfile() for m in members):
                   raise SystemExit('VaR closure contains unsupported members')
-              archive.extractall(root, members=members)
-          print(f'VaR closure validated by gzip/tar integrity: {digest}')
+              member = members[0]
+              source = archive.extractfile(member)
+              data = source.read() if source is not None else None
+              if data is None:
+                  raise SystemExit('VaR closure source could not be read')
+          if b'\x00' in data:
+              raise SystemExit('VaR closure source contains null bytes')
+          source_digest = hashlib.sha256(data).hexdigest()
+          if source_digest != expected_source:
+              raise SystemExit(
+                  f'VaR source SHA-256 mismatch: expected {expected_source}, got {source_digest}'
+              )
+          destination = root / expected_path
+          destination.parent.mkdir(parents=True, exist_ok=True)
+          destination.write_bytes(data)
+          print(
+              'VaR closure validated: '
+              f'archive={archive_digest}; source={source_digest}; bytes={len(data)}'
+          )
 
       - name: Apply validated Macro Intelligence closure
         shell: python
