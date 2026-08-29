@@ -6,6 +6,7 @@ from aip.product.configured.configuration.configured_source_config import Config
 from aip.product.demo.bootstrap.application_factory import DemoApplicationFactory
 from aip.product.demo.configuration.demo_config import DemoConfig
 from aip.product.demo.status.system_status import SystemStatus
+from aip.product.demo.workflows.executive_refresh_workflow import ExecutiveRefreshWorkflow
 from aip.product.demo.workflows.initial_load_workflow import InitialLoadWorkflow
 from aip.product.demo.workflows.refresh_all_workflow import RefreshAllWorkflow
 
@@ -25,6 +26,16 @@ class ConfiguredApplicationFactory(DemoApplicationFactory):
     def container(self) -> Container:
         return self._container
 
+    def update_runtime_metadata(
+        self,
+        *,
+        config: DemoConfig,
+        source_config: ConfiguredSourceConfig,
+    ) -> None:
+        """Synchronize immutable runtime metadata without rebuilding services."""
+        self._config = config
+        self._source_config = source_config
+
     def build_system_status(self) -> SystemStatus:
         return SystemStatus(
             execution_mode=self._config.execution_mode,
@@ -43,3 +54,6 @@ class ConfiguredApplicationFactory(DemoApplicationFactory):
 
     def refresh_all_workflow(self) -> RefreshAllWorkflow:
         return self._container.resolve(RefreshAllWorkflow)
+
+    def executive_refresh_workflow(self) -> ExecutiveRefreshWorkflow:
+        return self._container.resolve(ExecutiveRefreshWorkflow)
