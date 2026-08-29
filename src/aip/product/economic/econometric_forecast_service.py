@@ -8,13 +8,13 @@ from typing import Any
 import numpy as np
 import pandas as pd
 from pandas.tseries.offsets import MonthEnd
-from statsmodels.tsa.ar_model import AutoReg
-from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.tools.sm_exceptions import (
     ConvergenceWarning,
     EstimationWarning,
     SingularMatrixWarning,
 )
+from statsmodels.tsa.ar_model import AutoReg
+from statsmodels.tsa.arima.model import ARIMA
 
 from aip.product.economic.econometric_dataset import (
     EconometricMonthlyDataset,

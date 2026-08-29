@@ -3,7 +3,12 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from aip.product.configured.protocols import MarketDataProvider, LiquidityDataProvider, PortfolioDataProvider, SourceHealthProvider
+from aip.product.configured.protocols import (
+    LiquidityDataProvider,
+    MarketDataProvider,
+    PortfolioDataProvider,
+    SourceHealthProvider,
+)
 from aip.product.demo.adapters.demo_health_provider import DemoHealthProvider
 from aip.product.demo.adapters.demo_liquidity_provider import DemoLiquidityProvider
 from aip.product.demo.adapters.demo_market_provider import DemoMarketProvider

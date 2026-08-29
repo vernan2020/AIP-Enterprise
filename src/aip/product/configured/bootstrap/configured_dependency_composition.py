@@ -1,14 +1,21 @@
 from __future__ import annotations
 
+from aip.product.configured.services.configured_portfolio_dv01_service import (
+    ConfiguredPortfolioDV01Service,
+)
+from aip.product.configured.services.configured_portfolio_rate_shock_service import (
+    ConfiguredPortfolioRateShockService,
+)
+
 from aip.core.container import Container
 from aip.integration.bccr.configuration.bccr_config import BCCRConfig
 from aip.integration.bccr.connector.bccr_connector import BCCRConnector
 from aip.integration.bccr.providers.urllib_http_provider import UrllibHTTPProvider
-from aip.product.configured.adapters.configured_health_provider import (
-    ConfiguredHealthProvider,
-)
 from aip.product.configured.adapters.configured_economic_indicators_provider import (
     ConfiguredEconomicIndicatorsProvider,
+)
+from aip.product.configured.adapters.configured_health_provider import (
+    ConfiguredHealthProvider,
 )
 from aip.product.configured.adapters.configured_liquidity_provider import (
     ConfiguredLiquidityProvider,
@@ -23,24 +30,18 @@ from aip.product.configured.configuration.configured_source_config import (
     ConfiguredSourceConfig,
 )
 from aip.product.configured.context.valuation_date_context import ValuationDateContext
-from aip.product.configured.services.configured_macro_intelligence_service import (
-    ConfiguredMacroIntelligenceService,
-)
-from aip.product.configured.services.configured_portfolio_dv01_service import (
-    ConfiguredPortfolioDV01Service,
-)
-from aip.product.configured.services.configured_portfolio_rate_shock_service import (
-    ConfiguredPortfolioRateShockService,
-)
-from aip.product.configured.services.configured_portfolio_var_service import (
-    ConfiguredPortfolioVaRService,
-)
 from aip.product.configured.protocols import (
     EconomicIndicatorsProvider,
     LiquidityDataProvider,
     MarketDataProvider,
     PortfolioDataProvider,
     SourceHealthProvider,
+)
+from aip.product.configured.services.configured_macro_intelligence_service import (
+    ConfiguredMacroIntelligenceService,
+)
+from aip.product.configured.services.configured_portfolio_var_service import (
+    ConfiguredPortfolioVaRService,
 )
 from aip.product.demo.configuration.demo_config import DemoConfig
 from aip.product.demo.workflows.executive_refresh_workflow import ExecutiveRefreshWorkflow

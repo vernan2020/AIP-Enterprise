@@ -14,6 +14,13 @@ from aip.domain.portfolio.risk.portfolio_historical_var_service import (
     PortfolioHistoricalVaRService,
     PortfolioVaRPosition,
 )
+from aip.product.configured.repositories.master_historical_price_repository import (
+    MasterHistoricalPriceRepository,
+)
+from aip.product.configured.repositories.pipca_historical_price_repository import (
+    PiPCAHistoricalPriceRepository,
+)
+
 from aip.product.configured.adapters.configured_portfolio_provider import (
     ConfiguredPortfolioProvider,
 )
@@ -21,12 +28,6 @@ from aip.product.configured.configuration.configured_source_config import (
     ConfiguredSourceConfig,
 )
 from aip.product.configured.context.valuation_date_context import ValuationDateContext
-from aip.product.configured.repositories.master_historical_price_repository import (
-    MasterHistoricalPriceRepository,
-)
-from aip.product.configured.repositories.pipca_historical_price_repository import (
-    PiPCAHistoricalPriceRepository,
-)
 from aip.product.demo.configuration.demo_config import DemoConfig
 
 

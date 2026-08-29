@@ -4,17 +4,6 @@ from datetime import date
 from decimal import Decimal
 from typing import Any
 
-from aip.domain.financial_math.curves.nelson_siegel import (
-    nelson_siegel_zero_rate,
-)
-from aip.product.configured.configuration.configured_source_config import (
-    ConfiguredSourceConfig,
-)
-from aip.product.configured.context.valuation_date_context import ValuationDateContext
-from aip.product.configured.protocols import (
-    PortfolioDataProvider,
-    SourceHealthProvider,
-)
 from aip.product.configured.services.institutional_market_curve_service import (
     InstitutionalMarketCurveService,
 )
@@ -26,6 +15,18 @@ from aip.product.configured.services.institutional_portfolio_rotation_service im
 )
 from aip.product.configured.services.institutional_relative_value_service import (
     InstitutionalRelativeValueService,
+)
+
+from aip.domain.financial_math.curves.nelson_siegel import (
+    nelson_siegel_zero_rate,
+)
+from aip.product.configured.configuration.configured_source_config import (
+    ConfiguredSourceConfig,
+)
+from aip.product.configured.context.valuation_date_context import ValuationDateContext
+from aip.product.configured.protocols import (
+    PortfolioDataProvider,
+    SourceHealthProvider,
 )
 from aip.product.demo.configuration.demo_config import DemoConfig
 

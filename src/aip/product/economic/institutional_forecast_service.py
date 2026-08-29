@@ -17,15 +17,15 @@ from aip.product.economic.econometric_dataset import (
 from aip.product.economic.econometric_diagnostics_service import (
     EconometricDiagnosticsService,
 )
-from aip.product.economic.econometric_forecast_service import (
-    EconometricForecastService,
-    _SelectedSpecification,
-)
 from aip.product.economic.econometric_forecast_governance import (
     ForecastGovernanceResult,
 )
 from aip.product.economic.econometric_forecast_governance_service import (
     ForecastGovernanceService,
+)
+from aip.product.economic.econometric_forecast_service import (
+    EconometricForecastService,
+    _SelectedSpecification,
 )
 from aip.product.economic.institutional_forecast import (
     InstitutionalForecastPoint,
