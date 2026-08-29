@@ -1,6 +1,7 @@
 name: CI
 
-# Certification run for the frozen, Ruff-clean recovered RC1 runtime.
+# Certification run for the frozen, formatted recovered RC1 runtime.
+# Ruff owns import ordering; Black owns formatting.
 on:
   pull_request:
   push:
@@ -67,8 +68,6 @@ jobs:
         run: ruff check src tests
       - name: Black
         run: black --check src tests
-      - name: isort
-        run: isort --check-only src tests
       - name: mypy
         run: mypy src tests
       - name: compileall
