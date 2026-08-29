@@ -8,6 +8,7 @@ on:
       - ".github/workflows/export-recovery-src.yml"
       - "recovery/checkpoints/rc1-final-20260829/**"
       - "scripts/recovery/restore_runtime_checkpoint.py"
+      - "scripts/recovery/salvage_runtime_checkpoint.py"
   workflow_dispatch:
 
 permissions:
@@ -28,8 +29,11 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Verify and restore certified runtime
-        run: python scripts/recovery/restore_runtime_checkpoint.py
+      - name: Salvage and verify recovered runtime source
+        run: python scripts/recovery/salvage_runtime_checkpoint.py
+
+      - name: Compile recovered source tree
+        run: python -m compileall -q src
 
       - name: Commit materialized source tree
         shell: bash
@@ -39,16 +43,16 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src
           if git diff --cached --quiet; then
-            echo "Certified runtime already materialized in src."
+            echo "Recovered runtime already materialized in src."
             exit 0
           fi
-          git commit -m "Materialize certified RC1 runtime source tree"
+          git commit -m "Materialize recovered RC1 runtime source tree"
           git push origin HEAD:recovery/full-runtime-rc1-20260829
 
       - name: Upload materialized source tree
         uses: actions/upload-artifact@v4
         with:
-          name: certified-recovery-src-${{ github.sha }}
+          name: recovered-runtime-src-${{ github.sha }}
           path: src
           if-no-files-found: error
           retention-days: 3
