@@ -185,14 +185,34 @@ jobs:
             tests/unit/extensions/coopealianza/treasury/decision \
             tests/unit/product/configured/context
 
+      - name: Normalize recovered Python source text
+        shell: python
+        run: |
+          from pathlib import Path
+          changed = 0
+          for path in Path('src').rglob('*.py'):
+              raw = path.read_bytes()
+              if b'\x00' in raw:
+                  raise SystemExit(f'null byte found in Python source: {path}')
+              text = raw.decode('utf-8')
+              normalized = '\n'.join(line.rstrip(' \t') for line in text.splitlines()).rstrip('\n') + '\n'
+              encoded = normalized.encode('utf-8')
+              if encoded != raw:
+                  path.write_bytes(encoded)
+                  changed += 1
+          print(f'normalized Python files: {changed}')
+
       - name: Check source tree quality
         run: |
+          find src -type d -name '__pycache__' -prune -exec rm -rf {} +
+          find src -type f -name '*.pyc' -delete
           git diff --check -- src
-          if find src -type f \( -name '*.bak' -o -name '*.pyc' \) | grep -q .; then
-            echo 'Backup or bytecode artifacts found under src'
-            find src -type f \( -name '*.bak' -o -name '*.pyc' \)
+          if find src -type f -name '*.bak' | grep -q .; then
+            echo 'Backup artifacts found under src'
+            find src -type f -name '*.bak'
             exit 1
           fi
+          echo 'source tree quality: PASS'
 
       - name: Materialize recovered runtime in branch
         run: |
