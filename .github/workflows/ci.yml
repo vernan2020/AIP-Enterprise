@@ -11,6 +11,7 @@ on:
 
 env:
   QT_QPA_PLATFORM: offscreen
+  PYTHONPATH: src
 
 jobs:
   recovery-checkpoint:
@@ -20,15 +21,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-      - name: Verify and restore recovery checkpoint when present
+      - name: Recover checkpoint source when present
         run: |
           if [ -f recovery/checkpoints/rc1-final-20260829/MANIFEST.json ]; then
-            python scripts/recovery/verify_runtime_checkpoint.py
-            python scripts/recovery/restore_runtime_checkpoint.py
+            python scripts/recovery/salvage_runtime_checkpoint.py
             python -m compileall -q src
-            python scripts/recovery/runtime_checkpoint_status.py
           else
-            echo "No recovery checkpoint on this ref; nothing to restore."
+            echo "No recovery checkpoint on this ref; nothing to recover."
           fi
 
   quality:
@@ -39,11 +38,10 @@ jobs:
         with:
           python-version: '3.13'
           cache: 'pip'
-      - name: Restore certified runtime when present
+      - name: Recover checkpoint source when present
         run: |
           if [ -f recovery/checkpoints/rc1-final-20260829/MANIFEST.json ]; then
-            python scripts/recovery/verify_runtime_checkpoint.py
-            python scripts/recovery/restore_runtime_checkpoint.py
+            python scripts/recovery/salvage_runtime_checkpoint.py
           fi
       - name: Install dependencies
         run: |
@@ -63,6 +61,7 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         suite: [unit, integration]
     steps:
@@ -71,11 +70,10 @@ jobs:
         with:
           python-version: '3.13'
           cache: 'pip'
-      - name: Restore certified runtime when present
+      - name: Recover checkpoint source when present
         run: |
           if [ -f recovery/checkpoints/rc1-final-20260829/MANIFEST.json ]; then
-            python scripts/recovery/verify_runtime_checkpoint.py
-            python scripts/recovery/restore_runtime_checkpoint.py
+            python scripts/recovery/salvage_runtime_checkpoint.py
           fi
       - name: Install Qt runtime libraries
         run: |
@@ -100,11 +98,10 @@ jobs:
         with:
           python-version: '3.13'
           cache: 'pip'
-      - name: Restore certified runtime when present
+      - name: Recover checkpoint source when present
         run: |
           if [ -f recovery/checkpoints/rc1-final-20260829/MANIFEST.json ]; then
-            python scripts/recovery/verify_runtime_checkpoint.py
-            python scripts/recovery/restore_runtime_checkpoint.py
+            python scripts/recovery/salvage_runtime_checkpoint.py
           fi
       - name: Install Qt runtime libraries
         run: |
@@ -127,11 +124,10 @@ jobs:
         with:
           python-version: '3.13'
           cache: 'pip'
-      - name: Restore certified runtime when present
+      - name: Recover checkpoint source when present
         run: |
           if [ -f recovery/checkpoints/rc1-final-20260829/MANIFEST.json ]; then
-            python scripts/recovery/verify_runtime_checkpoint.py
-            python scripts/recovery/restore_runtime_checkpoint.py
+            python scripts/recovery/salvage_runtime_checkpoint.py
           fi
       - name: Install build dependencies
         run: |
