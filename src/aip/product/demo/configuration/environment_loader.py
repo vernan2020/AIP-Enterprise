@@ -7,7 +7,14 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from aip.product.configured.configuration.configured_source_config import BCCRSourceConfig, ConfiguredSourceConfig, CurvesSourceConfig, FolderWatchSourceConfig, SQLServerSourceConfig, VectorSourceConfig
+from aip.product.configured.configuration.configured_source_config import (
+    BCCRSourceConfig,
+    ConfiguredSourceConfig,
+    CurvesSourceConfig,
+    FolderWatchSourceConfig,
+    SQLServerSourceConfig,
+    VectorSourceConfig,
+)
 from aip.product.demo.configuration.demo_config import DemoConfig
 from aip.product.demo.exceptions import DemoConfigurationError
 

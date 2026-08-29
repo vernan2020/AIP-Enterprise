@@ -16,7 +16,6 @@ from aip.product.economic.economic_viewmodel import (
 )
 from aip.shared.serialization import JsonSerializer
 
-
 logger = logging.getLogger(__name__)
 
 

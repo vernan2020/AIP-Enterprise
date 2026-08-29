@@ -6,6 +6,7 @@ from datetime import date
 from aip.product.configured.repositories.institutional_macro_scenario_repository import (
     InstitutionalMacroScenarioRepository,
 )
+
 from aip.product.economic.institutional_macro_driver import (
     EXPECTED_MACRO_DRIVER_CODES,
     InstitutionalMacroDriverSet,

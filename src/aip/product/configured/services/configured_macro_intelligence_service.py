@@ -6,6 +6,7 @@ from typing import Any
 from aip.product.configured.repositories.institutional_macro_scenario_repository import (
     InstitutionalMacroScenarioRepository,
 )
+
 from aip.product.economic.institutional_macro_driver_service import (
     InstitutionalMacroDriverService,
 )

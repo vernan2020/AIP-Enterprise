@@ -6,8 +6,8 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 from aip.product.configured.readers.pipca_vector_reader import (
-    InstitutionalPiPCAVectorReadResult,
     InstitutionalPiPCAVectorReader,
+    InstitutionalPiPCAVectorReadResult,
     InstitutionalVectorRecord,
 )
 

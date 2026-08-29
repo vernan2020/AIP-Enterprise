@@ -14,29 +14,30 @@ from aip.domain.economic.economic_indicator_observation import (
 from aip.domain.economic.economic_indicator_series import (
     EconomicIndicatorSeries,
 )
-from aip.integration.bccr.configuration.bccr_config import (
-    BCCRConfig,
-)
-from aip.integration.bccr.connector.cache import (
-    BCCRCache,
-)
 from aip.integration.bccr.connector.rest_client import (
     BCCRRestClient,
 )
 from aip.integration.bccr.normalization.economic_series_parser import (
     BCCREconomicSeriesParser,
 )
-from aip.integration.bccr.providers.urllib_http_provider import (
-    UrllibHTTPProvider,
-)
 from aip.integration.economic.official_indicator_mappings import (
     build_official_indicator_mapper,
 )
-from aip.product.configured.protocols import (
-    EconomicIndicatorsProvider,
-)
 from aip.product.configured.repositories.economic_historical_repository import (
     EconomicHistoricalRepository,
+)
+
+from aip.integration.bccr.configuration.bccr_config import (
+    BCCRConfig,
+)
+from aip.integration.bccr.connector.cache import (
+    BCCRCache,
+)
+from aip.integration.bccr.providers.urllib_http_provider import (
+    UrllibHTTPProvider,
+)
+from aip.product.configured.protocols import (
+    EconomicIndicatorsProvider,
 )
 
 
