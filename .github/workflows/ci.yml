@@ -3,13 +3,35 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main, master, release/**]
+    branches:
+      - main
+      - master
+      - release/**
+      - recovery/full-runtime-rc1-20260829
 
 env:
   QT_QPA_PLATFORM: offscreen
 
 jobs:
+  recovery-checkpoint:
+    if: github.ref == 'refs/heads/recovery/full-runtime-rc1-20260829'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Verify certified checkpoint
+        run: python scripts/recovery/verify_runtime_checkpoint.py
+      - name: Restore certified checkpoint
+        run: python scripts/recovery/restore_runtime_checkpoint.py
+      - name: Compile restored runtime
+        run: python -m compileall -q src
+      - name: Verify runtime marker
+        run: python scripts/recovery/runtime_checkpoint_status.py
+
   quality:
+    if: github.ref != 'refs/heads/recovery/full-runtime-rc1-20260829'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,6 +55,7 @@ jobs:
         run: python -m compileall src tests
 
   tests:
+    if: github.ref != 'refs/heads/recovery/full-runtime-rc1-20260829'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -59,6 +82,7 @@ jobs:
         run: pytest tests/integration -q -W error
 
   coverage:
+    if: github.ref != 'refs/heads/recovery/full-runtime-rc1-20260829'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -80,6 +104,7 @@ jobs:
           coverage report --fail-under=90
 
   package:
+    if: github.ref != 'refs/heads/recovery/full-runtime-rc1-20260829'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
