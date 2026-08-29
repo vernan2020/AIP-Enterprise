@@ -33,6 +33,15 @@ def main() -> int:
     if not _exists(sources.vector.path):
         failures.append("vector path is unavailable")
 
+    critical_modules = [
+        Path("src/aip/product/configured/services/configured_portfolio_var_service.py"),
+        Path("src/aip/ui/modules/macro_intelligence/views/macro_intelligence_view.py"),
+        Path("src/aip/product/economic/economic_snapshot_store.py"),
+    ]
+    for module in critical_modules:
+        if not module.exists():
+            failures.append(f"critical runtime module missing: {module}")
+
     if failures:
         print("Status: FAILED")
         for item in failures:
