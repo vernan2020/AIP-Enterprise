@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from scripts.recovery.restore_runtime_checkpoint import verify_checkpoint
+from restore_runtime_checkpoint import verify_checkpoint
 
 
 def main() -> int:
