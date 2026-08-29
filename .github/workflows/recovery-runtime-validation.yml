@@ -7,149 +7,27 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 env:
   QT_QPA_PLATFORM: offscreen
   PYTHONPATH: src
 
 jobs:
-  validate-and-materialize:
+  validate-materialized-runtime:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout recovery branch
         uses: actions/checkout@v4
         with:
           ref: recovery/full-runtime-rc1-20260829
-          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.13'
 
-      - name: Recover intact prefix from canonical checkpoint
-        run: python scripts/recovery/salvage_runtime_checkpoint.py || true
-
-      - name: Stream-extract validated runtime completion delta
-        shell: python
-        run: |
-          import base64, gzip, hashlib, io, tarfile
-          from pathlib import Path
-          root = Path.cwd()
-          delta = root / 'recovery/checkpoints/rc1-runtime-delta-final-20260829/runtime_delta.part00.b64'
-          expected = '352d846b5dea950382cbba4ceb5ec1eb8c8df239740a7fb91ae5a16490cb9e6e'
-          payload = base64.b64decode(delta.read_text(encoding='ascii').strip(), validate=True)
-          digest = hashlib.sha256(payload).hexdigest()
-          if digest != expected:
-              raise SystemExit(f'runtime delta SHA-256 mismatch: expected {expected}, got {digest}')
-          extracted = []
-          try:
-              with tarfile.open(fileobj=io.BytesIO(payload), mode='r|gz') as archive:
-                  while True:
-                      try:
-                          member = archive.next()
-                      except (EOFError, gzip.BadGzipFile, tarfile.ReadError):
-                          break
-                      if member is None:
-                          break
-                      path = Path(member.name)
-                      if path.is_absolute() or '..' in path.parts or not path.parts or path.parts[0] != 'src':
-                          raise SystemExit(f'unsafe runtime delta member: {member.name}')
-                      if member.isdir():
-                          (root / path).mkdir(parents=True, exist_ok=True)
-                          extracted.append(member.name)
-                          continue
-                      if not member.isfile():
-                          raise SystemExit(f'unsupported runtime delta member type: {member.name}')
-                      try:
-                          source = archive.extractfile(member)
-                          data = source.read() if source is not None else None
-                      except (EOFError, gzip.BadGzipFile, tarfile.ReadError):
-                          break
-                      if data is None:
-                          break
-                      destination = root / path
-                      destination.parent.mkdir(parents=True, exist_ok=True)
-                      destination.write_bytes(data)
-                      extracted.append(member.name)
-          except (EOFError, gzip.BadGzipFile, tarfile.ReadError):
-              pass
-          if not extracted:
-              raise SystemExit('runtime completion delta yielded no complete members')
-          print(f'completion delta validated: {digest}; complete_members={len(extracted)}')
-
-      - name: Apply validated VaR runtime closure
-        shell: python
-        run: |
-          import base64, hashlib, io, tarfile
-          from pathlib import Path
-          root = Path.cwd()
-          closure_dir = root / 'recovery/checkpoints/rc1-critical-closure-20260829'
-          parts = [
-              closure_dir / 'var_closure.part00.b64',
-              closure_dir / 'var_closure.part01.b64',
-              closure_dir / 'var_closure.part02.b64',
-          ]
-          expected_archive = 'acfaca6509e2fbc3894457555e76c751d35345718407789f4f05f2914ef86d26'
-          expected_source = 'c10f12e3026838a18d131d669910f3453136ce2ee5eb775deaa054c146c324d7'
-          expected_path = 'src/aip/product/configured/services/configured_portfolio_var_service.py'
-          encoded = ''.join(part.read_text(encoding='ascii').strip() for part in parts)
-          payload = base64.b64decode(encoded, validate=True)
-          archive_digest = hashlib.sha256(payload).hexdigest()
-          if archive_digest != expected_archive:
-              raise SystemExit(
-                  f'VaR closure SHA-256 mismatch: expected {expected_archive}, got {archive_digest}'
-              )
-          with tarfile.open(fileobj=io.BytesIO(payload), mode='r:gz') as archive:
-              members = archive.getmembers()
-              names = {m.name for m in members}
-              if names != {expected_path}:
-                  raise SystemExit(f'VaR closure paths mismatch: {sorted(names)}')
-              if not all(m.isfile() for m in members):
-                  raise SystemExit('VaR closure contains unsupported members')
-              source = archive.extractfile(members[0])
-              data = source.read() if source is not None else None
-              if data is None:
-                  raise SystemExit('VaR closure source could not be read')
-          if b'\x00' in data:
-              raise SystemExit('VaR closure source contains null bytes')
-          source_digest = hashlib.sha256(data).hexdigest()
-          if source_digest != expected_source:
-              raise SystemExit(
-                  f'VaR source SHA-256 mismatch: expected {expected_source}, got {source_digest}'
-              )
-          destination = root / expected_path
-          destination.parent.mkdir(parents=True, exist_ok=True)
-          destination.write_bytes(data)
-          print(
-              'VaR closure validated: '
-              f'archive={archive_digest}; source={source_digest}; bytes={len(data)}'
-          )
-
-      - name: Apply validated Macro Intelligence closure
-        shell: python
-        run: |
-          import hashlib, tarfile
-          from pathlib import Path
-          root = Path.cwd()
-          closure = root / 'recovery/checkpoints/rc1-macro-closure-20260829/macro_view.tar.gz'
-          expected = '5ebad4ae0e9c67edcd850b76a5fa254a04a729f41a559517b88465f6074a6ed7'
-          expected_path = 'src/aip/ui/modules/macro_intelligence/views/macro_intelligence_view.py'
-          digest = hashlib.sha256(closure.read_bytes()).hexdigest()
-          if digest != expected:
-              raise SystemExit(f'Macro closure SHA-256 mismatch: expected {expected}, got {digest}')
-          with tarfile.open(closure, mode='r:gz') as archive:
-              members = archive.getmembers()
-              names = {m.name for m in members}
-              if names != {expected_path}:
-                  raise SystemExit(f'Macro closure paths mismatch: {sorted(names)}')
-              if not all(m.isfile() for m in members):
-                  raise SystemExit('Macro closure contains unsupported members')
-              archive.extractall(root, members=members)
-          print(f'Macro closure validated by gzip/tar integrity: {digest}')
-
-      - name: Compile recovered production source
+      - name: Compile materialized production source
         run: python -m compileall -q src
 
       - name: Validate critical production modules
@@ -161,6 +39,7 @@ jobs:
               'src/aip/product/configured/adapters/configured_economic_indicators_provider.py',
               'src/aip/product/configured/adapters/configured_market_provider.py',
               'src/aip/product/configured/adapters/configured_liquidity_provider.py',
+              'src/aip/product/configured/readers/institutional_icl_reader.py',
               'src/aip/ui/modules/macro_intelligence/views/macro_intelligence_view.py',
               'src/aip/product/economic/economic_snapshot_store.py',
               'src/aip/ui/application/main.py',
@@ -169,7 +48,14 @@ jobs:
           missing = [item for item in required if not Path(item).is_file()]
           if missing:
               raise SystemExit('missing critical modules: ' + ', '.join(missing))
-          print('critical runtime modules: PASS')
+          invalid = []
+          for item in required:
+              data = Path(item).read_bytes()
+              if not data or b'\x00' in data:
+                  invalid.append(item)
+          if invalid:
+              raise SystemExit('invalid critical modules: ' + ', '.join(invalid))
+          print('critical materialized runtime: PASS')
 
       - name: Install runtime and test dependencies
         run: |
@@ -185,43 +71,18 @@ jobs:
             tests/unit/extensions/coopealianza/treasury/decision \
             tests/unit/product/configured/context
 
-      - name: Normalize recovered Python source text
-        shell: python
+      - name: Validate source tree hygiene
+        shell: bash
         run: |
-          from pathlib import Path
-          changed = 0
-          for path in Path('src').rglob('*.py'):
-              raw = path.read_bytes()
-              if b'\x00' in raw:
-                  raise SystemExit(f'null byte found in Python source: {path}')
-              text = raw.decode('utf-8')
-              normalized = '\n'.join(line.rstrip(' \t') for line in text.splitlines()).rstrip('\n') + '\n'
-              encoded = normalized.encode('utf-8')
-              if encoded != raw:
-                  path.write_bytes(encoded)
-                  changed += 1
-          print(f'normalized Python files: {changed}')
-
-      - name: Check source tree quality
-        run: |
-          find src -type d -name '__pycache__' -prune -exec rm -rf {} +
-          find src -type f -name '*.pyc' -delete
-          git diff --check -- src
+          set -euo pipefail
           if find src -type f -name '*.bak' | grep -q .; then
             echo 'Backup artifacts found under src'
             find src -type f -name '*.bak'
             exit 1
           fi
-          echo 'source tree quality: PASS'
-
-      - name: Materialize recovered runtime in branch
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add src
-          if git diff --cached --quiet; then
-            echo 'Visible src already contains the recovered runtime.'
-          else
-            git commit -m 'Materialize recovered RC1 production runtime'
-            git push origin HEAD:recovery/full-runtime-rc1-20260829
+          if grep -RIl $'\x00' src --include='*.py' | grep -q .; then
+            echo 'Null bytes found in Python source'
+            exit 1
           fi
+          git diff --check -- src
+          echo 'source tree validation: PASS'
