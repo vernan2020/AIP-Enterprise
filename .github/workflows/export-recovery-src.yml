@@ -1,4 +1,4 @@
-name: Materialize Recovery Source
+name: Build Certified Runtime Checkpoint
 
 on:
   push:
@@ -6,16 +6,17 @@ on:
       - recovery/full-runtime-rc1-20260829
     paths:
       - ".github/workflows/export-recovery-src.yml"
-      - "recovery/checkpoints/rc1-final-20260829/**"
-      - "scripts/recovery/restore_runtime_checkpoint.py"
-      - "scripts/recovery/salvage_runtime_checkpoint.py"
   workflow_dispatch:
 
 permissions:
   contents: write
 
+env:
+  QT_QPA_PLATFORM: offscreen
+  PYTHONPATH: src
+
 jobs:
-  materialize-src:
+  certify-src:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout recovery branch
@@ -29,30 +30,186 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Salvage and verify recovered runtime source
-        run: python scripts/recovery/salvage_runtime_checkpoint.py
-
-      - name: Compile recovered source tree
+      - name: Compile materialized runtime source
         run: python -m compileall -q src
 
-      - name: Commit materialized source tree
+      - name: Validate critical runtime modules
+        shell: python
+        run: |
+          from pathlib import Path
+          required = [
+              'src/aip/product/configured/services/configured_portfolio_var_service.py',
+              'src/aip/product/configured/adapters/configured_economic_indicators_provider.py',
+              'src/aip/product/configured/adapters/configured_market_provider.py',
+              'src/aip/product/configured/adapters/configured_liquidity_provider.py',
+              'src/aip/product/configured/readers/institutional_icl_reader.py',
+              'src/aip/ui/modules/macro_intelligence/views/macro_intelligence_view.py',
+              'src/aip/product/economic/economic_snapshot_store.py',
+              'src/aip/ui/application/main.py',
+              'src/aip/ui/application/app.py',
+          ]
+          missing = [item for item in required if not Path(item).is_file()]
+          if missing:
+              raise SystemExit('missing critical modules: ' + ', '.join(missing))
+          for item in required:
+              data = Path(item).read_bytes()
+              if not data or b'\x00' in data:
+                  raise SystemExit(f'invalid critical module: {item}')
+          print('critical materialized runtime: PASS')
+
+      - name: Build deterministic certified source checkpoint
+        shell: python
+        run: |
+          import base64
+          import gzip
+          import hashlib
+          import io
+          import json
+          import shutil
+          import tarfile
+          from pathlib import Path
+
+          root = Path.cwd()
+          source_root = root / 'src'
+          output = root / 'recovery/checkpoints/rc1-certified-src-20260829'
+          if output.exists():
+              shutil.rmtree(output)
+          output.mkdir(parents=True, exist_ok=True)
+
+          files = []
+          for path in sorted(source_root.rglob('*')):
+              if not path.is_file():
+                  continue
+              rel = path.relative_to(root).as_posix()
+              parts = set(path.parts)
+              if '__pycache__' in parts:
+                  continue
+              if path.suffix in {'.pyc', '.pyo'}:
+                  continue
+              if '.bak' in path.name or '.before_' in path.name:
+                  continue
+              files.append((path, rel))
+
+          tar_buffer = io.BytesIO()
+          with tarfile.open(fileobj=tar_buffer, mode='w', format=tarfile.PAX_FORMAT) as archive:
+              for path, rel in files:
+                  data = path.read_bytes()
+                  info = tarfile.TarInfo(name=rel)
+                  info.size = len(data)
+                  info.mode = 0o644
+                  info.mtime = 0
+                  info.uid = 0
+                  info.gid = 0
+                  info.uname = ''
+                  info.gname = ''
+                  archive.addfile(info, io.BytesIO(data))
+
+          gz_buffer = io.BytesIO()
+          with gzip.GzipFile(filename='', mode='wb', fileobj=gz_buffer, mtime=0, compresslevel=9) as gz:
+              gz.write(tar_buffer.getvalue())
+          payload = gz_buffer.getvalue()
+          digest = hashlib.sha256(payload).hexdigest()
+          encoded = base64.b64encode(payload).decode('ascii')
+          chunk_chars = 48000
+          chunks = [encoded[i:i + chunk_chars] for i in range(0, len(encoded), chunk_chars)]
+
+          chunk_names = []
+          for index, chunk in enumerate(chunks):
+              name = f'runtime_src.part{index:03d}.b64'
+              (output / name).write_text(chunk + '\n', encoding='ascii')
+              chunk_names.append(name)
+
+          source_manifest = []
+          for path, rel in files:
+              data = path.read_bytes()
+              source_manifest.append({
+                  'path': rel,
+                  'size': len(data),
+                  'sha256': hashlib.sha256(data).hexdigest(),
+              })
+
+          manifest = {
+              'format': 'tar.gz+base64-chunks',
+              'canonical_source': 'materialized GitHub src tree',
+              'archive_sha256': digest,
+              'archive_bytes': len(payload),
+              'encoded_chars': len(encoded),
+              'chunk_chars': chunk_chars,
+              'part_count': len(chunks),
+              'parts': chunk_names,
+              'source_file_count': len(files),
+              'source_files': source_manifest,
+          }
+          (output / 'MANIFEST.json').write_text(
+              json.dumps(manifest, indent=2, sort_keys=True) + '\n',
+              encoding='utf-8',
+          )
+          print(f'CERTIFIED_ARCHIVE_SHA256={digest}')
+          print(f'CERTIFIED_ARCHIVE_BYTES={len(payload)}')
+          print(f'CERTIFIED_PART_COUNT={len(chunks)}')
+          print(f'CERTIFIED_SOURCE_FILES={len(files)}')
+
+      - name: Verify certified checkpoint reconstruction
+        shell: python
+        run: |
+          import base64
+          import gzip
+          import hashlib
+          import io
+          import json
+          import tarfile
+          from pathlib import Path
+
+          root = Path.cwd()
+          checkpoint = root / 'recovery/checkpoints/rc1-certified-src-20260829'
+          manifest = json.loads((checkpoint / 'MANIFEST.json').read_text(encoding='utf-8'))
+          encoded = ''.join((checkpoint / name).read_text(encoding='ascii').strip() for name in manifest['parts'])
+          payload = base64.b64decode(encoded, validate=True)
+          digest = hashlib.sha256(payload).hexdigest()
+          if digest != manifest['archive_sha256']:
+              raise SystemExit(f'archive SHA mismatch: {digest}')
+
+          expected = {row['path']: row for row in manifest['source_files']}
+          seen = set()
+          with tarfile.open(fileobj=io.BytesIO(payload), mode='r:gz') as archive:
+              for member in archive.getmembers():
+                  if not member.isfile():
+                      raise SystemExit(f'unsupported member: {member.name}')
+                  if member.name not in expected:
+                      raise SystemExit(f'unexpected member: {member.name}')
+                  src = archive.extractfile(member)
+                  data = src.read() if src is not None else b''
+                  row = expected[member.name]
+                  if len(data) != row['size']:
+                      raise SystemExit(f'size mismatch: {member.name}')
+                  if hashlib.sha256(data).hexdigest() != row['sha256']:
+                      raise SystemExit(f'file SHA mismatch: {member.name}')
+                  seen.add(member.name)
+          missing = sorted(set(expected) - seen)
+          if missing:
+              raise SystemExit('missing archive members: ' + ', '.join(missing[:10]))
+          print(f'CERTIFIED CHECKPOINT VERIFIED: {digest}; files={len(seen)}')
+
+      - name: Commit certified checkpoint
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src
+          git add recovery/checkpoints/rc1-certified-src-20260829
           if git diff --cached --quiet; then
-            echo "Recovered runtime already materialized in src."
+            echo "Certified checkpoint already current."
             exit 0
           fi
-          git commit -m "Materialize recovered RC1 runtime source tree"
+          git commit -m "Store certified RC1 materialized runtime checkpoint"
           git push origin HEAD:recovery/full-runtime-rc1-20260829
 
-      - name: Upload materialized source tree
+      - name: Upload certified source artifact
         uses: actions/upload-artifact@v4
         with:
-          name: recovered-runtime-src-${{ github.sha }}
-          path: src
+          name: aip-rc1-certified-src-${{ github.sha }}
+          path: |
+            src
+            recovery/checkpoints/rc1-certified-src-20260829/MANIFEST.json
           if-no-files-found: error
-          retention-days: 3
+          retention-days: 7
