@@ -1,0 +1,113 @@
+name: Recovery Runtime Validation
+
+on:
+  push:
+    branches:
+      - recovery/full-runtime-rc1-20260829
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  validate-and-materialize:
+    runs-on: ubuntu-latest
+    env:
+      QT_QPA_PLATFORM: offscreen
+      PYTHONPATH: src
+    steps:
+      - name: Checkout recovery branch
+        uses: actions/checkout@v4
+        with:
+          ref: recovery/full-runtime-rc1-20260829
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify final runtime delta artifact
+        shell: python
+        run: |
+          import base64
+          import hashlib
+          import io
+          import tarfile
+          from pathlib import Path
+
+          root = Path.cwd()
+          delta_dir = root / 'recovery/checkpoints/rc1-runtime-delta-final-20260829'
+          part = delta_dir / 'runtime_delta.part00.b64'
+          expected = '6791a23279590846ed00c298ffd2a9434ef251c67bb5b44ed669c9347382c29b'
+          encoded = part.read_text(encoding='ascii').strip()
+          payload = base64.b64decode(encoded, validate=True)
+          digest = hashlib.sha256(payload).hexdigest()
+          if digest != expected:
+              raise SystemExit(f'delta SHA-256 mismatch: expected {expected}, got {digest}')
+          with tarfile.open(fileobj=io.BytesIO(payload), mode='r:gz') as archive:
+              members = archive.getmembers()
+              if not members:
+                  raise SystemExit('runtime delta is empty')
+              for member in members:
+                  path = Path(member.name)
+                  if path.is_absolute() or '..' in path.parts or not path.parts or path.parts[0] != 'src':
+                      raise SystemExit(f'unsafe runtime delta member: {member.name}')
+              archive.extractall(root, members=members)
+          print(f'validated runtime delta: {digest}; members={len(members)}')
+
+      - name: Compile restored production source
+        run: python -m compileall -q src
+
+      - name: Validate critical production modules
+        shell: python
+        run: |
+          from pathlib import Path
+          required = [
+              'src/aip/product/configured/services/configured_portfolio_var_service.py',
+              'src/aip/product/configured/adapters/configured_market_provider.py',
+              'src/aip/product/configured/adapters/configured_liquidity_provider.py',
+              'src/aip/ui/modules/macro_intelligence/views/macro_intelligence_view.py',
+              'src/aip/product/economic/economic_snapshot_store.py',
+              'src/aip/ui/application/main.py',
+              'src/aip/ui/application/app.py',
+          ]
+          missing = [item for item in required if not Path(item).is_file()]
+          if missing:
+              raise SystemExit('missing critical modules: ' + ', '.join(missing))
+          print('critical runtime modules: PASS')
+
+      - name: Install runtime and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+
+      - name: Run liquidity, treasury and relative-value regression suite
+        run: |
+          python -m pytest -q \
+            tests/unit/domain/liquidity \
+            tests/unit/domain/relative_value \
+            tests/unit/extensions/coopealianza/liquidity \
+            tests/unit/extensions/coopealianza/treasury/decision \
+            tests/unit/product/configured/context
+
+      - name: Check source tree quality
+        run: |
+          git diff --check -- src
+          if find src -type f \( -name '*.bak' -o -name '*.pyc' \) | grep -q .; then
+            echo 'Backup or bytecode artifacts found under src'
+            find src -type f \( -name '*.bak' -o -name '*.pyc' \)
+            exit 1
+          fi
+
+      - name: Materialize canonical runtime in branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src
+          if git diff --cached --quiet; then
+            echo 'Visible src already matches canonical runtime delta.'
+          else
+            git commit -m 'Materialize certified RC1 runtime from canonical delta'
+            git push origin HEAD:recovery/full-runtime-rc1-20260829
+          fi
