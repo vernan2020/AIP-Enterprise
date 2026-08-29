@@ -82,13 +82,19 @@ jobs:
               'src/aip/product/configured/services/institutional_matching_service.py',
               'matching_key = self._compose_key(series, maturity)',
           )
-          remove_line_containing(
+          replace_once(
               'src/aip/tools/reconcile_portfolio_valuation.py',
-              'source_values = row.get("source_values", {}) or {}',
+              '    print("TOP 30 POSITIONS CONTRIBUTING TO DIFFERENCE")\n'
+              '    for index, (_, row) in enumerate(differences[:30], start=1):\n'
+              '        source_values = row.get("source_values", {}) or {}\n'
+              '        colonized = _field_value(row, "valor mercado colonizado")\n',
+              '    print("TOP 30 POSITIONS CONTRIBUTING TO DIFFERENCE")\n'
+              '    for index, (_, row) in enumerate(differences[:30], start=1):\n'
+              '        colonized = _field_value(row, "valor mercado colonizado")\n',
           )
           remove_line_containing(
               'src/aip/tools/reconcile_portfolio_valuation.py',
-              'amortized = sum(',
+              'amortized = sum(1 for row in rows if "amort" in str(row.get("classification", "")).lower())',
           )
 
           # Fix real valuation-date runtime dependency used on interactive cutoff changes.
@@ -105,7 +111,10 @@ jobs:
           # Resolve forward type safely without introducing a runtime circular import.
           mil_request = Path('src/extensions/coopealianza/liquidity/mil/models/mil_request.py')
           mil_text = mil_request.read_text(encoding='utf-8')
-          mil_text = mil_text.replace('from typing import Any\n', 'from typing import TYPE_CHECKING, Any\n', 1)
+          if 'from typing import TYPE_CHECKING, Any\n' not in mil_text:
+              if 'from typing import Any\n' not in mil_text:
+                  raise SystemExit('mil_request.py: typing import anchor not found')
+              mil_text = mil_text.replace('from typing import Any\n', 'from typing import TYPE_CHECKING, Any\n', 1)
           type_block = (
               '\nif TYPE_CHECKING:\n'
               '    from src.extensions.coopealianza.liquidity.mil.models.mil_asset import MilAsset\n'
@@ -140,7 +149,7 @@ jobs:
       - name: Run focused affected tests
         run: |
           pytest tests/unit/domain/portfolio/test_portfolio.py -q -W error
-          pytest tests/unit/extensions/coopealianza/liquidity/mil -q -W error || test ! -d tests/unit/extensions/coopealianza/liquidity/mil
+          if [ -d tests/unit/extensions/coopealianza/liquidity/mil ]; then pytest tests/unit/extensions/coopealianza/liquidity/mil -q -W error; fi
       - name: Commit reviewed fixes
         shell: bash
         run: |
