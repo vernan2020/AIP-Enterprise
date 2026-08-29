@@ -14,6 +14,28 @@ env:
   PYTHONPATH: src
 
 jobs:
+  checkpoint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Verify recovered runtime checkpoint
+        run: python scripts/recovery/verify_runtime_checkpoint.py
+      - name: Reconstruct checkpoint in isolated directory
+        run: |
+          mkdir -p /tmp/aip-restore
+          cp -a recovery scripts /tmp/aip-restore/
+          cd /tmp/aip-restore
+          python scripts/recovery/restore_runtime_checkpoint.py
+          python -m compileall src
+          test -f src/aip/product/configured/services/configured_portfolio_var_service.py
+          test -f src/aip/product/configured/adapters/configured_market_provider.py
+          test -f src/aip/product/configured/adapters/configured_liquidity_provider.py
+          test -f src/aip/ui/modules/macro_intelligence/views/macro_intelligence_view.py
+          test -f src/aip/product/economic/economic_snapshot_store.py
+
   quality:
     runs-on: ubuntu-latest
     steps:
