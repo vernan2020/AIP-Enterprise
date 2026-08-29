@@ -9,12 +9,13 @@ on:
 permissions:
   contents: write
 
+env:
+  QT_QPA_PLATFORM: offscreen
+  PYTHONPATH: src
+
 jobs:
   validate-and-materialize:
     runs-on: ubuntu-latest
-    env:
-      QT_QPA_PLATFORM: offscreen
-      PYTHONPATH: src
     steps:
       - name: Checkout recovery branch
         uses: actions/checkout@v4
@@ -25,36 +26,13 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.13'
 
-      - name: Verify final runtime delta artifact
-        shell: python
-        run: |
-          import base64
-          import hashlib
-          import io
-          import tarfile
-          from pathlib import Path
+      - name: Verify canonical recovered runtime checkpoint
+        run: python scripts/recovery/verify_runtime_checkpoint.py
 
-          root = Path.cwd()
-          delta_dir = root / 'recovery/checkpoints/rc1-runtime-delta-final-20260829'
-          part = delta_dir / 'runtime_delta.part00.b64'
-          expected = '6791a23279590846ed00c298ffd2a9434ef251c67bb5b44ed669c9347382c29b'
-          encoded = part.read_text(encoding='ascii').strip()
-          payload = base64.b64decode(encoded, validate=True)
-          digest = hashlib.sha256(payload).hexdigest()
-          if digest != expected:
-              raise SystemExit(f'delta SHA-256 mismatch: expected {expected}, got {digest}')
-          with tarfile.open(fileobj=io.BytesIO(payload), mode='r:gz') as archive:
-              members = archive.getmembers()
-              if not members:
-                  raise SystemExit('runtime delta is empty')
-              for member in members:
-                  path = Path(member.name)
-                  if path.is_absolute() or '..' in path.parts or not path.parts or path.parts[0] != 'src':
-                      raise SystemExit(f'unsafe runtime delta member: {member.name}')
-              archive.extractall(root, members=members)
-          print(f'validated runtime delta: {digest}; members={len(members)}')
+      - name: Restore canonical recovered runtime checkpoint
+        run: python scripts/recovery/restore_runtime_checkpoint.py
 
       - name: Compile restored production source
         run: python -m compileall -q src
@@ -65,6 +43,7 @@ jobs:
           from pathlib import Path
           required = [
               'src/aip/product/configured/services/configured_portfolio_var_service.py',
+              'src/aip/product/configured/adapters/configured_economic_indicators_provider.py',
               'src/aip/product/configured/adapters/configured_market_provider.py',
               'src/aip/product/configured/adapters/configured_liquidity_provider.py',
               'src/aip/ui/modules/macro_intelligence/views/macro_intelligence_view.py',
@@ -82,7 +61,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e '.[dev]'
 
-      - name: Run liquidity, treasury and relative-value regression suite
+      - name: Run institutional regression suite
         run: |
           python -m pytest -q \
             tests/unit/domain/liquidity \
@@ -106,8 +85,8 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add src
           if git diff --cached --quiet; then
-            echo 'Visible src already matches canonical runtime delta.'
+            echo 'Visible src already matches canonical recovered runtime.'
           else
-            git commit -m 'Materialize certified RC1 runtime from canonical delta'
+            git commit -m 'Materialize certified RC1 runtime from canonical checkpoint'
             git push origin HEAD:recovery/full-runtime-rc1-20260829
           fi
