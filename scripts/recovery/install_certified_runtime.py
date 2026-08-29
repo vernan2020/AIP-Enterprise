@@ -184,6 +184,13 @@ def install(*, skip_backup: bool = False) -> int:
 
     runtime_env = _runtime_env(root)
 
+    print("Compiling restored source tree...")
+    _run(
+        root,
+        [sys.executable, "-m", "compileall", "-q", "src"],
+        env=runtime_env,
+    )
+
     print("Running configured preflight...")
     _run(
         root,
