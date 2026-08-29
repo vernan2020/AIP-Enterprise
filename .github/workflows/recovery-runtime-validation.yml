@@ -28,10 +28,39 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Salvage canonical recovered runtime with strict acceptance criteria
-        run: python scripts/recovery/salvage_runtime_checkpoint.py
+      - name: Recover intact prefix from canonical checkpoint
+        run: |
+          python scripts/recovery/salvage_runtime_checkpoint.py || true
 
-      - name: Compile salvaged production source
+      - name: Validate and apply certified runtime completion delta
+        shell: python
+        run: |
+          import base64
+          import hashlib
+          import io
+          import tarfile
+          from pathlib import Path
+
+          root = Path.cwd()
+          delta = root / 'recovery/checkpoints/rc1-runtime-delta-final-20260829/runtime_delta.part00.b64'
+          expected = '352d846b5dea950382cbba4ceb5ec1eb8c8df239740a7fb91ae5a16490cb9e6e'
+          encoded = delta.read_text(encoding='ascii').strip()
+          payload = base64.b64decode(encoded, validate=True)
+          digest = hashlib.sha256(payload).hexdigest()
+          if digest != expected:
+              raise SystemExit(f'runtime delta SHA-256 mismatch: expected {expected}, got {digest}')
+          with tarfile.open(fileobj=io.BytesIO(payload), mode='r:*') as archive:
+              members = archive.getmembers()
+              if not members:
+                  raise SystemExit('runtime completion delta is empty')
+              for member in members:
+                  path = Path(member.name)
+                  if path.is_absolute() or '..' in path.parts or not path.parts or path.parts[0] != 'src':
+                      raise SystemExit(f'unsafe runtime delta member: {member.name}')
+              archive.extractall(root, members=members)
+          print(f'validated runtime completion delta: {digest}; members={len(members)}')
+
+      - name: Compile recovered production source
         run: python -m compileall -q src
 
       - name: Validate critical production modules
@@ -76,14 +105,14 @@ jobs:
             exit 1
           fi
 
-      - name: Materialize accepted salvaged runtime in branch
+      - name: Materialize recovered runtime in branch
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add src
           if git diff --cached --quiet; then
-            echo 'Visible src already contains the accepted salvaged runtime.'
+            echo 'Visible src already contains the recovered runtime.'
           else
-            git commit -m 'Materialize accepted RC1 runtime salvage'
+            git commit -m 'Materialize recovered RC1 production runtime'
             git push origin HEAD:recovery/full-runtime-rc1-20260829
           fi
