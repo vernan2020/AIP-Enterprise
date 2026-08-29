@@ -33,7 +33,9 @@ class InMemoryMarketRepository(MarketRepository):
         self._snapshots.append(snapshot)
 
     def get_by_date(self, valuation_date: date) -> list[MarketSnapshot]:
-        return [snapshot for snapshot in self._snapshots if snapshot.valuation_date == valuation_date]
+        return [
+            snapshot for snapshot in self._snapshots if snapshot.valuation_date == valuation_date
+        ]
 
     def get_by_market(self, market: str) -> list[MarketSnapshot]:
         return [snapshot for snapshot in self._snapshots if snapshot.market == market]
@@ -104,7 +106,19 @@ def test_snapshot_is_immutable_and_history_is_preserved() -> None:
         source=QuoteSource.CENTRAL_BANK.value,
         currency="USD",
         quotes=(
-            PriceQuote(instrument_id="US123", currency="USD", market=MarketType.GOVERNMENT.value, source=QuoteSource.CENTRAL_BANK.value, price=Decimal("101.25"), yield_rate=Decimal("0.045"), duration=Decimal("4.5"), convexity=Decimal("22.3"), dv01=Decimal("0.015"), pvbp=Decimal("0.012"), spread=Decimal("0.002")),
+            PriceQuote(
+                instrument_id="US123",
+                currency="USD",
+                market=MarketType.GOVERNMENT.value,
+                source=QuoteSource.CENTRAL_BANK.value,
+                price=Decimal("101.25"),
+                yield_rate=Decimal("0.045"),
+                duration=Decimal("4.5"),
+                convexity=Decimal("22.3"),
+                dv01=Decimal("0.015"),
+                pvbp=Decimal("0.012"),
+                spread=Decimal("0.002"),
+            ),
         ),
         curves=(
             CurveSnapshot(
@@ -128,7 +142,19 @@ def test_snapshot_is_immutable_and_history_is_preserved() -> None:
         source=QuoteSource.CENTRAL_BANK.value,
         currency="USD",
         quotes=(
-            PriceQuote(instrument_id="US123", currency="USD", market=MarketType.GOVERNMENT.value, source=QuoteSource.CENTRAL_BANK.value, price=Decimal("102.50"), yield_rate=Decimal("0.046"), duration=Decimal("4.6"), convexity=Decimal("22.8"), dv01=Decimal("0.016"), pvbp=Decimal("0.013"), spread=Decimal("0.003")),
+            PriceQuote(
+                instrument_id="US123",
+                currency="USD",
+                market=MarketType.GOVERNMENT.value,
+                source=QuoteSource.CENTRAL_BANK.value,
+                price=Decimal("102.50"),
+                yield_rate=Decimal("0.046"),
+                duration=Decimal("4.6"),
+                convexity=Decimal("22.8"),
+                dv01=Decimal("0.016"),
+                pvbp=Decimal("0.013"),
+                spread=Decimal("0.003"),
+            ),
         ),
         curves=(
             CurveSnapshot(
@@ -150,13 +176,27 @@ def test_snapshot_is_immutable_and_history_is_preserved() -> None:
     assert second.version == SnapshotVersion(1, 0, 1)
     assert second.price == Decimal("102.50")
     assert repository.get_by_date(valuation_date)[0].version == SnapshotVersion(1, 0, 0)
-    assert repository.get_by_market(MarketType.GOVERNMENT.value)[1].version == SnapshotVersion(1, 0, 1)
-    assert repository.get_by_source(QuoteSource.CENTRAL_BANK.value)[0].source == QuoteSource.CENTRAL_BANK.value
-    assert repository.get_by_version(SnapshotVersion(1, 0, 1))[0].version == SnapshotVersion(1, 0, 1)
-    assert service.get_latest_snapshot(valuation_date, MarketType.GOVERNMENT.value, QuoteSource.CENTRAL_BANK.value) == second
+    assert repository.get_by_market(MarketType.GOVERNMENT.value)[1].version == SnapshotVersion(
+        1, 0, 1
+    )
+    assert (
+        repository.get_by_source(QuoteSource.CENTRAL_BANK.value)[0].source
+        == QuoteSource.CENTRAL_BANK.value
+    )
+    assert repository.get_by_version(SnapshotVersion(1, 0, 1))[0].version == SnapshotVersion(
+        1, 0, 1
+    )
+    assert (
+        service.get_latest_snapshot(
+            valuation_date, MarketType.GOVERNMENT.value, QuoteSource.CENTRAL_BANK.value
+        )
+        == second
+    )
 
 
-def test_service_can_create_snapshot_from_instrument_and_pricing_engine(bond: GovernmentBond) -> None:
+def test_service_can_create_snapshot_from_instrument_and_pricing_engine(
+    bond: GovernmentBond,
+) -> None:
     repository = InMemoryMarketRepository()
     service = MarketService(repository=repository)
 
@@ -176,8 +216,32 @@ def test_service_can_create_snapshot_from_instrument_and_pricing_engine(bond: Go
 
 
 def test_quote_variants_and_events_are_value_objects() -> None:
-    quote = PriceQuote(instrument_id="US123", currency="EUR", market=MarketType.INTERBANK.value, source=QuoteSource.BROKER.value, price=Decimal("100"), yield_rate=Decimal("0.02"), duration=Decimal("3"), convexity=Decimal("10"), dv01=Decimal("0.01"), pvbp=Decimal("0.02"), spread=Decimal("0.005"))
-    yield_quote = YieldQuote(instrument_id="US124", currency="USD", market=MarketType.GOVERNMENT.value, source=QuoteSource.CENTRAL_BANK.value, price=Decimal("99"), yield_rate=Decimal("0.03"), duration=Decimal("2"), convexity=Decimal("8"), dv01=Decimal("0.02"), pvbp=Decimal("0.03"), spread=Decimal("0.004"))
+    quote = PriceQuote(
+        instrument_id="US123",
+        currency="EUR",
+        market=MarketType.INTERBANK.value,
+        source=QuoteSource.BROKER.value,
+        price=Decimal("100"),
+        yield_rate=Decimal("0.02"),
+        duration=Decimal("3"),
+        convexity=Decimal("10"),
+        dv01=Decimal("0.01"),
+        pvbp=Decimal("0.02"),
+        spread=Decimal("0.005"),
+    )
+    yield_quote = YieldQuote(
+        instrument_id="US124",
+        currency="USD",
+        market=MarketType.GOVERNMENT.value,
+        source=QuoteSource.CENTRAL_BANK.value,
+        price=Decimal("99"),
+        yield_rate=Decimal("0.03"),
+        duration=Decimal("2"),
+        convexity=Decimal("8"),
+        dv01=Decimal("0.02"),
+        pvbp=Decimal("0.03"),
+        spread=Decimal("0.004"),
+    )
 
     assert quote.price == Decimal("100")
     assert yield_quote.yield_rate == Decimal("0.03")
@@ -214,8 +278,35 @@ def test_market_data_error_is_raised_for_invalid_snapshot() -> None:
             market="",
             source=QuoteSource.CENTRAL_BANK.value,
             currency="USD",
-            quotes=(PriceQuote(instrument_id="US123", currency="USD", market=MarketType.GOVERNMENT.value, source=QuoteSource.CENTRAL_BANK.value, price=Decimal("100"), yield_rate=Decimal("0.03"), duration=Decimal("1"), convexity=Decimal("2"), dv01=Decimal("0.01"), pvbp=Decimal("0.02"), spread=Decimal("0.001")),),
-            curves=(CurveSnapshot(valuation_date=date(2026, 7, 27), curve=MarketCurve(name="USD Curve", currency="USD", market=MarketType.GOVERNMENT.value, source=QuoteSource.CENTRAL_BANK.value, points=(CurvePoint(Decimal("1"), Decimal("0.03")),)), version=SnapshotVersion(1, 0, 0), timestamp=datetime(2026, 7, 27, 9, 0, 0)),),
+            quotes=(
+                PriceQuote(
+                    instrument_id="US123",
+                    currency="USD",
+                    market=MarketType.GOVERNMENT.value,
+                    source=QuoteSource.CENTRAL_BANK.value,
+                    price=Decimal("100"),
+                    yield_rate=Decimal("0.03"),
+                    duration=Decimal("1"),
+                    convexity=Decimal("2"),
+                    dv01=Decimal("0.01"),
+                    pvbp=Decimal("0.02"),
+                    spread=Decimal("0.001"),
+                ),
+            ),
+            curves=(
+                CurveSnapshot(
+                    valuation_date=date(2026, 7, 27),
+                    curve=MarketCurve(
+                        name="USD Curve",
+                        currency="USD",
+                        market=MarketType.GOVERNMENT.value,
+                        source=QuoteSource.CENTRAL_BANK.value,
+                        points=(CurvePoint(Decimal("1"), Decimal("0.03")),),
+                    ),
+                    version=SnapshotVersion(1, 0, 0),
+                    timestamp=datetime(2026, 7, 27, 9, 0, 0),
+                ),
+            ),
             version=SnapshotVersion(1, 0, 0),
             timestamp=datetime(2026, 7, 27, 9, 0, 0),
         )
@@ -226,8 +317,35 @@ def test_market_data_error_is_raised_for_invalid_snapshot() -> None:
             market=MarketType.GOVERNMENT.value,
             source="",
             currency="USD",
-            quotes=(PriceQuote(instrument_id="US123", currency="USD", market=MarketType.GOVERNMENT.value, source=QuoteSource.CENTRAL_BANK.value, price=Decimal("100"), yield_rate=Decimal("0.03"), duration=Decimal("1"), convexity=Decimal("2"), dv01=Decimal("0.01"), pvbp=Decimal("0.02"), spread=Decimal("0.001")),),
-            curves=(CurveSnapshot(valuation_date=date(2026, 7, 27), curve=MarketCurve(name="USD Curve", currency="USD", market=MarketType.GOVERNMENT.value, source=QuoteSource.CENTRAL_BANK.value, points=(CurvePoint(Decimal("1"), Decimal("0.03")),)), version=SnapshotVersion(1, 0, 0), timestamp=datetime(2026, 7, 27, 9, 0, 0)),),
+            quotes=(
+                PriceQuote(
+                    instrument_id="US123",
+                    currency="USD",
+                    market=MarketType.GOVERNMENT.value,
+                    source=QuoteSource.CENTRAL_BANK.value,
+                    price=Decimal("100"),
+                    yield_rate=Decimal("0.03"),
+                    duration=Decimal("1"),
+                    convexity=Decimal("2"),
+                    dv01=Decimal("0.01"),
+                    pvbp=Decimal("0.02"),
+                    spread=Decimal("0.001"),
+                ),
+            ),
+            curves=(
+                CurveSnapshot(
+                    valuation_date=date(2026, 7, 27),
+                    curve=MarketCurve(
+                        name="USD Curve",
+                        currency="USD",
+                        market=MarketType.GOVERNMENT.value,
+                        source=QuoteSource.CENTRAL_BANK.value,
+                        points=(CurvePoint(Decimal("1"), Decimal("0.03")),),
+                    ),
+                    version=SnapshotVersion(1, 0, 0),
+                    timestamp=datetime(2026, 7, 27, 9, 0, 0),
+                ),
+            ),
             version=SnapshotVersion(1, 0, 0),
             timestamp=datetime(2026, 7, 27, 9, 0, 0),
         )
@@ -238,8 +356,35 @@ def test_market_data_error_is_raised_for_invalid_snapshot() -> None:
             market=MarketType.GOVERNMENT.value,
             source=QuoteSource.CENTRAL_BANK.value,
             currency="",
-            quotes=(PriceQuote(instrument_id="US123", currency="USD", market=MarketType.GOVERNMENT.value, source=QuoteSource.CENTRAL_BANK.value, price=Decimal("100"), yield_rate=Decimal("0.03"), duration=Decimal("1"), convexity=Decimal("2"), dv01=Decimal("0.01"), pvbp=Decimal("0.02"), spread=Decimal("0.001")),),
-            curves=(CurveSnapshot(valuation_date=date(2026, 7, 27), curve=MarketCurve(name="USD Curve", currency="USD", market=MarketType.GOVERNMENT.value, source=QuoteSource.CENTRAL_BANK.value, points=(CurvePoint(Decimal("1"), Decimal("0.03")),)), version=SnapshotVersion(1, 0, 0), timestamp=datetime(2026, 7, 27, 9, 0, 0)),),
+            quotes=(
+                PriceQuote(
+                    instrument_id="US123",
+                    currency="USD",
+                    market=MarketType.GOVERNMENT.value,
+                    source=QuoteSource.CENTRAL_BANK.value,
+                    price=Decimal("100"),
+                    yield_rate=Decimal("0.03"),
+                    duration=Decimal("1"),
+                    convexity=Decimal("2"),
+                    dv01=Decimal("0.01"),
+                    pvbp=Decimal("0.02"),
+                    spread=Decimal("0.001"),
+                ),
+            ),
+            curves=(
+                CurveSnapshot(
+                    valuation_date=date(2026, 7, 27),
+                    curve=MarketCurve(
+                        name="USD Curve",
+                        currency="USD",
+                        market=MarketType.GOVERNMENT.value,
+                        source=QuoteSource.CENTRAL_BANK.value,
+                        points=(CurvePoint(Decimal("1"), Decimal("0.03")),),
+                    ),
+                    version=SnapshotVersion(1, 0, 0),
+                    timestamp=datetime(2026, 7, 27, 9, 0, 0),
+                ),
+            ),
             version=SnapshotVersion(1, 0, 0),
             timestamp=datetime(2026, 7, 27, 9, 0, 0),
         )
@@ -247,22 +392,55 @@ def test_market_data_error_is_raised_for_invalid_snapshot() -> None:
 
 def test_market_curve_validation_and_zero_rate_lookup() -> None:
     with pytest.raises(ValueError):
-        MarketCurve(name="", currency="USD", market=MarketType.GOVERNMENT.value, source=QuoteSource.CENTRAL_BANK.value, points=(CurvePoint(Decimal("1"), Decimal("0.03")),))
+        MarketCurve(
+            name="",
+            currency="USD",
+            market=MarketType.GOVERNMENT.value,
+            source=QuoteSource.CENTRAL_BANK.value,
+            points=(CurvePoint(Decimal("1"), Decimal("0.03")),),
+        )
     with pytest.raises(ValueError):
-        MarketCurve(name="USD Curve", currency="", market=MarketType.GOVERNMENT.value, source=QuoteSource.CENTRAL_BANK.value, points=(CurvePoint(Decimal("1"), Decimal("0.03")),))
+        MarketCurve(
+            name="USD Curve",
+            currency="",
+            market=MarketType.GOVERNMENT.value,
+            source=QuoteSource.CENTRAL_BANK.value,
+            points=(CurvePoint(Decimal("1"), Decimal("0.03")),),
+        )
     with pytest.raises(ValueError):
-        MarketCurve(name="USD Curve", currency="USD", market="", source=QuoteSource.CENTRAL_BANK.value, points=(CurvePoint(Decimal("1"), Decimal("0.03")),))
+        MarketCurve(
+            name="USD Curve",
+            currency="USD",
+            market="",
+            source=QuoteSource.CENTRAL_BANK.value,
+            points=(CurvePoint(Decimal("1"), Decimal("0.03")),),
+        )
     with pytest.raises(ValueError):
-        MarketCurve(name="USD Curve", currency="USD", market=MarketType.GOVERNMENT.value, source="", points=(CurvePoint(Decimal("1"), Decimal("0.03")),))
+        MarketCurve(
+            name="USD Curve",
+            currency="USD",
+            market=MarketType.GOVERNMENT.value,
+            source="",
+            points=(CurvePoint(Decimal("1"), Decimal("0.03")),),
+        )
     with pytest.raises(ValueError):
-        MarketCurve(name="USD Curve", currency="USD", market=MarketType.GOVERNMENT.value, source=QuoteSource.CENTRAL_BANK.value, points=())
+        MarketCurve(
+            name="USD Curve",
+            currency="USD",
+            market=MarketType.GOVERNMENT.value,
+            source=QuoteSource.CENTRAL_BANK.value,
+            points=(),
+        )
 
     curve = MarketCurve(
         name="USD Curve",
         currency="USD",
         market=MarketType.GOVERNMENT.value,
         source=QuoteSource.CENTRAL_BANK.value,
-        points=(CurvePoint(Decimal("1"), Decimal("0.03")), CurvePoint(Decimal("2"), Decimal("0.04"))),
+        points=(
+            CurvePoint(Decimal("1"), Decimal("0.03")),
+            CurvePoint(Decimal("2"), Decimal("0.04")),
+        ),
     )
     assert curve.zero_rate(Decimal("1")) == Decimal("0.03")
     with pytest.raises(KeyError):
@@ -293,7 +471,20 @@ def test_service_advances_version_for_existing_snapshot() -> None:
             source=QuoteSource.CENTRAL_BANK.value,
             currency="USD",
             quotes=(),
-            curves=(CurveSnapshot(valuation_date=date(2026, 7, 28), curve=MarketCurve(name="USD Curve", currency="USD", market=MarketType.GOVERNMENT.value, source=QuoteSource.CENTRAL_BANK.value, points=(CurvePoint(Decimal("1"), Decimal("0.03")),)), version=SnapshotVersion(1, 0, 0), timestamp=datetime(2026, 7, 28, 9, 0, 0)),),
+            curves=(
+                CurveSnapshot(
+                    valuation_date=date(2026, 7, 28),
+                    curve=MarketCurve(
+                        name="USD Curve",
+                        currency="USD",
+                        market=MarketType.GOVERNMENT.value,
+                        source=QuoteSource.CENTRAL_BANK.value,
+                        points=(CurvePoint(Decimal("1"), Decimal("0.03")),),
+                    ),
+                    version=SnapshotVersion(1, 0, 0),
+                    timestamp=datetime(2026, 7, 28, 9, 0, 0),
+                ),
+            ),
         )
     with pytest.raises(MarketDataError):
         service.create_snapshot(
@@ -301,7 +492,21 @@ def test_service_advances_version_for_existing_snapshot() -> None:
             market=MarketType.GOVERNMENT.value,
             source=QuoteSource.CENTRAL_BANK.value,
             currency="USD",
-            quotes=(PriceQuote(instrument_id="US123", currency="USD", market=MarketType.GOVERNMENT.value, source=QuoteSource.CENTRAL_BANK.value, price=Decimal("100"), yield_rate=Decimal("0.03"), duration=Decimal("1"), convexity=Decimal("2"), dv01=Decimal("0.01"), pvbp=Decimal("0.02"), spread=Decimal("0.001")),),
+            quotes=(
+                PriceQuote(
+                    instrument_id="US123",
+                    currency="USD",
+                    market=MarketType.GOVERNMENT.value,
+                    source=QuoteSource.CENTRAL_BANK.value,
+                    price=Decimal("100"),
+                    yield_rate=Decimal("0.03"),
+                    duration=Decimal("1"),
+                    convexity=Decimal("2"),
+                    dv01=Decimal("0.01"),
+                    pvbp=Decimal("0.02"),
+                    spread=Decimal("0.001"),
+                ),
+            ),
             curves=(),
         )
 
@@ -310,8 +515,35 @@ def test_service_advances_version_for_existing_snapshot() -> None:
         market=MarketType.GOVERNMENT.value,
         source=QuoteSource.CENTRAL_BANK.value,
         currency="USD",
-        quotes=(PriceQuote(instrument_id="US123", currency="USD", market=MarketType.GOVERNMENT.value, source=QuoteSource.CENTRAL_BANK.value, price=Decimal("100"), yield_rate=Decimal("0.03"), duration=Decimal("1"), convexity=Decimal("2"), dv01=Decimal("0.01"), pvbp=Decimal("0.02"), spread=Decimal("0.001")),),
-        curves=(CurveSnapshot(valuation_date=date(2026, 7, 28), curve=MarketCurve(name="USD Curve", currency="USD", market=MarketType.GOVERNMENT.value, source=QuoteSource.CENTRAL_BANK.value, points=(CurvePoint(Decimal("1"), Decimal("0.03")),)), version=SnapshotVersion(1, 0, 0), timestamp=datetime(2026, 7, 28, 9, 0, 0)),),
+        quotes=(
+            PriceQuote(
+                instrument_id="US123",
+                currency="USD",
+                market=MarketType.GOVERNMENT.value,
+                source=QuoteSource.CENTRAL_BANK.value,
+                price=Decimal("100"),
+                yield_rate=Decimal("0.03"),
+                duration=Decimal("1"),
+                convexity=Decimal("2"),
+                dv01=Decimal("0.01"),
+                pvbp=Decimal("0.02"),
+                spread=Decimal("0.001"),
+            ),
+        ),
+        curves=(
+            CurveSnapshot(
+                valuation_date=date(2026, 7, 28),
+                curve=MarketCurve(
+                    name="USD Curve",
+                    currency="USD",
+                    market=MarketType.GOVERNMENT.value,
+                    source=QuoteSource.CENTRAL_BANK.value,
+                    points=(CurvePoint(Decimal("1"), Decimal("0.03")),),
+                ),
+                version=SnapshotVersion(1, 0, 0),
+                timestamp=datetime(2026, 7, 28, 9, 0, 0),
+            ),
+        ),
         version=SnapshotVersion(1, 0, 1),
     )
     second = service.create_snapshot(
@@ -319,15 +551,44 @@ def test_service_advances_version_for_existing_snapshot() -> None:
         market=MarketType.GOVERNMENT.value,
         source=QuoteSource.CENTRAL_BANK.value,
         currency="USD",
-        quotes=(PriceQuote(instrument_id="US123", currency="USD", market=MarketType.GOVERNMENT.value, source=QuoteSource.CENTRAL_BANK.value, price=Decimal("101"), yield_rate=Decimal("0.04"), duration=Decimal("2"), convexity=Decimal("3"), dv01=Decimal("0.02"), pvbp=Decimal("0.03"), spread=Decimal("0.002")),),
-        curves=(CurveSnapshot(valuation_date=date(2026, 7, 28), curve=MarketCurve(name="USD Curve", currency="USD", market=MarketType.GOVERNMENT.value, source=QuoteSource.CENTRAL_BANK.value, points=(CurvePoint(Decimal("1"), Decimal("0.03")),)), version=SnapshotVersion(1, 0, 0), timestamp=datetime(2026, 7, 28, 10, 0, 0)),),
+        quotes=(
+            PriceQuote(
+                instrument_id="US123",
+                currency="USD",
+                market=MarketType.GOVERNMENT.value,
+                source=QuoteSource.CENTRAL_BANK.value,
+                price=Decimal("101"),
+                yield_rate=Decimal("0.04"),
+                duration=Decimal("2"),
+                convexity=Decimal("3"),
+                dv01=Decimal("0.02"),
+                pvbp=Decimal("0.03"),
+                spread=Decimal("0.002"),
+            ),
+        ),
+        curves=(
+            CurveSnapshot(
+                valuation_date=date(2026, 7, 28),
+                curve=MarketCurve(
+                    name="USD Curve",
+                    currency="USD",
+                    market=MarketType.GOVERNMENT.value,
+                    source=QuoteSource.CENTRAL_BANK.value,
+                    points=(CurvePoint(Decimal("1"), Decimal("0.03")),),
+                ),
+                version=SnapshotVersion(1, 0, 0),
+                timestamp=datetime(2026, 7, 28, 10, 0, 0),
+            ),
+        ),
         version=SnapshotVersion(1, 0, 0),
     )
 
     assert first.version == SnapshotVersion(1, 0, 1)
     assert second.version == SnapshotVersion(1, 0, 2)
 
-    snapshot = repository.get_latest(date(2026, 7, 28), MarketType.GOVERNMENT.value, QuoteSource.CENTRAL_BANK.value)
+    snapshot = repository.get_latest(
+        date(2026, 7, 28), MarketType.GOVERNMENT.value, QuoteSource.CENTRAL_BANK.value
+    )
     assert snapshot is not None
     assert snapshot.price == Decimal("101")
     assert snapshot.yield_rate == Decimal("0.04")

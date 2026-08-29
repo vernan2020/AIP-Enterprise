@@ -22,8 +22,19 @@ class SecurityAudit:
     def __init__(self) -> None:
         self._records: list[AuditRecord] = []
 
-    def record(self, event_type: str, message: str, correlation_id: str | None = None, metadata: dict[str, Any] | None = None) -> AuditRecord:
-        record = AuditRecord(event_type=event_type, message=message, correlation_id=correlation_id, metadata=dict(metadata or {}))
+    def record(
+        self,
+        event_type: str,
+        message: str,
+        correlation_id: str | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> AuditRecord:
+        record = AuditRecord(
+            event_type=event_type,
+            message=message,
+            correlation_id=correlation_id,
+            metadata=dict(metadata or {}),
+        )
         self._records.append(record)
         return record
 

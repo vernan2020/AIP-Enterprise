@@ -38,17 +38,43 @@ class StressScenarioConfig:
     def _validate(self) -> None:
         if not self.scenario_id or not self.name or not self.scenario_type:
             raise StressConfigurationError("Scenario id, name, and type are required")
-        if self.scenario_type not in {"parallel_shift", "twist", "butterfly", "historical", "hypothetical", "deposit_runoff", "wholesale_funding_shock", "collateral_haircut", "market_liquidity_deterioration", "combined"}:
+        if self.scenario_type not in {
+            "parallel_shift",
+            "twist",
+            "butterfly",
+            "historical",
+            "hypothetical",
+            "deposit_runoff",
+            "wholesale_funding_shock",
+            "collateral_haircut",
+            "market_liquidity_deterioration",
+            "combined",
+        }:
             raise StressConfigurationError("Scenario type is not supported")
         if self.scenario_type == "combined" and not self.combined_scenario_ids:
             raise StressConfigurationError("Combined scenarios require scenario references")
         if not self.policy_references:
             raise StressConfigurationError("Scenario policy references are required")
-        for value in (self.severity, self.rate_shift, self.liquidity_factor, self.concentration_factor, self.runoff_rate, self.withdrawal_rate, self.collateral_multiplier, self.market_value_multiplier):
+        for value in (
+            self.severity,
+            self.rate_shift,
+            self.liquidity_factor,
+            self.concentration_factor,
+            self.runoff_rate,
+            self.withdrawal_rate,
+            self.collateral_multiplier,
+            self.market_value_multiplier,
+        ):
             if value < 0 or value > Decimal("1"):
                 raise StressConfigurationError("Scenario percentages must stay within 0% and 100%")
-        if self.effective_date and self.expiration_date and self.expiration_date < self.effective_date:
-            raise StressConfigurationError("Scenario expiration date must be on or after effective date")
+        if (
+            self.effective_date
+            and self.expiration_date
+            and self.expiration_date < self.effective_date
+        ):
+            raise StressConfigurationError(
+                "Scenario expiration date must be on or after effective date"
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -82,12 +108,22 @@ class StressPolicyConfig:
                 withdrawal_rate=Decimal(str(item.get("withdrawal_rate", "0"))),
                 collateral_multiplier=Decimal(str(item.get("collateral_multiplier", "1"))),
                 market_value_multiplier=Decimal(str(item.get("market_value_multiplier", "1"))),
-                policy_references=tuple(str(reference) for reference in item.get("policy_references", ()) or ()),
-                affected_assets=tuple(str(asset) for asset in item.get("affected_assets", ()) or ()),
-                affected_buckets=tuple(str(bucket) for bucket in item.get("affected_buckets", ()) or ()),
-                assumptions=tuple(str(assumption) for assumption in item.get("assumptions", ()) or ()),
+                policy_references=tuple(
+                    str(reference) for reference in item.get("policy_references", ()) or ()
+                ),
+                affected_assets=tuple(
+                    str(asset) for asset in item.get("affected_assets", ()) or ()
+                ),
+                affected_buckets=tuple(
+                    str(bucket) for bucket in item.get("affected_buckets", ()) or ()
+                ),
+                assumptions=tuple(
+                    str(assumption) for assumption in item.get("assumptions", ()) or ()
+                ),
                 warnings=tuple(str(warning) for warning in item.get("warnings", ()) or ()),
-                combined_scenario_ids=tuple(str(reference) for reference in item.get("combined_scenario_ids", ()) or ()),
+                combined_scenario_ids=tuple(
+                    str(reference) for reference in item.get("combined_scenario_ids", ()) or ()
+                ),
                 effective_date=cls._parse_date(item.get("effective_date")),
                 expiration_date=cls._parse_date(item.get("expiration_date")),
             )
@@ -117,8 +153,14 @@ class StressPolicyConfig:
     def _validate(self) -> None:
         if not self.policy_id or not self.version or not self.name or not self.category:
             raise StressConfigurationError("Policy id, version, name, and category are required")
-        if self.effective_date and self.expiration_date and self.expiration_date < self.effective_date:
-            raise StressConfigurationError("Policy expiration date must be on or after effective date")
+        if (
+            self.effective_date
+            and self.expiration_date
+            and self.expiration_date < self.effective_date
+        ):
+            raise StressConfigurationError(
+                "Policy expiration date must be on or after effective date"
+            )
         seen_ids: set[str] = set()
         for scenario in self.scenarios:
             if scenario.scenario_id in seen_ids:

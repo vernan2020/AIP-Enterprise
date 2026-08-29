@@ -30,7 +30,9 @@ class GapAnalytics:
         scenario_totals: dict[str, Decimal] = {}
         for gap in gaps:
             scenario_key = gap.scenario or "base"
-            scenario_totals[scenario_key] = scenario_totals.get(scenario_key, Decimal("0")) + gap.net_gap
+            scenario_totals[scenario_key] = (
+                scenario_totals.get(scenario_key, Decimal("0")) + gap.net_gap
+            )
         return {
             "concentration": {"total": concentration_total},
             "distribution": {"stddev": statistics.standard_deviation()},

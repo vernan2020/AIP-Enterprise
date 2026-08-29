@@ -22,9 +22,7 @@ class ConfiguredMacroIntelligenceService:
         repository: InstitutionalMacroScenarioRepository | None = None,
     ) -> None:
         self._repository = repository or InstitutionalMacroScenarioRepository()
-        self._driver_service = InstitutionalMacroDriverService(
-            repository=self._repository
-        )
+        self._driver_service = InstitutionalMacroDriverService(repository=self._repository)
 
     def get_projection(
         self,

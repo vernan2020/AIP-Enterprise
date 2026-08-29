@@ -4,14 +4,13 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from decimal import Decimal
 from io import BytesIO
-from typing import Any
 
 import pytest
 
 from src.aip.platform.reporting.audit.reporting_audit import ReportingAudit
 from src.aip.platform.reporting.configuration.reporting_config import ReportingConfig
-from src.aip.platform.reporting.engine.report_engine import ReportEngine
 from src.aip.platform.reporting.engine.renderer import Renderer
+from src.aip.platform.reporting.engine.report_engine import ReportEngine
 from src.aip.platform.reporting.events.reporting_events import (
     ExportCompleted,
     ExportStarted,
@@ -22,27 +21,24 @@ from src.aip.platform.reporting.events.reporting_events import (
     RetryStarted,
 )
 from src.aip.platform.reporting.exceptions.reporting_exceptions import (
-    ReportingError,
     RendererError,
+    ReportingError,
 )
 from src.aip.platform.reporting.export.export_service import ExportService
 from src.aip.platform.reporting.formatting.formatter import Formatter
-from src.aip.platform.reporting.models.attachment import Attachment
-from src.aip.platform.reporting.models.chart import Chart
 from src.aip.platform.reporting.models.report import Report
 from src.aip.platform.reporting.models.report_metadata import ReportMetadata
 from src.aip.platform.reporting.models.section import Section
 from src.aip.platform.reporting.models.table import Table
-from src.aip.platform.reporting.monitoring.reporting_health import ReportingHealth
-from src.aip.platform.reporting.monitoring.reporting_health import ReportingMonitor
+from src.aip.platform.reporting.monitoring.reporting_health import ReportingHealth, ReportingMonitor
+from src.aip.platform.reporting.renderers.excel_renderer import ExcelRenderer
 from src.aip.platform.reporting.renderers.html_renderer import HtmlRenderer
 from src.aip.platform.reporting.renderers.json_renderer import JsonRenderer
 from src.aip.platform.reporting.renderers.pdf_renderer import PdfRenderer
 from src.aip.platform.reporting.renderers.ppt_renderer import PptRenderer
-from src.aip.platform.reporting.renderers.excel_renderer import ExcelRenderer
+from src.aip.platform.reporting.telemetry.reporting_metrics import ReportingMetrics
 from src.aip.platform.reporting.templates.template import Template
 from src.aip.platform.reporting.templates.template_registry import TemplateRegistry
-from src.aip.platform.reporting.telemetry.reporting_metrics import ReportingMetrics
 
 
 @dataclass(frozen=True, slots=True)
@@ -66,7 +62,9 @@ class TestReportingPlatform:
             sections=(
                 Section(title="Overview", tables=(Table(columns=("Name",), rows=(("A",),)),)),
             ),
-            metadata=ReportMetadata(author="Ops", generated_at=datetime(2024, 1, 1, tzinfo=timezone.utc)),
+            metadata=ReportMetadata(
+                author="Ops", generated_at=datetime(2024, 1, 1, tzinfo=timezone.utc)
+            ),
         )
 
         engine = ReportEngine(renderer=HtmlRenderer())

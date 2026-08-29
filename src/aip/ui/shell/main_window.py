@@ -5,7 +5,18 @@ from typing import Any
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction
-from PySide6.QtWidgets import QApplication, QDialog, QDockWidget, QLabel, QMainWindow, QMessageBox, QSplitter, QTextEdit, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QApplication,
+    QDialog,
+    QDockWidget,
+    QLabel,
+    QMainWindow,
+    QMessageBox,
+    QSplitter,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
 
 from aip.core.version import APP_DISPLAY_NAME, APP_DISPLAY_VERSION
 from aip.product.demo.bootstrap.application_factory import DemoApplicationFactory
@@ -97,9 +108,15 @@ class MainWindow(QMainWindow):
         self._status_bar = StatusBar()
         execution_mode = self._demo_factory.config.execution_mode
         banner_label = "CONFIGURED MODE" if execution_mode == "CONFIGURED" else "DEMO MODE"
-        header_name = "AIP Enterprise — CONFIGURED MODE" if execution_mode == "CONFIGURED" else APP_DISPLAY_NAME
+        header_name = (
+            "AIP Enterprise — CONFIGURED MODE"
+            if execution_mode == "CONFIGURED"
+            else APP_DISPLAY_NAME
+        )
         self._demo_banner = QLabel(f"{header_name}\n{banner_label} • Executive Workspace")
-        self._demo_banner.setStyleSheet("background: #1f4e79; color: white; padding: 4px 8px; font-weight: bold;")
+        self._demo_banner.setStyleSheet(
+            "background: #1f4e79; color: white; padding: 4px 8px; font-weight: bold;"
+        )
         self._demo_banner.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self._workspace.add_tab("Home", QTextEdit("Welcome to AIP Enterprise Demo 0.9"))
@@ -211,7 +228,9 @@ class MainWindow(QMainWindow):
         dialog = AboutDialog()
         dialog.exec()
 
-    def export_current_workspace_table(self, path: str | None = None, *, export_format: str = "csv") -> str:
+    def export_current_workspace_table(
+        self, path: str | None = None, *, export_format: str = "csv"
+    ) -> str:
         if self._workspace is None:
             raise RuntimeError("Workspace not initialized")
 
@@ -222,7 +241,14 @@ class MainWindow(QMainWindow):
         headers: list[str] = []
         rows: list[list[object]] = []
         if hasattr(current_widget, "columnCount") and hasattr(current_widget, "rowCount"):
-            headers = [current_widget.horizontalHeaderItem(index).text() if current_widget.horizontalHeaderItem(index) is not None else str(index) for index in range(current_widget.columnCount())]
+            headers = [
+                (
+                    current_widget.horizontalHeaderItem(index).text()
+                    if current_widget.horizontalHeaderItem(index) is not None
+                    else str(index)
+                )
+                for index in range(current_widget.columnCount())
+            ]
             for row_index in range(current_widget.rowCount()):
                 row: list[object] = []
                 for column_index in range(current_widget.columnCount()):
@@ -231,7 +257,14 @@ class MainWindow(QMainWindow):
                 rows.append(row)
         elif hasattr(current_widget, "table") and hasattr(current_widget.table, "columnCount"):
             table = current_widget.table
-            headers = [table.horizontalHeaderItem(index).text() if table.horizontalHeaderItem(index) is not None else str(index) for index in range(table.columnCount())]
+            headers = [
+                (
+                    table.horizontalHeaderItem(index).text()
+                    if table.horizontalHeaderItem(index) is not None
+                    else str(index)
+                )
+                for index in range(table.columnCount())
+            ]
             for row_index in range(table.rowCount()):
                 row = []
                 for column_index in range(table.columnCount()):
@@ -241,7 +274,9 @@ class MainWindow(QMainWindow):
         else:
             raise RuntimeError("Active workspace tab does not expose a table")
 
-        return self._export_service.export_records(path or "workspace-export", headers=headers, rows=rows, export_format=export_format)
+        return self._export_service.export_records(
+            path or "workspace-export", headers=headers, rows=rows, export_format=export_format
+        )
 
     def _show_dialog(self, title: str, widget: QWidget) -> None:
         dialog = QDialog(self)
@@ -255,7 +290,9 @@ class MainWindow(QMainWindow):
         if self._workspace is None:
             raise RuntimeError("Workspace not initialized")
         if route_id == "portfolio":
-            self._workspace.open_tab("Portfolio", PortfolioView(presenter=PortfolioPresenter(self._demo_factory)))
+            self._workspace.open_tab(
+                "Portfolio", PortfolioView(presenter=PortfolioPresenter(self._demo_factory))
+            )
             return
         if route_id == "market":
             self._workspace.open_tab("Market", MarketView())
@@ -340,7 +377,11 @@ class MainWindow(QMainWindow):
             f"Execution Mode: {status.execution_mode}",
             f"Demo Mode: {self._demo_factory.config.demo_mode_enabled}",
             f"Configured Mode: {status.execution_mode == 'CONFIGURED'}",
-            "Demo Badge: ABSENT" if status.execution_mode == "CONFIGURED" else "Demo Badge: PRESENT",
+            (
+                "Demo Badge: ABSENT"
+                if status.execution_mode == "CONFIGURED"
+                else "Demo Badge: PRESENT"
+            ),
             f"Diagnostic Mode: {'ON' if self._diagnostic_mode else 'OFF'}",
             *[f"{name}: {state}" for name, state in component_states.items()],
         ]

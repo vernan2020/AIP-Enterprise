@@ -2,18 +2,21 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from aip.integration.audit.execution_result import ExecutionResult, ExecutionStatus
+from aip.integration.audit.execution_result import ExecutionStatus
 from aip.integration.audit.synchronization_log import SynchronizationLog
 from aip.integration.contracts.connector import ConnectorProtocol, ConnectorType
 from aip.integration.contracts.synchronization import SynchronizationRequest
-from aip.integration.events.synchronization_events import SynchronizationEvent, SynchronizationEventType
+from aip.integration.events.synchronization_events import (
+    SynchronizationEvent,
+    SynchronizationEventType,
+)
 from aip.integration.hub.integration_hub import IntegrationHub
 from aip.integration.monitoring.health_monitor import HealthMonitor
 from aip.integration.normalization.normalizer import Normalizer
 from aip.integration.scheduler.job_definition import JobDefinition
 from aip.integration.scheduler.scheduler_service import SchedulerService
 from aip.integration.telemetry.metrics import MetricsCollector
-from aip.integration.validation.validator import ValidationIssue, ValidationResult, Validator
+from aip.integration.validation.validator import ValidationResult, Validator
 
 
 class StubConnector(ConnectorProtocol):
@@ -99,7 +102,9 @@ def test_scheduler_supports_manual_scheduled_retry_and_cancellation() -> None:
     assert second.status == ExecutionStatus.COMPLETED
     assert scheduler.get_status("job-1") == ExecutionStatus.COMPLETED
 
-    scheduled = JobDefinition(id="job-2", connector=StubConnector("folder"), connector_type=ConnectorType.FOLDER_WATCH)
+    scheduled = JobDefinition(
+        id="job-2", connector=StubConnector("folder"), connector_type=ConnectorType.FOLDER_WATCH
+    )
     scheduler.schedule_job(scheduled, scheduled_for=datetime.now(UTC) + timedelta(minutes=5))
     scheduler.cancel_job("job-2")
     assert scheduler.get_status("job-2") == ExecutionStatus.CANCELLED
@@ -122,7 +127,9 @@ def test_validation_pipeline_collects_issues() -> None:
 
 def test_monitoring_tracks_health_and_execution_stats() -> None:
     monitor = HealthMonitor()
-    monitor.record_health("sql", healthy=True, availability=0.99, last_synchronization=datetime.now(UTC))
+    monitor.record_health(
+        "sql", healthy=True, availability=0.99, last_synchronization=datetime.now(UTC)
+    )
     monitor.record_execution("sql", success=True, records=12)
 
     snapshot = monitor.get_health("sql")
@@ -176,7 +183,9 @@ def test_validator_accepts_empty_rules_and_reports_payloads() -> None:
 
 def test_scheduler_status_and_history_helpers() -> None:
     scheduler = SchedulerService()
-    job = JobDefinition(id="job-3", connector=StubConnector("rest"), connector_type=ConnectorType.REST_API)
+    job = JobDefinition(
+        id="job-3", connector=StubConnector("rest"), connector_type=ConnectorType.REST_API
+    )
     scheduler.run_job(job)
 
     assert scheduler.get_status("job-3") == ExecutionStatus.COMPLETED
@@ -198,7 +207,9 @@ def test_hub_requires_registered_connector() -> None:
 
 def test_health_monitor_status_and_normalizer_fallback() -> None:
     monitor = HealthMonitor()
-    monitor.record_health("rest", healthy=True, availability=0.8, last_synchronization=datetime.now(UTC))
+    monitor.record_health(
+        "rest", healthy=True, availability=0.8, last_synchronization=datetime.now(UTC)
+    )
     snapshot = monitor.get_health("rest")
     assert snapshot.healthy is True
     assert snapshot.availability == 0.8

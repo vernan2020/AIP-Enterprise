@@ -25,12 +25,21 @@ class InvestmentRanking:
             RankItem(
                 business_id=opportunity.business_id,
                 primary_score=opportunity.score,
-                secondary_metrics=(("recommendation", Decimal(1) if opportunity.recommendation is not None else Decimal(0)),),
+                secondary_metrics=(
+                    (
+                        "recommendation",
+                        Decimal(1) if opportunity.recommendation is not None else Decimal(0),
+                    ),
+                ),
                 metadata=opportunity.metadata,
             )
             for opportunity in opportunities
         ]
-        result = RankingEngine().rank(items, RankingOrder.DESCENDING, TieBreaker(metric_name="recommendation", ranking_order=RankingOrder.ASCENDING))
+        result = RankingEngine().rank(
+            items,
+            RankingOrder.DESCENDING,
+            TieBreaker(metric_name="recommendation", ranking_order=RankingOrder.ASCENDING),
+        )
         percentile_rank = tuple(
             Decimal("1") - (Decimal(index) / Decimal(len(result.ranked_items)))
             for index in range(len(result.ranked_items))

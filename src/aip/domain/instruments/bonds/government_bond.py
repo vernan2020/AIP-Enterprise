@@ -14,7 +14,10 @@ class GovernmentBond(Bond):
 
     def __post_init__(self) -> None:
         super().__post_init__()
-        if self.issuer.name.lower().find("costa") == -1 and self.issuer.name.lower().find("government") == -1:
+        if (
+            self.issuer.name.lower().find("costa") == -1
+            and self.issuer.name.lower().find("government") == -1
+        ):
             self.metadata["jurisdiction"] = self.jurisdiction
 
     def calculate_price(self) -> Decimal:

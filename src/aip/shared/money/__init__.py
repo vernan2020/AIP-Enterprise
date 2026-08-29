@@ -59,10 +59,7 @@ class Currency(Enum):
         """
         Guard.required(code, "code")
         Guard.matches(
-            code,
-            "code",
-            Validators.is_valid_iso_currency_code,
-            "ISO 4217 code (e.g., 'USD')"
+            code, "code", Validators.is_valid_iso_currency_code, "ISO 4217 code (e.g., 'USD')"
         )
 
         try:
@@ -143,8 +140,7 @@ class Money:
         """
         self._validate_currency_match(other)
         result_amount = (self.amount + other.amount).quantize(
-            Decimal("0.01"),
-            rounding=ROUND_HALF_UP
+            Decimal("0.01"), rounding=ROUND_HALF_UP
         )
         return Money(result_amount, self.currency)
 
@@ -162,8 +158,7 @@ class Money:
         """
         self._validate_currency_match(other)
         result_amount = (self.amount - other.amount).quantize(
-            Decimal("0.01"),
-            rounding=ROUND_HALF_UP
+            Decimal("0.01"), rounding=ROUND_HALF_UP
         )
         return Money(result_amount, self.currency)
 
@@ -179,10 +174,7 @@ class Money:
         if isinstance(factor, (int, float)):
             factor = Decimal(str(factor))
 
-        result_amount = (self.amount * factor).quantize(
-            Decimal("0.01"),
-            rounding=ROUND_HALF_UP
-        )
+        result_amount = (self.amount * factor).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
         return Money(result_amount, self.currency)
 
     def __rmul__(self, factor: Decimal | int | float) -> Self:
@@ -214,10 +206,7 @@ class Money:
         if isinstance(divisor, (int, float)):
             divisor = Decimal(str(divisor))
 
-        result_amount = (self.amount / divisor).quantize(
-            Decimal("0.01"),
-            rounding=ROUND_HALF_UP
-        )
+        result_amount = (self.amount / divisor).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
         return Money(result_amount, self.currency)
 
     def __neg__(self) -> Self:
@@ -321,13 +310,10 @@ class ExchangeRate:
             ValueError: If source currency doesn't match.
         """
         if money.currency != self.from_currency:
-            raise ValueError(
-                f"Cannot convert {money.currency} with rate for {self.from_currency}"
-            )
+            raise ValueError(f"Cannot convert {money.currency} with rate for {self.from_currency}")
 
         converted_amount = (money.amount * self.rate).quantize(
-            Decimal("0.01"),
-            rounding=ROUND_HALF_UP
+            Decimal("0.01"), rounding=ROUND_HALF_UP
         )
         return Money(converted_amount, self.to_currency)
 
@@ -341,15 +327,9 @@ class ExchangeRate:
             raise ValueError("Cannot invert zero rate")
 
         inverse_rate = (Decimal(1) / self.rate).quantize(
-            Decimal("0.000001"),
-            rounding=ROUND_HALF_UP
+            Decimal("0.000001"), rounding=ROUND_HALF_UP
         )
-        return ExchangeRate(
-            self.to_currency,
-            self.from_currency,
-            inverse_rate,
-            self.effective_date
-        )
+        return ExchangeRate(self.to_currency, self.from_currency, inverse_rate, self.effective_date)
 
 
 class MoneyArithmetic:
@@ -411,4 +391,3 @@ class MoneyArithmetic:
             Money with multiplied amount.
         """
         return money * factor
-

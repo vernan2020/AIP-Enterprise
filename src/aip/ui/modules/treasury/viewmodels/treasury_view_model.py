@@ -27,15 +27,33 @@ class TreasuryViewModel:
             "subtitle": self.subtitle,
             "summary": list(self.summary),
             "recommendations": [
-                {"title": item.title, "detail": item.detail, "severity": item.severity, "source": item.source, "timestamp": item.timestamp}
+                {
+                    "title": item.title,
+                    "detail": item.detail,
+                    "severity": item.severity,
+                    "source": item.source,
+                    "timestamp": item.timestamp,
+                }
                 for item in self.recommendations
             ],
             "alerts": [
-                {"title": item.title, "detail": item.detail, "severity": item.severity, "source": item.source, "timestamp": item.timestamp}
+                {
+                    "title": item.title,
+                    "detail": item.detail,
+                    "severity": item.severity,
+                    "source": item.source,
+                    "timestamp": item.timestamp,
+                }
                 for item in self.alerts
             ],
             "opportunities": [
-                {"title": item.title, "detail": item.detail, "severity": item.severity, "source": item.source, "timestamp": item.timestamp}
+                {
+                    "title": item.title,
+                    "detail": item.detail,
+                    "severity": item.severity,
+                    "source": item.source,
+                    "timestamp": item.timestamp,
+                }
                 for item in self.opportunities
             ],
             "refresh_label": self.refresh_label,

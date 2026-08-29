@@ -4,7 +4,12 @@ from datetime import datetime, timezone
 from typing import Any
 
 from aip.product.configured.context.valuation_date_context import ValuationDateContext
-from aip.product.configured.protocols import MarketDataProvider, LiquidityDataProvider, PortfolioDataProvider, SourceHealthProvider
+from aip.product.configured.protocols import (
+    LiquidityDataProvider,
+    MarketDataProvider,
+    PortfolioDataProvider,
+    SourceHealthProvider,
+)
 from aip.product.demo.adapters.demo_health_provider import DemoHealthProvider
 from aip.product.demo.adapters.demo_liquidity_provider import DemoLiquidityProvider
 from aip.product.demo.adapters.demo_market_provider import DemoMarketProvider
@@ -41,21 +46,32 @@ class RefreshAllWorkflow:
             for name, state in health.items()
         )
         portfolio = self._portfolio_provider.get_portfolio()
-        liquidity = PortfolioLiquidityComposer.compose(portfolio, self._liquidity_provider.get_liquidity())
+        liquidity = PortfolioLiquidityComposer.compose(
+            portfolio, self._liquidity_provider.get_liquidity()
+        )
         return {
             "execution_id": f"refresh-{correlation_id}",
             "correlation_id": correlation_id,
             "started_at": started_at.isoformat(),
             "completed_at": datetime.now(timezone.utc).isoformat(),
             "source_statuses": [
-                {"name": status.name, "state": status.state, "details": status.details, "correlation_id": status.correlation_id}
+                {
+                    "name": status.name,
+                    "state": status.state,
+                    "details": status.details,
+                    "correlation_id": status.correlation_id,
+                }
                 for status in source_statuses
             ],
             "data_quality_status": "HEALTHY",
             "workflow_statuses": {"refresh_all": "COMPLETED"},
             "warnings": (),
             "errors": (),
-            "calculation_references": {"portfolio": "calc-portfolio-demo", "market": "calc-market-demo", "liquidity": "calc-liquidity-demo"},
+            "calculation_references": {
+                "portfolio": "calc-portfolio-demo",
+                "market": "calc-market-demo",
+                "liquidity": "calc-liquidity-demo",
+            },
             "valuation_date": (
                 self._valuation_date_context.value
                 if self._valuation_date_context is not None

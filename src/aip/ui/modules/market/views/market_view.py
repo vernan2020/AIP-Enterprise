@@ -10,7 +10,6 @@ from aip.ui.modules.market.views.pricing_view import PricingView
 from aip.ui.modules.market.views.relative_value_view import RelativeValueView
 from aip.ui.modules.market.views.yield_curve_view import YieldCurveView
 from aip.ui.modules.market.widgets.market_filter_panel import MarketFilterPanel
-from aip.ui.modules.market.widgets.market_metric_card import MarketMetricCard
 from aip.ui.modules.market.widgets.market_status_badge import MarketStatusBadge
 
 

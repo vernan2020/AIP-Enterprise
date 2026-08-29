@@ -14,7 +14,9 @@ class BCCRHealthMonitor:
     states: dict[str, str] = field(default_factory=dict)
 
     def record_success(self, connector_name: str, count: int) -> None:
-        self.requests_processed[connector_name] = self.requests_processed.get(connector_name, 0) + count
+        self.requests_processed[connector_name] = (
+            self.requests_processed.get(connector_name, 0) + count
+        )
 
     def record_failure(self, connector_name: str) -> None:
         self.failures[connector_name] = self.failures.get(connector_name, 0) + 1

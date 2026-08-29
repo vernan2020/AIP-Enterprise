@@ -6,5 +6,4 @@ from aip.platform.observability.logging.structured_log import StructuredLog
 
 
 class Exporter(Protocol):
-    def export(self, log: StructuredLog) -> None:
-        ...
+    def export(self, log: StructuredLog) -> None: ...

@@ -4,7 +4,6 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from typing import Any
 
-from aip.platform.scheduler.exceptions.scheduler_exceptions import SchedulerError
 from aip.platform.scheduler.jobs.job_result import JobResult, JobStatus
 from aip.platform.scheduler.jobs.scheduled_job import ScheduledJob
 from aip.platform.scheduler.locking.execution_lock import ExecutionLock
@@ -35,10 +34,30 @@ class ExecutionEngine:
 
     def execute(self, job: ScheduledJob, *, context: dict[str, Any] | None = None) -> JobResult:
         if not self.registry.is_enabled(job.job_id):
-            return JobResult(execution_id=f"{job.job_id}-disabled", correlation_id="system", job_id=job.job_id, status=JobStatus.SKIPPED, duration_seconds=0.0, retries=0, warnings=[], errors=["disabled"], timestamp=datetime.now(UTC))
+            return JobResult(
+                execution_id=f"{job.job_id}-disabled",
+                correlation_id="system",
+                job_id=job.job_id,
+                status=JobStatus.SKIPPED,
+                duration_seconds=0.0,
+                retries=0,
+                warnings=[],
+                errors=["disabled"],
+                timestamp=datetime.now(UTC),
+            )
 
         if not self.lock.acquire(job.job_id):
-            return JobResult(execution_id=f"{job.job_id}-locked", correlation_id="system", job_id=job.job_id, status=JobStatus.CANCELLED, duration_seconds=0.0, retries=0, warnings=["locked"], errors=[], timestamp=datetime.now(UTC))
+            return JobResult(
+                execution_id=f"{job.job_id}-locked",
+                correlation_id="system",
+                job_id=job.job_id,
+                status=JobStatus.CANCELLED,
+                duration_seconds=0.0,
+                retries=0,
+                warnings=["locked"],
+                errors=[],
+                timestamp=datetime.now(UTC),
+            )
 
         try:
             self.health.record_running(job.job_id)
@@ -50,7 +69,13 @@ class ExecutionEngine:
         finally:
             self.lock.release(job.job_id)
 
-    def execute_many(self, jobs: list[ScheduledJob], *, parallel: bool = False, context: dict[str, Any] | None = None) -> list[JobResult]:
+    def execute_many(
+        self,
+        jobs: list[ScheduledJob],
+        *,
+        parallel: bool = False,
+        context: dict[str, Any] | None = None,
+    ) -> list[JobResult]:
         resolved_jobs = self._resolve_dependencies(jobs)
         if not parallel:
             return [self.execute(job, context=context) for job in resolved_jobs]

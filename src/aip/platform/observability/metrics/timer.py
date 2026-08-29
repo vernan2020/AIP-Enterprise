@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from statistics import mean
-from time import sleep
 from typing import Iterator
 
 

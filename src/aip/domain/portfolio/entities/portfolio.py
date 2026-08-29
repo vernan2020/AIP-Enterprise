@@ -150,11 +150,15 @@ class Portfolio:
 
     def total_nominal_value(self) -> Money:
         """Calculate total portfolio nominal value in base currency."""
-        return PortfolioCalculationService.portfolio_nominal_value(self.positions, self.base_currency)
+        return PortfolioCalculationService.portfolio_nominal_value(
+            self.positions, self.base_currency
+        )
 
     def total_market_value(self) -> Money:
         """Calculate total portfolio market value in base currency."""
-        return PortfolioCalculationService.portfolio_market_value(self.positions, self.base_currency)
+        return PortfolioCalculationService.portfolio_market_value(
+            self.positions, self.base_currency
+        )
 
     def total_book_value(self) -> Money:
         """Calculate total portfolio book value in base currency."""
@@ -162,19 +166,27 @@ class Portfolio:
 
     def unrealized_gain_or_loss(self) -> Money:
         """Calculate unrealized portfolio gain or loss."""
-        return PortfolioCalculationService.unrealized_gain_or_loss(self.positions, self.base_currency)
+        return PortfolioCalculationService.unrealized_gain_or_loss(
+            self.positions, self.base_currency
+        )
 
     def weighted_yield(self) -> Decimal:
         """Calculate weighted average yield in percentage points."""
-        return PortfolioCalculationService.weighted_average_yield(self.positions, self.base_currency)
+        return PortfolioCalculationService.weighted_average_yield(
+            self.positions, self.base_currency
+        )
 
     def weighted_duration(self) -> Decimal:
         """Calculate weighted average duration."""
-        return PortfolioCalculationService.weighted_average_duration(self.positions, self.base_currency)
+        return PortfolioCalculationService.weighted_average_duration(
+            self.positions, self.base_currency
+        )
 
     def weighted_convexity(self) -> Decimal:
         """Calculate weighted average convexity."""
-        return PortfolioCalculationService.weighted_average_convexity(self.positions, self.base_currency)
+        return PortfolioCalculationService.weighted_average_convexity(
+            self.positions, self.base_currency
+        )
 
     def pull_domain_events(self) -> list[DomainEvent]:
         """Return and clear pending domain events."""
@@ -185,7 +197,9 @@ class Portfolio:
     def _ensure_not_closed(self) -> None:
         """Ensure portfolio is not closed before mutation."""
         if self.status == PortfolioStatus.CLOSED:
-            raise PortfolioClosedError("Closed portfolio cannot accept new positions or transactions.")
+            raise PortfolioClosedError(
+                "Closed portfolio cannot accept new positions or transactions."
+            )
 
     def _record_state_event(self, event_type: str) -> None:
         """Record generic state transition event."""

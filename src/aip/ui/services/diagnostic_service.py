@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-import json
 import os
 import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
 
 from aip.core.version import APP_NAME, APP_RELEASE, APP_VERSION
@@ -45,10 +43,22 @@ class DiagnosticMetricsStore:
 class DiagnosticContext:
     execution_id: str = field(default_factory=lambda: f"exec-{uuid.uuid4().hex[:8]}")
     correlation_id: str = field(default_factory=lambda: f"corr-{uuid.uuid4().hex[:8]}")
-    valuation_date: str = field(default_factory=lambda: datetime.now(timezone.utc).date().isoformat())
-    environment: str = field(default_factory=lambda: (os.getenv("AIP_ENVIRONMENT") or os.getenv("AIP_DEMO_ENVIRONMENT") or "demo"))
-    execution_mode: str = field(default_factory=lambda: ((os.getenv("AIP_EXECUTION_MODE") or os.getenv("AIP_DEMO_EXECUTION_MODE") or "DEMO")).upper())
-    connector_status: dict[str, str] = field(default_factory=lambda: {"sql": "HEALTHY", "folder_watch": "HEALTHY", "bccr": "HEALTHY"})
+    valuation_date: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).date().isoformat()
+    )
+    environment: str = field(
+        default_factory=lambda: (
+            os.getenv("AIP_ENVIRONMENT") or os.getenv("AIP_DEMO_ENVIRONMENT") or "demo"
+        )
+    )
+    execution_mode: str = field(
+        default_factory=lambda: (
+            (os.getenv("AIP_EXECUTION_MODE") or os.getenv("AIP_DEMO_EXECUTION_MODE") or "DEMO")
+        ).upper()
+    )
+    connector_status: dict[str, str] = field(
+        default_factory=lambda: {"sql": "HEALTHY", "folder_watch": "HEALTHY", "bccr": "HEALTHY"}
+    )
     scheduler_jobs: list[str] = field(default_factory=lambda: ["refresh-all", "executive-sync"])
     last_refresh_duration: float = 0.0
     application_version: str = field(default_factory=lambda: APP_VERSION)
@@ -78,7 +88,9 @@ class ProductionReadinessService:
                 failures += 1
                 continue
             execution_times.append((time.perf_counter() - started) * 1000.0)
-        average_execution_time = sum(execution_times) / len(execution_times) if execution_times else 0.0
+        average_execution_time = (
+            sum(execution_times) / len(execution_times) if execution_times else 0.0
+        )
         return {
             "iterations": self._iterations,
             "failures": failures,

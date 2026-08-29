@@ -33,4 +33,6 @@ class ScoreComponent:
             raise ScoringError("Target-based scoring requires a target value")
         if self.minimum_threshold is not None and self.maximum_threshold is not None:
             if self.minimum_threshold > self.maximum_threshold:
-                raise ScoringError("Minimum threshold must be less than or equal to maximum threshold")
+                raise ScoringError(
+                    "Minimum threshold must be less than or equal to maximum threshold"
+                )

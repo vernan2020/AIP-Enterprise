@@ -42,6 +42,8 @@ class SpreadEngine:
             return self._curve.calculate(observed_yield, curve, tenor)
         if spread_type == "z":
             if instrument is None or initial_guess is None or tolerance is None:
-                raise UnsupportedSpreadTypeError("Instrument, initial guess, and tolerance are required")
+                raise UnsupportedSpreadTypeError(
+                    "Instrument, initial guess, and tolerance are required"
+                )
             return self._z.calculate(observed_yield, curve, instrument, initial_guess, tolerance)
         raise UnsupportedSpreadTypeError(f"Unsupported spread type: {spread_type}")

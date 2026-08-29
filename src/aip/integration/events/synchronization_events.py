@@ -31,10 +31,17 @@ class SynchronizationEvent:
 
     @classmethod
     def started(cls, job_id: str, connector_name: str, execution_id: str) -> "SynchronizationEvent":
-        return cls(event_type=SynchronizationEventType.STARTED, job_id=job_id, connector_name=connector_name, execution_id=execution_id)
+        return cls(
+            event_type=SynchronizationEventType.STARTED,
+            job_id=job_id,
+            connector_name=connector_name,
+            execution_id=execution_id,
+        )
 
     @classmethod
-    def completed(cls, job_id: str, connector_name: str, execution_id: str, result: ExecutionResult) -> "SynchronizationEvent":
+    def completed(
+        cls, job_id: str, connector_name: str, execution_id: str, result: ExecutionResult
+    ) -> "SynchronizationEvent":
         return cls(
             event_type=SynchronizationEventType.COMPLETED,
             job_id=job_id,
@@ -44,7 +51,9 @@ class SynchronizationEvent:
         )
 
     @classmethod
-    def failed(cls, job_id: str, connector_name: str, execution_id: str, error: str) -> "SynchronizationEvent":
+    def failed(
+        cls, job_id: str, connector_name: str, execution_id: str, error: str
+    ) -> "SynchronizationEvent":
         return cls(
             event_type=SynchronizationEventType.FAILED,
             job_id=job_id,
@@ -54,11 +63,20 @@ class SynchronizationEvent:
         )
 
     @classmethod
-    def cancelled(cls, job_id: str, connector_name: str, execution_id: str) -> "SynchronizationEvent":
-        return cls(event_type=SynchronizationEventType.CANCELLED, job_id=job_id, connector_name=connector_name, execution_id=execution_id)
+    def cancelled(
+        cls, job_id: str, connector_name: str, execution_id: str
+    ) -> "SynchronizationEvent":
+        return cls(
+            event_type=SynchronizationEventType.CANCELLED,
+            job_id=job_id,
+            connector_name=connector_name,
+            execution_id=execution_id,
+        )
 
     @classmethod
-    def retry(cls, job_id: str, connector_name: str, execution_id: str, attempt: int) -> "SynchronizationEvent":
+    def retry(
+        cls, job_id: str, connector_name: str, execution_id: str, attempt: int
+    ) -> "SynchronizationEvent":
         return cls(
             event_type=SynchronizationEventType.RETRY,
             job_id=job_id,
@@ -68,7 +86,9 @@ class SynchronizationEvent:
         )
 
     @classmethod
-    def connected(cls, job_id: str, connector_name: str, execution_id: str) -> "SynchronizationEvent":
+    def connected(
+        cls, job_id: str, connector_name: str, execution_id: str
+    ) -> "SynchronizationEvent":
         return cls(
             event_type=SynchronizationEventType.CONNECTED,
             job_id=job_id,
@@ -78,7 +98,9 @@ class SynchronizationEvent:
         )
 
     @classmethod
-    def disconnected(cls, job_id: str, connector_name: str, execution_id: str) -> "SynchronizationEvent":
+    def disconnected(
+        cls, job_id: str, connector_name: str, execution_id: str
+    ) -> "SynchronizationEvent":
         return cls(
             event_type=SynchronizationEventType.DISCONNECTED,
             job_id=job_id,
@@ -88,7 +110,9 @@ class SynchronizationEvent:
         )
 
     @classmethod
-    def synchronization_started(cls, job_id: str, connector_name: str, execution_id: str) -> "SynchronizationEvent":
+    def synchronization_started(
+        cls, job_id: str, connector_name: str, execution_id: str
+    ) -> "SynchronizationEvent":
         return cls(
             event_type=SynchronizationEventType.STARTED,
             job_id=job_id,
@@ -98,7 +122,9 @@ class SynchronizationEvent:
         )
 
     @classmethod
-    def synchronization_completed(cls, job_id: str, connector_name: str, execution_id: str) -> "SynchronizationEvent":
+    def synchronization_completed(
+        cls, job_id: str, connector_name: str, execution_id: str
+    ) -> "SynchronizationEvent":
         return cls(
             event_type=SynchronizationEventType.COMPLETED,
             job_id=job_id,

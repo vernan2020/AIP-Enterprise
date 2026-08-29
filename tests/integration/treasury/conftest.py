@@ -77,7 +77,9 @@ def yield_curve() -> YieldCurve:
 
 
 @pytest.fixture
-def analysis_request(treasury_instrument: TreasuryInstrument, yield_curve: YieldCurve) -> AnalysisRequest:
+def analysis_request(
+    treasury_instrument: TreasuryInstrument, yield_curve: YieldCurve
+) -> AnalysisRequest:
     return AnalysisRequest(
         workflow_id="wf-treasury",
         correlation_id="corr-treasury",
@@ -90,8 +92,18 @@ def analysis_request(treasury_instrument: TreasuryInstrument, yield_curve: Yield
         context={
             "deterministic_ids": True,
             "contractual_cashflows": (
-                CashFlow(payment_date=date(2026, 6, 1), amount=Decimal("500000"), currency="USD", cash_flow_type="coupon"),
-                CashFlow(payment_date=date(2027, 6, 1), amount=Decimal("300000"), currency="USD", cash_flow_type="principal"),
+                CashFlow(
+                    payment_date=date(2026, 6, 1),
+                    amount=Decimal("500000"),
+                    currency="USD",
+                    cash_flow_type="coupon",
+                ),
+                CashFlow(
+                    payment_date=date(2027, 6, 1),
+                    amount=Decimal("300000"),
+                    currency="USD",
+                    cash_flow_type="principal",
+                ),
             ),
         },
         requested_at=datetime(2026, 1, 1, tzinfo=UTC),
@@ -103,8 +115,18 @@ def projection_request() -> ProjectionRequest:
     return ProjectionRequest(
         valuation_date=date(2026, 1, 1),
         contractual_cashflows=(
-            CashFlow(payment_date=date(2026, 6, 1), amount=Decimal("500000"), currency="USD", cash_flow_type="coupon"),
-            CashFlow(payment_date=date(2027, 6, 1), amount=Decimal("300000"), currency="USD", cash_flow_type="principal"),
+            CashFlow(
+                payment_date=date(2026, 6, 1),
+                amount=Decimal("500000"),
+                currency="USD",
+                cash_flow_type="coupon",
+            ),
+            CashFlow(
+                payment_date=date(2027, 6, 1),
+                amount=Decimal("300000"),
+                currency="USD",
+                cash_flow_type="principal",
+            ),
         ),
         portfolio_reference="portfolio-1",
         currency="USD",

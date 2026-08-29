@@ -11,5 +11,6 @@ if TYPE_CHECKING:
 class BehavioralProvider(Protocol):
     """Protocol for providing behavioral assumptions for a projection request."""
 
-    def get_behavioral_assumptions(self, request: ProjectionRequest) -> tuple[BehavioralAssumption, ...]:
-        ...
+    def get_behavioral_assumptions(
+        self, request: ProjectionRequest
+    ) -> tuple[BehavioralAssumption, ...]: ...

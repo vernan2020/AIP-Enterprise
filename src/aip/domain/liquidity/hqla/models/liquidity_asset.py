@@ -53,7 +53,9 @@ class LiquidityAsset:
             raise HQLAError("Metadata must be a dictionary")
         if self.metadata is not None:
             object.__setattr__(self, "metadata", dict(self.metadata))
-            object.__setattr__(self, "marketability_indicators", dict(self.marketability_indicators))
+            object.__setattr__(
+                self, "marketability_indicators", dict(self.marketability_indicators)
+            )
             object.__setattr__(self, "settlement_indicators", dict(self.settlement_indicators))
 
     @property

@@ -35,21 +35,38 @@ class CashFlowEngine:
         values = [cashflow.amount for cashflow in projected]
         stats = DescriptiveStatistics(values)
         factors = [
-            ExplanationFactor(name="projected_amount", value=stats.sum(), direction="higher_is_better", contribution=stats.sum(), source_reference="cashflow"),
+            ExplanationFactor(
+                name="projected_amount",
+                value=stats.sum(),
+                direction="higher_is_better",
+                contribution=stats.sum(),
+                source_reference="cashflow",
+            ),
         ]
         self._explanation.build(
             "Projected cash flows derived from contractual and behavioral assumptions",
             factors,
-            assumptions=request.behavioral_assumptions and tuple(assumption.name for assumption in request.behavioral_assumptions) or request.assumptions,
+            assumptions=request.behavioral_assumptions
+            and tuple(assumption.name for assumption in request.behavioral_assumptions)
+            or request.assumptions,
             warnings=request.warnings,
             references=request.references,
         )
         return ProjectionResult(
             projection_type=self._projection_type(request),
             projected_cashflows=projected,
-            assumptions=request.behavioral_assumptions and tuple(assumption.name for assumption in request.behavioral_assumptions) or request.assumptions,
-            behavioral_inputs=tuple((assumption.name, assumption.probability) for assumption in request.behavioral_assumptions),
-            calculation_path=("contractual", "behavioral") if request.behavioral_assumptions else ("contractual",),
+            assumptions=request.behavioral_assumptions
+            and tuple(assumption.name for assumption in request.behavioral_assumptions)
+            or request.assumptions,
+            behavioral_inputs=tuple(
+                (assumption.name, assumption.probability)
+                for assumption in request.behavioral_assumptions
+            ),
+            calculation_path=(
+                ("contractual", "behavioral")
+                if request.behavioral_assumptions
+                else ("contractual",)
+            ),
             warnings=request.warnings,
             references=request.references,
             coverage=stats.mean(),
@@ -57,7 +74,11 @@ class CashFlowEngine:
             timing=stats.median(),
             distribution=stats.standard_deviation(),
             weighted_average=stats.mean(),
-            percentiles=(stats.percentile(Decimal("0.25")), stats.percentile(Decimal("0.5")), stats.percentile(Decimal("0.75"))),
+            percentiles=(
+                stats.percentile(Decimal("0.25")),
+                stats.percentile(Decimal("0.5")),
+                stats.percentile(Decimal("0.75")),
+            ),
             factors=tuple(factors),
             scenario=scenario,
             aggregation=aggregation,

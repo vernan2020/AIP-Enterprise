@@ -3,12 +3,12 @@ from __future__ import annotations
 import math
 import re
 import unicodedata
+import zipfile
 from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
-import zipfile
 
 import openpyxl
 from openpyxl.utils.exceptions import InvalidFileException
@@ -41,7 +41,13 @@ class PortfolioMasterReader:
         "issuer": ("issuer", "emisor", "issuer name", "nombre emisor"),
         "instrument": ("instrument", "instrumento", "security", "nombre instrumento"),
         "currency": ("currency", "moneda", "ccy", "curr"),
-        "nominal_value": ("nominal", "nominal value", "nominal valor", "nominales", "saldo principal"),
+        "nominal_value": (
+            "nominal",
+            "nominal value",
+            "nominal valor",
+            "nominales",
+            "saldo principal",
+        ),
         "market_value": (
             "market value",
             "valor de mercado",
@@ -50,11 +56,29 @@ class PortfolioMasterReader:
             "saldo valor mercado",
             "valor mercado colonizado",
         ),
-        "book_value": ("book value", "valor en libros", "valor libro", "libros", "saldo valor compra"),
-        "purchase_value": ("purchase value", "valor compra", "valor de compra", "saldo valor transado"),
+        "book_value": (
+            "book value",
+            "valor en libros",
+            "valor libro",
+            "libros",
+            "saldo valor compra",
+        ),
+        "purchase_value": (
+            "purchase value",
+            "valor compra",
+            "valor de compra",
+            "saldo valor transado",
+        ),
         "market_price": ("market price", "precio mercado", "precio de mercado"),
         "acquisition_price": ("acquisition price", "precio adquisicion", "precio de adquisición"),
-        "yield_value": ("yield", "rendimiento", "yield value", "market yield", "rendimiento mercado", "tir"),
+        "yield_value": (
+            "yield",
+            "rendimiento",
+            "yield value",
+            "market yield",
+            "rendimiento mercado",
+            "tir",
+        ),
         "nominal_rate": ("nominal rate", "tasa nominal", "rate"),
         "modified_duration": (
             "modified duration",
@@ -63,17 +87,34 @@ class PortfolioMasterReader:
             "duration",
             "duracion",
         ),
-        "maturity_date": ("maturity date", "fecha vencimiento", "fecha de vencimiento", "vencimiento"),
-        "next_coupon_date": ("next coupon date", "proxima cupon", "próxima cupón", "fecha proximo cupon"),
+        "maturity_date": (
+            "maturity date",
+            "fecha vencimiento",
+            "fecha de vencimiento",
+            "vencimiento",
+        ),
+        "next_coupon_date": (
+            "next coupon date",
+            "proxima cupon",
+            "próxima cupón",
+            "fecha proximo cupon",
+        ),
         "rate_type": ("rate type", "tipo tasa", "tipo de tasa"),
         "classification": ("classification", "clasificacion", "clasificación", "category"),
-        "reserve_liquidity_indicator": ("reserve liquidity", "liquidity", "liquidez", "indicador liquidez"),
+        "reserve_liquidity_indicator": (
+            "reserve liquidity",
+            "liquidity",
+            "liquidez",
+            "indicador liquidez",
+        ),
         "encumbrance_status": ("encumbrance", "encumbrado", "commitment", "compromiso"),
         "accounting_account": ("account", "accounting account", "cuenta", "cuenta contable"),
         "source_cutoff": ("source cutoff", "cutoff", "fecha corte", "corte"),
     }
 
-    def read(self, path: str | Path, *, valuation_date_override: date | None = None) -> PortfolioMasterReadResult:
+    def read(
+        self, path: str | Path, *, valuation_date_override: date | None = None
+    ) -> PortfolioMasterReadResult:
         file_path = Path(path)
         if not file_path.exists():
             return PortfolioMasterReadResult(
@@ -108,7 +149,14 @@ class PortfolioMasterReader:
                 sheet_names = workbook.sheetnames
                 sheet_data = [self._read_xlsx_sheet(sheet) for sheet in workbook.worksheets]
                 workbook.close()
-        except (InvalidFileException, XLRDError, zipfile.BadZipFile, ValueError, OSError, RuntimeError) as exc:
+        except (
+            InvalidFileException,
+            XLRDError,
+            zipfile.BadZipFile,
+            ValueError,
+            OSError,
+            RuntimeError,
+        ) as exc:
             return PortfolioMasterReadResult(
                 source_file=str(file_path),
                 valuation_date=valuation_date,
@@ -121,7 +169,9 @@ class PortfolioMasterReader:
                 diagnostics={"workbook_type": workbook_type, "error": str(exc), "sheet_count": 0},
             )
 
-        sheet_index, header_index, header_values, normalized_headers, column_map = self._select_sheet(sheet_names, sheet_data)
+        sheet_index, header_index, header_values, normalized_headers, column_map = (
+            self._select_sheet(sheet_names, sheet_data)
+        )
         if sheet_index is None or header_index is None:
             return PortfolioMasterReadResult(
                 source_file=str(file_path),
@@ -132,7 +182,11 @@ class PortfolioMasterReader:
                 rejected_row_count=0,
                 source_status="UNAVAILABLE",
                 detected_column_mapping={},
-                diagnostics={"workbook_type": workbook_type, "sheet_count": len(sheet_names), "sheets": sheet_names},
+                diagnostics={
+                    "workbook_type": workbook_type,
+                    "sheet_count": len(sheet_names),
+                    "sheets": sheet_names,
+                },
             )
 
         sheet_name = sheet_names[sheet_index]
@@ -156,7 +210,9 @@ class PortfolioMasterReader:
             position_identity = self._build_position_identity(position)
             if position_identity in seen_identities:
                 rejected_rows += 1
-                warnings.append(f"Duplicate identity detected for row {row_index}: {position_identity}")
+                warnings.append(
+                    f"Duplicate identity detected for row {row_index}: {position_identity}"
+                )
                 continue
 
             seen_identities.add(position_identity)
@@ -220,12 +276,18 @@ class PortfolioMasterReader:
             rows.append(list(row_values))
         return rows
 
-    def _select_sheet(self, sheet_names: list[str], sheet_data: list[list[list[Any]]]) -> tuple[int | None, int | None, list[str], list[str], dict[str, str]]:
+    def _select_sheet(
+        self, sheet_names: list[str], sheet_data: list[list[list[Any]]]
+    ) -> tuple[int | None, int | None, list[str], list[str], dict[str, str]]:
         best_score = -1
-        best_selection: tuple[int | None, int | None, list[str], list[str], dict[str, str]] | None = None
+        best_selection: (
+            tuple[int | None, int | None, list[str], list[str], dict[str, str]] | None
+        ) = None
         for sheet_index, rows in enumerate(sheet_data):
             for header_index, header_row in enumerate(rows[: min(len(rows), 20)]):
-                normalized_headers = [self._normalize_header(self._stringify(value)) for value in header_row]
+                normalized_headers = [
+                    self._normalize_header(self._stringify(value)) for value in header_row
+                ]
                 if not normalized_headers:
                     continue
                 matches = self._match_header_row(normalized_headers)
@@ -240,7 +302,13 @@ class PortfolioMasterReader:
                             break
                 if score >= 5:
                     best_score = score
-                    best_selection = (sheet_index, header_index, [self._stringify(value) for value in header_row], normalized_headers, column_map)
+                    best_selection = (
+                        sheet_index,
+                        header_index,
+                        [self._stringify(value) for value in header_row],
+                        normalized_headers,
+                        column_map,
+                    )
                     break
                 for canonical, aliases in self._CANONICAL_ALIASES.items():
                     for index, header in enumerate(normalized_headers):
@@ -249,7 +317,13 @@ class PortfolioMasterReader:
                             break
                 if score > best_score:
                     best_score = score
-                    best_selection = (sheet_index, header_index, [self._stringify(value) for value in header_row], normalized_headers, column_map)
+                    best_selection = (
+                        sheet_index,
+                        header_index,
+                        [self._stringify(value) for value in header_row],
+                        normalized_headers,
+                        column_map,
+                    )
         if best_selection is None:
             return None, None, [], [], {}
         return best_selection
@@ -278,7 +352,11 @@ class PortfolioMasterReader:
             alias_normalized = self._normalize_header(alias)
             if not alias_normalized:
                 continue
-            if normalized_header == alias_normalized or normalized_header.startswith(alias_normalized) or alias_normalized.startswith(normalized_header):
+            if (
+                normalized_header == alias_normalized
+                or normalized_header.startswith(alias_normalized)
+                or alias_normalized.startswith(normalized_header)
+            ):
                 return True
         return False
 
@@ -293,7 +371,9 @@ class PortfolioMasterReader:
             return str(value)
         return str(value)
 
-    def _normalize_row(self, row_values: list[Any], header_values: list[str]) -> dict[str, Any] | None:
+    def _normalize_row(
+        self, row_values: list[Any], header_values: list[str]
+    ) -> dict[str, Any] | None:
         values = [self._stringify(value) for value in row_values]
         if not any(value.strip() for value in values):
             return None
@@ -304,21 +384,36 @@ class PortfolioMasterReader:
             result[self._normalize_header(header)] = row_values[index]
         return result
 
-    def _build_position(self, row_data: dict[str, Any], row_number: int, file_name: str) -> dict[str, Any] | None:
+    def _build_position(
+        self, row_data: dict[str, Any], row_number: int, file_name: str
+    ) -> dict[str, Any] | None:
         normalized_cells = {self._normalize_header(key): value for key, value in row_data.items()}
         isin = self._coerce_text(self._find_field(normalized_cells, "isin"))
         issuer = self._coerce_text(self._find_field(normalized_cells, "issuer"))
         instrument = self._coerce_text(self._find_field(normalized_cells, "instrument"))
-        currency = self._normalize_currency(self._coerce_text(self._find_field(normalized_cells, "currency")))
+        currency = self._normalize_currency(
+            self._coerce_text(self._find_field(normalized_cells, "currency"))
+        )
         nominal_value = self._parse_number(self._find_field(normalized_cells, "nominal_value"))
         market_value = self._parse_number(self._find_field(normalized_cells, "market_value"))
         book_value = self._parse_number(self._find_field(normalized_cells, "book_value"))
-        yield_value = self._parse_number(self._find_field(normalized_cells, "yield_value"), percentage=True)
-        modified_duration = self._parse_number(self._find_field(normalized_cells, "modified_duration"))
+        yield_value = self._parse_number(
+            self._find_field(normalized_cells, "yield_value"), percentage=True
+        )
+        modified_duration = self._parse_number(
+            self._find_field(normalized_cells, "modified_duration")
+        )
         maturity_date = self._parse_date(self._find_field(normalized_cells, "maturity_date"))
         classification = self._coerce_text(self._find_field(normalized_cells, "classification"))
         account = self._coerce_text(self._find_field(normalized_cells, "accounting_account"))
-        if not isin and not issuer and not instrument and not market_value and not book_value and not nominal_value:
+        if (
+            not isin
+            and not issuer
+            and not instrument
+            and not market_value
+            and not book_value
+            and not nominal_value
+        ):
             return None
         if not isin and not issuer and not instrument:
             return None
@@ -383,7 +478,11 @@ class PortfolioMasterReader:
             if not text:
                 return None
             text = text.replace("$", "").replace("€", "").replace("£", "")
-            text = text.replace(".", "").replace(",", ".") if text.count(",") == 1 and text.count(".") == 0 else text
+            text = (
+                text.replace(".", "").replace(",", ".")
+                if text.count(",") == 1 and text.count(".") == 0
+                else text
+            )
             if "," in text and "." in text:
                 if text.rfind(",") > text.rfind("."):
                     text = text.replace(".", "").replace(",", ".")
@@ -445,14 +544,24 @@ class PortfolioMasterReader:
         compact_match = re.search(r"(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})", value)
         if compact_match is not None:
             try:
-                return date(int(compact_match.group("year")), int(compact_match.group("month")), int(compact_match.group("day")))
+                return date(
+                    int(compact_match.group("year")),
+                    int(compact_match.group("month")),
+                    int(compact_match.group("day")),
+                )
             except ValueError:
                 return None
-        date_match = re.search(r"(?P<day>\d{1,2})[-.]?(?P<month>\d{1,2})[-.]?(?P<year>\d{4})", value)
+        date_match = re.search(
+            r"(?P<day>\d{1,2})[-.]?(?P<month>\d{1,2})[-.]?(?P<year>\d{4})", value
+        )
         if not date_match:
             return None
         try:
-            return date(int(date_match.group("year")), int(date_match.group("month")), int(date_match.group("day")))
+            return date(
+                int(date_match.group("year")),
+                int(date_match.group("month")),
+                int(date_match.group("day")),
+            )
         except ValueError:
             return None
 

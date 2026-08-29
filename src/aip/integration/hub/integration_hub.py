@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Any
 
 from aip.integration.audit.execution_result import ExecutionResult, ExecutionStatus
 from aip.integration.audit.synchronization_log import SynchronizationLog
@@ -14,7 +13,7 @@ from aip.integration.exceptions.exceptions import IntegrationError
 from aip.integration.monitoring.health_monitor import HealthMonitor
 from aip.integration.normalization.normalizer import Normalizer
 from aip.integration.telemetry.metrics import MetricsCollector
-from aip.integration.validation.validator import ValidationIssue, ValidationResult, Validator
+from aip.integration.validation.validator import Validator
 
 
 @dataclass(slots=True)
@@ -77,19 +76,26 @@ class IntegrationHub:
             self.monitor.record_execution(connector.name, success=True, records=records_processed)
             self.metrics.increment("syncs", 1)
             self.monitor.record_sync(connector.name)
-            self._publish(SynchronizationEvent.completed(correlation_id, connector.name, execution_id, ExecutionResult(
-                execution_id=execution_id,
-                correlation_id=correlation_id,
-                connector=connector.name,
-                duration_seconds=duration,
-                records_processed=records_processed,
-                warnings=[],
-                errors=[],
-                user=user,
-                started_at=started_at,
-                finished_at=datetime.now(UTC),
-                status=ExecutionStatus.COMPLETED,
-            )))
+            self._publish(
+                SynchronizationEvent.completed(
+                    correlation_id,
+                    connector.name,
+                    execution_id,
+                    ExecutionResult(
+                        execution_id=execution_id,
+                        correlation_id=correlation_id,
+                        connector=connector.name,
+                        duration_seconds=duration,
+                        records_processed=records_processed,
+                        warnings=[],
+                        errors=[],
+                        user=user,
+                        started_at=started_at,
+                        finished_at=datetime.now(UTC),
+                        status=ExecutionStatus.COMPLETED,
+                    ),
+                )
+            )
             return ExecutionResult(
                 execution_id=execution_id,
                 correlation_id=correlation_id,
@@ -106,7 +112,9 @@ class IntegrationHub:
         except Exception as exc:  # noqa: BLE001
             self.monitor.record_execution(connector.name, success=False, records=0)
             self.metrics.increment("sync_failures", 1)
-            self._publish(SynchronizationEvent.failed(correlation_id, connector.name, execution_id, str(exc)))
+            self._publish(
+                SynchronizationEvent.failed(correlation_id, connector.name, execution_id, str(exc))
+            )
             raise IntegrationError(str(exc)) from exc
         finally:
             connector.disconnect()

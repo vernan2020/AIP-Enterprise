@@ -60,10 +60,12 @@ class HealthMonitor:
     ) -> None:
         self.availability[connector_name] = healthy
         snapshot = dict(self.health_status.get(connector_name, {}))
-        snapshot.update({
-            "healthy": healthy,
-            "availability": availability,
-        })
+        snapshot.update(
+            {
+                "healthy": healthy,
+                "availability": availability,
+            }
+        )
         self.health_status[connector_name] = snapshot
         if last_synchronization is not None:
             self.last_sync[connector_name] = last_synchronization

@@ -50,6 +50,4 @@ class ServiceLifetime(Enum):
             return cls[value.upper()]
         except KeyError:
             valid_values = ", ".join([item.name.lower() for item in cls])
-            raise ValueError(
-                f"Invalid lifetime: '{value}'. Must be one of: {valid_values}"
-            )
+            raise ValueError(f"Invalid lifetime: '{value}'. Must be one of: {valid_values}")

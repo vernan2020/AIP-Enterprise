@@ -166,44 +166,71 @@ def test_configuration_rejects_invalid_ranges_and_duplicates() -> None:
         LiquidityPolicyConfig.validate_configuration_collection(duplicate)
 
     with pytest.raises(InstitutionalConfigurationError):
-        LiquidityPolicyConfig(policy_id="p2", version="1.0", name="bad", category="hqla", issuer_limit=Decimal("-1"))
+        LiquidityPolicyConfig(
+            policy_id="p2", version="1.0", name="bad", category="hqla", issuer_limit=Decimal("-1")
+        )
 
     with pytest.raises(InstitutionalConfigurationError):
-        LiquidityPolicyConfig(policy_id="p3", version="1.0", name="bad", category="hqla", minimum_marketability_score=Decimal("1.2"))
+        LiquidityPolicyConfig(
+            policy_id="p3",
+            version="1.0",
+            name="bad",
+            category="hqla",
+            minimum_marketability_score=Decimal("1.2"),
+        )
 
     with pytest.raises(InstitutionalConfigurationError):
-        LiquidityPolicyConfig(policy_id="p4", version="1.0", name="bad", category="hqla", effective_date=date(2024, 2, 1), expiration_date=date(2024, 1, 1))
+        LiquidityPolicyConfig(
+            policy_id="p4",
+            version="1.0",
+            name="bad",
+            category="hqla",
+            effective_date=date(2024, 2, 1),
+            expiration_date=date(2024, 1, 1),
+        )
 
 
 def test_expired_and_disabled_policies_are_not_applicable() -> None:
     config = make_config(enabled=False)
     policy = UnencumberedAssetPolicy(config)
-    result = policy.evaluate(PolicyContext(context_id="ctx-1", timestamp=datetime.now(timezone.utc)))
+    result = policy.evaluate(
+        PolicyContext(context_id="ctx-1", timestamp=datetime.now(timezone.utc))
+    )
     assert result.status == "NOT_APPLICABLE"
 
     expired = make_config(effective_date=date(2020, 1, 1), expiration_date=date(2022, 1, 1))
     expired_policy = UnencumberedAssetPolicy(expired)
-    result = expired_policy.evaluate(PolicyContext(context_id="ctx-2", timestamp=datetime.now(timezone.utc)))
+    result = expired_policy.evaluate(
+        PolicyContext(context_id="ctx-2", timestamp=datetime.now(timezone.utc))
+    )
     assert result.status == "NOT_APPLICABLE"
 
 
 def test_unencumbered_asset_policy_passes_and_fails() -> None:
     policy = UnencumberedAssetPolicy(make_config())
-    context = PolicyContext(context_id="ctx-3", metadata={"asset": {"encumbrance_status": "unencumbered"}})
+    context = PolicyContext(
+        context_id="ctx-3", metadata={"asset": {"encumbrance_status": "unencumbered"}}
+    )
     result = policy.evaluate(context)
     assert result.status == "PASSED"
 
-    failing = PolicyContext(context_id="ctx-4", metadata={"asset": {"encumbrance_status": "pledged"}})
+    failing = PolicyContext(
+        context_id="ctx-4", metadata={"asset": {"encumbrance_status": "pledged"}}
+    )
     result = policy.evaluate(failing)
     assert result.status == "FAILED"
 
-    warning_context = PolicyContext(context_id="ctx-5", metadata={"asset": {"encumbrance_status": "unknown"}})
+    warning_context = PolicyContext(
+        context_id="ctx-5", metadata={"asset": {"encumbrance_status": "unknown"}}
+    )
     result = policy.evaluate(warning_context)
     assert result.status == "WARNING"
 
 
 def test_classification_exclusion_policy_supports_multiple_prefixes() -> None:
-    policy = ClassificationExclusionPolicy(make_config(excluded_classification_prefixes=("V.C", "A.B")))
+    policy = ClassificationExclusionPolicy(
+        make_config(excluded_classification_prefixes=("V.C", "A.B"))
+    )
     matching = PolicyContext(context_id="ctx-6", metadata={"asset": {"classification": "V.C-TEST"}})
     result = policy.evaluate(matching)
     assert result.status == "FAILED"
@@ -215,7 +242,9 @@ def test_classification_exclusion_policy_supports_multiple_prefixes() -> None:
 
 def test_issuer_eligibility_policy_uses_configured_categories() -> None:
     policy = IssuerEligibilityPolicy(make_config(issuer_categories=("cooperative", "public")))
-    pass_ctx = PolicyContext(context_id="ctx-8", metadata={"asset": {"issuer_category": "cooperative"}})
+    pass_ctx = PolicyContext(
+        context_id="ctx-8", metadata={"asset": {"issuer_category": "cooperative"}}
+    )
     assert policy.evaluate(pass_ctx).status == "PASSED"
 
     fail_ctx = PolicyContext(context_id="ctx-9", metadata={"asset": {"issuer_category": "private"}})
@@ -226,78 +255,232 @@ def test_issuer_eligibility_policy_uses_configured_categories() -> None:
 
 
 def test_marketability_policy_requires_attributes_and_price_availability() -> None:
-    policy = MarketabilityPolicy(make_config(required_marketability_attributes=("marketability_score", "price_availability_score")))
-    good_context = PolicyContext(context_id="ctx-11", metadata={"asset": {"marketability_score": Decimal("0.90"), "price_availability_score": Decimal("0.80")}})
+    policy = MarketabilityPolicy(
+        make_config(
+            required_marketability_attributes=("marketability_score", "price_availability_score")
+        )
+    )
+    good_context = PolicyContext(
+        context_id="ctx-11",
+        metadata={
+            "asset": {
+                "marketability_score": Decimal("0.90"),
+                "price_availability_score": Decimal("0.80"),
+            }
+        },
+    )
     assert policy.evaluate(good_context).status == "PASSED"
 
-    stale_context = PolicyContext(context_id="ctx-12", metadata={"asset": {"marketability_score": Decimal("0.90"), "price_availability_score": Decimal("0.80"), "price_timestamp": date(2020, 1, 1)}})
+    stale_context = PolicyContext(
+        context_id="ctx-12",
+        metadata={
+            "asset": {
+                "marketability_score": Decimal("0.90"),
+                "price_availability_score": Decimal("0.80"),
+                "price_timestamp": date(2020, 1, 1),
+            }
+        },
+    )
     result = policy.evaluate(stale_context)
     assert result.status == "WARNING"
 
-    missing_context = PolicyContext(context_id="ctx-13", metadata={"asset": {"marketability_score": Decimal("0.70")}})
+    missing_context = PolicyContext(
+        context_id="ctx-13", metadata={"asset": {"marketability_score": Decimal("0.70")}}
+    )
     assert policy.evaluate(missing_context).status == "FAILED"
 
 
 def test_mil_policies_apply_collateral_and_issuer_rules() -> None:
     collateral_policy = CollateralAvailabilityPolicy(make_config())
-    assert collateral_policy.evaluate(PolicyContext(context_id="ctx-14", metadata={"asset": {"collateral_available": True, "operationally_available": True}})).status == "PASSED"
-    assert collateral_policy.evaluate(PolicyContext(context_id="ctx-15", metadata={"asset": {"collateral_available": False}})).status == "FAILED"
+    assert (
+        collateral_policy.evaluate(
+            PolicyContext(
+                context_id="ctx-14",
+                metadata={"asset": {"collateral_available": True, "operationally_available": True}},
+            )
+        ).status
+        == "PASSED"
+    )
+    assert (
+        collateral_policy.evaluate(
+            PolicyContext(context_id="ctx-15", metadata={"asset": {"collateral_available": False}})
+        ).status
+        == "FAILED"
+    )
 
     eligible_policy = EligibleIssuerPolicy(make_config())
-    assert eligible_policy.evaluate(PolicyContext(context_id="ctx-16", metadata={"asset": {"issuer_class": "AA"}})).status == "PASSED"
-    assert eligible_policy.evaluate(PolicyContext(context_id="ctx-17", metadata={"asset": {"issuer_class": "BB"}})).status == "FAILED"
+    assert (
+        eligible_policy.evaluate(
+            PolicyContext(context_id="ctx-16", metadata={"asset": {"issuer_class": "AA"}})
+        ).status
+        == "PASSED"
+    )
+    assert (
+        eligible_policy.evaluate(
+            PolicyContext(context_id="ctx-17", metadata={"asset": {"issuer_class": "BB"}})
+        ).status
+        == "FAILED"
+    )
 
     encumbrance_policy = EncumbrancePolicy(make_config())
-    assert encumbrance_policy.evaluate(PolicyContext(context_id="ctx-18", metadata={"asset": {"encumbrance_status": "unencumbered"}})).status == "PASSED"
-    assert encumbrance_policy.evaluate(PolicyContext(context_id="ctx-19", metadata={"asset": {"encumbrance_status": "encumbered"}})).status == "FAILED"
+    assert (
+        encumbrance_policy.evaluate(
+            PolicyContext(
+                context_id="ctx-18", metadata={"asset": {"encumbrance_status": "unencumbered"}}
+            )
+        ).status
+        == "PASSED"
+    )
+    assert (
+        encumbrance_policy.evaluate(
+            PolicyContext(
+                context_id="ctx-19", metadata={"asset": {"encumbrance_status": "encumbered"}}
+            )
+        ).status
+        == "FAILED"
+    )
 
 
 def test_issuer_limit_policy_uses_warning_and_blocking_thresholds() -> None:
     policy = IssuerLimitPolicy(make_config(issuer_limit=Decimal("100")))
-    assert policy.evaluate(PolicyContext(context_id="ctx-20", metadata={"asset": {"current_exposure": Decimal("80")}})).status == "PASSED"
-    assert policy.evaluate(PolicyContext(context_id="ctx-21", metadata={"asset": {"current_exposure": Decimal("120")}})).status == "WARNING"
-    assert policy.evaluate(PolicyContext(context_id="ctx-22", metadata={"asset": {"current_exposure": Decimal("150")}})).status == "FAILED"
+    assert (
+        policy.evaluate(
+            PolicyContext(
+                context_id="ctx-20", metadata={"asset": {"current_exposure": Decimal("80")}}
+            )
+        ).status
+        == "PASSED"
+    )
+    assert (
+        policy.evaluate(
+            PolicyContext(
+                context_id="ctx-21", metadata={"asset": {"current_exposure": Decimal("120")}}
+            )
+        ).status
+        == "WARNING"
+    )
+    assert (
+        policy.evaluate(
+            PolicyContext(
+                context_id="ctx-22", metadata={"asset": {"current_exposure": Decimal("150")}}
+            )
+        ).status
+        == "FAILED"
+    )
 
 
 def test_issuer_concentration_policy_uses_warning_and_blocking_thresholds() -> None:
-    policy = IssuerConcentrationPolicy(make_config(concentration_warning_limit=Decimal("0.10"), concentration_blocking_limit=Decimal("0.20")))
-    assert policy.evaluate(PolicyContext(context_id="ctx-23", metadata={"asset": {"current_concentration": Decimal("0.05")}})).status == "PASSED"
-    assert policy.evaluate(PolicyContext(context_id="ctx-24", metadata={"asset": {"current_concentration": Decimal("0.15")}})).status == "WARNING"
-    assert policy.evaluate(PolicyContext(context_id="ctx-25", metadata={"asset": {"current_concentration": Decimal("0.25")}})).status == "FAILED"
+    policy = IssuerConcentrationPolicy(
+        make_config(
+            concentration_warning_limit=Decimal("0.10"),
+            concentration_blocking_limit=Decimal("0.20"),
+        )
+    )
+    assert (
+        policy.evaluate(
+            PolicyContext(
+                context_id="ctx-23", metadata={"asset": {"current_concentration": Decimal("0.05")}}
+            )
+        ).status
+        == "PASSED"
+    )
+    assert (
+        policy.evaluate(
+            PolicyContext(
+                context_id="ctx-24", metadata={"asset": {"current_concentration": Decimal("0.15")}}
+            )
+        ).status
+        == "WARNING"
+    )
+    assert (
+        policy.evaluate(
+            PolicyContext(
+                context_id="ctx-25", metadata={"asset": {"current_concentration": Decimal("0.25")}}
+            )
+        ).status
+        == "FAILED"
+    )
 
 
 def test_minimum_liquidity_policy_evaluates_supplied_metric() -> None:
-    policy = MinimumLiquidityPolicy(make_config(minimum_liquidity_warning=Decimal("100"), minimum_liquidity_blocking=Decimal("50")))
-    assert policy.evaluate(PolicyContext(context_id="ctx-26", metadata={"asset": {"liquidity_metric": Decimal("150")}})).status == "PASSED"
-    assert policy.evaluate(PolicyContext(context_id="ctx-27", metadata={"asset": {"liquidity_metric": Decimal("75")}})).status == "WARNING"
-    assert policy.evaluate(PolicyContext(context_id="ctx-28", metadata={"asset": {"liquidity_metric": Decimal("40")}})).status == "FAILED"
+    policy = MinimumLiquidityPolicy(
+        make_config(
+            minimum_liquidity_warning=Decimal("100"), minimum_liquidity_blocking=Decimal("50")
+        )
+    )
+    assert (
+        policy.evaluate(
+            PolicyContext(
+                context_id="ctx-26", metadata={"asset": {"liquidity_metric": Decimal("150")}}
+            )
+        ).status
+        == "PASSED"
+    )
+    assert (
+        policy.evaluate(
+            PolicyContext(
+                context_id="ctx-27", metadata={"asset": {"liquidity_metric": Decimal("75")}}
+            )
+        ).status
+        == "WARNING"
+    )
+    assert (
+        policy.evaluate(
+            PolicyContext(
+                context_id="ctx-28", metadata={"asset": {"liquidity_metric": Decimal("40")}}
+            )
+        ).status
+        == "FAILED"
+    )
 
 
 def test_policy_engine_reuses_existing_abstractions() -> None:
     engine = PolicyEngine()
     policy = UnencumberedAssetPolicy(make_config())
     engine.register(policy)
-    result = engine.evaluate(policy, PolicyContext(context_id="ctx-29", metadata={"asset": {"encumbrance_status": "unencumbered"}}))
+    result = engine.evaluate(
+        policy,
+        PolicyContext(
+            context_id="ctx-29", metadata={"asset": {"encumbrance_status": "unencumbered"}}
+        ),
+    )
     assert result.status == "PASSED"
 
 
 def test_report_builder_orders_and_aggregates() -> None:
     builder = LiquidityPolicyReportBuilder()
     policies = [
-        UnencumberedAssetPolicy(make_config(policy_id="p-2", category="hqla", name="Asset 2", priority=2)),
-        IssuerEligibilityPolicy(make_config(policy_id="p-1", category="hqla", name="Issuer 1", priority=1)),
+        UnencumberedAssetPolicy(
+            make_config(policy_id="p-2", category="hqla", name="Asset 2", priority=2)
+        ),
+        IssuerEligibilityPolicy(
+            make_config(policy_id="p-1", category="hqla", name="Issuer 1", priority=1)
+        ),
     ]
     engine = PolicyEngine()
     for policy in policies:
         engine.register(policy)
-    results = engine.evaluate_many(policies, PolicyContext(context_id="ctx-30", metadata={"asset": {"encumbrance_status": "unencumbered", "issuer_category": "cooperative"}}))
+    results = engine.evaluate_many(
+        policies,
+        PolicyContext(
+            context_id="ctx-30",
+            metadata={
+                "asset": {"encumbrance_status": "unencumbered", "issuer_category": "cooperative"}
+            },
+        ),
+    )
     report = builder.build(
         results.results,
         portfolio_reference="portfolio-1",
         policy_configuration_version="v1",
         evaluation_date=datetime(2024, 1, 1, tzinfo=timezone.utc),
         asset_id="asset-1",
-        policy_context=PolicyContext(context_id="ctx-30", metadata={"asset": {"encumbrance_status": "unencumbered", "issuer_category": "cooperative"}}),
+        policy_context=PolicyContext(
+            context_id="ctx-30",
+            metadata={
+                "asset": {"encumbrance_status": "unencumbered", "issuer_category": "cooperative"}
+            },
+        ),
     )
     assert report.total_policies_evaluated == 2
     assert report.passed_count == 2
@@ -313,7 +496,7 @@ def test_provider_ports_success_empty_malformed_and_failure() -> None:
         def get_assets(self, portfolio_reference: str) -> tuple[dict[str, Any], ...]:
             return ()
 
-    assert EmptyProvider().get_assets("p")==()
+    assert EmptyProvider().get_assets("p") == ()
 
     class MalformedProvider(PortfolioAssetProvider):
         def get_assets(self, portfolio_reference: str) -> tuple[dict[str, Any], ...]:
@@ -329,7 +512,9 @@ def test_provider_ports_success_empty_malformed_and_failure() -> None:
     assert policy_provider.get_policy_data("p")["institutional_reference"] == "COOP-001"
 
     with pytest.raises(InstitutionalProviderError):
-        LiquidityPolicyReportBuilder().build_provider_policy_data(FailingInstitutionalPolicyProvider(), "p")
+        LiquidityPolicyReportBuilder().build_provider_policy_data(
+            FailingInstitutionalPolicyProvider(), "p"
+        )
 
 
 def test_extension_exceptions_are_specific() -> None:
@@ -347,7 +532,12 @@ def test_extension_exceptions_are_specific() -> None:
 
 def test_decimal_precision_and_context_immutability() -> None:
     policy = MarketabilityPolicy(make_config())
-    metadata = {"asset": {"marketability_score": Decimal("0.3333333333"), "price_availability_score": Decimal("0.3333333333")}}
+    metadata = {
+        "asset": {
+            "marketability_score": Decimal("0.3333333333"),
+            "price_availability_score": Decimal("0.3333333333"),
+        }
+    }
     context = PolicyContext(context_id="ctx-31", metadata=metadata)
     result = policy.evaluate(context)
     assert result.status == "PASSED"
@@ -387,17 +577,48 @@ def test_liquidity_policy_config_covers_validation_and_parsing_paths() -> None:
     with pytest.raises(InstitutionalConfigurationError):
         LiquidityPolicyConfig(policy_id="", version="1.0", name="bad", category="hqla")
     with pytest.raises(InstitutionalConfigurationError):
-        LiquidityPolicyConfig(policy_id="p", version="1.0", name="bad", category="hqla", issuer_limit=Decimal("-1"))
+        LiquidityPolicyConfig(
+            policy_id="p", version="1.0", name="bad", category="hqla", issuer_limit=Decimal("-1")
+        )
     with pytest.raises(InstitutionalConfigurationError):
-        LiquidityPolicyConfig(policy_id="p", version="1.0", name="bad", category="hqla", minimum_marketability_score=Decimal("1.2"))
+        LiquidityPolicyConfig(
+            policy_id="p",
+            version="1.0",
+            name="bad",
+            category="hqla",
+            minimum_marketability_score=Decimal("1.2"),
+        )
     with pytest.raises(InstitutionalConfigurationError):
-        LiquidityPolicyConfig(policy_id="p", version="1.0", name="bad", category="hqla", effective_date=date(2024, 2, 1), expiration_date=date(2024, 1, 1))
+        LiquidityPolicyConfig(
+            policy_id="p",
+            version="1.0",
+            name="bad",
+            category="hqla",
+            effective_date=date(2024, 2, 1),
+            expiration_date=date(2024, 1, 1),
+        )
     with pytest.raises(InstitutionalConfigurationError):
-        LiquidityPolicyConfig(policy_id="p", version="1.0", name="bad", category="hqla", concentration_warning_limit=Decimal("0.20"), concentration_blocking_limit=Decimal("0.10"))
+        LiquidityPolicyConfig(
+            policy_id="p",
+            version="1.0",
+            name="bad",
+            category="hqla",
+            concentration_warning_limit=Decimal("0.20"),
+            concentration_blocking_limit=Decimal("0.10"),
+        )
     with pytest.raises(InstitutionalConfigurationError):
-        LiquidityPolicyConfig(policy_id="p", version="1.0", name="bad", category="hqla", minimum_liquidity_warning=Decimal("50"), minimum_liquidity_blocking=Decimal("100"))
+        LiquidityPolicyConfig(
+            policy_id="p",
+            version="1.0",
+            name="bad",
+            category="hqla",
+            minimum_liquidity_warning=Decimal("50"),
+            minimum_liquidity_blocking=Decimal("100"),
+        )
     with pytest.raises(InstitutionalConfigurationError):
-        LiquidityPolicyConfig(policy_id="p", version="1.0", name="bad", category="hqla", policy_references=(object(),))
+        LiquidityPolicyConfig(
+            policy_id="p", version="1.0", name="bad", category="hqla", policy_references=(object(),)
+        )
     with pytest.raises(InstitutionalConfigurationError):
         LiquidityPolicyConfig._parse_date(object())
     with pytest.raises(InstitutionalConfigurationError):
@@ -414,7 +635,10 @@ def test_configuration_collection_enforces_duplicates_and_reference_identifiers(
     with pytest.raises(InstitutionalConfigurationError):
         LiquidityPolicyConfig.validate_configuration_collection([base, duplicate_category])
 
-    missing_identifier = make_config(policy_id="p-3", policy_references=(PolicyReferenceConfig(source="regulation", identifier=""),))
+    missing_identifier = make_config(
+        policy_id="p-3",
+        policy_references=(PolicyReferenceConfig(source="regulation", identifier=""),),
+    )
     with pytest.raises(InstitutionalConfigurationError):
         LiquidityPolicyConfig.validate_configuration_collection([base, missing_identifier])
 
@@ -430,8 +654,20 @@ def test_report_builder_handles_empty_and_malformed_inputs() -> None:
         )
 
     evaluations = (
-        SimpleNamespace(policy_id="b-policy", context_id="ctx-2", status="FAILED", message="later", references=()),
-        SimpleNamespace(policy_id="a-policy", context_id="ctx-1", status="PASSED", message="first", references=()),
+        SimpleNamespace(
+            policy_id="b-policy",
+            context_id="ctx-2",
+            status="FAILED",
+            message="later",
+            references=(),
+        ),
+        SimpleNamespace(
+            policy_id="a-policy",
+            context_id="ctx-1",
+            status="PASSED",
+            message="first",
+            references=(),
+        ),
     )
     report = builder.build(
         evaluations,
@@ -470,7 +706,12 @@ def test_report_builder_handles_empty_and_malformed_inputs() -> None:
 
     valid_assets = builder.build_provider_assets(DummyPortfolioAssetProvider(), "portfolio-1")
     assert valid_assets[0]["asset_id"] == "asset-1"
-    assert builder.build_provider_policy_data(DummyInstitutionalPolicyProvider(), "portfolio-1")["institutional_reference"] == "COOP-001"
+    assert (
+        builder.build_provider_policy_data(DummyInstitutionalPolicyProvider(), "portfolio-1")[
+            "institutional_reference"
+        ]
+        == "COOP-001"
+    )
 
 
 def test_policy_protocols_raise_not_implemented_when_called_directly() -> None:
@@ -490,25 +731,110 @@ def test_policy_protocols_raise_not_implemented_when_called_directly() -> None:
 
 def test_policies_support_boundary_and_numeric_coercion_paths() -> None:
     issuer_limit_policy = IssuerLimitPolicy(make_config(issuer_limit=Decimal("100")))
-    assert issuer_limit_policy.evaluate(PolicyContext(context_id="ctx-32", metadata={"asset": {"current_exposure": Decimal("100")}})).status == "WARNING"
-    assert issuer_limit_policy.evaluate(PolicyContext(context_id="ctx-33", metadata={"asset": {"current_exposure": "120"}})).status == "WARNING"
+    assert (
+        issuer_limit_policy.evaluate(
+            PolicyContext(
+                context_id="ctx-32", metadata={"asset": {"current_exposure": Decimal("100")}}
+            )
+        ).status
+        == "WARNING"
+    )
+    assert (
+        issuer_limit_policy.evaluate(
+            PolicyContext(context_id="ctx-33", metadata={"asset": {"current_exposure": "120"}})
+        ).status
+        == "WARNING"
+    )
     with pytest.raises(InstitutionalPolicyError):
-        issuer_limit_policy.evaluate(PolicyContext(context_id="ctx-34", metadata={"asset": {"current_exposure": object()}}))
+        issuer_limit_policy.evaluate(
+            PolicyContext(context_id="ctx-34", metadata={"asset": {"current_exposure": object()}})
+        )
 
-    concentration_policy = IssuerConcentrationPolicy(make_config(concentration_warning_limit=Decimal("0.10"), concentration_blocking_limit=Decimal("0.20")))
-    assert concentration_policy.evaluate(PolicyContext(context_id="ctx-35", metadata={"asset": {"current_concentration": Decimal("0.10")}})).status == "WARNING"
-    assert concentration_policy.evaluate(PolicyContext(context_id="ctx-36", metadata={"asset": {"current_concentration": 0.15}})).status == "WARNING"
+    concentration_policy = IssuerConcentrationPolicy(
+        make_config(
+            concentration_warning_limit=Decimal("0.10"),
+            concentration_blocking_limit=Decimal("0.20"),
+        )
+    )
+    assert (
+        concentration_policy.evaluate(
+            PolicyContext(
+                context_id="ctx-35", metadata={"asset": {"current_concentration": Decimal("0.10")}}
+            )
+        ).status
+        == "WARNING"
+    )
+    assert (
+        concentration_policy.evaluate(
+            PolicyContext(context_id="ctx-36", metadata={"asset": {"current_concentration": 0.15}})
+        ).status
+        == "WARNING"
+    )
     with pytest.raises(InstitutionalPolicyError):
-        concentration_policy.evaluate(PolicyContext(context_id="ctx-37", metadata={"asset": {"current_concentration": object()}}))
+        concentration_policy.evaluate(
+            PolicyContext(
+                context_id="ctx-37", metadata={"asset": {"current_concentration": object()}}
+            )
+        )
 
-    minimum_liquidity_policy = MinimumLiquidityPolicy(make_config(minimum_liquidity_warning=Decimal("100"), minimum_liquidity_blocking=Decimal("50")))
-    assert minimum_liquidity_policy.evaluate(PolicyContext(context_id="ctx-38", metadata={"asset": {"liquidity_metric": Decimal("100")}})).status == "PASSED"
-    assert minimum_liquidity_policy.evaluate(PolicyContext(context_id="ctx-39", metadata={"asset": {"liquidity_metric": 75}})).status == "WARNING"
-    assert minimum_liquidity_policy.evaluate(PolicyContext(context_id="ctx-40", metadata={"asset": {"liquidity_metric": "30"}})).status == "FAILED"
+    minimum_liquidity_policy = MinimumLiquidityPolicy(
+        make_config(
+            minimum_liquidity_warning=Decimal("100"), minimum_liquidity_blocking=Decimal("50")
+        )
+    )
+    assert (
+        minimum_liquidity_policy.evaluate(
+            PolicyContext(
+                context_id="ctx-38", metadata={"asset": {"liquidity_metric": Decimal("100")}}
+            )
+        ).status
+        == "PASSED"
+    )
+    assert (
+        minimum_liquidity_policy.evaluate(
+            PolicyContext(context_id="ctx-39", metadata={"asset": {"liquidity_metric": 75}})
+        ).status
+        == "WARNING"
+    )
+    assert (
+        minimum_liquidity_policy.evaluate(
+            PolicyContext(context_id="ctx-40", metadata={"asset": {"liquidity_metric": "30"}})
+        ).status
+        == "FAILED"
+    )
     with pytest.raises(InstitutionalPolicyError):
-        minimum_liquidity_policy.evaluate(PolicyContext(context_id="ctx-41", metadata={"asset": {"liquidity_metric": object()}}))
+        minimum_liquidity_policy.evaluate(
+            PolicyContext(context_id="ctx-41", metadata={"asset": {"liquidity_metric": object()}})
+        )
 
-    marketability_policy = MarketabilityPolicy(make_config(required_marketability_attributes=("marketability_score", "price_availability_score")))
-    assert marketability_policy.evaluate(PolicyContext(context_id="ctx-42", metadata={"asset": {"marketability_score": "0.90", "price_availability_score": Decimal("0.80")}})).status == "PASSED"
+    marketability_policy = MarketabilityPolicy(
+        make_config(
+            required_marketability_attributes=("marketability_score", "price_availability_score")
+        )
+    )
+    assert (
+        marketability_policy.evaluate(
+            PolicyContext(
+                context_id="ctx-42",
+                metadata={
+                    "asset": {
+                        "marketability_score": "0.90",
+                        "price_availability_score": Decimal("0.80"),
+                    }
+                },
+            )
+        ).status
+        == "PASSED"
+    )
     with pytest.raises(InstitutionalPolicyError):
-        marketability_policy.evaluate(PolicyContext(context_id="ctx-43", metadata={"asset": {"marketability_score": object(), "price_availability_score": Decimal("0.80")}}))
+        marketability_policy.evaluate(
+            PolicyContext(
+                context_id="ctx-43",
+                metadata={
+                    "asset": {
+                        "marketability_score": object(),
+                        "price_availability_score": Decimal("0.80"),
+                    }
+                },
+            )
+        )

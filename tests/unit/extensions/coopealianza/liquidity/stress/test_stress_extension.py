@@ -89,8 +89,18 @@ def make_projection_result() -> ProjectionResult:
     return ProjectionResult(
         projection_type="contractual",
         projected_cashflows=(
-            ProjectedCashFlow(payment_date=date(2024, 1, 15), amount=Decimal("-500"), currency="USD", cash_flow_type="outflow"),
-            ProjectedCashFlow(payment_date=date(2024, 1, 16), amount=Decimal("300"), currency="USD", cash_flow_type="inflow"),
+            ProjectedCashFlow(
+                payment_date=date(2024, 1, 15),
+                amount=Decimal("-500"),
+                currency="USD",
+                cash_flow_type="outflow",
+            ),
+            ProjectedCashFlow(
+                payment_date=date(2024, 1, 16),
+                amount=Decimal("300"),
+                currency="USD",
+                cash_flow_type="inflow",
+            ),
         ),
     )
 
@@ -100,20 +110,74 @@ def test_stress_configuration_is_valid_and_immutable() -> None:
     assert config.scenarios[0].scenario_type == "parallel_shift"
     assert config.effective_date == date(2024, 1, 1)
     with pytest.raises(AttributeError):
-        config.scenarios += (StressScenarioConfig(scenario_id="s2", name="x", scenario_type="twist", severity=Decimal("0.01"), policy_references=("REF-2",)),)
+        config.scenarios += (
+            StressScenarioConfig(
+                scenario_id="s2",
+                name="x",
+                scenario_type="twist",
+                severity=Decimal("0.01"),
+                policy_references=("REF-2",),
+            ),
+        )
 
 
 def test_stress_configuration_rejects_invalid_dates_and_values() -> None:
     with pytest.raises(StressConfigurationError):
-        StressPolicyConfig(policy_id="x", version="1", name="y", category="stress", effective_date=date(2024, 2, 1), expiration_date=date(2024, 1, 1))
+        StressPolicyConfig(
+            policy_id="x",
+            version="1",
+            name="y",
+            category="stress",
+            effective_date=date(2024, 2, 1),
+            expiration_date=date(2024, 1, 1),
+        )
     with pytest.raises(StressConfigurationError):
-        StressScenarioConfig(scenario_id="bad", name="bad", scenario_type="parallel_shift", severity=Decimal("-0.01"), policy_references=("REF-1",))
+        StressScenarioConfig(
+            scenario_id="bad",
+            name="bad",
+            scenario_type="parallel_shift",
+            severity=Decimal("-0.01"),
+            policy_references=("REF-1",),
+        )
     with pytest.raises(StressConfigurationError):
-        StressScenarioConfig(scenario_id="bad2", name="bad2", scenario_type="parallel_shift", severity=Decimal("1.01"), policy_references=("REF-1",))
+        StressScenarioConfig(
+            scenario_id="bad2",
+            name="bad2",
+            scenario_type="parallel_shift",
+            severity=Decimal("1.01"),
+            policy_references=("REF-1",),
+        )
     with pytest.raises(StressConfigurationError):
-        StressPolicyConfig(policy_id="x", version="1", name="y", category="stress", scenarios=(StressScenarioConfig(scenario_id="a", name="a", scenario_type="parallel_shift", severity=Decimal("0.1"), policy_references=("REF-1",)), StressScenarioConfig(scenario_id="a", name="b", scenario_type="twist", severity=Decimal("0.1"), policy_references=("REF-2",))))
+        StressPolicyConfig(
+            policy_id="x",
+            version="1",
+            name="y",
+            category="stress",
+            scenarios=(
+                StressScenarioConfig(
+                    scenario_id="a",
+                    name="a",
+                    scenario_type="parallel_shift",
+                    severity=Decimal("0.1"),
+                    policy_references=("REF-1",),
+                ),
+                StressScenarioConfig(
+                    scenario_id="a",
+                    name="b",
+                    scenario_type="twist",
+                    severity=Decimal("0.1"),
+                    policy_references=("REF-2",),
+                ),
+            ),
+        )
     with pytest.raises(StressConfigurationError):
-        StressScenarioConfig(scenario_id="bad3", name="bad3", scenario_type="combined", policy_references=(), combined_scenario_ids=("s1",))
+        StressScenarioConfig(
+            scenario_id="bad3",
+            name="bad3",
+            scenario_type="combined",
+            policy_references=(),
+            combined_scenario_ids=("s1",),
+        )
 
 
 def test_stress_configuration_from_mapping_supports_expired_and_disabled_states() -> None:
@@ -125,7 +189,20 @@ def test_stress_configuration_from_mapping_supports_expired_and_disabled_states(
         "enabled": True,
         "effective_date": "2024-01-01",
         "expiration_date": "2024-03-01",
-        "scenarios": [{"scenario_id": "s2", "name": "deposit_runoff", "scenario_type": "deposit_runoff", "severity": "0.05", "runoff_rate": "0.20", "policy_references": ["REF-2"], "affected_assets": ["asset-2"], "affected_buckets": ["1D"], "assumptions": ["runoff"], "warnings": ["warn"]}],
+        "scenarios": [
+            {
+                "scenario_id": "s2",
+                "name": "deposit_runoff",
+                "scenario_type": "deposit_runoff",
+                "severity": "0.05",
+                "runoff_rate": "0.20",
+                "policy_references": ["REF-2"],
+                "affected_assets": ["asset-2"],
+                "affected_buckets": ["1D"],
+                "assumptions": ["runoff"],
+                "warnings": ["warn"],
+            }
+        ],
     }
     config = StressPolicyConfig.from_mapping(mapping)
     assert config.scenarios[0].runoff_rate == Decimal("0.20")
@@ -134,13 +211,28 @@ def test_stress_configuration_from_mapping_supports_expired_and_disabled_states(
 
 def test_stress_policy_validation_covers_unsupported_and_empty_inputs() -> None:
     with pytest.raises(StressConfigurationError):
-        StressScenarioConfig(scenario_id="bad", name="bad", scenario_type="unsupported", policy_references=("REF",))
+        StressScenarioConfig(
+            scenario_id="bad", name="bad", scenario_type="unsupported", policy_references=("REF",)
+        )
     with pytest.raises(StressConfigurationError):
-        StressScenarioConfig(scenario_id="combined", name="combined", scenario_type="combined", policy_references=("REF",), combined_scenario_ids=())
+        StressScenarioConfig(
+            scenario_id="combined",
+            name="combined",
+            scenario_type="combined",
+            policy_references=("REF",),
+            combined_scenario_ids=(),
+        )
     with pytest.raises(StressConfigurationError):
         StressPolicyConfig(policy_id="", version="1", name="n", category="stress")
     with pytest.raises(StressConfigurationError):
-        StressScenarioConfig(scenario_id="bad", name="bad", scenario_type="parallel_shift", severity=Decimal("0.20"), collateral_multiplier=Decimal("1.01"), policy_references=("REF",))
+        StressScenarioConfig(
+            scenario_id="bad",
+            name="bad",
+            scenario_type="parallel_shift",
+            severity=Decimal("0.20"),
+            collateral_multiplier=Decimal("1.01"),
+            policy_references=("REF",),
+        )
     assert StressPolicyConfig._parse_date(date(2024, 1, 2)) == date(2024, 1, 2)
     assert StressPolicyConfig._parse_date("2024-01-03") == date(2024, 1, 3)
     with pytest.raises(StressConfigurationError):
@@ -168,9 +260,44 @@ def test_stress_engine_evaluates_scenarios_using_existing_liquidity_outputs() ->
 
 
 def test_deposit_runoff_scenarios_cover_zero_partial_and_full_runoff() -> None:
-    config = StressPolicyConfig(policy_id="p", version="1", name="n", category="stress", scenarios=(StressScenarioConfig(scenario_id="r0", name="zero", scenario_type="deposit_runoff", runoff_rate=Decimal("0"), policy_references=("REF",)), StressScenarioConfig(scenario_id="r1", name="partial", scenario_type="deposit_runoff", runoff_rate=Decimal("0.25"), policy_references=("REF",)), StressScenarioConfig(scenario_id="r2", name="full", scenario_type="deposit_runoff", runoff_rate=Decimal("1"), policy_references=("REF",))))
+    config = StressPolicyConfig(
+        policy_id="p",
+        version="1",
+        name="n",
+        category="stress",
+        scenarios=(
+            StressScenarioConfig(
+                scenario_id="r0",
+                name="zero",
+                scenario_type="deposit_runoff",
+                runoff_rate=Decimal("0"),
+                policy_references=("REF",),
+            ),
+            StressScenarioConfig(
+                scenario_id="r1",
+                name="partial",
+                scenario_type="deposit_runoff",
+                runoff_rate=Decimal("0.25"),
+                policy_references=("REF",),
+            ),
+            StressScenarioConfig(
+                scenario_id="r2",
+                name="full",
+                scenario_type="deposit_runoff",
+                runoff_rate=Decimal("1"),
+                policy_references=("REF",),
+            ),
+        ),
+    )
     engine = StressEngine()
-    result = engine.evaluate(StressRequest(portfolio_reference="portfolio", gap_result=make_gap_result(), projection_result=make_projection_result(), configuration=config))
+    result = engine.evaluate(
+        StressRequest(
+            portfolio_reference="portfolio",
+            gap_result=make_gap_result(),
+            projection_result=make_projection_result(),
+            configuration=config,
+        )
+    )
     assert result.scenario_results[0].stressed_gap == Decimal("1000")
     assert result.scenario_results[1].stressed_gap == Decimal("1250")
     assert result.scenario_results[2].stressed_gap == Decimal("2000")
@@ -179,9 +306,47 @@ def test_deposit_runoff_scenarios_cover_zero_partial_and_full_runoff() -> None:
 
 
 def test_wholesale_funding_shock_scenarios_cover_withdrawal_and_maturity_buckets() -> None:
-    config = StressPolicyConfig(policy_id="p", version="1", name="n", category="stress", scenarios=(StressScenarioConfig(scenario_id="w0", name="zero", scenario_type="wholesale_funding_shock", withdrawal_rate=Decimal("0"), policy_references=("REF",), affected_buckets=("O/N", "1W")), StressScenarioConfig(scenario_id="w1", name="partial", scenario_type="wholesale_funding_shock", withdrawal_rate=Decimal("0.50"), policy_references=("REF",), affected_buckets=("O/N",)), StressScenarioConfig(scenario_id="w2", name="full", scenario_type="wholesale_funding_shock", withdrawal_rate=Decimal("1"), policy_references=("REF",), affected_buckets=("1M",))))
+    config = StressPolicyConfig(
+        policy_id="p",
+        version="1",
+        name="n",
+        category="stress",
+        scenarios=(
+            StressScenarioConfig(
+                scenario_id="w0",
+                name="zero",
+                scenario_type="wholesale_funding_shock",
+                withdrawal_rate=Decimal("0"),
+                policy_references=("REF",),
+                affected_buckets=("O/N", "1W"),
+            ),
+            StressScenarioConfig(
+                scenario_id="w1",
+                name="partial",
+                scenario_type="wholesale_funding_shock",
+                withdrawal_rate=Decimal("0.50"),
+                policy_references=("REF",),
+                affected_buckets=("O/N",),
+            ),
+            StressScenarioConfig(
+                scenario_id="w2",
+                name="full",
+                scenario_type="wholesale_funding_shock",
+                withdrawal_rate=Decimal("1"),
+                policy_references=("REF",),
+                affected_buckets=("1M",),
+            ),
+        ),
+    )
     engine = StressEngine()
-    result = engine.evaluate(StressRequest(portfolio_reference="portfolio", gap_result=make_gap_result(), projection_result=make_projection_result(), configuration=config))
+    result = engine.evaluate(
+        StressRequest(
+            portfolio_reference="portfolio",
+            gap_result=make_gap_result(),
+            projection_result=make_projection_result(),
+            configuration=config,
+        )
+    )
     assert result.scenario_results[0].stressed_outflow == Decimal("5000")
     assert result.scenario_results[1].stressed_outflow == Decimal("7500")
     assert result.scenario_results[2].stressed_outflow == Decimal("10000")
@@ -189,9 +354,41 @@ def test_wholesale_funding_shock_scenarios_cover_withdrawal_and_maturity_buckets
 
 
 def test_collateral_haircut_and_market_liquidity_deterioration_scenarios() -> None:
-    config = StressPolicyConfig(policy_id="p", version="1", name="n", category="stress", scenarios=(StressScenarioConfig(scenario_id="c1", name="haircut", scenario_type="collateral_haircut", severity=Decimal("0.20"), collateral_multiplier=Decimal("0.50"), policy_references=("REF",), affected_assets=("asset-1",)), StressScenarioConfig(scenario_id="m1", name="market", scenario_type="market_liquidity_deterioration", severity=Decimal("0.10"), market_value_multiplier=Decimal("0.20"), policy_references=("REF",), affected_assets=("asset-2",))))
+    config = StressPolicyConfig(
+        policy_id="p",
+        version="1",
+        name="n",
+        category="stress",
+        scenarios=(
+            StressScenarioConfig(
+                scenario_id="c1",
+                name="haircut",
+                scenario_type="collateral_haircut",
+                severity=Decimal("0.20"),
+                collateral_multiplier=Decimal("0.50"),
+                policy_references=("REF",),
+                affected_assets=("asset-1",),
+            ),
+            StressScenarioConfig(
+                scenario_id="m1",
+                name="market",
+                scenario_type="market_liquidity_deterioration",
+                severity=Decimal("0.10"),
+                market_value_multiplier=Decimal("0.20"),
+                policy_references=("REF",),
+                affected_assets=("asset-2",),
+            ),
+        ),
+    )
     engine = StressEngine()
-    result = engine.evaluate(StressRequest(portfolio_reference="portfolio", gap_result=make_gap_result(), projection_result=make_projection_result(), configuration=config))
+    result = engine.evaluate(
+        StressRequest(
+            portfolio_reference="portfolio",
+            gap_result=make_gap_result(),
+            projection_result=make_projection_result(),
+            configuration=config,
+        )
+    )
     assert result.scenario_results[0].stressed_gap == Decimal("1500")
     assert result.scenario_results[1].stressed_gap == Decimal("1200")
     assert result.scenario_results[0].stressed_outflow == Decimal("6000")
@@ -199,9 +396,46 @@ def test_collateral_haircut_and_market_liquidity_deterioration_scenarios() -> No
 
 
 def test_combined_scenarios_are_isolated_and_deterministic() -> None:
-    config = StressPolicyConfig(policy_id="p", version="1", name="n", category="stress", scenarios=(StressScenarioConfig(scenario_id="c1", name="alpha", scenario_type="parallel_shift", severity=Decimal("0.10"), policy_references=("REF",)), StressScenarioConfig(scenario_id="c2", name="beta", scenario_type="parallel_shift", severity=Decimal("0.20"), policy_references=("REF",)), StressScenarioConfig(scenario_id="combined", name="combined", scenario_type="combined", severity=Decimal("0.10"), policy_references=("REF",), combined_scenario_ids=("c1", "c2"), affected_assets=("asset-3",))))
+    config = StressPolicyConfig(
+        policy_id="p",
+        version="1",
+        name="n",
+        category="stress",
+        scenarios=(
+            StressScenarioConfig(
+                scenario_id="c1",
+                name="alpha",
+                scenario_type="parallel_shift",
+                severity=Decimal("0.10"),
+                policy_references=("REF",),
+            ),
+            StressScenarioConfig(
+                scenario_id="c2",
+                name="beta",
+                scenario_type="parallel_shift",
+                severity=Decimal("0.20"),
+                policy_references=("REF",),
+            ),
+            StressScenarioConfig(
+                scenario_id="combined",
+                name="combined",
+                scenario_type="combined",
+                severity=Decimal("0.10"),
+                policy_references=("REF",),
+                combined_scenario_ids=("c1", "c2"),
+                affected_assets=("asset-3",),
+            ),
+        ),
+    )
     engine = StressEngine()
-    result = engine.evaluate(StressRequest(portfolio_reference="portfolio", gap_result=make_gap_result(), projection_result=make_projection_result(), configuration=config))
+    result = engine.evaluate(
+        StressRequest(
+            portfolio_reference="portfolio",
+            gap_result=make_gap_result(),
+            projection_result=make_projection_result(),
+            configuration=config,
+        )
+    )
     assert result.scenario_results[-1].stressed_gap == Decimal("2300")
     assert result.scenario_results[-1].affected_assets == ("asset-3",)
     assert [item.scenario_name for item in result.scenario_results] == ["alpha", "beta", "combined"]
@@ -210,14 +444,38 @@ def test_combined_scenarios_are_isolated_and_deterministic() -> None:
 def test_stress_engine_handles_successful_and_failed_requests() -> None:
     engine = StressEngine()
     with pytest.raises(StressEvaluationError):
-        engine.evaluate(StressRequest(portfolio_reference="", gap_result=make_gap_result(), projection_result=make_projection_result(), configuration=make_config()))
+        engine.evaluate(
+            StressRequest(
+                portfolio_reference="",
+                gap_result=make_gap_result(),
+                projection_result=make_projection_result(),
+                configuration=make_config(),
+            )
+        )
     with pytest.raises(StressEvaluationError):
         engine.evaluate(StressRequest(portfolio_reference="portfolio", configuration=make_config()))
     with pytest.raises(StressProviderError):
-        engine.evaluate(StressRequest(portfolio_reference="portfolio", gap_result=make_gap_result(), projection_result=make_projection_result(), configuration=make_config(), scenario_provider=FailingScenarioProvider()))
-    empty_config = StressPolicyConfig(policy_id="empty", version="1", name="empty", category="stress", scenarios=())
+        engine.evaluate(
+            StressRequest(
+                portfolio_reference="portfolio",
+                gap_result=make_gap_result(),
+                projection_result=make_projection_result(),
+                configuration=make_config(),
+                scenario_provider=FailingScenarioProvider(),
+            )
+        )
+    empty_config = StressPolicyConfig(
+        policy_id="empty", version="1", name="empty", category="stress", scenarios=()
+    )
     with pytest.raises(StressEvaluationError):
-        engine.evaluate(StressRequest(portfolio_reference="portfolio", gap_result=make_gap_result(), projection_result=make_projection_result(), configuration=empty_config))
+        engine.evaluate(
+            StressRequest(
+                portfolio_reference="portfolio",
+                gap_result=make_gap_result(),
+                projection_result=make_projection_result(),
+                configuration=empty_config,
+            )
+        )
 
     combined_scenario = object.__new__(StressScenarioConfig)
     object.__setattr__(combined_scenario, "scenario_id", "combined")
@@ -241,42 +499,83 @@ def test_stress_engine_handles_successful_and_failed_requests() -> None:
     object.__setattr__(combined_scenario, "expiration_date", None)
 
     with pytest.raises(StressEvaluationError):
-        engine._evaluate_combined_scenario(combined_scenario, make_gap_result(), make_projection_result(), {})
+        engine._evaluate_combined_scenario(
+            combined_scenario, make_gap_result(), make_projection_result(), {}
+        )
 
-    missing_scenario = StressScenarioConfig(scenario_id="missing", name="missing", scenario_type="combined", policy_references=("REF",), combined_scenario_ids=("not-there",))
+    missing_scenario = StressScenarioConfig(
+        scenario_id="missing",
+        name="missing",
+        scenario_type="combined",
+        policy_references=("REF",),
+        combined_scenario_ids=("not-there",),
+    )
     with pytest.raises(StressEvaluationError):
-        engine._evaluate_combined_scenario(missing_scenario, make_gap_result(), make_projection_result(), {})
+        engine._evaluate_combined_scenario(
+            missing_scenario, make_gap_result(), make_projection_result(), {}
+        )
 
     with pytest.raises(StressConfigurationError):
         engine._coerce_config(object())
-    assert engine._coerce_config({"policy_id": "p", "version": "1", "name": "n", "category": "stress", "scenarios": []}).policy_id == "p"
+    assert (
+        engine._coerce_config(
+            {"policy_id": "p", "version": "1", "name": "n", "category": "stress", "scenarios": []}
+        ).policy_id
+        == "p"
+    )
 
 
 def test_analytics_builds_expected_explanations_and_decimal_precision() -> None:
     analytics = StressAnalytics()
-    explanation = analytics.build_gap_deterioration(baseline_gap=Decimal("1000"), stressed_gap=Decimal("1250"))
+    explanation = analytics.build_gap_deterioration(
+        baseline_gap=Decimal("1000"), stressed_gap=Decimal("1250")
+    )
     assert explanation.concise_conclusion == "Gap deterioration"
     assert explanation.supporting_factors[0].value == Decimal("250")
-    explanation = analytics.build_resilience_ratio(baseline_gap=Decimal("1000"), stressed_gap=Decimal("1250"))
+    explanation = analytics.build_resilience_ratio(
+        baseline_gap=Decimal("1000"), stressed_gap=Decimal("1250")
+    )
     assert explanation.supporting_factors[0].value == Decimal("1.25")
-    explanation = analytics.build_comparison(baseline_gap=Decimal("1000"), stressed_gap=Decimal("1250"), baseline_outflow=Decimal("5000"), stressed_outflow=Decimal("6000"))
+    explanation = analytics.build_comparison(
+        baseline_gap=Decimal("1000"),
+        stressed_gap=Decimal("1250"),
+        baseline_outflow=Decimal("5000"),
+        stressed_outflow=Decimal("6000"),
+    )
     assert explanation.supporting_factors[1].value == Decimal("1000")
-    explanation = analytics.build_liquidity_coverage_variation(baseline_outflow=Decimal("5000"), stressed_outflow=Decimal("6000"))
+    explanation = analytics.build_liquidity_coverage_variation(
+        baseline_outflow=Decimal("5000"), stressed_outflow=Decimal("6000")
+    )
     assert explanation.supporting_factors[0].value == Decimal("1000")
-    explanation = analytics.build_collateral_capacity_variation(baseline_capacity=Decimal("100"), stressed_capacity=Decimal("80"))
+    explanation = analytics.build_collateral_capacity_variation(
+        baseline_capacity=Decimal("100"), stressed_capacity=Decimal("80")
+    )
     assert explanation.supporting_factors[0].value == Decimal("20")
-    explanation = analytics.build_hqla_variation(baseline_capacity=Decimal("100"), stressed_capacity=Decimal("80"))
+    explanation = analytics.build_hqla_variation(
+        baseline_capacity=Decimal("100"), stressed_capacity=Decimal("80")
+    )
     assert explanation.supporting_factors[0].value == Decimal("20")
-    explanation = analytics.build_issuer_concentration_change(baseline=Decimal("100"), stressed=Decimal("120"))
+    explanation = analytics.build_issuer_concentration_change(
+        baseline=Decimal("100"), stressed=Decimal("120")
+    )
     assert explanation.supporting_factors[0].value == Decimal("20")
-    explanation = analytics.build_currency_concentration_change(baseline=Decimal("100"), stressed=Decimal("90"))
+    explanation = analytics.build_currency_concentration_change(
+        baseline=Decimal("100"), stressed=Decimal("90")
+    )
     assert explanation.supporting_factors[0].value == Decimal("-10")
     with pytest.raises(Exception):
         analytics.build_explanation(conclusion="Empty", factors=[])
 
 
 def test_report_builder_includes_metadata_and_orders_results() -> None:
-    result = StressEngine().evaluate(StressRequest(portfolio_reference="portfolio", gap_result=make_gap_result(), projection_result=make_projection_result(), configuration=make_config()))
+    result = StressEngine().evaluate(
+        StressRequest(
+            portfolio_reference="portfolio",
+            gap_result=make_gap_result(),
+            projection_result=make_projection_result(),
+            configuration=make_config(),
+        )
+    )
     report = StressReportBuilder().build(result)
     assert report["scenario_results"][0]["scenario_name"] == "parallel_shift"
     assert report["warnings"] == ["watch liquidity"]
@@ -290,7 +589,36 @@ def test_report_builder_raises_for_missing_result() -> None:
 
 
 def test_report_builder_handles_warnings_and_empty_assets() -> None:
-    result = StressEngine().evaluate(StressRequest(portfolio_reference="portfolio", gap_result=make_gap_result(), projection_result=make_projection_result(), configuration=StressPolicyConfig(policy_id="p", version="1", name="n", category="stress", scenarios=(StressScenarioConfig(scenario_id="s1", name="beta", scenario_type="parallel_shift", severity=Decimal("0.10"), policy_references=("REF",), warnings=("warn",)), StressScenarioConfig(scenario_id="s2", name="alpha", scenario_type="parallel_shift", severity=Decimal("0.05"), policy_references=("REF",))))))
+    result = StressEngine().evaluate(
+        StressRequest(
+            portfolio_reference="portfolio",
+            gap_result=make_gap_result(),
+            projection_result=make_projection_result(),
+            configuration=StressPolicyConfig(
+                policy_id="p",
+                version="1",
+                name="n",
+                category="stress",
+                scenarios=(
+                    StressScenarioConfig(
+                        scenario_id="s1",
+                        name="beta",
+                        scenario_type="parallel_shift",
+                        severity=Decimal("0.10"),
+                        policy_references=("REF",),
+                        warnings=("warn",),
+                    ),
+                    StressScenarioConfig(
+                        scenario_id="s2",
+                        name="alpha",
+                        scenario_type="parallel_shift",
+                        severity=Decimal("0.05"),
+                        policy_references=("REF",),
+                    ),
+                ),
+            ),
+        )
+    )
     report = StressReportBuilder().build(result)
     assert report["warnings"] == ["warn"]
     assert report["affected_assets"] == []
@@ -300,7 +628,8 @@ def test_report_builder_handles_warnings_and_empty_assets() -> None:
 
 def test_provider_error_translation_and_exception_paths() -> None:
     with pytest.raises(StressConfigurationError):
-        StressScenarioConfig(scenario_id="bad", name="", scenario_type="", policy_references=("REF",))
+        StressScenarioConfig(
+            scenario_id="bad", name="", scenario_type="", policy_references=("REF",)
+        )
     with pytest.raises(StressScenarioError):
         raise StressScenarioError("scenario issue")
-

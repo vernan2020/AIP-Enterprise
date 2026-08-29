@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from PySide6.QtWidgets import QToolBar, QWidget
+from PySide6.QtWidgets import QToolBar
 
 
 class PortfolioToolbar(QToolBar):

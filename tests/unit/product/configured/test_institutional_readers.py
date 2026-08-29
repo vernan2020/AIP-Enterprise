@@ -125,7 +125,9 @@ def test_institutional_master_reader_parses_verified_headers_and_sentinels(tmp_p
     path = tmp_path / "maestro.xls"
     _write_institutional_xls(path)
 
-    result = InstitutionalPortfolioMasterReader().read(path, valuation_date_override=date(2026, 7, 29))
+    result = InstitutionalPortfolioMasterReader().read(
+        path, valuation_date_override=date(2026, 7, 29)
+    )
 
     assert result.source_status == "HEALTHY"
     assert result.rejected_row_count == 0
@@ -136,16 +138,29 @@ def test_institutional_master_reader_parses_verified_headers_and_sentinels(tmp_p
     assert result.normalized_positions[1]["maturity_date"] is None
 
 
-def test_institutional_master_reader_emits_first_row_field_diagnostics_for_production_headers(tmp_path: Path) -> None:
+def test_institutional_master_reader_emits_first_row_field_diagnostics_for_production_headers(
+    tmp_path: Path,
+) -> None:
     path = tmp_path / "maestro.xlsx"
     workbook = openpyxl.Workbook()
     worksheet = workbook.active
     worksheet.title = "Maestro"
-    worksheet.append(["  serie  ", "  código producto  ", " fecha vencimiento ", " ISIN ", "Valor de Mercado", "Valor en Libros"])
+    worksheet.append(
+        [
+            "  serie  ",
+            "  código producto  ",
+            " fecha vencimiento ",
+            " ISIN ",
+            "Valor de Mercado",
+            "Valor en Libros",
+        ]
+    )
     worksheet.append(["ABC-001", "BONO", "2029-04-18", "CR123", 100, 90])
     workbook.save(path)
 
-    result = InstitutionalPortfolioMasterReader().read(path, valuation_date_override=date(2026, 7, 29), diagnostic_mode=True)
+    result = InstitutionalPortfolioMasterReader().read(
+        path, valuation_date_override=date(2026, 7, 29), diagnostic_mode=True
+    )
 
     assert result.source_status == "HEALTHY"
     assert result.normalized_positions[0]["series"] == "ABC-001"
@@ -154,7 +169,9 @@ def test_institutional_master_reader_emits_first_row_field_diagnostics_for_produ
     assert result.normalized_positions[0]["isin"] == "CR123"
     assert result.diagnostics["column_mapping"]["series"].strip().lower() == "serie"
     assert result.diagnostics["column_mapping"]["product_code"].strip().lower() == "código producto"
-    assert result.diagnostics["column_mapping"]["maturity_date"].strip().lower() == "fecha vencimiento"
+    assert (
+        result.diagnostics["column_mapping"]["maturity_date"].strip().lower() == "fecha vencimiento"
+    )
     assert result.diagnostics["column_mapping"]["isin"].strip().lower() == "isin"
 
     first_row_debug = result.diagnostics["trace"]["first_accepted_row_field_diagnostics"][0]
@@ -169,7 +186,9 @@ def test_institutional_master_reader_emits_first_row_field_diagnostics_for_produ
     assert first_row_debug["fields"]["ISIN"]["normalized_value"] == "CR123"
 
 
-def test_pipca_vector_reader_parses_positional_records_and_rejects_malformed_lines(tmp_path: Path) -> None:
+def test_pipca_vector_reader_parses_positional_records_and_rejects_malformed_lines(
+    tmp_path: Path,
+) -> None:
     path = tmp_path / "VectorPiPCA_20260729.txt"
     path.write_text(
         "BCCR bem  BC12M120826 12/08/2026  0.000 100.008344  2.842 0.000000 0\n"

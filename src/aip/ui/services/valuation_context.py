@@ -36,9 +36,7 @@ class ValuationContext(QObject):
             raise TypeError("initial_date must be datetime.date")
 
         self._source_context = (
-            source_context
-            if source_context is not None
-            else ValuationDateContext(initial_date)
+            source_context if source_context is not None else ValuationDateContext(initial_date)
         )
         self._last_notified_date = self._source_context.value
 

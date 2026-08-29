@@ -8,8 +8,23 @@ from aip.platform.notifications.severity.severity import Severity
 
 
 class AlertEngine:
-    def create_alert(self, alert_id: str, message: str, severity: Severity, *, correlation_id: str | None = None, execution_id: str | None = None) -> Alert:
-        return Alert(alert_id=alert_id, title=message, message=message, severity=severity, correlation_id=correlation_id, execution_id=execution_id)
+    def create_alert(
+        self,
+        alert_id: str,
+        message: str,
+        severity: Severity,
+        *,
+        correlation_id: str | None = None,
+        execution_id: str | None = None,
+    ) -> Alert:
+        return Alert(
+            alert_id=alert_id,
+            title=message,
+            message=message,
+            severity=severity,
+            correlation_id=correlation_id,
+            execution_id=execution_id,
+        )
 
     def resolve_alert(self, alert: Alert, resolved_by: str) -> Alert:
         alert.status = AlertStatus.RESOLVED
@@ -31,4 +46,10 @@ class AlertEngine:
         return alert
 
     def to_result(self, alert: Alert) -> AlertResult:
-        return AlertResult(alert_id=alert.alert_id, status=alert.status, severity=alert.severity, message=alert.message, correlation_id=alert.correlation_id)
+        return AlertResult(
+            alert_id=alert.alert_id,
+            status=alert.status,
+            severity=alert.severity,
+            message=alert.message,
+            correlation_id=alert.correlation_id,
+        )

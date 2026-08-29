@@ -11,5 +11,7 @@ class CurrencyAggregation:
     def aggregate(self, cashflows: tuple[ProjectedCashFlow, ...]) -> dict[str, Decimal]:
         grouped: dict[str, Decimal] = {}
         for cashflow in cashflows:
-            grouped[cashflow.currency] = grouped.get(cashflow.currency, Decimal("0")) + cashflow.amount
+            grouped[cashflow.currency] = (
+                grouped.get(cashflow.currency, Decimal("0")) + cashflow.amount
+            )
         return grouped

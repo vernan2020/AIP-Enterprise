@@ -7,7 +7,9 @@ from aip.product.configured.readers.portfolio_master_reader import PortfolioMast
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Inspect a portfolio master workbook without exposing row values")
+    parser = argparse.ArgumentParser(
+        description="Inspect a portfolio master workbook without exposing row values"
+    )
     parser.add_argument("path")
     args = parser.parse_args()
 

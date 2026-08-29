@@ -2,16 +2,22 @@ from __future__ import annotations
 
 from dataclasses import FrozenInstanceError
 from datetime import UTC, datetime, timedelta
-from typing import Any
 
 import pytest
 
-from aip.core.exceptions import InfrastructureError
 from aip.integration.audit.execution_result import ExecutionResult, ExecutionStatus
 from aip.integration.audit.synchronization_log import SynchronizationLog
-from aip.integration.contracts.connector import ConnectorDescriptor, ConnectorProtocol, ConnectorType
+from aip.integration.contracts.connector import (
+    ConnectorDescriptor,
+    ConnectorProtocol,
+    ConnectorType,
+)
 from aip.integration.contracts.synchronization import SynchronizationJob, SynchronizationRequest
-from aip.integration.events.synchronization_events import IntegrationEventBus, SynchronizationEvent, SynchronizationEventType
+from aip.integration.events.synchronization_events import (
+    IntegrationEventBus,
+    SynchronizationEvent,
+    SynchronizationEventType,
+)
 from aip.integration.exceptions.exceptions import IntegrationError
 from aip.integration.hub.integration_hub import IntegrationHub
 from aip.integration.monitoring.health_monitor import HealthMonitor
@@ -68,7 +74,9 @@ class RecordingConnector(ConnectorProtocol):
     def validate(self, payload: object) -> ValidationResult:
         self.validate_calls += 1
         if self._fail_on_validate:
-            return ValidationResult(ok=False, issues=[ValidationIssue(field="payload", message="invalid")])
+            return ValidationResult(
+                ok=False, issues=[ValidationIssue(field="payload", message="invalid")]
+            )
         return ValidationResult(ok=True, issues=[])
 
     def normalize(self, payload: object) -> object:
@@ -129,7 +137,10 @@ def test_hub_emits_started_completed_and_failed_events_in_order() -> None:
     result = hub.run_synchronization(correlation_id="corr-1", user="ops")
 
     assert result.status == ExecutionStatus.COMPLETED
-    assert [event.event_type for event in events] == [SynchronizationEventType.STARTED, SynchronizationEventType.COMPLETED]
+    assert [event.event_type for event in events] == [
+        SynchronizationEventType.STARTED,
+        SynchronizationEventType.COMPLETED,
+    ]
 
 
 def test_scheduler_retries_until_exhaustion_and_emits_retry_event() -> None:
@@ -147,7 +158,9 @@ def test_scheduler_retries_until_exhaustion_and_emits_retry_event() -> None:
 
     assert first.status == ExecutionStatus.FAILED
     assert second.status == ExecutionStatus.FAILED
-    assert [event.event_type for event in events if event.event_type == SynchronizationEventType.RETRY] == [SynchronizationEventType.RETRY]
+    assert [
+        event.event_type for event in events if event.event_type == SynchronizationEventType.RETRY
+    ] == [SynchronizationEventType.RETRY]
     assert scheduler.get_status("retry-job") == ExecutionStatus.FAILED
 
 
@@ -156,7 +169,9 @@ def test_scheduler_cancels_unknown_jobs_and_wraps_history() -> None:
     assert scheduler.cancel_job("missing") is False
     assert scheduler.cancel("missing") is False
 
-    job = JobDefinition(id="cancel-job", connector=RecordingConnector("rest"), connector_type=ConnectorType.REST_API)
+    job = JobDefinition(
+        id="cancel-job", connector=RecordingConnector("rest"), connector_type=ConnectorType.REST_API
+    )
     scheduler.schedule_job(job, scheduled_for=datetime.now(UTC) + timedelta(minutes=1))
     assert scheduler.status("cancel-job")["status"] == ExecutionStatus.PENDING.value
     assert scheduler.cancel("cancel-job") is True
@@ -180,7 +195,9 @@ def test_scheduler_handles_validation_and_normalization_failures() -> None:
     scheduler = SchedulerService()
     connector = RecordingConnector("invalid", fail_on_validate=True)
     scheduler.register_connector(connector)
-    job = JobDefinition(id="validation-job", connector=connector, connector_type=ConnectorType.FILE_IMPORT)
+    job = JobDefinition(
+        id="validation-job", connector=connector, connector_type=ConnectorType.FILE_IMPORT
+    )
 
     failed = scheduler.run_job(job)
 
@@ -189,7 +206,9 @@ def test_scheduler_handles_validation_and_normalization_failures() -> None:
 
     connector = RecordingConnector("bad-normalizer", fail_on_normalize=True)
     scheduler.register_connector(connector)
-    job = JobDefinition(id="normalizer-job", connector=connector, connector_type=ConnectorType.FILE_IMPORT)
+    job = JobDefinition(
+        id="normalizer-job", connector=connector, connector_type=ConnectorType.FILE_IMPORT
+    )
     failed = scheduler.run_job(job)
     assert failed.status == ExecutionStatus.FAILED
     assert "normalize failed" in failed.errors[0]
@@ -262,10 +281,14 @@ def test_audit_and_result_models_render_to_dicts() -> None:
 
 
 def test_contracts_and_events_are_immutable_and_metadata_is_stable() -> None:
-    request = SynchronizationRequest(connector_name="sql", correlation_id="c", metadata={"source": "api"})
+    request = SynchronizationRequest(
+        connector_name="sql", correlation_id="c", metadata={"source": "api"}
+    )
     job = SynchronizationJob(id="job", connector_name="sql")
     event = SynchronizationEvent.started("job", "sql", "exec")
-    descriptor = ConnectorDescriptor(name="sql", connector_type=ConnectorType.SQL_SERVER, description="sql")
+    descriptor = ConnectorDescriptor(
+        name="sql", connector_type=ConnectorType.SQL_SERVER, description="sql"
+    )
 
     with pytest.raises(FrozenInstanceError):
         request.connector_name = "rest"
@@ -295,16 +318,26 @@ def test_event_bus_propagates_and_surfaces_subscriber_failures() -> None:
 
     bus.subscribe(failing_handler)
     with pytest.raises(RuntimeError, match="subscriber failed"):
-        bus.publish(SynchronizationEvent.completed("job", "sql", "exec", ExecutionResult(
-            execution_id="exec",
-            correlation_id="job",
-            connector="sql",
-            duration_seconds=0.0,
-            records_processed=1,
-            status=ExecutionStatus.COMPLETED,
-        )))
+        bus.publish(
+            SynchronizationEvent.completed(
+                "job",
+                "sql",
+                "exec",
+                ExecutionResult(
+                    execution_id="exec",
+                    correlation_id="job",
+                    connector="sql",
+                    duration_seconds=0.0,
+                    records_processed=1,
+                    status=ExecutionStatus.COMPLETED,
+                ),
+            )
+        )
 
-    assert [event.event_type for event in events] == [SynchronizationEventType.STARTED, SynchronizationEventType.COMPLETED]
+    assert [event.event_type for event in events] == [
+        SynchronizationEventType.STARTED,
+        SynchronizationEventType.COMPLETED,
+    ]
 
 
 def test_validator_accepts_none_payload_and_reports_invalid_rules() -> None:

@@ -42,8 +42,21 @@ class RecordingHandler:
 
 def test_registry_supports_registration_lookup_priority_and_dependency_graph() -> None:
     registry = JobRegistry()
-    parent = ScheduledJob(job_id="parent", name="parent", handler=lambda job, context: {}, trigger=ManualTrigger(), priority=JobPriority.HIGH)
-    child = ScheduledJob(job_id="child", name="child", handler=lambda job, context: {}, trigger=ManualTrigger(), priority=JobPriority.NORMAL, dependencies=["parent"])
+    parent = ScheduledJob(
+        job_id="parent",
+        name="parent",
+        handler=lambda job, context: {},
+        trigger=ManualTrigger(),
+        priority=JobPriority.HIGH,
+    )
+    child = ScheduledJob(
+        job_id="child",
+        name="child",
+        handler=lambda job, context: {},
+        trigger=ManualTrigger(),
+        priority=JobPriority.NORMAL,
+        dependencies=["parent"],
+    )
 
     registry.register(parent)
     registry.register(child)
@@ -76,7 +89,12 @@ def test_triggers_support_cron_interval_manual_and_startup() -> None:
 
 def test_execution_queue_and_worker_handle_success_retry_timeout_and_cancellation() -> None:
     queue = ExecutionQueue()
-    job = ScheduledJob(job_id="job-1", name="job-1", handler=lambda job, context: {"ok": True}, trigger=ManualTrigger())
+    job = ScheduledJob(
+        job_id="job-1",
+        name="job-1",
+        handler=lambda job, context: {"ok": True},
+        trigger=ManualTrigger(),
+    )
     queue.enqueue(job)
     assert queue.dequeue() is job
     assert queue.size() == 0
@@ -85,12 +103,26 @@ def test_execution_queue_and_worker_handle_success_retry_timeout_and_cancellatio
     completed = worker.execute(job, correlation_id="corr")
     assert completed.status == JobStatus.COMPLETED
 
-    flaky = ScheduledJob(job_id="job-2", name="job-2", handler=lambda job, context: (_ for _ in ()).throw(TimeoutError("slow")), trigger=ManualTrigger(), retries=1)
+    flaky = ScheduledJob(
+        job_id="job-2",
+        name="job-2",
+        handler=lambda job, context: (_ for _ in ()).throw(TimeoutError("slow")),
+        trigger=ManualTrigger(),
+        retries=1,
+    )
     cancelled = worker.execute(flaky, cancellation_token="cancelled")
     assert cancelled.status == JobStatus.CANCELLED
 
     with pytest.raises(TimeoutError):
-        worker.execute(ScheduledJob(job_id="job-3", name="job-3", handler=lambda job, context: (_ for _ in ()).throw(TimeoutError("slow")), trigger=ManualTrigger(), timeout_seconds=0.01))
+        worker.execute(
+            ScheduledJob(
+                job_id="job-3",
+                name="job-3",
+                handler=lambda job, context: (_ for _ in ()).throw(TimeoutError("slow")),
+                trigger=ManualTrigger(),
+                timeout_seconds=0.01,
+            )
+        )
 
 
 def test_locking_supports_single_instance_job_lock_and_forced_unlock() -> None:
@@ -105,12 +137,24 @@ def test_locking_supports_single_instance_job_lock_and_forced_unlock() -> None:
 
 def test_history_and_audit_record_results_and_events() -> None:
     history = JobHistory()
-    result = JobResult(execution_id="exec-1", correlation_id="corr-1", job_id="job-a", status=JobStatus.COMPLETED, duration_seconds=1.2, retries=0, warnings=["warn"], errors=[], timestamp=datetime.now(UTC))
+    result = JobResult(
+        execution_id="exec-1",
+        correlation_id="corr-1",
+        job_id="job-a",
+        status=JobStatus.COMPLETED,
+        duration_seconds=1.2,
+        retries=0,
+        warnings=["warn"],
+        errors=[],
+        timestamp=datetime.now(UTC),
+    )
     history.record(result)
     assert history.latest().execution_id == "exec-1"
 
     audit = SchedulerAudit()
-    event = SchedulerEvent(event_type=SchedulerEventType.JOB_STARTED, message="job started", job_id="job-a")
+    event = SchedulerEvent(
+        event_type=SchedulerEventType.JOB_STARTED, message="job started", job_id="job-a"
+    )
     audit.record(event)
     assert audit.entries[-1].job_id == "job-a"
 
@@ -142,21 +186,43 @@ def test_execution_engine_resolves_dependencies_and_runs_parallel_jobs() -> None
     registry = JobRegistry()
     handler = RecordingHandler()
     parent = ScheduledJob(job_id="parent", name="parent", handler=handler, trigger=ManualTrigger())
-    child = ScheduledJob(job_id="child", name="child", handler=handler, trigger=ManualTrigger(), dependencies=["parent"])
+    child = ScheduledJob(
+        job_id="child",
+        name="child",
+        handler=handler,
+        trigger=ManualTrigger(),
+        dependencies=["parent"],
+    )
     registry.register(parent)
     registry.register(child)
 
-    engine = ExecutionEngine(registry=registry, worker=Worker(), lock=ExecutionLock(), metrics=SchedulerMetrics(), health=SchedulerHealthMonitor())
+    engine = ExecutionEngine(
+        registry=registry,
+        worker=Worker(),
+        lock=ExecutionLock(),
+        metrics=SchedulerMetrics(),
+        health=SchedulerHealthMonitor(),
+    )
     results = engine.execute_many([child], parallel=False)
     assert results[0].status == JobStatus.COMPLETED
     assert handler.calls == ["parent", "child"]
 
     registry2 = JobRegistry()
-    a = ScheduledJob(job_id="a", name="a", handler=lambda job, context: {"ok": True}, trigger=ManualTrigger())
-    b = ScheduledJob(job_id="b", name="b", handler=lambda job, context: {"ok": True}, trigger=ManualTrigger())
+    a = ScheduledJob(
+        job_id="a", name="a", handler=lambda job, context: {"ok": True}, trigger=ManualTrigger()
+    )
+    b = ScheduledJob(
+        job_id="b", name="b", handler=lambda job, context: {"ok": True}, trigger=ManualTrigger()
+    )
     registry2.register(a)
     registry2.register(b)
-    engine2 = ExecutionEngine(registry=registry2, worker=Worker(), lock=ExecutionLock(), metrics=SchedulerMetrics(), health=SchedulerHealthMonitor())
+    engine2 = ExecutionEngine(
+        registry=registry2,
+        worker=Worker(),
+        lock=ExecutionLock(),
+        metrics=SchedulerMetrics(),
+        health=SchedulerHealthMonitor(),
+    )
     results2 = engine2.execute_many([a, b], parallel=True)
     assert len(results2) == 2
     assert {result.job_id for result in results2} == {"a", "b"}
@@ -165,9 +231,23 @@ def test_execution_engine_resolves_dependencies_and_runs_parallel_jobs() -> None
 def test_scheduler_engine_supports_graceful_shutdown_and_event_publishing() -> None:
     config = SchedulerConfig(name="demo", poll_interval_seconds=1)
     registry = JobRegistry()
-    job = ScheduledJob(job_id="job-x", name="job-x", handler=lambda job, context: {"ok": True}, trigger=ManualTrigger())
+    job = ScheduledJob(
+        job_id="job-x",
+        name="job-x",
+        handler=lambda job, context: {"ok": True},
+        trigger=ManualTrigger(),
+    )
     registry.register(job)
-    engine = SchedulerEngine(config=config, registry=registry, queue=ExecutionQueue(), worker=Worker(), lock=ExecutionLock(), metrics=SchedulerMetrics(), health=SchedulerHealthMonitor(), audit=SchedulerAudit())
+    engine = SchedulerEngine(
+        config=config,
+        registry=registry,
+        queue=ExecutionQueue(),
+        worker=Worker(),
+        lock=ExecutionLock(),
+        metrics=SchedulerMetrics(),
+        health=SchedulerHealthMonitor(),
+        audit=SchedulerAudit(),
+    )
 
     engine.start()
     engine.shutdown()
@@ -185,9 +265,20 @@ def test_scheduler_engine_retries_and_reports_failure() -> None:
             raise RuntimeError("transient")
         return {"ok": True}
 
-    job = ScheduledJob(job_id="job-r", name="job-r", handler=flaky, trigger=ManualTrigger(), retries=2)
+    job = ScheduledJob(
+        job_id="job-r", name="job-r", handler=flaky, trigger=ManualTrigger(), retries=2
+    )
     registry.register(job)
-    engine = SchedulerEngine(config=SchedulerConfig(name="retry", poll_interval_seconds=1), registry=registry, queue=ExecutionQueue(), worker=Worker(), lock=ExecutionLock(), metrics=SchedulerMetrics(), health=SchedulerHealthMonitor(), audit=SchedulerAudit())
+    engine = SchedulerEngine(
+        config=SchedulerConfig(name="retry", poll_interval_seconds=1),
+        registry=registry,
+        queue=ExecutionQueue(),
+        worker=Worker(),
+        lock=ExecutionLock(),
+        metrics=SchedulerMetrics(),
+        health=SchedulerHealthMonitor(),
+        audit=SchedulerAudit(),
+    )
 
     result = engine.execute_job(job.job_id, context={"attempts": 0})
     assert result.status == JobStatus.COMPLETED
@@ -196,14 +287,28 @@ def test_scheduler_engine_retries_and_reports_failure() -> None:
 
 def test_scheduler_edge_paths_cover_disabled_locked_and_dependency_paths() -> None:
     registry = JobRegistry()
-    parent = ScheduledJob(job_id="parent", name="parent", handler=lambda job, context: {}, trigger=ManualTrigger())
-    child = ScheduledJob(job_id="child", name="child", handler=lambda job, context: {}, trigger=ManualTrigger(), dependencies=["parent"])
+    parent = ScheduledJob(
+        job_id="parent", name="parent", handler=lambda job, context: {}, trigger=ManualTrigger()
+    )
+    child = ScheduledJob(
+        job_id="child",
+        name="child",
+        handler=lambda job, context: {},
+        trigger=ManualTrigger(),
+        dependencies=["parent"],
+    )
     registry.register(parent)
     registry.register(child)
     registry.disable("child")
 
     lock = ExecutionLock()
-    engine = ExecutionEngine(registry=registry, worker=Worker(), lock=lock, metrics=SchedulerMetrics(), health=SchedulerHealthMonitor())
+    engine = ExecutionEngine(
+        registry=registry,
+        worker=Worker(),
+        lock=lock,
+        metrics=SchedulerMetrics(),
+        health=SchedulerHealthMonitor(),
+    )
     skipped = engine.execute(child)
     assert skipped.status == JobStatus.SKIPPED
 
@@ -217,7 +322,16 @@ def test_scheduler_edge_paths_cover_disabled_locked_and_dependency_paths() -> No
     assert results[1].job_id == "child"
 
     with pytest.raises(SchedulerError, match="scheduler stopped"):
-        stopped_engine = SchedulerEngine(config=SchedulerConfig(name="stopped"), registry=registry, queue=ExecutionQueue(), worker=Worker(), lock=ExecutionLock(), metrics=SchedulerMetrics(), health=SchedulerHealthMonitor(), audit=SchedulerAudit())
+        stopped_engine = SchedulerEngine(
+            config=SchedulerConfig(name="stopped"),
+            registry=registry,
+            queue=ExecutionQueue(),
+            worker=Worker(),
+            lock=ExecutionLock(),
+            metrics=SchedulerMetrics(),
+            health=SchedulerHealthMonitor(),
+            audit=SchedulerAudit(),
+        )
         stopped_engine.shutdown()
 
 
@@ -230,21 +344,49 @@ def test_worker_and_history_cover_retry_and_state_paths() -> None:
             raise RuntimeError("transient")
         return {"ok": True}
 
-    result = worker.execute(ScheduledJob(job_id="retry", name="retry", handler=fail_once, trigger=ManualTrigger(), retries=1), context={"attempts": 0})
+    result = worker.execute(
+        ScheduledJob(
+            job_id="retry", name="retry", handler=fail_once, trigger=ManualTrigger(), retries=1
+        ),
+        context={"attempts": 0},
+    )
     assert result.status == JobStatus.COMPLETED
     assert result.retries == 1
 
     def timeout_once(job: ScheduledJob, context: dict[str, Any]) -> dict[str, Any]:
         raise TimeoutError("slow")
 
-    failed = worker.execute(ScheduledJob(job_id="timeout", name="timeout", handler=timeout_once, trigger=ManualTrigger(), retries=1), context={})
+    failed = worker.execute(
+        ScheduledJob(
+            job_id="timeout",
+            name="timeout",
+            handler=timeout_once,
+            trigger=ManualTrigger(),
+            retries=1,
+        ),
+        context={},
+    )
     assert failed.status == JobStatus.FAILED
 
     history = JobHistory()
-    history.record(JobResult(execution_id="exec-2", correlation_id="corr-2", job_id="job-b", status=JobStatus.COMPLETED, duration_seconds=0.5, retries=0, warnings=[], errors=[], timestamp=datetime.now(UTC)))
+    history.record(
+        JobResult(
+            execution_id="exec-2",
+            correlation_id="corr-2",
+            job_id="job-b",
+            status=JobStatus.COMPLETED,
+            duration_seconds=0.5,
+            retries=0,
+            warnings=[],
+            errors=[],
+            timestamp=datetime.now(UTC),
+        )
+    )
     assert history.entries[-1].job_id == "job-b"
 
-    job = ScheduledJob(job_id="job-z", name="job-z", handler=lambda job, context: {}, trigger=ManualTrigger())
+    job = ScheduledJob(
+        job_id="job-z", name="job-z", handler=lambda job, context: {}, trigger=ManualTrigger()
+    )
     job.disable()
     job.enable()
     assert job.enabled is True

@@ -12,7 +12,6 @@ from aip.platform.security.events.security_events import (
     SecurityEventPublisher,
 )
 from aip.platform.security.exceptions.security_exceptions import AuthenticationError
-from aip.platform.security.identity.identity import Identity
 from aip.platform.security.identity.identity_provider import IdentityProvider
 from aip.platform.security.identity.principal import Principal
 
@@ -34,12 +33,16 @@ class AuthenticationService:
 
     def authenticate(self, username: str, password: str) -> tuple[Principal, Token]:
         if not self._credential_validator.validate(username, password):
-            self._event_publisher.publish(AuthenticationFailed(username=username, occurred_at=datetime.now(timezone.utc)))
+            self._event_publisher.publish(
+                AuthenticationFailed(username=username, occurred_at=datetime.now(timezone.utc))
+            )
             raise AuthenticationError("Authentication failed")
         identity = self._identity_provider.get_identity(username)
         principal = Principal(identity=identity)
         token = Token(value=f"token-{identity.subject}", expires_at=datetime.now(timezone.utc))
-        self._event_publisher.publish(AuthenticationSucceeded(username=username, occurred_at=datetime.now(timezone.utc)))
+        self._event_publisher.publish(
+            AuthenticationSucceeded(username=username, occurred_at=datetime.now(timezone.utc))
+        )
         return principal, token
 
     def create_session(self, principal: Principal, token: Token | None = None) -> Any:

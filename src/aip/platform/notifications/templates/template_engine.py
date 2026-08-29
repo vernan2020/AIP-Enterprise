@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from string import Formatter
 from typing import Any
 
 

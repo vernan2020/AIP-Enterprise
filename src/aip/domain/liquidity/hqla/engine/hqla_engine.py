@@ -103,5 +103,9 @@ class HQLAEngine:
             reason=reason,
             analytics=analytics,
             explanation=explanation,
-            currency=request.configuration.get("currency", "USD") if isinstance(request.configuration.get("currency"), str) else "USD",
+            currency=(
+                request.configuration.get("currency", "USD")
+                if isinstance(request.configuration.get("currency"), str)
+                else "USD"
+            ),
         )

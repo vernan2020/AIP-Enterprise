@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+from aip.ui.modules.portfolio.routing.portfolio_route import PortfolioRoute
 from aip.ui.navigation.navigation_manager import NavigationManager
 from aip.ui.navigation.routes import Route
-from aip.ui.modules.portfolio.routing.portfolio_route import PortfolioRoute
 
 
 def test_portfolio_route_registers_in_navigation_manager() -> None:

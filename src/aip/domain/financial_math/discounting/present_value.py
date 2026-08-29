@@ -11,7 +11,9 @@ from aip.domain.financial_math.exceptions import InvalidCashFlowError
 from aip.domain.financial_math.rates.interest_rate import InterestRate
 
 
-def _time_to_years(payment_date: date, valuation_date: date, *, day_count_convention: str = "ACTUAL_365") -> Decimal:
+def _time_to_years(
+    payment_date: date, valuation_date: date, *, day_count_convention: str = "ACTUAL_365"
+) -> Decimal:
     if day_count_convention.upper() == "ACTUAL_365":
         return Decimal((payment_date - valuation_date).days) / Decimal("365")
     if day_count_convention.upper() == "ACTUAL_360":
@@ -33,8 +35,12 @@ def present_value(
     rate_value = rate.rate if isinstance(rate, InterestRate) else rate
     compounding_value = rate.compounding if isinstance(rate, InterestRate) else compounding
     frequency_value = rate.frequency if isinstance(rate, InterestRate) else frequency
-    time = _time_to_years(cash_flow.payment_date, valuation_date, day_count_convention=day_count_convention)
-    return cash_flow.amount * discount_factor(rate_value, time, compounding=compounding_value, frequency=frequency_value)
+    time = _time_to_years(
+        cash_flow.payment_date, valuation_date, day_count_convention=day_count_convention
+    )
+    return cash_flow.amount * discount_factor(
+        rate_value, time, compounding=compounding_value, frequency=frequency_value
+    )
 
 
 def present_value_series(

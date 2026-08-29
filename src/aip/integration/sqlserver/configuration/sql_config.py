@@ -32,7 +32,9 @@ class SQLServerConfig:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        if not self.connection_string.strip() and not (self.server.strip() and self.database.strip()):
+        if not self.connection_string.strip() and not (
+            self.server.strip() and self.database.strip()
+        ):
             raise ValueError("connection_string is required")
         if self.timeout_seconds <= 0:
             raise ValueError("timeout_seconds must be positive")
@@ -62,5 +64,7 @@ class SQLServerConfig:
 
     def __repr__(self) -> str:
         safe = self.to_safe_dict()
-        safe["authentication"] = repr(self.authentication) if self.authentication is not None else None
+        safe["authentication"] = (
+            repr(self.authentication) if self.authentication is not None else None
+        )
         return f"SQLServerConfig({safe})"

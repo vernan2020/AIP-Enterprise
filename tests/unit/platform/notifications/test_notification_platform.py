@@ -2,25 +2,28 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
-from threading import Lock
-from typing import Any
 
 import pytest
 
 from aip.platform.notifications.audit.notification_audit import NotificationAudit
-from aip.platform.notifications.configuration.notification_config import NotificationConfig
+from aip.platform.notifications.deduplication.deduplication_service import DeduplicationService
 from aip.platform.notifications.dispatch.dispatch_queue import DispatchQueue
 from aip.platform.notifications.dispatch.dispatcher import Dispatcher
-from aip.platform.notifications.deduplication.deduplication_service import DeduplicationService
 from aip.platform.notifications.engine.alert_engine import AlertEngine
 from aip.platform.notifications.engine.notification_engine import NotificationEngine
-from aip.platform.notifications.events.notification_events import NotificationEvent, NotificationEventType
+from aip.platform.notifications.events.notification_events import (
+    NotificationEvent,
+    NotificationEventType,
+)
 from aip.platform.notifications.exceptions.notification_exceptions import NotificationError
 from aip.platform.notifications.models.alert import Alert, AlertStatus
 from aip.platform.notifications.models.alert_result import AlertResult
 from aip.platform.notifications.models.alert_rule import AlertRule
 from aip.platform.notifications.models.notification import Notification
-from aip.platform.notifications.models.notification_result import NotificationResult, NotificationStatus
+from aip.platform.notifications.models.notification_result import (
+    NotificationResult,
+    NotificationStatus,
+)
 from aip.platform.notifications.monitoring.notification_health import NotificationHealthMonitor
 from aip.platform.notifications.providers.null_provider import NullProvider
 from aip.platform.notifications.providers.provider import Provider
@@ -37,9 +40,22 @@ class RecordingProvider(Provider):
     sent: list[Notification] = field(default_factory=list)
     health_ok: bool = True
 
-    def send(self, notification: Notification, *, timeout_seconds: float | None = None, cancellation_token: str | None = None) -> NotificationResult:
+    def send(
+        self,
+        notification: Notification,
+        *,
+        timeout_seconds: float | None = None,
+        cancellation_token: str | None = None,
+    ) -> NotificationResult:
         self.sent.append(notification)
-        return NotificationResult(notification_id=notification.notification_id, status=NotificationStatus.SENT, retries=0, provider=self.name, timestamp=datetime.now(UTC), duration_seconds=0.0)
+        return NotificationResult(
+            notification_id=notification.notification_id,
+            status=NotificationStatus.SENT,
+            retries=0,
+            provider=self.name,
+            timestamp=datetime.now(UTC),
+            duration_seconds=0.0,
+        )
 
     def health(self) -> bool:
         return self.health_ok
@@ -73,12 +89,20 @@ def test_notification_engine_evaluates_rules_and_suppression() -> None:
     metrics = NotificationMetrics()
     health = NotificationHealthMonitor()
     engine = NotificationEngine(provider_registry=registry, metrics=metrics, health=health)
-    rule = AlertRule(rule_id="rule-1", name="rule", severity=Severity.HIGH, threshold=1, event_type="job_failed")
-    alert = engine.process_event({"event_type": "job_failed", "severity": "high", "message": "job failed"}, rule=rule)
+    rule = AlertRule(
+        rule_id="rule-1", name="rule", severity=Severity.HIGH, threshold=1, event_type="job_failed"
+    )
+    alert = engine.process_event(
+        {"event_type": "job_failed", "severity": "high", "message": "job failed"}, rule=rule
+    )
     assert alert is not None
     assert alert.severity == Severity.HIGH
 
-    suppressed = engine.process_event({"event_type": "job_failed", "severity": "high", "message": "job failed"}, rule=rule, suppress=True)
+    suppressed = engine.process_event(
+        {"event_type": "job_failed", "severity": "high", "message": "job failed"},
+        rule=rule,
+        suppress=True,
+    )
     assert suppressed is None
 
 
@@ -86,7 +110,14 @@ def test_dispatcher_queue_and_retry_paths() -> None:
     queue = DispatchQueue()
     provider = RecordingProvider()
     dispatcher = Dispatcher(provider=provider, max_retries=2)
-    notification = Notification(notification_id="n-1", alert_id="a-1", message="hello", severity=Severity.INFO, correlation_id="c-1", execution_id="e-1")
+    notification = Notification(
+        notification_id="n-1",
+        alert_id="a-1",
+        message="hello",
+        severity=Severity.INFO,
+        correlation_id="c-1",
+        execution_id="e-1",
+    )
 
     queue.enqueue(notification)
     assert queue.dequeue() is notification
@@ -99,7 +130,13 @@ def test_dispatcher_queue_and_retry_paths() -> None:
     class FailingProvider(Provider):
         name = "failing"
 
-        def send(self, notification: Notification, *, timeout_seconds: float | None = None, cancellation_token: str | None = None) -> NotificationResult:
+        def send(
+            self,
+            notification: Notification,
+            *,
+            timeout_seconds: float | None = None,
+            cancellation_token: str | None = None,
+        ) -> NotificationResult:
             raise RuntimeError("boom")
 
         def health(self) -> bool:
@@ -107,7 +144,16 @@ def test_dispatcher_queue_and_retry_paths() -> None:
 
     failed = Dispatcher(provider=FailingProvider(), max_retries=1)
     with pytest.raises(NotificationError, match="failed"):
-        failed.dispatch(Notification(notification_id="n-2", alert_id="a-2", message="hello", severity=Severity.INFO, correlation_id="c-2", execution_id="e-2"))
+        failed.dispatch(
+            Notification(
+                notification_id="n-2",
+                alert_id="a-2",
+                message="hello",
+                severity=Severity.INFO,
+                correlation_id="c-2",
+                execution_id="e-2",
+            )
+        )
 
 
 def test_provider_registry_and_null_provider() -> None:
@@ -134,11 +180,27 @@ def test_suppression_and_deduplication_services() -> None:
 
 def test_template_engine_and_audit_and_metrics() -> None:
     template = TemplateEngine()
-    rendered = template.render("Hello {name} at {timestamp}", {"name": "ops", "timestamp": "2024-01-01"})
+    rendered = template.render(
+        "Hello {name} at {timestamp}", {"name": "ops", "timestamp": "2024-01-01"}
+    )
     assert "ops" in rendered
 
     audit = NotificationAudit()
-    audit.record(NotificationEvent(NotificationEventType.NOTIFICATION_SENT, "sent", notification_id="n-1", alert_id="a-1", execution_id="e-1", correlation_id="c-1", provider="recording", severity=Severity.INFO, status="sent", retries=0, timestamp=datetime.now(UTC)))
+    audit.record(
+        NotificationEvent(
+            NotificationEventType.NOTIFICATION_SENT,
+            "sent",
+            notification_id="n-1",
+            alert_id="a-1",
+            execution_id="e-1",
+            correlation_id="c-1",
+            provider="recording",
+            severity=Severity.INFO,
+            status="sent",
+            retries=0,
+            timestamp=datetime.now(UTC),
+        )
+    )
     assert audit.entries[-1].notification_id == "n-1"
 
     metrics = NotificationMetrics()
@@ -163,22 +225,41 @@ def test_monitoring_and_events() -> None:
     assert snapshot["provider_latency"] == 3.5
     assert snapshot["queue_size"] == 2
 
-    events = NotificationEngine(provider_registry=ProviderRegistry(), metrics=NotificationMetrics(), health=NotificationHealthMonitor())
-    event = NotificationEvent(NotificationEventType.NOTIFICATION_QUEUED, "queued", notification_id="n-1")
+    events = NotificationEngine(
+        provider_registry=ProviderRegistry(),
+        metrics=NotificationMetrics(),
+        health=NotificationHealthMonitor(),
+    )
+    event = NotificationEvent(
+        NotificationEventType.NOTIFICATION_QUEUED, "queued", notification_id="n-1"
+    )
     assert events.publish_event(event) is None
 
 
 def test_retry_timeout_and_cancellation() -> None:
     provider = RecordingProvider()
     dispatcher = Dispatcher(provider=provider, max_retries=1)
-    notification = Notification(notification_id="n-3", alert_id="a-3", message="hello", severity=Severity.INFO, correlation_id="c-3", execution_id="e-3")
+    notification = Notification(
+        notification_id="n-3",
+        alert_id="a-3",
+        message="hello",
+        severity=Severity.INFO,
+        correlation_id="c-3",
+        execution_id="e-3",
+    )
     result = dispatcher.dispatch(notification, cancellation_token="cancelled")
     assert result.status == NotificationStatus.CANCELLED
 
     class SlowProvider(Provider):
         name = "slow"
 
-        def send(self, notification: Notification, *, timeout_seconds: float | None = None, cancellation_token: str | None = None) -> NotificationResult:
+        def send(
+            self,
+            notification: Notification,
+            *,
+            timeout_seconds: float | None = None,
+            cancellation_token: str | None = None,
+        ) -> NotificationResult:
             raise TimeoutError("slow")
 
         def health(self) -> bool:
@@ -186,15 +267,36 @@ def test_retry_timeout_and_cancellation() -> None:
 
     slow = Dispatcher(provider=SlowProvider(), max_retries=1)
     with pytest.raises(TimeoutError):
-        slow.dispatch(Notification(notification_id="n-4", alert_id="a-4", message="hello", severity=Severity.INFO, correlation_id="c-4", execution_id="e-4"))
+        slow.dispatch(
+            Notification(
+                notification_id="n-4",
+                alert_id="a-4",
+                message="hello",
+                severity=Severity.INFO,
+                correlation_id="c-4",
+                execution_id="e-4",
+            )
+        )
 
 
 def test_alert_result_and_engine_helpers() -> None:
-    result = AlertResult(alert_id="a-1", status=AlertStatus.OPEN, severity=Severity.INFO, message="msg", correlation_id="corr")
+    result = AlertResult(
+        alert_id="a-1",
+        status=AlertStatus.OPEN,
+        severity=Severity.INFO,
+        message="msg",
+        correlation_id="corr",
+    )
     assert result.alert_id == "a-1"
 
     engine = AlertEngine()
-    alert = Alert(alert_id="a-1", title="title", message="message", severity=Severity.INFO, correlation_id="corr")
+    alert = Alert(
+        alert_id="a-1",
+        title="title",
+        message="message",
+        severity=Severity.INFO,
+        correlation_id="corr",
+    )
     assert engine.resolve_alert(alert, "done").status == AlertStatus.RESOLVED
     assert engine.acknowledge_alert(alert, "ops").status == AlertStatus.ACKNOWLEDGED
     assert engine.escalate_alert(alert, Severity.CRITICAL).severity == Severity.CRITICAL
@@ -224,12 +326,18 @@ def test_notification_engine_deduplication_and_no_rule_path() -> None:
     policy = SuppressionPolicy()
     health = NotificationHealthMonitor()
     metrics = NotificationMetrics()
-    engine = NotificationEngine(metrics=metrics, health=health, suppression_policy=policy, deduplication_service=dedup)
+    engine = NotificationEngine(
+        metrics=metrics, health=health, suppression_policy=policy, deduplication_service=dedup
+    )
 
-    first = engine.process_event({"event_type": "job_failed", "message": "job failed", "severity": "high"})
+    first = engine.process_event(
+        {"event_type": "job_failed", "message": "job failed", "severity": "high"}
+    )
     assert first is not None
 
-    duplicate = engine.process_event({"event_type": "job_failed", "message": "job failed", "severity": "high"})
+    duplicate = engine.process_event(
+        {"event_type": "job_failed", "message": "job failed", "severity": "high"}
+    )
     assert duplicate is None
 
     no_rule = engine.process_event({"event_type": "job_started", "message": "job started"})
@@ -241,7 +349,16 @@ def test_notification_engine_deduplication_and_no_rule_path() -> None:
 
 def test_dispatcher_and_template_engine_cover_unreachable_paths() -> None:
     provider = NullProvider()
-    result = provider.send(Notification(notification_id="n-5", alert_id="a-5", message="hello", severity=Severity.INFO, correlation_id="c-5", execution_id="e-5"))
+    result = provider.send(
+        Notification(
+            notification_id="n-5",
+            alert_id="a-5",
+            message="hello",
+            severity=Severity.INFO,
+            correlation_id="c-5",
+            execution_id="e-5",
+        )
+    )
     assert result.status == NotificationStatus.SENT
     assert provider.health() is True
 
@@ -259,4 +376,13 @@ def test_dispatcher_and_template_engine_cover_unreachable_paths() -> None:
 
     dispatcher = Dispatcher(provider=RecordingProvider(), max_retries=-1)
     with pytest.raises(NotificationError, match="notification failed"):
-        dispatcher.dispatch(Notification(notification_id="n-6", alert_id="a-6", message="hello", severity=Severity.INFO, correlation_id="c-6", execution_id="e-6"))
+        dispatcher.dispatch(
+            Notification(
+                notification_id="n-6",
+                alert_id="a-6",
+                message="hello",
+                severity=Severity.INFO,
+                correlation_id="c-6",
+                execution_id="e-6",
+            )
+        )

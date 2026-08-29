@@ -8,7 +8,12 @@ from aip.product.demo.configuration.demo_config import DemoConfig
 
 
 class ConfiguredMarketProvider:
-    def __init__(self, config: DemoConfig, source_config: ConfiguredSourceConfig | None = None, health_provider: SourceHealthProvider | None = None) -> None:
+    def __init__(
+        self,
+        config: DemoConfig,
+        source_config: ConfiguredSourceConfig | None = None,
+        health_provider: SourceHealthProvider | None = None,
+    ) -> None:
         self._config = config
         self._source_config = source_config or ConfiguredSourceConfig()
         self._health_provider = health_provider
@@ -16,7 +21,9 @@ class ConfiguredMarketProvider:
     def get_market(self) -> dict[str, Any]:
         bccr_enabled = self._source_config.bccr.enabled
         curves_enabled = self._source_config.curves.enabled
-        source_status = self._health_provider.get_health() if self._health_provider is not None else {}
+        source_status = (
+            self._health_provider.get_health() if self._health_provider is not None else {}
+        )
         return {
             "market_date": self._config.data_cutoff_date.isoformat(),
             "market_status": "Configured" if bccr_enabled or curves_enabled else "Unavailable",
@@ -28,5 +35,9 @@ class ConfiguredMarketProvider:
             "average_spread": 0.0,
             "source_status": source_status,
             "data_quality_status": "HEALTHY" if bccr_enabled else "DEGRADED",
-            "configuration_message": "Market sources are disabled or unavailable" if not (bccr_enabled or curves_enabled) else "Configured market sources are active",
+            "configuration_message": (
+                "Market sources are disabled or unavailable"
+                if not (bccr_enabled or curves_enabled)
+                else "Configured market sources are active"
+            ),
         }

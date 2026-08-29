@@ -5,12 +5,12 @@ from pathlib import Path
 from PySide6.QtWidgets import QTableWidget, QTableWidgetItem
 
 from aip.ui.dialogs.about_dialog import AboutDialog
-from aip.ui.shell.main_window import MainWindow
-from aip.ui.widgets.health_center import HealthCenterWidget
-from aip.ui.widgets.settings_center import SettingsCenterDialog
-from aip.ui.widgets.log_viewer import LogViewerDialog
 from aip.ui.services.diagnostic_service import DiagnosticMetricsStore, ProductionReadinessService
 from aip.ui.services.export_service import TableExportService
+from aip.ui.shell.main_window import MainWindow
+from aip.ui.widgets.health_center import HealthCenterWidget
+from aip.ui.widgets.log_viewer import LogViewerDialog
+from aip.ui.widgets.settings_center import SettingsCenterDialog
 
 
 def test_diagnostic_mode_exposes_metrics() -> None:
@@ -80,7 +80,9 @@ def test_main_window_exports_current_workspace_table(tmp_path: Path) -> None:
     table.setItem(0, 1, QTableWidgetItem("Healthy"))
 
     window.workspace.add_tab("Export Test", table)
-    output = window.export_current_workspace_table(tmp_path / "workspace-export", export_format="csv")
+    output = window.export_current_workspace_table(
+        tmp_path / "workspace-export", export_format="csv"
+    )
     assert output.endswith(".csv")
     assert Path(output).exists()
 

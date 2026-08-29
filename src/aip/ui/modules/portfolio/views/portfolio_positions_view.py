@@ -8,21 +8,23 @@ class PortfolioPositionsView(QWidget):
         super().__init__()
         self._table = QTableWidget()
         self._table.setColumnCount(14)
-        self._table.setHorizontalHeaderLabels([
-            "ISIN",
-            "Issuer",
-            "Instrument",
-            "Currency",
-            "Nominal",
-            "Market Value",
-            "Book Value",
-            "Yield",
-            "Modified Duration",
-            "Classification",
-            "HQLA Status",
-            "MIL Status",
-            "Recommendation",
-        ])
+        self._table.setHorizontalHeaderLabels(
+            [
+                "ISIN",
+                "Issuer",
+                "Instrument",
+                "Currency",
+                "Nominal",
+                "Market Value",
+                "Book Value",
+                "Yield",
+                "Modified Duration",
+                "Classification",
+                "HQLA Status",
+                "MIL Status",
+                "Recommendation",
+            ]
+        )
         layout = QVBoxLayout(self)
         layout.addWidget(self._table)
         self.bind_rows(rows or ())

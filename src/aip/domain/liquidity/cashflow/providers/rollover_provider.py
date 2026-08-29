@@ -10,5 +10,4 @@ if TYPE_CHECKING:
 class RolloverProvider(Protocol):
     """Protocol for providing rollover rates for a projection request."""
 
-    def get_rollover_rate(self, request: ProjectionRequest) -> Decimal:
-        ...
+    def get_rollover_rate(self, request: ProjectionRequest) -> Decimal: ...

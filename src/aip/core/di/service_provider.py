@@ -26,9 +26,7 @@ class ServiceScope(ABC):
     """Abstract base class for managing scoped service instances."""
 
     @abstractmethod
-    def get_instance(
-        self, service_type: type[T], instance: T
-    ) -> T:
+    def get_instance(self, service_type: type[T], instance: T) -> T:
         """Get or cache scoped instance.
 
         Args:
@@ -57,9 +55,7 @@ class DefaultServiceScope(ServiceScope):
         self._instances: dict[type, Any] = {}
         self._lock = threading.RLock()
 
-    def get_instance(
-        self, service_type: type[T], instance: T | None = None
-    ) -> T:
+    def get_instance(self, service_type: type[T], instance: T | None = None) -> T:
         """Get or cache scoped instance.
 
         Args:

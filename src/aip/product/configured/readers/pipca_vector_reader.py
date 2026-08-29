@@ -12,7 +12,16 @@ from typing import Any
 class PiPCAParseError(ValueError):
     """Raised when a PiPCA line cannot be parsed into a vector record."""
 
-    def __init__(self, reason: str, *, line: str, source_line: int | None = None, branch: str | None = None, field_widths: tuple[int, ...] | None = None, raw_identifier: str | None = None) -> None:
+    def __init__(
+        self,
+        reason: str,
+        *,
+        line: str,
+        source_line: int | None = None,
+        branch: str | None = None,
+        field_widths: tuple[int, ...] | None = None,
+        raw_identifier: str | None = None,
+    ) -> None:
         self.reason = reason
         self.line = line
         self.source_line = source_line
@@ -54,7 +63,9 @@ class InstitutionalPiPCAVectorReadResult:
 class InstitutionalPiPCAVectorReader:
     _MAX_DIAGNOSTIC_TRACE_ENTRIES = 20
 
-    def read(self, path: str | Path, *, source_cutoff: date | None = None, diagnostic_mode: bool = False) -> InstitutionalPiPCAVectorReadResult:
+    def read(
+        self, path: str | Path, *, source_cutoff: date | None = None, diagnostic_mode: bool = False
+    ) -> InstitutionalPiPCAVectorReadResult:
         file_path = Path(path)
         if not file_path.exists():
             raise FileNotFoundError(f"PiPCA vector file does not exist: {file_path}")
@@ -73,45 +84,72 @@ class InstitutionalPiPCAVectorReader:
             if diagnostic_mode:
                 line_diagnostics.append(line_diagnostic)
             try:
-                record = self._parse_line(raw_line, source_cutoff=source_cutoff, source_line=line_number)
+                record = self._parse_line(
+                    raw_line, source_cutoff=source_cutoff, source_line=line_number
+                )
             except PiPCAParseError as exc:
                 rejected_count += 1
                 reason = exc.reason
                 rejected_reason_counts[reason] = rejected_reason_counts.get(reason, 0) + 1
                 if diagnostic_mode:
-                    line_diagnostic.update({
-                        "status": "rejected",
-                        "reason": reason,
-                        "parser_branch": exc.branch,
-                        "raw_identifier": exc.raw_identifier,
-                    })
-                    record_trace.append({
-                        "line": line_number,
-                        "status": "discarded",
-                        "reason": reason,
-                        "branch": exc.branch,
-                        "field_widths": list(exc.field_widths),
-                        "raw_identifier": exc.raw_identifier,
-                        "isin": None,
-                    })
+                    line_diagnostic.update(
+                        {
+                            "status": "rejected",
+                            "reason": reason,
+                            "parser_branch": exc.branch,
+                            "raw_identifier": exc.raw_identifier,
+                        }
+                    )
+                    record_trace.append(
+                        {
+                            "line": line_number,
+                            "status": "discarded",
+                            "reason": reason,
+                            "branch": exc.branch,
+                            "field_widths": list(exc.field_widths),
+                            "raw_identifier": exc.raw_identifier,
+                            "isin": None,
+                        }
+                    )
                 continue
             except ValueError as exc:
                 rejected_count += 1
                 reason = str(exc)
                 rejected_reason_counts[reason] = rejected_reason_counts.get(reason, 0) + 1
                 if diagnostic_mode:
-                    line_diagnostic.update({"status": "rejected", "reason": reason, "parser_branch": None, "raw_identifier": None})
-                    record_trace.append({"line": line_number, "status": "discarded", "reason": reason, "branch": None, "field_widths": [], "raw_identifier": None, "isin": None})
+                    line_diagnostic.update(
+                        {
+                            "status": "rejected",
+                            "reason": reason,
+                            "parser_branch": None,
+                            "raw_identifier": None,
+                        }
+                    )
+                    record_trace.append(
+                        {
+                            "line": line_number,
+                            "status": "discarded",
+                            "reason": reason,
+                            "branch": None,
+                            "field_widths": [],
+                            "raw_identifier": None,
+                            "isin": None,
+                        }
+                    )
                 continue
             if record is not None:
                 records.append(record)
                 if diagnostic_mode:
-                    line_diagnostic.update({
-                        "status": "accepted",
-                        "reason": "parsed",
-                        "parser_branch": "accepted",
-                        "raw_identifier": self._extract_raw_identifier(normalized_line=raw_line),
-                    })
+                    line_diagnostic.update(
+                        {
+                            "status": "accepted",
+                            "reason": "parsed",
+                            "parser_branch": "accepted",
+                            "raw_identifier": self._extract_raw_identifier(
+                                normalized_line=raw_line
+                            ),
+                        }
+                    )
                     diagnostics_entry = {
                         "line": record.source_line,
                         "status": "accepted",
@@ -119,7 +157,11 @@ class InstitutionalPiPCAVectorReader:
                         "issuer": record.issuer,
                         "mnemonic": record.instrument_type_or_mnemonic,
                         "series_or_security_code": record.series_or_security_code,
-                        "maturity_date": record.maturity_date_if_present.isoformat() if record.maturity_date_if_present else None,
+                        "maturity_date": (
+                            record.maturity_date_if_present.isoformat()
+                            if record.maturity_date_if_present
+                            else None
+                        ),
                         "normalized_series_key": record.normalized_series_key,
                         "normalized_issuer_key": record.normalized_issuer_key,
                         "isin": record.isin_if_present or None,
@@ -137,7 +179,9 @@ class InstitutionalPiPCAVectorReader:
                 "records_valid": len(records),
                 "records_discarded": rejected_count,
                 "rejected_reason_counts": rejected_reason_counts,
-                "isin_found": [record.isin_if_present for record in records if record.isin_if_present],
+                "isin_found": [
+                    record.isin_if_present for record in records if record.isin_if_present
+                ],
                 "accepted_records": accepted_records,
                 "line_diagnostics": line_diagnostics,
                 "record_trace": record_trace[-self._MAX_DIAGNOSTIC_TRACE_ENTRIES :],
@@ -177,7 +221,11 @@ class InstitutionalPiPCAVectorReader:
             "masked_raw_line": self._mask_text(raw_line),
             "parser_branch": "pending",
             "issuer_slice": {"start": 0, "end": 4, "text": raw_line[0:4]},
-            "product_series_slice": {"start": 4, "end": combined_field_end, "text": raw_line[4:combined_field_end]},
+            "product_series_slice": {
+                "start": 4,
+                "end": combined_field_end,
+                "text": raw_line[4:combined_field_end],
+            },
             "maturity_slice": {"start": maturity_start, "end": maturity_end, "text": maturity_text},
             "parsed_issuer": issuer,
             "parsed_product": product_code,
@@ -212,12 +260,16 @@ class InstitutionalPiPCAVectorReader:
             return ""
         return candidate.name
 
-    def _parse_line(self, line: str, *, source_cutoff: date | None, source_line: int) -> InstitutionalVectorRecord | None:
+    def _parse_line(
+        self, line: str, *, source_cutoff: date | None, source_line: int
+    ) -> InstitutionalVectorRecord | None:
         if not line.strip():
             return None
         normalized_line = line.strip()
         if len(normalized_line) < 10:
-            raise PiPCAParseError("line too short", line=line, source_line=source_line, branch="length-check")
+            raise PiPCAParseError(
+                "line too short", line=line, source_line=source_line, branch="length-check"
+            )
 
         issuer = self._extract_issuer(normalized_line)
         instrument_type_or_mnemonic = self._extract_mnemonic(normalized_line)
@@ -231,16 +283,48 @@ class InstitutionalPiPCAVectorReader:
 
         maturity_date = self._parse_date(maturity_date_field)
         if not issuer and not instrument_type_or_mnemonic and not series_or_security_code:
-            raise PiPCAParseError("empty record", line=line, source_line=source_line, branch="empty-record", field_widths=(len(normalized_line),), raw_identifier="")
+            raise PiPCAParseError(
+                "empty record",
+                line=line,
+                source_line=source_line,
+                branch="empty-record",
+                field_widths=(len(normalized_line),),
+                raw_identifier="",
+            )
         if not re.search(r"\d{2}/\d{2}/\d{4}", normalized_line):
-            raise PiPCAParseError("missing maturity", line=line, source_line=source_line, branch="maturity-scan", field_widths=(len(normalized_line),), raw_identifier=normalized_line[:20])
+            raise PiPCAParseError(
+                "missing maturity",
+                line=line,
+                source_line=source_line,
+                branch="maturity-scan",
+                field_widths=(len(normalized_line),),
+                raw_identifier=normalized_line[:20],
+            )
         if not issuer or not instrument_type_or_mnemonic or not series_or_security_code:
-            raise PiPCAParseError("unsupported layout", line=line, source_line=source_line, branch="field-scan", field_widths=(len(normalized_line),), raw_identifier=normalized_line[:20])
+            raise PiPCAParseError(
+                "unsupported layout",
+                line=line,
+                source_line=source_line,
+                branch="field-scan",
+                field_widths=(len(normalized_line),),
+                raw_identifier=normalized_line[:20],
+            )
         if len(series_or_security_code) < 2:
-            raise PiPCAParseError("combined product-series parse failure", line=line, source_line=source_line, branch="series-split", field_widths=(len(normalized_line),), raw_identifier=normalized_line[:20])
+            raise PiPCAParseError(
+                "combined product-series parse failure",
+                line=line,
+                source_line=source_line,
+                branch="series-split",
+                field_widths=(len(normalized_line),),
+                raw_identifier=normalized_line[:20],
+            )
 
         isin_if_present = ""
-        if "isin" in normalized_line.lower() or len(normalized_line) > 30 and normalized_line[20:30].isdigit():
+        if (
+            "isin" in normalized_line.lower()
+            or len(normalized_line) > 30
+            and normalized_line[20:30].isdigit()
+        ):
             isin_if_present = self._extract_token(normalized_line, 20, 36)
 
         return InstitutionalVectorRecord(
@@ -283,7 +367,7 @@ class InstitutionalPiPCAVectorReader:
 
         match = re.search(r"\d{2}/\d{2}/\d{4}", combined_field)
         if match:
-            combined_field = combined_field[:match.start()].strip()
+            combined_field = combined_field[: match.start()].strip()
 
         product_code = self._clean_text(combined_field[:5])
         series_code = self._clean_text(combined_field[5:])

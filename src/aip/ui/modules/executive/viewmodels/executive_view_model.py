@@ -35,17 +35,28 @@ class ExecutiveViewModel:
             "liquidity": list(self.liquidity),
             "market": list(self.market),
             "recommendations": [
-                {"title": item.title, "detail": item.detail, "category": item.category, "severity": item.severity, "source": item.source, "timestamp": item.timestamp}
+                {
+                    "title": item.title,
+                    "detail": item.detail,
+                    "category": item.category,
+                    "severity": item.severity,
+                    "source": item.source,
+                    "timestamp": item.timestamp,
+                }
                 for item in self.recommendations
             ],
             "alerts": [
-                {"title": item.title, "detail": item.detail, "category": item.category, "severity": item.severity, "source": item.source, "timestamp": item.timestamp}
+                {
+                    "title": item.title,
+                    "detail": item.detail,
+                    "category": item.category,
+                    "severity": item.severity,
+                    "source": item.source,
+                    "timestamp": item.timestamp,
+                }
                 for item in self.alerts
             ],
-            "trends": [
-                {"label": label, "points": list(points)}
-                for label, points in self.trends
-            ],
+            "trends": [{"label": label, "points": list(points)} for label, points in self.trends],
             "refresh_label": self.refresh_label,
             "theme_name": self.theme_name,
             "filters": self.filters,

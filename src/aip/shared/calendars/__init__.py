@@ -271,7 +271,9 @@ class CostaRicaHolidayProvider(HolidayProvider):
         Returns:
             True if date is statutory or configured institutional holiday.
         """
-        return self._statutory_provider.is_holiday(day) or self._institutional_provider.is_holiday(day)
+        return self._statutory_provider.is_holiday(day) or self._institutional_provider.is_holiday(
+            day
+        )
 
     def get_holidays(self, start: date, end: date) -> list[date]:
         """Get holidays in date range for this profile.
@@ -311,13 +313,13 @@ class CostaRicaStatutoryHolidayProvider(HolidayProvider):
 
     # Statutory fixed holidays (month, day).
     FIXED_HOLIDAYS = [
-        (1, 1),   # New Year's Day
+        (1, 1),  # New Year's Day
         (4, 11),  # Juan Santamaría Day
-        (5, 1),   # Labor Day
+        (5, 1),  # Labor Day
         (7, 25),  # Annexation of Guanacaste
         (9, 15),  # Independence Day
-        (10, 12), # Columbus Day / Día del Descubrimiento
-        (12, 25), # Christmas Day
+        (10, 12),  # Columbus Day / Día del Descubrimiento
+        (12, 25),  # Christmas Day
     ]
 
     def is_holiday(self, day: date) -> bool:

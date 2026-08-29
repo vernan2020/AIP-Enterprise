@@ -41,7 +41,9 @@ class SchedulerHealthMonitor:
             "queued_jobs": len(self._queued_jobs),
             "failed_jobs": sum(self._failed_jobs.values()),
             "retry_count": self._retry_count,
-            "average_duration": sum(self._durations) / len(self._durations) if self._durations else 0.0,
+            "average_duration": (
+                sum(self._durations) / len(self._durations) if self._durations else 0.0
+            ),
             "last_execution": self._last_execution,
             "uptime_seconds": self._uptime_seconds,
         }

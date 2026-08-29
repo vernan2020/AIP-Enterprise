@@ -17,6 +17,7 @@ class TestServiceCollection:
 
     def test_add_singleton_basic(self) -> None:
         """Test adding basic singleton service."""
+
         class MyService:
             pass
 
@@ -28,6 +29,7 @@ class TestServiceCollection:
 
     def test_add_singleton_with_implementation(self) -> None:
         """Test adding singleton with different implementation type."""
+
         class IService:
             pass
 
@@ -41,6 +43,7 @@ class TestServiceCollection:
 
     def test_add_singleton_with_factory(self) -> None:
         """Test adding singleton with factory function."""
+
         class MyService:
             pass
 
@@ -53,6 +56,7 @@ class TestServiceCollection:
 
     def test_add_transient_basic(self) -> None:
         """Test adding basic transient service."""
+
         class MyService:
             pass
 
@@ -63,6 +67,7 @@ class TestServiceCollection:
 
     def test_add_transient_with_implementation(self) -> None:
         """Test adding transient with different implementation type."""
+
         class IService:
             pass
 
@@ -75,6 +80,7 @@ class TestServiceCollection:
 
     def test_add_transient_with_factory(self) -> None:
         """Test adding transient with factory function."""
+
         class MyService:
             pass
 
@@ -87,6 +93,7 @@ class TestServiceCollection:
 
     def test_add_scoped_basic(self) -> None:
         """Test adding basic scoped service."""
+
         class MyService:
             pass
 
@@ -97,6 +104,7 @@ class TestServiceCollection:
 
     def test_add_scoped_with_implementation(self) -> None:
         """Test adding scoped with different implementation type."""
+
         class IService:
             pass
 
@@ -109,6 +117,7 @@ class TestServiceCollection:
 
     def test_add_scoped_with_factory(self) -> None:
         """Test adding scoped with factory function."""
+
         class MyService:
             pass
 
@@ -121,6 +130,7 @@ class TestServiceCollection:
 
     def test_method_chaining(self) -> None:
         """Test method chaining for fluent API."""
+
         class ServiceA:
             pass
 
@@ -131,10 +141,7 @@ class TestServiceCollection:
             pass
 
         collection = (
-            ServiceCollection()
-            .add_singleton(ServiceA)
-            .add_transient(ServiceB)
-            .add_scoped(ServiceC)
+            ServiceCollection().add_singleton(ServiceA).add_transient(ServiceB).add_scoped(ServiceC)
         )
 
         assert len(collection) == 3
@@ -144,6 +151,7 @@ class TestServiceCollection:
 
     def test_duplicate_registration_raises_error(self) -> None:
         """Test registering duplicate service raises error."""
+
         class MyService:
             pass
 
@@ -156,6 +164,7 @@ class TestServiceCollection:
 
     def test_try_add_singleton_new_service(self) -> None:
         """Test try_add_singleton adds new service."""
+
         class MyService:
             pass
 
@@ -166,6 +175,7 @@ class TestServiceCollection:
 
     def test_try_add_singleton_existing_service(self) -> None:
         """Test try_add_singleton ignores existing service."""
+
         class MyService:
             pass
 
@@ -178,6 +188,7 @@ class TestServiceCollection:
 
     def test_try_add_transient_new_service(self) -> None:
         """Test try_add_transient adds new service."""
+
         class MyService:
             pass
 
@@ -187,6 +198,7 @@ class TestServiceCollection:
 
     def test_try_add_transient_existing_service(self) -> None:
         """Test try_add_transient ignores existing service."""
+
         class MyService:
             pass
 
@@ -198,6 +210,7 @@ class TestServiceCollection:
 
     def test_try_add_scoped_new_service(self) -> None:
         """Test try_add_scoped adds new service."""
+
         class MyService:
             pass
 
@@ -207,6 +220,7 @@ class TestServiceCollection:
 
     def test_try_add_scoped_existing_service(self) -> None:
         """Test try_add_scoped ignores existing service."""
+
         class MyService:
             pass
 
@@ -218,17 +232,14 @@ class TestServiceCollection:
 
     def test_clear_collection(self) -> None:
         """Test clearing service collection."""
+
         class ServiceA:
             pass
 
         class ServiceB:
             pass
 
-        collection = (
-            ServiceCollection()
-            .add_singleton(ServiceA)
-            .add_transient(ServiceB)
-        )
+        collection = ServiceCollection().add_singleton(ServiceA).add_transient(ServiceB)
         assert len(collection) == 2
 
         collection.clear()
@@ -238,6 +249,7 @@ class TestServiceCollection:
 
     def test_get_descriptors(self) -> None:
         """Test getting all service descriptors."""
+
         class ServiceA:
             pass
 
@@ -257,6 +269,7 @@ class TestServiceCollection:
 
     def test_descriptor_lifetime_persistence(self) -> None:
         """Test that descriptor lifetimes are preserved."""
+
         class ServiceA:
             pass
 
@@ -278,6 +291,7 @@ class TestServiceCollection:
 
     def test_len_collection(self) -> None:
         """Test collection length."""
+
         class ServiceA:
             pass
 
@@ -295,6 +309,7 @@ class TestServiceCollection:
 
     def test_repr_collection(self) -> None:
         """Test collection string representation."""
+
         class MyService:
             pass
 

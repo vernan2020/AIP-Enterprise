@@ -7,7 +7,14 @@ from aip.domain.analytics.explainability.explanation_factor import ExplanationFa
 class ProjectionExplanation:
     """Build an explanation for a projected cash flow run."""
 
-    def build(self, concise_conclusion: str, factors: list[ExplanationFactor], assumptions: tuple[str, ...] = (), warnings: tuple[str, ...] = (), references: tuple[str, ...] = ()) -> object:
+    def build(
+        self,
+        concise_conclusion: str,
+        factors: list[ExplanationFactor],
+        assumptions: tuple[str, ...] = (),
+        warnings: tuple[str, ...] = (),
+        references: tuple[str, ...] = (),
+    ) -> object:
         return ExplanationBuilder().build(
             concise_conclusion,
             factors,

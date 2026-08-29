@@ -56,13 +56,14 @@ def _institutional_defaults() -> dict[str, str | None]:
     coopealianza = home / "COOPEALIANZA R.L"
     investment_root = coopealianza / "Seidy Fonseca Hernandez - inversiones"
     analytics_root = (
-        coopealianza
-        / "Liquidez e Inversiones - Documentos"
-        / "General"
-        / "Análisis Financiero"
+        coopealianza / "Liquidez e Inversiones - Documentos" / "General" / "Análisis Financiero"
     )
     cutoff_env = (os.getenv("AIP_DATA_CUTOFF_DATE") or "").strip()
-    year = cutoff_env[:4] if len(cutoff_env) >= 4 and cutoff_env[:4].isdigit() else str(date.today().year)
+    year = (
+        cutoff_env[:4]
+        if len(cutoff_env) >= 4 and cutoff_env[:4].isdigit()
+        else str(date.today().year)
+    )
     vector_root = investment_root / "Inversiones" / year / "vector"
     return {
         "portfolio_root": _first_existing_path(investment_root),
@@ -87,7 +88,9 @@ def _infer_latest_master_date(portfolio_root: str | None) -> date | None:
             if match is None:
                 continue
             try:
-                parsed = date(int(match.group("year")), int(match.group("month")), int(match.group("day")))
+                parsed = date(
+                    int(match.group("year")), int(match.group("month")), int(match.group("day"))
+                )
             except ValueError:
                 continue
             if latest is None or parsed > latest:
@@ -116,11 +119,18 @@ class EnvironmentLoader:
         source = self.load_source_config()
         defaults = _institutional_defaults()
         execution_env = os.getenv("AIP_EXECUTION_MODE") or os.getenv("AIP_DEMO_EXECUTION_MODE")
-        execution_mode = execution_env.upper() if execution_env else ("CONFIGURED" if defaults["portfolio_root"] else "DEMO")
+        execution_mode = (
+            execution_env.upper()
+            if execution_env
+            else ("CONFIGURED" if defaults["portfolio_root"] else "DEMO")
+        )
         if execution_mode not in {"DEMO", "CONFIGURED"}:
             raise DemoConfigurationError("invalid execution mode")
         if execution_mode == "DEMO" and (
-            source.folder_watch.enabled or source.vector.enabled or source.sql_server.enabled or source.curves.enabled
+            source.folder_watch.enabled
+            or source.vector.enabled
+            or source.sql_server.enabled
+            or source.curves.enabled
         ):
             execution_mode = "CONFIGURED"
         demo_enabled = _parse_boolean_flag(
@@ -131,14 +141,19 @@ class EnvironmentLoader:
             demo_enabled = True
         cutoff = self._effective_cutoff(source.folder_watch.portfolio_root)
         return DemoConfig(
-            environment_name=os.getenv("AIP_ENVIRONMENT") or os.getenv("AIP_DEMO_ENVIRONMENT", "configured" if execution_mode == "CONFIGURED" else "demo"),
+            environment_name=os.getenv("AIP_ENVIRONMENT")
+            or os.getenv(
+                "AIP_DEMO_ENVIRONMENT", "configured" if execution_mode == "CONFIGURED" else "demo"
+            ),
             execution_mode=execution_mode,
             demo_mode_enabled=demo_enabled,
             sql_connector_enabled=source.sql_server.enabled,
             folder_watch_enabled=source.folder_watch.enabled,
             bccr_enabled=source.bccr.enabled,
             scheduler_enabled=_parse_boolean_flag(os.getenv("AIP_SCHEDULER_ENABLED"), default=True),
-            notifications_enabled=_parse_boolean_flag(os.getenv("AIP_NOTIFICATIONS_ENABLED"), default=True),
+            notifications_enabled=_parse_boolean_flag(
+                os.getenv("AIP_NOTIFICATIONS_ENABLED"), default=True
+            ),
             startup_timeout_seconds=int(os.getenv("AIP_STARTUP_TIMEOUT_SECONDS", "30")),
             refresh_timeout_seconds=int(os.getenv("AIP_REFRESH_TIMEOUT_SECONDS", "30")),
             default_theme=os.getenv("AIP_DEFAULT_THEME", "light"),
@@ -151,7 +166,9 @@ class EnvironmentLoader:
 
     def load_source_config(self) -> ConfiguredSourceConfig:
         defaults = _institutional_defaults()
-        portfolio_root = _normalize_path_value(os.getenv("AIP_PORTFOLIO_ROOT") or defaults["portfolio_root"])
+        portfolio_root = _normalize_path_value(
+            os.getenv("AIP_PORTFOLIO_ROOT") or defaults["portfolio_root"]
+        )
         icl_root = _normalize_path_value(os.getenv("AIP_ICL_ROOT") or defaults["icl_root"])
         vector_path = _normalize_path_value(os.getenv("AIP_VECTOR_PATH") or defaults["vector_path"])
 
@@ -159,10 +176,17 @@ class EnvironmentLoader:
             os.getenv("AIP_FOLDERWATCH_ENABLED") or os.getenv("AIP_FOLDER_WATCH_ENABLED"),
             default=bool(portfolio_root),
         )
-        vector_enabled = _parse_boolean_flag(os.getenv("AIP_VECTOR_ENABLED"), default=bool(vector_path))
-        sql_enabled = _parse_boolean_flag(os.getenv("AIP_SQLSERVER_ENABLED") or os.getenv("AIP_SQL_CONNECTOR_ENABLED"), default=False)
+        vector_enabled = _parse_boolean_flag(
+            os.getenv("AIP_VECTOR_ENABLED"), default=bool(vector_path)
+        )
+        sql_enabled = _parse_boolean_flag(
+            os.getenv("AIP_SQLSERVER_ENABLED") or os.getenv("AIP_SQL_CONNECTOR_ENABLED"),
+            default=False,
+        )
         curves_workbook = _normalize_path_value(os.getenv("AIP_CURVES_WORKBOOK"))
-        curves_enabled = _parse_boolean_flag(os.getenv("AIP_CURVES_ENABLED"), default=bool(curves_workbook))
+        curves_enabled = _parse_boolean_flag(
+            os.getenv("AIP_CURVES_ENABLED"), default=bool(curves_workbook)
+        )
         bccr_enabled = _parse_boolean_flag(os.getenv("AIP_BCCR_ENABLED"), default=True)
         cutoff = self._effective_cutoff(portfolio_root)
 
@@ -175,11 +199,18 @@ class EnvironmentLoader:
                 username_secret_ref=os.getenv("AIP_SQLSERVER_USERNAME_SECRET"),
                 password_secret_ref=os.getenv("AIP_SQLSERVER_PASSWORD_SECRET"),
                 view=os.getenv("AIP_SQLSERVER_VIEW", "VISTA_1514_1515_1516"),
-                scenario_filters=tuple(filter(None, os.getenv("AIP_SQLSERVER_SCENARIOS", "Reales,Presupuesto 2026%").split(","))),
+                scenario_filters=tuple(
+                    filter(
+                        None,
+                        os.getenv("AIP_SQLSERVER_SCENARIOS", "Reales,Presupuesto 2026%").split(","),
+                    )
+                ),
                 connection_timeout_seconds=int(os.getenv("AIP_SQLSERVER_CONNECTION_TIMEOUT", "30")),
                 command_timeout_seconds=int(os.getenv("AIP_SQLSERVER_COMMAND_TIMEOUT", "30")),
                 retry_count=int(os.getenv("AIP_SQLSERVER_RETRIES", "3")),
-                additional_query_filters=tuple(filter(None, os.getenv("AIP_SQLSERVER_QUERY_FILTERS", "").split(","))),
+                additional_query_filters=tuple(
+                    filter(None, os.getenv("AIP_SQLSERVER_QUERY_FILTERS", "").split(","))
+                ),
             ),
             folder_watch=FolderWatchSourceConfig(
                 enabled=folder_enabled,
@@ -187,25 +218,53 @@ class EnvironmentLoader:
                 icl_root=icl_root,
                 curves_path=curves_workbook,
                 vector_path=vector_path,
-                portfolio_master_pattern=os.getenv("AIP_PORTFOLIO_MASTER_PATTERN", r"Inversiones\{year}\maestro\{month}\*.xls*"),
+                portfolio_master_pattern=os.getenv(
+                    "AIP_PORTFOLIO_MASTER_PATTERN", r"Inversiones\{year}\maestro\{month}\*.xls*"
+                ),
                 icl_file_pattern=os.getenv("AIP_ICL_FILE_PATTERN", r"ICL\Reportes ICL\*"),
-                supported_extensions=tuple(filter(None, os.getenv("AIP_PORTFOLIO_SUPPORTED_EXTENSIONS", ".xls,.xlsx").split(","))),
+                supported_extensions=tuple(
+                    filter(
+                        None,
+                        os.getenv("AIP_PORTFOLIO_SUPPORTED_EXTENSIONS", ".xls,.xlsx").split(","),
+                    )
+                ),
                 recursive=_parse_boolean_flag(os.getenv("AIP_PORTFOLIO_RECURSIVE"), default=True),
-                stale_data_threshold_seconds=int(os.getenv("AIP_PORTFOLIO_STALE_HOURS", "24")) * 3600,
+                stale_data_threshold_seconds=int(os.getenv("AIP_PORTFOLIO_STALE_HOURS", "24"))
+                * 3600,
             ),
             curves=CurvesSourceConfig(
                 enabled=curves_enabled,
                 workbook=curves_workbook,
-                sheet_mapping=tuple(filter(None, os.getenv("AIP_CURVES_SHEET_MAPPING", "Gobierno CRC,Gobierno USD,BCCR CRC").split(","))),
+                sheet_mapping=tuple(
+                    filter(
+                        None,
+                        os.getenv(
+                            "AIP_CURVES_SHEET_MAPPING", "Gobierno CRC,Gobierno USD,BCCR CRC"
+                        ).split(","),
+                    )
+                ),
                 stale_data_threshold_seconds=int(os.getenv("AIP_CURVES_STALE_HOURS", "24")) * 3600,
             ),
             vector=VectorSourceConfig(
                 enabled=vector_enabled,
                 path=vector_path,
                 root=_normalize_path_value(os.getenv("AIP_VECTOR_ROOT")),
-                directory_aliases=tuple(filter(None, os.getenv("AIP_VECTOR_DIRECTORY_ALIASES", "vector,Vector,Vector Pip,vector pipca").split(","))),
-                file_pattern=os.getenv("AIP_VECTOR_FILE_PATTERNS") or os.getenv("AIP_VECTOR_FILE_PATTERN", "VectorPiPCA_{yyyymmdd}.txt"),
-                supported_extensions=tuple(filter(None, os.getenv("AIP_VECTOR_SUPPORTED_EXTENSIONS", ".txt,.xls,.xlsx").split(","))),
+                directory_aliases=tuple(
+                    filter(
+                        None,
+                        os.getenv(
+                            "AIP_VECTOR_DIRECTORY_ALIASES", "vector,Vector,Vector Pip,vector pipca"
+                        ).split(","),
+                    )
+                ),
+                file_pattern=os.getenv("AIP_VECTOR_FILE_PATTERNS")
+                or os.getenv("AIP_VECTOR_FILE_PATTERN", "VectorPiPCA_{yyyymmdd}.txt"),
+                supported_extensions=tuple(
+                    filter(
+                        None,
+                        os.getenv("AIP_VECTOR_SUPPORTED_EXTENSIONS", ".txt,.xls,.xlsx").split(","),
+                    )
+                ),
                 stale_data_threshold_seconds=int(os.getenv("AIP_VECTOR_STALE_HOURS", "24")) * 3600,
             ),
             bccr=BCCRSourceConfig(
@@ -213,16 +272,26 @@ class EnvironmentLoader:
                 base_url=os.getenv("AIP_BCCR_BASE_URL", "https://apim.bccr.fi.cr"),
                 timeout_seconds=float(os.getenv("AIP_BCCR_TIMEOUT_SECONDS", "30")),
                 retries=int(os.getenv("AIP_BCCR_RETRIES", "3")),
-                cache_enabled=_parse_boolean_flag(os.getenv("AIP_BCCR_CACHE_ENABLED"), default=True),
-                indicator_configuration=tuple(filter(None, os.getenv("AIP_BCCR_SERIES_CONFIG", "FX").split(","))),
-                series_config=tuple(filter(None, os.getenv("AIP_BCCR_SERIES_CONFIG", "FX").split(","))),
+                cache_enabled=_parse_boolean_flag(
+                    os.getenv("AIP_BCCR_CACHE_ENABLED"), default=True
+                ),
+                indicator_configuration=tuple(
+                    filter(None, os.getenv("AIP_BCCR_SERIES_CONFIG", "FX").split(","))
+                ),
+                series_config=tuple(
+                    filter(None, os.getenv("AIP_BCCR_SERIES_CONFIG", "FX").split(","))
+                ),
                 name=os.getenv("AIP_BCCR_NAME"),
                 email=os.getenv("AIP_BCCR_EMAIL"),
                 token=os.getenv("AIP_BCCR_TOKEN"),
             ),
-            diagnostic_mode=_parse_boolean_flag(os.getenv("AIP_CONFIGURED_DIAGNOSTIC_MODE"), default=False),
+            diagnostic_mode=_parse_boolean_flag(
+                os.getenv("AIP_CONFIGURED_DIAGNOSTIC_MODE"), default=False
+            ),
             metadata={
-                "allow_prior_source_date": _parse_boolean_flag(os.getenv("AIP_ALLOW_PRIOR_SOURCE_DATE"), default=True),
+                "allow_prior_source_date": _parse_boolean_flag(
+                    os.getenv("AIP_ALLOW_PRIOR_SOURCE_DATE"), default=True
+                ),
                 "data_cutoff_date": cutoff.isoformat(),
             },
         )

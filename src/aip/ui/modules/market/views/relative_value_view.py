@@ -8,15 +8,17 @@ class RelativeValueView(QWidget):
         super().__init__()
         self._table = QTableWidget()
         self._table.setColumnCount(8)
-        self._table.setHorizontalHeaderLabels([
-            "Issuer",
-            "Instrument",
-            "Recommendation",
-            "Confidence",
-            "Spread",
-            "Z-Spread",
-            "Benchmark Spread",
-        ])
+        self._table.setHorizontalHeaderLabels(
+            [
+                "Issuer",
+                "Instrument",
+                "Recommendation",
+                "Confidence",
+                "Spread",
+                "Z-Spread",
+                "Benchmark Spread",
+            ]
+        )
         layout = QVBoxLayout(self)
         layout.addWidget(self._table)
         self.bind_rows(rows or ())

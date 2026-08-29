@@ -17,7 +17,9 @@ class AIPError(Exception):
 
     default_code = "AIP_ERROR"
 
-    def __init__(self, message: str, *, code: str | None = None, details: Mapping[str, Any] | None = None) -> None:
+    def __init__(
+        self, message: str, *, code: str | None = None, details: Mapping[str, Any] | None = None
+    ) -> None:
         super().__init__(message)
         self.message = message
         self.context = ErrorContext(code=code or self.default_code, details=dict(details or {}))

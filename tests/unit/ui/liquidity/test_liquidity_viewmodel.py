@@ -16,7 +16,20 @@ def test_view_model_is_immutable_and_serializable() -> None:
         correlation_id="corr-1",
     )
     view_model = LiquidityViewModel(
-        summary=type("Summary", (), {"liquidity_date": "2026-07-29", "cash_position": "100.00", "net_cash_flow": "10.00", "liquidity_gap": "0.00", "hqla_capacity": "80.00", "mil_eligible_capacity": "60.00", "stress_result": "Stable", "policy_status": "Compliant"})(),
+        summary=type(
+            "Summary",
+            (),
+            {
+                "liquidity_date": "2026-07-29",
+                "cash_position": "100.00",
+                "net_cash_flow": "10.00",
+                "liquidity_gap": "0.00",
+                "hqla_capacity": "80.00",
+                "mil_eligible_capacity": "60.00",
+                "stress_result": "Stable",
+                "policy_status": "Compliant",
+            },
+        )(),
         cashflow_rows=(row,),
         gap_rows=(),
         hqla_rows=(),

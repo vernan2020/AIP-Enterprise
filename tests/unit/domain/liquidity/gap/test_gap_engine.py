@@ -18,8 +18,18 @@ class _StaticGapProvider(GapProvider):
         return ProjectionRequest(
             valuation_date=request.valuation_date,
             contractual_cashflows=(
-                CashFlow(payment_date=date(2024, 2, 1), amount=Decimal("100"), currency="USD", cash_flow_type="coupon"),
-                CashFlow(payment_date=date(2024, 3, 1), amount=Decimal("-40"), currency="USD", cash_flow_type="principal"),
+                CashFlow(
+                    payment_date=date(2024, 2, 1),
+                    amount=Decimal("100"),
+                    currency="USD",
+                    cash_flow_type="coupon",
+                ),
+                CashFlow(
+                    payment_date=date(2024, 3, 1),
+                    amount=Decimal("-40"),
+                    currency="USD",
+                    cash_flow_type="principal",
+                ),
             ),
             business_unit="treasury",
             portfolio_reference="pf-1",
@@ -41,8 +51,18 @@ def test_gap_engine_builds_net_gross_incremental_and_cumulative_values() -> None
         cashflow_request=ProjectionRequest(
             valuation_date=date(2024, 1, 1),
             contractual_cashflows=(
-                CashFlow(payment_date=date(2024, 2, 1), amount=Decimal("100"), currency="USD", cash_flow_type="coupon"),
-                CashFlow(payment_date=date(2024, 3, 1), amount=Decimal("-40"), currency="USD", cash_flow_type="principal"),
+                CashFlow(
+                    payment_date=date(2024, 2, 1),
+                    amount=Decimal("100"),
+                    currency="USD",
+                    cash_flow_type="coupon",
+                ),
+                CashFlow(
+                    payment_date=date(2024, 3, 1),
+                    amount=Decimal("-40"),
+                    currency="USD",
+                    cash_flow_type="principal",
+                ),
             ),
         ),
     )
@@ -65,7 +85,14 @@ def test_gap_engine_supports_contractual_behavioral_and_scenario_summary_values(
         valuation_date=date(2024, 1, 1),
         cashflow_request=ProjectionRequest(
             valuation_date=date(2024, 1, 1),
-            contractual_cashflows=(CashFlow(payment_date=date(2024, 2, 1), amount=Decimal("100"), currency="USD", cash_flow_type="coupon"),),
+            contractual_cashflows=(
+                CashFlow(
+                    payment_date=date(2024, 2, 1),
+                    amount=Decimal("100"),
+                    currency="USD",
+                    cash_flow_type="coupon",
+                ),
+            ),
         ),
         gap_type="behavioral",
     )
@@ -82,8 +109,18 @@ def test_gap_engine_aggregates_deterministically_across_dimensions() -> None:
         cashflow_request=ProjectionRequest(
             valuation_date=date(2024, 1, 1),
             contractual_cashflows=(
-                CashFlow(payment_date=date(2024, 2, 1), amount=Decimal("100"), currency="USD", cash_flow_type="coupon"),
-                CashFlow(payment_date=date(2024, 3, 1), amount=Decimal("50"), currency="EUR", cash_flow_type="principal"),
+                CashFlow(
+                    payment_date=date(2024, 2, 1),
+                    amount=Decimal("100"),
+                    currency="USD",
+                    cash_flow_type="coupon",
+                ),
+                CashFlow(
+                    payment_date=date(2024, 3, 1),
+                    amount=Decimal("50"),
+                    currency="EUR",
+                    cash_flow_type="principal",
+                ),
             ),
             business_unit="treasury",
             portfolio_reference="pf-1",
@@ -99,8 +136,18 @@ def test_gap_engine_aggregates_deterministically_across_dimensions() -> None:
             cashflow_request=ProjectionRequest(
                 valuation_date=date(2024, 1, 1),
                 contractual_cashflows=(
-                    CashFlow(payment_date=date(2024, 2, 1), amount=Decimal("100"), currency="USD", cash_flow_type="coupon"),
-                    CashFlow(payment_date=date(2024, 3, 1), amount=Decimal("50"), currency="EUR", cash_flow_type="principal"),
+                    CashFlow(
+                        payment_date=date(2024, 2, 1),
+                        amount=Decimal("100"),
+                        currency="USD",
+                        cash_flow_type="coupon",
+                    ),
+                    CashFlow(
+                        payment_date=date(2024, 3, 1),
+                        amount=Decimal("50"),
+                        currency="EUR",
+                        cash_flow_type="principal",
+                    ),
                 ),
                 business_unit="treasury",
                 portfolio_reference="pf-1",
@@ -108,7 +155,15 @@ def test_gap_engine_aggregates_deterministically_across_dimensions() -> None:
                 counterparty="cpty-a",
                 instrument_id="inst-1",
             ),
-            exchange_rate_policy_provider=type("Rate", (), {"get_rate": lambda self, from_currency, to_currency, valuation_date=None: Decimal("1")})(),
+            exchange_rate_policy_provider=type(
+                "Rate",
+                (),
+                {
+                    "get_rate": lambda self, from_currency, to_currency, valuation_date=None: Decimal(
+                        "1"
+                    )
+                },
+            )(),
         )
     )
 
@@ -127,7 +182,14 @@ def test_gap_engine_rejects_currency_mismatch() -> None:
         valuation_date=date(2024, 1, 1),
         cashflow_request=ProjectionRequest(
             valuation_date=date(2024, 1, 1),
-            contractual_cashflows=(CashFlow(payment_date=date(2024, 2, 1), amount=Decimal("100"), currency="USD", cash_flow_type="coupon"),),
+            contractual_cashflows=(
+                CashFlow(
+                    payment_date=date(2024, 2, 1),
+                    amount=Decimal("100"),
+                    currency="USD",
+                    cash_flow_type="coupon",
+                ),
+            ),
             currency="USD",
         ),
         currency="EUR",

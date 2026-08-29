@@ -9,46 +9,68 @@ from pathlib import Path
 
 import openpyxl
 
-from aip.product.configured.adapters.configured_portfolio_provider import ConfiguredPortfolioProvider
-from aip.product.configured.configuration.configured_source_config import ConfiguredSourceConfig, FolderWatchSourceConfig, VectorSourceConfig
+from aip.product.configured.adapters.configured_portfolio_provider import (
+    ConfiguredPortfolioProvider,
+)
+from aip.product.configured.configuration.configured_source_config import (
+    ConfiguredSourceConfig,
+    FolderWatchSourceConfig,
+    VectorSourceConfig,
+)
 from aip.product.configured.readers.pipca_vector_reader import InstitutionalPiPCAVectorReader
-from aip.product.configured.services.institutional_matching_service import InstitutionalPortfolioMatchingService
+from aip.product.configured.services.institutional_matching_service import (
+    InstitutionalPortfolioMatchingService,
+)
 from aip.product.demo.configuration.demo_config import DemoConfig
 from aip.tools.reconcile_portfolio_valuation import _build_reconciliation_rows
 
 
-def _build_configured_provider(tmp_path: Path, *, row_values: list[list[object]]) -> ConfiguredPortfolioProvider:
+def _build_configured_provider(
+    tmp_path: Path, *, row_values: list[list[object]]
+) -> ConfiguredPortfolioProvider:
     master_root = tmp_path / "institutional" / "Inversiones" / "2026"
     master_dir = master_root / "maestro"
     master_dir.mkdir(parents=True, exist_ok=True)
     workbook_path = master_dir / "29-07-2026.xlsx"
     workbook = openpyxl.Workbook()
     worksheet = workbook.active
-    worksheet.append([
-        "issuer",
-        "product_code",
-        "series",
-        "maturity_date",
-        "market_value",
-        "book_value",
-        "isin",
-        "currency",
-        "valor mercado colonizado",
-    ])
+    worksheet.append(
+        [
+            "issuer",
+            "product_code",
+            "series",
+            "maturity_date",
+            "market_value",
+            "book_value",
+            "isin",
+            "currency",
+            "valor mercado colonizado",
+        ]
+    )
     for row in row_values:
         worksheet.append(row)
     workbook.save(workbook_path)
 
-    config = DemoConfig(execution_mode="CONFIGURED", demo_mode_enabled=False, data_cutoff_date=date(2026, 7, 29))
+    config = DemoConfig(
+        execution_mode="CONFIGURED", demo_mode_enabled=False, data_cutoff_date=date(2026, 7, 29)
+    )
     source_config = ConfiguredSourceConfig(
-        folder_watch=FolderWatchSourceConfig(enabled=True, portfolio_root=str(tmp_path / "institutional")),
+        folder_watch=FolderWatchSourceConfig(
+            enabled=True, portfolio_root=str(tmp_path / "institutional")
+        ),
         vector=VectorSourceConfig(enabled=True, path=str(tmp_path / "vector")),
-        metadata={"allow_prior_source_date": False, "data_cutoff_date": date(2026, 7, 29).isoformat(), "diagnostic_mode": "false"},
+        metadata={
+            "allow_prior_source_date": False,
+            "data_cutoff_date": date(2026, 7, 29).isoformat(),
+            "diagnostic_mode": "false",
+        },
     )
     return ConfiguredPortfolioProvider(config, source_config)
 
 
-def _build_pipca_line(series: str, *, issuer: str = "BCCR", mnemonic: str = "BEM", maturity: str = "24/03/2027") -> str:
+def _build_pipca_line(
+    series: str, *, issuer: str = "BCCR", mnemonic: str = "BEM", maturity: str = "24/03/2027"
+) -> str:
     return f"{issuer}{mnemonic:<6}{series}{maturity}".ljust(120)
 
 
@@ -132,7 +154,10 @@ def test_reconciliation_summary_classifies_positions_and_reports_collisions() ->
     assert reconciliation["collisions_affecting_portfolio"] == 1
     assert reconciliation["unmatched_reason_groups"]["series absent from vector"] == 1
     assert reconciliation["position_reconciliation"][0]["classification"] == "MATCHED"
-    assert reconciliation["position_reconciliation"][3]["reason_no_match"] == "no maturity / perpetual / fund"
+    assert (
+        reconciliation["position_reconciliation"][3]["reason_no_match"]
+        == "no maturity / perpetual / fund"
+    )
     assert reconciliation["known_government_positions"]["S240327"]["classification"] == "MATCHED"
 
 
@@ -162,12 +187,19 @@ def test_exact_series_plus_maturity_match_uses_date_objects() -> None:
     assert summary["series_maturity_matches"] == 1
     assert enriched_positions[0]["vector_match"]["matched"] is True
     assert enriched_positions[0]["vector_match"]["match_method"] == "SERIES_MATURITY"
-    assert enriched_positions[0]["matching_diagnostics"]["matching_keys"]["series_maturity"] == "s240327|2027-03-24"
+    assert (
+        enriched_positions[0]["matching_diagnostics"]["matching_keys"]["series_maturity"]
+        == "s240327|2027-03-24"
+    )
 
 
 def test_leading_zero_series_is_preserved_by_positional_parser() -> None:
     reader = InstitutionalPiPCAVectorReader()
-    record = reader._parse_line(_build_pipca_line("001234", maturity="24/03/2027"), source_cutoff=date(2026, 7, 29), source_line=1)
+    record = reader._parse_line(
+        _build_pipca_line("001234", maturity="24/03/2027"),
+        source_cutoff=date(2026, 7, 29),
+        source_line=1,
+    )
 
     assert record is not None
     assert record.series_or_security_code == "001234"
@@ -176,7 +208,11 @@ def test_leading_zero_series_is_preserved_by_positional_parser() -> None:
 
 def test_adjacent_fixed_width_fields_are_parsed_without_losing_series() -> None:
     reader = InstitutionalPiPCAVectorReader()
-    record = reader._parse_line(_build_pipca_line("S240327", maturity="24/03/2027"), source_cutoff=date(2026, 7, 29), source_line=1)
+    record = reader._parse_line(
+        _build_pipca_line("S240327", maturity="24/03/2027"),
+        source_cutoff=date(2026, 7, 29),
+        source_line=1,
+    )
 
     assert record is not None
     assert record.issuer == "BCCR"
@@ -188,7 +224,11 @@ def test_adjacent_fixed_width_fields_are_parsed_without_losing_series() -> None:
 
 def test_costa_rican_government_security_series_is_preserved() -> None:
     reader = InstitutionalPiPCAVectorReader()
-    record = reader._parse_line(_build_pipca_line("CRS240129", maturity="24/01/2029"), source_cutoff=date(2026, 7, 29), source_line=1)
+    record = reader._parse_line(
+        _build_pipca_line("CRS240129", maturity="24/01/2029"),
+        source_cutoff=date(2026, 7, 29),
+        source_line=1,
+    )
 
     assert record is not None
     assert record.series_or_security_code == "CRS240129"
@@ -226,7 +266,9 @@ def test_production_pipca_combined_product_series_layouts_are_split_correctly() 
             assert record.maturity_date_if_present == date(2029, 1, 24)
 
 
-def test_public_reader_accepts_production_fixed_width_lines_and_matches_by_series_maturity(tmp_path) -> None:
+def test_public_reader_accepts_production_fixed_width_lines_and_matches_by_series_maturity(
+    tmp_path,
+) -> None:
     path = tmp_path / "VectorPiPCA_20260729.txt"
     path.write_text(
         "G   tptbaB180429   18/04/2029\n"
@@ -235,13 +277,23 @@ def test_public_reader_accepts_production_fixed_width_lines_and_matches_by_serie
         encoding="utf-8",
     )
 
-    result = InstitutionalPiPCAVectorReader().read(path, source_cutoff=date(2026, 7, 29), diagnostic_mode=True)
+    result = InstitutionalPiPCAVectorReader().read(
+        path, source_cutoff=date(2026, 7, 29), diagnostic_mode=True
+    )
 
     assert result.accepted_count == 3
     assert result.rejected_count == 0
     assert [record.issuer for record in result.records] == ["G", "G", "G"]
-    assert [record.instrument_type_or_mnemonic for record in result.records] == ["tptba", "tpras", "tpras"]
-    assert [record.series_or_security_code for record in result.records] == ["B180429", "S240327", "CRS240129"]
+    assert [record.instrument_type_or_mnemonic for record in result.records] == [
+        "tptba",
+        "tpras",
+        "tpras",
+    ]
+    assert [record.series_or_security_code for record in result.records] == [
+        "B180429",
+        "S240327",
+        "CRS240129",
+    ]
     assert [record.maturity_date_if_present for record in result.records] == [
         date(2029, 4, 18),
         date(2027, 3, 24),
@@ -260,7 +312,15 @@ def test_public_reader_accepts_production_fixed_width_lines_and_matches_by_serie
         for record in result.records
     ]
     enriched_positions, summary = service.enrich_positions(
-        [{"isin": "", "series": "B180429", "maturity_date": date(2029, 4, 18), "issuer": "Banco Central", "product_code": "tptba"}],
+        [
+            {
+                "isin": "",
+                "series": "B180429",
+                "maturity_date": date(2029, 4, 18),
+                "issuer": "Banco Central",
+                "product_code": "tptba",
+            }
+        ],
         records_for_matching,
     )
 
@@ -277,17 +337,27 @@ def test_provider_pipeline_matches_real_pipca_line(tmp_path: Path) -> None:
     workbook_path = root / "maestro" / "29-07-2026.xlsx"
     workbook = openpyxl.Workbook()
     worksheet = workbook.active
-    worksheet.append(["issuer", "product_code", "series", "maturity_date", "market_value", "book_value", "isin"])
+    worksheet.append(
+        ["issuer", "product_code", "series", "maturity_date", "market_value", "book_value", "isin"]
+    )
     worksheet.append(["Banco Central", "tptba", "B180429", "2029-04-18", 1000.0, 1000.0, ""])
     workbook.save(workbook_path)
 
     vector_path = root / "vector" / "VectorPiPCA_20260729.txt"
     vector_path.write_text("G   tptbaB180429   18/04/2029\n", encoding="utf-8")
 
-    config = DemoConfig(execution_mode="CONFIGURED", demo_mode_enabled=False, data_cutoff_date=date(2026, 7, 29))
+    config = DemoConfig(
+        execution_mode="CONFIGURED", demo_mode_enabled=False, data_cutoff_date=date(2026, 7, 29)
+    )
     source_config = ConfiguredSourceConfig(
-        folder_watch=FolderWatchSourceConfig(enabled=True, portfolio_root=str(tmp_path / "institutional")),
-        metadata={"allow_prior_source_date": False, "data_cutoff_date": date(2026, 7, 29).isoformat(), "diagnostic_mode": "true"},
+        folder_watch=FolderWatchSourceConfig(
+            enabled=True, portfolio_root=str(tmp_path / "institutional")
+        ),
+        metadata={
+            "allow_prior_source_date": False,
+            "data_cutoff_date": date(2026, 7, 29).isoformat(),
+            "diagnostic_mode": "true",
+        },
     )
     provider = ConfiguredPortfolioProvider(config, source_config)
 
@@ -302,7 +372,9 @@ def test_provider_pipeline_matches_real_pipca_line(tmp_path: Path) -> None:
     assert positions[0]["vector_match"]["match_method"] == "SERIES_MATURITY"
 
 
-def test_inspect_pipca_vector_cli_search_reports_accepted_production_lines(tmp_path, capsys) -> None:
+def test_inspect_pipca_vector_cli_search_reports_accepted_production_lines(
+    tmp_path, capsys
+) -> None:
     path = tmp_path / "VectorPiPCA_20260729.txt"
     path.write_text(
         "G   tptbaB180429   18/04/2029\n"
@@ -312,6 +384,7 @@ def test_inspect_pipca_vector_cli_search_reports_accepted_production_lines(tmp_p
     )
 
     import sys
+
     from aip.tools.inspect_pipca_vector import main
 
     sys.argv = ["inspect_pipca_vector", str(path), "--search", "B180429"]
@@ -322,16 +395,17 @@ def test_inspect_pipca_vector_cli_search_reports_accepted_production_lines(tmp_p
     assert "raw_identifier" in captured.out
 
 
-def test_inspect_pipca_vector_cli_search_reports_rejected_production_lines(tmp_path, capsys) -> None:
+def test_inspect_pipca_vector_cli_search_reports_rejected_production_lines(
+    tmp_path, capsys
+) -> None:
     path = tmp_path / "VectorPiPCA_20260729.txt"
     path.write_text(
-        "G   tptbaB180429\n"
-        "G   tprasS240327   24/03/2027\n"
-        "G   tprasCRS240129 24/01/2029\n",
+        "G   tptbaB180429\n" "G   tprasS240327   24/03/2027\n" "G   tprasCRS240129 24/01/2029\n",
         encoding="utf-8",
     )
 
     import sys
+
     from aip.tools.inspect_pipca_vector import main
 
     sys.argv = ["inspect_pipca_vector", str(path), "--search", "B180429"]
@@ -352,6 +426,7 @@ def test_inspect_pipca_vector_cli_search_reports_no_matching_raw_lines(tmp_path,
     )
 
     import sys
+
     from aip.tools.inspect_pipca_vector import main
 
     sys.argv = ["inspect_pipca_vector", str(path), "--search", "NOT_PRESENT"]
@@ -430,7 +505,9 @@ def test_ambiguous_secondary_matches_are_not_silently_selected() -> None:
 def test_configured_provider_uses_colonized_market_value_for_crc_positions(tmp_path: Path) -> None:
     provider = _build_configured_provider(
         tmp_path,
-        row_values=[["Banco Central", "tptba", "S240327", "2027-03-24", 1500.0, 1400.0, "", "CRC", 1500.0]],
+        row_values=[
+            ["Banco Central", "tptba", "S240327", "2027-03-24", 1500.0, 1400.0, "", "CRC", 1500.0]
+        ],
     )
 
     payload = provider.get_portfolio()
@@ -444,7 +521,9 @@ def test_configured_provider_uses_colonized_market_value_for_crc_positions(tmp_p
 def test_configured_provider_uses_colonized_market_value_for_usd_positions(tmp_path: Path) -> None:
     provider = _build_configured_provider(
         tmp_path,
-        row_values=[["Banco Central", "tptba", "B180429", "2029-04-18", 2500.0, 2400.0, "", "USD", 180000.0]],
+        row_values=[
+            ["Banco Central", "tptba", "B180429", "2029-04-18", 2500.0, 2400.0, "", "USD", 180000.0]
+        ],
     )
 
     payload = provider.get_portfolio()
@@ -459,7 +538,9 @@ def test_configured_provider_uses_colonized_market_value_for_usd_positions(tmp_p
 def test_configured_provider_falls_back_when_colonized_value_is_missing(tmp_path: Path) -> None:
     provider = _build_configured_provider(
         tmp_path,
-        row_values=[["Banco Central", "tptba", "CRS240129", "2029-01-24", 750.0, 700.0, "", "CRC", None]],
+        row_values=[
+            ["Banco Central", "tptba", "CRS240129", "2029-01-24", 750.0, 700.0, "", "CRC", None]
+        ],
     )
 
     payload = provider.get_portfolio()
@@ -478,18 +559,37 @@ def test_configured_provider_preserves_match_status_for_reconciliation(tmp_path:
     workbook_path = master_root / "maestro" / "29-07-2026.xlsx"
     workbook = openpyxl.Workbook()
     worksheet = workbook.active
-    worksheet.append(["issuer", "product_code", "series", "maturity_date", "market_value", "book_value", "isin", "currency"])
+    worksheet.append(
+        [
+            "issuer",
+            "product_code",
+            "series",
+            "maturity_date",
+            "market_value",
+            "book_value",
+            "isin",
+            "currency",
+        ]
+    )
     worksheet.append(["Banco Central", "tptba", "B180429", "2029-04-18", 1000.0, 1000.0, "", "USD"])
     workbook.save(workbook_path)
 
     vector_path = vector_root / "VectorPiPCA_20260729.txt"
     vector_path.write_text("G   tptbaB180429   18/04/2029\n", encoding="utf-8")
 
-    config = DemoConfig(execution_mode="CONFIGURED", demo_mode_enabled=False, data_cutoff_date=date(2026, 7, 29))
+    config = DemoConfig(
+        execution_mode="CONFIGURED", demo_mode_enabled=False, data_cutoff_date=date(2026, 7, 29)
+    )
     source_config = ConfiguredSourceConfig(
-        folder_watch=FolderWatchSourceConfig(enabled=True, portfolio_root=str(tmp_path / "institutional")),
+        folder_watch=FolderWatchSourceConfig(
+            enabled=True, portfolio_root=str(tmp_path / "institutional")
+        ),
         vector=VectorSourceConfig(enabled=True, path=str(vector_root)),
-        metadata={"allow_prior_source_date": False, "data_cutoff_date": date(2026, 7, 29).isoformat(), "diagnostic_mode": "false"},
+        metadata={
+            "allow_prior_source_date": False,
+            "data_cutoff_date": date(2026, 7, 29).isoformat(),
+            "diagnostic_mode": "false",
+        },
     )
     provider = ConfiguredPortfolioProvider(config, source_config)
 
@@ -510,7 +610,9 @@ def test_diagnose_configured_sources_cli_matches_production_pipca_line(tmp_path:
     workbook_path = master_dir / "29-07-2026.xlsx"
     workbook = openpyxl.Workbook()
     worksheet = workbook.active
-    worksheet.append(["issuer", "product_code", "series", "maturity_date", "market_value", "book_value", "isin"])
+    worksheet.append(
+        ["issuer", "product_code", "series", "maturity_date", "market_value", "book_value", "isin"]
+    )
     worksheet.append(["Banco Central", "tptba", "B180429", "2029-04-18", 1000.0, 1000.0, ""])
     workbook.save(workbook_path)
 
@@ -520,15 +622,17 @@ def test_diagnose_configured_sources_cli_matches_production_pipca_line(tmp_path:
     vector_path.write_text("G   tptbaB180429   18/04/2029\n", encoding="utf-8")
 
     env = os.environ.copy()
-    env.update({
-        "AIP_EXECUTION_MODE": "CONFIGURED",
-        "AIP_CONFIGURED_DIAGNOSTIC_MODE": "true",
-        "AIP_FOLDERWATCH_ENABLED": "true",
-        "AIP_VECTOR_ENABLED": "true",
-        "AIP_PORTFOLIO_ROOT": str(portfolio_root),
-        "AIP_VECTOR_PATH": str(vector_dir),
-        "AIP_DATA_CUTOFF_DATE": "2026-07-29",
-    })
+    env.update(
+        {
+            "AIP_EXECUTION_MODE": "CONFIGURED",
+            "AIP_CONFIGURED_DIAGNOSTIC_MODE": "true",
+            "AIP_FOLDERWATCH_ENABLED": "true",
+            "AIP_VECTOR_ENABLED": "true",
+            "AIP_PORTFOLIO_ROOT": str(portfolio_root),
+            "AIP_VECTOR_PATH": str(vector_dir),
+            "AIP_DATA_CUTOFF_DATE": "2026-07-29",
+        }
+    )
     env["PYTHONPATH"] = str(repo_root / "src") + os.pathsep + env.get("PYTHONPATH", "")
 
     completed = subprocess.run(

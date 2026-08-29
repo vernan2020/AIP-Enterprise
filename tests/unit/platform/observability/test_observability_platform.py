@@ -37,9 +37,17 @@ class RecordingProvider:
 
 def test_structured_logging_and_logger_factory() -> None:
     provider = RecordingProvider()
-    logger = LoggerFactory.create_logger("payments", provider=provider, config=ObservabilityConfig(service_name="orders"))
+    logger = LoggerFactory.create_logger(
+        "payments", provider=provider, config=ObservabilityConfig(service_name="orders")
+    )
 
-    logger.info("started", correlation_id="corr-1", execution_id="exec-1", component="payments", metadata={"tenant": "t1"})
+    logger.info(
+        "started",
+        correlation_id="corr-1",
+        execution_id="exec-1",
+        component="payments",
+        metadata={"tenant": "t1"},
+    )
     logger.warning("warned", component="payments")
     logger.error("failed", exception=RuntimeError("boom"))
     logger.critical("critical", component="payments")
@@ -89,7 +97,9 @@ def test_tracing_and_trace_context_propagation() -> None:
     with Tracer() as tracer_context:
         assert tracer_context is not None
 
-    context = TraceContext(trace_id="t-1", span_id="s-1", correlation_id="corr", execution_id="exec")
+    context = TraceContext(
+        trace_id="t-1", span_id="s-1", correlation_id="corr", execution_id="exec"
+    )
     assert context.to_dict()["trace_id"] == "t-1"
 
 
@@ -149,7 +159,9 @@ def test_health_service_aggregation() -> None:
     unknown_service.update_component("api", HealthStatus.UNKNOWN)
     assert unknown_service.aggregate_status() == HealthStatus.UNKNOWN
 
-    component = ComponentHealth(name="api", status=HealthStatus.UNKNOWN, details={"status": "booting"})
+    component = ComponentHealth(
+        name="api", status=HealthStatus.UNKNOWN, details={"status": "booting"}
+    )
     assert component.to_dict()["status"] == "unknown"
 
 
@@ -181,7 +193,12 @@ def test_correlation_context_and_telemetry_service() -> None:
 
 def test_monitoring_service_audit_and_events() -> None:
     audit = ObservabilityAudit()
-    event = ObservabilityEvent(event_type="log", message="captured", timestamp=datetime.now(UTC), metadata={"source": "tests"})
+    event = ObservabilityEvent(
+        event_type="log",
+        message="captured",
+        timestamp=datetime.now(UTC),
+        metadata={"source": "tests"},
+    )
     audit.record(event)
 
     monitoring = MonitoringService()
@@ -197,7 +214,9 @@ def test_monitoring_service_audit_and_events() -> None:
 
 
 def test_configuration_and_exceptions() -> None:
-    config = ObservabilityConfig.from_dict({"service_name": "checkout", "enabled": True, "json_logs": True})
+    config = ObservabilityConfig.from_dict(
+        {"service_name": "checkout", "enabled": True, "json_logs": True}
+    )
     assert config.service_name == "checkout"
     assert config.enabled is True
     assert config.json_logs is True

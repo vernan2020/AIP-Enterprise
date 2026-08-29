@@ -37,19 +37,39 @@ class OutlierDetection:
             threshold_value = threshold or Decimal("1.5") * iqr
             lower_bound = q1 - threshold_value
             upper_bound = q3 + threshold_value
-            outliers = tuple(value for value in values if value < lower_bound or value > upper_bound)
-            return OutlierResult(outliers, threshold_value, self.method, iqr, "Outliers beyond the IQR fence")
+            outliers = tuple(
+                value for value in values if value < lower_bound or value > upper_bound
+            )
+            return OutlierResult(
+                outliers, threshold_value, self.method, iqr, "Outliers beyond the IQR fence"
+            )
         if self.method is OutlierMethod.Z_SCORE:
             mean_value = stats.mean()
             std_dev = stats.standard_deviation()
             if std_dev == 0:
-                raise StatisticsError("Z-score outlier detection requires non-zero standard deviation")
+                raise StatisticsError(
+                    "Z-score outlier detection requires non-zero standard deviation"
+                )
             threshold_value = threshold or Decimal("1.3")
             z_scores = [(value - mean_value) / std_dev for value in values]
-            outliers = tuple(value for value, score in zip(values, z_scores) if abs(score) >= threshold_value)
-            return OutlierResult(outliers, threshold_value, self.method, std_dev, "Outliers beyond the z-score threshold")
+            outliers = tuple(
+                value for value, score in zip(values, z_scores) if abs(score) >= threshold_value
+            )
+            return OutlierResult(
+                outliers,
+                threshold_value,
+                self.method,
+                std_dev,
+                "Outliers beyond the z-score threshold",
+            )
         median = stats.median()
         mad = sum(abs(value - median) for value in values) / Decimal(len(values))
         threshold_value = threshold or Decimal("3.5")
         outliers = tuple(value for value in values if abs((value - median) / mad) > threshold_value)
-        return OutlierResult(outliers, threshold_value, self.method, mad, "Outliers beyond the modified z-score threshold")
+        return OutlierResult(
+            outliers,
+            threshold_value,
+            self.method,
+            mad,
+            "Outliers beyond the modified z-score threshold",
+        )

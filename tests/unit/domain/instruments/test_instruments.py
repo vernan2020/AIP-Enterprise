@@ -139,7 +139,9 @@ def test_floating_rate_bond_tracks_reference_and_spread() -> None:
 
 
 def test_day_count_convention_and_factory() -> None:
-    year_fraction = DayCountConvention.ACTUAL_365.calculate_year_fraction(date(2024, 1, 1), date(2024, 12, 31))
+    year_fraction = DayCountConvention.ACTUAL_365.calculate_year_fraction(
+        date(2024, 1, 1), date(2024, 12, 31)
+    )
     assert year_fraction == Decimal("1")
 
     factory = InstrumentFactory()

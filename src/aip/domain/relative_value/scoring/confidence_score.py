@@ -21,7 +21,9 @@ class ConfidenceScore:
 
     @property
     def level(self) -> ConfidenceLevel:
-        average = (self.evidence_quality + self.evidence_completeness + self.policy_alignment) / Decimal("3")
+        average = (
+            self.evidence_quality + self.evidence_completeness + self.policy_alignment
+        ) / Decimal("3")
         if average >= Decimal("0.8"):
             return ConfidenceLevel.HIGH
         if average >= Decimal("0.5"):
@@ -30,4 +32,6 @@ class ConfidenceScore:
 
     @property
     def score(self) -> Decimal:
-        return (self.evidence_quality + self.evidence_completeness + self.policy_alignment) / Decimal("3")
+        return (
+            self.evidence_quality + self.evidence_completeness + self.policy_alignment
+        ) / Decimal("3")

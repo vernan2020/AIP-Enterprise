@@ -8,7 +8,9 @@ from aip.domain.relative_value.engine.relative_value_engine import RelativeValue
 from aip.domain.relative_value.models.relative_value_request import RelativeValueRequest
 
 
-def test_pricing_and_relative_value_chain_produce_consistent_results(treasury_instrument, yield_curve, analysis_request) -> None:
+def test_pricing_and_relative_value_chain_produce_consistent_results(
+    treasury_instrument, yield_curve, analysis_request
+) -> None:
     pricing_result = PricingEngine().price(
         PricingRequest(
             valuation_date=analysis_request.valuation_date,

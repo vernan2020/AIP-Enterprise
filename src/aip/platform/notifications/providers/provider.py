@@ -9,8 +9,12 @@ from aip.platform.notifications.models.notification_result import NotificationRe
 class Provider(Protocol):
     name: str
 
-    def send(self, notification: Notification, *, timeout_seconds: float | None = None, cancellation_token: str | None = None) -> NotificationResult:
-        ...
+    def send(
+        self,
+        notification: Notification,
+        *,
+        timeout_seconds: float | None = None,
+        cancellation_token: str | None = None,
+    ) -> NotificationResult: ...
 
-    def health(self) -> bool:
-        ...
+    def health(self) -> bool: ...

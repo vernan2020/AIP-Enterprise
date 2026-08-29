@@ -11,10 +11,20 @@ class MarketPresenter:
     """Presenter for rendering application-layer market data in the UI."""
 
     def __init__(self, demo_factory: DemoApplicationFactory | None = None) -> None:
-        self._demo_factory = demo_factory or DemoApplicationFactory(DemoConfig(execution_mode="DEMO", demo_mode_enabled=True))
+        self._demo_factory = demo_factory or DemoApplicationFactory(
+            DemoConfig(execution_mode="DEMO", demo_mode_enabled=True)
+        )
         self._correlation_id = "corr-demo-market"
 
-    def build_view_model(self, *, theme: str = "light", filters: dict[str, str] | None = None, selected_curve: str | None = None, loading: bool = False, error: str | None = None) -> MarketViewModel:
+    def build_view_model(
+        self,
+        *,
+        theme: str = "light",
+        filters: dict[str, str] | None = None,
+        selected_curve: str | None = None,
+        loading: bool = False,
+        error: str | None = None,
+    ) -> MarketViewModel:
         workflow_result = self._demo_factory.initial_load_workflow().execute(self._correlation_id)
         market = workflow_result["market"]
         summary = type(
@@ -66,14 +76,22 @@ class MarketPresenter:
             selected_curve=selected_curve,
             theme=theme,
             status="error" if error else "loaded",
-            warnings=("Application workflow returned a warning",) if not loading and not error else (),
+            warnings=(
+                ("Application workflow returned a warning",) if not loading and not error else ()
+            ),
             calculation_id=workflow_result["calculation_references"]["market"],
             correlation_id=self._correlation_id,
             loading=loading,
             error=error,
         )
 
-    def refresh(self, *, theme: str = "light", filters: dict[str, str] | None = None, selected_curve: str | None = None) -> MarketViewModel:
+    def refresh(
+        self,
+        *,
+        theme: str = "light",
+        filters: dict[str, str] | None = None,
+        selected_curve: str | None = None,
+    ) -> MarketViewModel:
         return self.build_view_model(theme=theme, filters=filters, selected_curve=selected_curve)
 
     def select(self, curve: str | None) -> MarketViewModel:

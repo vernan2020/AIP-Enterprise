@@ -33,13 +33,19 @@ class GapEngine:
 
     def project(self, request: GapRequest) -> GapResult:
         projection_request = self._resolve_projection_request(request)
-        if request.currency is not None and projection_request.currency is not None and request.currency != projection_request.currency:
+        if (
+            request.currency is not None
+            and projection_request.currency is not None
+            and request.currency != projection_request.currency
+        ):
             raise CurrencyMismatchError("Gap currency must match projection currency")
 
         sanitized_request = self._sanitize_projection_request(projection_request)
         projection_result = self._cashflow_engine.project(sanitized_request)
         config = self._resolve_configuration(request)
-        gap_values = self._build_gap_values(projection_result.projected_cashflows, projection_request, config)
+        gap_values = self._build_gap_values(
+            projection_result.projected_cashflows, projection_request, config
+        )
         if not gap_values:
             return GapResult(
                 valuation_date=request.valuation_date,
@@ -50,8 +56,23 @@ class GapEngine:
                 incremental_gap=Decimal("0"),
                 cumulative_gap=Decimal("0"),
                 summary_value=Decimal("0"),
-                aggregation={"bucket": {}, "currency": {}, "scenario": {}, "product": {}, "counterparty": {}, "instrument": {}, "portfolio": {}, "business_unit": {}},
-                analytics={"concentration": {}, "distribution": {}, "percentiles": {}, "weighted_statistics": {}, "scenario_comparison": {}},
+                aggregation={
+                    "bucket": {},
+                    "currency": {},
+                    "scenario": {},
+                    "product": {},
+                    "counterparty": {},
+                    "instrument": {},
+                    "portfolio": {},
+                    "business_unit": {},
+                },
+                analytics={
+                    "concentration": {},
+                    "distribution": {},
+                    "percentiles": {},
+                    "weighted_statistics": {},
+                    "scenario_comparison": {},
+                },
                 opening_liquidity=self._opening_liquidity(config),
                 position="neutral",
                 projection_type=projection_result.projection_type,
@@ -68,11 +89,19 @@ class GapEngine:
         incremental_gap = sum((value.incremental_gap for value in gap_values), Decimal("0"))
         cumulative_gap = gap_values[-1].cumulative_gap if gap_values else Decimal("0")
         factors = [
-            ExplanationFactor(name="net_gap", value=net_gap, direction="higher_is_better", contribution=net_gap, source_reference="gap"),
+            ExplanationFactor(
+                name="net_gap",
+                value=net_gap,
+                direction="higher_is_better",
+                contribution=net_gap,
+                source_reference="gap",
+            ),
         ]
         assumptions = request.assumptions
         if not assumptions and sanitized_request.behavioral_assumptions:
-            assumptions = tuple(assumption.name for assumption in sanitized_request.behavioral_assumptions)
+            assumptions = tuple(
+                assumption.name for assumption in sanitized_request.behavioral_assumptions
+            )
         explanation = self._explanation.build(
             "Liquidity gap derived from projected cash flows",
             factors,
@@ -119,14 +148,22 @@ class GapEngine:
             raise GapProviderError("A projection request is required")
         return request.cashflow_request
 
-    def _build_gap_values(self, cashflows: tuple[object, ...], request: ProjectionRequest, config: dict[str, object]) -> tuple[GapValue, ...]:
+    def _build_gap_values(
+        self, cashflows: tuple[object, ...], request: ProjectionRequest, config: dict[str, object]
+    ) -> tuple[GapValue, ...]:
         values: list[GapValue] = []
         source_cashflows = tuple(request.contractual_cashflows or ())
         cumulative_total = self._opening_liquidity(config)
         bucket_configuration = self._bucket_configuration(config)
         if bucket_configuration:
             self._validate_bucket_configuration(bucket_configuration)
-        for cashflow in sorted(cashflows, key=lambda item: (getattr(item, "payment_date", request.valuation_date), getattr(item, "currency", ""))):
+        for cashflow in sorted(
+            cashflows,
+            key=lambda item: (
+                getattr(item, "payment_date", request.valuation_date),
+                getattr(item, "currency", ""),
+            ),
+        ):
             amount = Decimal(str(getattr(cashflow, "amount", Decimal("0"))))
             magnitude = abs(amount)
             source_amount = self._resolve_source_amount(cashflow, source_cashflows)
@@ -162,11 +199,16 @@ class GapEngine:
             )
         return tuple(values)
 
-    def _resolve_source_amount(self, cashflow: object, source_cashflows: tuple[object, ...]) -> Decimal | None:
+    def _resolve_source_amount(
+        self, cashflow: object, source_cashflows: tuple[object, ...]
+    ) -> Decimal | None:
         payment_date = getattr(cashflow, "payment_date", None)
         currency = getattr(cashflow, "currency", None)
         for source_cashflow in source_cashflows:
-            if getattr(source_cashflow, "payment_date", None) == payment_date and getattr(source_cashflow, "currency", None) == currency:
+            if (
+                getattr(source_cashflow, "payment_date", None) == payment_date
+                and getattr(source_cashflow, "currency", None) == currency
+            ):
                 return Decimal(str(getattr(source_cashflow, "amount", Decimal("0"))))
         return None
 
@@ -188,19 +230,28 @@ class GapEngine:
         value = config.get("opening_liquidity", Decimal("0"))
         return Decimal(str(value)) if value is not None else Decimal("0")
 
-    def _bucket_configuration(self, config: dict[str, object]) -> tuple[tuple[date, date, str], ...]:
+    def _bucket_configuration(
+        self, config: dict[str, object]
+    ) -> tuple[tuple[date, date, str], ...]:
         raw = config.get("bucket_configuration", ())
         if not raw:
             return ()
         return tuple(cast(Iterable[tuple[date, date, str]], raw))
 
-    def _validate_bucket_configuration(self, bucket_configuration: tuple[tuple[date, date, str], ...]) -> None:
+    def _validate_bucket_configuration(
+        self, bucket_configuration: tuple[tuple[date, date, str], ...]
+    ) -> None:
         for index, current in enumerate(bucket_configuration):
             for other in bucket_configuration[index + 1 :]:
                 if current[0] <= other[1] and other[0] <= current[1]:
                     raise AggregationError("Overlapping bucket configuration is not allowed")
 
-    def _bucket_for(self, cashflow: object, request: ProjectionRequest, bucket_configuration: tuple[tuple[date, date, str], ...]) -> str:
+    def _bucket_for(
+        self,
+        cashflow: object,
+        request: ProjectionRequest,
+        bucket_configuration: tuple[tuple[date, date, str], ...],
+    ) -> str:
         payment_date = getattr(cashflow, "payment_date", request.valuation_date)
         if not bucket_configuration:
             return getattr(cashflow, "bucket", request.business_unit or "default")
@@ -216,7 +267,13 @@ class GapEngine:
             return "deficit"
         return "neutral"
 
-    def _apply_currency_policy(self, gaps: tuple[GapValue, ...], request: GapRequest, projection_request: ProjectionRequest, config: dict[str, object]) -> tuple[GapValue, ...]:
+    def _apply_currency_policy(
+        self,
+        gaps: tuple[GapValue, ...],
+        request: GapRequest,
+        projection_request: ProjectionRequest,
+        config: dict[str, object],
+    ) -> tuple[GapValue, ...]:
         currencies = {gap.currency for gap in gaps}
         if len(currencies) <= 1:
             return gaps
@@ -225,12 +282,16 @@ class GapEngine:
         if target_currency is None:
             return gaps
         if request.exchange_rate_policy_provider is None:
-            raise CurrencyAggregationError("Multi-currency aggregation requires an exchange rate policy provider")
+            raise CurrencyAggregationError(
+                "Multi-currency aggregation requires an exchange rate policy provider"
+            )
 
         converted: list[GapValue] = []
         for gap in gaps:
             try:
-                rate = request.exchange_rate_policy_provider.get_rate(gap.currency, target_currency, request.valuation_date)
+                rate = request.exchange_rate_policy_provider.get_rate(
+                    gap.currency, target_currency, request.valuation_date
+                )
             except Exception as exc:
                 raise CurrencyAggregationError("Exchange rate policy provider failed") from exc
             if rate is None:
@@ -253,7 +314,15 @@ class GapEngine:
 
     def _normalize_gap_type(self, gap_type: str | None) -> str:
         normalized = (gap_type or "net").strip().lower()
-        if normalized in {"net", "gross", "incremental", "cumulative", "contractual", "behavioral", "scenario"}:
+        if normalized in {
+            "net",
+            "gross",
+            "incremental",
+            "cumulative",
+            "contractual",
+            "behavioral",
+            "scenario",
+        }:
             return normalized
         return "net"
 

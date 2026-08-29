@@ -11,6 +11,7 @@ class TestServiceDescriptor:
 
     def test_service_descriptor_basic_creation(self) -> None:
         """Test basic service descriptor creation."""
+
         class MyService:
             pass
 
@@ -22,6 +23,7 @@ class TestServiceDescriptor:
 
     def test_service_descriptor_with_implementation_type(self) -> None:
         """Test service descriptor with different implementation type."""
+
         class IService:
             pass
 
@@ -34,6 +36,7 @@ class TestServiceDescriptor:
 
     def test_service_descriptor_with_lifetime(self) -> None:
         """Test service descriptor with specific lifetime."""
+
         class MyService:
             pass
 
@@ -45,6 +48,7 @@ class TestServiceDescriptor:
 
     def test_service_descriptor_with_factory(self) -> None:
         """Test service descriptor with factory function."""
+
         class MyService:
             pass
 
@@ -57,6 +61,7 @@ class TestServiceDescriptor:
 
     def test_service_descriptor_validation_no_factory(self) -> None:
         """Test descriptor validation with no factory and no explicit implementation."""
+
         class MyService:
             pass
 
@@ -66,6 +71,7 @@ class TestServiceDescriptor:
 
     def test_service_descriptor_validation_factory_type_error(self) -> None:
         """Test descriptor validation with both no implementation and factory."""
+
         class MyService:
             pass
 
@@ -78,6 +84,7 @@ class TestServiceDescriptor:
 
     def test_service_descriptor_validation_invalid_lifetime(self) -> None:
         """Test descriptor validation with invalid lifetime type."""
+
         class MyService:
             pass
 
@@ -87,6 +94,7 @@ class TestServiceDescriptor:
 
     def test_service_descriptor_lifetime_checks(self) -> None:
         """Test lifetime checking methods."""
+
         class MyService:
             pass
 
@@ -116,6 +124,7 @@ class TestServiceDescriptor:
 
     def test_service_descriptor_has_factory(self) -> None:
         """Test factory presence detection."""
+
         class MyService:
             pass
 
@@ -130,6 +139,7 @@ class TestServiceDescriptor:
 
     def test_service_descriptor_repr(self) -> None:
         """Test string representation."""
+
         class MyService:
             pass
 
@@ -141,6 +151,7 @@ class TestServiceDescriptor:
 
     def test_service_descriptor_equality(self) -> None:
         """Test descriptor equality."""
+
         class ServiceA:
             pass
 
@@ -156,6 +167,7 @@ class TestServiceDescriptor:
 
     def test_service_descriptor_equality_with_non_descriptor(self) -> None:
         """Test descriptor equality with non-descriptor."""
+
         class MyService:
             pass
 
@@ -166,6 +178,7 @@ class TestServiceDescriptor:
 
     def test_service_descriptor_hash(self) -> None:
         """Test descriptor hashing."""
+
         class MyService:
             pass
 
@@ -175,6 +188,7 @@ class TestServiceDescriptor:
 
     def test_service_descriptor_can_be_dict_key(self) -> None:
         """Test descriptor can be used as dictionary key."""
+
         class ServiceA:
             pass
 
@@ -190,6 +204,7 @@ class TestServiceDescriptor:
 
     def test_service_descriptor_factory_and_implementation(self) -> None:
         """Test descriptor with both factory and implementation type."""
+
         class MyService:
             pass
 

@@ -22,7 +22,9 @@ class PortfolioView(QWidget):
         self._summary = PortfolioSummaryView(self._view_model.summary)
         self._filter_panel = PortfolioFilterPanel()
         self._positions = PortfolioPositionsView(self._view_model.rows)
-        self._details = PortfolioDetailsView(self._view_model.rows[0] if self._view_model.rows else None)
+        self._details = PortfolioDetailsView(
+            self._view_model.rows[0] if self._view_model.rows else None
+        )
         self._status_bar = PortfolioStatusBadge("Portfolio ready")
         self._content_splitter: QSplitter | None = None
         self._build_ui()
@@ -56,7 +58,9 @@ class PortfolioView(QWidget):
             if filter_panel_index >= 0:
                 layout.removeWidget(self._filter_panel)
                 self._filter_panel.hide()
-            splitter_index = layout.indexOf(self._content_splitter) if self._content_splitter is not None else -1
+            splitter_index = (
+                layout.indexOf(self._content_splitter) if self._content_splitter is not None else -1
+            )
             if splitter_index >= 0:
                 layout.removeWidget(self._content_splitter)
                 self._content_splitter.hide()

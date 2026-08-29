@@ -250,7 +250,9 @@ class Transaction:
         fields = [self.nominal_amount, self.gross_amount, self.fees, self.taxes, self.net_amount]
         for field in fields:
             if field.currency != self.currency:
-                raise InvalidTransactionError("All transaction monetary fields must share the same currency.")
+                raise InvalidTransactionError(
+                    "All transaction monetary fields must share the same currency."
+                )
 
     def _validate_reference(self) -> None:
         """Ensure transaction reference is present."""
@@ -261,7 +263,9 @@ class Transaction:
         """Validate net amount is reproducible from gross, fees, and taxes."""
         expected = self.gross_amount - self.fees - self.taxes
         if expected.amount != self.net_amount.amount:
-            raise InvalidTransactionError("Net amount is not reproducible from gross, fees, and taxes.")
+            raise InvalidTransactionError(
+                "Net amount is not reproducible from gross, fees, and taxes."
+            )
 
     def _validate_type_sign_consistency(self) -> None:
         """Validate sign conventions according to transaction type."""
@@ -269,19 +273,33 @@ class Transaction:
             raise InvalidTransactionError("Fees and taxes must be non-negative.")
 
         if self.transaction_type == TransactionType.BUY:
-            if not (self.nominal_amount.amount < 0 and self.gross_amount.amount < 0 and self.net_amount.amount < 0):
-                raise InvalidTransactionError("BUY transactions must have negative nominal, gross and net.")
+            if not (
+                self.nominal_amount.amount < 0
+                and self.gross_amount.amount < 0
+                and self.net_amount.amount < 0
+            ):
+                raise InvalidTransactionError(
+                    "BUY transactions must have negative nominal, gross and net."
+                )
 
         elif self.transaction_type in {
             TransactionType.SELL,
             TransactionType.COUPON,
             TransactionType.MATURITY,
         }:
-            if not (self.nominal_amount.amount > 0 and self.gross_amount.amount > 0 and self.net_amount.amount > 0):
+            if not (
+                self.nominal_amount.amount > 0
+                and self.gross_amount.amount > 0
+                and self.net_amount.amount > 0
+            ):
                 raise InvalidTransactionError(
                     "SELL/COUPON/MATURITY transactions must have positive nominal, gross and net."
                 )
 
         elif self.transaction_type == TransactionType.ADJUSTMENT:
-            if self.nominal_amount.amount == Decimal("0") and self.gross_amount.amount == Decimal("0"):
-                raise InvalidTransactionError("ADJUSTMENT transaction cannot be zero on both nominal and gross.")
+            if self.nominal_amount.amount == Decimal("0") and self.gross_amount.amount == Decimal(
+                "0"
+            ):
+                raise InvalidTransactionError(
+                    "ADJUSTMENT transaction cannot be zero on both nominal and gross."
+                )

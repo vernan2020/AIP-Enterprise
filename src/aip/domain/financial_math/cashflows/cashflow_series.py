@@ -43,15 +43,24 @@ class CashFlowSeries:
             amount = cash_flow.amount
             if fx_conversion is not None and len(currencies) > 1:
                 amount = fx_conversion(cash_flow.currency, next(iter(currencies)), cash_flow.amount)
-            grouped[cash_flow.payment_date] = grouped.get(cash_flow.payment_date, Decimal("0")) + amount
+            grouped[cash_flow.payment_date] = (
+                grouped.get(cash_flow.payment_date, Decimal("0")) + amount
+            )
         aggregated = tuple(
-            CashFlow(payment_date=payment_date, amount=amount, currency=next(iter(currencies)), cash_flow_type="coupon")
+            CashFlow(
+                payment_date=payment_date,
+                amount=amount,
+                currency=next(iter(currencies)),
+                cash_flow_type="coupon",
+            )
             for payment_date, amount in sorted(grouped.items())
         )
         return CashFlowSeries(cash_flows=aggregated)
 
     def filter_by_date_range(self, start: date, end: date) -> "CashFlowSeries":
-        filtered = tuple(cash_flow for cash_flow in self.cash_flows if start <= cash_flow.payment_date <= end)
+        filtered = tuple(
+            cash_flow for cash_flow in self.cash_flows if start <= cash_flow.payment_date <= end
+        )
         return CashFlowSeries(cash_flows=filtered)
 
     def total_amount(self) -> Decimal:
@@ -72,4 +81,6 @@ class CashFlowSeries:
     ) -> Decimal:
         from aip.domain.financial_math.discounting.present_value import present_value_series
 
-        return present_value_series(self, rate, valuation_date=valuation_date, compounding=compounding, frequency=frequency)
+        return present_value_series(
+            self, rate, valuation_date=valuation_date, compounding=compounding, frequency=frequency
+        )

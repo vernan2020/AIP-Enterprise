@@ -3,7 +3,12 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from aip.product.configured.protocols import MarketDataProvider, LiquidityDataProvider, PortfolioDataProvider, SourceHealthProvider
+from aip.product.configured.protocols import (
+    LiquidityDataProvider,
+    MarketDataProvider,
+    PortfolioDataProvider,
+    SourceHealthProvider,
+)
 from aip.product.demo.adapters.demo_health_provider import DemoHealthProvider
 from aip.product.demo.adapters.demo_liquidity_provider import DemoLiquidityProvider
 from aip.product.demo.adapters.demo_market_provider import DemoMarketProvider
@@ -48,14 +53,27 @@ class InitialLoadWorkflow:
             "started_at": started_at.isoformat(),
             "completed_at": datetime.now(timezone.utc).isoformat(),
             "source_statuses": [
-                {"name": status.name, "state": status.state, "details": status.details, "correlation_id": status.correlation_id}
+                {
+                    "name": status.name,
+                    "state": status.state,
+                    "details": status.details,
+                    "correlation_id": status.correlation_id,
+                }
                 for status in source_statuses
             ],
             "data_quality_status": "HEALTHY",
-            "workflow_statuses": {"portfolio": "COMPLETED", "market": "COMPLETED", "liquidity": "COMPLETED"},
+            "workflow_statuses": {
+                "portfolio": "COMPLETED",
+                "market": "COMPLETED",
+                "liquidity": "COMPLETED",
+            },
             "warnings": (),
             "errors": (),
-            "calculation_references": {"portfolio": "calc-portfolio-demo", "market": "calc-market-demo", "liquidity": "calc-liquidity-demo"},
+            "calculation_references": {
+                "portfolio": "calc-portfolio-demo",
+                "market": "calc-market-demo",
+                "liquidity": "calc-liquidity-demo",
+            },
             "application_readiness": "READY",
             "portfolio": portfolio,
             "market": self._market_provider.get_market(),

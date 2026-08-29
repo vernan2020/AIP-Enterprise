@@ -28,7 +28,20 @@ def test_view_model_is_immutable_and_serializable() -> None:
     )
     curve = CurvePoint(label="USD 3M", value="3.10", tenor="3M")
     view_model = MarketViewModel(
-        summary=type("Summary", (), {"market_date": "2026-07-29", "curves_loaded": 3, "pricing_date": "2026-07-29", "relative_value_opportunities": 2, "average_yield": "3.10%", "average_duration": "4.50", "average_spread": "0.45", "market_status": "Ready"})(),
+        summary=type(
+            "Summary",
+            (),
+            {
+                "market_date": "2026-07-29",
+                "curves_loaded": 3,
+                "pricing_date": "2026-07-29",
+                "relative_value_opportunities": 2,
+                "average_yield": "3.10%",
+                "average_duration": "4.50",
+                "average_spread": "0.45",
+                "market_status": "Ready",
+            },
+        )(),
         rows=(row,),
         curve_points=(curve,),
         filters={"currency": "USD"},

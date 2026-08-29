@@ -21,13 +21,24 @@ class InterestRate:
             raise InvalidRateError("Rate must be finite")
         if self.frequency <= 0:
             raise InvalidRateError("Frequency must be positive")
-        if self.compounding.lower() not in {"simple", "annual", "semiannual", "quarterly", "monthly", "continuous"}:
+        if self.compounding.lower() not in {
+            "simple",
+            "annual",
+            "semiannual",
+            "quarterly",
+            "monthly",
+            "continuous",
+        }:
             raise InvalidRateError("Unsupported compounding convention")
         if self.day_count_convention.upper() not in {"ACTUAL_365", "ACTUAL_360"}:
             raise InvalidRateError("Unsupported day-count convention")
 
     def discount_factor(self, time: Decimal) -> Decimal:
-        return discount_factor(self.rate, time, compounding=self.compounding, frequency=self.frequency)
+        return discount_factor(
+            self.rate, time, compounding=self.compounding, frequency=self.frequency
+        )
 
     def accumulation_factor(self, time: Decimal) -> Decimal:
-        return accumulation_factor(self.rate, time, compounding=self.compounding, frequency=self.frequency)
+        return accumulation_factor(
+            self.rate, time, compounding=self.compounding, frequency=self.frequency
+        )

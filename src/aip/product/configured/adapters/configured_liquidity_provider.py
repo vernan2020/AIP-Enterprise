@@ -8,7 +8,12 @@ from aip.product.demo.configuration.demo_config import DemoConfig
 
 
 class ConfiguredLiquidityProvider:
-    def __init__(self, config: DemoConfig, source_config: ConfiguredSourceConfig | None = None, health_provider: SourceHealthProvider | None = None) -> None:
+    def __init__(
+        self,
+        config: DemoConfig,
+        source_config: ConfiguredSourceConfig | None = None,
+        health_provider: SourceHealthProvider | None = None,
+    ) -> None:
         self._config = config
         self._source_config = source_config or ConfiguredSourceConfig()
         self._health_provider = health_provider
@@ -16,7 +21,9 @@ class ConfiguredLiquidityProvider:
     def get_liquidity(self) -> dict[str, Any]:
         folder_enabled = self._source_config.folder_watch.enabled
         sql_enabled = self._source_config.sql_server.enabled
-        source_status = self._health_provider.get_health() if self._health_provider is not None else {}
+        source_status = (
+            self._health_provider.get_health() if self._health_provider is not None else {}
+        )
         return {
             "liquidity_date": self._config.data_cutoff_date.isoformat(),
             "cash_position": 0.0,
@@ -33,5 +40,9 @@ class ConfiguredLiquidityProvider:
             "stress_rows": [],
             "source_status": source_status,
             "data_quality_status": "HEALTHY" if sql_enabled or folder_enabled else "DEGRADED",
-            "configuration_message": "Liquidity sources are disabled or unavailable" if not (sql_enabled or folder_enabled) else "Configured liquidity sources are active",
+            "configuration_message": (
+                "Liquidity sources are disabled or unavailable"
+                if not (sql_enabled or folder_enabled)
+                else "Configured liquidity sources are active"
+            ),
         }

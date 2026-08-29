@@ -10,5 +10,9 @@ class JsonRenderer(Renderer):
     """JSON renderer for reporting content."""
 
     def render(self, report: Report) -> str:
-        payload = {"title": report.title, "subtitle": report.subtitle, "sections": [section.title for section in report.sections]}
+        payload = {
+            "title": report.title,
+            "subtitle": report.subtitle,
+            "sections": [section.title for section in report.sections],
+        }
         return json.dumps(payload)

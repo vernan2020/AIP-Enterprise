@@ -8,7 +8,13 @@ from aip.platform.observability.metrics.metrics_registry import MetricsRegistry
 
 
 class MonitoringService:
-    def __init__(self, *, audit: ObservabilityAudit | None = None, health: HealthService | None = None, metrics: MetricsRegistry | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        audit: ObservabilityAudit | None = None,
+        health: HealthService | None = None,
+        metrics: MetricsRegistry | None = None,
+    ) -> None:
         self.audit = audit or ObservabilityAudit()
         self.health = health or HealthService()
         self.metrics = metrics or MetricsRegistry()
@@ -23,4 +29,8 @@ class MonitoringService:
         self.metrics.counter(name).increment(int(value))
 
     def snapshot(self) -> dict[str, object]:
-        return {"events": [event.to_dict() for event in self.audit.entries], "health": self.health.snapshot(), "metrics": self.metrics.snapshot()}
+        return {
+            "events": [event.to_dict() for event in self.audit.entries],
+            "health": self.health.snapshot(),
+            "metrics": self.metrics.snapshot(),
+        }

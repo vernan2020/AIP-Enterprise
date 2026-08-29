@@ -6,8 +6,14 @@ from pathlib import Path
 import openpyxl
 import pytest
 
-from aip.product.configured.adapters.configured_portfolio_provider import ConfiguredPortfolioProvider
-from aip.product.configured.configuration.configured_source_config import ConfiguredSourceConfig, FolderWatchSourceConfig, SQLServerSourceConfig
+from aip.product.configured.adapters.configured_portfolio_provider import (
+    ConfiguredPortfolioProvider,
+)
+from aip.product.configured.configuration.configured_source_config import (
+    ConfiguredSourceConfig,
+    FolderWatchSourceConfig,
+    SQLServerSourceConfig,
+)
 from aip.product.configured.configuration.institutional_paths import resolve_institutional_path
 from aip.product.demo.configuration.demo_config import DemoConfig
 from aip.product.demo.configuration.environment_loader import EnvironmentLoader
@@ -89,7 +95,9 @@ def test_environment_loader_uses_institutional_defaults(monkeypatch: pytest.Monk
     monkeypatch.delenv("AIP_SQLSERVER_SCENARIOS", raising=False)
     monkeypatch.setenv("AIP_PORTFOLIO_ROOT", r"C:\\Institutional Data\\Inversiones")
     monkeypatch.setenv("AIP_ICL_ROOT", r"C:\\Institutional Data\\ICL")
-    monkeypatch.setenv("AIP_CURVES_WORKBOOK", r"C:\\Users\\Jane Doe\\OneDrive\\Grafico Curvas de Rendimiento.xlsx")
+    monkeypatch.setenv(
+        "AIP_CURVES_WORKBOOK", r"C:\\Users\\Jane Doe\\OneDrive\\Grafico Curvas de Rendimiento.xlsx"
+    )
 
     config = EnvironmentLoader().load()
     sql_config = config.source_config["sql_server"]
@@ -99,7 +107,10 @@ def test_environment_loader_uses_institutional_defaults(monkeypatch: pytest.Monk
     assert sql_config["scenario_filters"] == ["Reales", "Presupuesto 2026%"]
     assert folder_config["portfolio_root"] == r"C:\Institutional Data\Inversiones"
     assert folder_config["icl_root"] == r"C:\Institutional Data\ICL"
-    assert config.source_config["curves"]["workbook"] == r"C:\Users\Jane Doe\OneDrive\Grafico Curvas de Rendimiento.xlsx"
+    assert (
+        config.source_config["curves"]["workbook"]
+        == r"C:\Users\Jane Doe\OneDrive\Grafico Curvas de Rendimiento.xlsx"
+    )
 
 
 def test_path_resolution_supports_spaces_and_unc(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -111,7 +122,9 @@ def test_path_resolution_supports_spaces_and_unc(monkeypatch: pytest.MonkeyPatch
     assert joined == r"C:\Institutional Data\Inversiones\2026"
 
 
-def test_environment_loader_reads_vector_configuration_variables(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_environment_loader_reads_vector_configuration_variables(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("AIP_EXECUTION_MODE", "CONFIGURED")
     monkeypatch.setenv("AIP_DEMO_MODE_ENABLED", "false")
     monkeypatch.setenv("AIP_VECTOR_ENABLED", "true")
@@ -147,7 +160,9 @@ def test_configured_portfolio_provider_returns_empty_state_without_demo_data() -
     assert "Blue Ridge" not in str(payload)
 
 
-def test_portfolio_master_discovery_uses_canonical_maestro_path_and_ignores_unrelated_dirs(tmp_path: Path) -> None:
+def test_portfolio_master_discovery_uses_canonical_maestro_path_and_ignores_unrelated_dirs(
+    tmp_path: Path,
+) -> None:
     root = tmp_path / "institutional"
     (root / "Inversiones" / "2026" / "maestro").mkdir(parents=True)
     (root / "Inversiones" / "2026" / "cuadre").mkdir(parents=True)
@@ -195,7 +210,9 @@ def test_portfolio_master_prefers_date_only_file_over_ambiguous_suffixes(tmp_pat
     root = tmp_path / "institutional"
     (root / "Inversiones" / "2023" / "maestro").mkdir(parents=True)
     (root / "Inversiones" / "2023" / "maestro" / "01-01-2023.xls").write_text("x")
-    (root / "Inversiones" / "2023" / "maestro" / "01-01-2023 maestro inversiones.xls").write_text("x")
+    (root / "Inversiones" / "2023" / "maestro" / "01-01-2023 maestro inversiones.xls").write_text(
+        "x"
+    )
     (root / "Inversiones" / "2023" / "maestro" / "01-01-2023-2.xls").write_text("x")
 
     config = DemoConfig(execution_mode="CONFIGURED", demo_mode_enabled=False)
@@ -235,9 +252,13 @@ def test_provider_emits_full_diagnostics_and_enriches_positions(tmp_path: Path) 
         encoding="utf-8",
     )
 
-    config = DemoConfig(execution_mode="CONFIGURED", demo_mode_enabled=False, data_cutoff_date=date(2026, 7, 29))
+    config = DemoConfig(
+        execution_mode="CONFIGURED", demo_mode_enabled=False, data_cutoff_date=date(2026, 7, 29)
+    )
     source_config = ConfiguredSourceConfig(
-        folder_watch=FolderWatchSourceConfig(enabled=True, portfolio_root=str(root), vector_path=str(vector_dir)),
+        folder_watch=FolderWatchSourceConfig(
+            enabled=True, portfolio_root=str(root), vector_path=str(vector_dir)
+        ),
         metadata={"diagnostic_mode": True},
     )
 
@@ -249,8 +270,14 @@ def test_provider_emits_full_diagnostics_and_enriches_positions(tmp_path: Path) 
     assert payload["positions"][0]["vector_match"]["matched"] is False
     assert payload["portfolio_master"]["diagnostics"]["trace"]["records_read"] == 2
     assert payload["portfolio_master"]["diagnostics"]["trace"]["records_discarded"] == 0
-    assert payload["portfolio_master"]["diagnostics"]["trace"]["record_trace"][0]["status"] == "accepted"
-    assert payload["portfolio_master"]["diagnostics"]["trace"]["record_trace"][1]["status"] == "accepted"
+    assert (
+        payload["portfolio_master"]["diagnostics"]["trace"]["record_trace"][0]["status"]
+        == "accepted"
+    )
+    assert (
+        payload["portfolio_master"]["diagnostics"]["trace"]["record_trace"][1]["status"]
+        == "accepted"
+    )
     assert payload["price_vector"]["diagnostics"]["trace"]["records_discarded"] == 1
     assert payload["price_vector"]["diagnostics"]["trace"]["records_valid"] == 1
 
@@ -264,7 +291,11 @@ def test_vector_discovery_uses_supported_aliases_and_skips_maestro(tmp_path: Pat
 
     config = DemoConfig(execution_mode="CONFIGURED", demo_mode_enabled=False)
     source_config = ConfiguredSourceConfig(
-        folder_watch=FolderWatchSourceConfig(enabled=True, portfolio_root=str(root), vector_path=str(root / "Inversiones" / "2026" / "vector")),
+        folder_watch=FolderWatchSourceConfig(
+            enabled=True,
+            portfolio_root=str(root),
+            vector_path=str(root / "Inversiones" / "2026" / "vector"),
+        ),
     )
 
     provider = ConfiguredPortfolioProvider(config, source_config)
@@ -284,7 +315,9 @@ def test_vector_discovery_uses_explicit_root_precedence(tmp_path: Path) -> None:
 
     config = DemoConfig(execution_mode="CONFIGURED", demo_mode_enabled=False)
     source_config = ConfiguredSourceConfig(
-        folder_watch=FolderWatchSourceConfig(enabled=True, portfolio_root=str(root), vector_path=str(explicit_root)),
+        folder_watch=FolderWatchSourceConfig(
+            enabled=True, portfolio_root=str(root), vector_path=str(explicit_root)
+        ),
     )
 
     provider = ConfiguredPortfolioProvider(config, source_config)

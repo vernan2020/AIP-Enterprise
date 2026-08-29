@@ -7,21 +7,23 @@ class PortfolioTable(QTableWidget):
     def __init__(self) -> None:
         super().__init__()
         self.setColumnCount(13)
-        self.setHorizontalHeaderLabels([
-            "ISIN",
-            "Issuer",
-            "Instrument",
-            "Currency",
-            "Nominal",
-            "Market Value",
-            "Book Value",
-            "Yield",
-            "Modified Duration",
-            "Classification",
-            "HQLA Status",
-            "MIL Status",
-            "Recommendation",
-        ])
+        self.setHorizontalHeaderLabels(
+            [
+                "ISIN",
+                "Issuer",
+                "Instrument",
+                "Currency",
+                "Nominal",
+                "Market Value",
+                "Book Value",
+                "Yield",
+                "Modified Duration",
+                "Classification",
+                "HQLA Status",
+                "MIL Status",
+                "Recommendation",
+            ]
+        )
         self.setSortingEnabled(True)
 
     def bind_rows(self, rows: tuple[object, ...]) -> None:

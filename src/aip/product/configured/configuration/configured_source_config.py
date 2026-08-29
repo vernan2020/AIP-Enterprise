@@ -158,17 +158,25 @@ class ConfiguredSourceConfig:
                 icl_root=folder_payload.get("icl_root"),
                 curves_path=folder_payload.get("curves_path"),
                 vector_path=folder_payload.get("vector_path"),
-                portfolio_master_pattern=folder_payload.get("portfolio_master_pattern", r"Inversiones\{year}\maestro\{month}\*.xls*"),
+                portfolio_master_pattern=folder_payload.get(
+                    "portfolio_master_pattern", r"Inversiones\{year}\maestro\{month}\*.xls*"
+                ),
                 icl_file_pattern=folder_payload.get("icl_file_pattern", r"ICL\Reportes ICL\*"),
-                supported_extensions=tuple(folder_payload.get("supported_extensions", (".xls", ".xlsx"))),
+                supported_extensions=tuple(
+                    folder_payload.get("supported_extensions", (".xls", ".xlsx"))
+                ),
                 recursive=bool(folder_payload.get("recursive", True)),
-                stale_data_threshold_seconds=int(folder_payload.get("stale_data_threshold_seconds", 3600)),
+                stale_data_threshold_seconds=int(
+                    folder_payload.get("stale_data_threshold_seconds", 3600)
+                ),
             ),
             curves=CurvesSourceConfig(
                 enabled=bool(curves_payload.get("enabled", False)),
                 workbook=curves_payload.get("workbook"),
                 sheet_mapping=tuple(curves_payload.get("sheet_mapping", ())),
-                stale_data_threshold_seconds=int(curves_payload.get("stale_data_threshold_seconds", 3600)),
+                stale_data_threshold_seconds=int(
+                    curves_payload.get("stale_data_threshold_seconds", 3600)
+                ),
             ),
             vector=VectorSourceConfig(
                 enabled=bool(vector_payload.get("enabled", False)),
@@ -176,8 +184,12 @@ class ConfiguredSourceConfig:
                 root=vector_payload.get("root"),
                 directory_aliases=tuple(vector_payload.get("directory_aliases", ())),
                 file_pattern=vector_payload.get("file_pattern"),
-                supported_extensions=tuple(vector_payload.get("supported_extensions", (".txt", ".xls", ".xlsx"))),
-                stale_data_threshold_seconds=int(vector_payload.get("stale_data_threshold_seconds", 3600)),
+                supported_extensions=tuple(
+                    vector_payload.get("supported_extensions", (".txt", ".xls", ".xlsx"))
+                ),
+                stale_data_threshold_seconds=int(
+                    vector_payload.get("stale_data_threshold_seconds", 3600)
+                ),
             ),
             bccr=BCCRSourceConfig(
                 enabled=bool(bccr_payload.get("enabled", False)),
@@ -193,7 +205,9 @@ class ConfiguredSourceConfig:
             ),
             diagnostic_mode=bool(source_config_payload.get("diagnostic_mode", False)),
             metadata={
-                "allow_prior_source_date": bool(source_config_payload.get("allow_prior_source_date", False)),
+                "allow_prior_source_date": bool(
+                    source_config_payload.get("allow_prior_source_date", False)
+                ),
                 "data_cutoff_date": source_config_payload.get("data_cutoff_date"),
             },
         )

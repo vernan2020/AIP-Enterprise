@@ -12,7 +12,9 @@ class PortfolioPresenter:
     """Presenter that adapts application-layer workflow results into a passive view model."""
 
     def __init__(self, demo_factory: DemoApplicationFactory | None = None) -> None:
-        self._demo_factory = demo_factory or DemoApplicationFactory(DemoConfig(execution_mode="DEMO", demo_mode_enabled=True))
+        self._demo_factory = demo_factory or DemoApplicationFactory(
+            DemoConfig(execution_mode="DEMO", demo_mode_enabled=True)
+        )
         self._correlation_id = "corr-demo-portfolio"
         self._trace_configuration()
 
@@ -31,7 +33,15 @@ class PortfolioPresenter:
             f"provider_object_type={type(provider) if provider is not None else None}"
         )
 
-    def build_view_model(self, *, theme: str = "light", filters: dict[str, str] | None = None, selected_isin: str | None = None, loading: bool = False, error: str | None = None) -> PortfolioViewModel:
+    def build_view_model(
+        self,
+        *,
+        theme: str = "light",
+        filters: dict[str, str] | None = None,
+        selected_isin: str | None = None,
+        loading: bool = False,
+        error: str | None = None,
+    ) -> PortfolioViewModel:
         print("[portfolio-runtime] presenter.method=build_view_model")
         workflow_result = self._demo_factory.initial_load_workflow().execute(self._correlation_id)
         portfolio = workflow_result["portfolio"]
@@ -77,7 +87,9 @@ class PortfolioPresenter:
             selected_isin=selected_isin,
             theme=theme,
             status="loaded" if not error else "error",
-            warnings=("Application workflow returned a warning",) if not loading and not error else (),
+            warnings=(
+                ("Application workflow returned a warning",) if not loading and not error else ()
+            ),
             calculation_id=workflow_result["calculation_references"]["portfolio"],
             correlation_id=self._correlation_id,
             loading=loading,
@@ -89,7 +101,13 @@ class PortfolioPresenter:
         )
         return view_model
 
-    def refresh(self, *, theme: str = "light", filters: dict[str, str] | None = None, selected_isin: str | None = None) -> PortfolioViewModel:
+    def refresh(
+        self,
+        *,
+        theme: str = "light",
+        filters: dict[str, str] | None = None,
+        selected_isin: str | None = None,
+    ) -> PortfolioViewModel:
         return self.build_view_model(theme=theme, filters=filters, selected_isin=selected_isin)
 
     def select(self, isin: str | None) -> PortfolioViewModel:

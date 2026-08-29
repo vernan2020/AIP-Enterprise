@@ -10,7 +10,9 @@ class SQLHealthMonitor:
 
     _states: dict[str, dict[str, Any]] = field(default_factory=dict)
 
-    def record_connection(self, connector_name: str, *, healthy: bool, latency_ms: float, retries: int) -> None:
+    def record_connection(
+        self, connector_name: str, *, healthy: bool, latency_ms: float, retries: int
+    ) -> None:
         self._states[connector_name] = {
             "healthy": healthy,
             "latency_ms": latency_ms,

@@ -16,5 +16,8 @@ class HQLAPolicyEngine:
 
     def evaluate(self, policies: tuple[object, ...], context: PolicyContext) -> HQLAPolicyResult:
         results = [self._engine.evaluate(policy, context) for policy in policies]
-        total_score = sum((Decimal("1") if result.status == "PASSED" else Decimal("0") for result in results), Decimal("0"))
+        total_score = sum(
+            (Decimal("1") if result.status == "PASSED" else Decimal("0") for result in results),
+            Decimal("0"),
+        )
         return HQLAPolicyResult(policy_results=tuple(results), total_score=total_score)

@@ -7,7 +7,6 @@ from typing import Any, Callable
 from aip.platform.scheduler.jobs.job_priority import JobPriority
 from aip.platform.scheduler.triggers.manual_trigger import ManualTrigger
 
-
 Handler = Callable[["ScheduledJob", dict[str, Any] | None], dict[str, Any]]
 
 

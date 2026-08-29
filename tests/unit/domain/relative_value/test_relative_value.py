@@ -148,21 +148,29 @@ def test_z_spread_convergence() -> None:
     calculator = ZSpreadCalculator()
     instrument = _build_instrument()
     curve = _build_curve()
-    result = calculator.calculate(Decimal("0.045"), curve, instrument, Decimal("0.01"), Decimal("0.001"))
+    result = calculator.calculate(
+        Decimal("0.045"), curve, instrument, Decimal("0.01"), Decimal("0.001")
+    )
     assert result > Decimal("0")
 
 
 def test_z_spread_unavailable_for_unsupported_instruments() -> None:
     calculator = ZSpreadCalculator()
     with pytest.raises(SpreadCalculationError):
-        calculator.calculate(Decimal("0.045"), _build_curve(), object(), Decimal("0.01"), Decimal("0.001"))
+        calculator.calculate(
+            Decimal("0.045"), _build_curve(), object(), Decimal("0.01"), Decimal("0.001")
+        )
 
 
 def test_z_spread_non_convergence_raises() -> None:
     calculator = ZSpreadCalculator()
-    instrument = SimpleNamespace(coupon_schedule=SimpleNamespace(coupons=[]), face_value=Decimal("100"))
+    instrument = SimpleNamespace(
+        coupon_schedule=SimpleNamespace(coupons=[]), face_value=Decimal("100")
+    )
     with pytest.raises(SpreadCalculationError):
-        calculator.calculate(Decimal("0.045"), _build_curve(), instrument, Decimal("0.01"), Decimal("0.001"))
+        calculator.calculate(
+            Decimal("0.045"), _build_curve(), instrument, Decimal("0.01"), Decimal("0.001")
+        )
 
 
 def test_decimal_precision() -> None:
@@ -191,7 +199,10 @@ def test_configurable_weights() -> None:
     score = RelativeValueScore(
         raw_values={"spread": Decimal("0.1"), "liquidity": Decimal("0.9")},
         weights={"spread": Decimal("0.3"), "liquidity": Decimal("0.7")},
-        directions={"spread": ScoreDirection.LOWER_IS_BETTER, "liquidity": ScoreDirection.HIGHER_IS_BETTER},
+        directions={
+            "spread": ScoreDirection.LOWER_IS_BETTER,
+            "liquidity": ScoreDirection.HIGHER_IS_BETTER,
+        },
         bands={"spread": (ScoreBand("spread", "spread", Decimal("0"), Decimal("1")),)},
     )
     assert score.final_score > Decimal("0")
@@ -199,19 +210,30 @@ def test_configurable_weights() -> None:
 
 def test_missing_score_components() -> None:
     with pytest.raises(InvalidWeightError):
-        RelativeValueScore(raw_values={"spread": Decimal("0.1")}, weights={"spread": Decimal("1")}, directions={"spread": ScoreDirection.LOWER_IS_BETTER})
+        RelativeValueScore(
+            raw_values={"spread": Decimal("0.1")},
+            weights={"spread": Decimal("1")},
+            directions={"spread": ScoreDirection.LOWER_IS_BETTER},
+        )
 
 
 def test_invalid_and_zero_total_weights() -> None:
     with pytest.raises(InvalidWeightError):
-        RelativeValueScore(raw_values={"spread": Decimal("0.1")}, weights={"spread": Decimal("0")}, directions={"spread": ScoreDirection.LOWER_IS_BETTER})
+        RelativeValueScore(
+            raw_values={"spread": Decimal("0.1")},
+            weights={"spread": Decimal("0")},
+            directions={"spread": ScoreDirection.LOWER_IS_BETTER},
+        )
 
 
 def test_relative_value_score_reconciles_contributions_and_component_weights() -> None:
     score = RelativeValueScore(
         raw_values={"spread": Decimal("0.1"), "liquidity": Decimal("0.8")},
         weights={"spread": Decimal("0.3"), "liquidity": Decimal("0.7")},
-        directions={"spread": ScoreDirection.LOWER_IS_BETTER, "liquidity": ScoreDirection.HIGHER_IS_BETTER},
+        directions={
+            "spread": ScoreDirection.LOWER_IS_BETTER,
+            "liquidity": ScoreDirection.HIGHER_IS_BETTER,
+        },
     )
     assert score.final_score == Decimal("0.83")
     assert score.component_contributions["spread"] == Decimal("0.27")
@@ -237,8 +259,13 @@ def test_confidence_based_on_evidence_completeness() -> None:
 
 
 def test_confidence_score_validates_boundary_and_incomplete_components() -> None:
-    assert ConfidenceScore(Decimal("0.0"), Decimal("0.0"), Decimal("0.0")).level is ConfidenceLevel.LOW
-    assert ConfidenceScore(Decimal("0.5"), Decimal("0.5"), Decimal("0.5")).level is ConfidenceLevel.MEDIUM
+    assert (
+        ConfidenceScore(Decimal("0.0"), Decimal("0.0"), Decimal("0.0")).level is ConfidenceLevel.LOW
+    )
+    assert (
+        ConfidenceScore(Decimal("0.5"), Decimal("0.5"), Decimal("0.5")).level
+        is ConfidenceLevel.MEDIUM
+    )
     with pytest.raises(ValueError):
         ConfidenceScore(Decimal("1.1"), Decimal("0.5"), Decimal("0.5"))
     with pytest.raises(ValueError):
@@ -324,9 +351,21 @@ def test_review_recommendation() -> None:
 
 
 def test_blocking_policy_failure() -> None:
-    policy_result = Recommendation("policy", RecommendationType.BUY, Decimal("0.9"), Decimal("0.9"), "", policy_summary={"blocking": True})
+    policy_result = Recommendation(
+        "policy",
+        RecommendationType.BUY,
+        Decimal("0.9"),
+        Decimal("0.9"),
+        "",
+        policy_summary={"blocking": True},
+    )
     with pytest.raises(RecommendationError):
-        RecommendationEngine().recommend(score=Decimal("0.9"), policy_summary={"status": "FAILED"}, thresholds={"buy": Decimal("0.8"), "accumulate": Decimal("0.65")}, policy_result=policy_result)
+        RecommendationEngine().recommend(
+            score=Decimal("0.9"),
+            policy_summary={"status": "FAILED"},
+            thresholds={"buy": Decimal("0.8"), "accumulate": Decimal("0.65")},
+            policy_result=policy_result,
+        )
 
 
 def test_warning_policy_outcome() -> None:
@@ -340,14 +379,38 @@ def test_warning_policy_outcome() -> None:
 
 
 def test_disabled_policy() -> None:
-    policy_result = Recommendation("policy", RecommendationType.BUY, Decimal("0.9"), Decimal("0.9"), "", policy_summary={"disabled": True})
-    result = RecommendationEngine().recommend(score=Decimal("0.9"), policy_summary={"status": "NOT_APPLICABLE"}, thresholds={"buy": Decimal("0.8"), "accumulate": Decimal("0.65")}, policy_result=policy_result)
+    policy_result = Recommendation(
+        "policy",
+        RecommendationType.BUY,
+        Decimal("0.9"),
+        Decimal("0.9"),
+        "",
+        policy_summary={"disabled": True},
+    )
+    result = RecommendationEngine().recommend(
+        score=Decimal("0.9"),
+        policy_summary={"status": "NOT_APPLICABLE"},
+        thresholds={"buy": Decimal("0.8"), "accumulate": Decimal("0.65")},
+        policy_result=policy_result,
+    )
     assert result.recommendation is RecommendationType.HOLD
 
 
 def test_not_applicable_policy() -> None:
-    policy_result = Recommendation("policy", RecommendationType.BUY, Decimal("0.9"), Decimal("0.9"), "", policy_summary={"not_applicable": True})
-    result = RecommendationEngine().recommend(score=Decimal("0.9"), policy_summary={"status": "NOT_APPLICABLE"}, thresholds={"buy": Decimal("0.8"), "accumulate": Decimal("0.65")}, policy_result=policy_result)
+    policy_result = Recommendation(
+        "policy",
+        RecommendationType.BUY,
+        Decimal("0.9"),
+        Decimal("0.9"),
+        "",
+        policy_summary={"not_applicable": True},
+    )
+    result = RecommendationEngine().recommend(
+        score=Decimal("0.9"),
+        policy_summary={"status": "NOT_APPLICABLE"},
+        thresholds={"buy": Decimal("0.8"), "accumulate": Decimal("0.65")},
+        policy_result=policy_result,
+    )
     assert result.recommendation is RecommendationType.HOLD
 
 
@@ -421,8 +484,20 @@ def test_recommendation_explanation_handles_positive_negative_and_empty_factors(
     explanation = RecommendationExplanation(
         concise_conclusion="Conclusion",
         supporting_factors=(
-            {"name": "spread", "value": Decimal("0.01"), "direction": "higher_is_better", "contribution": Decimal("0.02"), "source_reference": "curve"},
-            {"name": "credit", "value": Decimal("-0.005"), "direction": "lower_is_better", "contribution": Decimal("-0.01"), "source_reference": "policy"},
+            {
+                "name": "spread",
+                "value": Decimal("0.01"),
+                "direction": "higher_is_better",
+                "contribution": Decimal("0.02"),
+                "source_reference": "curve",
+            },
+            {
+                "name": "credit",
+                "value": Decimal("-0.005"),
+                "direction": "lower_is_better",
+                "contribution": Decimal("-0.01"),
+                "source_reference": "policy",
+            },
             "unsupported",
         ),
         assumptions=("Assumption",),
@@ -494,10 +569,16 @@ def test_every_domain_exception() -> None:
     with pytest.raises(UnsupportedSpreadTypeError):
         SpreadEngine().calculate("unsupported", Decimal("0.045"), Decimal("0.05"))
     with pytest.raises(RecommendationError):
-        RecommendationEngine().recommend(score=Decimal("0.9"), policy_summary={"status": "FAILED"}, thresholds={"buy": Decimal("0.8"), "accumulate": Decimal("0.65")}, policy_result=None)
+        RecommendationEngine().recommend(
+            score=Decimal("0.9"),
+            policy_summary={"status": "FAILED"},
+            thresholds={"buy": Decimal("0.8"), "accumulate": Decimal("0.65")},
+            policy_result=None,
+        )
 
 
 # Additional regression tests for the earlier defects.
+
 
 def test_regression_missing_curve_reference() -> None:
     request = RelativeValueRequest(

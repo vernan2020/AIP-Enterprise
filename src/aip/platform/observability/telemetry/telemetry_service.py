@@ -10,7 +10,14 @@ from aip.platform.observability.tracing.tracer import Tracer
 
 
 class TelemetryService:
-    def __init__(self, *, logger: Logger | None = None, metrics: MetricsRegistry | None = None, health: HealthService | None = None, tracer: Tracer | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        logger: Logger | None = None,
+        metrics: MetricsRegistry | None = None,
+        health: HealthService | None = None,
+        tracer: Tracer | None = None,
+    ) -> None:
         self.logger = logger or Logger(provider=NullProvider())
         self.metrics = metrics or MetricsRegistry()
         self.health = health or HealthService()
@@ -18,7 +25,11 @@ class TelemetryService:
 
     def emit_log(self, level: str, message: str) -> None:
         context = CorrelationContext.get_current()
-        self.logger.info(message, correlation_id=context.correlation_id if context else None, execution_id=context.execution_id if context else None)
+        self.logger.info(
+            message,
+            correlation_id=context.correlation_id if context else None,
+            execution_id=context.execution_id if context else None,
+        )
 
     def record_counter(self, name: str, value: int = 1) -> None:
         self.metrics.counter(name).increment(value)

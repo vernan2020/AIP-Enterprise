@@ -3,7 +3,6 @@
 Comprehensive tests for immutable collection types.
 """
 
-
 from src.aip.shared.collections import (
     ImmutableDict,
     ImmutableList,

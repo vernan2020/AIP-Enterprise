@@ -44,9 +44,13 @@ class PolicyEngine:
         else:
             overall_status = "PASSED"
             message = "All policies passed"
-        return EvaluationReport(results=tuple(results), overall_status=overall_status, message=message)
+        return EvaluationReport(
+            results=tuple(results), overall_status=overall_status, message=message
+        )
 
-    def _evaluate_policy(self, policy: Policy, context: PolicyContext, seen: tuple[str, ...]) -> EvaluationResult:
+    def _evaluate_policy(
+        self, policy: Policy, context: PolicyContext, seen: tuple[str, ...]
+    ) -> EvaluationResult:
         if policy.policy_id in seen:
             raise PolicyDependencyError(f"Circular dependency detected for {policy.policy_id}")
         if not policy.enabled:

@@ -20,7 +20,9 @@ class RelativeValueScore:
     def __post_init__(self) -> None:
         if not self.raw_values:
             raise InvalidWeightError("At least one component is required")
-        if set(self.raw_values) != set(self.weights) or set(self.raw_values) != set(self.directions):
+        if set(self.raw_values) != set(self.weights) or set(self.raw_values) != set(
+            self.directions
+        ):
             raise InvalidWeightError("Weights and directions must align with input values")
         total_weight = sum(self.weights.values(), Decimal("0"))
         if total_weight <= 0:
@@ -50,4 +52,7 @@ class RelativeValueScore:
 
     @property
     def component_contributions(self) -> dict[str, Decimal]:
-        return {name: self._normalize(raw_value, name, self.directions[name]) * self.weights[name] for name, raw_value in self.raw_values.items()}
+        return {
+            name: self._normalize(raw_value, name, self.directions[name]) * self.weights[name]
+            for name, raw_value in self.raw_values.items()
+        }

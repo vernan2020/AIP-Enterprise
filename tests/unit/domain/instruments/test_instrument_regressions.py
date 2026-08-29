@@ -31,7 +31,9 @@ def make_issuer() -> Issuer:
     "payment_frequency",
     [PaymentFrequency.ANNUAL, PaymentFrequency.SEMIANNUAL, PaymentFrequency.QUARTERLY],
 )
-def test_fixed_rate_bonds_generate_complete_coupon_schedule(payment_frequency: PaymentFrequency) -> None:
+def test_fixed_rate_bonds_generate_complete_coupon_schedule(
+    payment_frequency: PaymentFrequency,
+) -> None:
     bond = GovernmentBond(
         isin="US0000000001",
         name="Regression Bond",

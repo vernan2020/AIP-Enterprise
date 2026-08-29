@@ -6,7 +6,10 @@ from typing import Any
 from aip.integration.audit.execution_result import ExecutionResult, ExecutionStatus
 from aip.integration.audit.synchronization_log import SynchronizationLog
 from aip.integration.contracts.connector import Connector, ConnectorType
-from aip.integration.events.synchronization_events import IntegrationEventBus, SynchronizationEvent, SynchronizationEventType
+from aip.integration.events.synchronization_events import (
+    IntegrationEventBus,
+    SynchronizationEvent,
+)
 from aip.integration.exceptions.exceptions import IntegrationError
 from aip.integration.folderwatch.configuration.folder_config import FolderWatchConfig
 from aip.integration.folderwatch.connector.watcher import FolderWatcher
@@ -45,7 +48,9 @@ class FolderWatchConnector(Connector):
         self.watcher = watcher or FolderWatcher(provider=self.provider, config=config)
         self.validator = validator or FileValidator()
         self.normalizer = normalizer or FileNormalizer()
-        self.synchronizer = synchronizer or FolderSynchronizer(provider=self.provider, validator=self.validator, normalizer=self.normalizer)
+        self.synchronizer = synchronizer or FolderSynchronizer(
+            provider=self.provider, validator=self.validator, normalizer=self.normalizer
+        )
         self.health_monitor = health_monitor or FolderHealthMonitor()
         self.metrics = metrics or FolderMetrics()
         self.event_bus = event_bus
@@ -65,7 +70,13 @@ class FolderWatchConnector(Connector):
     def health(self) -> bool:
         return self._connected
 
-    def synchronize(self, request: Any, correlation_id: str | None = None, user: str = "system", cancellation_token: str | None = None) -> ExecutionResult:
+    def synchronize(
+        self,
+        request: Any,
+        correlation_id: str | None = None,
+        user: str = "system",
+        cancellation_token: str | None = None,
+    ) -> ExecutionResult:
         if not self._connected:
             self.connect()
         if cancellation_token == "cancelled":
@@ -104,8 +115,12 @@ class FolderWatchConnector(Connector):
         return self.normalizer.normalize(payload)
 
     def audit(self, log: SynchronizationLog) -> None:
-        self._publish(SynchronizationEvent.synchronization_started(self.name, self.name, log.execution_id))
-        self._publish(SynchronizationEvent.synchronization_completed(self.name, self.name, log.execution_id))
+        self._publish(
+            SynchronizationEvent.synchronization_started(self.name, self.name, log.execution_id)
+        )
+        self._publish(
+            SynchronizationEvent.synchronization_completed(self.name, self.name, log.execution_id)
+        )
 
     def _publish(self, event: SynchronizationEvent) -> None:
         if self.event_bus is not None:

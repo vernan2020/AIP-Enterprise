@@ -84,9 +84,22 @@ def test_mil_engine_evaluates_eligibility_and_capacity() -> None:
     request = MilRequest(
         portfolio_reference="portfolio-1",
         assets=(
-            make_asset(position_id="pos-eligible", market_value=Decimal("1000"), valuation_date=date(2024, 1, 10), maturity_date=date(2024, 6, 30)),
-            make_asset(position_id="pos-conditional", market_value=Decimal("500"), reserve_liquidity_status="reserve", valuation_date=date(2024, 1, 1), maturity_date=date(2024, 6, 30)),
-            make_asset(position_id="pos-ineligible", market_value=Decimal("200"), classification="V.C-TEST"),
+            make_asset(
+                position_id="pos-eligible",
+                market_value=Decimal("1000"),
+                valuation_date=date(2024, 1, 10),
+                maturity_date=date(2024, 6, 30),
+            ),
+            make_asset(
+                position_id="pos-conditional",
+                market_value=Decimal("500"),
+                reserve_liquidity_status="reserve",
+                valuation_date=date(2024, 1, 1),
+                maturity_date=date(2024, 6, 30),
+            ),
+            make_asset(
+                position_id="pos-ineligible", market_value=Decimal("200"), classification="V.C-TEST"
+            ),
         ),
         configuration=config,
         policy_context={"evaluation_date": date(2024, 1, 10)},
@@ -112,9 +125,7 @@ def test_mil_engine_marks_unknown_when_required_inputs_are_missing() -> None:
     engine = MilEligibilityEngine()
     request = MilRequest(
         portfolio_reference="portfolio-1",
-        assets=(
-            make_asset(position_id="pos-unknown", operational_availability=False),
-        ),
+        assets=(make_asset(position_id="pos-unknown", operational_availability=False),),
         configuration=config,
         policy_context={"evaluation_date": date(2024, 1, 10)},
     )
@@ -156,7 +167,9 @@ def test_mil_configuration_is_immutable_and_rejects_invalid_values() -> None:
         raise AssertionError("Configuration should be immutable")
 
     try:
-        MilPolicyConfig(policy_id="x", version="1", name="y", category="mil", minimum_remaining_maturity_days=-1)
+        MilPolicyConfig(
+            policy_id="x", version="1", name="y", category="mil", minimum_remaining_maturity_days=-1
+        )
     except ValueError:
         pass
     else:
@@ -230,21 +243,61 @@ def test_mil_policy_config_rejects_invalid_values_and_allows_disabled_policy() -
     with pytest.raises(MilConfigurationError):
         MilPolicyConfig(policy_id="", version="1", name="", category="")
     with pytest.raises(MilConfigurationError):
-        MilPolicyConfig(policy_id="x", version="1", name="y", category="mil", valuation_freshness_limit_days=-1)
+        MilPolicyConfig(
+            policy_id="x", version="1", name="y", category="mil", valuation_freshness_limit_days=-1
+        )
     with pytest.raises(ValueError):
-        MilPolicyConfig(policy_id="x", version="1", name="y", category="mil", minimum_remaining_maturity_days=-1)
+        MilPolicyConfig(
+            policy_id="x", version="1", name="y", category="mil", minimum_remaining_maturity_days=-1
+        )
     with pytest.raises(MilConfigurationError):
-        MilPolicyConfig(policy_id="x", version="1", name="y", category="mil", haircut_mappings=(MilHaircutConfig(haircut=Decimal("-0.01")),))
+        MilPolicyConfig(
+            policy_id="x",
+            version="1",
+            name="y",
+            category="mil",
+            haircut_mappings=(MilHaircutConfig(haircut=Decimal("-0.01")),),
+        )
     with pytest.raises(MilConfigurationError):
-        MilPolicyConfig(policy_id="x", version="1", name="y", category="mil", haircut_mappings=(MilHaircutConfig(haircut=Decimal("1.01")),))
+        MilPolicyConfig(
+            policy_id="x",
+            version="1",
+            name="y",
+            category="mil",
+            haircut_mappings=(MilHaircutConfig(haircut=Decimal("1.01")),),
+        )
     with pytest.raises(MilConfigurationError):
-        MilPolicyConfig(policy_id="x", version="1", name="y", category="mil", issuer_limits=(("issuer", Decimal("-1")),))
+        MilPolicyConfig(
+            policy_id="x",
+            version="1",
+            name="y",
+            category="mil",
+            issuer_limits=(("issuer", Decimal("-1")),),
+        )
     with pytest.raises(MilConfigurationError):
-        MilPolicyConfig(policy_id="x", version="1", name="y", category="mil", currency_limits=(("USD", Decimal("-1")),))
+        MilPolicyConfig(
+            policy_id="x",
+            version="1",
+            name="y",
+            category="mil",
+            currency_limits=(("USD", Decimal("-1")),),
+        )
     with pytest.raises(MilConfigurationError):
-        MilPolicyConfig(policy_id="x", version="1", name="y", category="mil", warning_concentration_threshold=Decimal("-1"))
+        MilPolicyConfig(
+            policy_id="x",
+            version="1",
+            name="y",
+            category="mil",
+            warning_concentration_threshold=Decimal("-1"),
+        )
     with pytest.raises(MilConfigurationError):
-        MilPolicyConfig(policy_id="x", version="1", name="y", category="mil", reserve_liquidity_treatment="invalid")
+        MilPolicyConfig(
+            policy_id="x",
+            version="1",
+            name="y",
+            category="mil",
+            reserve_liquidity_treatment="invalid",
+        )
 
     disabled = MilPolicyConfig(policy_id="x", version="1", name="y", category="mil", enabled=False)
     assert disabled.enabled is False
@@ -285,10 +338,14 @@ def test_mil_asset_validation_rejects_invalid_payloads() -> None:
 
 def test_availability_policy_handles_active_and_inactive_contexts() -> None:
     policy = AvailabilityPolicy(make_config())
-    passed = policy.evaluate(PolicyContext(context_id="ctx-1", metadata={"asset": {"operational_availability": True}}))
+    passed = policy.evaluate(
+        PolicyContext(context_id="ctx-1", metadata={"asset": {"operational_availability": True}})
+    )
     assert passed.status == "PASSED"
 
-    failed = policy.evaluate(PolicyContext(context_id="ctx-2", metadata={"asset": {"operational_availability": False}}))
+    failed = policy.evaluate(
+        PolicyContext(context_id="ctx-2", metadata={"asset": {"operational_availability": False}})
+    )
     assert failed.status == "FAILED"
 
     inactive_config = MilPolicyConfig(
@@ -300,7 +357,13 @@ def test_availability_policy_handles_active_and_inactive_contexts() -> None:
         expiration_date=date(2024, 3, 1),
     )
     inactive = AvailabilityPolicy(inactive_config)
-    result = inactive.evaluate(PolicyContext(context_id="ctx-3", timestamp=datetime(2024, 1, 1, tzinfo=timezone.utc), metadata={"asset": {"operational_availability": True}}))
+    result = inactive.evaluate(
+        PolicyContext(
+            context_id="ctx-3",
+            timestamp=datetime(2024, 1, 1, tzinfo=timezone.utc),
+            metadata={"asset": {"operational_availability": True}},
+        )
+    )
     assert result.status == "NOT_APPLICABLE"
 
 
@@ -308,16 +371,40 @@ def test_mil_policy_config_validation_branch_paths() -> None:
     with pytest.raises(MilConfigurationError):
         MilPolicyConfig.validate_configuration_collection(
             (
-                MilPolicyConfig(policy_id="p1", version="1", name="One", category="mil", excluded_classification_prefixes=("V.C",)),
-                MilPolicyConfig(policy_id="p2", version="1", name="Two", category="mil", excluded_classification_prefixes=("V.C",)),
+                MilPolicyConfig(
+                    policy_id="p1",
+                    version="1",
+                    name="One",
+                    category="mil",
+                    excluded_classification_prefixes=("V.C",),
+                ),
+                MilPolicyConfig(
+                    policy_id="p2",
+                    version="1",
+                    name="Two",
+                    category="mil",
+                    excluded_classification_prefixes=("V.C",),
+                ),
             )
         )
 
     with pytest.raises(MilConfigurationError):
         MilPolicyConfig.validate_configuration_collection(
             (
-                MilPolicyConfig(policy_id="p3", version="1", name="Three", category="mil", eligible_issuer_categories=("cooperative",)),
-                MilPolicyConfig(policy_id="p4", version="1", name="Four", category="mil", eligible_issuer_categories=("cooperative",)),
+                MilPolicyConfig(
+                    policy_id="p3",
+                    version="1",
+                    name="Three",
+                    category="mil",
+                    eligible_issuer_categories=("cooperative",),
+                ),
+                MilPolicyConfig(
+                    policy_id="p4",
+                    version="1",
+                    name="Four",
+                    category="mil",
+                    eligible_issuer_categories=("cooperative",),
+                ),
             )
         )
 
@@ -327,13 +414,35 @@ def test_mil_policy_config_validation_branch_paths() -> None:
     assert MilPolicyConfig._parse_severity(PolicySeverity.MEDIUM) == PolicySeverity.MEDIUM
 
     with pytest.raises(MilConfigurationError):
-        MilPolicyConfig(policy_id="x", version="1", name="y", category="mil", effective_date=date(2024, 2, 1), expiration_date=date(2024, 1, 1))
+        MilPolicyConfig(
+            policy_id="x",
+            version="1",
+            name="y",
+            category="mil",
+            effective_date=date(2024, 2, 1),
+            expiration_date=date(2024, 1, 1),
+        )
     with pytest.raises(MilConfigurationError):
-        MilPolicyConfig(policy_id="x", version="1", name="y", category="mil", warning_concentration_threshold=Decimal("0.2"), blocking_concentration_threshold=Decimal("0.1"))
+        MilPolicyConfig(
+            policy_id="x",
+            version="1",
+            name="y",
+            category="mil",
+            warning_concentration_threshold=Decimal("0.2"),
+            blocking_concentration_threshold=Decimal("0.1"),
+        )
     with pytest.raises(MilConfigurationError):
-        MilPolicyConfig(policy_id="x", version="1", name="y", category="mil", policy_references=(object(),))
+        MilPolicyConfig(
+            policy_id="x", version="1", name="y", category="mil", policy_references=(object(),)
+        )
     with pytest.raises(MilConfigurationError):
-        MilPolicyConfig(policy_id="x", version="1", name="y", category="mil", blocking_concentration_threshold=Decimal("-0.01"))
+        MilPolicyConfig(
+            policy_id="x",
+            version="1",
+            name="y",
+            category="mil",
+            blocking_concentration_threshold=Decimal("-0.01"),
+        )
 
 
 def test_mil_engine_handles_exception_and_branch_paths() -> None:
@@ -345,14 +454,16 @@ def test_mil_engine_handles_exception_and_branch_paths() -> None:
     with pytest.raises(MilConfigurationError):
         engine._coerce_config(object())
 
-    config = engine._coerce_config({
-        "policy_id": "config-from-map",
-        "version": "1.0",
-        "name": "Mapped",
-        "category": "mil",
-        "eligible_issuer_categories": ("cooperative",),
-        "acceptable_settlement_rules": ("delivery_vs_payment",),
-    })
+    config = engine._coerce_config(
+        {
+            "policy_id": "config-from-map",
+            "version": "1.0",
+            "name": "Mapped",
+            "category": "mil",
+            "eligible_issuer_categories": ("cooperative",),
+            "acceptable_settlement_rules": ("delivery_vs_payment",),
+        }
+    )
     assert config.policy_id == "config-from-map"
 
     asset = make_asset(valuation_date=date(2024, 1, 1))
@@ -366,11 +477,29 @@ def test_mil_engine_handles_exception_and_branch_paths() -> None:
         "capacity_by_maturity_band": {},
         "capacity_by_classification": {},
     }
-    engine._accumulate_capacity(capacity_values, make_asset(), Decimal("12"), MilEligibilityStatus.CONDITIONALLY_ELIGIBLE, {"evaluation_date": date(2024, 1, 10)})
+    engine._accumulate_capacity(
+        capacity_values,
+        make_asset(),
+        Decimal("12"),
+        MilEligibilityStatus.CONDITIONALLY_ELIGIBLE,
+        {"evaluation_date": date(2024, 1, 10)},
+    )
     assert capacity_values["conditional_adjusted_collateral_value"] == Decimal("12")
     assert capacity_values["capacity_by_maturity_band"]["medium"] == Decimal("12")
 
-    assert engine._resolve_haircut(make_asset(issuer_category="bank"), make_config()) == Decimal("0")
-    assert engine._maturity_band(make_asset(maturity_date=date(2025, 12, 31)), {"evaluation_date": date(2024, 1, 10)}) == "long"
+    assert engine._resolve_haircut(make_asset(issuer_category="bank"), make_config()) == Decimal(
+        "0"
+    )
+    assert (
+        engine._maturity_band(
+            make_asset(maturity_date=date(2025, 12, 31)), {"evaluation_date": date(2024, 1, 10)}
+        )
+        == "long"
+    )
     assert engine._coerce_date_from_context({}) == date.today()
-    assert engine._maturity_band(make_asset(maturity_date=date(2024, 4, 1)), {"evaluation_date": date(2024, 1, 10)}) == "short"
+    assert (
+        engine._maturity_band(
+            make_asset(maturity_date=date(2024, 4, 1)), {"evaluation_date": date(2024, 1, 10)}
+        )
+        == "short"
+    )

@@ -49,27 +49,57 @@ class DecisionConfig:
             enabled=bool(mapping.get("enabled", True)),
             effective_date=cls._parse_date(mapping.get("effective_date")),
             expiration_date=cls._parse_date(mapping.get("expiration_date")),
-            enabled_recommendation_types=tuple(str(item) for item in (mapping.get("enabled_recommendation_types") or ())),
-            recommendation_thresholds={str(key): Decimal(str(value)) for key, value in (mapping.get("recommendation_thresholds") or {}).items()},
-            priority_thresholds={str(key): Decimal(str(value)) for key, value in (mapping.get("priority_thresholds") or {}).items()},
-            factor_weights={str(key): Decimal(str(value)) for key, value in (mapping.get("factor_weights") or {}).items()},
-            policy_severity_mappings={str(key): str(value) for key, value in (mapping.get("policy_severity_mappings") or {}).items()},
-            confidence_bands={str(key): Decimal(str(value)) for key, value in (mapping.get("confidence_bands") or {}).items()},
-            materiality_thresholds={str(key): Decimal(str(value)) for key, value in (mapping.get("materiality_thresholds") or {}).items()},
-            conflicting_signal_resolution=str(mapping.get("conflicting_signal_resolution", "priority")),
+            enabled_recommendation_types=tuple(
+                str(item) for item in (mapping.get("enabled_recommendation_types") or ())
+            ),
+            recommendation_thresholds={
+                str(key): Decimal(str(value))
+                for key, value in (mapping.get("recommendation_thresholds") or {}).items()
+            },
+            priority_thresholds={
+                str(key): Decimal(str(value))
+                for key, value in (mapping.get("priority_thresholds") or {}).items()
+            },
+            factor_weights={
+                str(key): Decimal(str(value))
+                for key, value in (mapping.get("factor_weights") or {}).items()
+            },
+            policy_severity_mappings={
+                str(key): str(value)
+                for key, value in (mapping.get("policy_severity_mappings") or {}).items()
+            },
+            confidence_bands={
+                str(key): Decimal(str(value))
+                for key, value in (mapping.get("confidence_bands") or {}).items()
+            },
+            materiality_thresholds={
+                str(key): Decimal(str(value))
+                for key, value in (mapping.get("materiality_thresholds") or {}).items()
+            },
+            conflicting_signal_resolution=str(
+                mapping.get("conflicting_signal_resolution", "priority")
+            ),
             duplicate_handling=str(mapping.get("duplicate_handling", "dedupe")),
             partial_input_behavior=str(mapping.get("partial_input_behavior", "review")),
             report_ordering=tuple(str(item) for item in (mapping.get("report_ordering") or ())),
             policy_references=tuple(str(item) for item in (mapping.get("policy_references") or ())),
-            recommended_actions=tuple(str(item) for item in (mapping.get("recommended_actions") or ())),
+            recommended_actions=tuple(
+                str(item) for item in (mapping.get("recommended_actions") or ())
+            ),
             require_policy_references=bool(mapping.get("require_policy_references", False)),
         )
 
     def _validate(self) -> None:
         if not self.policy_id or not self.version or not self.name:
             raise TreasuryDecisionConfigurationError("Policy id, version, and name are required")
-        if self.effective_date and self.expiration_date and self.expiration_date < self.effective_date:
-            raise TreasuryDecisionConfigurationError("Expiration date cannot precede effective date")
+        if (
+            self.effective_date
+            and self.expiration_date
+            and self.expiration_date < self.effective_date
+        ):
+            raise TreasuryDecisionConfigurationError(
+                "Expiration date cannot precede effective date"
+            )
         if self.effective_date and self.expiration_date and date.today() < self.effective_date:
             raise TreasuryDecisionConfigurationError("Configuration is not yet effective")
         if self.effective_date and self.expiration_date and date.today() > self.expiration_date:
@@ -79,9 +109,17 @@ class DecisionConfig:
                 raise TreasuryDecisionConfigurationError("Threshold values cannot be negative")
         for key, value in self.materiality_thresholds.items():
             if value < 0 or value > Decimal("1"):
-                raise TreasuryDecisionConfigurationError("Materiality thresholds must be between 0 and 100%")
-        if self.priority_thresholds.get("warning") and self.priority_thresholds.get("blocking") and self.priority_thresholds["warning"] > self.priority_thresholds["blocking"]:
-            raise TreasuryDecisionConfigurationError("Warning threshold cannot exceed blocking threshold")
+                raise TreasuryDecisionConfigurationError(
+                    "Materiality thresholds must be between 0 and 100%"
+                )
+        if (
+            self.priority_thresholds.get("warning")
+            and self.priority_thresholds.get("blocking")
+            and self.priority_thresholds["warning"] > self.priority_thresholds["blocking"]
+        ):
+            raise TreasuryDecisionConfigurationError(
+                "Warning threshold cannot exceed blocking threshold"
+            )
         if self.require_policy_references and not self.policy_references:
             raise TreasuryDecisionConfigurationError("Policy references are required")
         if self.conflicting_signal_resolution not in {"priority", "explain"}:
@@ -91,7 +129,9 @@ class DecisionConfig:
         if self.duplicate_handling not in {"dedupe", "allow"}:
             raise TreasuryDecisionConfigurationError("Duplicate handling mode is invalid")
         if len(set(self.enabled_recommendation_types)) != len(self.enabled_recommendation_types):
-            raise TreasuryDecisionConfigurationError("Duplicate recommendation types are not allowed")
+            raise TreasuryDecisionConfigurationError(
+                "Duplicate recommendation types are not allowed"
+            )
 
     @classmethod
     def _parse_date(cls, value: Any) -> date | None:

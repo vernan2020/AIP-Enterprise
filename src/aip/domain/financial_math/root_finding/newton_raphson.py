@@ -17,7 +17,9 @@ def newton_raphson_solve(
 ) -> ConvergenceResult:
     value = function(initial_guess)
     if abs(value) <= tolerance:
-        return ConvergenceResult(root=initial_guess, iterations=0, converged=True, residual=abs(value), method="newton")
+        return ConvergenceResult(
+            root=initial_guess, iterations=0, converged=True, residual=abs(value), method="newton"
+        )
     for iteration in range(1, max_iterations + 1):
         derivative_value = derivative(initial_guess)
         if derivative_value == 0:
@@ -25,7 +27,13 @@ def newton_raphson_solve(
         next_guess = initial_guess - value / derivative_value
         next_value = function(next_guess)
         if abs(next_value) <= tolerance:
-            return ConvergenceResult(root=next_guess, iterations=iteration, converged=True, residual=abs(next_value), method="newton")
+            return ConvergenceResult(
+                root=next_guess,
+                iterations=iteration,
+                converged=True,
+                residual=abs(next_value),
+                method="newton",
+            )
         initial_guess = next_guess
         value = next_value
     raise ConvergenceError("Newton-Raphson did not converge")

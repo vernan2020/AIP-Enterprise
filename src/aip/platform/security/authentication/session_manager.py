@@ -2,10 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
-from typing import Any
 
 from aip.platform.security.authentication.token import Token
-from aip.platform.security.exceptions.security_exceptions import AuthenticationError, SessionError
+from aip.platform.security.exceptions.security_exceptions import SessionError
 from aip.platform.security.identity.principal import Principal
 
 
@@ -32,9 +31,19 @@ class SessionManager:
         self._sessions: dict[str, Session] = {}
 
     def create_session(self, principal: Principal, token: Token | None = None) -> Session:
-        session_token = token or Token(value=f"token-{principal.identity.subject}", expires_at=datetime.now(timezone.utc) + timedelta(seconds=self._ttl_seconds))
-        expires_at = session_token.expires_at or datetime.now(timezone.utc) + timedelta(seconds=self._ttl_seconds)
-        session = Session(session_id=f"session-{principal.identity.subject}", principal=principal, token=session_token, expires_at=expires_at)
+        session_token = token or Token(
+            value=f"token-{principal.identity.subject}",
+            expires_at=datetime.now(timezone.utc) + timedelta(seconds=self._ttl_seconds),
+        )
+        expires_at = session_token.expires_at or datetime.now(timezone.utc) + timedelta(
+            seconds=self._ttl_seconds
+        )
+        session = Session(
+            session_id=f"session-{principal.identity.subject}",
+            principal=principal,
+            token=session_token,
+            expires_at=expires_at,
+        )
         self._sessions[session.session_id] = session
         return session
 

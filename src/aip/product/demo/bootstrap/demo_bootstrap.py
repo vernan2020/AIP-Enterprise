@@ -32,7 +32,9 @@ class DemoBootstrap:
     def factory(self) -> DemoApplicationFactory:
         return self._factory
 
-    def bootstrap(self, correlation_id: str | None = None) -> tuple[DemoApplicationFactory, list[StartupStatus]]:
+    def bootstrap(
+        self, correlation_id: str | None = None
+    ) -> tuple[DemoApplicationFactory, list[StartupStatus]]:
         correlation = correlation_id or f"demo-{int(time.time())}"
         steps: list[StartupStatus] = []
         for component_name, action in [

@@ -9,7 +9,9 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
 
-from aip.product.configured.adapters.configured_portfolio_provider import ConfiguredPortfolioProvider
+from aip.product.configured.adapters.configured_portfolio_provider import (
+    ConfiguredPortfolioProvider,
+)
 from aip.product.configured.configuration.configured_source_config import (
     BCCRSourceConfig,
     ConfiguredSourceConfig,
@@ -38,9 +40,13 @@ def _build_config() -> tuple[DemoConfig, ConfiguredSourceConfig]:
             enabled=bool(source_config_payload.get("sql_server", {}).get("enabled", False)),
             server=source_config_payload.get("sql_server", {}).get("server"),
             database=source_config_payload.get("sql_server", {}).get("database"),
-            authentication_mode=source_config_payload.get("sql_server", {}).get("authentication_mode", "windows"),
+            authentication_mode=source_config_payload.get("sql_server", {}).get(
+                "authentication_mode", "windows"
+            ),
             view=source_config_payload.get("sql_server", {}).get("view", "VISTA_1514_1515_1516"),
-            scenario_filters=tuple(source_config_payload.get("sql_server", {}).get("scenario_filters", ())),
+            scenario_filters=tuple(
+                source_config_payload.get("sql_server", {}).get("scenario_filters", ())
+            ),
         ),
         folder_watch=FolderWatchSourceConfig(
             enabled=bool(source_config_payload.get("folder_watch", {}).get("enabled", False)),
@@ -48,8 +54,12 @@ def _build_config() -> tuple[DemoConfig, ConfiguredSourceConfig]:
             icl_root=source_config_payload.get("folder_watch", {}).get("icl_root"),
             curves_path=source_config_payload.get("folder_watch", {}).get("curves_path"),
             vector_path=source_config_payload.get("folder_watch", {}).get("vector_path"),
-            portfolio_master_pattern=source_config_payload.get("folder_watch", {}).get("portfolio_master_pattern", r"Inversiones\{year}\maestro\{month}\*.xls*"),
-            icl_file_pattern=source_config_payload.get("folder_watch", {}).get("icl_file_pattern", r"ICL\Reportes ICL\*"),
+            portfolio_master_pattern=source_config_payload.get("folder_watch", {}).get(
+                "portfolio_master_pattern", r"Inversiones\{year}\maestro\{month}\*.xls*"
+            ),
+            icl_file_pattern=source_config_payload.get("folder_watch", {}).get(
+                "icl_file_pattern", r"ICL\Reportes ICL\*"
+            ),
         ),
         curves=CurvesSourceConfig(
             enabled=bool(source_config_payload.get("curves", {}).get("enabled", False)),
@@ -60,20 +70,28 @@ def _build_config() -> tuple[DemoConfig, ConfiguredSourceConfig]:
             enabled=bool(source_config_payload.get("vector", {}).get("enabled", False)),
             path=source_config_payload.get("vector", {}).get("path"),
             root=source_config_payload.get("vector", {}).get("root"),
-            directory_aliases=tuple(source_config_payload.get("vector", {}).get("directory_aliases", ())),
+            directory_aliases=tuple(
+                source_config_payload.get("vector", {}).get("directory_aliases", ())
+            ),
             file_pattern=source_config_payload.get("vector", {}).get("file_pattern"),
-            supported_extensions=tuple(source_config_payload.get("vector", {}).get("supported_extensions", ())),
+            supported_extensions=tuple(
+                source_config_payload.get("vector", {}).get("supported_extensions", ())
+            ),
         ),
         bccr=BCCRSourceConfig(
             enabled=bool(source_config_payload.get("bccr", {}).get("enabled", False)),
             base_url=source_config_payload.get("bccr", {}).get("base_url"),
-            timeout_seconds=float(source_config_payload.get("bccr", {}).get("timeout_seconds", 30.0)),
+            timeout_seconds=float(
+                source_config_payload.get("bccr", {}).get("timeout_seconds", 30.0)
+            ),
             retries=int(source_config_payload.get("bccr", {}).get("retries", 3)),
             cache_enabled=bool(source_config_payload.get("bccr", {}).get("cache_enabled", True)),
         ),
         diagnostic_mode=bool(source_config_payload.get("diagnostic_mode", False)),
         metadata={
-            "allow_prior_source_date": bool(source_config_payload.get("allow_prior_source_date", False)),
+            "allow_prior_source_date": bool(
+                source_config_payload.get("allow_prior_source_date", False)
+            ),
             "data_cutoff_date": source_config_payload.get("data_cutoff_date"),
         },
     )
@@ -101,7 +119,9 @@ def _coerce_decimal(value: Any) -> Decimal:
 def _format_decimal(value: Decimal | None, *, decimals: int = 2) -> str:
     if value is None:
         return ""
-    return format(value.quantize(Decimal("1" if decimals == 0 else f"1.{'0' * decimals}")), f",.{decimals}f")
+    return format(
+        value.quantize(Decimal("1" if decimals == 0 else f"1.{'0' * decimals}")), f",.{decimals}f"
+    )
 
 
 def _normalize_classification(value: str | None) -> str:
@@ -129,7 +149,9 @@ def _resolve_position_value(position: dict[str, Any], *keys: str) -> Any:
     if not isinstance(source_values, dict):
         return None
 
-    normalized_source_values = {_normalize_lookup_key(key): value for key, value in source_values.items()}
+    normalized_source_values = {
+        _normalize_lookup_key(key): value for key, value in source_values.items()
+    }
     for key in keys:
         normalized_key = _normalize_lookup_key(key)
         if normalized_key in normalized_source_values:
@@ -161,8 +183,12 @@ def _classify_rate_source(position: dict[str, Any]) -> tuple[str, Decimal | None
         is_excluded = True
         exclusion_reason = "closed_position"
 
-    master_tir = _resolve_position_value(position, "portfolio_yield", "yield_value", "master_tir", "tir")
-    facial_rate = _resolve_position_value(position, "nominal_rate", "facial_rate", "rate", "tasa nominal")
+    master_tir = _resolve_position_value(
+        position, "portfolio_yield", "yield_value", "master_tir", "tir"
+    )
+    facial_rate = _resolve_position_value(
+        position, "nominal_rate", "facial_rate", "rate", "tasa nominal"
+    )
     master_tir_value = _coerce_decimal(master_tir)
     facial_rate_value = _coerce_decimal(facial_rate)
 
@@ -184,15 +210,21 @@ def _classify_rate_source(position: dict[str, Any]) -> tuple[str, Decimal | None
         rate_source = "MISSING_RATE_REVIEW"
         rate_detail = "missing_rate"
 
-    if rate_source in {"MASTER_TIR", "FACIAL_RATE_FALLBACK"} and _is_implausible_rate(effective_rate):
+    if rate_source in {"MASTER_TIR", "FACIAL_RATE_FALLBACK"} and _is_implausible_rate(
+        effective_rate
+    ):
         rate_source = "MISSING_RATE_REVIEW"
         rate_detail = "implausible_rate"
     return rate_source, effective_rate, rate_detail, exclusion_reason, classification
 
 
-def _read_master_positions(master_path: str | Path, *, cutoff_date: date, provider: ConfiguredPortfolioProvider) -> list[dict[str, Any]]:
+def _read_master_positions(
+    master_path: str | Path, *, cutoff_date: date, provider: ConfiguredPortfolioProvider
+) -> list[dict[str, Any]]:
     reader = InstitutionalPortfolioMasterReader()
-    read_result = reader.read(master_path, valuation_date_override=cutoff_date, diagnostic_mode=True)
+    read_result = reader.read(
+        master_path, valuation_date_override=cutoff_date, diagnostic_mode=True
+    )
     positions: list[dict[str, Any]] = []
     for raw_position in read_result.normalized_positions:
         source_values = raw_position.get("source_values", {}) or {}
@@ -202,7 +234,9 @@ def _read_master_positions(master_path: str | Path, *, cutoff_date: date, provid
             "series": raw_position.get("series", ""),
             "product_code": raw_position.get("product_code", ""),
             "currency": str(raw_position.get("currency", "USD")).upper(),
-            "nominal": float(raw_position.get("traded_balance") or raw_position.get("principal_balance") or 0.0),
+            "nominal": float(
+                raw_position.get("traded_balance") or raw_position.get("principal_balance") or 0.0
+            ),
             "market_value": float(raw_position.get("market_value", 0.0) or 0.0),
             "book_value": float(raw_position.get("book_value", 0.0) or 0.0),
             "yield_value": float(raw_position.get("portfolio_yield", 0.0) or 0.0),
@@ -218,12 +252,16 @@ def _read_master_positions(master_path: str | Path, *, cutoff_date: date, provid
             "nominal_rate": float(raw_position.get("nominal_rate", 0.0) or 0.0),
             "liquidity_reserve_flag": raw_position.get("liquidity_reserve_flag", ""),
         }
-        payload_position["source_values"] = {str(key): value for key, value in source_values.items()}
+        payload_position["source_values"] = {
+            str(key): value for key, value in source_values.items()
+        }
         positions.append(payload_position)
     return positions
 
 
-def _read_vector_records(vector_path: str | Path, *, cutoff_date: date, provider: ConfiguredPortfolioProvider) -> list[dict[str, Any]]:
+def _read_vector_records(
+    vector_path: str | Path, *, cutoff_date: date, provider: ConfiguredPortfolioProvider
+) -> list[dict[str, Any]]:
     reader = InstitutionalPiPCAVectorReader()
     read_result = reader.read(vector_path, source_cutoff=cutoff_date, diagnostic_mode=True)
     return [provider._normalize_vector_record(record) for record in read_result.records]
@@ -233,11 +271,19 @@ def _build_tir_rows(positions: list[dict[str, Any]]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for position in positions:
         classification = str(position.get("classification", "") or "")
-        weight_value = _coerce_decimal(position.get("market_value_crc") or position.get("market_value") or position.get("book_value"))
+        weight_value = _coerce_decimal(
+            position.get("market_value_crc")
+            or position.get("market_value")
+            or position.get("book_value")
+        )
 
         rate_source, effective_rate, _, exclusion_reason, _ = _classify_rate_source(position)
-        master_tir = _resolve_position_value(position, "portfolio_yield", "yield_value", "master_tir", "tir")
-        facial_rate = _resolve_position_value(position, "nominal_rate", "facial_rate", "rate", "tasa nominal")
+        master_tir = _resolve_position_value(
+            position, "portfolio_yield", "yield_value", "master_tir", "tir"
+        )
+        facial_rate = _resolve_position_value(
+            position, "nominal_rate", "facial_rate", "rate", "tasa nominal"
+        )
         master_tir_value = _coerce_decimal(master_tir)
         facial_rate_value = _coerce_decimal(facial_rate)
 
@@ -254,8 +300,15 @@ def _build_tir_rows(positions: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "facial_rate": facial_rate_value,
                 "effective_rate": effective_rate,
                 "rate_source": rate_source,
-                "market_value_crc": _coerce_decimal(position.get("market_value_crc") or position.get("market_value")),
-                "weighted_rate_contribution": effective_rate * weight_value if rate_source in {"MASTER_TIR", "FACIAL_RATE_FALLBACK"} and effective_rate is not None else Decimal("0"),
+                "market_value_crc": _coerce_decimal(
+                    position.get("market_value_crc") or position.get("market_value")
+                ),
+                "weighted_rate_contribution": (
+                    effective_rate * weight_value
+                    if rate_source in {"MASTER_TIR", "FACIAL_RATE_FALLBACK"}
+                    and effective_rate is not None
+                    else Decimal("0")
+                ),
                 "included_in_portfolio_tir": rate_source in {"MASTER_TIR", "FACIAL_RATE_FALLBACK"},
                 "exclusion_reason": exclusion_reason,
             }
@@ -271,8 +324,22 @@ def _print_rate_bucket(label: str, rows: list[dict[str, Any]], *, rate_source: s
         print("  CRC weight: 0.00")
         print("  weighted rate: 0.00")
         return
-    total_weight = sum((_coerce_decimal(row.get("market_value_crc")) for row in bucket_rows), Decimal("0"))
-    weighted_rate = sum((_coerce_decimal(row.get("effective_rate")) * _coerce_decimal(row.get("market_value_crc")) for row in bucket_rows), Decimal("0")) / total_weight if total_weight else Decimal("0")
+    total_weight = sum(
+        (_coerce_decimal(row.get("market_value_crc")) for row in bucket_rows), Decimal("0")
+    )
+    weighted_rate = (
+        sum(
+            (
+                _coerce_decimal(row.get("effective_rate"))
+                * _coerce_decimal(row.get("market_value_crc"))
+                for row in bucket_rows
+            ),
+            Decimal("0"),
+        )
+        / total_weight
+        if total_weight
+        else Decimal("0")
+    )
     print(f"{label}")
     print(f"  positions: {len(bucket_rows)}")
     print(f"  CRC weight: {_format_decimal(total_weight)}")
@@ -281,12 +348,20 @@ def _print_rate_bucket(label: str, rows: list[dict[str, Any]], *, rate_source: s
 
 def _print_excluded_summary(rows: list[dict[str, Any]]) -> None:
     excluded_rows = [row for row in rows if row.get("rate_source") == "EXCLUDED"]
-    total_weight = sum((_coerce_decimal(row.get("market_value_crc")) for row in excluded_rows), Decimal("0"))
+    total_weight = sum(
+        (_coerce_decimal(row.get("market_value_crc")) for row in excluded_rows), Decimal("0")
+    )
     print("EXCLUDED")
     print(f"  positions: {len(excluded_rows)}")
     print(f"  CRC weight: {_format_decimal(total_weight)}")
     if excluded_rows:
-        reasons = sorted({row.get("exclusion_reason", "") for row in excluded_rows if row.get("exclusion_reason")})
+        reasons = sorted(
+            {
+                row.get("exclusion_reason", "")
+                for row in excluded_rows
+                if row.get("exclusion_reason")
+            }
+        )
         print("  reasons: " + ", ".join(reasons))
 
 
@@ -315,9 +390,13 @@ def _print_rate_quality_diagnostics(rows: list[dict[str, Any]]) -> None:
         if master_tir is not None and facial_rate is not None:
             master_value = _coerce_decimal(master_tir)
             facial_value = _coerce_decimal(facial_rate)
-            if master_value != Decimal("0") and facial_value != Decimal("0") and (
-                (abs(master_value) < Decimal("1") and abs(facial_value) > Decimal("1"))
-                or (abs(facial_value) < Decimal("1") and abs(master_value) > Decimal("1"))
+            if (
+                master_value != Decimal("0")
+                and facial_value != Decimal("0")
+                and (
+                    (abs(master_value) < Decimal("1") and abs(facial_value) > Decimal("1"))
+                    or (abs(facial_value) < Decimal("1") and abs(master_value) > Decimal("1"))
+                )
             ):
                 summary["inconsistent_rate_scale"] += 1
     print("RATE QUALITY DIAGNOSTICS")
@@ -348,17 +427,36 @@ def _write_csv(rows: list[dict[str, Any]], output_path: Path) -> None:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
         for row in rows:
-            writer.writerow({
-                key: (
-                    ""
-                    if key in {"master_tir", "facial_rate", "effective_rate", "market_value_crc", "weighted_rate_contribution"} and value in {None, ""}
-                    else _format_decimal(_coerce_decimal(value))
-                    if key in {"master_tir", "facial_rate", "effective_rate", "market_value_crc", "weighted_rate_contribution"}
-                    else value
-                )
-                for key, value in row.items()
-                if key in fieldnames
-            })
+            writer.writerow(
+                {
+                    key: (
+                        ""
+                        if key
+                        in {
+                            "master_tir",
+                            "facial_rate",
+                            "effective_rate",
+                            "market_value_crc",
+                            "weighted_rate_contribution",
+                        }
+                        and value in {None, ""}
+                        else (
+                            _format_decimal(_coerce_decimal(value))
+                            if key
+                            in {
+                                "master_tir",
+                                "facial_rate",
+                                "effective_rate",
+                                "market_value_crc",
+                                "weighted_rate_contribution",
+                            }
+                            else value
+                        )
+                    )
+                    for key, value in row.items()
+                    if key in fieldnames
+                }
+            )
 
 
 def _print_report(rows: list[dict[str, Any]], *, output_path: Path, cutoff_date: date) -> None:
@@ -377,17 +475,35 @@ def _print_report(rows: list[dict[str, Any]], *, output_path: Path, cutoff_date:
     print()
     print("MISSING RATE REVIEW")
     missing_rows = [row for row in rows if row.get("rate_source") == "MISSING_RATE_REVIEW"]
-    total_weight = sum((_coerce_decimal(row.get("market_value_crc")) for row in missing_rows), Decimal("0"))
+    total_weight = sum(
+        (_coerce_decimal(row.get("market_value_crc")) for row in missing_rows), Decimal("0")
+    )
     print(f"  positions: {len(missing_rows)}")
     print(f"  CRC weight: {_format_decimal(total_weight)}")
     for row in missing_rows[:20]:
-        print(f"    {row.get('issuer')} | {row.get('classification')} | {row.get('isin')} | crc={_format_decimal(_coerce_decimal(row.get('market_value_crc')))}")
+        print(
+            f"    {row.get('issuer')} | {row.get('classification')} | {row.get('isin')} | crc={_format_decimal(_coerce_decimal(row.get('market_value_crc')))}"
+        )
     print()
     _print_excluded_summary(rows)
     print()
     included_rows = [row for row in rows if row.get("included_in_portfolio_tir")]
-    total_weight = sum((_coerce_decimal(row.get("market_value_crc")) for row in included_rows), Decimal("0"))
-    weighted_effective_tir = sum((_coerce_decimal(row.get("effective_rate")) * _coerce_decimal(row.get("market_value_crc")) for row in included_rows), Decimal("0")) / total_weight if total_weight else Decimal("0")
+    total_weight = sum(
+        (_coerce_decimal(row.get("market_value_crc")) for row in included_rows), Decimal("0")
+    )
+    weighted_effective_tir = (
+        sum(
+            (
+                _coerce_decimal(row.get("effective_rate"))
+                * _coerce_decimal(row.get("market_value_crc"))
+                for row in included_rows
+            ),
+            Decimal("0"),
+        )
+        / total_weight
+        if total_weight
+        else Decimal("0")
+    )
     print("COMBINED PORTFOLIO TIR")
     print(f"  included positions: {len(included_rows)}")
     print(f"  CRC denominator: {_format_decimal(total_weight)}")
@@ -396,9 +512,13 @@ def _print_report(rows: list[dict[str, Any]], *, output_path: Path, cutoff_date:
     print("BY CURRENCY")
     by_currency: dict[str, list[dict[str, Any]]] = {}
     for row in included_rows:
-        by_currency.setdefault(str(row.get("currency", "")).strip().upper() or "UNKNOWN", []).append(row)
+        by_currency.setdefault(
+            str(row.get("currency", "")).strip().upper() or "UNKNOWN", []
+        ).append(row)
     for currency, bucket_rows in sorted(by_currency.items()):
-        bucket_weight = sum((_coerce_decimal(row.get("market_value_crc")) for row in bucket_rows), Decimal("0"))
+        bucket_weight = sum(
+            (_coerce_decimal(row.get("market_value_crc")) for row in bucket_rows), Decimal("0")
+        )
         print(f"  {currency}: positions={len(bucket_rows)} weight={_format_decimal(bucket_weight)}")
     print()
     print("BY ISSUER")
@@ -406,7 +526,9 @@ def _print_report(rows: list[dict[str, Any]], *, output_path: Path, cutoff_date:
     for row in included_rows:
         by_issuer.setdefault(str(row.get("issuer", "")).strip() or "UNKNOWN", []).append(row)
     for issuer, bucket_rows in sorted(by_issuer.items()):
-        bucket_weight = sum((_coerce_decimal(row.get("market_value_crc")) for row in bucket_rows), Decimal("0"))
+        bucket_weight = sum(
+            (_coerce_decimal(row.get("market_value_crc")) for row in bucket_rows), Decimal("0")
+        )
         print(f"  {issuer}: positions={len(bucket_rows)} weight={_format_decimal(bucket_weight)}")
     print()
     print("BY PRODUCT")
@@ -414,20 +536,32 @@ def _print_report(rows: list[dict[str, Any]], *, output_path: Path, cutoff_date:
     for row in included_rows:
         by_product.setdefault(str(row.get("product_code", "")).strip() or "UNKNOWN", []).append(row)
     for product_code, bucket_rows in sorted(by_product.items()):
-        bucket_weight = sum((_coerce_decimal(row.get("market_value_crc")) for row in bucket_rows), Decimal("0"))
-        print(f"  {product_code}: positions={len(bucket_rows)} weight={_format_decimal(bucket_weight)}")
+        bucket_weight = sum(
+            (_coerce_decimal(row.get("market_value_crc")) for row in bucket_rows), Decimal("0")
+        )
+        print(
+            f"  {product_code}: positions={len(bucket_rows)} weight={_format_decimal(bucket_weight)}"
+        )
     print()
     print("BY CLASSIFICATION")
     by_classification: dict[str, list[dict[str, Any]]] = {}
     for row in included_rows:
-        by_classification.setdefault(str(row.get("classification", "")).strip() or "UNKNOWN", []).append(row)
+        by_classification.setdefault(
+            str(row.get("classification", "")).strip() or "UNKNOWN", []
+        ).append(row)
     for classification, bucket_rows in sorted(by_classification.items()):
-        bucket_weight = sum((_coerce_decimal(row.get("market_value_crc")) for row in bucket_rows), Decimal("0"))
-        print(f"  {classification}: positions={len(bucket_rows)} weight={_format_decimal(bucket_weight)}")
+        bucket_weight = sum(
+            (_coerce_decimal(row.get("market_value_crc")) for row in bucket_rows), Decimal("0")
+        )
+        print(
+            f"  {classification}: positions={len(bucket_rows)} weight={_format_decimal(bucket_weight)}"
+        )
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Generate a read-only TIR reconciliation diagnostic")
+    parser = argparse.ArgumentParser(
+        description="Generate a read-only TIR reconciliation diagnostic"
+    )
     parser.add_argument("--output", default="portfolio_tir.csv", help="CSV output path")
     parser.add_argument("--master-file", help="Path to the portfolio master workbook")
     parser.add_argument("--vector-file", help="Path to the PiPCA vector file")
@@ -443,22 +577,34 @@ def main(argv: list[str] | None = None) -> int:
         print(f"TIR RECONCILIATION DIAGNOSTIC\nERROR: {exc}")
         return 2
 
-    cutoff_date = date.fromisoformat(args.cutoff_date) if args.cutoff_date else config.data_cutoff_date
+    cutoff_date = (
+        date.fromisoformat(args.cutoff_date) if args.cutoff_date else config.data_cutoff_date
+    )
     provider = ConfiguredPortfolioProvider(config, source_config)
 
     if args.master_file and args.vector_file:
-        positions = _read_master_positions(args.master_file, cutoff_date=cutoff_date, provider=provider)
-        vector_records = _read_vector_records(args.vector_file, cutoff_date=cutoff_date, provider=provider)
+        positions = _read_master_positions(
+            args.master_file, cutoff_date=cutoff_date, provider=provider
+        )
+        vector_records = _read_vector_records(
+            args.vector_file, cutoff_date=cutoff_date, provider=provider
+        )
     else:
         payload = provider.get_portfolio()
-        positions = [dict(position) for position in payload.get("positions", []) if isinstance(position, dict)]
+        positions = [
+            dict(position)
+            for position in payload.get("positions", [])
+            if isinstance(position, dict)
+        ]
         vector_records = []
         for record in payload.get("price_vector", {}).get("records", []):
             if isinstance(record, dict):
                 vector_records.append(dict(record))
 
     service = InstitutionalPortfolioMatchingService()
-    enriched_positions, _ = service.enrich_positions(positions, vector_records, diagnostic_mode=True)
+    enriched_positions, _ = service.enrich_positions(
+        positions, vector_records, diagnostic_mode=True
+    )
     rows = _build_tir_rows(enriched_positions)
 
     output_path = Path(args.output).expanduser().resolve()

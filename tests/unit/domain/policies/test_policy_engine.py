@@ -238,7 +238,13 @@ def test_disabled_policies_return_not_applicable() -> None:
 
 
 def test_severity_ordering_is_deterministic() -> None:
-    severities = [PolicySeverity.CRITICAL, PolicySeverity.HIGH, PolicySeverity.MEDIUM, PolicySeverity.LOW, PolicySeverity.INFO]
+    severities = [
+        PolicySeverity.CRITICAL,
+        PolicySeverity.HIGH,
+        PolicySeverity.MEDIUM,
+        PolicySeverity.LOW,
+        PolicySeverity.INFO,
+    ]
     ordered = sorted(severities, key=lambda severity: severity.rank())
     assert ordered[0] is PolicySeverity.INFO
     assert ordered[-1] is PolicySeverity.CRITICAL

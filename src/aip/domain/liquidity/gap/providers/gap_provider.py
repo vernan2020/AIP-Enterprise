@@ -9,5 +9,4 @@ from aip.domain.liquidity.gap.models.gap_request import GapRequest
 class GapProvider(Protocol):
     """Protocol for providers that can resolve projection inputs for gaps."""
 
-    def get_projection_request(self, request: GapRequest) -> ProjectionRequest:
-        ...
+    def get_projection_request(self, request: GapRequest) -> ProjectionRequest: ...

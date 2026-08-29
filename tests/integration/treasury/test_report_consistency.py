@@ -12,7 +12,9 @@ from src.extensions.coopealianza.liquidity.stress.reports.stress_report_builder 
 )
 
 
-def test_report_consistency_aggregates_stress_output_for_reporting(projection_request, stress_config) -> None:
+def test_report_consistency_aggregates_stress_output_for_reporting(
+    projection_request, stress_config
+) -> None:
     projection_result = CashFlowEngine().project(projection_request)
     gap_result = GapEngine().project(
         GapRequest(

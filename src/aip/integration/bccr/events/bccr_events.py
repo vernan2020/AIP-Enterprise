@@ -31,40 +31,86 @@ class BCCREvent:
 
     @classmethod
     def started(cls, connector_name: str, execution_id: str) -> "BCCREvent":
-        return cls(event_type=BCCREventType.STARTED, connector_name=connector_name, execution_id=execution_id)
+        return cls(
+            event_type=BCCREventType.STARTED,
+            connector_name=connector_name,
+            execution_id=execution_id,
+        )
 
     @classmethod
     def completed(cls, connector_name: str, execution_id: str) -> "BCCREvent":
-        return cls(event_type=BCCREventType.COMPLETED, connector_name=connector_name, execution_id=execution_id)
+        return cls(
+            event_type=BCCREventType.COMPLETED,
+            connector_name=connector_name,
+            execution_id=execution_id,
+        )
 
     @classmethod
     def failed(cls, connector_name: str, execution_id: str, error: str) -> "BCCREvent":
-        return cls(event_type=BCCREventType.FAILED, connector_name=connector_name, execution_id=execution_id, details={"error": error})
+        return cls(
+            event_type=BCCREventType.FAILED,
+            connector_name=connector_name,
+            execution_id=execution_id,
+            details={"error": error},
+        )
 
     @classmethod
     def retry_started(cls, connector_name: str, execution_id: str, attempt: int) -> "BCCREvent":
-        return cls(event_type=BCCREventType.RETRY_STARTED, connector_name=connector_name, execution_id=execution_id, details={"attempt": attempt})
+        return cls(
+            event_type=BCCREventType.RETRY_STARTED,
+            connector_name=connector_name,
+            execution_id=execution_id,
+            details={"attempt": attempt},
+        )
 
     @classmethod
     def retry_completed(cls, connector_name: str, execution_id: str, attempt: int) -> "BCCREvent":
-        return cls(event_type=BCCREventType.RETRY_COMPLETED, connector_name=connector_name, execution_id=execution_id, details={"attempt": attempt})
+        return cls(
+            event_type=BCCREventType.RETRY_COMPLETED,
+            connector_name=connector_name,
+            execution_id=execution_id,
+            details={"attempt": attempt},
+        )
 
     @classmethod
     def request_started(cls, connector_name: str, execution_id: str) -> "BCCREvent":
-        return cls(event_type=BCCREventType.REQUEST_STARTED, connector_name=connector_name, execution_id=execution_id)
+        return cls(
+            event_type=BCCREventType.REQUEST_STARTED,
+            connector_name=connector_name,
+            execution_id=execution_id,
+        )
 
     @classmethod
     def request_completed(cls, connector_name: str, execution_id: str) -> "BCCREvent":
-        return cls(event_type=BCCREventType.REQUEST_COMPLETED, connector_name=connector_name, execution_id=execution_id)
+        return cls(
+            event_type=BCCREventType.REQUEST_COMPLETED,
+            connector_name=connector_name,
+            execution_id=execution_id,
+        )
 
     @classmethod
     def request_failed(cls, connector_name: str, execution_id: str, error: str) -> "BCCREvent":
-        return cls(event_type=BCCREventType.REQUEST_FAILED, connector_name=connector_name, execution_id=execution_id, details={"error": error})
+        return cls(
+            event_type=BCCREventType.REQUEST_FAILED,
+            connector_name=connector_name,
+            execution_id=execution_id,
+            details={"error": error},
+        )
 
     @classmethod
     def cache_hit(cls, connector_name: str, execution_id: str) -> "BCCREvent":
-        return cls(event_type=BCCREventType.CACHE_HIT, connector_name=connector_name, execution_id=execution_id, details={"source": "cache"})
+        return cls(
+            event_type=BCCREventType.CACHE_HIT,
+            connector_name=connector_name,
+            execution_id=execution_id,
+            details={"source": "cache"},
+        )
 
     @classmethod
     def cache_miss(cls, connector_name: str, execution_id: str) -> "BCCREvent":
-        return cls(event_type=BCCREventType.CACHE_MISS, connector_name=connector_name, execution_id=execution_id, details={"source": "network"})
+        return cls(
+            event_type=BCCREventType.CACHE_MISS,
+            connector_name=connector_name,
+            execution_id=execution_id,
+            details={"source": "network"},
+        )

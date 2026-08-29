@@ -50,7 +50,15 @@ class MilAsset:
                 raise MilValuationError(f"{name} must be a date")
 
     def _validate(self) -> None:
-        for name in ("position_id", "instrument_id", "isin", "issuer", "currency", "classification", "portfolio_reference"):
+        for name in (
+            "position_id",
+            "instrument_id",
+            "isin",
+            "issuer",
+            "currency",
+            "classification",
+            "portfolio_reference",
+        ):
             value = getattr(self, name)
             if not isinstance(value, str) or not value.strip():
                 raise MilValuationError(f"{name} must be provided")

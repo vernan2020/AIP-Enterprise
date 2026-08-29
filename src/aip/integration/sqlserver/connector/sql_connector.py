@@ -6,14 +6,19 @@ from typing import Any
 from aip.integration.audit.execution_result import ExecutionResult, ExecutionStatus
 from aip.integration.audit.synchronization_log import SynchronizationLog
 from aip.integration.contracts.connector import Connector, ConnectorType
-from aip.integration.events.synchronization_events import IntegrationEventBus, SynchronizationEvent, SynchronizationEventType
+from aip.integration.events.synchronization_events import (
+    IntegrationEventBus,
+    SynchronizationEvent,
+)
 from aip.integration.exceptions.exceptions import IntegrationError
 from aip.integration.sqlserver.configuration.sql_config import SQLServerConfig
-from aip.integration.sqlserver.connector.connection_factory import DefaultSQLServerConnectionFactory, SQLServerConnectionFactory
+from aip.integration.sqlserver.connector.connection_factory import (
+    DefaultSQLServerConnectionFactory,
+    SQLServerConnectionFactory,
+)
 from aip.integration.sqlserver.connector.connection_pool import ConnectionPool
 from aip.integration.sqlserver.contracts.sql_request import SQLRequest
 from aip.integration.sqlserver.driver.driver_adapter import SQLServerDriverAdapter
-from aip.integration.sqlserver.contracts.sql_result import SQLExecutionResult
 from aip.integration.sqlserver.monitoring.sql_health import SQLHealthMonitor
 from aip.integration.sqlserver.synchronization.sql_synchronizer import SQLSynchronizer
 from aip.integration.sqlserver.telemetry.sql_metrics import SQLMetrics
@@ -41,8 +46,12 @@ class SQLServerConnector(Connector):
         driver: SQLServerDriverAdapter | None = None,
     ) -> None:
         self.config = config
-        self.connection_factory = connection_factory or DefaultSQLServerConnectionFactory(config, driver=driver)
-        self.pool = pool or ConnectionPool(factory=self.connection_factory, max_size=config.pool_size)
+        self.connection_factory = connection_factory or DefaultSQLServerConnectionFactory(
+            config, driver=driver
+        )
+        self.pool = pool or ConnectionPool(
+            factory=self.connection_factory, max_size=config.pool_size
+        )
         self.validator = validator or SQLValidator()
         self.synchronizer = synchronizer or SQLSynchronizer(
             pool=self.pool,
@@ -67,7 +76,9 @@ class SQLServerConnector(Connector):
     def health(self) -> bool:
         return self._connected
 
-    def synchronize(self, request: Any, correlation_id: str | None = None, user: str = "system") -> ExecutionResult:
+    def synchronize(
+        self, request: Any, correlation_id: str | None = None, user: str = "system"
+    ) -> ExecutionResult:
         if not self._connected:
             self.connect()
         validation_result = self.validator.validate(request)
@@ -92,7 +103,11 @@ class SQLServerConnector(Connector):
             timestamp=datetime.now(UTC),
             started_at=datetime.now(UTC),
             finished_at=datetime.now(UTC),
-            status=ExecutionStatus.COMPLETED if sql_result.status == ExecutionStatus.COMPLETED else ExecutionStatus.FAILED,
+            status=(
+                ExecutionStatus.COMPLETED
+                if sql_result.status == ExecutionStatus.COMPLETED
+                else ExecutionStatus.FAILED
+            ),
         )
 
     def validate(self, payload: object) -> Any:
@@ -101,7 +116,9 @@ class SQLServerConnector(Connector):
             if not validation_result.ok:
                 raise IntegrationError("Validation failed")
             return validation_result
-        validation_result = self.validator.validate(SQLRequest(query_name="", query_text="", parameters={}))
+        validation_result = self.validator.validate(
+            SQLRequest(query_name="", query_text="", parameters={})
+        )
         if not validation_result.ok:
             raise IntegrationError("Validation failed")
         return validation_result
@@ -110,8 +127,12 @@ class SQLServerConnector(Connector):
         return payload
 
     def audit(self, log: SynchronizationLog) -> None:
-        self._publish(SynchronizationEvent.synchronization_started(self.name, self.name, log.execution_id))
-        self._publish(SynchronizationEvent.synchronization_completed(self.name, self.name, log.execution_id))
+        self._publish(
+            SynchronizationEvent.synchronization_started(self.name, self.name, log.execution_id)
+        )
+        self._publish(
+            SynchronizationEvent.synchronization_completed(self.name, self.name, log.execution_id)
+        )
 
     def _publish(self, event: SynchronizationEvent) -> None:
         if self.event_bus is not None:

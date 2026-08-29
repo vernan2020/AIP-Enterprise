@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+from aip.ui.modules.market.widgets.market_filter_panel import MarketFilterPanel
 from aip.ui.modules.market.widgets.market_metric_card import MarketMetricCard
 from aip.ui.modules.market.widgets.market_status_badge import MarketStatusBadge
-from aip.ui.modules.market.widgets.market_filter_panel import MarketFilterPanel
 
 
 def test_market_widgets_render(qt_app) -> None:

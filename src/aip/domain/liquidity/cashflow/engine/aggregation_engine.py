@@ -18,16 +18,22 @@ class AggregationEngine:
         self._currency = CurrencyAggregation()
         self._scenario = ScenarioAggregation()
 
-    def aggregate(self, cashflows: tuple[ProjectedCashFlow, ...], request: ProjectionRequest) -> dict[str, dict[str, Decimal]]:
+    def aggregate(
+        self, cashflows: tuple[ProjectedCashFlow, ...], request: ProjectionRequest
+    ) -> dict[str, dict[str, Decimal]]:
         if not cashflows:
             raise AggregationError("At least one projected cash flow is required")
         projected_cashflows = tuple(
-            cashflow if isinstance(cashflow, ProjectedCashFlow) else ProjectedCashFlow(
-                payment_date=cashflow.payment_date,
-                amount=cashflow.amount,
-                currency=cashflow.currency,
-                cash_flow_type=cashflow.cash_flow_type,
-                bucket=request.business_unit or "default",
+            (
+                cashflow
+                if isinstance(cashflow, ProjectedCashFlow)
+                else ProjectedCashFlow(
+                    payment_date=cashflow.payment_date,
+                    amount=cashflow.amount,
+                    currency=cashflow.currency,
+                    cash_flow_type=cashflow.cash_flow_type,
+                    bucket=request.business_unit or "default",
+                )
             )
             for cashflow in cashflows
         )
@@ -35,11 +41,21 @@ class AggregationEngine:
             "bucket": self._bucket.aggregate(projected_cashflows),
             "currency": self._currency.aggregate(projected_cashflows),
             "scenario": self._scenario.aggregate(projected_cashflows),
-            "product": {request.product_type or "default": self._sum_cashflows(projected_cashflows)},
-            "counterparty": {request.counterparty or "default": self._sum_cashflows(projected_cashflows)},
-            "instrument": {request.instrument_id or "default": self._sum_cashflows(projected_cashflows)},
-            "portfolio": {request.portfolio_reference or "default": self._sum_cashflows(projected_cashflows)},
-            "business_unit": {request.business_unit or "default": self._sum_cashflows(projected_cashflows)},
+            "product": {
+                request.product_type or "default": self._sum_cashflows(projected_cashflows)
+            },
+            "counterparty": {
+                request.counterparty or "default": self._sum_cashflows(projected_cashflows)
+            },
+            "instrument": {
+                request.instrument_id or "default": self._sum_cashflows(projected_cashflows)
+            },
+            "portfolio": {
+                request.portfolio_reference or "default": self._sum_cashflows(projected_cashflows)
+            },
+            "business_unit": {
+                request.business_unit or "default": self._sum_cashflows(projected_cashflows)
+            },
         }
 
     def _sum_cashflows(self, cashflows: tuple[ProjectedCashFlow, ...]) -> Decimal:

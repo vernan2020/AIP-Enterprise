@@ -80,14 +80,27 @@ def test_cash_flow_validation_and_series_valuation() -> None:
 
 
 def test_compounding_and_equivalent_rates_have_explicit_decimal_semantics() -> None:
-    assert accumulation_factor(Decimal("0.05"), Decimal("1"), compounding="annual") == Decimal("1.05")
-    assert accumulation_factor(Decimal("0.05"), Decimal("1"), compounding="simple") == Decimal("1.05")
-    assert accumulation_factor(Decimal("0.05"), Decimal("1"), compounding="semiannual") == Decimal("1.050625")
-    assert accumulation_factor(Decimal("0.05"), Decimal("1"), compounding="continuous") > Decimal("1")
-    assert discount_factor(Decimal("0.05"), Decimal("1"), compounding="annual") == Decimal("0.9523809523809523809523809524")
+    assert accumulation_factor(Decimal("0.05"), Decimal("1"), compounding="annual") == Decimal(
+        "1.05"
+    )
+    assert accumulation_factor(Decimal("0.05"), Decimal("1"), compounding="simple") == Decimal(
+        "1.05"
+    )
+    assert accumulation_factor(Decimal("0.05"), Decimal("1"), compounding="semiannual") == Decimal(
+        "1.050625"
+    )
+    assert accumulation_factor(Decimal("0.05"), Decimal("1"), compounding="continuous") > Decimal(
+        "1"
+    )
+    assert discount_factor(Decimal("0.05"), Decimal("1"), compounding="annual") == Decimal(
+        "0.9523809523809523809523809524"
+    )
 
     expected_semiannual = Decimal("0.04939015319192")
-    assert equivalent_rate(Decimal("0.05"), from_compounding="annual", to_compounding="semiannual") == expected_semiannual
+    assert (
+        equivalent_rate(Decimal("0.05"), from_compounding="annual", to_compounding="semiannual")
+        == expected_semiannual
+    )
 
     with pytest.raises(InvalidRateError):
         accumulation_factor(Decimal("0.05"), Decimal("1"), compounding="unsupported")
@@ -115,7 +128,9 @@ def test_rate_value_objects_and_day_count_conventions() -> None:
 
 
 def test_root_finding_solvers_cover_valid_and_invalid_cases() -> None:
-    result = bisection_solve(lambda x: x * x - Decimal("4"), Decimal("0"), Decimal("3"), tolerance=Decimal("1e-8"))
+    result = bisection_solve(
+        lambda x: x * x - Decimal("4"), Decimal("0"), Decimal("3"), tolerance=Decimal("1e-8")
+    )
     assert result.converged and result.method == "bisection"
     _assert_close(result.root, Decimal("2"))
     assert result.residual <= Decimal("1e-8")
@@ -123,23 +138,46 @@ def test_root_finding_solvers_cover_valid_and_invalid_cases() -> None:
     with pytest.raises(InvalidBracketError):
         bisection_solve(lambda x: x * x - Decimal("4"), Decimal("0"), Decimal("1"))
     with pytest.raises(InvalidBracketError):
-        bisection_solve(lambda x: x * x - Decimal("2"), Decimal("0"), Decimal("1"), tolerance=Decimal("1e-12"), max_iterations=1)
+        bisection_solve(
+            lambda x: x * x - Decimal("2"),
+            Decimal("0"),
+            Decimal("1"),
+            tolerance=Decimal("1e-12"),
+            max_iterations=1,
+        )
 
     with pytest.raises(ConvergenceError):
-        newton_raphson_solve(lambda x: x * x + Decimal("1"), lambda x: Decimal("2") * x, Decimal("0.5"), tolerance=Decimal("1e-8"))
+        newton_raphson_solve(
+            lambda x: x * x + Decimal("1"),
+            lambda x: Decimal("2") * x,
+            Decimal("0.5"),
+            tolerance=Decimal("1e-8"),
+        )
     with pytest.raises(ConvergenceError):
-        newton_raphson_solve(lambda x: x * x - Decimal("1"), lambda x: Decimal("0"), Decimal("0.5"), tolerance=Decimal("1e-8"))
+        newton_raphson_solve(
+            lambda x: x * x - Decimal("1"),
+            lambda x: Decimal("0"),
+            Decimal("0.5"),
+            tolerance=Decimal("1e-8"),
+        )
 
-    brent_result = brent_solve(lambda x: x * x - Decimal("4"), Decimal("0"), Decimal("3"), tolerance=Decimal("1e-8"))
+    brent_result = brent_solve(
+        lambda x: x * x - Decimal("4"), Decimal("0"), Decimal("3"), tolerance=Decimal("1e-8")
+    )
     assert brent_result.converged and brent_result.method == "brent"
     _assert_close(brent_result.root, Decimal("2"))
 
     with pytest.raises(InvalidBracketError):
-        brent_solve(lambda x: x * x + Decimal("1"), Decimal("0"), Decimal("1"), tolerance=Decimal("1e-8"))
+        brent_solve(
+            lambda x: x * x + Decimal("1"), Decimal("0"), Decimal("1"), tolerance=Decimal("1e-8")
+        )
 
 
 def test_yield_and_irr_handlers() -> None:
-    cash_flows = [CashFlow(date(2024, 1, 1), Decimal("-100"), "USD"), CashFlow(date(2025, 1, 1), Decimal("110"), "USD")]
+    cash_flows = [
+        CashFlow(date(2024, 1, 1), Decimal("-100"), "USD"),
+        CashFlow(date(2025, 1, 1), Decimal("110"), "USD"),
+    ]
     summary = yield_to_maturity(cash_flows, Decimal("100"), settlement_date=date(2024, 1, 1))
     assert summary.converged
     assert summary.rate < Decimal("0")
@@ -155,14 +193,25 @@ def test_yield_and_irr_handlers() -> None:
 
 
 def test_interpolation_and_curve_point_validation() -> None:
-    assert interpolate_linear([Decimal("0"), Decimal("2")], [Decimal("0"), Decimal("4")], Decimal("1")) == Decimal("2")
-    assert interpolate_linear([Decimal("0"), Decimal("2")], [Decimal("0"), Decimal("4")], Decimal("0"), extrapolation="constant") == Decimal("0")
-    assert interpolate_logarithmic([Decimal("1"), Decimal("2")], [Decimal("1"), Decimal("4")], Decimal("1.5")) == Decimal("2")
+    assert interpolate_linear(
+        [Decimal("0"), Decimal("2")], [Decimal("0"), Decimal("4")], Decimal("1")
+    ) == Decimal("2")
+    assert interpolate_linear(
+        [Decimal("0"), Decimal("2")],
+        [Decimal("0"), Decimal("4")],
+        Decimal("0"),
+        extrapolation="constant",
+    ) == Decimal("0")
+    assert interpolate_logarithmic(
+        [Decimal("1"), Decimal("2")], [Decimal("1"), Decimal("4")], Decimal("1.5")
+    ) == Decimal("2")
 
     with pytest.raises(InterpolationError):
         interpolate_linear([Decimal("0"), Decimal("2")], [Decimal("1"), Decimal("3")], Decimal("3"))
     with pytest.raises(InterpolationError):
-        interpolate_logarithmic([Decimal("0"), Decimal("2")], [Decimal("1"), Decimal("3")], Decimal("3"))
+        interpolate_logarithmic(
+            [Decimal("0"), Decimal("2")], [Decimal("1"), Decimal("3")], Decimal("3")
+        )
     with pytest.raises(InterpolationError):
         interpolate_linear([Decimal("0"), Decimal("0")], [Decimal("1"), Decimal("2")], Decimal("1"))
     with pytest.raises(InterpolationError):
@@ -171,7 +220,10 @@ def test_interpolation_and_curve_point_validation() -> None:
     curve = YieldCurve(
         valuation_date=date(2024, 1, 1),
         currency="USD",
-        points=(CurvePoint(Decimal("1"), Decimal("0.04")), CurvePoint(Decimal("2"), Decimal("0.05"))),
+        points=(
+            CurvePoint(Decimal("1"), Decimal("0.04")),
+            CurvePoint(Decimal("2"), Decimal("0.05")),
+        ),
         extrapolation_policy="constant",
     )
     assert curve.zero_rate(Decimal("1.5")) == Decimal("0.045")
@@ -179,15 +231,31 @@ def test_interpolation_and_curve_point_validation() -> None:
     assert curve.forward_rate(Decimal("1"), Decimal("2")) > Decimal("0")
 
     with pytest.raises(CurveConstructionError):
-        YieldCurve(valuation_date=date(2024, 1, 1), currency="USD", points=(CurvePoint(Decimal("1"), Decimal("0.01")), CurvePoint(Decimal("1"), Decimal("0.02"))))
+        YieldCurve(
+            valuation_date=date(2024, 1, 1),
+            currency="USD",
+            points=(
+                CurvePoint(Decimal("1"), Decimal("0.01")),
+                CurvePoint(Decimal("1"), Decimal("0.02")),
+            ),
+        )
     with pytest.raises(CurveConstructionError):
-        YieldCurve(valuation_date=date(2024, 1, 1), currency="USD", points=(CurvePoint(Decimal("2"), Decimal("0.02")), CurvePoint(Decimal("1"), Decimal("0.01"))))
+        YieldCurve(
+            valuation_date=date(2024, 1, 1),
+            currency="USD",
+            points=(
+                CurvePoint(Decimal("2"), Decimal("0.02")),
+                CurvePoint(Decimal("1"), Decimal("0.01")),
+            ),
+        )
 
     assert curve.zero_rate(Decimal("3")) == Decimal("0.05")
 
 
 def test_curve_bootstrap_and_parametric_models() -> None:
-    result = bootstrap_zero_curve([(Decimal("1"), Decimal("95"), Decimal("100"))], tolerance=Decimal("0.1"))
+    result = bootstrap_zero_curve(
+        [(Decimal("1"), Decimal("95"), Decimal("100"))], tolerance=Decimal("0.1")
+    )
     assert len(result.points) == 1
     assert len(result.residuals) == 1
     assert result.points[0].tenor == Decimal("1")
@@ -195,23 +263,81 @@ def test_curve_bootstrap_and_parametric_models() -> None:
     with pytest.raises(BootstrapError):
         bootstrap_zero_curve([])
 
-    assert nelson_siegel_zero_rate(Decimal("0"), beta0=Decimal("0.01"), beta1=Decimal("0.02"), beta2=Decimal("0.03"), tau=Decimal("1")) == Decimal("0.01")
-    assert svensson_zero_rate(Decimal("0"), beta0=Decimal("0.01"), beta1=Decimal("0.02"), beta2=Decimal("0.03"), beta3=Decimal("0.04"), tau1=Decimal("1"), tau2=Decimal("2")) == Decimal("0.01")
-    assert len(nelson_siegel_curve([Decimal("0"), Decimal("1")], beta0=Decimal("0.01"), beta1=Decimal("0.02"), beta2=Decimal("0.03"), tau=Decimal("1"))) == 2
-    assert len(svensson_curve([Decimal("0"), Decimal("1")], beta0=Decimal("0.01"), beta1=Decimal("0.02"), beta2=Decimal("0.03"), beta3=Decimal("0.04"), tau1=Decimal("1"), tau2=Decimal("2"))) == 2
+    assert nelson_siegel_zero_rate(
+        Decimal("0"),
+        beta0=Decimal("0.01"),
+        beta1=Decimal("0.02"),
+        beta2=Decimal("0.03"),
+        tau=Decimal("1"),
+    ) == Decimal("0.01")
+    assert svensson_zero_rate(
+        Decimal("0"),
+        beta0=Decimal("0.01"),
+        beta1=Decimal("0.02"),
+        beta2=Decimal("0.03"),
+        beta3=Decimal("0.04"),
+        tau1=Decimal("1"),
+        tau2=Decimal("2"),
+    ) == Decimal("0.01")
+    assert (
+        len(
+            nelson_siegel_curve(
+                [Decimal("0"), Decimal("1")],
+                beta0=Decimal("0.01"),
+                beta1=Decimal("0.02"),
+                beta2=Decimal("0.03"),
+                tau=Decimal("1"),
+            )
+        )
+        == 2
+    )
+    assert (
+        len(
+            svensson_curve(
+                [Decimal("0"), Decimal("1")],
+                beta0=Decimal("0.01"),
+                beta1=Decimal("0.02"),
+                beta2=Decimal("0.03"),
+                beta3=Decimal("0.04"),
+                tau1=Decimal("1"),
+                tau2=Decimal("2"),
+            )
+        )
+        == 2
+    )
 
     with pytest.raises(InvalidRateError):
-        nelson_siegel_zero_rate(Decimal("1"), beta0=Decimal("0.01"), beta1=Decimal("0.02"), beta2=Decimal("0.03"), tau=Decimal("0"))
+        nelson_siegel_zero_rate(
+            Decimal("1"),
+            beta0=Decimal("0.01"),
+            beta1=Decimal("0.02"),
+            beta2=Decimal("0.03"),
+            tau=Decimal("0"),
+        )
     with pytest.raises(InvalidRateError):
-        svensson_zero_rate(Decimal("1"), beta0=Decimal("0.01"), beta1=Decimal("0.02"), beta2=Decimal("0.03"), beta3=Decimal("0.04"), tau1=Decimal("0"), tau2=Decimal("2"))
+        svensson_zero_rate(
+            Decimal("1"),
+            beta0=Decimal("0.01"),
+            beta1=Decimal("0.02"),
+            beta2=Decimal("0.03"),
+            beta3=Decimal("0.04"),
+            tau1=Decimal("0"),
+            tau2=Decimal("2"),
+        )
 
 
 def test_bond_metrics_reference_values_and_symmetric_shocks() -> None:
-    accrued = accrued_interest(Decimal("0.05"), Decimal("1000"), days_since_last_coupon=30, days_in_period=180)
+    accrued = accrued_interest(
+        Decimal("0.05"), Decimal("1000"), days_since_last_coupon=30, days_in_period=180
+    )
     with pytest.raises(InvalidCashFlowError):
-        accrued_interest(Decimal("0.05"), Decimal("1000"), days_since_last_coupon=-1, days_in_period=180)
+        accrued_interest(
+            Decimal("0.05"), Decimal("1000"), days_since_last_coupon=-1, days_in_period=180
+        )
     with pytest.raises(InvalidCashFlowError):
-        accrued_interest(Decimal("0.05"), Decimal("1000"), days_since_last_coupon=30, days_in_period=0)
+        accrued_interest(
+            Decimal("0.05"), Decimal("1000"), days_since_last_coupon=30, days_in_period=0
+        )
     assert accrued == Decimal("8.333333333333333333")
     assert dirty_price(Decimal("95"), accrued) == Decimal("103.333333333333333333")
     assert clean_price(Decimal("103.333333333333333333"), accrued) == Decimal("95")
@@ -233,14 +359,22 @@ def test_additional_branch_and_exception_paths() -> None:
     flow = CashFlow(payment_date=date(2025, 1, 1), amount=Decimal("100"), currency="USD")
     series = CashFlowSeries.from_cashflows([flow, CashFlow(date(2025, 6, 1), Decimal("50"), "USD")])
 
-    assert present_value(flow, rate, valuation_date=date(2024, 1, 1), day_count_convention="ACTUAL_360") > Decimal("0")
-    assert future_value(flow, rate, valuation_date=date(2024, 1, 1), day_count_convention="ACTUAL_360") > Decimal("0")
+    assert present_value(
+        flow, rate, valuation_date=date(2024, 1, 1), day_count_convention="ACTUAL_360"
+    ) > Decimal("0")
+    assert future_value(
+        flow, rate, valuation_date=date(2024, 1, 1), day_count_convention="ACTUAL_360"
+    ) > Decimal("0")
     assert present_value_series(series, rate, valuation_date=date(2024, 1, 1)) > Decimal("0")
     assert future_value_series(series, rate, valuation_date=date(2024, 1, 1)) > Decimal("0")
     assert present_value(flow, Decimal("0.05")) > Decimal("0")
     assert future_value(flow, Decimal("0.05")) > Decimal("0")
-    assert present_value_series((flow, CashFlow(date(2025, 12, 1), Decimal("20"), "USD")), Decimal("0.05")) > Decimal("0")
-    assert future_value_series((flow, CashFlow(date(2025, 12, 1), Decimal("20"), "USD")), Decimal("0.05")) > Decimal("0")
+    assert present_value_series(
+        (flow, CashFlow(date(2025, 12, 1), Decimal("20"), "USD")), Decimal("0.05")
+    ) > Decimal("0")
+    assert future_value_series(
+        (flow, CashFlow(date(2025, 12, 1), Decimal("20"), "USD")), Decimal("0.05")
+    ) > Decimal("0")
 
     with pytest.raises(InvalidCashFlowError):
         present_value(flow, rate, valuation_date=date(2024, 1, 1), day_count_convention="BAD")
@@ -254,24 +388,45 @@ def test_additional_branch_and_exception_paths() -> None:
     with pytest.raises(InvalidRateError):
         InterestRate(rate=Decimal("0.03"), day_count_convention="bad")
 
-    assert equivalent_rate(Decimal("0.05"), from_compounding="continuous", to_compounding="annual") > Decimal("0")
-    assert equivalent_rate(Decimal("0.05"), from_compounding="simple", to_compounding="simple") == Decimal("0.05")
-    assert equivalent_rate(Decimal("0.05"), from_compounding="annual", to_compounding="continuous") > Decimal("0")
-    assert equivalent_rate(Decimal("0.05"), from_compounding="simple", to_compounding="annual") == Decimal("0.05")
-    assert accumulation_factor(Decimal("0.05"), Decimal("1"), compounding="quarterly") > Decimal("1")
+    assert equivalent_rate(
+        Decimal("0.05"), from_compounding="continuous", to_compounding="annual"
+    ) > Decimal("0")
+    assert equivalent_rate(
+        Decimal("0.05"), from_compounding="simple", to_compounding="simple"
+    ) == Decimal("0.05")
+    assert equivalent_rate(
+        Decimal("0.05"), from_compounding="annual", to_compounding="continuous"
+    ) > Decimal("0")
+    assert equivalent_rate(
+        Decimal("0.05"), from_compounding="simple", to_compounding="annual"
+    ) == Decimal("0.05")
+    assert accumulation_factor(Decimal("0.05"), Decimal("1"), compounding="quarterly") > Decimal(
+        "1"
+    )
     assert accumulation_factor(Decimal("0.05"), Decimal("1"), compounding="monthly") > Decimal("1")
     assert discount_factor(Decimal("0.05"), Decimal("1"), compounding="quarterly") < Decimal("1")
     with pytest.raises(InvalidRateError):
         accumulation_factor(Decimal("0.05"), Decimal("1"), compounding="annual", frequency=0)
 
     with pytest.raises(InterpolationError):
-        interpolate_logarithmic([Decimal("1"), Decimal("2")], [Decimal("1"), Decimal("4")], Decimal("0.5"))
+        interpolate_logarithmic(
+            [Decimal("1"), Decimal("2")], [Decimal("1"), Decimal("4")], Decimal("0.5")
+        )
     with pytest.raises(InterpolationError):
         interpolate_logarithmic([Decimal("1"), Decimal("2")], [Decimal("1")], Decimal("1"))
     with pytest.raises(InterpolationError):
-        interpolate_logarithmic([Decimal("1"), Decimal("2")], [Decimal("1"), Decimal("-1")], Decimal("1.5"))
-    assert interpolate_logarithmic([Decimal("1"), Decimal("2")], [Decimal("1"), Decimal("4")], Decimal("1")) == Decimal("1")
-    assert interpolate_logarithmic([Decimal("1"), Decimal("2")], [Decimal("1"), Decimal("4")], Decimal("2"), extrapolation="constant") == Decimal("4")
+        interpolate_logarithmic(
+            [Decimal("1"), Decimal("2")], [Decimal("1"), Decimal("-1")], Decimal("1.5")
+        )
+    assert interpolate_logarithmic(
+        [Decimal("1"), Decimal("2")], [Decimal("1"), Decimal("4")], Decimal("1")
+    ) == Decimal("1")
+    assert interpolate_logarithmic(
+        [Decimal("1"), Decimal("2")],
+        [Decimal("1"), Decimal("4")],
+        Decimal("2"),
+        extrapolation="constant",
+    ) == Decimal("4")
     with pytest.raises(InterpolationError):
         interpolate_linear([Decimal("0"), Decimal("0")], [Decimal("1"), Decimal("2")], Decimal("1"))
 
@@ -294,13 +449,24 @@ def test_additional_branch_and_exception_paths() -> None:
     with pytest.raises(InvalidRateError):
         convexity([(Decimal("1"), Decimal("-100"))], Decimal("0.05"))
 
-    assert bisection_solve(lambda x: x - Decimal("2"), Decimal("2"), Decimal("3")).root == Decimal("2")
-    assert bisection_solve(lambda x: x - Decimal("2"), Decimal("0"), Decimal("4"), tolerance=Decimal("1e-8")).root == Decimal("2")
+    assert bisection_solve(lambda x: x - Decimal("2"), Decimal("2"), Decimal("3")).root == Decimal(
+        "2"
+    )
+    assert bisection_solve(
+        lambda x: x - Decimal("2"), Decimal("0"), Decimal("4"), tolerance=Decimal("1e-8")
+    ).root == Decimal("2")
     with pytest.raises(InvalidBracketError):
         bisection_solve(lambda x: x * x - Decimal("4"), Decimal("0"), Decimal("0"))
-    assert newton_raphson_solve(lambda x: x - Decimal("2"), lambda x: Decimal("1"), Decimal("2")).converged
+    assert newton_raphson_solve(
+        lambda x: x - Decimal("2"), lambda x: Decimal("1"), Decimal("2")
+    ).converged
     with pytest.raises(ConvergenceError):
-        newton_raphson_solve(lambda x: x * x + Decimal("1"), lambda x: Decimal("2") * x, Decimal("0"), tolerance=Decimal("1e-8"))
+        newton_raphson_solve(
+            lambda x: x * x + Decimal("1"),
+            lambda x: Decimal("2") * x,
+            Decimal("0"),
+            tolerance=Decimal("1e-8"),
+        )
     with pytest.raises(InvalidBracketError):
         brent_solve(lambda x: x - Decimal("1"), Decimal("2"), Decimal("2"))
     with pytest.raises(InvalidBracketError):
@@ -309,15 +475,27 @@ def test_additional_branch_and_exception_paths() -> None:
     curve = YieldCurve(
         valuation_date=date(2024, 1, 1),
         currency="USD",
-        points=(CurvePoint(Decimal("1"), Decimal("0.04")), CurvePoint(Decimal("2"), Decimal("0.05"))),
+        points=(
+            CurvePoint(Decimal("1"), Decimal("0.04")),
+            CurvePoint(Decimal("2"), Decimal("0.05")),
+        ),
         extrapolation_policy="constant",
     )
     assert curve.zero_rate(Decimal("0")) == Decimal("0.04")
     assert curve.zero_rate(Decimal("3")) == Decimal("0.05")
     with pytest.raises(CurveConstructionError):
-        YieldCurve(valuation_date=date(2024, 1, 1), currency="", points=(CurvePoint(Decimal("1"), Decimal("0.01")),))
+        YieldCurve(
+            valuation_date=date(2024, 1, 1),
+            currency="",
+            points=(CurvePoint(Decimal("1"), Decimal("0.01")),),
+        )
     with pytest.raises(CurveConstructionError):
-        YieldCurve(valuation_date=date(2024, 1, 1), currency="USD", day_count_convention="BAD", points=(CurvePoint(Decimal("1"), Decimal("0.01")),))
+        YieldCurve(
+            valuation_date=date(2024, 1, 1),
+            currency="USD",
+            day_count_convention="BAD",
+            points=(CurvePoint(Decimal("1"), Decimal("0.01")),),
+        )
 
     with pytest.raises(BootstrapError):
         bootstrap_zero_curve([(Decimal("0"), Decimal("95"), Decimal("100"))])
@@ -326,26 +504,39 @@ def test_additional_branch_and_exception_paths() -> None:
     with pytest.raises(BootstrapError):
         bootstrap_zero_curve([(Decimal("1"), Decimal("95"), Decimal("0"))])
     with pytest.raises(BootstrapError):
-        bootstrap_zero_curve([(Decimal("1"), Decimal("50"), Decimal("100"))], tolerance=Decimal("0.001"))
+        bootstrap_zero_curve(
+            [(Decimal("1"), Decimal("50"), Decimal("100"))], tolerance=Decimal("0.001")
+        )
 
     with pytest.raises(InvalidCashFlowError):
         CashFlow(payment_date=None, amount=Decimal("1"), currency="USD")
     with pytest.raises(InvalidCashFlowError):
         CashFlow(payment_date=date(2024, 1, 1), amount=Decimal("1"), currency=" ")
 
-    mixed_series = CashFlowSeries.from_cashflows([
-        CashFlow(date(2024, 1, 1), Decimal("10"), "USD"),
-        CashFlow(date(2024, 1, 1), Decimal("20"), "EUR"),
-    ])
+    mixed_series = CashFlowSeries.from_cashflows(
+        [
+            CashFlow(date(2024, 1, 1), Decimal("10"), "USD"),
+            CashFlow(date(2024, 1, 1), Decimal("20"), "EUR"),
+        ]
+    )
     aggregated = mixed_series.aggregate_duplicates(fx_conversion=lambda _from, _to, amount: amount)
     assert aggregated.total_amount() == Decimal("30")
 
-    cash_flows = [CashFlow(date(2024, 1, 1), Decimal("-100"), "USD"), CashFlow(date(2025, 1, 1), Decimal("110"), "USD")]
+    cash_flows = [
+        CashFlow(date(2024, 1, 1), Decimal("-100"), "USD"),
+        CashFlow(date(2025, 1, 1), Decimal("110"), "USD"),
+    ]
     assert internal_rate_of_return(cash_flows) > Decimal("0")
     assert yield_to_maturity(cash_flows, Decimal("100")).converged
     with pytest.raises(ConvergenceError):
         yield_to_maturity(
             cash_flows,
             Decimal("100"),
-            solver=lambda _function, _lower, _upper, **_kwargs: ConvergenceResult(root=Decimal("0"), iterations=1, converged=False, residual=Decimal("1"), method="custom"),
+            solver=lambda _function, _lower, _upper, **_kwargs: ConvergenceResult(
+                root=Decimal("0"),
+                iterations=1,
+                converged=False,
+                residual=Decimal("1"),
+                method="custom",
+            ),
         )
