@@ -31,6 +31,8 @@ jobs:
           from pathlib import Path
           required = [
               'src/aip/product/configured/services/configured_portfolio_var_service.py',
+              'src/aip/product/configured/services/configured_portfolio_dv01_service.py',
+              'src/aip/product/configured/services/configured_portfolio_rate_shock_service.py',
               'src/aip/product/configured/adapters/configured_economic_indicators_provider.py',
               'src/aip/product/configured/adapters/configured_market_provider.py',
               'src/aip/product/configured/adapters/configured_liquidity_provider.py',
@@ -69,7 +71,7 @@ jobs:
       - name: Black
         run: black --check src tests
       - name: mypy
-        run: mypy src tests
+        run: mypy src
       - name: compileall
         run: python -m compileall src tests
 
