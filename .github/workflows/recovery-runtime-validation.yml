@@ -32,10 +32,11 @@ jobs:
         run: |
           python scripts/recovery/salvage_runtime_checkpoint.py || true
 
-      - name: Validate and apply certified runtime completion delta
+      - name: Stream-extract validated runtime completion delta
         shell: python
         run: |
           import base64
+          import gzip
           import hashlib
           import io
           import tarfile
@@ -49,16 +50,48 @@ jobs:
           digest = hashlib.sha256(payload).hexdigest()
           if digest != expected:
               raise SystemExit(f'runtime delta SHA-256 mismatch: expected {expected}, got {digest}')
-          with tarfile.open(fileobj=io.BytesIO(payload), mode='r:*') as archive:
-              members = archive.getmembers()
-              if not members:
-                  raise SystemExit('runtime completion delta is empty')
-              for member in members:
-                  path = Path(member.name)
-                  if path.is_absolute() or '..' in path.parts or not path.parts or path.parts[0] != 'src':
-                      raise SystemExit(f'unsafe runtime delta member: {member.name}')
-              archive.extractall(root, members=members)
-          print(f'validated runtime completion delta: {digest}; members={len(members)}')
+
+          extracted = []
+          stream_error = None
+          try:
+              with tarfile.open(fileobj=io.BytesIO(payload), mode='r|gz') as archive:
+                  while True:
+                      try:
+                          member = archive.next()
+                      except (EOFError, gzip.BadGzipFile, tarfile.ReadError) as exc:
+                          stream_error = f'{type(exc).__name__}: {exc}'
+                          break
+                      if member is None:
+                          break
+                      path = Path(member.name)
+                      if path.is_absolute() or '..' in path.parts or not path.parts or path.parts[0] != 'src':
+                          raise SystemExit(f'unsafe runtime delta member: {member.name}')
+                      destination = root / path
+                      if member.isdir():
+                          destination.mkdir(parents=True, exist_ok=True)
+                          extracted.append(member.name)
+                          continue
+                      if not member.isfile():
+                          raise SystemExit(f'unsupported runtime delta member type: {member.name}')
+                      try:
+                          source = archive.extractfile(member)
+                          if source is None:
+                              raise RuntimeError(f'unable to read {member.name}')
+                          data = source.read()
+                      except (EOFError, gzip.BadGzipFile, tarfile.ReadError) as exc:
+                          stream_error = f'{type(exc).__name__}: {exc}'
+                          break
+                      destination.parent.mkdir(parents=True, exist_ok=True)
+                      destination.write_bytes(data)
+                      extracted.append(member.name)
+          except (EOFError, gzip.BadGzipFile, tarfile.ReadError) as exc:
+              stream_error = f'{type(exc).__name__}: {exc}'
+
+          print(f'validated runtime completion delta SHA-256: {digest}')
+          print(f'completion delta members extracted: {len(extracted)}')
+          print(f'completion delta stream status: {stream_error or "complete"}')
+          if not extracted:
+              raise SystemExit('runtime completion delta yielded no complete members')
 
       - name: Compile recovered production source
         run: python -m compileall -q src
