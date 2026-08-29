@@ -1,5 +1,6 @@
 name: Apply Safe Runtime Quality Fixes
 
+# Re-run after freezing the materialized runtime source.
 on:
   push:
     branches:
@@ -43,7 +44,7 @@ jobs:
             echo "No safe Ruff changes required."
             exit 0
           fi
-          git commit -m "quality: apply safe Ruff fixes to recovered runtime"
+          git commit -m "quality: apply safe Ruff fixes to frozen runtime"
           git push origin HEAD:recovery/full-runtime-rc1-20260829
       - name: Report remaining Ruff findings
         run: ruff check src tests
