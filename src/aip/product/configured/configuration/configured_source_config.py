@@ -62,6 +62,9 @@ class BCCRSourceConfig:
     cache_enabled: bool = True
     indicator_configuration: tuple[str, ...] = ("FX",)
     series_config: tuple[str, ...] = ()
+    name: str | None = None
+    email: str | None = None
+    token: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -184,6 +187,9 @@ class ConfiguredSourceConfig:
                 cache_enabled=bool(bccr_payload.get("cache_enabled", True)),
                 indicator_configuration=tuple(bccr_payload.get("indicator_configuration", ("FX",))),
                 series_config=tuple(bccr_payload.get("series_config", ())),
+                name=bccr_payload.get("name"),
+                email=bccr_payload.get("email"),
+                token=bccr_payload.get("token"),
             ),
             diagnostic_mode=bool(source_config_payload.get("diagnostic_mode", False)),
             metadata={
