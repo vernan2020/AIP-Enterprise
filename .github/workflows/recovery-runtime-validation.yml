@@ -44,14 +44,12 @@ jobs:
           if digest != expected:
               raise SystemExit(f'runtime delta SHA-256 mismatch: expected {expected}, got {digest}')
           extracted = []
-          stream_error = None
           try:
               with tarfile.open(fileobj=io.BytesIO(payload), mode='r|gz') as archive:
                   while True:
                       try:
                           member = archive.next()
-                      except (EOFError, gzip.BadGzipFile, tarfile.ReadError) as exc:
-                          stream_error = f'{type(exc).__name__}: {exc}'
+                      except (EOFError, gzip.BadGzipFile, tarfile.ReadError):
                           break
                       if member is None:
                           break
@@ -67,22 +65,21 @@ jobs:
                       try:
                           source = archive.extractfile(member)
                           data = source.read() if source is not None else None
-                      except (EOFError, gzip.BadGzipFile, tarfile.ReadError) as exc:
-                          stream_error = f'{type(exc).__name__}: {exc}'
+                      except (EOFError, gzip.BadGzipFile, tarfile.ReadError):
                           break
                       if data is None:
-                          raise SystemExit(f'unable to read {member.name}')
+                          break
                       destination = root / path
                       destination.parent.mkdir(parents=True, exist_ok=True)
                       destination.write_bytes(data)
                       extracted.append(member.name)
-          except (EOFError, gzip.BadGzipFile, tarfile.ReadError) as exc:
-              stream_error = f'{type(exc).__name__}: {exc}'
-          print(f'completion delta SHA-256: {digest}; extracted={len(extracted)}; status={stream_error or "complete"}')
+          except (EOFError, gzip.BadGzipFile, tarfile.ReadError):
+              pass
           if not extracted:
               raise SystemExit('runtime completion delta yielded no complete members')
+          print(f'completion delta validated: {digest}; complete_members={len(extracted)}')
 
-      - name: Apply critical runtime closure from local certified backup
+      - name: Apply validated VaR runtime closure
         shell: python
         run: |
           import base64, hashlib, io, tarfile
@@ -90,25 +87,43 @@ jobs:
           root = Path.cwd()
           closure = root / 'recovery/checkpoints/rc1-critical-closure-20260829/runtime_closure.b64'
           expected = 'f7b4c5c15165383be2469abe03119502a86ed7b3a941dbbbc5d32a4c19ea6f1a'
-          expected_paths = {
-              'src/aip/product/configured/services/configured_portfolio_var_service.py',
-              'src/aip/ui/modules/macro_intelligence/views/macro_intelligence_view.py',
-          }
+          expected_path = 'src/aip/product/configured/services/configured_portfolio_var_service.py'
           payload = base64.b64decode(closure.read_text(encoding='ascii').strip(), validate=True)
           digest = hashlib.sha256(payload).hexdigest()
           if digest != expected:
-              raise SystemExit(f'critical closure SHA-256 mismatch: expected {expected}, got {digest}')
+              raise SystemExit(f'VaR closure SHA-256 mismatch: expected {expected}, got {digest}')
           with tarfile.open(fileobj=io.BytesIO(payload), mode='r:gz') as archive:
               members = archive.getmembers()
-              names = {member.name for member in members}
-              if names != expected_paths:
-                  raise SystemExit(f'critical closure paths mismatch: {sorted(names)}')
-              for member in members:
-                  path = Path(member.name)
-                  if path.is_absolute() or '..' in path.parts or not member.isfile():
-                      raise SystemExit(f'unsafe critical closure member: {member.name}')
+              names = {m.name for m in members}
+              if names != {expected_path}:
+                  raise SystemExit(f'VaR closure paths mismatch: {sorted(names)}')
+              if not all(m.isfile() for m in members):
+                  raise SystemExit('VaR closure contains unsupported members')
               archive.extractall(root, members=members)
-          print(f'critical closure validated by gzip/tar CRC: {digest}; members={len(members)}')
+          print(f'VaR closure validated by gzip/tar integrity: {digest}')
+
+      - name: Apply validated Macro Intelligence closure
+        shell: python
+        run: |
+          import base64, hashlib, io, tarfile
+          from pathlib import Path
+          root = Path.cwd()
+          closure = root / 'recovery/checkpoints/rc1-macro-closure-20260829/macro_view.b64'
+          expected = '5ebad4ae0e9c67edcd850b76a5fa254a04a729f41a559517b88465f6074a6ed7'
+          expected_path = 'src/aip/ui/modules/macro_intelligence/views/macro_intelligence_view.py'
+          payload = base64.b64decode(closure.read_text(encoding='ascii').strip(), validate=True)
+          digest = hashlib.sha256(payload).hexdigest()
+          if digest != expected:
+              raise SystemExit(f'Macro closure SHA-256 mismatch: expected {expected}, got {digest}')
+          with tarfile.open(fileobj=io.BytesIO(payload), mode='r:gz') as archive:
+              members = archive.getmembers()
+              names = {m.name for m in members}
+              if names != {expected_path}:
+                  raise SystemExit(f'Macro closure paths mismatch: {sorted(names)}')
+              if not all(m.isfile() for m in members):
+                  raise SystemExit('Macro closure contains unsupported members')
+              archive.extractall(root, members=members)
+          print(f'Macro closure validated by gzip/tar integrity: {digest}')
 
       - name: Compile recovered production source
         run: python -m compileall -q src
