@@ -11,6 +11,7 @@ from typing import Any
 CHECKPOINT_DIR = Path("recovery/checkpoints/rc1-final-20260829")
 MANIFEST_NAME = "MANIFEST.json"
 PART_GLOB = "runtime_final.part*.b64"
+MARKER_NAME = ".aip_runtime_checkpoint.sha256"
 
 
 def _load_manifest(checkpoint_dir: Path) -> dict[str, Any]:
@@ -127,8 +128,6 @@ def verify_checkpoint(root: Path) -> tuple[str, int, int]:
                 "Checkpoint is structurally incomplete; critical members missing: "
                 + ", ".join(missing)
             )
-        # Iterate the same safety validator used during extraction so verification
-        # rejects unsafe archive paths without touching the local runtime.
         list(_safe_members(archive))
 
     return digest, len(parts), len(critical)
@@ -153,9 +152,13 @@ def main() -> int:
             )
         archive.extractall(root, members=_safe_members(archive))
 
+    marker_path = root / MARKER_NAME
+    marker_path.write_text(digest + "\n", encoding="ascii")
+
     print(f"AIP runtime checkpoint restored: {digest}")
     print(f"Validated checkpoint parts: {len(parts)}")
     print(f"Validated critical runtime members: {len(critical)}")
+    print(f"Runtime marker written: {marker_path.name}")
     return 0
 
 
