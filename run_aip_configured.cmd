@@ -17,6 +17,17 @@ if not defined AIP_BCCR_ENABLED set "AIP_BCCR_ENABLED=true"
 if not defined AIP_BCCR_BASE_URL set "AIP_BCCR_BASE_URL=https://apim.bccr.fi.cr"
 if not defined AIP_ALLOW_PRIOR_SOURCE_DATE set "AIP_ALLOW_PRIOR_SOURCE_DATE=true"
 
+if not exist "src\aip\product\configured\services\configured_portfolio_var_service.py" (
+    echo Restoring recovered AIP runtime checkpoint...
+    python scripts\recovery\restore_runtime_checkpoint.py
+    if errorlevel 1 exit /b 1
+)
+if not exist "src\aip\ui\modules\macro_intelligence\views\macro_intelligence_view.py" (
+    echo Restoring recovered AIP runtime checkpoint...
+    python scripts\recovery\restore_runtime_checkpoint.py
+    if errorlevel 1 exit /b 1
+)
+
 python -m aip.tools.preflight_runtime
 if errorlevel 1 (
     echo.
