@@ -6,9 +6,16 @@ import io
 import tarfile
 from pathlib import Path
 
-EXPECTED_SHA256 = "d88798ab1ccc83742fd6e62dccbf07d86d3b4e85d7a9bb9ee78161665d05e373"
+EXPECTED_SHA256 = "5c245fb32d1d0977e637bca5263c25fe519c6dc6bd109ae98823c5c31b2120ae"
 CHECKPOINT_DIR = Path("recovery/checkpoints/rc1-final-20260829")
 PART_PATTERN = "runtime_final.part*.b64"
+CRITICAL_MEMBERS = {
+    "src/aip/product/configured/services/configured_portfolio_var_service.py",
+    "src/aip/product/configured/adapters/configured_market_provider.py",
+    "src/aip/product/configured/adapters/configured_liquidity_provider.py",
+    "src/aip/ui/modules/macro_intelligence/views/macro_intelligence_view.py",
+    "src/aip/product/economic/economic_snapshot_store.py",
+}
 
 
 def _safe_members(archive: tarfile.TarFile):
@@ -41,9 +48,18 @@ def main() -> int:
         )
 
     with tarfile.open(fileobj=io.BytesIO(payload), mode="r:*") as archive:
+        members = archive.getmembers()
+        names = {member.name.replace("\\", "/") for member in members}
+        missing = sorted(CRITICAL_MEMBERS - names)
+        if missing:
+            raise RuntimeError(
+                "Checkpoint is structurally incomplete; critical members missing: "
+                + ", ".join(missing)
+            )
         archive.extractall(root, members=_safe_members(archive))
 
     print(f"AIP runtime checkpoint restored: {digest}")
+    print(f"Validated critical runtime members: {len(CRITICAL_MEMBERS)}")
     return 0
 
 
