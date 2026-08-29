@@ -5,7 +5,6 @@ import base64
 import datetime as dt
 import json
 import os
-import shutil
 import subprocess
 import sys
 import urllib.error
@@ -23,6 +22,7 @@ SUPPORT_FILES = (
     Path("scripts/recovery/restore_runtime_checkpoint.py"),
     Path("scripts/recovery/runtime_checkpoint_status.py"),
     Path("scripts/recovery/verify_runtime_checkpoint.py"),
+    Path("scripts/recovery/certify_installed_runtime.py"),
     Path("run_aip_configured.cmd"),
 )
 USER_AGENT = "AIP-Enterprise-RC1-Recovery/1.0"
@@ -182,11 +182,20 @@ def install(*, skip_backup: bool = False) -> int:
     print("Restoring certified runtime...")
     _run(root, [sys.executable, "scripts/recovery/restore_runtime_checkpoint.py"])
 
+    runtime_env = _runtime_env(root)
+
     print("Running configured preflight...")
     _run(
         root,
         [sys.executable, "-m", "aip.tools.preflight_runtime"],
-        env=_runtime_env(root),
+        env=runtime_env,
+    )
+
+    print("Running deep runtime certification...")
+    _run(
+        root,
+        [sys.executable, "scripts/recovery/certify_installed_runtime.py"],
+        env=runtime_env,
     )
 
     print()
@@ -199,7 +208,7 @@ def install(*, skip_backup: bool = False) -> int:
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Install the certified AIP Enterprise RC1 runtime from GitHub without Git."
+        description="Install and certify the AIP Enterprise RC1 runtime from GitHub without Git."
     )
     parser.add_argument(
         "--skip-backup",
