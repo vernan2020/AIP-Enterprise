@@ -1,0 +1,26 @@
+name: Export Recovery Source
+
+on:
+  push:
+    branches:
+      - recovery/full-runtime-rc1-20260829
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export-src:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout recovery branch
+        uses: actions/checkout@v4
+        with:
+          ref: recovery/full-runtime-rc1-20260829
+      - name: Upload current source tree
+        uses: actions/upload-artifact@v4
+        with:
+          name: recovery-src-${{ github.sha }}
+          path: src
+          if-no-files-found: error
+          retention-days: 1
