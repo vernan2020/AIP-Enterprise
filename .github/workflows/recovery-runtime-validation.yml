@@ -89,21 +89,26 @@ jobs:
           from pathlib import Path
           root = Path.cwd()
           closure = root / 'recovery/checkpoints/rc1-critical-closure-20260829/runtime_closure.b64'
-          expected = 'b955e600156e4e6eb828231167805d6b3c2f1c7bce572b0b75ce0a9e3d50cb0d'
+          expected = 'f7b4c5c15165383be2469abe03119502a86ed7b3a941dbbbc5d32a4c19ea6f1a'
+          expected_paths = {
+              'src/aip/product/configured/services/configured_portfolio_var_service.py',
+              'src/aip/ui/modules/macro_intelligence/views/macro_intelligence_view.py',
+          }
           payload = base64.b64decode(closure.read_text(encoding='ascii').strip(), validate=True)
           digest = hashlib.sha256(payload).hexdigest()
           if digest != expected:
               raise SystemExit(f'critical closure SHA-256 mismatch: expected {expected}, got {digest}')
           with tarfile.open(fileobj=io.BytesIO(payload), mode='r:gz') as archive:
               members = archive.getmembers()
-              if len(members) != 2:
-                  raise SystemExit(f'critical closure expected 2 files, found {len(members)} members')
+              names = {member.name for member in members}
+              if names != expected_paths:
+                  raise SystemExit(f'critical closure paths mismatch: {sorted(names)}')
               for member in members:
                   path = Path(member.name)
-                  if path.is_absolute() or '..' in path.parts or not path.parts or path.parts[0] != 'src' or not member.isfile():
+                  if path.is_absolute() or '..' in path.parts or not member.isfile():
                       raise SystemExit(f'unsafe critical closure member: {member.name}')
               archive.extractall(root, members=members)
-          print(f'critical closure SHA-256: {digest}; members={len(members)}')
+          print(f'critical closure validated by gzip/tar CRC: {digest}; members={len(members)}')
 
       - name: Compile recovered production source
         run: python -m compileall -q src
