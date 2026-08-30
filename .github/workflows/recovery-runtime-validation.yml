@@ -93,7 +93,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e '.[dev]'
 
-      - name: Run institutional regression suite
+      - name: Run institutional risk and liquidity regression suite
         run: |
           python -m pytest -q \
             tests/unit/domain/liquidity \
@@ -101,6 +101,27 @@ jobs:
             tests/unit/extensions/coopealianza/liquidity \
             tests/unit/extensions/coopealianza/treasury/decision \
             tests/unit/product/configured/context
+
+      - name: Run configured source and market regression suite
+        run: |
+          python -m pytest -q \
+            tests/unit/product/configured \
+            tests/unit/product/demo/test_configured_mode.py \
+            tests/unit/product/demo/test_configured_diagnostics_runtime.py \
+            tests/unit/product/demo/test_configured_portfolio_discovery.py \
+            tests/unit/product/demo/test_pipca_vector_discovery.py \
+            tests/unit/domain/market \
+            tests/unit/integration/bccr
+
+      - name: Run desktop workspace regression suite
+        run: |
+          python -m pytest -q \
+            tests/unit/ui/market \
+            tests/unit/ui/portfolio \
+            tests/unit/ui/liquidity \
+            tests/unit/ui/treasury \
+            tests/unit/ui/test_production_readiness.py \
+            tests/unit/ui/test_rc1_ui_bootstrap.py
 
       - name: Build certified Windows recovery package
         run: python scripts/recovery/build_windows_recovery_package.py
