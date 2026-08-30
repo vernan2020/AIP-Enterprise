@@ -14,7 +14,7 @@ env:
   PYTHONPATH: src
 
 jobs:
-  validate-materialized-runtime:
+  validate-certified-runtime:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout recovery branch
@@ -27,7 +27,16 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Compile materialized production source
+      - name: Verify certified checkpoint digest and structure
+        run: python scripts/recovery/verify_runtime_checkpoint.py
+
+      - name: Restore source tree from certified checkpoint
+        run: python scripts/recovery/restore_runtime_checkpoint.py
+
+      - name: Confirm restored checkpoint marker
+        run: python scripts/recovery/runtime_checkpoint_status.py
+
+      - name: Compile restored production source
         run: python -m compileall -q src
 
       - name: Validate critical production modules
@@ -55,7 +64,7 @@ jobs:
                   invalid.append(item)
           if invalid:
               raise SystemExit('invalid critical modules: ' + ', '.join(invalid))
-          print('critical materialized runtime: PASS')
+          print('critical restored runtime: PASS')
 
       - name: Install runtime and test dependencies
         run: |
