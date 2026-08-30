@@ -30,32 +30,24 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Verify certified checkpoint digest and structure
-        run: python scripts/recovery/verify_runtime_checkpoint.py
-
-      - name: Restore source tree from certified checkpoint
-        run: python scripts/recovery/restore_runtime_checkpoint.py
-
-      - name: Confirm restored checkpoint marker
-        run: python scripts/recovery/runtime_checkpoint_status.py
-
-      - name: Compile restored production source
-        run: python -m compileall -q src
-
       - name: Validate critical production modules
         shell: python
         run: |
           from pathlib import Path
           required = [
               'src/aip/product/configured/services/configured_portfolio_var_service.py',
+              'src/aip/product/configured/services/configured_portfolio_dv01_service.py',
+              'src/aip/product/configured/services/configured_portfolio_rate_shock_service.py',
               'src/aip/product/configured/adapters/configured_economic_indicators_provider.py',
               'src/aip/product/configured/adapters/configured_market_provider.py',
               'src/aip/product/configured/adapters/configured_liquidity_provider.py',
+              'src/aip/product/configured/adapters/configured_portfolio_provider.py',
               'src/aip/product/configured/readers/institutional_icl_reader.py',
               'src/aip/ui/modules/macro_intelligence/views/macro_intelligence_view.py',
               'src/aip/product/economic/economic_snapshot_store.py',
               'src/aip/ui/application/main.py',
               'src/aip/ui/application/app.py',
+              'src/aip/tools/preflight_runtime.py',
           ]
           missing = [item for item in required if not Path(item).is_file()]
           if missing:
@@ -67,7 +59,26 @@ jobs:
                   invalid.append(item)
           if invalid:
               raise SystemExit('invalid critical modules: ' + ', '.join(invalid))
-          print('critical restored runtime: PASS')
+          print(f'critical production modules: PASS ({len(required)})')
+
+      - name: Compile production source
+        run: python -m compileall -q src
+
+      - name: Validate source tree hygiene
+        shell: bash
+        run: |
+          set -euo pipefail
+          if find src -type f \( -name '*.bak' -o -name '*.before_*' -o -name '*~' \) | grep -q .; then
+            echo 'Backup artifacts found under src'
+            find src -type f \( -name '*.bak' -o -name '*.before_*' -o -name '*~' \)
+            exit 1
+          fi
+          if grep -RIl $'\x00' src --include='*.py' | grep -q .; then
+            echo 'Null bytes found in Python source'
+            exit 1
+          fi
+          git diff --check -- src
+          echo 'source tree validation: PASS'
 
       - name: Install runtime and test dependencies
         run: |
@@ -83,18 +94,13 @@ jobs:
             tests/unit/extensions/coopealianza/treasury/decision \
             tests/unit/product/configured/context
 
-      - name: Validate source tree hygiene
-        shell: bash
-        run: |
-          set -euo pipefail
-          if find src -type f -name '*.bak' | grep -q .; then
-            echo 'Backup artifacts found under src'
-            find src -type f -name '*.bak'
-            exit 1
-          fi
-          if grep -RIl $'\x00' src --include='*.py' | grep -q .; then
-            echo 'Null bytes found in Python source'
-            exit 1
-          fi
-          git diff --check -- src
-          echo 'source tree validation: PASS'
+      - name: Build certified Windows recovery package
+        run: python scripts/recovery/build_windows_recovery_package.py
+
+      - name: Upload certified recovery package
+        uses: actions/upload-artifact@v4
+        with:
+          name: AIP-Enterprise-RC1-Certified-Windows
+          path: dist/AIP-Enterprise-RC1-Certified-Windows.zip
+          if-no-files-found: error
+          retention-days: 30
