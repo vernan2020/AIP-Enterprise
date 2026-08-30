@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - recovery/full-runtime-rc1-20260829
+  pull_request:
+    branches:
+      - release/core-v1.0
   workflow_dispatch:
 
 permissions:
@@ -17,7 +20,7 @@ jobs:
   validate-certified-runtime:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout recovery branch
+      - name: Checkout certified recovery branch
         uses: actions/checkout@v4
         with:
           ref: recovery/full-runtime-rc1-20260829
