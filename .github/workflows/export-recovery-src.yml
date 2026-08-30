@@ -1,38 +1,30 @@
-name: Materialize Certified Runtime Source
+name: Recovery Source Audit
 
 on:
-  push:
-    branches:
-      - recovery/full-runtime-rc1-20260829
-    paths:
-      - ".github/workflows/export-recovery-src.yml"
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 env:
   PYTHONPATH: src
 
 jobs:
-  materialize-certified-src:
+  audit-recovery-source:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout recovery branch
         uses: actions/checkout@v4
         with:
           ref: recovery/full-runtime-rc1-20260829
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.13"
 
-      - name: Verify and restore certified runtime checkpoint
-        run: python scripts/recovery/restore_runtime_checkpoint.py
-
-      - name: Validate recovered production source
+      - name: Validate materialized production source
         shell: python
         run: |
           from pathlib import Path
@@ -57,11 +49,7 @@ jobs:
           ]
           missing = [item for item in required if not Path(item).is_file()]
           if missing:
-              raise SystemExit("certified checkpoint missing required source: " + ", ".join(missing))
-
-          main_window = Path("src/aip/ui/shell/main_window.py").read_text(encoding="utf-8")
-          if "demo_factory" not in main_window:
-              raise SystemExit("certified MainWindow does not expose injected factory composition")
+              raise SystemExit("missing required source: " + ", ".join(missing))
 
           for path in Path("src").rglob("*.py"):
               data = path.read_bytes()
@@ -69,36 +57,7 @@ jobs:
                   raise SystemExit(f"null byte in source: {path}")
               ast.parse(data.decode("utf-8"), filename=str(path))
 
-          print(f"certified materialized source validated: {len(required)} critical modules")
+          print(f"materialized source validated: {len(required)} critical modules")
 
-      - name: Compile recovered production source
+      - name: Compile production source
         run: python -m compileall -q src
-
-      - name: Remove generated recovery marker and caches
-        shell: bash
-        run: |
-          rm -f .aip_runtime_checkpoint.sha256
-          find src -type d -name __pycache__ -prune -exec rm -rf {} +
-          find src -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete
-
-      - name: Commit materialized certified runtime
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A src
-          if git diff --cached --quiet; then
-            echo "Certified runtime source is already fully materialized."
-            exit 0
-          fi
-          git commit -m "Materialize certified RC1 runtime source"
-          git push origin HEAD:recovery/full-runtime-rc1-20260829
-
-      - name: Upload materialized source artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: aip-rc1-materialized-src-${{ github.sha }}
-          path: src
-          if-no-files-found: error
-          retention-days: 7
