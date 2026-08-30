@@ -26,6 +26,13 @@ venv/
 !.env.example
 config/runtime.local.cmd
 
+# Local certified-runtime state and rollback packages
+.aip_certified_runtime.json
+.aip_runtime_checkpoint.sha256
+AIP_BEFORE_CERTIFIED_RECOVERY_*.zip
+.aip_src_certified_staging/
+.aip_src_before_certified/
+
 # Build outputs
 build/
 dist/
