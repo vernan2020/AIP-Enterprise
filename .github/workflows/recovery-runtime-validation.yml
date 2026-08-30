@@ -65,20 +65,28 @@ jobs:
         run: python -m compileall -q src
 
       - name: Validate source tree hygiene
-        shell: bash
+        shell: python
         run: |
-          set -euo pipefail
-          if find src -type f \( -name '*.bak' -o -name '*.before_*' -o -name '*~' \) | grep -q .; then
-            echo 'Backup artifacts found under src'
-            find src -type f \( -name '*.bak' -o -name '*.before_*' -o -name '*~' \)
-            exit 1
-          fi
-          if grep -RIl $'\x00' src --include='*.py' | grep -q .; then
-            echo 'Null bytes found in Python source'
-            exit 1
-          fi
-          git diff --check -- src
-          echo 'source tree validation: PASS'
+          from pathlib import Path
+          root = Path('src')
+          backups = []
+          null_bytes = []
+          for path in root.rglob('*'):
+              if not path.is_file():
+                  continue
+              name = path.name.lower()
+              if name.endswith('.bak') or '.before_' in name or name.endswith('~'):
+                  backups.append(str(path))
+              if path.suffix.lower() == '.py' and b'\x00' in path.read_bytes():
+                  null_bytes.append(str(path))
+          if backups:
+              raise SystemExit('backup artifacts found under src: ' + ', '.join(backups))
+          if null_bytes:
+              raise SystemExit('null bytes found in Python source: ' + ', '.join(null_bytes))
+          print('binary/source hygiene: PASS')
+
+      - name: Validate whitespace hygiene
+        run: git diff --check -- src
 
       - name: Install runtime and test dependencies
         run: |
@@ -96,6 +104,9 @@ jobs:
 
       - name: Build certified Windows recovery package
         run: python scripts/recovery/build_windows_recovery_package.py
+
+      - name: Verify certified Windows recovery package
+        run: python scripts/recovery/verify_windows_recovery_package.py
 
       - name: Upload certified recovery package
         uses: actions/upload-artifact@v4
