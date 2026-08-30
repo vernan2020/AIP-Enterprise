@@ -1,0 +1,20 @@
+{
+  "format": "AIP_CANONICAL_RUNTIME_XZ_V1",
+  "archive_compression": "xz",
+  "archive_sha256": "f650a5fe90861f4fc83f6abe9aacc3a2a96b76e158268d184ba4d465664e5b22",
+  "archive_size": 357364,
+  "source_file_count": 1022,
+  "source_tree_sha256": "71cb1aff925b910fb5e81948dba0a179960b94c07b3731259a84b3b1f6fa0324",
+  "fragment_count": 32,
+  "fragment_pattern": "runtime_canonical.part{index:03d}.b64",
+  "base64_length": 476488,
+  "source_baseline": "user backup + selected recovery/hardening overlays",
+  "notes": [
+    "no credentials",
+    "no database",
+    "no virtualenv",
+    "no runtime caches"
+  ],
+  "fragment_size": 15000,
+  "last_fragment_size": 11488
+}
