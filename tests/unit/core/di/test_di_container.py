@@ -21,6 +21,7 @@ class TestContainer:
 
     def test_add_singleton(self) -> None:
         """Test adding singleton service."""
+
         class MyService:
             pass
 
@@ -30,6 +31,7 @@ class TestContainer:
 
     def test_add_transient(self) -> None:
         """Test adding transient service."""
+
         class MyService:
             pass
 
@@ -39,6 +41,7 @@ class TestContainer:
 
     def test_add_scoped(self) -> None:
         """Test adding scoped service."""
+
         class MyService:
             pass
 
@@ -48,6 +51,7 @@ class TestContainer:
 
     def test_add_singleton_factory(self) -> None:
         """Test adding singleton with factory."""
+
         class MyService:
             def __init__(self, value: int) -> None:
                 self.value = value
@@ -61,6 +65,7 @@ class TestContainer:
 
     def test_add_transient_factory(self) -> None:
         """Test adding transient with factory."""
+
         class MyService:
             def __init__(self, value: int) -> None:
                 self.value = value
@@ -74,6 +79,7 @@ class TestContainer:
 
     def test_add_scoped_factory(self) -> None:
         """Test adding scoped with factory."""
+
         class MyService:
             def __init__(self, value: int) -> None:
                 self.value = value
@@ -87,6 +93,7 @@ class TestContainer:
 
     def test_method_chaining(self) -> None:
         """Test method chaining for fluent API."""
+
         class ServiceA:
             pass
 
@@ -96,17 +103,13 @@ class TestContainer:
         class ServiceC:
             pass
 
-        container = (
-            Container()
-            .add_singleton(ServiceA)
-            .add_transient(ServiceB)
-            .add_scoped(ServiceC)
-        )
+        container = Container().add_singleton(ServiceA).add_transient(ServiceB).add_scoped(ServiceC)
 
         assert not container.is_built()
 
     def test_build_container(self) -> None:
         """Test building container."""
+
         class MyService:
             pass
 
@@ -127,6 +130,7 @@ class TestContainer:
 
     def test_register_after_build_fails(self) -> None:
         """Test registering service after build fails."""
+
         class ServiceA:
             pass
 
@@ -143,6 +147,7 @@ class TestContainer:
 
     def test_resolve_singleton(self) -> None:
         """Test resolving singleton service."""
+
         class MyService:
             pass
 
@@ -157,6 +162,7 @@ class TestContainer:
 
     def test_resolve_transient(self) -> None:
         """Test resolving transient service."""
+
         class MyService:
             pass
 
@@ -171,6 +177,7 @@ class TestContainer:
 
     def test_resolve_with_constructor_injection(self) -> None:
         """Test resolving with constructor injection."""
+
         class Logger:
             pass
 
@@ -189,6 +196,7 @@ class TestContainer:
 
     def test_resolve_without_build_fails(self) -> None:
         """Test resolving without building fails."""
+
         class MyService:
             pass
 
@@ -201,6 +209,7 @@ class TestContainer:
 
     def test_resolve_unregistered_service_fails(self) -> None:
         """Test resolving unregistered service fails."""
+
         class RegisteredService:
             pass
 
@@ -216,6 +225,7 @@ class TestContainer:
 
     def test_resolve_circular_dependency_fails(self) -> None:
         """Test resolving circular dependency fails."""
+
         class ServiceA:
             def __init__(self, service_b: "ServiceB") -> None:
                 self.service_b = service_b
@@ -234,6 +244,7 @@ class TestContainer:
 
     def test_try_add_singleton(self) -> None:
         """Test try_add_singleton."""
+
         class MyService:
             pass
 
@@ -245,6 +256,7 @@ class TestContainer:
 
     def test_try_add_transient(self) -> None:
         """Test try_add_transient."""
+
         class MyService:
             pass
 
@@ -254,6 +266,7 @@ class TestContainer:
 
     def test_try_add_scoped(self) -> None:
         """Test try_add_scoped."""
+
         class MyService:
             pass
 
@@ -263,6 +276,7 @@ class TestContainer:
 
     def test_scoped_resolution_without_scope_fails(self) -> None:
         """Test scoped resolution fails without scope."""
+
         class ScopedService:
             pass
 
@@ -275,6 +289,7 @@ class TestContainer:
 
     def test_scoped_resolution_with_scope(self) -> None:
         """Test scoped resolution within scope."""
+
         class ScopedService:
             pass
 
@@ -289,6 +304,7 @@ class TestContainer:
 
     def test_scoped_resolution_different_scopes(self) -> None:
         """Test scoped services are different across scopes."""
+
         class ScopedService:
             pass
 
@@ -306,6 +322,7 @@ class TestContainer:
 
     def test_complex_dependency_tree(self) -> None:
         """Test resolving complex dependency tree."""
+
         class Logger:
             pass
 
@@ -347,6 +364,7 @@ class TestContainer:
 
     def test_get_provider(self) -> None:
         """Test getting underlying service provider."""
+
         class MyService:
             pass
 
@@ -366,6 +384,7 @@ class TestContainer:
 
     def test_repr_not_built(self) -> None:
         """Test string representation when not built."""
+
         class MyService:
             pass
 
@@ -378,6 +397,7 @@ class TestContainer:
 
     def test_repr_built(self) -> None:
         """Test string representation when built."""
+
         class MyService:
             pass
 
@@ -391,6 +411,7 @@ class TestContainer:
 
     def test_singleton_with_implementation_type(self) -> None:
         """Test singleton with different implementation type."""
+
         class IService:
             def get_name(self) -> str:
                 raise NotImplementedError
@@ -409,6 +430,7 @@ class TestContainer:
 
     def test_mixed_lifetimes(self) -> None:
         """Test container with mixed service lifetimes."""
+
         class SingletonService:
             pass
 

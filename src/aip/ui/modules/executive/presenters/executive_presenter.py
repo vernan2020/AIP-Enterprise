@@ -12,7 +12,14 @@ class ExecutivePresenter:
         self._demo_factory = demo_factory or DemoApplicationFactory()
         self._correlation_id = "corr-demo-executive"
 
-    def build_view_model(self, *, theme: str = "light", filters: dict[str, str] | None = None, loading: bool = False, error: str | None = None) -> ExecutiveViewModel:
+    def build_view_model(
+        self,
+        *,
+        theme: str = "light",
+        filters: dict[str, str] | None = None,
+        loading: bool = False,
+        error: str | None = None,
+    ) -> ExecutiveViewModel:
         workflow_result = self._demo_factory.initial_load_workflow().execute(self._correlation_id)
         portfolio = workflow_result["portfolio"]
         liquidity = workflow_result["liquidity"]
@@ -29,9 +36,11 @@ class ExecutivePresenter:
         )
         currency_distribution = portfolio.get("currency_distribution", ()) or ()
         positions = portfolio.get("positions", []) or []
-        top_issuers = ", ".join(
-            position.get("issuer", "N/A") for position in positions[:2]
-        ) if positions else "N/A"
+        top_issuers = (
+            ", ".join(position.get("issuer", "N/A") for position in positions[:2])
+            if positions
+            else "N/A"
+        )
         portfolio_view = (
             f"Market Value: {portfolio['market_value']:,.2f}",
             f"Yield: {portfolio['weighted_yield']:.2f}%",
@@ -56,11 +65,29 @@ class ExecutivePresenter:
             f"Market Status: {market['market_status']}",
         )
         recommendations = (
-            ExecutiveRow(title="Treasury Buffer Review", detail="Maintain cash buffer ahead of next rollover", category="Treasury", severity="High", source="Treasury Ops"),
-            ExecutiveRow(title="Funding Window", detail="Reprice term funding before rollover", category="Funding", severity="Medium", source="Funding Desk"),
+            ExecutiveRow(
+                title="Treasury Buffer Review",
+                detail="Maintain cash buffer ahead of next rollover",
+                category="Treasury",
+                severity="High",
+                source="Treasury Ops",
+            ),
+            ExecutiveRow(
+                title="Funding Window",
+                detail="Reprice term funding before rollover",
+                category="Funding",
+                severity="Medium",
+                source="Funding Desk",
+            ),
         )
         alerts = (
-            ExecutiveRow(title="Demo Mode Badge", detail="Deterministic demo data is active", category="System", severity="Medium", source="Demo Platform"),
+            ExecutiveRow(
+                title="Demo Mode Badge",
+                detail="Deterministic demo data is active",
+                category="System",
+                severity="Medium",
+                source="Demo Platform",
+            ),
         )
         trends = (
             ("30 Days", ("92", "95", "97", "94")),
@@ -82,7 +109,9 @@ class ExecutivePresenter:
             error=error,
         )
 
-    def refresh(self, *, theme: str = "light", filters: dict[str, str] | None = None) -> ExecutiveViewModel:
+    def refresh(
+        self, *, theme: str = "light", filters: dict[str, str] | None = None
+    ) -> ExecutiveViewModel:
         return self.build_view_model(theme=theme, filters=filters)
 
     def handle_theme_change(self, theme: str) -> ExecutiveViewModel:

@@ -1,6 +1,5 @@
 """Unit tests for dependency injection exceptions."""
 
-
 from aip.core.di.exceptions import (
     CircularDependencyError,
     DIException,
@@ -30,6 +29,7 @@ class TestServiceNotFoundError:
 
     def test_service_not_found_error_with_defaults(self) -> None:
         """Test ServiceNotFoundError with default message."""
+
         class MyService:
             pass
 
@@ -39,6 +39,7 @@ class TestServiceNotFoundError:
 
     def test_service_not_found_error_with_custom_message(self) -> None:
         """Test ServiceNotFoundError with custom message."""
+
         class MyService:
             pass
 
@@ -56,6 +57,7 @@ class TestCircularDependencyError:
 
     def test_circular_dependency_error_creation(self) -> None:
         """Test CircularDependencyError with dependency chain."""
+
         class ServiceA:
             pass
 
@@ -67,6 +69,7 @@ class TestCircularDependencyError:
 
     def test_circular_dependency_error_single_item_chain(self) -> None:
         """Test CircularDependencyError with single item chain."""
+
         class ServiceA:
             pass
 
@@ -80,6 +83,7 @@ class TestServiceAlreadyRegisteredError:
 
     def test_service_already_registered_error_with_defaults(self) -> None:
         """Test ServiceAlreadyRegisteredError with default message."""
+
         class MyService:
             pass
 
@@ -89,6 +93,7 @@ class TestServiceAlreadyRegisteredError:
 
     def test_service_already_registered_error_with_custom_message(self) -> None:
         """Test ServiceAlreadyRegisteredError with custom message."""
+
         class MyService:
             pass
 
@@ -102,6 +107,7 @@ class TestResolutionError:
 
     def test_resolution_error_creation(self) -> None:
         """Test ResolutionError creation."""
+
         class MyService:
             pass
 
@@ -127,6 +133,7 @@ class TestScopeNotActiveError:
 
     def test_scope_not_active_error(self) -> None:
         """Test ScopeNotActiveError creation."""
+
         class ScopedService:
             pass
 

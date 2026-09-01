@@ -5,7 +5,6 @@ from PySide6.QtWidgets import QScrollArea, QSplitter, QVBoxLayout, QWidget
 
 from aip.ui.modules.executive.presenters.executive_presenter import ExecutivePresenter
 from aip.ui.modules.executive.viewmodels.executive_view_model import ExecutiveViewModel
-from aip.ui.modules.executive.views.executive_alerts_view import ExecutiveAlertsView
 from aip.ui.modules.executive.views.executive_decisions_view import ExecutiveDecisionsView
 from aip.ui.modules.executive.views.executive_liquidity_view import ExecutiveLiquidityView
 from aip.ui.modules.executive.views.executive_market_view import ExecutiveMarketView
@@ -19,7 +18,6 @@ from aip.ui.modules.executive.widgets.executive_kpi_strip import ExecutiveKPIWid
 from aip.ui.modules.executive.widgets.executive_metric_card import ExecutiveMetricCard
 from aip.ui.modules.executive.widgets.executive_status_card import ExecutiveStatusCard
 from aip.ui.modules.executive.widgets.executive_summary_table import ExecutiveSummaryTable
-from aip.ui.modules.executive.widgets.executive_trend_chart import ExecutiveTrendChart
 
 
 class ExecutiveWorkspace(QWidget):

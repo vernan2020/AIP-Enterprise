@@ -44,7 +44,11 @@ class AnalysisResult:
             object.__setattr__(self, "requested_at", self.executed_at)
         if self.completed_at is None and self.executed_at is not None:
             object.__setattr__(self, "completed_at", self.executed_at)
-        if self.requested_at is not None and self.completed_at is not None and self.completed_at < self.requested_at:
+        if (
+            self.requested_at is not None
+            and self.completed_at is not None
+            and self.completed_at < self.requested_at
+        ):
             raise ContractValidationError("completed_at cannot be before requested_at")
         object.__setattr__(self, "metadata", deepcopy(dict(self.metadata)))
         object.__setattr__(self, "step_results", deepcopy(dict(self.step_results)))

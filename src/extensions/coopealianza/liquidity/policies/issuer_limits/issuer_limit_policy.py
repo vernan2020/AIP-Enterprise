@@ -36,4 +36,3 @@ class IssuerLimitPolicy(InstitutionalPolicy):
         if isinstance(value, (int, float, str)):
             return Decimal(str(value))
         raise InstitutionalPolicyError("Expected a numeric exposure value")
-

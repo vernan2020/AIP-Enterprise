@@ -4,11 +4,15 @@ from datetime import date
 from pathlib import Path
 
 import openpyxl
-import pytest
 import xlwt
 
-from aip.product.configured.adapters.configured_portfolio_provider import ConfiguredPortfolioProvider
-from aip.product.configured.configuration.configured_source_config import ConfiguredSourceConfig, FolderWatchSourceConfig
+from aip.product.configured.adapters.configured_portfolio_provider import (
+    ConfiguredPortfolioProvider,
+)
+from aip.product.configured.configuration.configured_source_config import (
+    ConfiguredSourceConfig,
+    FolderWatchSourceConfig,
+)
 from aip.product.configured.readers.portfolio_master_reader import PortfolioMasterReader
 from aip.product.demo.configuration.demo_config import DemoConfig
 
@@ -19,8 +23,30 @@ def _write_xlsx(path: Path, *, sheet_name: str = "Maestro") -> None:
     worksheet.title = sheet_name
     worksheet.append(["Resumen institucional", ""])
     worksheet.append(["", ""])
-    worksheet.append(["ISIN", "Emisor", "Instrumento", "Moneda", "Nominal", "Valor de Mercado", "Valor en Libros", "Fecha de Vencimiento"])
-    worksheet.append(["US1234567890", "Banco Central", "Bono", "USD", "1000000", "1005000", "995000", date(2028, 1, 15)])
+    worksheet.append(
+        [
+            "ISIN",
+            "Emisor",
+            "Instrumento",
+            "Moneda",
+            "Nominal",
+            "Valor de Mercado",
+            "Valor en Libros",
+            "Fecha de Vencimiento",
+        ]
+    )
+    worksheet.append(
+        [
+            "US1234567890",
+            "Banco Central",
+            "Bono",
+            "USD",
+            "1000000",
+            "1005000",
+            "995000",
+            date(2028, 1, 15),
+        ]
+    )
     workbook.save(path)
 
 
@@ -47,7 +73,9 @@ def _write_xls(path: Path) -> None:
     workbook.save(str(path))
 
 
-def test_portfolio_master_reader_reads_xlsx_with_header_detection_and_normalization(tmp_path: Path) -> None:
+def test_portfolio_master_reader_reads_xlsx_with_header_detection_and_normalization(
+    tmp_path: Path,
+) -> None:
     path = tmp_path / "maestro.xlsx"
     _write_xlsx(path)
 
@@ -62,7 +90,9 @@ def test_portfolio_master_reader_reads_xlsx_with_header_detection_and_normalizat
     assert result.normalized_positions[0]["book_value"] == 995000
 
 
-def test_portfolio_master_reader_reads_xls_and_marks_duplicates_and_malformed_rows(tmp_path: Path) -> None:
+def test_portfolio_master_reader_reads_xls_and_marks_duplicates_and_malformed_rows(
+    tmp_path: Path,
+) -> None:
     path = tmp_path / "maestro.xls"
     _write_xls(path)
 
@@ -110,8 +140,12 @@ def test_configured_provider_returns_real_positions_without_demo_fallback(tmp_pa
     path.parent.mkdir(parents=True)
     _write_xlsx(path)
 
-    config = DemoConfig(execution_mode="CONFIGURED", demo_mode_enabled=False, data_cutoff_date=date(2026, 7, 29))
-    source_config = ConfiguredSourceConfig(folder_watch=FolderWatchSourceConfig(enabled=True, portfolio_root=str(root)))
+    config = DemoConfig(
+        execution_mode="CONFIGURED", demo_mode_enabled=False, data_cutoff_date=date(2026, 7, 29)
+    )
+    source_config = ConfiguredSourceConfig(
+        folder_watch=FolderWatchSourceConfig(enabled=True, portfolio_root=str(root))
+    )
     provider = ConfiguredPortfolioProvider(config, source_config)
 
     payload = provider.get_portfolio()

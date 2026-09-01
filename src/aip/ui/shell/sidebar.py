@@ -16,7 +16,11 @@ from aip.ui.shell.workspace import Workspace
 class Sidebar(QWidget):
     """Navigation, favorites, and recent modules panel."""
 
-    def __init__(self, navigation: NavigationManager, application_factory: DemoApplicationFactory | None = None) -> None:
+    def __init__(
+        self,
+        navigation: NavigationManager,
+        application_factory: DemoApplicationFactory | None = None,
+    ) -> None:
         super().__init__()
         self._navigation = navigation
         self._application_factory = application_factory
@@ -31,7 +35,9 @@ class Sidebar(QWidget):
         self._search = QLineEdit()
         self._search.setPlaceholderText("Search")
         self._tree = QListWidget()
-        self._tree.addItems(["Home", "Portfolio", "Market", "Liquidity", "Treasury", "Executive", "Reports"])
+        self._tree.addItems(
+            ["Home", "Portfolio", "Market", "Liquidity", "Treasury", "Executive", "Reports"]
+        )
         self._tree.itemDoubleClicked.connect(self._on_item_double_clicked)
         layout.addWidget(self._search)
         layout.addWidget(self._tree)
@@ -41,7 +47,9 @@ class Sidebar(QWidget):
             return
         route_id = item.text().lower()
         if route_id == "portfolio":
-            self._workspace.open_tab("Portfolio", PortfolioView(presenter=PortfolioPresenter(self._application_factory)))
+            self._workspace.open_tab(
+                "Portfolio", PortfolioView(presenter=PortfolioPresenter(self._application_factory))
+            )
         elif route_id == "market":
             self._workspace.open_tab("Market", MarketView())
         elif route_id == "liquidity":

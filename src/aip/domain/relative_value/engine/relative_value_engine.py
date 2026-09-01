@@ -29,15 +29,29 @@ class RelativeValueEngine:
         if request.observed_market_price <= 0:
             raise RelativeValueError("Observed market price must be positive")
 
-        nominal_spread = self._spread_engine.calculate("nominal", request.observed_market_yield, request.benchmark_yield)
+        nominal_spread = self._spread_engine.calculate(
+            "nominal", request.observed_market_yield, request.benchmark_yield
+        )
         benchmark_spread = nominal_spread
         if request.benchmark_yield is not None:
-            benchmark_spread = self._spread_engine.calculate("benchmark", request.observed_market_yield, request.benchmark_yield)
+            benchmark_spread = self._spread_engine.calculate(
+                "benchmark", request.observed_market_yield, request.benchmark_yield
+            )
         else:
-            curve_spread = self._spread_engine.calculate("curve", request.observed_market_yield, curve=request.reference_curve, tenor=Decimal("5"))
+            curve_spread = self._spread_engine.calculate(
+                "curve",
+                request.observed_market_yield,
+                curve=request.reference_curve,
+                tenor=Decimal("5"),
+            )
             nominal_spread = curve_spread
             benchmark_spread = curve_spread
-        curve_spread = self._spread_engine.calculate("curve", request.observed_market_yield, curve=request.reference_curve, tenor=Decimal("5"))
+        curve_spread = self._spread_engine.calculate(
+            "curve",
+            request.observed_market_yield,
+            curve=request.reference_curve,
+            tenor=Decimal("5"),
+        )
         z_spread = self._spread_engine.calculate(
             "z",
             request.observed_market_yield,
@@ -55,7 +69,10 @@ class RelativeValueEngine:
         score = RelativeValueScore(
             raw_values={"spread": nominal_spread, "liquidity": Decimal("0.8")},
             weights={"spread": Decimal("0.7"), "liquidity": Decimal("0.3")},
-            directions={"spread": ScoreDirection.LOWER_IS_BETTER, "liquidity": ScoreDirection.HIGHER_IS_BETTER},
+            directions={
+                "spread": ScoreDirection.LOWER_IS_BETTER,
+                "liquidity": ScoreDirection.HIGHER_IS_BETTER,
+            },
         )
         confidence = ConfidenceScore(Decimal("0.9"), Decimal("0.8"), Decimal("0.7"))
         recommendation = self._recommendation_engine.recommend(
@@ -66,7 +83,13 @@ class RelativeValueEngine:
         )
 
         factors = (
-            ExplanationFactor(name="spread", value=nominal_spread, direction="lower_is_better", contribution=score.final_score, source_reference="curve"),
+            ExplanationFactor(
+                name="spread",
+                value=nominal_spread,
+                direction="lower_is_better",
+                contribution=score.final_score,
+                source_reference="curve",
+            ),
         )
         explanation = ExplanationBuilder().build(
             "Relative value recommendation derived from spread analysis",

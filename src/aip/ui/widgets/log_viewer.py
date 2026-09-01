@@ -4,7 +4,16 @@ import json
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtWidgets import QComboBox, QFormLayout, QPushButton, QTableWidget, QTableWidgetItem, QTextEdit, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QComboBox,
+    QFormLayout,
+    QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
 
 
 class LogViewerDialog(QWidget):
@@ -20,7 +29,9 @@ class LogViewerDialog(QWidget):
         self._correlation_filter = QTextEdit()
         self._table = QTableWidget()
         self._table.setColumnCount(5)
-        self._table.setHorizontalHeaderLabels(["Level", "Component", "Execution", "Correlation", "Message"])
+        self._table.setHorizontalHeaderLabels(
+            ["Level", "Component", "Execution", "Correlation", "Message"]
+        )
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -36,8 +47,18 @@ class LogViewerDialog(QWidget):
         layout.addWidget(export_button)
         layout.addWidget(self._table)
 
-    def add_log(self, level: str, component: str, execution_id: str, correlation_id: str, message: str) -> None:
-        self._logs.append({"level": level, "component": component, "execution_id": execution_id, "correlation_id": correlation_id, "message": message})
+    def add_log(
+        self, level: str, component: str, execution_id: str, correlation_id: str, message: str
+    ) -> None:
+        self._logs.append(
+            {
+                "level": level,
+                "component": component,
+                "execution_id": execution_id,
+                "correlation_id": correlation_id,
+                "message": message,
+            }
+        )
         self._refresh_table()
 
     def apply_filters(self, *, level: str | None = None) -> None:
@@ -67,7 +88,9 @@ class LogViewerDialog(QWidget):
         rows = self._filtered_logs()
         self._table.setRowCount(len(rows))
         for row_index, row in enumerate(rows):
-            for column_index, header in enumerate(["level", "component", "execution_id", "correlation_id", "message"]):
+            for column_index, header in enumerate(
+                ["level", "component", "execution_id", "correlation_id", "message"]
+            ):
                 self._table.setItem(row_index, column_index, QTableWidgetItem(str(row[header])))
 
     def export_logs(self, export_format: str) -> str:

@@ -19,9 +19,20 @@ class RecommendationExplanation:
     source_references: tuple[str, ...] = ()
 
     def to_explanation(self) -> Explanation:
-        factors = [factor for factor in (self._coerce_factor(item) for item in self.supporting_factors) if factor is not None]
+        factors = [
+            factor
+            for factor in (self._coerce_factor(item) for item in self.supporting_factors)
+            if factor is not None
+        ]
         if not factors:
-            factors.append(ExplanationFactor(name="default", value=Decimal("0"), direction="neutral", contribution=Decimal("0")))
+            factors.append(
+                ExplanationFactor(
+                    name="default",
+                    value=Decimal("0"),
+                    direction="neutral",
+                    contribution=Decimal("0"),
+                )
+            )
         return ExplanationBuilder().build(
             self.concise_conclusion,
             factors,
@@ -33,7 +44,9 @@ class RecommendationExplanation:
     @property
     def supporting_factor_objects(self) -> tuple[ExplanationFactor, ...]:
         return tuple(
-            factor for factor in (self._coerce_factor(item) for item in self.supporting_factors) if factor is not None
+            factor
+            for factor in (self._coerce_factor(item) for item in self.supporting_factors)
+            if factor is not None
         )
 
     def _coerce_factor(self, factor: object) -> ExplanationFactor | None:

@@ -6,8 +6,8 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 from aip.product.configured.readers.pipca_vector_reader import (
-    InstitutionalPiPCAVectorReadResult,
     InstitutionalPiPCAVectorReader,
+    InstitutionalPiPCAVectorReadResult,
     InstitutionalVectorRecord,
 )
 
@@ -23,7 +23,9 @@ class InstitutionalVectorRow:
 class InstitutionalVectorReader(InstitutionalPiPCAVectorReader):
     """Backward-compatible PiPCA vector reader for the historical test contract."""
 
-    def read(self, path: str | Path, *, source_cutoff: date | None = None, diagnostic_mode: bool = False) -> list[InstitutionalVectorRow]:
+    def read(
+        self, path: str | Path, *, source_cutoff: date | None = None, diagnostic_mode: bool = False
+    ) -> list[InstitutionalVectorRow]:
         del source_cutoff, diagnostic_mode
         file_path = Path(path)
         if not file_path.exists():

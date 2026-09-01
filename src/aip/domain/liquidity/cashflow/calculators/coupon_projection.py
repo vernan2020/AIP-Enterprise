@@ -8,7 +8,9 @@ from aip.domain.liquidity.cashflow.exceptions import ProjectionError
 class CouponProjection:
     """Compute the coupon cash flow amount from an instrument or simple nominal/rate inputs."""
 
-    def project(self, nominal_value: Decimal | object, coupon_rate: Decimal | None = None) -> Decimal:
+    def project(
+        self, nominal_value: Decimal | object, coupon_rate: Decimal | None = None
+    ) -> Decimal:
         if isinstance(nominal_value, (Decimal, int, float)):
             if coupon_rate is None:
                 raise ProjectionError("Coupon rate is required for numeric projection")

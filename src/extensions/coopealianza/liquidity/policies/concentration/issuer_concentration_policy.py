@@ -15,7 +15,9 @@ class IssuerConcentrationPolicy(InstitutionalPolicy):
     """Evaluate current concentration against warning and blocking thresholds."""
 
     def __init__(self, config: LiquidityPolicyConfig) -> None:
-        super().__init__(config, description="Ensure issuer concentration is within configured thresholds")
+        super().__init__(
+            config, description="Ensure issuer concentration is within configured thresholds"
+        )
 
     def _evaluate_impl(self, context: PolicyContext) -> EvaluationResult:
         asset = self._coerce_asset(context)
@@ -25,7 +27,9 @@ class IssuerConcentrationPolicy(InstitutionalPolicy):
         if concentration < warning:
             return self._result(context, "PASSED", "Concentration is within warning threshold")
         if concentration < blocking:
-            return self._result(context, "WARNING", "Concentration is approaching blocking threshold")
+            return self._result(
+                context, "WARNING", "Concentration is approaching blocking threshold"
+            )
         return self._result(context, "FAILED", "Concentration exceeds blocking threshold")
 
     def _result(self, context: PolicyContext, status: str, message: str) -> EvaluationResult:
@@ -37,4 +41,3 @@ class IssuerConcentrationPolicy(InstitutionalPolicy):
         if isinstance(value, (int, float, str)):
             return Decimal(str(value))
         raise InstitutionalPolicyError("Expected a numeric concentration value")
-

@@ -299,7 +299,5 @@ class ServiceCollection:
         Returns:
             String describing registered services.
         """
-        service_list = "\n  ".join(
-            str(descriptor) for descriptor in self._services.values()
-        )
+        service_list = "\n  ".join(str(descriptor) for descriptor in self._services.values())
         return f"ServiceCollection(\n  {service_list}\n)"

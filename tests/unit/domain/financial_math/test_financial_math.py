@@ -72,13 +72,19 @@ def test_cash_flow_and_series_behaviour() -> None:
 
 def test_cash_flow_series_duplicate_aggregation_with_fx() -> None:
     series = CashFlowSeries.from_cashflows(
-        [CashFlow(date(2024, 1, 1), Decimal("100"), "USD"), CashFlow(date(2024, 1, 1), Decimal("25"), "USD")]
+        [
+            CashFlow(date(2024, 1, 1), Decimal("100"), "USD"),
+            CashFlow(date(2024, 1, 1), Decimal("25"), "USD"),
+        ]
     )
     aggregated = series.aggregate_duplicates()
     assert aggregated.total_amount() == Decimal("125")
 
     mixed = CashFlowSeries.from_cashflows(
-        [CashFlow(date(2024, 1, 1), Decimal("100"), "USD"), CashFlow(date(2024, 1, 1), Decimal("25"), "EUR")]
+        [
+            CashFlow(date(2024, 1, 1), Decimal("100"), "USD"),
+            CashFlow(date(2024, 1, 1), Decimal("25"), "EUR"),
+        ]
     )
     with pytest.raises(CurrencyMismatchError):
         mixed.aggregate_duplicates()
@@ -88,9 +94,15 @@ def test_cash_flow_series_duplicate_aggregation_with_fx() -> None:
 
 
 def test_compounding_and_rate_conversion() -> None:
-    assert accumulation_factor(Decimal("0.05"), Decimal("1"), compounding="annual") == Decimal("1.05")
-    assert discount_factor(Decimal("0.05"), Decimal("1"), compounding="annual") == Decimal("0.9523809523809523809523809524")
-    assert equivalent_rate(Decimal("0.05"), from_compounding="annual", to_compounding="semiannual") > Decimal("0")
+    assert accumulation_factor(Decimal("0.05"), Decimal("1"), compounding="annual") == Decimal(
+        "1.05"
+    )
+    assert discount_factor(Decimal("0.05"), Decimal("1"), compounding="annual") == Decimal(
+        "0.9523809523809523809523809524"
+    )
+    assert equivalent_rate(
+        Decimal("0.05"), from_compounding="annual", to_compounding="semiannual"
+    ) > Decimal("0")
     with pytest.raises(InvalidRateError):
         accumulation_factor(Decimal("0.05"), Decimal("1"), compounding="bad")
 
@@ -102,7 +114,9 @@ def test_present_and_future_value_with_interest_rate_object() -> None:
     assert present_value(flow, rate, valuation_date=valuation_date) < Decimal("100")
     assert future_value(flow, rate, valuation_date=valuation_date) > Decimal("100")
 
-    series = CashFlowSeries.from_cashflows([flow, CashFlow(date(2026, 1, 1), Decimal("100"), "USD")])
+    series = CashFlowSeries.from_cashflows(
+        [flow, CashFlow(date(2026, 1, 1), Decimal("100"), "USD")]
+    )
     assert present_value_series(series, rate, valuation_date=valuation_date) > Decimal("0")
     assert future_value_series(series, rate, valuation_date=valuation_date) > Decimal("0")
 
@@ -120,21 +134,33 @@ def test_rate_value_objects_capture_compounding_metadata() -> None:
 
 
 def test_root_finding_convergence_and_errors() -> None:
-    result = bisection_solve(lambda x: x * x - Decimal("4"), Decimal("0"), Decimal("3"), tolerance=Decimal("1e-8"))
+    result = bisection_solve(
+        lambda x: x * x - Decimal("4"), Decimal("0"), Decimal("3"), tolerance=Decimal("1e-8")
+    )
     assert result.converged and result.root == pytest.approx(2, abs=1e-6)
 
     with pytest.raises(InvalidBracketError):
         bisection_solve(lambda x: x * x - Decimal("4"), Decimal("0"), Decimal("1"))
 
     with pytest.raises(ConvergenceError):
-        newton_raphson_solve(lambda x: x * x + Decimal("1"), lambda x: Decimal("2") * x, Decimal("1"), tolerance=Decimal("1e-8"))
+        newton_raphson_solve(
+            lambda x: x * x + Decimal("1"),
+            lambda x: Decimal("2") * x,
+            Decimal("1"),
+            tolerance=Decimal("1e-8"),
+        )
 
     with pytest.raises(InvalidBracketError):
-        brent_solve(lambda x: x * x - Decimal("4"), Decimal("0"), Decimal("1"), tolerance=Decimal("1e-8"))
+        brent_solve(
+            lambda x: x * x - Decimal("4"), Decimal("0"), Decimal("1"), tolerance=Decimal("1e-8")
+        )
 
 
 def test_yield_and_irr_converge_for_known_cash_flows() -> None:
-    cash_flows = [CashFlow(date(2024, 1, 1), Decimal("-100"), "USD"), CashFlow(date(2025, 1, 1), Decimal("110"), "USD")]
+    cash_flows = [
+        CashFlow(date(2024, 1, 1), Decimal("-100"), "USD"),
+        CashFlow(date(2025, 1, 1), Decimal("110"), "USD"),
+    ]
     summary = yield_to_maturity(cash_flows, Decimal("100"), settlement_date=date(2024, 1, 1))
     assert summary.converged
     irr = internal_rate_of_return(cash_flows, settlement_date=date(2024, 1, 1))
@@ -143,42 +169,100 @@ def test_yield_and_irr_converge_for_known_cash_flows() -> None:
 
 
 def test_interpolation_and_curve_behaviour() -> None:
-    assert interpolate_linear([Decimal("0"), Decimal("2")], [Decimal("0"), Decimal("4")], Decimal("1")) == Decimal("2")
-    assert interpolate_logarithmic([Decimal("1"), Decimal("2")], [Decimal("1"), Decimal("4")], Decimal("1.5")) > Decimal("1")
+    assert interpolate_linear(
+        [Decimal("0"), Decimal("2")], [Decimal("0"), Decimal("4")], Decimal("1")
+    ) == Decimal("2")
+    assert interpolate_logarithmic(
+        [Decimal("1"), Decimal("2")], [Decimal("1"), Decimal("4")], Decimal("1.5")
+    ) > Decimal("1")
 
     with pytest.raises(InterpolationError):
         interpolate_linear([Decimal("0"), Decimal("2")], [Decimal("1"), Decimal("3")], Decimal("3"))
 
     with pytest.raises(InterpolationError):
-        interpolate_logarithmic([Decimal("0"), Decimal("2")], [Decimal("1"), Decimal("3")], Decimal("3"))
+        interpolate_logarithmic(
+            [Decimal("0"), Decimal("2")], [Decimal("1"), Decimal("3")], Decimal("3")
+        )
 
     curve = YieldCurve(
         valuation_date=date(2024, 1, 1),
         currency="USD",
-        points=(CurvePoint(Decimal("1"), Decimal("0.04")), CurvePoint(Decimal("2"), Decimal("0.05"))),
+        points=(
+            CurvePoint(Decimal("1"), Decimal("0.04")),
+            CurvePoint(Decimal("2"), Decimal("0.05")),
+        ),
     )
     assert curve.zero_rate(Decimal("1")) == Decimal("0.04")
     assert curve.discount_factor(Decimal("1")) < Decimal("1")
     assert curve.forward_rate(Decimal("1"), Decimal("2")) > Decimal("0")
 
     with pytest.raises(CurveConstructionError):
-        YieldCurve(valuation_date=date(2024, 1, 1), currency="USD", points=(CurvePoint(Decimal("1"), Decimal("0.01")), CurvePoint(Decimal("1"), Decimal("0.02"))))
+        YieldCurve(
+            valuation_date=date(2024, 1, 1),
+            currency="USD",
+            points=(
+                CurvePoint(Decimal("1"), Decimal("0.01")),
+                CurvePoint(Decimal("1"), Decimal("0.02")),
+            ),
+        )
 
 
 def test_bootstrap_and_curves() -> None:
-    result = bootstrap_zero_curve([(Decimal("1"), Decimal("95"), Decimal("100"))], tolerance=Decimal("0.1"))
+    result = bootstrap_zero_curve(
+        [(Decimal("1"), Decimal("95"), Decimal("100"))], tolerance=Decimal("0.1")
+    )
     assert result.points[0].tenor == Decimal("1")
     assert len(result.residuals) == 1
 
-    assert nelson_siegel_zero_rate(Decimal("0"), beta0=Decimal("0.01"), beta1=Decimal("0.02"), beta2=Decimal("0.03"), tau=Decimal("1")) == Decimal("0.01")
-    assert svensson_zero_rate(Decimal("0"), beta0=Decimal("0.01"), beta1=Decimal("0.02"), beta2=Decimal("0.03"), beta3=Decimal("0.04"), tau1=Decimal("1"), tau2=Decimal("2")) == Decimal("0.01")
-    assert len(nelson_siegel_curve([Decimal("0"), Decimal("1")], beta0=Decimal("0.01"), beta1=Decimal("0.02"), beta2=Decimal("0.03"), tau=Decimal("1"))) == 2
-    assert len(svensson_curve([Decimal("0"), Decimal("1")], beta0=Decimal("0.01"), beta1=Decimal("0.02"), beta2=Decimal("0.03"), beta3=Decimal("0.04"), tau1=Decimal("1"), tau2=Decimal("2"))) == 2
+    assert nelson_siegel_zero_rate(
+        Decimal("0"),
+        beta0=Decimal("0.01"),
+        beta1=Decimal("0.02"),
+        beta2=Decimal("0.03"),
+        tau=Decimal("1"),
+    ) == Decimal("0.01")
+    assert svensson_zero_rate(
+        Decimal("0"),
+        beta0=Decimal("0.01"),
+        beta1=Decimal("0.02"),
+        beta2=Decimal("0.03"),
+        beta3=Decimal("0.04"),
+        tau1=Decimal("1"),
+        tau2=Decimal("2"),
+    ) == Decimal("0.01")
+    assert (
+        len(
+            nelson_siegel_curve(
+                [Decimal("0"), Decimal("1")],
+                beta0=Decimal("0.01"),
+                beta1=Decimal("0.02"),
+                beta2=Decimal("0.03"),
+                tau=Decimal("1"),
+            )
+        )
+        == 2
+    )
+    assert (
+        len(
+            svensson_curve(
+                [Decimal("0"), Decimal("1")],
+                beta0=Decimal("0.01"),
+                beta1=Decimal("0.02"),
+                beta2=Decimal("0.03"),
+                beta3=Decimal("0.04"),
+                tau1=Decimal("1"),
+                tau2=Decimal("2"),
+            )
+        )
+        == 2
+    )
 
 
 def test_bond_metrics_consistency_and_reference_behaviour() -> None:
     cash_flows = [(Decimal("1"), Decimal("100")), (Decimal("2"), Decimal("1100"))]
-    assert accrued_interest_fn(Decimal("0.05"), Decimal("1000"), days_since_last_coupon=30, days_in_period=180) == Decimal("8.333333333333333333")
+    assert accrued_interest_fn(
+        Decimal("0.05"), Decimal("1000"), days_since_last_coupon=30, days_in_period=180
+    ) == Decimal("8.333333333333333333")
 
     assert dirty_price(Decimal("95"), Decimal("5")) == Decimal("100")
     assert clean_price(Decimal("100"), Decimal("5")) == Decimal("95")

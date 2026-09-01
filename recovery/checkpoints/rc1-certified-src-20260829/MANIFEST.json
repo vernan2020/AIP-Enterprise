@@ -1,0 +1,4319 @@
+{
+  "archive_bytes": 324979,
+  "archive_sha256": "707f6a2be1701d0bc7434b9f3f50542948d991b58c427dea11e0727543505ac5",
+  "canonical_source": "materialized GitHub src tree",
+  "chunk_chars": 48000,
+  "encoded_chars": 433308,
+  "format": "tar.gz+base64-chunks",
+  "part_count": 10,
+  "parts": [
+    "runtime_src.part000.b64",
+    "runtime_src.part001.b64",
+    "runtime_src.part002.b64",
+    "runtime_src.part003.b64",
+    "runtime_src.part004.b64",
+    "runtime_src.part005.b64",
+    "runtime_src.part006.b64",
+    "runtime_src.part007.b64",
+    "runtime_src.part008.b64",
+    "runtime_src.part009.b64"
+  ],
+  "source_file_count": 859,
+  "source_files": [
+    {
+      "path": "src/__init__.py",
+      "sha256": "256241bae81da6a5186930a1559f24d3ed093c319a08472931369df7f10b86f6",
+      "size": 56
+    },
+    {
+      "path": "src/aip/__init__.py",
+      "sha256": "babe9e154654b4d45e144d7686173e292974a53eb15abf27d9b330e08657d7b5",
+      "size": 93
+    },
+    {
+      "path": "src/aip/__main__.py",
+      "sha256": "e63c061095746e6706dd8393bb944c3e11a61b3e713862193559a69e2915c7aa",
+      "size": 119
+    },
+    {
+      "path": "src/aip/application/README.md",
+      "sha256": "b677ef08903215e7bcc420c4b1e2a9c15315d913ff355dca0a7568f27f696136",
+      "size": 641
+    },
+    {
+      "path": "src/aip/application/__init__.py",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "size": 1
+    },
+    {
+      "path": "src/aip/application/contracts/analysis_request.py",
+      "sha256": "c0a7fcdba2ec0b7524d99641cfd830517de9833bab5f378371b476589d59c053",
+      "size": 1886
+    },
+    {
+      "path": "src/aip/application/contracts/analysis_result.py",
+      "sha256": "ddb9b0b563e7fa3e59238795b4dd766181ba431c442091dbc4d7f4a8d52c4321",
+      "size": 2501
+    },
+    {
+      "path": "src/aip/application/events/domain_event_dispatcher.py",
+      "sha256": "dbc396043d90b671673766da644a344b62f33cdd5d75699acdacea1a7d5f76c9",
+      "size": 1338
+    },
+    {
+      "path": "src/aip/application/exceptions.py",
+      "sha256": "28f88558911f6ff320741bb32642d4891dcff27a6b00f3e238e61752a22d36f1",
+      "size": 1420
+    },
+    {
+      "path": "src/aip/application/kernel.py",
+      "sha256": "02b42352a853258a53d7b9226aef60f07d3923cf9dfb0c82dac97072a9a757ba",
+      "size": 1538
+    },
+    {
+      "path": "src/aip/application/orchestrators/investment_decision_orchestrator.py",
+      "sha256": "c9ac1bc28eab697066698f569c6dc8e9164c26dde144e1cff5b59614d6c52450",
+      "size": 609
+    },
+    {
+      "path": "src/aip/application/orchestrators/liquidity_analysis_orchestrator.py",
+      "sha256": "b56784c2d8692e4b76ebf50193677724427aba92e293679aa1a432e6fb3aee2d",
+      "size": 590
+    },
+    {
+      "path": "src/aip/application/orchestrators/portfolio_analysis_orchestrator.py",
+      "sha256": "5818c2154c544ea28e2041b1d8ee1d147b47e6f8d912ca572be7baecf902017a",
+      "size": 614
+    },
+    {
+      "path": "src/aip/application/orchestrators/pricing_orchestrator.py",
+      "sha256": "67a7e1328ab678571e1d18f337f1e3b14555352a5971012163a4bdd39d238907",
+      "size": 834
+    },
+    {
+      "path": "src/aip/application/telemetry/execution_metrics.py",
+      "sha256": "d0de7ca5da2e74cfbb0271d19c0e5c578675524e013c2fa53aa107d272dbf8ec",
+      "size": 2213
+    },
+    {
+      "path": "src/aip/application/workflows/base_workflow.py",
+      "sha256": "78bde88f67962e805261917edc3df14d7ecbddd4b85cf7502e745ebb8c6011f0",
+      "size": 1647
+    },
+    {
+      "path": "src/aip/application/workflows/hqla_workflow.py",
+      "sha256": "c884066e3190e6205c6ee39c2460b09896aa59d717746ff23ca4becc9160cb79",
+      "size": 4888
+    },
+    {
+      "path": "src/aip/application/workflows/liquidity_workflow.py",
+      "sha256": "2d840332d15a539efe3efcef27b19ffc7bc03f668bb40b45221e6fd62b461f8a",
+      "size": 5283
+    },
+    {
+      "path": "src/aip/application/workflows/relative_value_workflow.py",
+      "sha256": "493a146aa2356d68210ffef1e838843a28a96075b2ad70c1c37d798cc3261c7a",
+      "size": 5466
+    },
+    {
+      "path": "src/aip/core/__init__.py",
+      "sha256": "e4f1d51779e99185bf5606208c24a606bcb8d7873f0c51a5e4eb260d4856c6a2",
+      "size": 814
+    },
+    {
+      "path": "src/aip/core/bootstrap.py",
+      "sha256": "1aae28301d5fcdfa75b6f83590e9f36355e50716e1c4babdb137faa691e01b10",
+      "size": 1806
+    },
+    {
+      "path": "src/aip/core/constants.py",
+      "sha256": "d24b5ea8e83a3a06dc4dbde6d077c17a896e91f91ea5eb61b0021a8dfa8c0d77",
+      "size": 562
+    },
+    {
+      "path": "src/aip/core/container.py",
+      "sha256": "3f04bca38247911a1ebf85198cf7d501279907e96bf6b2776062e4340cd621bb",
+      "size": 1053
+    },
+    {
+      "path": "src/aip/core/di/QUICK_REFERENCE.md",
+      "sha256": "c62b26bc1258e4dad206a72eaaf7946aba5523fbdeed9818bfbf0899d5334a0e",
+      "size": 12316
+    },
+    {
+      "path": "src/aip/core/di/README.md",
+      "sha256": "b14f764b09a0dc0f0820eb54492259fe7128e7f2554ff9c981b3b6a1c2e3a8d8",
+      "size": 9642
+    },
+    {
+      "path": "src/aip/core/di/__init__.py",
+      "sha256": "580c60f1ed72432103870226d83b02cc0e0201f66099263aef69a9c6f0c0162f",
+      "size": 2163
+    },
+    {
+      "path": "src/aip/core/di/container.py",
+      "sha256": "4018d5d084bd93a9458365b67cc248325017a4519fabba936032c272067f627d",
+      "size": 9619
+    },
+    {
+      "path": "src/aip/core/di/exceptions.py",
+      "sha256": "6042d8a9e9c3cd9769e7c5647388a7d22ff36fb32a543fa60664910e78cb6b2a",
+      "size": 3548
+    },
+    {
+      "path": "src/aip/core/di/lifetimes.py",
+      "sha256": "c5135256a8feff0d9aaaa353dce30e771cdbc901743def304b9ea61051f93e04",
+      "size": 1720
+    },
+    {
+      "path": "src/aip/core/di/service_collection.py",
+      "sha256": "afd7d42d2077014d16dda82cd9e395841726463a9704aa01e259cd67ee61ac29",
+      "size": 9163
+    },
+    {
+      "path": "src/aip/core/di/service_descriptor.py",
+      "sha256": "6b2cb83a4a1261b8d9ded432ed887dde72c7615a5dab4fa0e805bcf182f3090d",
+      "size": 4551
+    },
+    {
+      "path": "src/aip/core/di/service_provider.py",
+      "sha256": "cbe390a4b9377ce0949458ca423927e26d4486067f9a270cff00b0f99cf3637c",
+      "size": 13735
+    },
+    {
+      "path": "src/aip/core/exceptions.py",
+      "sha256": "94f8ef78e4aa8ab6f3b70930215df1139ff039621c05d64b8d0d3ab7b4d7a537",
+      "size": 1379
+    },
+    {
+      "path": "src/aip/core/identifiers.py",
+      "sha256": "6bd954b3d2d94e145663a253bd5c01bd798d34b1303e3262099bf47f13b6a9c5",
+      "size": 1175
+    },
+    {
+      "path": "src/aip/core/paths.py",
+      "sha256": "e9712a931ce33746b29d3b9640e7717644399fb7e434cf38dc24c7ffde6d7da3",
+      "size": 1624
+    },
+    {
+      "path": "src/aip/core/result.py",
+      "sha256": "c97b516141b760a45ea56d07adca72569ba64fabc3723c008608433768537b31",
+      "size": 1852
+    },
+    {
+      "path": "src/aip/core/value_object.py",
+      "sha256": "90d0d21569abf6dc11420126b30837a7061996f4dd9eed862df46d23e2b7c540",
+      "size": 543
+    },
+    {
+      "path": "src/aip/core/version.py",
+      "sha256": "0c0acad2cab1464f6fd8299f95fe2e4a5fa13b5af02d64f2e0ef388fef22986e",
+      "size": 560
+    },
+    {
+      "path": "src/aip/domain/analytics/__init__.py",
+      "sha256": "2baf871be16041e73abdabd40967dac05c4710708129d7e39809c8f92ad2f43b",
+      "size": 2827
+    },
+    {
+      "path": "src/aip/domain/analytics/enums/normalization_method.py",
+      "sha256": "47cadf254ffb9f028d3b6e25972f73bfc8f3c4f54ffaf63b091a2e665b763e3a",
+      "size": 252
+    },
+    {
+      "path": "src/aip/domain/analytics/enums/outlier_method.py",
+      "sha256": "5d0f0cd9b068e6e3d9ce0ac3880e71ee230097511a6537987b29a03baea1ad99",
+      "size": 222
+    },
+    {
+      "path": "src/aip/domain/analytics/enums/ranking_order.py",
+      "sha256": "67387e811a9d0621e9e4403679c284c8d4dc5e9c99eae0b2a1520b9c548047b1",
+      "size": 190
+    },
+    {
+      "path": "src/aip/domain/analytics/enums/score_direction.py",
+      "sha256": "11bf1906b32840b7f3118049fda4a2467d592012ec065a813e5c21b4bb587fc8",
+      "size": 276
+    },
+    {
+      "path": "src/aip/domain/analytics/exceptions.py",
+      "sha256": "5030f64ee2bda8773291f471e9c9c45a80896abcbb8819eb553c8e8974cd05a6",
+      "size": 926
+    },
+    {
+      "path": "src/aip/domain/analytics/explainability/explanation.py",
+      "sha256": "41b22338aef2b61a8933fa96cbbed53a59fea03c1700adfa0b1df6bfe6cbbd22",
+      "size": 556
+    },
+    {
+      "path": "src/aip/domain/analytics/explainability/explanation_builder.py",
+      "sha256": "1bb4fb06bd63bccf307ee37b508fc07769a3dabd3a053e579fb3586a45523377",
+      "size": 1205
+    },
+    {
+      "path": "src/aip/domain/analytics/explainability/explanation_factor.py",
+      "sha256": "69dc4e9de189a7293d5079a8d48b1c9b60c79a8bdc6d106f73345dd092feb8e8",
+      "size": 345
+    },
+    {
+      "path": "src/aip/domain/analytics/models/analytics_context.py",
+      "sha256": "8929be4c6925999b6e13215fa10ad16a0965255335a4a208619c6f184cae5f4b",
+      "size": 561
+    },
+    {
+      "path": "src/aip/domain/analytics/models/metric_observation.py",
+      "sha256": "a78d1814114974050eb2e8d7149fdfe25d689522b1cdbfa4766ebd5a1fc0f337",
+      "size": 1133
+    },
+    {
+      "path": "src/aip/domain/analytics/normalization/min_max.py",
+      "sha256": "223cea4bb0d0c3611c2d1ad9039ef735910dff432c62fe1840f64a376d0b7caa",
+      "size": 1096
+    },
+    {
+      "path": "src/aip/domain/analytics/normalization/percentile_rank.py",
+      "sha256": "a77806476622ae513fdcc1e1e650ecee08324ccf4d0dea9c1b074e1bb4298daf",
+      "size": 1336
+    },
+    {
+      "path": "src/aip/domain/analytics/normalization/robust_scaler.py",
+      "sha256": "48b2110bac4f3a5e97c88950f11e23b0645a57c7511df01b4abe6fe67b18cfcd",
+      "size": 969
+    },
+    {
+      "path": "src/aip/domain/analytics/normalization/z_score.py",
+      "sha256": "cd6c2c1dd6d94e6c899482ebeb569b74c929005118f7fb6274c7cdf1eaa66743",
+      "size": 1101
+    },
+    {
+      "path": "src/aip/domain/analytics/ranking/rank_item.py",
+      "sha256": "6a8afd35e85d1197a4b30622d001adb6fd281b5dd0d389a63f693539c1f4bc4d",
+      "size": 370
+    },
+    {
+      "path": "src/aip/domain/analytics/ranking/ranking_engine.py",
+      "sha256": "dc87cecbdcd934204f1772415a58b5cc5e5ce3358712a2b8cb82ab0e459d6f38",
+      "size": 3045
+    },
+    {
+      "path": "src/aip/domain/analytics/ranking/ranking_result.py",
+      "sha256": "d610f832cf4ca7dc89adf6e12059c91c7087af12423417c71bd1718ce24e278b",
+      "size": 519
+    },
+    {
+      "path": "src/aip/domain/analytics/ranking/tie_breaker.py",
+      "sha256": "a59851ca82e73f76f4c1f0fb5146f4845ad4462c53c2bf34d63e0301ef44aa5c",
+      "size": 1295
+    },
+    {
+      "path": "src/aip/domain/analytics/scoring/composite_score.py",
+      "sha256": "079ec124775aab9fe1748041894ed12e3d4e07e72c0a97dfc3129448bfb7dd29",
+      "size": 868
+    },
+    {
+      "path": "src/aip/domain/analytics/scoring/score_band.py",
+      "sha256": "3d08f0d32ef7430263cc1f1c3c0a0efc26b3bdb2043d70a389d74263c917e105",
+      "size": 999
+    },
+    {
+      "path": "src/aip/domain/analytics/scoring/score_component.py",
+      "sha256": "8cfe96af0dca268aeef7293109d32074ca2aff1d724d71ce19f59c9ea350a69c",
+      "size": 1548
+    },
+    {
+      "path": "src/aip/domain/analytics/scoring/weighted_score.py",
+      "sha256": "aee32cab738e1a9bf5c32afa47ac4dc7cef9c50f624865a80f9588efdae1c2b4",
+      "size": 690
+    },
+    {
+      "path": "src/aip/domain/analytics/statistics/descriptive_statistics.py",
+      "sha256": "01005318c4ce930d21512250dfddf365ebd34569a0a322e7e9f34b98e37299da",
+      "size": 3351
+    },
+    {
+      "path": "src/aip/domain/analytics/statistics/outlier_detection.py",
+      "sha256": "47e46ed92554bdbc80b1eaa26c9c5db2d0a8c175a8d2ba95e80b305c811bc93f",
+      "size": 2927
+    },
+    {
+      "path": "src/aip/domain/analytics/statistics/weighted_statistics.py",
+      "sha256": "098f52189063e0c959da287bf9331865a3645548242af4c4b620c02efb5f8b66",
+      "size": 1431
+    },
+    {
+      "path": "src/aip/domain/financial_math/README.md",
+      "sha256": "36651b15d1b3e8780d3838416cc7193d99b16e5f25bfdcca4982ad106e72be89",
+      "size": 488
+    },
+    {
+      "path": "src/aip/domain/financial_math/__init__.py",
+      "sha256": "934a423385b400d900b1342af135eae3674a9f10f2553217572c5ce599119136",
+      "size": 4012
+    },
+    {
+      "path": "src/aip/domain/financial_math/bond_metrics/__init__.py",
+      "sha256": "5a918ef7681ed470e41a66ea80bea6469a8a8d3b1f90a031a21d63e6dd4a0001",
+      "size": 829
+    },
+    {
+      "path": "src/aip/domain/financial_math/bond_metrics/accrued_interest.py",
+      "sha256": "2165f43c6cf67934604749fd052fa2483b2d34f7d232f54388668a30bdd974fb",
+      "size": 725
+    },
+    {
+      "path": "src/aip/domain/financial_math/bond_metrics/clean_dirty_price.py",
+      "sha256": "2fee95adb1a26e17e5a67ea5113643f16ef36c943285a63d32e30c0152a456b6",
+      "size": 306
+    },
+    {
+      "path": "src/aip/domain/financial_math/bond_metrics/convexity.py",
+      "sha256": "1f4f9331bd7196ab097a409a4f7ffcd67f2cb67352b8a4f62fe49dfa343a60b3",
+      "size": 766
+    },
+    {
+      "path": "src/aip/domain/financial_math/bond_metrics/dv01.py",
+      "sha256": "9bb7fbf43fea8163a12a53dedbac98f6eb9f89ce762d065a1f4a9c09f58eb124",
+      "size": 684
+    },
+    {
+      "path": "src/aip/domain/financial_math/bond_metrics/effective_duration.py",
+      "sha256": "4176ef811430b37fe40d40eaa4478783b5208d10b17248bab22f352c43120bd9",
+      "size": 800
+    },
+    {
+      "path": "src/aip/domain/financial_math/bond_metrics/macaulay_duration.py",
+      "sha256": "d6ec0994c54fce865f4cda37907a00881727cc65eb42bb1830ec575242f3e608",
+      "size": 984
+    },
+    {
+      "path": "src/aip/domain/financial_math/bond_metrics/modified_duration.py",
+      "sha256": "39cf90712f7d5aef4bcca6a9ae7ee3c2ddc7a4c2970a67859e29acaf6ac12a76",
+      "size": 555
+    },
+    {
+      "path": "src/aip/domain/financial_math/bond_metrics/pvbp.py",
+      "sha256": "727a96f3d9a81c4bf24fea22b29f6934cc5a224d802bcac54398074ad9590f6e",
+      "size": 517
+    },
+    {
+      "path": "src/aip/domain/financial_math/cashflows/__init__.py",
+      "sha256": "02c78f3711b682e70ba3623cd7e90679b5e76924c7cb8fa78550d65679882e11",
+      "size": 220
+    },
+    {
+      "path": "src/aip/domain/financial_math/cashflows/cashflow.py",
+      "sha256": "de392a4f7b37f7646973a611c3da2524a89b53dabca8bacc41e5a60e7339e5c1",
+      "size": 802
+    },
+    {
+      "path": "src/aip/domain/financial_math/cashflows/cashflow_series.py",
+      "sha256": "5fafc153c3b1d495ec676d37382fb8ce3945e9f78409bab8e543d99733941d2f",
+      "size": 3359
+    },
+    {
+      "path": "src/aip/domain/financial_math/curves/__init__.py",
+      "sha256": "1032077a6ed117f33281144ccb99e962fb43e403e751402913d784545d4076c3",
+      "size": 643
+    },
+    {
+      "path": "src/aip/domain/financial_math/curves/bootstrap.py",
+      "sha256": "3a361660b0979e6a0244fa356d4b9d5db380c72f5cc399d7361b519ed0037f3f",
+      "size": 1492
+    },
+    {
+      "path": "src/aip/domain/financial_math/curves/curve_point.py",
+      "sha256": "2e53632962b41dee6fd0bafe500b60b086d679cbcf87b1e28af0f75a99d9faa6",
+      "size": 196
+    },
+    {
+      "path": "src/aip/domain/financial_math/curves/nelson_siegel.py",
+      "sha256": "96dc7494802dea805db53a8ed9f035d0d9e0892a04f0d47948ea55878cfe1647",
+      "size": 853
+    },
+    {
+      "path": "src/aip/domain/financial_math/curves/svensson.py",
+      "sha256": "c95c9df729106462f8a86a8e066d937fe3158b2fc048cfa820c250f947d3b04d",
+      "size": 1251
+    },
+    {
+      "path": "src/aip/domain/financial_math/curves/yield_curve.py",
+      "sha256": "07f546f2fb3889eda58b672b5c3d74e40a437de035643fbc5f97740c1223ee9a",
+      "size": 2589
+    },
+    {
+      "path": "src/aip/domain/financial_math/discounting/__init__.py",
+      "sha256": "b421dec2e0021b6f0874647b00c0f389b9513f6188929a95a1b3958ed43bce80",
+      "size": 514
+    },
+    {
+      "path": "src/aip/domain/financial_math/discounting/compounding.py",
+      "sha256": "358df345393a98a8012ea55d1267c1a9972ab99a57db967ea1064415eed68fcc",
+      "size": 3147
+    },
+    {
+      "path": "src/aip/domain/financial_math/discounting/future_value.py",
+      "sha256": "655daae4644bbcc1a15ad7bccf2d82c5c0983bf748a4a26b51295e9fe2cf5f0b",
+      "size": 2319
+    },
+    {
+      "path": "src/aip/domain/financial_math/discounting/present_value.py",
+      "sha256": "39ce0323cb87cf2278a28b69a354626ab48f22a11af09654a0198f214a94ee42",
+      "size": 2664
+    },
+    {
+      "path": "src/aip/domain/financial_math/exceptions.py",
+      "sha256": "cbe1729f273be65ca5fe07aa9e7b8c08b0d2a5fed83798cb6814bfb0ced2a60e",
+      "size": 1031
+    },
+    {
+      "path": "src/aip/domain/financial_math/interpolation/__init__.py",
+      "sha256": "96a57b6e918926c759eb9edbdcbcd8a7e382a629d7766c44c2b1f8c86d483039",
+      "size": 227
+    },
+    {
+      "path": "src/aip/domain/financial_math/interpolation/linear.py",
+      "sha256": "63bede272f07968853a4da5b1811f21478075810a89eed9104597103c46ceaac",
+      "size": 1249
+    },
+    {
+      "path": "src/aip/domain/financial_math/interpolation/logarithmic.py",
+      "sha256": "879f54afe21528e5b4e6616b7b203e1b06258ff07360ab42d8448a73b955a169",
+      "size": 1389
+    },
+    {
+      "path": "src/aip/domain/financial_math/rates/__init__.py",
+      "sha256": "e775ec3c2c750d690051ac9f0a038e5f69d5c91a2abb4358539af8db28b6a38b",
+      "size": 432
+    },
+    {
+      "path": "src/aip/domain/financial_math/rates/effective_rate.py",
+      "sha256": "c6f653d75747e2f58f9cdeefc585de6699f7c278af67ee7192f463f41e52b1f6",
+      "size": 426
+    },
+    {
+      "path": "src/aip/domain/financial_math/rates/forward_rate.py",
+      "sha256": "d7be055d853cc5a408b25c57bf0b4fda013fc575184928d4b0e61ab1828793dd",
+      "size": 361
+    },
+    {
+      "path": "src/aip/domain/financial_math/rates/interest_rate.py",
+      "sha256": "849d871d2bb7655f88b52859b976a5869da05f4eb7090f2d1b169bfedbb3a5ae",
+      "size": 1557
+    },
+    {
+      "path": "src/aip/domain/financial_math/rates/nominal_rate.py",
+      "sha256": "0fea931b98fdc4fbd9d8c01744ca81ca32b178c7199df07e221a68a497fb82e7",
+      "size": 331
+    },
+    {
+      "path": "src/aip/domain/financial_math/rates/zero_rate.py",
+      "sha256": "e5decee84e560ea8fef3ea80713480f2033a88c11722b46392c5e3cb2ba8e313",
+      "size": 318
+    },
+    {
+      "path": "src/aip/domain/financial_math/root_finding/__init__.py",
+      "sha256": "9ee6ea3fb6ae94c8f7e60db92e8b33806100568c25b7095a52acb1007ff05294",
+      "size": 343
+    },
+    {
+      "path": "src/aip/domain/financial_math/root_finding/bisection.py",
+      "sha256": "82833b9dd32f9ef0787709ae9c2c90d808feb8397c9e54e9ef14f827d71ace82",
+      "size": 1852
+    },
+    {
+      "path": "src/aip/domain/financial_math/root_finding/brent.py",
+      "sha256": "0f6d550f65f60ab12944a8a291102244b23d8b92425a876101ced4235cb45ce3",
+      "size": 2366
+    },
+    {
+      "path": "src/aip/domain/financial_math/root_finding/newton_raphson.py",
+      "sha256": "74fa59375ddd85347e4236518d85736aa5df186d985105c21d162e6ac1f7b9b0",
+      "size": 1393
+    },
+    {
+      "path": "src/aip/domain/financial_math/yield_calculations/__init__.py",
+      "sha256": "0855698958a9c798a1f1607f6a74e8f84e1d00e6c95b7d540af35538e6a25f6c",
+      "size": 310
+    },
+    {
+      "path": "src/aip/domain/financial_math/yield_calculations/internal_rate_of_return.py",
+      "sha256": "a1172ee46475d5527cccd00347a1033796e7d858f5f8b9db8f719387b1ac788f",
+      "size": 2218
+    },
+    {
+      "path": "src/aip/domain/financial_math/yield_calculations/yield_to_maturity.py",
+      "sha256": "b94ac23a9b943fa0b21bba676cd7ffe9acda3c9aa55a6fc3ccebb1252e6e76bc",
+      "size": 2232
+    },
+    {
+      "path": "src/aip/domain/instruments/__init__.py",
+      "sha256": "f007663cf9d21a7eb70aae5768fea5951f035a1b2e355a400074415dbe302401",
+      "size": 2651
+    },
+    {
+      "path": "src/aip/domain/instruments/base/financial_instrument.py",
+      "sha256": "a4c433cf68bc362702dc7ef9a8abc80743edc8a26aeed444072893f7e40098cc",
+      "size": 7733
+    },
+    {
+      "path": "src/aip/domain/instruments/base/fixed_income_instrument.py",
+      "sha256": "691b3bdf7c65015f9cb6b99def895a5522539bdf30d1622541266b1ee6ec06c1",
+      "size": 2011
+    },
+    {
+      "path": "src/aip/domain/instruments/bonds/bond.py",
+      "sha256": "fb82401c25bb63805fd0109abf4c07b57140b8468a37387a621488f476c95a2a",
+      "size": 1233
+    },
+    {
+      "path": "src/aip/domain/instruments/bonds/floating_rate_bond.py",
+      "sha256": "c1e5e814fb35668088f68127c5f984718156824d02cb9e06af5d928140e71e0d",
+      "size": 2602
+    },
+    {
+      "path": "src/aip/domain/instruments/bonds/government_bond.py",
+      "sha256": "3fc79462d02de926b2cf742c4c1c005895f510ce997fd73a42b6f58cf51569fb",
+      "size": 940
+    },
+    {
+      "path": "src/aip/domain/instruments/bonds/treasury_bill.py",
+      "sha256": "2228b2fc84787ad060c0bb0f77e883c8d52a2fc8bf1fd4478b435826d74bf09d",
+      "size": 1167
+    },
+    {
+      "path": "src/aip/domain/instruments/bonds/zero_coupon_bond.py",
+      "sha256": "8eb15a308738987dea29bb0821200caa0569dad7e4ba5bdab5c6e3ff5879c409",
+      "size": 514
+    },
+    {
+      "path": "src/aip/domain/instruments/cash/cash.py",
+      "sha256": "fd5e87adcbb3e95465fac575e95d5fb84ba3f00ffc5fd7e63c2d8373dd1b4517",
+      "size": 432
+    },
+    {
+      "path": "src/aip/domain/instruments/enums/amortization_type.py",
+      "sha256": "96e014234efe63e3bbacf58895abee696ca45738d65d9b07686b424aaf997a41",
+      "size": 156
+    },
+    {
+      "path": "src/aip/domain/instruments/enums/coupon_type.py",
+      "sha256": "0b27f786f32e7021f9b8e7c7bdbd6d3bef76a0311fab0d53f102b05f00e8a45e",
+      "size": 146
+    },
+    {
+      "path": "src/aip/domain/instruments/enums/instrument_type.py",
+      "sha256": "5f6c2297f36e5b47cd593d8760c517f5eb723aa5d5611355cdfe7f05410f3893",
+      "size": 466
+    },
+    {
+      "path": "src/aip/domain/instruments/enums/payment_frequency.py",
+      "sha256": "0228b20f417c9e30561c67835c3f99230af6a15082bc142dfddf22da7b4fdf6a",
+      "size": 1134
+    },
+    {
+      "path": "src/aip/domain/instruments/events/instrument_created.py",
+      "sha256": "c46892a0a6d31393a99fd9e5837c3027b62158d70df447086215d0c02150a1a8",
+      "size": 356
+    },
+    {
+      "path": "src/aip/domain/instruments/events/instrument_updated.py",
+      "sha256": "fe4bfb98f38b9de52e51f7605c2e1950f7d1766362957abb25976e8c1b9a8017",
+      "size": 355
+    },
+    {
+      "path": "src/aip/domain/instruments/exceptions.py",
+      "sha256": "c08aeba2fddb20705244709a4aac021519297b234336362ab01876eaeb64f74b",
+      "size": 519
+    },
+    {
+      "path": "src/aip/domain/instruments/funds/investment_fund.py",
+      "sha256": "0f9fc945c6e61f73402b1f00a046c2712fd89f6e98c1319cf10220eb3533703a",
+      "size": 439
+    },
+    {
+      "path": "src/aip/domain/instruments/issuers/credit_rating.py",
+      "sha256": "b3bc6464aacba3b88f6d22a33b37a7161261ab990ecd036a90f97b1a6246d2da",
+      "size": 175
+    },
+    {
+      "path": "src/aip/domain/instruments/issuers/issuer.py",
+      "sha256": "26b46808f3c9df9a57d488008d377505d6192ef76b2c484d657d9c81f9e00b39",
+      "size": 408
+    },
+    {
+      "path": "src/aip/domain/instruments/issuers/issuer_type.py",
+      "sha256": "96da286418738cd6db2830e1af479de7f7681a20b22dd4356c574be9d8d375d7",
+      "size": 206
+    },
+    {
+      "path": "src/aip/domain/instruments/money_market/certificate_of_deposit.py",
+      "sha256": "048fb429ab7d0b22f494ae4e499c0ccdb90880d6a349655d7c86fc3d87ac4b10",
+      "size": 450
+    },
+    {
+      "path": "src/aip/domain/instruments/money_market/commercial_paper.py",
+      "sha256": "5f12b5cc3bfb2c5f64b1b49e21bb32d89c33a66c0d21657a3af6164f3c424baa",
+      "size": 439
+    },
+    {
+      "path": "src/aip/domain/instruments/money_market/repo.py",
+      "sha256": "d6b511aab0e1eb8a1c2722b18489a0fec230d92472e813f46e7642feb362b000",
+      "size": 432
+    },
+    {
+      "path": "src/aip/domain/instruments/money_market/reverse_repo.py",
+      "sha256": "ff70f82f0440f872879718ceba9418bb06e962fcfe79f5b473748b29b40fbe13",
+      "size": 447
+    },
+    {
+      "path": "src/aip/domain/instruments/repositories/instrument_repository.py",
+      "sha256": "f6435e9d41ee2618930bcf1d1a0e550a0653249aa76d58bf2463560c7ba85568",
+      "size": 751
+    },
+    {
+      "path": "src/aip/domain/instruments/schedules/coupon.py",
+      "sha256": "ac34f995aabeb10a542a510443d8032ea4b45e7ab7e435416e10920340fdc973",
+      "size": 317
+    },
+    {
+      "path": "src/aip/domain/instruments/schedules/coupon_schedule.py",
+      "sha256": "68f7506549de7554cef2dd45f15b028e02489fa8f408548fae0962e44dc51702",
+      "size": 3627
+    },
+    {
+      "path": "src/aip/domain/instruments/services/instrument_factory.py",
+      "sha256": "60cdb9c0bf745f749e34dc55adec130d7c12f88838c3fb2b12c3215b479b6f87",
+      "size": 23032
+    },
+    {
+      "path": "src/aip/domain/liquidity/__init__.py",
+      "sha256": "f1a6c2df4a77c4cd858e3b07e55624dc74d38d04f6c29f64ce48a0aa6e3e842c",
+      "size": 110
+    },
+    {
+      "path": "src/aip/domain/liquidity/cashflow/aggregation/bucket_aggregation.py",
+      "sha256": "9f756638961f0d7b8e3364f034de4d6450dd549ea82fe7cd2399fe9d36e1f2c5",
+      "size": 561
+    },
+    {
+      "path": "src/aip/domain/liquidity/cashflow/aggregation/currency_aggregation.py",
+      "sha256": "308bcf7781572eefa79343a7abaf97d65e53dab00a900753df59f4578ed11a22",
+      "size": 559
+    },
+    {
+      "path": "src/aip/domain/liquidity/cashflow/aggregation/scenario_aggregation.py",
+      "sha256": "b9cc729affcacd9373292a4b7a28a6ae1d597119374637cd7a5d4b507e6cb441",
+      "size": 560
+    },
+    {
+      "path": "src/aip/domain/liquidity/cashflow/calculators/amortization_projection.py",
+      "sha256": "bcf6db3339dd446658c0e05ec7c40b19cbc6712a0dd18d768d7557aacd44f9cd",
+      "size": 721
+    },
+    {
+      "path": "src/aip/domain/liquidity/cashflow/calculators/behavioral_projection.py",
+      "sha256": "0fc5af0c11cdd15f424426259d22d3f13a1067c3f4a5526e9510cb38206d3daf",
+      "size": 3247
+    },
+    {
+      "path": "src/aip/domain/liquidity/cashflow/calculators/contractual_projection.py",
+      "sha256": "46c08feb8245bcda58d0840136319580fe509522ed1d786f523d4a3ce76f6286",
+      "size": 1781
+    },
+    {
+      "path": "src/aip/domain/liquidity/cashflow/calculators/coupon_projection.py",
+      "sha256": "71a189c5a9af137625673f63a797c28d640cd6907247a3e86038d73049197606",
+      "size": 2062
+    },
+    {
+      "path": "src/aip/domain/liquidity/cashflow/calculators/rollover_projection.py",
+      "sha256": "c65d675314cce3f5788c9af045b50cbf12ca12c57173dfd34508246dc0e32b98",
+      "size": 507
+    },
+    {
+      "path": "src/aip/domain/liquidity/cashflow/engine/aggregation_engine.py",
+      "sha256": "4137071197df339bcdea4ec5568ddbf419e5e3c2a8652490a2d66a9d5424e41c",
+      "size": 2715
+    },
+    {
+      "path": "src/aip/domain/liquidity/cashflow/engine/cashflow_engine.py",
+      "sha256": "322bb46bf05aa74a57c08d008ebf41e9b62849532e57d6778886de5afcb9f628",
+      "size": 4053
+    },
+    {
+      "path": "src/aip/domain/liquidity/cashflow/engine/projection_engine.py",
+      "sha256": "d515a0a04f5a6d665aa3e43f55937a0dc414a893cd15db1436da0808c06d4e86",
+      "size": 2689
+    },
+    {
+      "path": "src/aip/domain/liquidity/cashflow/exceptions.py",
+      "sha256": "4efdcb964fbc917bfa0a4cc92859388711dce5f97aab51ffc21b5d4f662d3877",
+      "size": 443
+    },
+    {
+      "path": "src/aip/domain/liquidity/cashflow/explainability/projection_explanation.py",
+      "sha256": "207b3d9a8cf595c8dac855498183863bf475d6e8762b89274b5087180c7a12c6",
+      "size": 782
+    },
+    {
+      "path": "src/aip/domain/liquidity/cashflow/models/behavioral_assumption.py",
+      "sha256": "f7ce5b321dd6e9a13c73299643897c2cce44676cdd8ef88966c784dca545be89",
+      "size": 733
+    },
+    {
+      "path": "src/aip/domain/liquidity/cashflow/models/projected_cashflow.py",
+      "sha256": "381c54ec41e1c74452aedd13831c9d6e329fc44306f2666b8b4b9e65d739283f",
+      "size": 484
+    },
+    {
+      "path": "src/aip/domain/liquidity/cashflow/models/projection_request.py",
+      "sha256": "6b0814e2b6e55c49c97567deb36bdb74581ea5623b8df590a7955dbd3f365f05",
+      "size": 2359
+    },
+    {
+      "path": "src/aip/domain/liquidity/cashflow/models/projection_result.py",
+      "sha256": "4f955b7008bea9d73ee3eb48adbb39056592ced98cc74a38e9d2a6c6437547bc",
+      "size": 1077
+    },
+    {
+      "path": "src/aip/domain/liquidity/cashflow/providers/behavioral_provider.py",
+      "sha256": "ebe124b285dce8a162006629a2aea2f660fa30d10339f5b2fc011401591a9827",
+      "size": 526
+    },
+    {
+      "path": "src/aip/domain/liquidity/cashflow/providers/rollover_provider.py",
+      "sha256": "27d664c728585d774138354568ed9d6f918b3592570f00510f6ec30de4b9a047",
+      "size": 403
+    },
+    {
+      "path": "src/aip/domain/liquidity/cashflow/providers/scenario_provider.py",
+      "sha256": "fef1de3b2bf18b0e9f15f78d1d071aa3b38c06a4bad57025a8e9180a192f5600",
+      "size": 369
+    },
+    {
+      "path": "src/aip/domain/liquidity/gap/__init__.py",
+      "sha256": "1fcf8a1cc67889cd47f5e0cb32aaabecce234367dfce48d4602f74ee9c2b5a5b",
+      "size": 90
+    },
+    {
+      "path": "src/aip/domain/liquidity/gap/aggregation/gap_aggregation.py",
+      "sha256": "c119b55531a9705ddcebe9415c692650776bcd38719bf9b7459187e3fe1b5b98",
+      "size": 2792
+    },
+    {
+      "path": "src/aip/domain/liquidity/gap/analytics/gap_analytics.py",
+      "sha256": "2ef0c1455e16f806acb1e34e8643b14de3be1ff3ce90fd7475ef065afffd57bb",
+      "size": 1627
+    },
+    {
+      "path": "src/aip/domain/liquidity/gap/engine/gap_engine.py",
+      "sha256": "9e53646fd7bea7e5301057affdaaf89bea97461711d0d1df3671a8fa9d346e6b",
+      "size": 15960
+    },
+    {
+      "path": "src/aip/domain/liquidity/gap/exceptions.py",
+      "sha256": "1ffa102ea8db34bc1c16d1efb84c7b20e5a342802ec31e588402abb9843243df",
+      "size": 791
+    },
+    {
+      "path": "src/aip/domain/liquidity/gap/explainability/gap_explanation.py",
+      "sha256": "94caec77e8838dbbc293f466b1dbfce1e702ff4ffc831c2cc68b6b348516ca98",
+      "size": 774
+    },
+    {
+      "path": "src/aip/domain/liquidity/gap/models/gap_request.py",
+      "sha256": "546972058553437729ae516e125a72dee856e874fb5f727a2fdfeeb26e264c12",
+      "size": 1349
+    },
+    {
+      "path": "src/aip/domain/liquidity/gap/models/gap_result.py",
+      "sha256": "c180a72c589ec8e1f4927a68f46cddbd70f3098249c582b4b24ceedcf9cd4a24",
+      "size": 1459
+    },
+    {
+      "path": "src/aip/domain/liquidity/gap/models/gap_value.py",
+      "sha256": "bf25867a3dbe7923ac3110e97bd4855ee8e48e59c4f6e7d86ad3a233b3991000",
+      "size": 489
+    },
+    {
+      "path": "src/aip/domain/liquidity/gap/providers/exchange_rate_policy_provider.py",
+      "sha256": "5aea72203ce826096a165ea839c52c3df173dd304b418060366fad8ea7b4f358",
+      "size": 382
+    },
+    {
+      "path": "src/aip/domain/liquidity/gap/providers/gap_provider.py",
+      "sha256": "c79aad2060ebf17733539d743dbdbfd9a302d1c02f5fc3a6654a66b2918b89c2",
+      "size": 412
+    },
+    {
+      "path": "src/aip/domain/liquidity/gap/providers/liquidity_policy_provider.py",
+      "sha256": "f533299a59a0a858ac90f248657e8f2e5beaa9b61dd53dd47d68f2b721507a16",
+      "size": 327
+    },
+    {
+      "path": "src/aip/domain/liquidity/hqla/__init__.py",
+      "sha256": "c574033f06637030dde72f151a727295a33de5de414c81e02ca4cc17c9dc3a73",
+      "size": 485
+    },
+    {
+      "path": "src/aip/domain/liquidity/hqla/analytics/hqla_analytics.py",
+      "sha256": "cfa1cd005a471f5a2acb5d2be90f259502073d4b44a0c56c7fec4cc073c44b80",
+      "size": 785
+    },
+    {
+      "path": "src/aip/domain/liquidity/hqla/engine/hqla_engine.py",
+      "sha256": "2e196d3cd8cdf0fdd63c0d348b7f728f0e699f65beee041dad7cd8838b9f495d",
+      "size": 4900
+    },
+    {
+      "path": "src/aip/domain/liquidity/hqla/engine/hqla_policy_engine.py",
+      "sha256": "0a64ed6e711cd39079cadb120f6dd7c743e74cda7da44e15f4725f682eea76ff",
+      "size": 1014
+    },
+    {
+      "path": "src/aip/domain/liquidity/hqla/enums.py",
+      "sha256": "10f04e1557726e9562c6543e9e2e4df7dd029b55dc4d3ba20957118870b6801d",
+      "size": 321
+    },
+    {
+      "path": "src/aip/domain/liquidity/hqla/exceptions.py",
+      "sha256": "8afbaa3fdb9a9d6c5c130c4e35e1947fe97feadb68da7822582cb84fda1f300f",
+      "size": 210
+    },
+    {
+      "path": "src/aip/domain/liquidity/hqla/explainability/hqla_explanation.py",
+      "sha256": "632a37a28d07c1b75365fff0963549e3e3f9535d97993d5b3033da343b1fb40d",
+      "size": 1230
+    },
+    {
+      "path": "src/aip/domain/liquidity/hqla/models/hqla_policy_result.py",
+      "sha256": "97727a54c5d7af3f26f4696dfb94c8c9d244afcbac56344f60cb7167c2b43342",
+      "size": 376
+    },
+    {
+      "path": "src/aip/domain/liquidity/hqla/models/hqla_request.py",
+      "sha256": "ad38ebabce69b8409a5360e6b01fe11d1442c46f1bcbe18269d86ce76bfec827",
+      "size": 1222
+    },
+    {
+      "path": "src/aip/domain/liquidity/hqla/models/hqla_result.py",
+      "sha256": "69196599b4f3b32fdabf65a5a946aef5816cf60f8f360b6fa095524ff12c477e",
+      "size": 618
+    },
+    {
+      "path": "src/aip/domain/liquidity/hqla/models/liquidity_asset.py",
+      "sha256": "e44baa82b88b75231e0b0bde0603a24f57aa673c2d16b9b1d3cd2f8f8a005ffb",
+      "size": 2761
+    },
+    {
+      "path": "src/aip/domain/liquidity/hqla/providers/eligibility_provider.py",
+      "sha256": "d45adcc622c091140178968823eeb8f3270f315a9e1b1a33ce5e8d6dc95016dd",
+      "size": 322
+    },
+    {
+      "path": "src/aip/domain/liquidity/hqla/providers/encumbrance_provider.py",
+      "sha256": "3e4ef78eb9138f8ebb75bcbb6bc894b7863e867f1d0223e0692f68ef1e861969",
+      "size": 296
+    },
+    {
+      "path": "src/aip/domain/liquidity/hqla/providers/marketability_provider.py",
+      "sha256": "3779854e10da2643d05f04275e637b27b9688ae5e0a1fef5e73f3b0685db266b",
+      "size": 297
+    },
+    {
+      "path": "src/aip/domain/market/__init__.py",
+      "sha256": "05cb06a2cc34ead109daccdfe45f781ba2a801f5a771753ac145385dcd79373e",
+      "size": 1250
+    },
+    {
+      "path": "src/aip/domain/market/curves/__init__.py",
+      "sha256": "bc8b82bdddb292a112d5575bcf0995af77c62b9f997271fff86ef1eb111d69b9",
+      "size": 27
+    },
+    {
+      "path": "src/aip/domain/market/curves/curve_snapshot.py",
+      "sha256": "de0730b1508e6350d813b57a35b7454d9b4844f73841a02adb63e4e3d83bb6b1",
+      "size": 472
+    },
+    {
+      "path": "src/aip/domain/market/curves/market_curve.py",
+      "sha256": "a80b993ea5f4e4303eacbd03869568df65c08301d6f535fa9b16184605238687",
+      "size": 1086
+    },
+    {
+      "path": "src/aip/domain/market/enums/__init__.py",
+      "sha256": "504861c8ef83d3d501a4e0865a6072f52f0c0032ab484faaa7eaffc6e606648b",
+      "size": 20
+    },
+    {
+      "path": "src/aip/domain/market/enums/market_type.py",
+      "sha256": "857aa63a3d81cf772689013da8682cccd58f9b57a0d8fed3311de6fbe9b07664",
+      "size": 263
+    },
+    {
+      "path": "src/aip/domain/market/enums/quote_source.py",
+      "sha256": "36eabbb8c5e494a777976a1afff9678c4068e0c477d5260838c4740bad5621d2",
+      "size": 249
+    },
+    {
+      "path": "src/aip/domain/market/events/__init__.py",
+      "sha256": "b9203ade14d0648d249f15cb8cb74540a5e65022393c10b44a9fb084bb0060d8",
+      "size": 28
+    },
+    {
+      "path": "src/aip/domain/market/events/quote_updated.py",
+      "sha256": "81ea1cc692aece2040719e8b5b586c24ae88e8a42fdba92deeb5ed0d60970875",
+      "size": 203
+    },
+    {
+      "path": "src/aip/domain/market/events/snapshot_created.py",
+      "sha256": "0b0020b5d8447d7cd1e67f4ed5950073678be92b951d79fbebdcc9e9ba746473",
+      "size": 219
+    },
+    {
+      "path": "src/aip/domain/market/exceptions.py",
+      "sha256": "de30eb1157ad134fe6940f529988052007dbedd4357a3dade9ac1a028ba5e4b4",
+      "size": 234
+    },
+    {
+      "path": "src/aip/domain/market/providers/__init__.py",
+      "sha256": "cd4d9d0efc51aff4f949f019c764b08d090179c363f658405004deabecec4b68",
+      "size": 24
+    },
+    {
+      "path": "src/aip/domain/market/providers/market_provider.py",
+      "sha256": "ca0229b9310dc9ba1f696871c518363ae92d5752c68a6f7529db9412529aec92",
+      "size": 353
+    },
+    {
+      "path": "src/aip/domain/market/quotes/__init__.py",
+      "sha256": "0eb3abe981b5bed16f98f0966e91eb991f51ead54a9e0050053db60c1e4bc1d7",
+      "size": 27
+    },
+    {
+      "path": "src/aip/domain/market/quotes/market_quote.py",
+      "sha256": "f87cd75657a382c5462a5efbef6e7cb1c7767b311f0e3238f3fc3086935fced0",
+      "size": 918
+    },
+    {
+      "path": "src/aip/domain/market/quotes/price_quote.py",
+      "sha256": "772684a379b660b2c274148a09d509e0c0fab2d3c830b18584810acee3aade99",
+      "size": 388
+    },
+    {
+      "path": "src/aip/domain/market/quotes/yield_quote.py",
+      "sha256": "5deff754ce204dd7c017440e135f4955dfd926ffe105a14fe313a609b55d4c9e",
+      "size": 398
+    },
+    {
+      "path": "src/aip/domain/market/repositories/__init__.py",
+      "sha256": "d04dc5959d781beb188687902bd21767047c90852bb7624a8de2bf8aaf4b87e9",
+      "size": 27
+    },
+    {
+      "path": "src/aip/domain/market/repositories/market_repository.py",
+      "sha256": "4098e4927a0f679baadca9edd635c085268ccb5651b98df39c4377aef34fad30",
+      "size": 1292
+    },
+    {
+      "path": "src/aip/domain/market/services/__init__.py",
+      "sha256": "c3594bb686f89911710cf6584af110707f598a96a036128420e726505b507679",
+      "size": 23
+    },
+    {
+      "path": "src/aip/domain/market/services/market_service.py",
+      "sha256": "3ed4d9433f77c198e4ec3620fe17b0f3818a1596b3c6b885635b53ef5da1ba69",
+      "size": 3802
+    },
+    {
+      "path": "src/aip/domain/market/snapshots/__init__.py",
+      "sha256": "9f9e9cb9dcd5f6ef5d7535bfd7bfd7d70eb8dfb8b1cf633e0c3f820604ce8598",
+      "size": 30
+    },
+    {
+      "path": "src/aip/domain/market/snapshots/market_snapshot.py",
+      "sha256": "14aabb525d0cb167b330563b1533435849ba94ef0acd489e41ec5f71c0b2d438",
+      "size": 1697
+    },
+    {
+      "path": "src/aip/domain/market/versioning/__init__.py",
+      "sha256": "ddf1e904319569a5ee5dad1ff9270c4b4ec98573f835b87afcca671d71203004",
+      "size": 35
+    },
+    {
+      "path": "src/aip/domain/market/versioning/snapshot_version.py",
+      "sha256": "1cdd7f3a424ff1c519e3d82cd19056f6c7a40fccbf6650599792ec6c4f180e5c",
+      "size": 590
+    },
+    {
+      "path": "src/aip/domain/policies/README.md",
+      "sha256": "5985f2efb3a8711a590375a22eb8c8a00e060fb9184bd3386b3150b0dc824900",
+      "size": 500
+    },
+    {
+      "path": "src/aip/domain/policies/__init__.py",
+      "sha256": "43bcd33146018388fecf7f662f6bbb73204cb23600a16eb44835bc08fc5308e4",
+      "size": 1377
+    },
+    {
+      "path": "src/aip/domain/policies/base/policy.py",
+      "sha256": "9343cd878ac31333d9cef2b30ffa63b48060064ae16a5f7628f8fa8ca9f755e2",
+      "size": 2948
+    },
+    {
+      "path": "src/aip/domain/policies/base/policy_context.py",
+      "sha256": "1b9f9dec9315e7ce2d2b6cfd615f428376dba721b9861cb1ce92d07362720e96",
+      "size": 330
+    },
+    {
+      "path": "src/aip/domain/policies/base/policy_result.py",
+      "sha256": "a82b1e13799effe849a74681ad2d6b4270b0cb161064c3896deb97ff7dfcfac4",
+      "size": 1253
+    },
+    {
+      "path": "src/aip/domain/policies/composition/and_policy.py",
+      "sha256": "4b224cce1a415c2ba0efceaacd4a0b5cf7965870f300f39f2fd719aae29663d4",
+      "size": 2058
+    },
+    {
+      "path": "src/aip/domain/policies/composition/composite_policy.py",
+      "sha256": "991545d2da58fc02de704c3b3e4421eca25bddcb0b6db354069c43628f4c8785",
+      "size": 1572
+    },
+    {
+      "path": "src/aip/domain/policies/composition/not_policy.py",
+      "sha256": "d36947bf3c396415acc8d0e5d3ee196ae6eacf7072517a124a1b43ec2ecb48fd",
+      "size": 1768
+    },
+    {
+      "path": "src/aip/domain/policies/composition/or_policy.py",
+      "sha256": "51b8627c1cb010be246ac66d88e7e86f30c8b5281153abea2903e767a2431a25",
+      "size": 1936
+    },
+    {
+      "path": "src/aip/domain/policies/engine/policy_engine.py",
+      "sha256": "a93bd4387d0b4c0e2118f1e304e81cf20fa57ee85e1d301e5e4d99b348c2505c",
+      "size": 3612
+    },
+    {
+      "path": "src/aip/domain/policies/evaluation/evaluation_report.py",
+      "sha256": "67bc6cd3385d49375f6661cb87ad155d068caabfbb231c524a12378b316f90a7",
+      "size": 339
+    },
+    {
+      "path": "src/aip/domain/policies/evaluation/evaluation_result.py",
+      "sha256": "d8a2105190c269416cac2e0e0a3b790e9d63c3fc8cc83b0468a908a42e6b71e2",
+      "size": 1194
+    },
+    {
+      "path": "src/aip/domain/policies/exceptions.py",
+      "sha256": "c2bb282ef36e4497d4ef7fdbd7d7424d3348deaaf2e69a10c722d61d0f803878",
+      "size": 323
+    },
+    {
+      "path": "src/aip/domain/policies/metadata/policy_reference.py",
+      "sha256": "c80bc06a23b93fb19c82321206c550c97d7c21e0c27f51da64467c15665e0bc6",
+      "size": 268
+    },
+    {
+      "path": "src/aip/domain/policies/registry/policy_registry.py",
+      "sha256": "1ddba748be43c70e5a73391e6232bbb62556456f8ac32eee09835a85392f074f",
+      "size": 1009
+    },
+    {
+      "path": "src/aip/domain/policies/severity/policy_severity.py",
+      "sha256": "f52b6a63021bc662b5ef1421a2743ce654f99d7aa4c06631c1d40b5124c50fd6",
+      "size": 477
+    },
+    {
+      "path": "src/aip/domain/portfolio/README.md",
+      "sha256": "e4ac9afa023a298ac137c214f4e999146a8a3b88e7ec31ecfb771d11e24506b7",
+      "size": 1113
+    },
+    {
+      "path": "src/aip/domain/portfolio/__init__.py",
+      "sha256": "1dfc86e03887ce0f6e802ac56fc56071717286ec594bee6eb61c83b4f8720f4d",
+      "size": 1809
+    },
+    {
+      "path": "src/aip/domain/portfolio/entities/__init__.py",
+      "sha256": "56e161e0e596bb179afac9714302e56aabb3b9fdbb51b34eb2f3e12045ca73d0",
+      "size": 286
+    },
+    {
+      "path": "src/aip/domain/portfolio/entities/portfolio.py",
+      "sha256": "595732023edef35681a962fe2dc631915c69e579459d81c3cd16fc077402e5ad",
+      "size": 8186
+    },
+    {
+      "path": "src/aip/domain/portfolio/entities/position.py",
+      "sha256": "fdceb2cfec7d75835d48eda84aeefc15a54eaac1d22cae98bbb45500f14f79ec",
+      "size": 6256
+    },
+    {
+      "path": "src/aip/domain/portfolio/entities/transaction.py",
+      "sha256": "860390710152a34d579e11d8b94e60f86a930a30134338961bebe64b50967122",
+      "size": 10598
+    },
+    {
+      "path": "src/aip/domain/portfolio/enums/__init__.py",
+      "sha256": "f874f3eee28f20426dd79639c7c3163251787bb98c2ebae46f7f0efde209c94a",
+      "size": 446
+    },
+    {
+      "path": "src/aip/domain/portfolio/enums/portfolio_status.py",
+      "sha256": "75f04e67f788ed7fcea2fb93417380d5d12b062f6cf6a27b8c405ecbf996c4bc",
+      "size": 260
+    },
+    {
+      "path": "src/aip/domain/portfolio/enums/position_status.py",
+      "sha256": "42b2b0af6dda15318856e82b27c5d625d08f597bdc124dec2e57204763119758",
+      "size": 188
+    },
+    {
+      "path": "src/aip/domain/portfolio/enums/transaction_type.py",
+      "sha256": "d6640ccbd08650763437c7f3cb6bdcece56e484c312aad289b52da7f3d9280a3",
+      "size": 285
+    },
+    {
+      "path": "src/aip/domain/portfolio/enums/valuation_source.py",
+      "sha256": "f4b507c33a046764d4a1a613df91bc99e0f2ee7ee937dd69164f6004cc79c269",
+      "size": 266
+    },
+    {
+      "path": "src/aip/domain/portfolio/events/__init__.py",
+      "sha256": "dadede9484ef40eb5eea54e54b246e2408e914bb7f5de9f12569b941be5f80aa",
+      "size": 588
+    },
+    {
+      "path": "src/aip/domain/portfolio/events/domain_event.py",
+      "sha256": "384e9531a0a9344f31d058f964f22a841570a3e518c488369add83d0cee08f76",
+      "size": 857
+    },
+    {
+      "path": "src/aip/domain/portfolio/events/portfolio_created.py",
+      "sha256": "2d7937cfa0a1645ac46e87c7ba512f86f2dc51f382d208a9adc71f532ff835cc",
+      "size": 852
+    },
+    {
+      "path": "src/aip/domain/portfolio/events/position_added.py",
+      "sha256": "5691c2b28111cad145c89f815f1d247b8c1322728d46c52d924d533fd4503a5d",
+      "size": 834
+    },
+    {
+      "path": "src/aip/domain/portfolio/events/position_removed.py",
+      "sha256": "7c4b0a070253b8a8158aad1ef69f5be7ff6af39831879063300296d57b8b831f",
+      "size": 848
+    },
+    {
+      "path": "src/aip/domain/portfolio/events/transaction_registered.py",
+      "sha256": "bb6c619d18e2dea73c7245f0b14cf0b25ab741077b9af16270b05699b06305cd",
+      "size": 913
+    },
+    {
+      "path": "src/aip/domain/portfolio/exceptions.py",
+      "sha256": "47eb5ed7e40e16e49871bb21f0e40a3ee866b63520d15bd39576e973ae35099e",
+      "size": 704
+    },
+    {
+      "path": "src/aip/domain/portfolio/repositories/__init__.py",
+      "sha256": "eadc3d0a6481c7d8c5936322b22737d63112f35c851a880c1d1eb20f87bc255b",
+      "size": 176
+    },
+    {
+      "path": "src/aip/domain/portfolio/repositories/portfolio_repository.py",
+      "sha256": "d3d7fe44d6341f605d4f1cfeb2fbe06aea7b32cc66d17f6d3a329c9382ea1882",
+      "size": 1413
+    },
+    {
+      "path": "src/aip/domain/portfolio/services/__init__.py",
+      "sha256": "44162421eddbfd05c7a89b3cbbd89101d47a871121ec20e4db5cb722dfbb0a73",
+      "size": 190
+    },
+    {
+      "path": "src/aip/domain/portfolio/services/portfolio_calculation_service.py",
+      "sha256": "8b5a3a3bf4fa0d51ce0072046fd6a871b8881c263c5129cdcf1f62794bd11121",
+      "size": 12856
+    },
+    {
+      "path": "src/aip/domain/portfolio/services/portfolio_duration_service.py",
+      "sha256": "a19226a443c9a58e58cd962774a98eb6c94791b76bc6ec9ec657804c7a2f62f4",
+      "size": 7402
+    },
+    {
+      "path": "src/aip/domain/portfolio/services/portfolio_hqla_service.py",
+      "sha256": "6ffb45e3240e9ab6ea010bea8bfd37afae2380443a33de857e70eb9aec8ab311",
+      "size": 3075
+    },
+    {
+      "path": "src/aip/domain/portfolio/services/portfolio_mil_service.py",
+      "sha256": "748db7c345cb9d5055dccf3eb5611e0d57d7f7467f91fa726ff71b543e2e2af9",
+      "size": 4949
+    },
+    {
+      "path": "src/aip/domain/portfolio/value_objects/__init__.py",
+      "sha256": "9f7b524afebc01301d3df911db32bd9d93bf3f639530564a5aee4d7ece68de39",
+      "size": 1359
+    },
+    {
+      "path": "src/aip/domain/portfolio/value_objects/acquisition_cost.py",
+      "sha256": "7d50fe5dc2c164e1d3afff9dbd02ec59a7f5fc89193238c0d991d6e4e6d052aa",
+      "size": 998
+    },
+    {
+      "path": "src/aip/domain/portfolio/value_objects/book_value.py",
+      "sha256": "80e72de956e1bed5f92da81c398e5a05cbf063baafa55b3ea1bb45caefad15fa",
+      "size": 950
+    },
+    {
+      "path": "src/aip/domain/portfolio/value_objects/convexity.py",
+      "sha256": "eef7cc91cceb2d9694eb874ee83b9c9510009af93002db276bcc23e95a9fe34c",
+      "size": 576
+    },
+    {
+      "path": "src/aip/domain/portfolio/value_objects/duration.py",
+      "sha256": "19a89c737aa6cff0f1499e33ba3a64bdc79cf10b47958504d7aaef0f225f430b",
+      "size": 560
+    },
+    {
+      "path": "src/aip/domain/portfolio/value_objects/instrument_name.py",
+      "sha256": "bbaa5cd30ce8695067cb0701a8af3add73d581da4be9a54632facf39829a7e69",
+      "size": 734
+    },
+    {
+      "path": "src/aip/domain/portfolio/value_objects/isin.py",
+      "sha256": "316f8855a3614a68ce2b048cc9bee9214d8282a341abb3dd3fe08ff5f46f2f80",
+      "size": 1458
+    },
+    {
+      "path": "src/aip/domain/portfolio/value_objects/market_value.py",
+      "sha256": "9c2bc7e47d6f4a16db05022d52c9fb7ea5a1b7c8783edc9e7753f2b2370e7a1e",
+      "size": 966
+    },
+    {
+      "path": "src/aip/domain/portfolio/value_objects/nominal_value.py",
+      "sha256": "dd4ad4b71acd2e704e8fdb3d3c3b9420b48c63bcc3b366b88c73d09356607480",
+      "size": 963
+    },
+    {
+      "path": "src/aip/domain/portfolio/value_objects/portfolio_id.py",
+      "sha256": "cc567227de10bada0bd0a907d97c773f7d0e650516d3a0341e26f37c97964f1a",
+      "size": 614
+    },
+    {
+      "path": "src/aip/domain/portfolio/value_objects/position_id.py",
+      "sha256": "1c2a8127a91b47364a201321df05816b43439d0a142446af6e655e6933e2f417",
+      "size": 606
+    },
+    {
+      "path": "src/aip/domain/portfolio/value_objects/quantity.py",
+      "sha256": "2c9ae712ea87192bcc81ad5fb96dcd4a040abceabbc59e60511cd5378abc9b23",
+      "size": 547
+    },
+    {
+      "path": "src/aip/domain/portfolio/value_objects/settlement_date.py",
+      "sha256": "2106c9bdea7e32d3d74d0f04fed66f83945586bf4aec58f06159a0f1c4fd3bd2",
+      "size": 386
+    },
+    {
+      "path": "src/aip/domain/portfolio/value_objects/transaction_id.py",
+      "sha256": "8480f3ce126f3e43f5870cc7b76b18c07d4e8a6526e09035be60b3dc560028bb",
+      "size": 624
+    },
+    {
+      "path": "src/aip/domain/portfolio/value_objects/yield_rate.py",
+      "sha256": "598af54ca08b878fc887ac0f38b0acaeb36962aa2ee209021fd93d766cc3b66e",
+      "size": 934
+    },
+    {
+      "path": "src/aip/domain/pricing/__init__.py",
+      "sha256": "c57ab368a736a5bcb26f7c841cb845eb53780cce5e55976fd4e3a363eb8cd02f",
+      "size": 475
+    },
+    {
+      "path": "src/aip/domain/pricing/calculators/bond_pricer.py",
+      "sha256": "38221971d1ddcd51ed5dc7a8cd866c1c49781dc19cf17d1875d2ee5c803bd18e",
+      "size": 2153
+    },
+    {
+      "path": "src/aip/domain/pricing/calculators/cash_pricer.py",
+      "sha256": "0f9d9185c704c184cedc0c2fa0ba8d172cfff238d4793c5ecc83bb633fd2ab5d",
+      "size": 849
+    },
+    {
+      "path": "src/aip/domain/pricing/calculators/floating_rate_pricer.py",
+      "sha256": "d29e61efe20289fb5607687211d23db0431e0e3b7d4e13781a2fdb9b60c7815e",
+      "size": 1118
+    },
+    {
+      "path": "src/aip/domain/pricing/calculators/treasury_bill_pricer.py",
+      "sha256": "e74c318112229355ed27de010e7e10684c1d00011f49adc7cc0c80f46502aba3",
+      "size": 1118
+    },
+    {
+      "path": "src/aip/domain/pricing/calculators/zero_coupon_pricer.py",
+      "sha256": "b74162f2916d65832d20f20d34e2767cf3c2f982b8e2620d78fe98b884b2bab2",
+      "size": 1116
+    },
+    {
+      "path": "src/aip/domain/pricing/engine/pricing_engine.py",
+      "sha256": "f796f5689b384023b05c960b99247edd3fcedd5c8af278bcd6847bbc6d409027",
+      "size": 1977
+    },
+    {
+      "path": "src/aip/domain/pricing/enums/pricing_method.py",
+      "sha256": "543808c4bff5e0915c2fa231a19c2d8b96115eb85c5121b256606c7b0ab0c471",
+      "size": 244
+    },
+    {
+      "path": "src/aip/domain/pricing/exceptions.py",
+      "sha256": "7aff0805be92b02f469b3c5d34ee4f403dc8ba1b18c34b3ba4981a50ebe48ab2",
+      "size": 356
+    },
+    {
+      "path": "src/aip/domain/pricing/models/pricing_request.py",
+      "sha256": "b68c751b5171546e37e01ce230d32693d0175159e9597ef3d1862c5ec7ba220b",
+      "size": 564
+    },
+    {
+      "path": "src/aip/domain/pricing/models/pricing_result.py",
+      "sha256": "0f342ea74f1bd7587f294bc6a6a909a7bfa81ca0e91677e518ae063a7bb95669",
+      "size": 512
+    },
+    {
+      "path": "src/aip/domain/pricing/repositories/market_data_provider.py",
+      "sha256": "a3dac217df809f1a7bcc1b4e917e69fffe28fd741ddc7df20b76a097a0867f8b",
+      "size": 409
+    },
+    {
+      "path": "src/aip/domain/pricing/services/pricing_service.py",
+      "sha256": "74c300a8e69b6bb9ba41f64ff2bfd29374db4e38bdaf0ac4dd5148106a34b4f0",
+      "size": 2610
+    },
+    {
+      "path": "src/aip/domain/relative_value/calculators/benchmark_spread.py",
+      "sha256": "09db4ccef0a910955d9553b9b6f52dd89cbc1628e2adfe379c93204eb6e3aeb0",
+      "size": 646
+    },
+    {
+      "path": "src/aip/domain/relative_value/calculators/interpolated_curve_spread.py",
+      "sha256": "c14ba7f88c80e21e460a3e7aac7c4a9198d41b975ce2bcbed1a04e53950f5caf",
+      "size": 1228
+    },
+    {
+      "path": "src/aip/domain/relative_value/calculators/nominal_spread.py",
+      "sha256": "1b1495776bbec92ed9f10c24ea03b394dbfcc70c3988acdbad029c435a52f796",
+      "size": 424
+    },
+    {
+      "path": "src/aip/domain/relative_value/calculators/z_spread.py",
+      "sha256": "a3fc26d97ee59771c136560814ce6ce0a47551e1e3131832e84a1bddd706c216",
+      "size": 1443
+    },
+    {
+      "path": "src/aip/domain/relative_value/engine/recommendation_engine.py",
+      "sha256": "110ce063e5ff51234a7f9c6d8c775b27812ffc7c087d009c552919c1b693132e",
+      "size": 2640
+    },
+    {
+      "path": "src/aip/domain/relative_value/engine/relative_value_engine.py",
+      "sha256": "2ad06b2fe794384d23646d38e5403aa20e7b8bfbd055120bc4f452b1d8d3f1d7",
+      "size": 5696
+    },
+    {
+      "path": "src/aip/domain/relative_value/engine/spread_engine.py",
+      "sha256": "1ac2df57f0c1bb94308088ac281bb8da0fb867e688c35f672ff445084cdb628d",
+      "size": 2187
+    },
+    {
+      "path": "src/aip/domain/relative_value/enums/confidence_level.py",
+      "sha256": "1756a22b6970b23758d8d9ab6fba098eaf747bbba005c9995b5b07347eac3698",
+      "size": 200
+    },
+    {
+      "path": "src/aip/domain/relative_value/enums/recommendation_type.py",
+      "sha256": "353f3f8e831cbdc617c2b6d47899aec25357aa2d271c3c67fd2250e8726d68d8",
+      "size": 288
+    },
+    {
+      "path": "src/aip/domain/relative_value/enums/valuation_status.py",
+      "sha256": "9fd1604f75a57c03aafa428ef2b463890eece9cc1d17a7b10adf2a65fb7e52d0",
+      "size": 194
+    },
+    {
+      "path": "src/aip/domain/relative_value/exceptions.py",
+      "sha256": "1584883a2c3ca1a0237b231d37529f73573b7d69bdd1c0b2b96b91739870d499",
+      "size": 883
+    },
+    {
+      "path": "src/aip/domain/relative_value/explainability/decision_matrix.py",
+      "sha256": "dac517c23162b21b9c0edc4d29d1d36ca518a25331d301cf8894ef47bdd6eb53",
+      "size": 600
+    },
+    {
+      "path": "src/aip/domain/relative_value/explainability/recommendation_explanation.py",
+      "sha256": "6c6994ca86716cded45a926a688cc858b57ce84fe80d2c0c40e6615faf2ab5f5",
+      "size": 2303
+    },
+    {
+      "path": "src/aip/domain/relative_value/models/investment_opportunity.py",
+      "sha256": "7d70151d1517a09817ea6b4c6bab3683d5b05d8d9885ac2d0ea81ad84b26d351",
+      "size": 485
+    },
+    {
+      "path": "src/aip/domain/relative_value/models/recommendation.py",
+      "sha256": "230a83ffa97e361180dd0b54d1c6ebd3d942f4487ce97d0390490d7fd535c898",
+      "size": 493
+    },
+    {
+      "path": "src/aip/domain/relative_value/models/relative_value_request.py",
+      "sha256": "ba4793122a81269d421f55632e7f4d6dfa7280c507a652bcd7674a8bacdc4796",
+      "size": 1964
+    },
+    {
+      "path": "src/aip/domain/relative_value/models/relative_value_result.py",
+      "sha256": "ae03a4031430dfb47c8a06bc5a88dd7409c72bbc802cd69ab5efe87a64f60c3a",
+      "size": 1343
+    },
+    {
+      "path": "src/aip/domain/relative_value/providers/accounting_classification_provider.py",
+      "sha256": "b0dd9e9253e80ff537f3dd90f5958fdbeeac0bbdcb8e86db838bac48c8753906",
+      "size": 332
+    },
+    {
+      "path": "src/aip/domain/relative_value/providers/capital_consumption_provider.py",
+      "sha256": "611d20117ca9828696d3917e7ffd34f29645b964d2b59440c33fb0d0df7819c4",
+      "size": 325
+    },
+    {
+      "path": "src/aip/domain/relative_value/providers/hqla_eligibility_provider.py",
+      "sha256": "3a0d83e62c5f49cc0b9142b89354408964eaa40ccaa3c42f09a08a31d8e8204e",
+      "size": 299
+    },
+    {
+      "path": "src/aip/domain/relative_value/providers/issuer_limit_provider.py",
+      "sha256": "34c0715b8214c954e51b20abfc3827bd992e34c78a0f8e8a59f4fbdac7a1b14a",
+      "size": 281
+    },
+    {
+      "path": "src/aip/domain/relative_value/providers/liquidity_provider.py",
+      "sha256": "15975e0400ef1d2447a45a9857762426d1f45022035c30120d44ebe1f9e3b331",
+      "size": 325
+    },
+    {
+      "path": "src/aip/domain/relative_value/providers/market_curve_provider.py",
+      "sha256": "d9757e464d9b22e815c51854619892f0528d204af4dee91ac316039f7c589d57",
+      "size": 372
+    },
+    {
+      "path": "src/aip/domain/relative_value/providers/mile_eligibility_provider.py",
+      "sha256": "910ddd17cffe1b3eda610207a5312bcfa2fbaec4957152d1608c6fce3881e988",
+      "size": 298
+    },
+    {
+      "path": "src/aip/domain/relative_value/providers/policy_provider.py",
+      "sha256": "8f81c740d65b5d049b9d1f4e24d7dcd407fd157298aefdb34924dd812089c693",
+      "size": 421
+    },
+    {
+      "path": "src/aip/domain/relative_value/ranking/investment_ranking.py",
+      "sha256": "532e3857ce8b42c5efd5c824b5aa1196264e7c9bd79538bb1c7e9c3edc45f45f",
+      "size": 2239
+    },
+    {
+      "path": "src/aip/domain/relative_value/scoring/confidence_score.py",
+      "sha256": "c3cef7dfe9dffd0cb8c6158b9c6b03cbb2e272cea7c92ea4ce949b62262f19a6",
+      "size": 1255
+    },
+    {
+      "path": "src/aip/domain/relative_value/scoring/opportunity_scorer.py",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "size": 1
+    },
+    {
+      "path": "src/aip/domain/relative_value/scoring/relative_value_score.py",
+      "sha256": "a716b522b1134c49aa82c5046568ce1d5c8495accbcbc9f83766c39493ff9026",
+      "size": 2408
+    },
+    {
+      "path": "src/aip/domain/relative_value/scoring/rich_cheap_score.py",
+      "sha256": "67c96dc8d399b1350025cd7e813509a9ecb6ed90831c08bb762ebf4f75a55d59",
+      "size": 731
+    },
+    {
+      "path": "src/aip/infrastructure/__init__.py",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "size": 1
+    },
+    {
+      "path": "src/aip/infrastructure/audit/__init__.py",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "size": 1
+    },
+    {
+      "path": "src/aip/infrastructure/audit/service.py",
+      "sha256": "64d4afcb2e0c912ccf2d18a94253ac38ddf7774c4500cae96428e5493ea1a976",
+      "size": 596
+    },
+    {
+      "path": "src/aip/infrastructure/configuration/__init__.py",
+      "sha256": "c4b6b3f5acd63d5c6471fdc0f724d5f2d7212778f63c55ece859f551b6fb3a80",
+      "size": 183
+    },
+    {
+      "path": "src/aip/infrastructure/configuration/exceptions.py",
+      "sha256": "019440c66ecfb16635b77957625ebb48fd8c9f214a4a877369122b3df0825e71",
+      "size": 49
+    },
+    {
+      "path": "src/aip/infrastructure/configuration/manager.py",
+      "sha256": "200597e472a5afe0a3c8b2797510b4df20514b900aa86137fcb61aa654554dfe",
+      "size": 1597
+    },
+    {
+      "path": "src/aip/infrastructure/configuration/models.py",
+      "sha256": "29cd68f03f8c99de9a9c9e135d916e1491eb9047eb2240fe2acf12e6e0fc1815",
+      "size": 1257
+    },
+    {
+      "path": "src/aip/infrastructure/database/__init__.py",
+      "sha256": "bc3e522e10958ad11263b861860404ec62a9e44c15344f7f6974e9588a81f0d7",
+      "size": 95
+    },
+    {
+      "path": "src/aip/infrastructure/database/manager.py",
+      "sha256": "a4e45802e066575443533c3da465053589aac0019777f8e720b824ed49ffad75",
+      "size": 1921
+    },
+    {
+      "path": "src/aip/infrastructure/logging/__init__.py",
+      "sha256": "de0d24362a2f59244e15b378410bb610b39d718cc2be80cf0b171308eee85294",
+      "size": 92
+    },
+    {
+      "path": "src/aip/infrastructure/logging/context.py",
+      "sha256": "767c1eb915ae93371a3dfbd59420e3408d3248dc511a4a8caf6d9c34573925cb",
+      "size": 641
+    },
+    {
+      "path": "src/aip/infrastructure/logging/manager.py",
+      "sha256": "8e0a4e7b4fb7c78d5202bfa5db04d7dbd4a2bb3d54425152b4ffa60c1175cca9",
+      "size": 2029
+    },
+    {
+      "path": "src/aip/integration/README.md",
+      "sha256": "bafaa06c613fe59aea8e2d8c913db76d30286f42dbf060b5df5abef07afd3578",
+      "size": 327
+    },
+    {
+      "path": "src/aip/integration/__init__.py",
+      "sha256": "95ac995f448197c35189f19a3a6cf65d8e71b4f358649c2f4572f83d17b62f48",
+      "size": 50
+    },
+    {
+      "path": "src/aip/integration/audit/execution_result.py",
+      "sha256": "4f42fb18a8447d1a9bc0a9960a030323be60513eb7902176526317ce4720eba9",
+      "size": 1639
+    },
+    {
+      "path": "src/aip/integration/audit/synchronization_log.py",
+      "sha256": "f16925b52c246aef733d6b8e9fd02f02d4798051a204d2ba26db3921d564ebb6",
+      "size": 1057
+    },
+    {
+      "path": "src/aip/integration/bccr/__init__.py",
+      "sha256": "b04406dd9d0baa7c68d602513d12e827219de77978ea761dd1fa07e4998af7a0",
+      "size": 49
+    },
+    {
+      "path": "src/aip/integration/bccr/audit/bccr_audit.py",
+      "sha256": "219481e84e443f4ee5788373161e56ace31083d01fb3c39c52aee0dfcd19ea81",
+      "size": 408
+    },
+    {
+      "path": "src/aip/integration/bccr/configuration/bccr_config.py",
+      "sha256": "4b0fed6dfec95bd76fdfb273ba9baa461d8cb660323f6f35ba0e4fea155d2cc5",
+      "size": 1016
+    },
+    {
+      "path": "src/aip/integration/bccr/connector/bccr_connector.py",
+      "sha256": "538875dc74c543777c30d3616233d7421d64f079b63c2af872d89706b279fd48",
+      "size": 7130
+    },
+    {
+      "path": "src/aip/integration/bccr/connector/cache.py",
+      "sha256": "6bfab3b935628ce023f82fd04fd6de5eeee505c2a95b1b67bda60bc95cbfc101",
+      "size": 840
+    },
+    {
+      "path": "src/aip/integration/bccr/connector/http_client.py",
+      "sha256": "dc04a4d50b495eb0d852799965f9c71491eaa6dc606c6e56d25c3699d366dc79",
+      "size": 1867
+    },
+    {
+      "path": "src/aip/integration/bccr/contracts/request.py",
+      "sha256": "be423b8794b0a914521cca9aa58378278b70c30bba2630c9276348ac28907fc2",
+      "size": 1773
+    },
+    {
+      "path": "src/aip/integration/bccr/contracts/response.py",
+      "sha256": "0c3ba79beae998bd840ca9a48c5f676bbe8fdb8d5bb307be51678765b07fabbc",
+      "size": 582
+    },
+    {
+      "path": "src/aip/integration/bccr/events/bccr_events.py",
+      "sha256": "9159cb1b194d89ae5cfd900c6a2e3c7623c22c8e35c0dc4de0cf172eaf6b5540",
+      "size": 3667
+    },
+    {
+      "path": "src/aip/integration/bccr/monitoring/bccr_health.py",
+      "sha256": "cdb086ba3dfd0626c7de6196f506897a29de163aab4694916da9e3d18310fa1a",
+      "size": 1877
+    },
+    {
+      "path": "src/aip/integration/bccr/normalization/response_normalizer.py",
+      "sha256": "44b715549cb720b2e3ed509928a927207595713c3ffa5a0fcb9463e96a56d37e",
+      "size": 1701
+    },
+    {
+      "path": "src/aip/integration/bccr/providers/http_provider.py",
+      "sha256": "d4118f0c37c0ef37a4f814d92d8e38ee96994000072adaa48c9dcfdfb2795310",
+      "size": 384
+    },
+    {
+      "path": "src/aip/integration/bccr/providers/urllib_http_provider.py",
+      "sha256": "6153cde6f7ead01a39ae6ae206d827173e70838abc5b3ea75aab18876ea04218",
+      "size": 4282
+    },
+    {
+      "path": "src/aip/integration/bccr/synchronization/bccr_synchronizer.py",
+      "sha256": "dd428b1f2e6fa03f2d4b7639bf001b9c56c22cb5419071b1a1810d8a91337cb9",
+      "size": 5336
+    },
+    {
+      "path": "src/aip/integration/bccr/telemetry/bccr_metrics.py",
+      "sha256": "45583ac982b52b674a1ac6c1c18173b87994a674ea1a05be1aaad9cd44beda0e",
+      "size": 638
+    },
+    {
+      "path": "src/aip/integration/bccr/validation/response_validator.py",
+      "sha256": "15d91aa934631b80618f47c973b55d538d4217994b7ff7a1e9643506f3301888",
+      "size": 2041
+    },
+    {
+      "path": "src/aip/integration/contracts/connector.py",
+      "sha256": "8bbdfa02572c7857e203fb34551354afde1c1d88dc14c55e22a53c5b339a380c",
+      "size": 3232
+    },
+    {
+      "path": "src/aip/integration/contracts/synchronization.py",
+      "sha256": "f612c50eedf617c74cc1a9447494838c3f24af814e4fd0588c1d2047d0d3cb08",
+      "size": 1454
+    },
+    {
+      "path": "src/aip/integration/contracts/validation.py",
+      "sha256": "437a31616f37b17a74b535b78c99f889335b3097131eacbf66c5f31d5ec3a2d4",
+      "size": 310
+    },
+    {
+      "path": "src/aip/integration/events/synchronization_events.py",
+      "sha256": "abb8e5ebd77f8e5bf8211b5f95172486241f883bf8cb565c85ed44a60e987227",
+      "size": 4707
+    },
+    {
+      "path": "src/aip/integration/exceptions/exceptions.py",
+      "sha256": "fd84d359fb5699391b60dae47c2c00421ef499d316a7c4426c5e7cf6b1792978",
+      "size": 228
+    },
+    {
+      "path": "src/aip/integration/folderwatch/README.md",
+      "sha256": "01092b59e4afa30b4bb7331b96fa802240f5dcacb93a8e0e393a36d4be897f7c",
+      "size": 190
+    },
+    {
+      "path": "src/aip/integration/folderwatch/__init__.py",
+      "sha256": "adb7860d1362d57c398e3db3fc15682945565a80f7488a9a663e7ece13a9c61f",
+      "size": 40
+    },
+    {
+      "path": "src/aip/integration/folderwatch/audit/folder_audit.py",
+      "sha256": "3930e9692b1fa257b38118b6dcb78d5e0be0b49ece900eea12c54992c15ece25",
+      "size": 398
+    },
+    {
+      "path": "src/aip/integration/folderwatch/checkpoint_store.py",
+      "sha256": "e09fea86d024996d2ff874d702e51d4c0a1564cdda63261426102c5e8201c499",
+      "size": 166
+    },
+    {
+      "path": "src/aip/integration/folderwatch/configuration/folder_config.py",
+      "sha256": "58349a0737b9cc1e3d268d3b90ec1332eff2c3de3e4b14aba05bffc6f0ac757b",
+      "size": 1462
+    },
+    {
+      "path": "src/aip/integration/folderwatch/connector/checkpoint_store.py",
+      "sha256": "ffb371edef1c277fb91eeb539136b99fade6864d6f687749d229e136a44f6095",
+      "size": 703
+    },
+    {
+      "path": "src/aip/integration/folderwatch/connector/folder_connector.py",
+      "sha256": "bd4079ed63413488fadac531005e36b4a2616ae0259ef1af72a55d6d74e559ef",
+      "size": 5560
+    },
+    {
+      "path": "src/aip/integration/folderwatch/connector/watcher.py",
+      "sha256": "50a7982e9c697d6105e96a5736cdb79ea23c43eb9f01c5fd644dfa22157b03c3",
+      "size": 2677
+    },
+    {
+      "path": "src/aip/integration/folderwatch/contracts/file_request.py",
+      "sha256": "f4261768c36178e71c43936cd7f89a3afca3a3dfbfe01d9b68535f376ae40191",
+      "size": 613
+    },
+    {
+      "path": "src/aip/integration/folderwatch/contracts/file_result.py",
+      "sha256": "f957b810c3784c45b92b6086d72c7cf0af100c963f2b423d71491c2199ff3c90",
+      "size": 702
+    },
+    {
+      "path": "src/aip/integration/folderwatch/events/folder_events.py",
+      "sha256": "52cb0b60c98db47d34edbceb3a3ee55c98f7697b1d05f06db4456928a41baad5",
+      "size": 3781
+    },
+    {
+      "path": "src/aip/integration/folderwatch/monitoring/folder_health.py",
+      "sha256": "8d2b8945f50e4031f3e3ecb3a414a3509bdf295f9d8b448622bddb79c315c071",
+      "size": 1919
+    },
+    {
+      "path": "src/aip/integration/folderwatch/normalization/file_normalizer.py",
+      "sha256": "7fb53316b8ad9a98e0bfd55bc614fe52a4596dd6e137afba8d414d3f09b5d6ff",
+      "size": 576
+    },
+    {
+      "path": "src/aip/integration/folderwatch/providers/filesystem_provider.py",
+      "sha256": "b35fd88392da702b0283cf98c018b043a97ff3ba8336d5338adfbd342d76e062",
+      "size": 807
+    },
+    {
+      "path": "src/aip/integration/folderwatch/providers/local_filesystem_provider.py",
+      "sha256": "eca0d65772baf595d63fa257ca2b685fbe5b6249cea45a246158772ba1d57a70",
+      "size": 1278
+    },
+    {
+      "path": "src/aip/integration/folderwatch/synchronization/folder_synchronizer.py",
+      "sha256": "64748ecb5035371f8732774e9c81b1bf00cb939c342d7a1ac87f2469df9298bd",
+      "size": 4339
+    },
+    {
+      "path": "src/aip/integration/folderwatch/telemetry/folder_metrics.py",
+      "sha256": "1939a3f45d467d0970910199fd068258775d73185c8ae77ccceae6464be978bb",
+      "size": 648
+    },
+    {
+      "path": "src/aip/integration/folderwatch/validation/file_validator.py",
+      "sha256": "a30061e609a642d7b0baa4c43e58d805dfbddbdbd197595c5b9b8e3776d1da84",
+      "size": 1240
+    },
+    {
+      "path": "src/aip/integration/hub/integration_hub.py",
+      "sha256": "67b334d9cd030d1ead311438bf7bbfc4ba5b4436dec61496b4ad05bba7a83750",
+      "size": 5631
+    },
+    {
+      "path": "src/aip/integration/monitoring/health_monitor.py",
+      "sha256": "f1e709db06b212abd5d216d875adff264a804e354cd2bc3b3baa5b41e4d11d9f",
+      "size": 3756
+    },
+    {
+      "path": "src/aip/integration/normalization/normalizer.py",
+      "sha256": "da16e714260539c6cb21ff38039333267a34daa110dd231db253b1aa9d5a31ac",
+      "size": 474
+    },
+    {
+      "path": "src/aip/integration/scheduler/job_definition.py",
+      "sha256": "1df7bf781144174c45a367ed598ae4fbd9371838c5bb4cf56eeb95f021e29731",
+      "size": 907
+    },
+    {
+      "path": "src/aip/integration/scheduler/scheduler_service.py",
+      "sha256": "a8aa160844efa7de4c05ce487296d35162d61c42d900d530c73d5849fca14f3d",
+      "size": 9093
+    },
+    {
+      "path": "src/aip/integration/sqlserver/README.md",
+      "sha256": "06465ff65e63b5ea3d7c202728d88ff3edf816de25bf6ec0198ba669bf1a0364",
+      "size": 286
+    },
+    {
+      "path": "src/aip/integration/sqlserver/__init__.py",
+      "sha256": "201d3354dd7ed653f3f318e0c16b430200f5331000ecad114c886b7697650610",
+      "size": 1331
+    },
+    {
+      "path": "src/aip/integration/sqlserver/audit/sql_audit.py",
+      "sha256": "948a1fc37da51fd62a244b3b4be5449b4690a3b17695648d572f7ddfdc25a027",
+      "size": 402
+    },
+    {
+      "path": "src/aip/integration/sqlserver/configuration/sql_config.py",
+      "sha256": "e070f79c9cc04a351ef5dea045e04729af49cc8e3d470d8bc61cdda64f197e9c",
+      "size": 2419
+    },
+    {
+      "path": "src/aip/integration/sqlserver/connector/connection_factory.py",
+      "sha256": "7d8bdb006cd1067c8e49f42a886b2bac44eb90ecf9d364fd1a46b9af8298e8e9",
+      "size": 1735
+    },
+    {
+      "path": "src/aip/integration/sqlserver/connector/connection_pool.py",
+      "sha256": "3680a79987a36a359a35d9947fbfd13e96a022f4bbc4a2a284fa06494bf0bf57",
+      "size": 1164
+    },
+    {
+      "path": "src/aip/integration/sqlserver/connector/sql_connector.py",
+      "sha256": "2e1ea71a33a26902da47549a1c2ba49b12142c08269c130355711fd750023613",
+      "size": 5899
+    },
+    {
+      "path": "src/aip/integration/sqlserver/contracts/sql_request.py",
+      "sha256": "c5cf859b5888fedbdff9d265ba1e0942de4660d31dec1028c532169522a267d4",
+      "size": 565
+    },
+    {
+      "path": "src/aip/integration/sqlserver/contracts/sql_result.py",
+      "sha256": "88e5a3617429adb277eec884207f072148fae68e5a9694b00e7595beec488ded",
+      "size": 773
+    },
+    {
+      "path": "src/aip/integration/sqlserver/driver/__init__.py",
+      "sha256": "63469cd7c80d4870cbce0c38b52eb2581940bfb350c6e151be1439fbe88e5423",
+      "size": 178
+    },
+    {
+      "path": "src/aip/integration/sqlserver/driver/driver_adapter.py",
+      "sha256": "965aea35e6645a62ee47143bbf14c3f2bd174559279ec7cd520bbb3936eb8c2c",
+      "size": 1742
+    },
+    {
+      "path": "src/aip/integration/sqlserver/exceptions/sql_exceptions.py",
+      "sha256": "17f66cee78b9226c6f302fbe88395d6e7953802b490736ef41ee662c3b45e175",
+      "size": 347
+    },
+    {
+      "path": "src/aip/integration/sqlserver/monitoring/sql_health.py",
+      "sha256": "d68dcf23ff31fec5303bcbb026c3f80f3382b23ab2484498a6fc4e477df3e2eb",
+      "size": 1312
+    },
+    {
+      "path": "src/aip/integration/sqlserver/synchronization/sql_synchronizer.py",
+      "sha256": "c90c01c828d8e21936712bdd5db71bfea5c1e8ce93fe67d961c5cd7c66bc6f38",
+      "size": 3576
+    },
+    {
+      "path": "src/aip/integration/sqlserver/telemetry/sql_metrics.py",
+      "sha256": "f248ac68ae9b16743ec389ee6b3165c438aa5b8a7611efc7802a070a170e8c3f",
+      "size": 644
+    },
+    {
+      "path": "src/aip/integration/sqlserver/validation/sql_validator.py",
+      "sha256": "6ee2024fff669b40a1f2151b45caf8608d03d9348a9ec234a10d03acf2afb164",
+      "size": 1329
+    },
+    {
+      "path": "src/aip/integration/telemetry/metrics.py",
+      "sha256": "44b2d59905aa74752c00d076793f48fbfa48c68fcc6ddb53232eed11800bd455",
+      "size": 767
+    },
+    {
+      "path": "src/aip/integration/validation/validator.py",
+      "sha256": "1139da821ea1c8a6c42a0b5372e3558d77d9d057a2cf31664c646da0764f6710",
+      "size": 1705
+    },
+    {
+      "path": "src/aip/main.py",
+      "sha256": "2e784889b830872257e669da57ac6fb128a4dc88606b7982330b0b149e0699a2",
+      "size": 326
+    },
+    {
+      "path": "src/aip/platform/__init__.py",
+      "sha256": "ca05e227bb87caf141ee5db92dd447270154585ebc7c68c18ac01992b53eb28b",
+      "size": 49
+    },
+    {
+      "path": "src/aip/platform/notifications/README.md",
+      "sha256": "ced0ec9856109fb7a25527e88b6cee6e04541ebe6dd89d14326f9c3bcd7c5e8a",
+      "size": 292
+    },
+    {
+      "path": "src/aip/platform/notifications/__init__.py",
+      "sha256": "8f94f500fd28195c9de9be8132d36c5cbffde76000e21b514fddef16c7465458",
+      "size": 47
+    },
+    {
+      "path": "src/aip/platform/notifications/audit/__init__.py",
+      "sha256": "725b3c3f126b18775bf7303d6fa3673ea4a9c6ffe1c5e7c66345bed92c875419",
+      "size": 34
+    },
+    {
+      "path": "src/aip/platform/notifications/audit/notification_audit.py",
+      "sha256": "cd0339833fac4a5202cb62edbe1a5b2d1a6c3a16f2b5427ec460f93000033808",
+      "size": 424
+    },
+    {
+      "path": "src/aip/platform/notifications/configuration/__init__.py",
+      "sha256": "2d23c80fa9d72265864939904075dab3ac1179826b0cbd3a9c08e8742189502d",
+      "size": 42
+    },
+    {
+      "path": "src/aip/platform/notifications/configuration/notification_config.py",
+      "sha256": "f7577bb7bd6662b94a18974b9906dacabd845fefa3976071672351be1dbfdb40",
+      "size": 243
+    },
+    {
+      "path": "src/aip/platform/notifications/deduplication/__init__.py",
+      "sha256": "3b104f51bd1db32479979a231161b5f4b8388755cfbef94ee95904494759e655",
+      "size": 42
+    },
+    {
+      "path": "src/aip/platform/notifications/deduplication/deduplication_service.py",
+      "sha256": "425b6c7b2c04e96013fdf1678ab447b3c0fcbd0f7a43f241da05eed309d8164f",
+      "size": 284
+    },
+    {
+      "path": "src/aip/platform/notifications/dispatch/__init__.py",
+      "sha256": "184f79fadb088f12fd7857bde6faafc3794fe551162569e1427f7377bbccb0be",
+      "size": 37
+    },
+    {
+      "path": "src/aip/platform/notifications/dispatch/dispatch_queue.py",
+      "sha256": "7cecb49ed01cdd77241f9c6dc619239570c7b83369d1dc07aee64b295ee259d1",
+      "size": 515
+    },
+    {
+      "path": "src/aip/platform/notifications/dispatch/dispatcher.py",
+      "sha256": "a1d7f935f37cd34842e2bd64ce6b6742bb9e8e38329a195d539ac503fe155fcf",
+      "size": 2122
+    },
+    {
+      "path": "src/aip/platform/notifications/engine/__init__.py",
+      "sha256": "44c041d84a65cc2ebf47310e3157bcaa721e258664b46ded600d52cbb9313679",
+      "size": 35
+    },
+    {
+      "path": "src/aip/platform/notifications/engine/alert_engine.py",
+      "sha256": "e1c0e937aa582b6a7bc6df057bbe83fcf9b0ad0c95b9f5d223b8cf49346a8b92",
+      "size": 1768
+    },
+    {
+      "path": "src/aip/platform/notifications/engine/notification_engine.py",
+      "sha256": "4a030145b1f309edc52a7aa3dcf0c3f11de04c9cb624f99ce3f9efca697d938c",
+      "size": 2727
+    },
+    {
+      "path": "src/aip/platform/notifications/events/__init__.py",
+      "sha256": "2f2c2f7ecae1729bd1630c08d227d13a413d9d746eb7ece2ee1414d267b4ed17",
+      "size": 35
+    },
+    {
+      "path": "src/aip/platform/notifications/events/notification_events.py",
+      "sha256": "fcee258f87935da6bda5d6b1a5d1ee16863a30193248bae313935c129ac404d6",
+      "size": 983
+    },
+    {
+      "path": "src/aip/platform/notifications/exceptions/__init__.py",
+      "sha256": "e57e1e8359efd54a0f8c03708bf39a3b33e4daebb338dfccea61eef37ae2a2bc",
+      "size": 38
+    },
+    {
+      "path": "src/aip/platform/notifications/exceptions/notification_exceptions.py",
+      "sha256": "5ab4dbf22ad53c058c102897210a50c97b8e64487f280e3ee36505936347b0a4",
+      "size": 141
+    },
+    {
+      "path": "src/aip/platform/notifications/models/__init__.py",
+      "sha256": "1917e18b585229131077ccdd528697e39ca130a7d04885c229abb3200cb65e98",
+      "size": 35
+    },
+    {
+      "path": "src/aip/platform/notifications/models/alert.py",
+      "sha256": "34d173773ba2f054ae88d4338ddddc65d66ce42c2d8d7b1fafb64c3d2e84cab5",
+      "size": 752
+    },
+    {
+      "path": "src/aip/platform/notifications/models/alert_result.py",
+      "sha256": "a6f4cadd1f3ad7b119593784f84f22544a5574aa0f1b91187cba92bb44bea67c",
+      "size": 365
+    },
+    {
+      "path": "src/aip/platform/notifications/models/alert_rule.py",
+      "sha256": "13161018afa211f42d68f740272091c345cc8e595b9a95790ffee36f367875ab",
+      "size": 290
+    },
+    {
+      "path": "src/aip/platform/notifications/models/notification.py",
+      "sha256": "80361a699eb1555496d642325bb30b963ec3528a6a555337c272d442cc1251c8",
+      "size": 510
+    },
+    {
+      "path": "src/aip/platform/notifications/models/notification_result.py",
+      "sha256": "860289418321eb64d3493dc31c0db3ac22d41dd4d757ca2a77d62eb53a35dc22",
+      "size": 528
+    },
+    {
+      "path": "src/aip/platform/notifications/monitoring/__init__.py",
+      "sha256": "dd68e2c6c18184500588e50d0979771634d80d8929c6565c5ce792a2338f75e5",
+      "size": 39
+    },
+    {
+      "path": "src/aip/platform/notifications/monitoring/notification_health.py",
+      "sha256": "f4815ebec78e8c147daca39a4df40ed94871c5261d6413009facc44c9efbd330",
+      "size": 1367
+    },
+    {
+      "path": "src/aip/platform/notifications/providers/__init__.py",
+      "sha256": "8d44f3fad415c4aa56469e830638e090a94d1f958d73681bc36826604172206b",
+      "size": 38
+    },
+    {
+      "path": "src/aip/platform/notifications/providers/null_provider.py",
+      "sha256": "d65a724e765205cb22cdcacd44602c630d8253ce7e0713946e6feb064995936b",
+      "size": 828
+    },
+    {
+      "path": "src/aip/platform/notifications/providers/provider.py",
+      "sha256": "3993083fd5c61fe13753ddb2ce0e1a2ae38c4178b170e2114ca010eadeef552f",
+      "size": 501
+    },
+    {
+      "path": "src/aip/platform/notifications/providers/provider_registry.py",
+      "sha256": "871aad063841c328b16a4f50e30b932841b9bfe4fba469a2b611fa489627f5b6",
+      "size": 779
+    },
+    {
+      "path": "src/aip/platform/notifications/severity/__init__.py",
+      "sha256": "70b8f3c960f45deb9e32a7997477e3c270a7e4712d543a4c892a15215718ef40",
+      "size": 24
+    },
+    {
+      "path": "src/aip/platform/notifications/severity/severity.py",
+      "sha256": "bd161dd2614dd60fd95a9b456f5d2d94cea9553890e8aad9f48138fa050b7b4b",
+      "size": 187
+    },
+    {
+      "path": "src/aip/platform/notifications/suppression/__init__.py",
+      "sha256": "2016cbf40762067ad4ade91a79ff2630351eb9f46e633da18a9fa56d076fc2f1",
+      "size": 40
+    },
+    {
+      "path": "src/aip/platform/notifications/suppression/suppression_policy.py",
+      "sha256": "02fd443954493cef328d9c61d8b29348cb83897071e95c4d7205b6fd27ab620e",
+      "size": 301
+    },
+    {
+      "path": "src/aip/platform/notifications/telemetry/__init__.py",
+      "sha256": "b0d5e76a9b24516022d5c8e8bafe32f24145c5ca713d99a62adbb0215d7cd669",
+      "size": 38
+    },
+    {
+      "path": "src/aip/platform/notifications/telemetry/notification_metrics.py",
+      "sha256": "ca598e69c5144c89d55b12529f549800fde6d42de9d32601824dae298400fdef",
+      "size": 459
+    },
+    {
+      "path": "src/aip/platform/notifications/templates/__init__.py",
+      "sha256": "3dce696a9fde10d75d46f678d110a33b8147dbda4dca155eef6a439892272212",
+      "size": 37
+    },
+    {
+      "path": "src/aip/platform/notifications/templates/template_engine.py",
+      "sha256": "80873a712f563adf75326a57036d237e1905e5accbab99197bb917bef2c920d6",
+      "size": 707
+    },
+    {
+      "path": "src/aip/platform/observability/README.md",
+      "sha256": "3822f1f91add43b225d6d8fe5e5533926fbc45b1349b11626448d07b9889a7c7",
+      "size": 185
+    },
+    {
+      "path": "src/aip/platform/observability/__init__.py",
+      "sha256": "057c3041ec2215b136dcb2a17ce59dc24529f2a80f53b5b604440cdb9530b52d",
+      "size": 473
+    },
+    {
+      "path": "src/aip/platform/observability/audit/observability_audit.py",
+      "sha256": "14af1a8c7bc0dd67cb7a231669256792bcab4eb56642a57976bd0fe0a89005fd",
+      "size": 430
+    },
+    {
+      "path": "src/aip/platform/observability/configuration/observability_config.py",
+      "sha256": "59200c9ae095577068be8119f3b9102ef9a0f4419d757118fabb7da06cffd23e",
+      "size": 677
+    },
+    {
+      "path": "src/aip/platform/observability/correlation/correlation_context.py",
+      "sha256": "567ed40498f5d0abbae95ae46be41e906a6bb059bf5d99d65cbfcd02bf131a93",
+      "size": 732
+    },
+    {
+      "path": "src/aip/platform/observability/events/observability_events.py",
+      "sha256": "87775b3695a76f510d9b6a971caab851cd6c9481cf646c1ec16ca2e0b5c89abb",
+      "size": 598
+    },
+    {
+      "path": "src/aip/platform/observability/exceptions/observability_exceptions.py",
+      "sha256": "369946e0a1f5156464d09a4544af3bd2f66b06740c8b9fb1adc8444e9286582f",
+      "size": 148
+    },
+    {
+      "path": "src/aip/platform/observability/exporters/exporter.py",
+      "sha256": "57d7647d8e7de65af2d8eedb21599f90f5ffc8f388be490e8a9cad555ef7fd96",
+      "size": 223
+    },
+    {
+      "path": "src/aip/platform/observability/health/component_health.py",
+      "sha256": "31ff8e7162d380926d46a3d050f6c9504a695f1d3d4375e990e9897cb1cc0b71",
+      "size": 560
+    },
+    {
+      "path": "src/aip/platform/observability/health/health_service.py",
+      "sha256": "b5717d34fc6cd2be39c75a0ca30356ba11a5692aa3ad1f609e0aa700a8726baa",
+      "size": 1122
+    },
+    {
+      "path": "src/aip/platform/observability/logging/logger.py",
+      "sha256": "62cef450f0abca03f3cc4c7ecdf65bd5435cdbf302c5a541289bde85aa17e55f",
+      "size": 3534
+    },
+    {
+      "path": "src/aip/platform/observability/logging/logger_factory.py",
+      "sha256": "655240264451ab10cac3b7f96843dd8831d9df4dccf9a0b71d3c155793104378",
+      "size": 660
+    },
+    {
+      "path": "src/aip/platform/observability/logging/structured_log.py",
+      "sha256": "ed14eb2c2eb11d0df196dfbb074a77c60379d8954c401d353be62c02dd2f9aa2",
+      "size": 665
+    },
+    {
+      "path": "src/aip/platform/observability/metrics/counter.py",
+      "sha256": "e82de938431d0cc22a30f8d0d317bf67ade0c2998dccac004abba383116b4db7",
+      "size": 282
+    },
+    {
+      "path": "src/aip/platform/observability/metrics/gauge.py",
+      "sha256": "0bc6e743834c78a32f10ca6f12d0cda30734b8479761aed3dc3877199f22daf0",
+      "size": 275
+    },
+    {
+      "path": "src/aip/platform/observability/metrics/histogram.py",
+      "sha256": "85860252be27a077e13f98836bdab5c1a9f0127f739ce9833b30a488924fa50e",
+      "size": 515
+    },
+    {
+      "path": "src/aip/platform/observability/metrics/metrics_registry.py",
+      "sha256": "d4aaf9db6d961bfb254628302c631df7614c706524b605fd7434ac349f49b5aa",
+      "size": 1706
+    },
+    {
+      "path": "src/aip/platform/observability/metrics/timer.py",
+      "sha256": "c14535585b28969cd02ea4848bedaf6e9b085c1f4cc5118f64dcc0fcdac21514",
+      "size": 767
+    },
+    {
+      "path": "src/aip/platform/observability/monitoring/monitoring_service.py",
+      "sha256": "bce1b8433a5704e5ccf70bd39a643f1b18b82330d1d746f4f5682519c966a12d",
+      "size": 1394
+    },
+    {
+      "path": "src/aip/platform/observability/providers/console_provider.py",
+      "sha256": "ee353bafb845d5d3fe7253249ae32277e6bf4af8b1a7f95c2286c15965ee7fc1",
+      "size": 267
+    },
+    {
+      "path": "src/aip/platform/observability/providers/null_provider.py",
+      "sha256": "65a527c4f591a94f4bdab72fbbe0ec7326e3bae6ba5cd2f2d3c03c8ec3ba0030",
+      "size": 202
+    },
+    {
+      "path": "src/aip/platform/observability/providers/provider.py",
+      "sha256": "c827e7c523f150f44417a735700a912b4292191e297287a03ef80fb3cd996d5e",
+      "size": 224
+    },
+    {
+      "path": "src/aip/platform/observability/telemetry/telemetry_service.py",
+      "sha256": "9b72cf825f78b8aaaf9acca4b5bbe8b3215edac71612802ea2a85431f70c493e",
+      "size": 2019
+    },
+    {
+      "path": "src/aip/platform/observability/tracing/trace_context.py",
+      "sha256": "1ec7d56f04300bf59a37e221007a116019bc6500e892a2bb580e40b039840512",
+      "size": 595
+    },
+    {
+      "path": "src/aip/platform/observability/tracing/tracer.py",
+      "sha256": "f725dc3823850705968f205ac05682137f7506cfac9adead7b756023500b4d4d",
+      "size": 2474
+    },
+    {
+      "path": "src/aip/platform/reporting/README.md",
+      "sha256": "7894ea67b6001cd2bd0ee3c44263d0dc7577f493d43644048fb03bdcd26c06be",
+      "size": 159
+    },
+    {
+      "path": "src/aip/platform/reporting/__init__.py",
+      "sha256": "e76aa7469b321a62da4927e5661e6b3126609be973d5852e82c7d016d9a7523b",
+      "size": 77
+    },
+    {
+      "path": "src/aip/platform/reporting/audit/__init__.py",
+      "sha256": "eada6e382a6b13b1323f29c3ebde118b2e63050dc7a6f2f22ee52e2ab9630518",
+      "size": 45
+    },
+    {
+      "path": "src/aip/platform/reporting/audit/reporting_audit.py",
+      "sha256": "b8854ae958dc790b18cb7be457dd271c6074fc772838bcdc870338f990328feb",
+      "size": 1381
+    },
+    {
+      "path": "src/aip/platform/reporting/configuration/__init__.py",
+      "sha256": "e8bc0d312f6b75eb4341133852bfd36e79d9759565ac4eadc9a054b44060f1d8",
+      "size": 56
+    },
+    {
+      "path": "src/aip/platform/reporting/configuration/reporting_config.py",
+      "sha256": "b15b37fde731f774c5b80c7e2724e1afd88e347d9d4c9318bfdc562845bb789f",
+      "size": 318
+    },
+    {
+      "path": "src/aip/platform/reporting/engine/__init__.py",
+      "sha256": "811e15192cfa525a880e1fd7077efcfbcd0fb442bd3bf3e3d2b540ba6109a3f5",
+      "size": 29
+    },
+    {
+      "path": "src/aip/platform/reporting/engine/renderer.py",
+      "sha256": "cb6fff2d44a28a315adc93a7c91ce8d4a1104b9c0cdcea547b34199d62b72f18",
+      "size": 323
+    },
+    {
+      "path": "src/aip/platform/reporting/engine/report_engine.py",
+      "sha256": "67720bf069095a985b78d94bda2c22f6b184a5fdee8ed11ad8ad2a783bcfcc36",
+      "size": 444
+    },
+    {
+      "path": "src/aip/platform/reporting/events/__init__.py",
+      "sha256": "5917a5aa7141b62cd937489e8cd035500511769e3362fd417b584186f99f6022",
+      "size": 24
+    },
+    {
+      "path": "src/aip/platform/reporting/events/reporting_events.py",
+      "sha256": "15f5fd02065c42cb53c9a88f135b001b9e482b076a30d5b4efba40b7cda5f634",
+      "size": 954
+    },
+    {
+      "path": "src/aip/platform/reporting/exceptions/__init__.py",
+      "sha256": "d4793e1f4c0a34409b7aec9bf787eade96fa81d48e196bcf558183e9c88960c9",
+      "size": 28
+    },
+    {
+      "path": "src/aip/platform/reporting/exceptions/reporting_exceptions.py",
+      "sha256": "abdc1c5b69db9fe924502af52a481acfa7778567b54187ca5a6a3cdada644c10",
+      "size": 185
+    },
+    {
+      "path": "src/aip/platform/reporting/export/__init__.py",
+      "sha256": "cb0af4c357911a9122da78c8ba29777aef5f320a2865de1fff6f8f7479832682",
+      "size": 45
+    },
+    {
+      "path": "src/aip/platform/reporting/export/export_service.py",
+      "sha256": "cecb642e9a000a2108529472532d71d29d0653661b61026ef26a3131c621258a",
+      "size": 1442
+    },
+    {
+      "path": "src/aip/platform/reporting/formatting/__init__.py",
+      "sha256": "1a5fc2a36394725131b3618319a988d4a2a92828d469dbbe924f6f7400f54c92",
+      "size": 47
+    },
+    {
+      "path": "src/aip/platform/reporting/formatting/formatter.py",
+      "sha256": "03cae0b84a63e4c694c11e31b1c950780240b46b8a0545256c5e5b1d1c72899f",
+      "size": 480
+    },
+    {
+      "path": "src/aip/platform/reporting/models/__init__.py",
+      "sha256": "21c94f75211421d6e5e126014989a3d53178bca8674e27407e11a931aa86ac3e",
+      "size": 31
+    },
+    {
+      "path": "src/aip/platform/reporting/models/attachment.py",
+      "sha256": "532ffb3decc124214dd6e3d5cb37c7f5c417d52f8715f169d4bdaababbd51cb7",
+      "size": 458
+    },
+    {
+      "path": "src/aip/platform/reporting/models/chart.py",
+      "sha256": "e083ce23760f782e40f8f9124478567ebfcc93d67ec4a1fdec10107935efae25",
+      "size": 705
+    },
+    {
+      "path": "src/aip/platform/reporting/models/report.py",
+      "sha256": "fc06cb1e69207bb5a78a1867c3e52c81cf06d8afe1bad2620a2f5cdc710901a6",
+      "size": 1350
+    },
+    {
+      "path": "src/aip/platform/reporting/models/report_metadata.py",
+      "sha256": "640f58fa8d67d7cd0887cb4023d2ae9f1df6212a67a39e94230a194e4b94f706",
+      "size": 601
+    },
+    {
+      "path": "src/aip/platform/reporting/models/section.py",
+      "sha256": "e9b8d1e7bba99411e729a366df036e0ab28d3ddded1943d7f87c30812db783be",
+      "size": 971
+    },
+    {
+      "path": "src/aip/platform/reporting/models/table.py",
+      "sha256": "5e9bb38a0893f8a291049871313550b5a119ae71c1359d3b2d5a7ce85b54491a",
+      "size": 543
+    },
+    {
+      "path": "src/aip/platform/reporting/monitoring/__init__.py",
+      "sha256": "cb6cf8f27e2daf4e12232e4fd0c8bb487a2782d22c724d420881cc1fca45ac5d",
+      "size": 50
+    },
+    {
+      "path": "src/aip/platform/reporting/monitoring/reporting_health.py",
+      "sha256": "91fa4228edfa99adeca04b964a7da144726aa802f72c693716e2c7d394449521",
+      "size": 1486
+    },
+    {
+      "path": "src/aip/platform/reporting/renderers/__init__.py",
+      "sha256": "a85a6f2362d0b09febc21d64fb098a4617b2431c5393539f4eb5c72a53b389e8",
+      "size": 59
+    },
+    {
+      "path": "src/aip/platform/reporting/renderers/excel_renderer.py",
+      "sha256": "77d66803ea6da4f6a42a06006d2aab0e35af5fac83bf081dafa2900c09d0c5a2",
+      "size": 325
+    },
+    {
+      "path": "src/aip/platform/reporting/renderers/html_renderer.py",
+      "sha256": "8e9ce9d1b7d829997bd612f20ebc47e0bf242de77331a7a8769bd54b9f2a42f3",
+      "size": 523
+    },
+    {
+      "path": "src/aip/platform/reporting/renderers/json_renderer.py",
+      "sha256": "26498aeeae37795da89ff905d1b4adf668a96cbfff4d1f0297c1f53b58d5e334",
+      "size": 511
+    },
+    {
+      "path": "src/aip/platform/reporting/renderers/pdf_renderer.py",
+      "sha256": "81167a43295c17b48b1c18eac5f109f71a8fb5bbbb111985c5557cb25f9f79f6",
+      "size": 320
+    },
+    {
+      "path": "src/aip/platform/reporting/renderers/ppt_renderer.py",
+      "sha256": "5704a6616dc86e09a390f65a7b26a750d396f629d42331e2a76368341752f634",
+      "size": 327
+    },
+    {
+      "path": "src/aip/platform/reporting/telemetry/__init__.py",
+      "sha256": "fa9e3fb2eced211059704047b6bcd9b3d87b0358dbb13ca637a57bcee848b9d5",
+      "size": 49
+    },
+    {
+      "path": "src/aip/platform/reporting/telemetry/reporting_metrics.py",
+      "sha256": "80be5756be1bc60ae49df05b449ee380e68a6dc0f0a8a896cc35aa9859b74b86",
+      "size": 904
+    },
+    {
+      "path": "src/aip/platform/reporting/templates/__init__.py",
+      "sha256": "771a408ac47da0ebbb9c38ba2f74539965d9c455c48178886bce59204eb3632a",
+      "size": 51
+    },
+    {
+      "path": "src/aip/platform/reporting/templates/template.py",
+      "sha256": "3823b402bd34077cc4716f427a9d230859c34034b769ebe36ea9d3779e40fe7c",
+      "size": 206
+    },
+    {
+      "path": "src/aip/platform/reporting/templates/template_registry.py",
+      "sha256": "d8eca49c9002a4a5b7a3c50dcaed70396075d50d4a789a44939768670c80245c",
+      "size": 515
+    },
+    {
+      "path": "src/aip/platform/scheduler/README.md",
+      "sha256": "950b7ef5ddc8ba74f5065a46ddb1b2cb4656d1652fbced4b2068d9401d7baae6",
+      "size": 281
+    },
+    {
+      "path": "src/aip/platform/scheduler/__init__.py",
+      "sha256": "3e9d4c08b4035d8f064f73b735f12d43b1a2c948a5675d218715907fbaafcac0",
+      "size": 67
+    },
+    {
+      "path": "src/aip/platform/scheduler/audit/__init__.py",
+      "sha256": "c08f4e565fc64ddb07ac82c7a718e9d95dd53fd41b069cc8dbc5d8c591f7ef38",
+      "size": 31
+    },
+    {
+      "path": "src/aip/platform/scheduler/audit/scheduler_audit.py",
+      "sha256": "24dd23c0943cd421fc5aa7cfda479f108d107f8f33cfdabe6a32f3effec9fcb8",
+      "size": 402
+    },
+    {
+      "path": "src/aip/platform/scheduler/configuration/__init__.py",
+      "sha256": "6fc86e11c9483ba84b3b2a7ae66ccfb8e71dad71b98a1bdec2421de743f57327",
+      "size": 39
+    },
+    {
+      "path": "src/aip/platform/scheduler/configuration/scheduler_config.py",
+      "sha256": "8362a44e287cbca57746f9f1331963a149f791b9d0318619699672b3d7dba463",
+      "size": 251
+    },
+    {
+      "path": "src/aip/platform/scheduler/engine/__init__.py",
+      "sha256": "84291eb1a90270f0961e5b0dcacb6f44b27216ea1ce986ff4f98d9a35b493244",
+      "size": 32
+    },
+    {
+      "path": "src/aip/platform/scheduler/engine/execution_engine.py",
+      "sha256": "e22932545e4eb70455ec029787d8aa825075afb0e28a9a84d6e2b04ab55ddee6",
+      "size": 3966
+    },
+    {
+      "path": "src/aip/platform/scheduler/engine/scheduler_engine.py",
+      "sha256": "9d920d0ed30ccebd44dbe5e658a5a2ed2ef47c41d551cdecf074625076940d71",
+      "size": 3330
+    },
+    {
+      "path": "src/aip/platform/scheduler/events/__init__.py",
+      "sha256": "d0a4795d25e139ce2af638f2e0ff01ae126d16319eb9b3a9fc735b38397c3f07",
+      "size": 31
+    },
+    {
+      "path": "src/aip/platform/scheduler/events/scheduler_events.py",
+      "sha256": "40e4c5beea81a5afff8d1258e2f16c23dbf422e8a3e61e83223761e4b9743289",
+      "size": 588
+    },
+    {
+      "path": "src/aip/platform/scheduler/exceptions/__init__.py",
+      "sha256": "dd0c87729ea423cb7eafcb4cc94c4714fb6f24392f2155345e7472596ef4d630",
+      "size": 35
+    },
+    {
+      "path": "src/aip/platform/scheduler/exceptions/scheduler_exceptions.py",
+      "sha256": "7b2cdb841a507b6300fd40f4f5661568a70b64e67a0368b7ec4c5341c7d1d33b",
+      "size": 140
+    },
+    {
+      "path": "src/aip/platform/scheduler/jobs/__init__.py",
+      "sha256": "b7ac212704c9838db34b57664fc4d7a4ac5129aecb34f9beb1577731414969f4",
+      "size": 28
+    },
+    {
+      "path": "src/aip/platform/scheduler/jobs/job_history.py",
+      "sha256": "b7b684bbeec0a7cc7623c89524e636e3e62899ec14ab371b35e515f9a0306ecb",
+      "size": 475
+    },
+    {
+      "path": "src/aip/platform/scheduler/jobs/job_priority.py",
+      "sha256": "e698b50ab508799f252e7a605bf1316c80000fece17dd769834ddd3686d32266",
+      "size": 172
+    },
+    {
+      "path": "src/aip/platform/scheduler/jobs/job_result.py",
+      "sha256": "adb010c55438a43633872cb535b731681cfbab56e2dde8b64924f91c77c2d0ec",
+      "size": 715
+    },
+    {
+      "path": "src/aip/platform/scheduler/jobs/scheduled_job.py",
+      "sha256": "f19b6f29f8d89e11eab7129c2772c712ccbbb7db77ddbe76d29915e8fe99b1b2",
+      "size": 886
+    },
+    {
+      "path": "src/aip/platform/scheduler/locking/__init__.py",
+      "sha256": "7ee4e05b04f335492f9fe05ae24fa1f1b29dd1685fa9b01403ad03e452d71a1c",
+      "size": 43
+    },
+    {
+      "path": "src/aip/platform/scheduler/locking/execution_lock.py",
+      "sha256": "a4846fa5709ef55dde93bd1a502f53a0d9928cd48ca4157d24cd3bfbe3f2db67",
+      "size": 718
+    },
+    {
+      "path": "src/aip/platform/scheduler/monitoring/__init__.py",
+      "sha256": "4d7ec812dce8233cc7a87980355f2142fbd20f0f243dad3da0c10a752ff3fe99",
+      "size": 36
+    },
+    {
+      "path": "src/aip/platform/scheduler/monitoring/scheduler_health.py",
+      "sha256": "41a790a7607938346778db532b3434ebdde155ce14a6c4ba347f3833996b4d67",
+      "size": 1677
+    },
+    {
+      "path": "src/aip/platform/scheduler/queue/__init__.py",
+      "sha256": "0710b1c4e1f0b6cfe624be5cff9289cd0258ffb5b1eab2baef90f4f5661654d3",
+      "size": 44
+    },
+    {
+      "path": "src/aip/platform/scheduler/queue/execution_queue.py",
+      "sha256": "3a532e2ed29b9c51e5285eeef5aee82a444da8436904497a148fc4e2c3375e32",
+      "size": 493
+    },
+    {
+      "path": "src/aip/platform/scheduler/queue/worker.py",
+      "sha256": "799c72363e08363da762f73881d7718fef9843c941fdbb3a8b88fe3a41b9d991",
+      "size": 4130
+    },
+    {
+      "path": "src/aip/platform/scheduler/registry/__init__.py",
+      "sha256": "0fcc197e9bbd6473677838d18c9c6b8619f905fc7aefff94b3e018e9479f386d",
+      "size": 38
+    },
+    {
+      "path": "src/aip/platform/scheduler/registry/job_registry.py",
+      "sha256": "f176c1ca983bc474f62836b3a2350591ee6b1a00ffb760dc8562a27c8782b68f",
+      "size": 1239
+    },
+    {
+      "path": "src/aip/platform/scheduler/telemetry/__init__.py",
+      "sha256": "06b12aba78f2330f414dbaea8624421e805cfac5dbc6cbb70f7acb253023822b",
+      "size": 35
+    },
+    {
+      "path": "src/aip/platform/scheduler/telemetry/scheduler_metrics.py",
+      "sha256": "f1974dac694b384a615132818d8e2a53e875747b872b68175b5d5a3b2e79e226",
+      "size": 456
+    },
+    {
+      "path": "src/aip/platform/scheduler/triggers/__init__.py",
+      "sha256": "c9fa183cf88400c38c5beb64ae2d8c7b290f75a5b1462fb533081ed57ccef8b7",
+      "size": 41
+    },
+    {
+      "path": "src/aip/platform/scheduler/triggers/cron_trigger.py",
+      "sha256": "eda1f4522fa590fe44b8dbd82eda9f695fd2069faf65e2b309a5355d759b2357",
+      "size": 332
+    },
+    {
+      "path": "src/aip/platform/scheduler/triggers/interval_trigger.py",
+      "sha256": "7a553b03cabc138cc11bfc42ccf837bab3a86dd6c76cb62c3b7c84182e347dfc",
+      "size": 393
+    },
+    {
+      "path": "src/aip/platform/scheduler/triggers/manual_trigger.py",
+      "sha256": "875fcba0fed94bf089e0079d94d029a237e72333b662faed801ea1700d549c63",
+      "size": 196
+    },
+    {
+      "path": "src/aip/platform/scheduler/triggers/startup_trigger.py",
+      "sha256": "b56f35d0eb9def5741b193b6cdd39e501898c033674acd7c9d27e9e638bbfe76",
+      "size": 197
+    },
+    {
+      "path": "src/aip/platform/security/README.md",
+      "sha256": "35eedaa26494b79ae857b586bfdf70fd8381cdba88b009c771e55ecab0dbaac7",
+      "size": 310
+    },
+    {
+      "path": "src/aip/platform/security/__init__.py",
+      "sha256": "cfd5464d4cb4f27372aebfead13247acf1957cf99e89667fc7b5b9f31d05c415",
+      "size": 92
+    },
+    {
+      "path": "src/aip/platform/security/audit/security_audit.py",
+      "sha256": "43a72d561cf79ad2bd38d6d5f2b368d3bf5a238ad8478e56270edbe6045200c6",
+      "size": 1143
+    },
+    {
+      "path": "src/aip/platform/security/authentication/authentication_service.py",
+      "sha256": "8de2c522c9dfedc8606637d709a0c0f7525349552862bf933ca4bd8caf9b0bf7",
+      "size": 2238
+    },
+    {
+      "path": "src/aip/platform/security/authentication/credential_validator.py",
+      "sha256": "5b67f34af2c31f66c0444912f168eb80773e980274c8ddb606687c589d004a43",
+      "size": 681
+    },
+    {
+      "path": "src/aip/platform/security/authentication/session_manager.py",
+      "sha256": "fe0bcf4c6059067f3944d206ba5aa51aa468c02512dad7e20d988ccef87a4f08",
+      "size": 3018
+    },
+    {
+      "path": "src/aip/platform/security/authentication/token.py",
+      "sha256": "2bbd89dbd14749c7857c75731aea9729473eec9941803f2a1f0abc756dd54cde",
+      "size": 792
+    },
+    {
+      "path": "src/aip/platform/security/authorization/authorization_service.py",
+      "sha256": "6071b9471570531794e1b9e9db0901755c0a07b39091f7943f9919480865ae2b",
+      "size": 1033
+    },
+    {
+      "path": "src/aip/platform/security/authorization/permission.py",
+      "sha256": "51b48d3ceab854980d049b072a7bdb46153f9a882edc8eccb72b2975b99dff46",
+      "size": 299
+    },
+    {
+      "path": "src/aip/platform/security/authorization/permission_evaluator.py",
+      "sha256": "5152bb519141fec2da3384b0b558e4784c4bd9ec51d8695260c60e9cc391ae93",
+      "size": 1410
+    },
+    {
+      "path": "src/aip/platform/security/authorization/policy.py",
+      "sha256": "1b91bb0d12f14d853583f9022e328865729e7059f85225907c7d929cdd94d570",
+      "size": 473
+    },
+    {
+      "path": "src/aip/platform/security/authorization/role.py",
+      "sha256": "4d489fc12f5700443c53e98c164289836dfb543783e709076a52fbace09a7cc1",
+      "size": 420
+    },
+    {
+      "path": "src/aip/platform/security/configuration/security_config.py",
+      "sha256": "d30a8ce81020f668e9fe50425d260457a93ee0a60f8ee0c7126614889b35bcbb",
+      "size": 453
+    },
+    {
+      "path": "src/aip/platform/security/events/security_events.py",
+      "sha256": "5333535b238581cc6ce75a28a4a0627ac1abe371b4fd17b6c0ff2918fba1cc04",
+      "size": 1838
+    },
+    {
+      "path": "src/aip/platform/security/exceptions/security_exceptions.py",
+      "sha256": "027ed90855862f6b2d31c9b3ed43194dc005445f63ad2c79e4b74c936663127f",
+      "size": 467
+    },
+    {
+      "path": "src/aip/platform/security/identity/identity.py",
+      "sha256": "031800b8107fb571815b13f7888cb2ae8e7203d4c28277cf3daa988ac596f71c",
+      "size": 904
+    },
+    {
+      "path": "src/aip/platform/security/identity/identity_provider.py",
+      "sha256": "1f24b9363194a8c6f7c3ebb7f0f1f2d5820bb6f474fe495826140855be8ce2f4",
+      "size": 927
+    },
+    {
+      "path": "src/aip/platform/security/identity/principal.py",
+      "sha256": "d0de2791791947711ea1d272f073770bad04f5ff743525970f5ba85ffcf2971a",
+      "size": 497
+    },
+    {
+      "path": "src/aip/platform/security/monitoring/security_health.py",
+      "sha256": "e9228a01b2c2b95b0e1fe310720c714e2027a389fad0cf649dd0fe1e6d9a62f1",
+      "size": 505
+    },
+    {
+      "path": "src/aip/platform/security/secrets/secret_provider.py",
+      "sha256": "1674391f099ca7e489f19e4657a619eaf805242f8ff27ebb0e132ec54fc4d945",
+      "size": 1142
+    },
+    {
+      "path": "src/aip/platform/security/telemetry/security_metrics.py",
+      "sha256": "2962da12abbb05ec0e79dcc6a2c1817283d2b7ca60011bff3828b9031603f7a8",
+      "size": 505
+    },
+    {
+      "path": "src/aip/product/__init__.py",
+      "sha256": "9aa9850402714665cb6c9f43963531721a5388644347c20bd9ebdefed924e541",
+      "size": 185
+    },
+    {
+      "path": "src/aip/product/configured/__init__.py",
+      "sha256": "5384bfdb2df380b6557cc7a71d16891415bccaa87699406e236f752c6415389f",
+      "size": 35
+    },
+    {
+      "path": "src/aip/product/configured/adapters/configured_economic_indicators_provider.py",
+      "sha256": "bf9ddbf2ea6b29ff5924a6042955f403cbc0607ef8f6c3846e2f65768ee6e744",
+      "size": 30999
+    },
+    {
+      "path": "src/aip/product/configured/adapters/configured_health_provider.py",
+      "sha256": "82da2cc8c7d602a2546c47373fa9e86b65aa0334e5f0ddf872121d996cb2f601",
+      "size": 929
+    },
+    {
+      "path": "src/aip/product/configured/adapters/configured_liquidity_provider.py",
+      "sha256": "787631c9bfb6b46a4663cc8b3f51e1e74e4ed2cb3c8af88e8c9866a1b41c012c",
+      "size": 30512
+    },
+    {
+      "path": "src/aip/product/configured/adapters/configured_market_provider.py",
+      "sha256": "c3b004d4d8cf52b65dbffa7f13357d77ebbc10792b440f5ee39531d5c2d6af96",
+      "size": 23720
+    },
+    {
+      "path": "src/aip/product/configured/adapters/configured_portfolio_provider.py",
+      "sha256": "64036774db36bf57deefce261bc3c33b06478f31685fd08190b98dfdc7eed905",
+      "size": 48539
+    },
+    {
+      "path": "src/aip/product/configured/adapters/pipca_vector_reader.py",
+      "sha256": "bdfa72aa9acb7143871bbdc5c8dae7c7c5c7042b3862740d1e5eb4a3c7be5746",
+      "size": 2782
+    },
+    {
+      "path": "src/aip/product/configured/bootstrap/configured_application_factory.py",
+      "sha256": "31877fcdd4ccab910cdd3baba95ae9fcf202ed430d0358f0fa6a9a26bfc98541",
+      "size": 2771
+    },
+    {
+      "path": "src/aip/product/configured/bootstrap/configured_dependency_composition.py",
+      "sha256": "a7ed3ac325745ca2ae0e1fce0f1c8f2e0695097ff4ac93d04f7f5cdc06f6a6d3",
+      "size": 10513
+    },
+    {
+      "path": "src/aip/product/configured/configuration/configured_source_config.py",
+      "sha256": "781d196913ca24c251f36320c2126a55acf450e5a1f8d107dbfe9a94b6f7429c",
+      "size": 9478
+    },
+    {
+      "path": "src/aip/product/configured/configuration/institutional_paths.py",
+      "sha256": "1e81bcea9fb367c30b013db6bab5caacbf16dfdf47db4bb61d5601b2314fadf8",
+      "size": 2021
+    },
+    {
+      "path": "src/aip/product/configured/context/__init__.py",
+      "sha256": "9a45c059c8fe4fbd645304bef70ecd78bf7638fd94ff51fa6c6237575f5ae747",
+      "size": 123
+    },
+    {
+      "path": "src/aip/product/configured/context/valuation_date_context.py",
+      "sha256": "3ee76cc66a9ae7ca4f28785c86d47151cb883dcffa598cf87b8174ee1fe2cee4",
+      "size": 814
+    },
+    {
+      "path": "src/aip/product/configured/models/portfolio_rotation.py",
+      "sha256": "6e6c9a2a518420b03cf355291268ece2552afcb6829c71e9bb69268c1ca81e4a",
+      "size": 2033
+    },
+    {
+      "path": "src/aip/product/configured/protocols.py",
+      "sha256": "5eaf8a3f78b8513e5b41644e673a1999a5921e72e4306f59cb32919724a3955d",
+      "size": 565
+    },
+    {
+      "path": "src/aip/product/configured/readers/__init__.py",
+      "sha256": "c416dcf046ec3758e6c02d0b30d0cc0bb5546970152723e15c7a4b63dfd0037c",
+      "size": 162
+    },
+    {
+      "path": "src/aip/product/configured/readers/institutional_icl_reader.py",
+      "sha256": "3bb141cec9a7c93057637eb0a3c881275681440d3c0f0d463b05004166c0f5af",
+      "size": 8183
+    },
+    {
+      "path": "src/aip/product/configured/readers/institutional_portfolio_master_reader.py",
+      "sha256": "6d31b65e6146486104a53a66cf9592f5f10eab8e316196ba3925921f178f887f",
+      "size": 31811
+    },
+    {
+      "path": "src/aip/product/configured/readers/pipca_vector_reader.py",
+      "sha256": "325cb47af1506d4bffcb1f565499a49d490092681d0909ebce1bbb5a5ef28d61",
+      "size": 27370
+    },
+    {
+      "path": "src/aip/product/configured/readers/portfolio_master_reader.py",
+      "sha256": "3fe78758236e8f332162d264fa0abdb8c7f3a82faedf5ad3c974b9dd03dec2eb",
+      "size": 22954
+    },
+    {
+      "path": "src/aip/product/configured/services/configured_macro_intelligence_service.py",
+      "sha256": "0963c88462c1fcdec183a8c01230d92d89b4e4cfc0b32ae23f78af038d2a86ab",
+      "size": 2224
+    },
+    {
+      "path": "src/aip/product/configured/services/configured_portfolio_var_service.py",
+      "sha256": "4582c5219a412643143d86e9dbdd6c3845d7692ca88125cff32f80c074c8a95f",
+      "size": 51233
+    },
+    {
+      "path": "src/aip/product/configured/services/institutional_matching_service.py",
+      "sha256": "0e02610e64a232253c22b7fef2fa20cbd638cb4475480642f58fb147bbc7e14a",
+      "size": 33826
+    },
+    {
+      "path": "src/aip/product/demo/README.md",
+      "sha256": "af0df8592e1c3dacb3457f2e8f93f0f48cf57e58c7567d7d963340cf6e98e0c3",
+      "size": 523
+    },
+    {
+      "path": "src/aip/product/demo/__init__.py",
+      "sha256": "6b7abbe364074a10d3c67fcd943edd9d69d85b6b87715fec295cddb2fe0063d7",
+      "size": 118
+    },
+    {
+      "path": "src/aip/product/demo/adapters/__init__.py",
+      "sha256": "42e6bc8649b51c773a993ef5aad616815daee33f3e56b30aef696e8b4c6de70e",
+      "size": 52
+    },
+    {
+      "path": "src/aip/product/demo/adapters/demo_health_provider.py",
+      "sha256": "9dcc572535bcf29a9ea493445b15a4a3e55979de81a1f2f19715369ea68f812a",
+      "size": 566
+    },
+    {
+      "path": "src/aip/product/demo/adapters/demo_liquidity_provider.py",
+      "sha256": "f783958299bb415807f9801d73c91953931c0678cf9c58713e99373358eec3f9",
+      "size": 319
+    },
+    {
+      "path": "src/aip/product/demo/adapters/demo_market_provider.py",
+      "sha256": "f408d086cc6d2429740d2144bd59c70798b2e93fb6ebe73a3393a3f9d453169c",
+      "size": 301
+    },
+    {
+      "path": "src/aip/product/demo/adapters/demo_portfolio_provider.py",
+      "sha256": "34fa4af59f326cf2a5884ccb676dbcc9bf8131a4a5c551e9da903dd658675501",
+      "size": 319
+    },
+    {
+      "path": "src/aip/product/demo/bootstrap/__init__.py",
+      "sha256": "062b5566d56dc03059501d34118f04f524cffd93f8eca6800b0304a5b136ea19",
+      "size": 46
+    },
+    {
+      "path": "src/aip/product/demo/bootstrap/application_factory.py",
+      "sha256": "0c53fbc064f670d4c0bdd86ef6e88233f9674798ef84882061cdc33bd2e74f3f",
+      "size": 7866
+    },
+    {
+      "path": "src/aip/product/demo/bootstrap/demo_bootstrap.py",
+      "sha256": "1a2498742110b063b6de870c936d2731f8b0af5472af9a7c27883b55663dc29c",
+      "size": 2332
+    },
+    {
+      "path": "src/aip/product/demo/bootstrap/dependency_composition.py",
+      "sha256": "09bda120e3cc2babdd180630b86801d052268e7eb21295429c2e86cc19f4aac9",
+      "size": 1702
+    },
+    {
+      "path": "src/aip/product/demo/configuration/__init__.py",
+      "sha256": "350449535eb65c20baa6044e33bc1d011e9925075918442272489d65967d5285",
+      "size": 50
+    },
+    {
+      "path": "src/aip/product/demo/configuration/demo_config.py",
+      "sha256": "0695c3be879d4dcc77c6cfe9617c5554ba7271849be2fc8348b071a6a94a9cfc",
+      "size": 2380
+    },
+    {
+      "path": "src/aip/product/demo/configuration/environment_loader.py",
+      "sha256": "2b3bb96e564ceb265cba2f1577c3999eaf3e909d35d91bccf88c9eaacca16b8d",
+      "size": 19498
+    },
+    {
+      "path": "src/aip/product/demo/configuration/source_config.py",
+      "sha256": "d262b96a8873e22a1283ca3099af1173d4deb9437a4a72217a126e7e8e5f5a04",
+      "size": 504
+    },
+    {
+      "path": "src/aip/product/demo/data/__init__.py",
+      "sha256": "f16069d8225a42070886093c8f03984d571aedcd9fc054ef27635ba3e1b6b31b",
+      "size": 49
+    },
+    {
+      "path": "src/aip/product/demo/data/demo_dataset.py",
+      "sha256": "9af548dbeb15484b0e59fc2a491fc02012f3faf313a7f8a6ae488f40bdb9f0c2",
+      "size": 634
+    },
+    {
+      "path": "src/aip/product/demo/data/demo_liquidity_data.py",
+      "sha256": "315bb0fdc72013c6783b24830801b7a31f8fffc5c86147c10bc246cfb1adf4d8",
+      "size": 1327
+    },
+    {
+      "path": "src/aip/product/demo/data/demo_market_data.py",
+      "sha256": "4287bf2aca71d5cab8c8b7fc9102c6c1a10b8fa3e76e2d54e209a391cb12c9a2",
+      "size": 1019
+    },
+    {
+      "path": "src/aip/product/demo/data/demo_portfolio_data.py",
+      "sha256": "675b6e478a74e4cffd7972508144713114a462d6eeed8a85790fe1ac607c7d4f",
+      "size": 2028
+    },
+    {
+      "path": "src/aip/product/demo/exceptions.py",
+      "sha256": "20f06a538801d0f5a3372786d80676ccacccffc8cde4dd7a1650c3d1406243d2",
+      "size": 322
+    },
+    {
+      "path": "src/aip/product/demo/status/__init__.py",
+      "sha256": "008e1d9a5193c5fbb1d0f6f85cade13be49628b70219a60134af333643bdb40d",
+      "size": 53
+    },
+    {
+      "path": "src/aip/product/demo/status/source_status.py",
+      "sha256": "e08864be70747f6a273277bfc5b4ff27bcc98b5b106485d285446d0bee2d52f2",
+      "size": 259
+    },
+    {
+      "path": "src/aip/product/demo/status/startup_status.py",
+      "sha256": "52d975c5784766e6ca5ff4b280de173decf19765cc087e310fdccaf40e9afd2a",
+      "size": 466
+    },
+    {
+      "path": "src/aip/product/demo/status/system_status.py",
+      "sha256": "faa2934a06f313e9d37421975850c77ea2e43e76352bd298932da717036c96d2",
+      "size": 841
+    },
+    {
+      "path": "src/aip/product/demo/workflows/__init__.py",
+      "sha256": "ce696cd50c97f2a73d60852a170d95deee90924aaf93d673db85164b7f6a9765",
+      "size": 49
+    },
+    {
+      "path": "src/aip/product/demo/workflows/executive_refresh_workflow.py",
+      "sha256": "272f16603a9b1f151e5f37351ba54430a7901537b1a46262145e8feda4b6f39f",
+      "size": 1272
+    },
+    {
+      "path": "src/aip/product/demo/workflows/initial_load_workflow.py",
+      "sha256": "3354d40068c993d04b176ab25f3f8be0a04063bb314c3a7851f72150104f24a9",
+      "size": 3027
+    },
+    {
+      "path": "src/aip/product/demo/workflows/portfolio_liquidity_composer.py",
+      "sha256": "dacdee5b07007f53aa277a7d6bc1332b47d53054e12cc42bf80a55bbefe1667e",
+      "size": 619
+    },
+    {
+      "path": "src/aip/product/demo/workflows/refresh_all_workflow.py",
+      "sha256": "89434e5c9802b104a20720ec1fb5440f0fbb7739b445429c7d1362771ee19c56",
+      "size": 3387
+    },
+    {
+      "path": "src/aip/product/economic/__init__.py",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "size": 1
+    },
+    {
+      "path": "src/aip/product/economic/econometric_dataset.py",
+      "sha256": "2445bba5f6c45a543a0d6fff9d370cf4136957f83b8d4d365f75763daeacdf3c",
+      "size": 3912
+    },
+    {
+      "path": "src/aip/product/economic/econometric_dataset_builder.py",
+      "sha256": "856c9f7bd1b203f2065960dcdc418e30d208b4997185a7c820d45b0fd47e7e95",
+      "size": 10578
+    },
+    {
+      "path": "src/aip/product/economic/econometric_diagnostics.py",
+      "sha256": "014dae27add230b572a2a14e8750d5dd390bbada82bad7b56aff9dcfbabeecd2",
+      "size": 1686
+    },
+    {
+      "path": "src/aip/product/economic/econometric_diagnostics_service.py",
+      "sha256": "6de972b3b7cd7483a5da3592690350e137eb4a581520163c020befb607855e66",
+      "size": 10632
+    },
+    {
+      "path": "src/aip/product/economic/econometric_forecast.py",
+      "sha256": "125700fef0dfc4fc5c62514f50f6018a537eec85dd391af54d2563c14c8bd0f0",
+      "size": 2250
+    },
+    {
+      "path": "src/aip/product/economic/econometric_forecast_governance.py",
+      "sha256": "e27d845a211404d860f9e9637d67137c60c121eef83f56cdd201c8d2d271b30a",
+      "size": 3561
+    },
+    {
+      "path": "src/aip/product/economic/econometric_forecast_governance_service.py",
+      "sha256": "68bff1dc71f99d6c386deafdac407420ce9498a9422d686755ca971f831412a8",
+      "size": 45338
+    },
+    {
+      "path": "src/aip/product/economic/econometric_forecast_service.py",
+      "sha256": "183b48d038b8fcb99ee6875dd4ae87b90d7dbf987843beaa64aea88845c32aa2",
+      "size": 27726
+    },
+    {
+      "path": "src/aip/product/economic/econometric_model_selection.py",
+      "sha256": "cf1801704932ddbee0d5489b7b3a244305bb6b560f6f386cd55c9ca58bcf8645",
+      "size": 2842
+    },
+    {
+      "path": "src/aip/product/economic/econometric_model_selection_service.py",
+      "sha256": "442567822493017a60e1f513fb60099e3d7031fdb5e4761532f3b44bdb5110ab",
+      "size": 26092
+    },
+    {
+      "path": "src/aip/product/economic/econometric_relationship_diagnostics.py",
+      "sha256": "3ee5ee02c4b55b066305f7e2ddf766377e94874daf7cf8865c3d4017bb962ce7",
+      "size": 2101
+    },
+    {
+      "path": "src/aip/product/economic/econometric_relationship_diagnostics_service.py",
+      "sha256": "5ad7a186354a25fdf6f4aaec788844175163806be8d36fc7208dc11e4bcf560e",
+      "size": 20042
+    },
+    {
+      "path": "src/aip/product/economic/economic_history.py",
+      "sha256": "4bb0bfbb942055ba0188b9dd2d2facc034c764973c25aef1e66245cb750dbcc7",
+      "size": 1853
+    },
+    {
+      "path": "src/aip/product/economic/economic_snapshot_store.py",
+      "sha256": "b1b598c5604c8ff42a1dbcc0ab8105d4f96b0f50e38288c29882e7d0601999c0",
+      "size": 14386
+    },
+    {
+      "path": "src/aip/product/economic/economic_viewmodel.py",
+      "sha256": "365d77ca665100103e32b7b5ade244435238a208ff36e01999ba6e75de33269d",
+      "size": 14486
+    },
+    {
+      "path": "src/aip/product/economic/institutional_forecast.py",
+      "sha256": "84e1afe0fe1f2b0ce9a2358662948ddf54675d0b5bf6ddffa3206c8f5935e0ce",
+      "size": 3326
+    },
+    {
+      "path": "src/aip/product/economic/institutional_forecast_service.py",
+      "sha256": "62f542507caba8379cd422831ca348744fc4dee82a0905ac1ec4cbc57259b6d5",
+      "size": 35603
+    },
+    {
+      "path": "src/aip/product/economic/institutional_macro_driver.py",
+      "sha256": "dcbf8d34e5dfd2d680b0e44dfc8b4300112e9c29c531f9944b42ebad416d0b11",
+      "size": 2552
+    },
+    {
+      "path": "src/aip/product/economic/institutional_macro_driver_service.py",
+      "sha256": "8b576db6019ee1b7e19d3ca81cb861dae1c8d1c3494bf9aa12401c86138c4fb7",
+      "size": 9533
+    },
+    {
+      "path": "src/aip/product/economic/institutional_macro_scenario.py",
+      "sha256": "a97cfbc42e0460ee7a295480daf71c86a721c9c211377410656bb72e4f67a690",
+      "size": 3260
+    },
+    {
+      "path": "src/aip/product/economic/institutional_macro_scenario_calendar.py",
+      "sha256": "358d3189ed077aca7004b4c4f7c1bc84b3ecce7f54ee0786c032e1d739d27acc",
+      "size": 3005
+    },
+    {
+      "path": "src/aip/product/economic/institutional_macro_scenario_service.py",
+      "sha256": "624e73466746ed83b9ec0389d917674bfcae5a647e5044fcfa3037c5091cb73e",
+      "size": 9302
+    },
+    {
+      "path": "src/aip/product/economic/institutional_macro_scenario_workflow.py",
+      "sha256": "71b0b9c41e0751ede14671a9230402b452c3c18c3f741731f52d8530669a679a",
+      "size": 1430
+    },
+    {
+      "path": "src/aip/product/economic/institutional_macro_scenario_workflow_service.py",
+      "sha256": "7184e2712f3a218b26c7c98862a2b5751c604d53f3a9b120940d4f82f333a0bb",
+      "size": 9592
+    },
+    {
+      "path": "src/aip/resources/__init__.py",
+      "sha256": "51e9fa9ef0446bc0e4014d93548741a010520515d4fe8875db0d94be41613ab9",
+      "size": 44
+    },
+    {
+      "path": "src/aip/resources/config/__init__.py",
+      "sha256": "1e6a234f44be641f4c7d8afdd75dddc98c15c205740c6e1f0d4e72b141072ae1",
+      "size": 44
+    },
+    {
+      "path": "src/aip/resources/config/application.yaml",
+      "sha256": "f08cc22e05082984064aa36003cd6a4caea12e2ea062f247e6f6631747490ee5",
+      "size": 159
+    },
+    {
+      "path": "src/aip/resources/config/database.yaml",
+      "sha256": "b9b36470ac6501249d2284c82d0df0c01f70cb33ef0d2466e6cf6c4fa22e8046",
+      "size": 78
+    },
+    {
+      "path": "src/aip/resources/config/logging.yaml",
+      "sha256": "1ba6609b2be7786d0aa83a8e4e7def7d4c0cc55ea0515bbdf3d61f566a63c066",
+      "size": 194
+    },
+    {
+      "path": "src/aip/shared/README.md",
+      "sha256": "742a6471d47e7c5d6756fe93552083d11c3a46eed7074aab2a9ff0efc7817e67",
+      "size": 2698
+    },
+    {
+      "path": "src/aip/shared/__init__.py",
+      "sha256": "3e06a3c8f996f494db32cebe3afce0e09d39c76c582ede2dcddf458b4da7d37c",
+      "size": 2679
+    },
+    {
+      "path": "src/aip/shared/calendars/__init__.py",
+      "sha256": "d904545d6f7071f623880ebe4ae19acac0cf3155363d5501c18d3ca4971a9354",
+      "size": 13934
+    },
+    {
+      "path": "src/aip/shared/collections/__init__.py",
+      "sha256": "df5521f834961288a786f3897ebc8c7c69a2b0feb776c83c3489dee2f8eb2263",
+      "size": 9186
+    },
+    {
+      "path": "src/aip/shared/conventions/__init__.py",
+      "sha256": "4f7be5795b0a3a45836874f12a2c0dabbe0d7142bb247913e9940538050cad79",
+      "size": 9396
+    },
+    {
+      "path": "src/aip/shared/dates/__init__.py",
+      "sha256": "a78831cb9cfbed01debcbe74f7df53a199941ba13855825e0bbaa2cc3b43ffac",
+      "size": 10194
+    },
+    {
+      "path": "src/aip/shared/math/__init__.py",
+      "sha256": "1fa34a3d56ee77ec209ebda3e980c2d6fce009228efaba7d1b58eee6e1b618aa",
+      "size": 10462
+    },
+    {
+      "path": "src/aip/shared/money/__init__.py",
+      "sha256": "5b11895c4ae46945aab549aeb764f650b1e9db7ee271c6da6eb96e8fceaab979",
+      "size": 10867
+    },
+    {
+      "path": "src/aip/shared/serialization/__init__.py",
+      "sha256": "6d4f2fa1a856b05dc865d23ad76a4161e4f60fc175285b79488954b2795b24aa",
+      "size": 6648
+    },
+    {
+      "path": "src/aip/shared/validation/__init__.py",
+      "sha256": "67fe8f115f01c5bdbc384cf239079255bf93cf689014a0f8a37ab83a8fb3714c",
+      "size": 856
+    },
+    {
+      "path": "src/aip/shared/validation/exceptions.py",
+      "sha256": "ddfe294bce9f26da22d9694692d322d8ba14d855319f7076aef16b12975df41e",
+      "size": 3521
+    },
+    {
+      "path": "src/aip/shared/validation/validators.py",
+      "sha256": "04647a3c89b0299b3cb059ed859d07e86289fa517ac04e7102feb5c518f5f740",
+      "size": 7669
+    },
+    {
+      "path": "src/aip/tools/__init__.py",
+      "sha256": "5384bfdb2df380b6557cc7a71d16891415bccaa87699406e236f752c6415389f",
+      "size": 35
+    },
+    {
+      "path": "src/aip/tools/diagnose_configured_sources.py",
+      "sha256": "112057fe71e28aac9b21f2ffaf5a2c4c873462ba19748e029393f9a8e4ecdd35",
+      "size": 15063
+    },
+    {
+      "path": "src/aip/tools/inspect_pipca_vector.py",
+      "sha256": "820b76fb5cdd50aba92444162a8676ffbc644e9cb8897e8c72768b8905705d1c",
+      "size": 3160
+    },
+    {
+      "path": "src/aip/tools/inspect_portfolio_master.py",
+      "sha256": "d671f29a26a731b82d61836d645176b4aafb7943e119b9a61d1001c52070d94e",
+      "size": 1253
+    },
+    {
+      "path": "src/aip/tools/preflight_runtime.py",
+      "sha256": "6b1a1d1bed29dd7f53ccd7975c1174bd91097cc58fd8b0c4ec6e35a17a920857",
+      "size": 1906
+    },
+    {
+      "path": "src/aip/tools/reconcile_portfolio_tir.py",
+      "sha256": "5a129e9fdd6e67b9a5d46535ed51a8a7a8ce42f6ab17042bbd92d0b918d41ba4",
+      "size": 24836
+    },
+    {
+      "path": "src/aip/tools/reconcile_portfolio_valuation.py",
+      "sha256": "2072efe7f1a443833504b10ee8e8e9b1fbd01493577e8c2b745f413cf8350424",
+      "size": 36932
+    },
+    {
+      "path": "src/aip/ui/README.md",
+      "sha256": "00a271f45a5f91701a67faaf9ebc400814e80c3854ade085d3e495b9d4006131",
+      "size": 268
+    },
+    {
+      "path": "src/aip/ui/__init__.py",
+      "sha256": "ba6ad49925d63a4a3fd8d7f4daaa93d0f505c32026985080b06a574b9c21f601",
+      "size": 234
+    },
+    {
+      "path": "src/aip/ui/application/__init__.py",
+      "sha256": "388d1ea1f29c5334d434ed83041451751a6897e2aaf3e455f4358b548c798a4f",
+      "size": 235
+    },
+    {
+      "path": "src/aip/ui/application/app.py",
+      "sha256": "b0bb5479a14180d2edcd1746476184c2193797f283a750e1a77a1e4ed81f5ee6",
+      "size": 1672
+    },
+    {
+      "path": "src/aip/ui/application/main.py",
+      "sha256": "b8a707970c511d9b9676ca8bf4346b305a41af35fb7c8b9fb7333339fdac9669",
+      "size": 1468
+    },
+    {
+      "path": "src/aip/ui/application/startup.py",
+      "sha256": "696d1355b8ddb624c2f34ccec3ba1accf38926a854a3db37da7361b053f5231f",
+      "size": 880
+    },
+    {
+      "path": "src/aip/ui/dialogs/about_dialog.py",
+      "sha256": "a577183fd6c0754759d14ae376891a8ac2ffb1eb3a70ea36061c51abbace6426",
+      "size": 991
+    },
+    {
+      "path": "src/aip/ui/dialogs/exception_dialog.py",
+      "sha256": "a42bf2ef4a99d7ac92c0e77c5f85c00f0c5f6c82fecb38167077d11d0c4b2fa8",
+      "size": 482
+    },
+    {
+      "path": "src/aip/ui/dialogs/settings_dialog.py",
+      "sha256": "6736a9e538f7fa5dbd5cf0f440a664001c52fd640c38d16d3f24a027a73e819a",
+      "size": 319
+    },
+    {
+      "path": "src/aip/ui/main_window.py",
+      "sha256": "b89e40a6b6a440b7b831ce85e77a41d8ae41d89f0e5c66c356e2275ba404234b",
+      "size": 1831
+    },
+    {
+      "path": "src/aip/ui/modules/executive/README.md",
+      "sha256": "4810bde2de5123054fff0138cdea4d6a031b18e40230720d45792b27386e1270",
+      "size": 203
+    },
+    {
+      "path": "src/aip/ui/modules/executive/__init__.py",
+      "sha256": "5b968d6ca705a809409e5f6653c669f5d2d10d4dfce7c23cc709e9b974f6ba79",
+      "size": 371
+    },
+    {
+      "path": "src/aip/ui/modules/executive/models/executive_row.py",
+      "sha256": "ea0c7d579f477a34d9d3ccd387f808665be00cbabbfde5686498e98a44b92c3c",
+      "size": 284
+    },
+    {
+      "path": "src/aip/ui/modules/executive/presenters/executive_presenter.py",
+      "sha256": "ebbb6b7b6891ed8697e7c0320fa71411e0636243b651190ab9789dee15c0c008",
+      "size": 5411
+    },
+    {
+      "path": "src/aip/ui/modules/executive/routing/executive_route.py",
+      "sha256": "b5a5d38f74af8d5f91f48b61dd48223c5dc69ee5b70d07440912b69bf74f6ff5",
+      "size": 271
+    },
+    {
+      "path": "src/aip/ui/modules/executive/viewmodels/executive_view_model.py",
+      "sha256": "fbc9f75e544f15b0b9319bc8c01380c12adecbb7f84067edba0b1bbb0bdc04b1",
+      "size": 2521
+    },
+    {
+      "path": "src/aip/ui/modules/executive/views/executive_alerts_view.py",
+      "sha256": "44e4a365ef1d4bb9fa340a7a14bcb8438fafc96df46054a4c0bcfa802f50ba7b",
+      "size": 449
+    },
+    {
+      "path": "src/aip/ui/modules/executive/views/executive_decisions_view.py",
+      "sha256": "5159f27d49ed20e3819e39b7d80f8390fa67ca0f8803b0712bc5817c0879b153",
+      "size": 451
+    },
+    {
+      "path": "src/aip/ui/modules/executive/views/executive_liquidity_view.py",
+      "sha256": "fd86b79523531fcd242c7ff65954998e9fabe4ec40ec944e13af15404c293364",
+      "size": 332
+    },
+    {
+      "path": "src/aip/ui/modules/executive/views/executive_market_view.py",
+      "sha256": "1d1f6c2eb2579a0f2096317a3e14cad4f343f7e6031defb66daf1007033a5d75",
+      "size": 323
+    },
+    {
+      "path": "src/aip/ui/modules/executive/views/executive_portfolio_view.py",
+      "sha256": "176dfc9b8db9d526dabc4c19310c6db75466d895fb9d759dca70e296e865d4db",
+      "size": 332
+    },
+    {
+      "path": "src/aip/ui/modules/executive/views/executive_summary_view.py",
+      "sha256": "73cb68c7a74154addde1c51fa4648c0618f672f4c9ff372f58fc3ebc896500bd",
+      "size": 326
+    },
+    {
+      "path": "src/aip/ui/modules/executive/views/executive_toolbar.py",
+      "sha256": "a0f8ce53f1d58cc7effa6fc7f48ccdd6b486ddec0beb4380bd2a9f424bf222c9",
+      "size": 245
+    },
+    {
+      "path": "src/aip/ui/modules/executive/views/executive_trends_view.py",
+      "sha256": "85a566e5754e5559f64a3d876e8444652b1e8ab7cf32967c17a24209f1e4075a",
+      "size": 458
+    },
+    {
+      "path": "src/aip/ui/modules/executive/views/executive_workspace.py",
+      "sha256": "8a05c77cf73dea6aa0e331fec69f8dac7fc38e9cf4627be89df3e17169318f93",
+      "size": 3886
+    },
+    {
+      "path": "src/aip/ui/modules/executive/widgets/executive_alert_panel.py",
+      "sha256": "0f5e9f9b8fe895b5c4faf547a28c419ebf67c5a97c4b5e92a30ef77d6611a29f",
+      "size": 492
+    },
+    {
+      "path": "src/aip/ui/modules/executive/widgets/executive_donut_chart.py",
+      "sha256": "e9a42194e4e0eb663712c36f107f1b18b6833fabca9921afad176500c0018841",
+      "size": 331
+    },
+    {
+      "path": "src/aip/ui/modules/executive/widgets/executive_kpi_strip.py",
+      "sha256": "52aba9e9ffaa3c0318eaac449c07e1b406735f11a06f63c79834a36b25e755cf",
+      "size": 320
+    },
+    {
+      "path": "src/aip/ui/modules/executive/widgets/executive_metric_card.py",
+      "sha256": "4168b91b688f8c5c22ce09962a7d126c5c11323488c76585ecb180d393d64b75",
+      "size": 331
+    },
+    {
+      "path": "src/aip/ui/modules/executive/widgets/executive_status_card.py",
+      "sha256": "f239133958bc9039a29e6f6edc178147a1211c58551041dc3e4a26f35dd5b640",
+      "size": 285
+    },
+    {
+      "path": "src/aip/ui/modules/executive/widgets/executive_summary_table.py",
+      "sha256": "03c588a67b2a076e829a6319a89144b39b15ec4e91fe5abe23a07edf462c1d32",
+      "size": 387
+    },
+    {
+      "path": "src/aip/ui/modules/executive/widgets/executive_trend_chart.py",
+      "sha256": "5c352471f515aed0c91f4695b8595f1873506b34acc8f3439b5c2495295f9ea8",
+      "size": 357
+    },
+    {
+      "path": "src/aip/ui/modules/liquidity/__init__.py",
+      "sha256": "9c69238e2cf5d28358d0e30bdd7931694d954064089d75a036cfc314d2c39be2",
+      "size": 108
+    },
+    {
+      "path": "src/aip/ui/modules/liquidity/models/liquidity_row.py",
+      "sha256": "1c806798457a9b1d613a4eebe14fca02f1df0c1cd8ce3592e5175d96312d4e99",
+      "size": 324
+    },
+    {
+      "path": "src/aip/ui/modules/liquidity/presenters/liquidity_presenter.py",
+      "sha256": "b58bbb39ad719b53a978e2046f3f3cd2b2879c5798242d5bbc0efbfe78d4366d",
+      "size": 5155
+    },
+    {
+      "path": "src/aip/ui/modules/liquidity/routing/__init__.py",
+      "sha256": "cf0bcabda87e6966f0792ecf3e6d1e2a894b897c744da056dc4a7c71adc1147d",
+      "size": 142
+    },
+    {
+      "path": "src/aip/ui/modules/liquidity/routing/liquidity_route.py",
+      "sha256": "d7ed86f14d732b2ad47b8b501509fc810a67cc9f9f607afe92868aa1ca1769be",
+      "size": 263
+    },
+    {
+      "path": "src/aip/ui/modules/liquidity/viewmodels/liquidity_view_model.py",
+      "sha256": "b3bab645d721db888411931589f2b837e477c816496411438ed69b559bb787b2",
+      "size": 1713
+    },
+    {
+      "path": "src/aip/ui/modules/liquidity/views/cashflow_view.py",
+      "sha256": "c7015684b2cd5440b8887e97b520686af9680bf33d87690a1f59cbbf610f1a98",
+      "size": 567
+    },
+    {
+      "path": "src/aip/ui/modules/liquidity/views/gap_view.py",
+      "sha256": "404be1ce44bdc553d7d42167395aee486ca3386ef5cc7dd538456bf70fefe29b",
+      "size": 566
+    },
+    {
+      "path": "src/aip/ui/modules/liquidity/views/hqla_view.py",
+      "sha256": "2a75fab8f70e832b94773083d97318e5af64c3d144c06dc7fe1545b016c89b7b",
+      "size": 568
+    },
+    {
+      "path": "src/aip/ui/modules/liquidity/views/liquidity_toolbar.py",
+      "sha256": "8fd3add2ece98640f655d77f5b4981e2e4a1b83bddb61ec30fb64ed994db7dc8",
+      "size": 181
+    },
+    {
+      "path": "src/aip/ui/modules/liquidity/views/liquidity_view.py",
+      "sha256": "ded8fef01b1f617511c80d82ca672640a19c477642b02671fe0edbe654b0754f",
+      "size": 5254
+    },
+    {
+      "path": "src/aip/ui/modules/liquidity/views/mil_view.py",
+      "sha256": "55d3610f43c55e8d2b4c09017e99b438dfe280e161db97d0c34f15d42b539bb1",
+      "size": 566
+    },
+    {
+      "path": "src/aip/ui/modules/liquidity/views/stress_view.py",
+      "sha256": "aba722a2e9ce801aba342c7a616241737cd8009b126bf4fe5919a0b8e3941c66",
+      "size": 547
+    },
+    {
+      "path": "src/aip/ui/modules/liquidity/widgets/cashflow_table.py",
+      "sha256": "6716ab35be196a446a4cc2972c4d532967d9d3fac3c404a50f27d288b19ada54",
+      "size": 684
+    },
+    {
+      "path": "src/aip/ui/modules/liquidity/widgets/gap_table.py",
+      "sha256": "19ae6f0429296ba4feadd9a59df20b4512f7fa74cc9337feade913307b0a82e2",
+      "size": 679
+    },
+    {
+      "path": "src/aip/ui/modules/liquidity/widgets/hqla_table.py",
+      "sha256": "a2679b8a6ff9e6d35b640cd40c74eedf4fe4b3e797215b3140318099e7c79faa",
+      "size": 710
+    },
+    {
+      "path": "src/aip/ui/modules/liquidity/widgets/liquidity_filter_panel.py",
+      "sha256": "a7f29119e284d5877345bfe29d6c4b94ff280a108cce5e6ce84c1fd297731400",
+      "size": 329
+    },
+    {
+      "path": "src/aip/ui/modules/liquidity/widgets/liquidity_metric_card.py",
+      "sha256": "a588f557fb06ff036bbb2b2114fe8e81960120af7a72101ccbe61ca239ab38f5",
+      "size": 540
+    },
+    {
+      "path": "src/aip/ui/modules/liquidity/widgets/liquidity_status_badge.py",
+      "sha256": "4ea349e53d458e64d83dae6a2ab9561e04b67f5a40985544aaa32c0b11cc8ded",
+      "size": 195
+    },
+    {
+      "path": "src/aip/ui/modules/liquidity/widgets/mil_table.py",
+      "sha256": "81b3152779d18d429fc66830ff8a06f85b462252efaaf4470808caa4e8bd4010",
+      "size": 679
+    },
+    {
+      "path": "src/aip/ui/modules/liquidity/widgets/stress_table.py",
+      "sha256": "40c2f56baea6659aa50ac5eb08bbaff4bdc37b6671192b8d6e4a5fff7051967b",
+      "size": 558
+    },
+    {
+      "path": "src/aip/ui/modules/macro_intelligence/views/macro_intelligence_view.py",
+      "sha256": "dec9cf98c05be261173fd855be7f93ea44ccd007bfef7c8105b0377577102b02",
+      "size": 31078
+    },
+    {
+      "path": "src/aip/ui/modules/market/__init__.py",
+      "sha256": "abc8382d20371459da8e4c893565bd0bed20a24ae3228a7036413644a7687ab3",
+      "size": 99
+    },
+    {
+      "path": "src/aip/ui/modules/market/models/curve_point.py",
+      "sha256": "40a8831bbf15c35c776c73e00783cbe831edb85e194b487d74a4de62c9d35406",
+      "size": 171
+    },
+    {
+      "path": "src/aip/ui/modules/market/models/market_row.py",
+      "sha256": "fd1632a2205498b95e211a5801aaa9671d6d6836e8230f4e67403976da50b392",
+      "size": 485
+    },
+    {
+      "path": "src/aip/ui/modules/market/presenters/market_presenter.py",
+      "sha256": "248a907b9c4fb8a2b0bc3eaf7a986f2f45790e447953f87b44f6251c49738945",
+      "size": 4352
+    },
+    {
+      "path": "src/aip/ui/modules/market/routing/__init__.py",
+      "sha256": "b3be8e3741c950d971a8f2502b7aef53ef23ab8c36916463442ad27930c169f6",
+      "size": 130
+    },
+    {
+      "path": "src/aip/ui/modules/market/routing/market_route.py",
+      "sha256": "854e97f623dc6d83e8c6023ffec0ff2d0f88d151b0d3253d2a15b3e72db5b156",
+      "size": 248
+    },
+    {
+      "path": "src/aip/ui/modules/market/viewmodels/market_view_model.py",
+      "sha256": "bdc4e73699def4b18500ac34b5849cff3970eec645f9daa9965523b5d9a81a29",
+      "size": 1421
+    },
+    {
+      "path": "src/aip/ui/modules/market/views/market_summary_view.py",
+      "sha256": "d02f92e74a518a5bf1873cf2805d68ea8d16db5f39421ef77db3f19712ca32c7",
+      "size": 1062
+    },
+    {
+      "path": "src/aip/ui/modules/market/views/market_toolbar.py",
+      "sha256": "15a703c3311a0d3bb4affeeb2bf89a78be195d99b7dc74540333de47fdd9021e",
+      "size": 220
+    },
+    {
+      "path": "src/aip/ui/modules/market/views/market_view.py",
+      "sha256": "8a40fe70e4dfd036f31c423f0e8c2fbfde646585391779d4229dd33dfe137eff",
+      "size": 2100
+    },
+    {
+      "path": "src/aip/ui/modules/market/views/pricing_view.py",
+      "sha256": "9a273d29ec79b33121f56dc28ce0d6f5506cc0e713ce3a0a1167d8cbd5207dca",
+      "size": 1037
+    },
+    {
+      "path": "src/aip/ui/modules/market/views/relative_value_view.py",
+      "sha256": "af2aa05006c75e8325287bf322fad7d22dc8f4e76f2f39e524d5445e7c7008b3",
+      "size": 1404
+    },
+    {
+      "path": "src/aip/ui/modules/market/views/yield_curve_view.py",
+      "sha256": "214aa3562ad2901aeb0aadaa3b9b97fd413c4f99e3c357f87265d95460a9bd2f",
+      "size": 419
+    },
+    {
+      "path": "src/aip/ui/modules/market/widgets/curve_chart.py",
+      "sha256": "0044ac4ff7269c49cb4adb5d217da746bff4f350912fa673c37d6a013a16f78d",
+      "size": 1187
+    },
+    {
+      "path": "src/aip/ui/modules/market/widgets/market_filter_panel.py",
+      "sha256": "f75a7d0ecf0fa7d827cf34f062930d8ce5a2b7bc21e85761f72d8891dfcaf39b",
+      "size": 865
+    },
+    {
+      "path": "src/aip/ui/modules/market/widgets/market_metric_card.py",
+      "sha256": "e3607322aeba7b91779b20cf9cbc0a45751363176ddad826b25e03481c9947f0",
+      "size": 407
+    },
+    {
+      "path": "src/aip/ui/modules/market/widgets/market_status_badge.py",
+      "sha256": "1abf49e8ed6c93e438e9f937ff0753d7096dc015c6cd475a9c8cfff3d7d63ae4",
+      "size": 283
+    },
+    {
+      "path": "src/aip/ui/modules/market/widgets/spread_table.py",
+      "sha256": "eb8e53182ae5e232098425471d4701e85a42e33fbdeafde391e28437849bc0ed",
+      "size": 347
+    },
+    {
+      "path": "src/aip/ui/modules/market/widgets/valuation_table.py",
+      "sha256": "11e6d815a4451936adececbe2e05f5d560aaa7ce6277f5dbb703da08f0ac0ab4",
+      "size": 356
+    },
+    {
+      "path": "src/aip/ui/modules/portfolio/README.md",
+      "sha256": "e0fd19dd319dadfb706a6c7cc1643bf5c1d4830e323a39777126633e237600cf",
+      "size": 214
+    },
+    {
+      "path": "src/aip/ui/modules/portfolio/__init__.py",
+      "sha256": "5abccbadb0e6df14faa0cf8fe7e395f9d5c8469f156602bf62c5770dbb2786a5",
+      "size": 356
+    },
+    {
+      "path": "src/aip/ui/modules/portfolio/models/portfolio_row.py",
+      "sha256": "7b66f14f22ac31c341223dfc83c372523f6df7b6ee0044d7a7c16381dd5a0fac",
+      "size": 392
+    },
+    {
+      "path": "src/aip/ui/modules/portfolio/models/portfolio_summary.py",
+      "sha256": "c53ac74defe908cdc7689213dc629a873308c70c5239fcb2ad708dcf0bcf888d",
+      "size": 398
+    },
+    {
+      "path": "src/aip/ui/modules/portfolio/presenters/portfolio_presenter.py",
+      "sha256": "f8958cbbc5f9dd463d6f685bad06ab160fb696923db7cd3465ec429d358ede04",
+      "size": 6659
+    },
+    {
+      "path": "src/aip/ui/modules/portfolio/routing/portfolio_route.py",
+      "sha256": "d8e9442bddf81f880ba11baca0b5ade42fadbb93c0aa2918d187c8ce0677ec5f",
+      "size": 220
+    },
+    {
+      "path": "src/aip/ui/modules/portfolio/viewmodels/portfolio_view_model.py",
+      "sha256": "60ff98fe2bd22458fdbfe61d43ec40932a491acc52e52876d1b699d0000d6ad0",
+      "size": 738
+    },
+    {
+      "path": "src/aip/ui/modules/portfolio/views/portfolio_details_view.py",
+      "sha256": "c8bf67eb1827ad83ec37fc344d73c8d6817d16737a25fed82116d4492d03ec16",
+      "size": 610
+    },
+    {
+      "path": "src/aip/ui/modules/portfolio/views/portfolio_positions_view.py",
+      "sha256": "eede577dd589538c1943f3ed96d0f64f7724b7672cd98a8b185e18cac24e09b7",
+      "size": 1880
+    },
+    {
+      "path": "src/aip/ui/modules/portfolio/views/portfolio_summary_view.py",
+      "sha256": "42eebd4388e56dfa4f7d9a5419c3725a8ef69198a1e1be5a87d4282646814efc",
+      "size": 1069
+    },
+    {
+      "path": "src/aip/ui/modules/portfolio/views/portfolio_toolbar.py",
+      "sha256": "7a180a0117a56509182d8318b1512cb7f889cc002260dfe5eca21fb087dfa504",
+      "size": 308
+    },
+    {
+      "path": "src/aip/ui/modules/portfolio/views/portfolio_view.py",
+      "sha256": "4f92959429fadfcfdcce9ecc21a48d951374e35f305cb48495adfaa38fa90d26",
+      "size": 4388
+    },
+    {
+      "path": "src/aip/ui/modules/portfolio/widgets/portfolio_filter_panel.py",
+      "sha256": "3468e90131508778beda2e7d47b71dd684be807fa35b2e297bc6c42ba5f04a17",
+      "size": 777
+    },
+    {
+      "path": "src/aip/ui/modules/portfolio/widgets/portfolio_metric_card.py",
+      "sha256": "7f7044addfcfcb8e58321cbe4bcd41132468a0f7f5e4c5f144fcf6c849438f67",
+      "size": 331
+    },
+    {
+      "path": "src/aip/ui/modules/portfolio/widgets/portfolio_property_grid.py",
+      "sha256": "96406dc598813553d8be79ab1e206ee5218921f53afddcfd916b5fca0aecc442",
+      "size": 620
+    },
+    {
+      "path": "src/aip/ui/modules/portfolio/widgets/portfolio_status_badge.py",
+      "sha256": "b0152f5dca8f53c457aba89029990b5e2e5529854488e8bb8c4503b54315e394",
+      "size": 286
+    },
+    {
+      "path": "src/aip/ui/modules/portfolio/widgets/portfolio_table.py",
+      "sha256": "abf8e5dd0d8c86140543b8a5901ee0c5080c9eb927c5a5f1baec3084caa11d20",
+      "size": 1679
+    },
+    {
+      "path": "src/aip/ui/modules/treasury/README.md",
+      "sha256": "f19f9d4293698fffe9c7a9ca2b3cda0cfffcf65ac757706f927b90b569cacc8e",
+      "size": 229
+    },
+    {
+      "path": "src/aip/ui/modules/treasury/__init__.py",
+      "sha256": "c057b2038adbc6651fb3d3b11948eb24ff84ce5d8c3156c784b17bff2d1f3176",
+      "size": 359
+    },
+    {
+      "path": "src/aip/ui/modules/treasury/models/treasury_row.py",
+      "sha256": "21b1d998ec3911d48a0c9cb5e9604cd301253d02589dfa0dc8e9f2b1e2c4538b",
+      "size": 251
+    },
+    {
+      "path": "src/aip/ui/modules/treasury/presenters/treasury_presenter.py",
+      "sha256": "923a774aae20f113779a7670bbe743cc29d4249dc37a4c87fb44cc180c82e25a",
+      "size": 3317
+    },
+    {
+      "path": "src/aip/ui/modules/treasury/routing/treasury_route.py",
+      "sha256": "c94b4a59804aaae44759b4d095aa377ce74bde0927565c9c21f4d309dff971e8",
+      "size": 258
+    },
+    {
+      "path": "src/aip/ui/modules/treasury/viewmodels/treasury_view_model.py",
+      "sha256": "b893b2e7900efd5a2f71aaa7d28e781af091a999a1f09606cdca793a6c843cac",
+      "size": 2275
+    },
+    {
+      "path": "src/aip/ui/modules/treasury/views/treasury_view.py",
+      "sha256": "73a83eb4f5ad1e45d5492599d02fb25876662ae068f67caf6db78ff2634046b0",
+      "size": 1518
+    },
+    {
+      "path": "src/aip/ui/modules/treasury/views/treasury_workspace.py",
+      "sha256": "d68559d571eab49287083639a93d8e4a7a79081c7ae8f53c7d90dafc73a9d8bd",
+      "size": 202
+    },
+    {
+      "path": "src/aip/ui/modules/treasury/widgets/treasury_filter_panel.py",
+      "sha256": "4d60773df8ca3e4c55ca1044e3ce968fd26e4a6b98f0033b37287da1686f01f1",
+      "size": 558
+    },
+    {
+      "path": "src/aip/ui/modules/treasury/widgets/treasury_status_badge.py",
+      "sha256": "43fc9f1b162a8062adffa5610abdf545d5131988dbc7e13a95529bb60f8e8822",
+      "size": 285
+    },
+    {
+      "path": "src/aip/ui/navigation/menu_registry.py",
+      "sha256": "57608503073a3e0fef28d1ea90e72c41bd520972ecd85e18cec44f9a94ba9ee8",
+      "size": 511
+    },
+    {
+      "path": "src/aip/ui/navigation/navigation_manager.py",
+      "sha256": "991a7d20dcd0361ad6317d158ece3503abe79f487515bb4429a132f98e5f6066",
+      "size": 770
+    },
+    {
+      "path": "src/aip/ui/navigation/routes.py",
+      "sha256": "807e784fe7d559948ff8c6567abae7d486c7210453dc9ed3e9859f43bd7820aa",
+      "size": 197
+    },
+    {
+      "path": "src/aip/ui/resources/README.md",
+      "sha256": "beace7b2bece1110ed6c2ace767b9f54de337ba042c6633b8d7090501a0c7de4",
+      "size": 76
+    },
+    {
+      "path": "src/aip/ui/services/diagnostic_service.py",
+      "sha256": "8865a26133940fbe88c5c06cc761102b4b1470280e1cf2aebb8b53aad012fa37",
+      "size": 4798
+    },
+    {
+      "path": "src/aip/ui/services/export_service.py",
+      "sha256": "93714b298ef5dbd3dd51593eb0876438270016442fae13f30914c06880200ca8",
+      "size": 1098
+    },
+    {
+      "path": "src/aip/ui/services/notification_service.py",
+      "sha256": "5584a60138928fe6ffe4275f167b70f075cdcabc4e5b579b396a4f1e4addec4e",
+      "size": 422
+    },
+    {
+      "path": "src/aip/ui/services/theme_service.py",
+      "sha256": "c27c3a1480c91b6c8cdb3ee970067a16eee6bb72dd74db598d7f5b9f8fe1e34d",
+      "size": 698
+    },
+    {
+      "path": "src/aip/ui/services/ui_event_bus.py",
+      "sha256": "fd677ea09627b4489d167dee2e3d5bdee4d26150296b19381ea2835015e1d11e",
+      "size": 571
+    },
+    {
+      "path": "src/aip/ui/services/valuation_context.py",
+      "sha256": "a3399aa432feb13cf9e8a76e09053d7c4c6e9f6113be22009a6ba90574ed6b9d",
+      "size": 2918
+    },
+    {
+      "path": "src/aip/ui/services/window_state_manager.py",
+      "sha256": "a2b911b79e20629c24f4f8613e6801082a2396ed33cae5bdf56c6f57b24a92c7",
+      "size": 518
+    },
+    {
+      "path": "src/aip/ui/shell/inspector.py",
+      "sha256": "029e41098dbf1871c276bdf18af3ad3394f218cd037f57e22ba29147bc2f4e92",
+      "size": 414
+    },
+    {
+      "path": "src/aip/ui/shell/main_window.py",
+      "sha256": "49fea9c4a325bfbc825ba3defcbac3b0ee96809a88638a48d63956a144797cec",
+      "size": 17786
+    },
+    {
+      "path": "src/aip/ui/shell/notification_panel.py",
+      "sha256": "72e57ec39fea96bdd680319eafc12e0dce17e11a3898d509fc8e411188dfbb28",
+      "size": 368
+    },
+    {
+      "path": "src/aip/ui/shell/ribbon.py",
+      "sha256": "3a1d6c3b9449bcfd954f7c9d5cae5eb4767148ce3219513e1224915531de4d77",
+      "size": 844
+    },
+    {
+      "path": "src/aip/ui/shell/sidebar.py",
+      "sha256": "d119e51a72f03697c19bc241bfe772988125ebeb29fe96b18ca1bcfc02bf59ce",
+      "size": 2577
+    },
+    {
+      "path": "src/aip/ui/shell/status_bar.py",
+      "sha256": "e9f870766b5ddba67e6211e268b1ad226777c8b8ec05956c246d26322a48b1ce",
+      "size": 361
+    },
+    {
+      "path": "src/aip/ui/shell/workspace.py",
+      "sha256": "0c27e60fa9eaf5dac38c8354c89903dcfd9c235f0e4f1abe4224c5da392a0e72",
+      "size": 1230
+    },
+    {
+      "path": "src/aip/ui/themes/dark_theme.py",
+      "sha256": "1363c55050e2c37cef7c6e60b0f09376ff9b87bf0b8578a808e8c8d4605bab4e",
+      "size": 529
+    },
+    {
+      "path": "src/aip/ui/themes/light_theme.py",
+      "sha256": "75898a454e8d3fbbd8999d064e9715624b2a7214e93f2f2ff046031fcab624e9",
+      "size": 530
+    },
+    {
+      "path": "src/aip/ui/themes/palette.py",
+      "sha256": "977fb7c928240ee2cfd419e3ffdcb8cf47814da8476853deb495e106910ee3ef",
+      "size": 225
+    },
+    {
+      "path": "src/aip/ui/widgets/busy_indicator.py",
+      "sha256": "3b1ce170ed58ec812b206554c66f908047500cd4b437c30808794c8293a0fa45",
+      "size": 187
+    },
+    {
+      "path": "src/aip/ui/widgets/health_center.py",
+      "sha256": "43f35478482e49556ece0039344be3ae149fbe9019ac57a9b4c2b43732e9ca8b",
+      "size": 1679
+    },
+    {
+      "path": "src/aip/ui/widgets/loading_widget.py",
+      "sha256": "16f9e85858628dd8fbff7488ddff7a0c450aeef777be975efd097e4e1a928e36",
+      "size": 190
+    },
+    {
+      "path": "src/aip/ui/widgets/log_viewer.py",
+      "sha256": "cedf3c42f543bac745956a78686dd2578db1ccaceb14a9129a6f20c17f9a7cff",
+      "size": 3624
+    },
+    {
+      "path": "src/aip/ui/widgets/settings_center.py",
+      "sha256": "e93f14400f48a792c062ff088d9db87af63b546a7a643a582f8f6aa315e237ce",
+      "size": 877
+    },
+    {
+      "path": "src/aip/ui/widgets/splash_screen.py",
+      "sha256": "25df7beb28072a2136b67b2d0e3af7305460631603d191b5bc91af349e35870a",
+      "size": 260
+    },
+    {
+      "path": "src/aip/ui/widgets/toast.py",
+      "sha256": "aaf7e24f8b4eec9cf793f21c3768fb08721bf4c53fc3826c1c9b9370b2a0daa2",
+      "size": 217
+    },
+    {
+      "path": "src/extensions/__init__.py",
+      "sha256": "074b9777c1dd56e33285c61349ad999e4aca3215c4b79920ec5ab07219b810bb",
+      "size": 69
+    },
+    {
+      "path": "src/extensions/coopealianza/__init__.py",
+      "sha256": "91337eb84c74d8babd8ec5abc12372e311814341efa6cc9491643a71f9309948",
+      "size": 40
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/README.md",
+      "sha256": "9eef53c811aae782e454572a04c340014fa4902a5ec474d3c6d15c1ad715388d",
+      "size": 694
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/__init__.py",
+      "sha256": "6fdac851fac98afab9084323e8930ddf12f798629574496498ee8e56fe389e58",
+      "size": 65
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/configuration/__init__.py",
+      "sha256": "47034eebe172ac5e368a16ce868ed424e8b3aa2cf5c880cfa978868d18470529",
+      "size": 83
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/configuration/liquidity_policy_config.py",
+      "sha256": "439dbe4e3979d729a768abe3668e6bd08913f5434a1d039287a4ec7286581dfe",
+      "size": 8548
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/configuration/models.py",
+      "sha256": "92fe5cfbf600e7f96d6a225b94d44fd6d3154ba6257e89cb1c23327414a1aed8",
+      "size": 1589
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/configuration/policy_reference_config.py",
+      "sha256": "f6c32b98cd4a19e0fc31308334d21779bc29b23248c8240f6a2fcf3f1e6ba802",
+      "size": 258
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/configuration/thresholds.py",
+      "sha256": "0961e94f4534bcec1982a0f4b2c0b81d8fe15c1f862e7f4dff7c9638b9d9aca6",
+      "size": 316
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/exceptions.py",
+      "sha256": "8a98f21b963283f805b38381ebad1bae63448e25f4995594cb4c8c1daddeeb49",
+      "size": 670
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/mil/__init__.py",
+      "sha256": "69e3e166af275d3c6f08452cf2b9ef9702e345776f48d0f9ad44385a1fe1d3a9",
+      "size": 1590
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/mil/analytics/__init__.py",
+      "sha256": "dc43a4626e804d757357085f48c8a4c21502b3ec9fe99796e892619966d3630b",
+      "size": 155
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/mil/analytics/mil_analytics.py",
+      "sha256": "3a955cd45420fd40ee6db7a05d79a7674a1cef22d023c80eb4f8c4ca2df5aa3e",
+      "size": 1176
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/mil/configuration/__init__.py",
+      "sha256": "5e1c74e7ec41117e11e8d66a5cbf2b5b49ca8a96a2f4b906a5e6d19efa6481ed",
+      "size": 316
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/mil/configuration/mil_policy_config.py",
+      "sha256": "7b72bb79c79845e3020acec0191a003e1a7bbfb7f496ade840181a1cfd2f3ae4",
+      "size": 10336
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/mil/engine/mil_eligibility_engine.py",
+      "sha256": "785747ef903a577b72aa9b1aa25e708a2f2dffb6a429369e410a16300cbdcee5",
+      "size": 12144
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/mil/enums/mil_availability_status.py",
+      "sha256": "a1e48744742426d85365a96f7b8ec532846d1419379d4bda60b15b23d478d16a",
+      "size": 184
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/mil/enums/mil_eligibility_status.py",
+      "sha256": "30760a5437ad173d4ab5895c4b0ab14df494ad418250f9fc9c325b528b763ecb",
+      "size": 237
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/mil/exceptions.py",
+      "sha256": "ee25be671245ff78c411bf06921de2a3e0f84bba189e76eeec0b3f581866df2d",
+      "size": 911
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/mil/models/mil_asset.py",
+      "sha256": "20e2ccbd4d7707f538c34a4fa8e445ea4586070719c5f7ea86bc871d6f8bd5ac",
+      "size": 3118
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/mil/models/mil_capacity_result.py",
+      "sha256": "079f521a07e87e2e7f26957b24465262964d76afc8b339c16a38e66d21d26f4e",
+      "size": 1091
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/mil/models/mil_position_result.py",
+      "sha256": "86cc973989df797c29fbaa6227c2b0efa2c3c486bfbce3934552fdf2ef667953",
+      "size": 1097
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/mil/models/mil_request.py",
+      "sha256": "554e92b1bf4f212aae6722b3e1165049f8bb56f0da0946e35211858478398056",
+      "size": 476
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/mil/models/mil_result.py",
+      "sha256": "76437fb856d6ec410cb30e219a57f280b5f852cffe3d400a84b95c7a9c889bb7",
+      "size": 990
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/mil/policies/availability_policy.py",
+      "sha256": "974240748593e800ca82ff04b43c4170c7ba2dd0496dbe98768284459014ac6a",
+      "size": 1196
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/mil/providers/__init__.py",
+      "sha256": "7846189315f91f3f70a1754e049d87dbf090a048a1d2f1fa9d1b77b07d99f2ff",
+      "size": 49
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/mil/reports/__init__.py",
+      "sha256": "47a94a1c3b4e55e87fe6d00453d99f38270c4fb1ce2e5810af5defa791efe3b6",
+      "size": 166
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/mil/reports/mil_report_builder.py",
+      "sha256": "48b4c4b983c237b4dce99bee64e05b411cd6337016c1c6aa9a5a440d9e654f8b",
+      "size": 3086
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/policies/__init__.py",
+      "sha256": "7e9846f9631b61d6a8149c47ba6308016c50fd0a24725a747c7aa77259aa8893",
+      "size": 57
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/policies/concentration/__init__.py",
+      "sha256": "61e0095511865aa2d2c8b471a5b18852f63ae74c09bbd5ab6930d1dcd05c3139",
+      "size": 78
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/policies/concentration/concentration_policy.py",
+      "sha256": "ae5ae96f8f87883e5db69290c03f6eee66adb3dde9b12ad1566fe1572dce4920",
+      "size": 3119
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/policies/concentration/issuer_concentration_policy.py",
+      "sha256": "dcbb901c9d58e12176689c2a8a29c570d87f3a1743b025efbebf8614f42a395a",
+      "size": 1982
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/policies/hqla/__init__.py",
+      "sha256": "b4215794d086bb3b5ba3ca788e9d98245e5c08dbd16cc0ee9903e134ab335948",
+      "size": 70
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/policies/hqla/classification_exclusion_policy.py",
+      "sha256": "34ca3940d624b4f5139ed0411b85619b317022b2b58447dc5977089d1f8e80b3",
+      "size": 1402
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/policies/hqla/hqla_policy.py",
+      "sha256": "1a821a958cbbf60ead047160dd96faa68157bfc1655ef8ca762633a78b78fa9b",
+      "size": 3016
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/policies/hqla/issuer_eligibility_policy.py",
+      "sha256": "a217137bca46155c0ac75b053d2c4152ce93c0bc093b6868994daeea5e7c00e9",
+      "size": 1377
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/policies/hqla/marketability_policy.py",
+      "sha256": "8cac48f07a04c9899d19c6f8abdea45e21cbd373253abaed13c2831892094072",
+      "size": 2248
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/policies/hqla/unencumbered_asset_policy.py",
+      "sha256": "913bf3d207b31cbcdbdc680227305363c71d582777f63d4fad982499263d585d",
+      "size": 1466
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/policies/institutional_policy.py",
+      "sha256": "8068ffefcef079bb918967d2c09ec98d2a92b324bdc5ea67088e323441cd7af9",
+      "size": 3207
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/policies/issuer_limits/__init__.py",
+      "sha256": "d63e2a146e4215b6dfc3ade45e0e9e12b6808216f57b6ad1d1513401363e40cd",
+      "size": 70
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/policies/issuer_limits/issuer_limit_policy.py",
+      "sha256": "4a34d96467ba59f22116dda11ceeeb4c1113f95c02edf011075b4936eec11d90",
+      "size": 1816
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/policies/liquidity_limits/__init__.py",
+      "sha256": "5df57e126f3a622aec7fdad91be966d03480bf7414d795266e487ae29d55d273",
+      "size": 73
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/policies/liquidity_limits/liquidity_limit_policy.py",
+      "sha256": "a7fe768f4fde3a10d8a6dbed57898eed4d9cf84ca012119723d74842d13bd2ca",
+      "size": 3043
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/policies/liquidity_limits/minimum_liquidity_policy.py",
+      "sha256": "24b650fdef0cdd5d45d80446b3123934faceb4a818f0ceeb9afd4301fad54b3b",
+      "size": 1894
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/policies/mil/__init__.py",
+      "sha256": "f5bf56aa9a7d8d8ccd245b1203184451cad357695d0273e11c71bdb407dcc517",
+      "size": 72
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/policies/mil/collateral_availability_policy.py",
+      "sha256": "f8ba43ce2f7e1c8f6df62b88ab6dc22b98caa49ab2b4c8219eaccc0531b070f6",
+      "size": 1243
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/policies/mil/eligible_issuer_policy.py",
+      "sha256": "b30932e63bd707d575dd5c706102e1b620be270ed82a71a73b68b30cca66c1d8",
+      "size": 1342
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/policies/mil/encumbrance_policy.py",
+      "sha256": "887d5f1f800f7dc8120e205fc4cfbc8718c82d063c471414cf7cc444411714a9",
+      "size": 1278
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/policies/mil/mil_policy.py",
+      "sha256": "ab4872df365a657a3d070bd72df6ef0c2362c29c73e38b976b8326a391f03a1d",
+      "size": 2979
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/policies/policy_outcome.py",
+      "sha256": "05465e52a8d8c7a1586255e9b33c58e4a74cab1b2aebe7343c297d77fdf989bf",
+      "size": 595
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/providers/__init__.py",
+      "sha256": "dcba7d2aa4b2e3f0624b4848f5476f144bb1b073ed85bd567526cf6e4c98b848",
+      "size": 69
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/providers/institutional_policy_provider.py",
+      "sha256": "7f61f9589c96dddd96258b90f96c2232cdb52e7f0356fa53e2ee55697b77e21b",
+      "size": 331
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/providers/policy_provider.py",
+      "sha256": "de097ff09f37286e6f52cfbbb2b37ccdf7b7317def0373f84d62dc48d2f73b8d",
+      "size": 2166
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/providers/portfolio_asset_provider.py",
+      "sha256": "baad9c07357329e7173aec56805ef29658a7cd89c08bfeb853231459c3127f0b",
+      "size": 347
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/reports/__init__.py",
+      "sha256": "c5eb892433600c5b15a1dc58656094dd7702732a5c094f6394190c833bf0f49c",
+      "size": 66
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/reports/liquidity_policy_report.py",
+      "sha256": "df7ef4631cb22c014f3d9c38dc03cd41683d993c5f49c1ae01c2df286e47420a",
+      "size": 1092
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/reports/liquidity_policy_report_builder.py",
+      "sha256": "ee7d0c8e36b4e28d6efeb10168fe6c99dbee4f3f13fbce86a16975f748b0a9ad",
+      "size": 4722
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/reports/policy_report.py",
+      "sha256": "aa5ffbda189748a780627f7bbb68ef1259da7249405a65117a4d746955b409a3",
+      "size": 2545
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/stress/__init__.py",
+      "sha256": "144f7b12f74947ec278dbc48d8a48d24ccf9acd17180c7255c639c0c362f4d9a",
+      "size": 55
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/stress/analytics/__init__.py",
+      "sha256": "028486a79e61805da8ac6b3b96f96fd533e842d6c0e17c5a52e8399aadcd3d0b",
+      "size": 131
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/stress/analytics/stress_analytics.py",
+      "sha256": "cce6023723e4be2836f1fef39f71d7fe4a9d24ffb0ad729160f2f65c0f92d29e",
+      "size": 3236
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/stress/configuration/__init__.py",
+      "sha256": "43d7f57d0bcdc4be3c4e6589e1fa20eba1e1b1d633c3772e3c87538c7e706cad",
+      "size": 204
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/stress/configuration/stress_policy_config.py",
+      "sha256": "7ab16e6721dd25c9cfb9240b7b264d43ba499999c094700976b710c1daccedad",
+      "size": 6552
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/stress/engine/__init__.py",
+      "sha256": "f49f3599e0cc9813399025ee4664347f7b698086a813efea385192e6a4be282d",
+      "size": 119
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/stress/engine/stress_engine.py",
+      "sha256": "3c09e4800e95a2e77e266edbde22dcb9f8ee937c64b4888053fda4ea4bc50996",
+      "size": 9956
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/stress/exceptions.py",
+      "sha256": "ad632c9aecafe5e62daa2f19e43565b0ff13ebd1f994655ddb85421d840b8b36",
+      "size": 632
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/stress/models/__init__.py",
+      "sha256": "0be53ca9f8d5c35ddd284bdb268cd87319d410932fa3ac6ee66040c2a495eaa7",
+      "size": 370
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/stress/models/stress_request.py",
+      "sha256": "d360722342d44cb40230f74d342b161ece27b2be707356d9340478b694461f38",
+      "size": 894
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/stress/models/stress_result.py",
+      "sha256": "c2f059320a08366e48a06ce30e01793e3cc7f3e0d23abe5a866658523a0347fc",
+      "size": 1073
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/stress/models/stress_scenario_result.py",
+      "sha256": "c9884de7af906cc6aa0cb736f7aba7b84c83724c6660959aa30b8005d3724c17",
+      "size": 841
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/stress/providers/__init__.py",
+      "sha256": "74ac6ab38e17d4635d507072c8dc0b2128629f5aa8b2ece216821b60e40e19d2",
+      "size": 197
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/stress/providers/scenario_provider.py",
+      "sha256": "54ab600e9a3a243a6b3e9d0068780b2789257920f45f71bb83984423b200c357",
+      "size": 742
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/stress/reports/__init__.py",
+      "sha256": "c08a8687a6ac67389c430466532182d9ed948d3a16298cbeccbc916b93a98e02",
+      "size": 151
+    },
+    {
+      "path": "src/extensions/coopealianza/liquidity/stress/reports/stress_report_builder.py",
+      "sha256": "bcbb05c8486c84ff4fb82bd692a43dac55dad97b00e769ebf62a22a6fc8944c3",
+      "size": 2859
+    },
+    {
+      "path": "src/extensions/coopealianza/treasury/decision/__init__.py",
+      "sha256": "21394348fdd172ac84b02fec380f520d8636add252d427cdb3fbea5b95874a55",
+      "size": 1594
+    },
+    {
+      "path": "src/extensions/coopealianza/treasury/decision/analytics/decision_analytics.py",
+      "sha256": "1e8e0528c34f5cd9fc02740dd116423a11c3062d9898cc04f2655737d8efa2a6",
+      "size": 4650
+    },
+    {
+      "path": "src/extensions/coopealianza/treasury/decision/configuration/decision_config.py",
+      "sha256": "8dba10d3041fc8274332352803ccbecd838f350ca0fcad56148e1ebe53a6ac0a",
+      "size": 6382
+    },
+    {
+      "path": "src/extensions/coopealianza/treasury/decision/engine/decision_engine.py",
+      "sha256": "0515d0519160357751bcae3b9552d165682c4a9079667f5e7bfcf77e7a3327ad",
+      "size": 17123
+    },
+    {
+      "path": "src/extensions/coopealianza/treasury/decision/enums/recommendation_type.py",
+      "sha256": "aeab0c7f1c21ca034a9f4bf06d237f3471686982ce3c27a7e26fdbdaff2a388a",
+      "size": 529
+    },
+    {
+      "path": "src/extensions/coopealianza/treasury/decision/exceptions.py",
+      "sha256": "40098b8faabf0922a91bed310d69c7f389a0255ad73d88c9c8c51bbb690168dd",
+      "size": 1234
+    },
+    {
+      "path": "src/extensions/coopealianza/treasury/decision/models/decision_request.py",
+      "sha256": "e038a6320663adf28e6e0fa4b15bfc68b25cad90cb7169bfcc7cec1d6019f73e",
+      "size": 1763
+    },
+    {
+      "path": "src/extensions/coopealianza/treasury/decision/models/decision_result.py",
+      "sha256": "f9004f5640dd7e5c39097276f0d2928eda5908cec8f1ea4ea025e1ff17d41f61",
+      "size": 813
+    },
+    {
+      "path": "src/extensions/coopealianza/treasury/decision/models/impact_metrics.py",
+      "sha256": "466133a504daa7e1a85c3c41dc1530e96ee5bfa16253d023840f92af6e09c78c",
+      "size": 691
+    },
+    {
+      "path": "src/extensions/coopealianza/treasury/decision/models/priority.py",
+      "sha256": "e375fb1f7e981353fe998d99c16369a9ca442c1b1e9d8a1a429448146daa57d6",
+      "size": 249
+    },
+    {
+      "path": "src/extensions/coopealianza/treasury/decision/models/recommendation.py",
+      "sha256": "5e4e129c75e11b403f3bde429fcb9d56e21e59e346a85d196704c9c1408afc37",
+      "size": 1450
+    },
+    {
+      "path": "src/extensions/coopealianza/treasury/decision/models/recommendation_group.py",
+      "sha256": "4740bc43d83e0c9ab585419480537a902b0de7d2f8f08af4c46b7f468e220e6e",
+      "size": 378
+    },
+    {
+      "path": "src/extensions/coopealianza/treasury/decision/providers/recommendation_provider.py",
+      "sha256": "edbd0e508f55e4ef4b7287da36f6d55df4ab04a94b557b772e1f9323231c12f3",
+      "size": 542
+    },
+    {
+      "path": "src/extensions/coopealianza/treasury/decision/reports/decision_report_builder.py",
+      "sha256": "1bac144d56c686e474d27c6b95b5e18d5440f59c7bdf2648f180402c2bf3c247",
+      "size": 1305
+    },
+    {
+      "path": "src/sitecustomize.py",
+      "sha256": "5a3d008f53e107d2ffd1c36923df1ce4800efcd15c039c0d6df43e6cbd76a10c",
+      "size": 311
+    }
+  ]
+}

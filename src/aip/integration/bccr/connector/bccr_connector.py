@@ -49,7 +49,14 @@ class BCCRConnector(Connector):
         self.event_bus = event_bus
         self.cache = cache or BCCRCache(ttl_seconds=config.cache_ttl_seconds)
         self._connected = False
-        self.synchronizer = synchronizer or BCCRSynchronizer(client=HTTPClient(provider=provider or self._default_provider(), timeout_seconds=config.timeout_seconds), validator=self.validator, normalizer=self.normalizer)
+        self.synchronizer = synchronizer or BCCRSynchronizer(
+            client=HTTPClient(
+                provider=provider or self._default_provider(),
+                timeout_seconds=config.timeout_seconds,
+            ),
+            validator=self.validator,
+            normalizer=self.normalizer,
+        )
 
     def connect(self) -> None:
         self._connected = True
@@ -64,7 +71,13 @@ class BCCRConnector(Connector):
     def health(self) -> bool:
         return self._connected
 
-    def synchronize(self, request: Any, correlation_id: str | None = None, user: str = "system", cancellation_token: str | None = None) -> ExecutionResult:
+    def synchronize(
+        self,
+        request: Any,
+        correlation_id: str | None = None,
+        user: str = "system",
+        cancellation_token: str | None = None,
+    ) -> ExecutionResult:
         if not self._connected:
             self.connect()
         if cancellation_token == "cancelled":
@@ -77,7 +90,9 @@ class BCCRConnector(Connector):
             payload = self.cache.get(cache_key)
             if payload is None:
                 try:
-                    result = self.synchronizer.synchronize(request, cancellation_token=cancellation_token)
+                    result = self.synchronizer.synchronize(
+                        request, cancellation_token=cancellation_token
+                    )
                 except (TimeoutError, ConnectionError) as exc:
                     self.health_monitor.record_failure(self.name)
                     raise IntegrationError(str(exc)) from exc
@@ -127,8 +142,12 @@ class BCCRConnector(Connector):
         return self.normalizer.normalize(payload)
 
     def audit(self, log: SynchronizationLog) -> None:
-        self._publish(SynchronizationEvent.synchronization_started(self.name, self.name, log.execution_id))
-        self._publish(SynchronizationEvent.synchronization_completed(self.name, self.name, log.execution_id))
+        self._publish(
+            SynchronizationEvent.synchronization_started(self.name, self.name, log.execution_id)
+        )
+        self._publish(
+            SynchronizationEvent.synchronization_completed(self.name, self.name, log.execution_id)
+        )
 
     def _publish(self, event: SynchronizationEvent) -> None:
         if self.event_bus is not None:
@@ -136,7 +155,9 @@ class BCCRConnector(Connector):
 
     def _default_provider(self) -> HTTPProvider:
         class DefaultProvider(HTTPProvider):
-            def get(self, url: str, *, timeout: float, headers: dict[str, str] | None = None) -> dict[str, Any]:
+            def get(
+                self, url: str, *, timeout: float, headers: dict[str, str] | None = None
+            ) -> dict[str, Any]:
                 return {"indicators": []}
 
         return DefaultProvider()

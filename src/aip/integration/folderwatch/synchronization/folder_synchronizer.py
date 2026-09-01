@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Any
 
 from aip.integration.audit.execution_result import ExecutionResult, ExecutionStatus
 from aip.integration.folderwatch.contracts.file_request import FileRequest
@@ -26,7 +25,9 @@ class FolderSynchronizer:
         self.normalizer = normalizer or FileNormalizer()
         self.max_retries = max_retries
 
-    def synchronize(self, requests: list[FileRequest] | FileRequest, *, cancellation_token: str | None = None) -> ExecutionResult:
+    def synchronize(
+        self, requests: list[FileRequest] | FileRequest, *, cancellation_token: str | None = None
+    ) -> ExecutionResult:
         if cancellation_token == "cancelled":
             return ExecutionResult(
                 execution_id="folder-sync",

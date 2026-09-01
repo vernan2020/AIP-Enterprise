@@ -25,6 +25,5 @@ class MinMaxNormalizer:
             return [self.lower for _ in values]
         span = maximum - minimum
         return [
-            ((value - minimum) / span) * (self.upper - self.lower) + self.lower
-            for value in values
+            ((value - minimum) / span) * (self.upper - self.lower) + self.lower for value in values
         ]

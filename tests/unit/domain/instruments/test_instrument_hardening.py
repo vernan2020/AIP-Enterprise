@@ -182,7 +182,11 @@ def test_financial_instrument_validation_errors(field: str, value: object, messa
 
 
 def test_fixed_income_instrument_builds_coupon_schedule_and_rejects_negative_coupon_rate() -> None:
-    instrument = FixedIncomeInstrument(**make_common_kwargs(coupon_rate=Decimal("0.06"), payment_frequency=PaymentFrequency.SEMIANNUAL))
+    instrument = FixedIncomeInstrument(
+        **make_common_kwargs(
+            coupon_rate=Decimal("0.06"), payment_frequency=PaymentFrequency.SEMIANNUAL
+        )
+    )
     assert instrument.coupon_schedule is not None
     assert instrument.coupon_schedule.coupons
 
@@ -192,7 +196,9 @@ def test_fixed_income_instrument_builds_coupon_schedule_and_rejects_negative_cou
 
 
 def test_fixed_income_instrument_normalizes_string_payment_frequency() -> None:
-    instrument = FixedIncomeInstrument(**make_common_kwargs(coupon_rate=Decimal("0.06"), payment_frequency="quarterly"))
+    instrument = FixedIncomeInstrument(
+        **make_common_kwargs(coupon_rate=Decimal("0.06"), payment_frequency="quarterly")
+    )
 
     assert instrument.payment_frequency is PaymentFrequency.QUARTERLY
     assert instrument.coupon_schedule is not None
@@ -200,7 +206,11 @@ def test_fixed_income_instrument_normalizes_string_payment_frequency() -> None:
 
 
 def test_fixed_income_calculate_price_and_yield_cover_branch_paths() -> None:
-    instrument = FixedIncomeInstrument(**make_common_kwargs(coupon_rate=Decimal("0.06"), payment_frequency=PaymentFrequency.SEMIANNUAL))
+    instrument = FixedIncomeInstrument(
+        **make_common_kwargs(
+            coupon_rate=Decimal("0.06"), payment_frequency=PaymentFrequency.SEMIANNUAL
+        )
+    )
     instrument.coupon_schedule = None
     assert instrument.calculate_price() == instrument.clean_price
 
@@ -221,7 +231,9 @@ def test_fixed_income_calculate_price_and_yield_cover_branch_paths() -> None:
 
 
 def test_bond_calculates_price_and_generates_schedule() -> None:
-    bond = Bond(**make_common_kwargs(coupon_rate=Decimal("0.08"), payment_frequency=PaymentFrequency.ANNUAL))
+    bond = Bond(
+        **make_common_kwargs(coupon_rate=Decimal("0.08"), payment_frequency=PaymentFrequency.ANNUAL)
+    )
 
     assert bond.calculate_yield() == bond.yield_rate
     assert bond.calculate_price() > Decimal("0")
@@ -229,7 +241,9 @@ def test_bond_calculates_price_and_generates_schedule() -> None:
 
 
 def test_bond_calculate_price_and_generate_schedule_cover_none_and_empty_branches() -> None:
-    bond = Bond(**make_common_kwargs(coupon_rate=Decimal("0.08"), payment_frequency=PaymentFrequency.ANNUAL))
+    bond = Bond(
+        **make_common_kwargs(coupon_rate=Decimal("0.08"), payment_frequency=PaymentFrequency.ANNUAL)
+    )
     bond.coupon_schedule = None
     assert bond.calculate_price() == bond.clean_price
 
@@ -239,8 +253,17 @@ def test_bond_calculate_price_and_generate_schedule_cover_none_and_empty_branche
 
 def test_government_bond_sets_metadata_for_non_government_issuer() -> None:
     issuer = make_issuer()
-    issuer = Issuer(code=issuer.code, name="Private Issuer", issuer_type=issuer.issuer_type, credit_rating=issuer.credit_rating)
-    bond = GovernmentBond(**make_common_kwargs(coupon_rate=Decimal("0.07"), payment_frequency=PaymentFrequency.QUARTERLY, issuer=issuer))
+    issuer = Issuer(
+        code=issuer.code,
+        name="Private Issuer",
+        issuer_type=issuer.issuer_type,
+        credit_rating=issuer.credit_rating,
+    )
+    bond = GovernmentBond(
+        **make_common_kwargs(
+            coupon_rate=Decimal("0.07"), payment_frequency=PaymentFrequency.QUARTERLY, issuer=issuer
+        )
+    )
 
     assert bond.calculate_price() > Decimal("0")
     assert bond.metadata["jurisdiction"] == "CR"
@@ -299,30 +322,65 @@ def test_floating_rate_bond_supports_reference_rate_spread_and_reset_validation(
     assert bond.calculate_yield() == bond.yield_rate
 
     with pytest.raises(InstrumentValidationError) as exc_info:
-        FloatingRateBond(**make_common_kwargs(reference_rate=Decimal("0.04"), spread=Decimal("-0.01"), next_reset_date=date(2024, 4, 1)))
+        FloatingRateBond(
+            **make_common_kwargs(
+                reference_rate=Decimal("0.04"),
+                spread=Decimal("-0.01"),
+                next_reset_date=date(2024, 4, 1),
+            )
+        )
     assert "Spread" in str(exc_info.value)
 
     with pytest.raises(InstrumentValidationError) as exc_info:
-        FloatingRateBond(**make_common_kwargs(reference_rate=Decimal("-0.01"), spread=Decimal("0.01"), next_reset_date=date(2024, 4, 1)))
+        FloatingRateBond(
+            **make_common_kwargs(
+                reference_rate=Decimal("-0.01"),
+                spread=Decimal("0.01"),
+                next_reset_date=date(2024, 4, 1),
+            )
+        )
     assert "Reference rate" in str(exc_info.value)
 
     with pytest.raises(InstrumentValidationError) as exc_info:
-        FloatingRateBond(**make_common_kwargs(reference_rate=Decimal("0.04"), spread=Decimal("0.01"), next_reset_date=date(2023, 12, 31)))
+        FloatingRateBond(
+            **make_common_kwargs(
+                reference_rate=Decimal("0.04"),
+                spread=Decimal("0.01"),
+                next_reset_date=date(2023, 12, 31),
+            )
+        )
     assert "reset date" in str(exc_info.value)
 
     with pytest.raises(InstrumentValidationError) as exc_info:
-        FloatingRateBond(**make_common_kwargs(reference_rate=Decimal("0.04"), spread=Decimal("0.01"), next_reset_date=date(2025, 12, 31)))
+        FloatingRateBond(
+            **make_common_kwargs(
+                reference_rate=Decimal("0.04"),
+                spread=Decimal("0.01"),
+                next_reset_date=date(2025, 12, 31),
+            )
+        )
     assert "reset date" in str(exc_info.value)
 
 
-def test_floating_rate_bond_raises_when_schedule_generation_returns_no_coupons(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_floating_rate_bond_raises_when_schedule_generation_returns_no_coupons(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     def fake_from_frequency(*args: object, **kwargs: object) -> CouponSchedule:
         return CouponSchedule()
 
-    monkeypatch.setattr("aip.domain.instruments.bonds.floating_rate_bond.CouponSchedule.from_frequency", fake_from_frequency)
+    monkeypatch.setattr(
+        "aip.domain.instruments.bonds.floating_rate_bond.CouponSchedule.from_frequency",
+        fake_from_frequency,
+    )
 
     with pytest.raises(InstrumentValidationError) as exc_info:
-        FloatingRateBond(**make_common_kwargs(reference_rate=Decimal("0.04"), spread=Decimal("0.01"), next_reset_date=date(2024, 4, 1)))
+        FloatingRateBond(
+            **make_common_kwargs(
+                reference_rate=Decimal("0.04"),
+                spread=Decimal("0.01"),
+                next_reset_date=date(2024, 4, 1),
+            )
+        )
     assert "schedule could not be generated" in str(exc_info.value)
 
 
@@ -426,13 +484,17 @@ def test_factory_validates_missing_fields_and_unsupported_types() -> None:
 
 def test_factory_ignores_unexpected_kwargs_and_uses_direct_values() -> None:
     factory = InstrumentFactory()
-    cash = factory.create(InstrumentType.CASH, name="Cash", nominal_value=Decimal("1200"), unexpected="value")
+    cash = factory.create(
+        InstrumentType.CASH, name="Cash", nominal_value=Decimal("1200"), unexpected="value"
+    )
     assert cash.nominal_value == Decimal("1200")
 
 
 def test_issuers_and_ratings_preserve_values() -> None:
     rating = CreditRating(value="A", agency="S&P")
-    issuer = Issuer(code="AAA", name="Issuer", issuer_type=IssuerType.GOVERNMENT, credit_rating=rating)
+    issuer = Issuer(
+        code="AAA", name="Issuer", issuer_type=IssuerType.GOVERNMENT, credit_rating=rating
+    )
 
     assert rating.value == "A"
     assert issuer.credit_rating is rating

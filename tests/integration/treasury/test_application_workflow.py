@@ -5,7 +5,9 @@ from aip.application.workflows.liquidity_workflow import LiquidityWorkflow
 from aip.application.workflows.relative_value_workflow import RelativeValueWorkflow
 
 
-def test_application_workflows_preserve_identifiers_and_steps(analysis_request, treasury_instrument) -> None:
+def test_application_workflows_preserve_identifiers_and_steps(
+    analysis_request, treasury_instrument
+) -> None:
     relative_value_result = RelativeValueWorkflow().execute(analysis_request)
     liquidity_result = LiquidityWorkflow().execute(analysis_request)
     hqla_result = HQLAWorkflow().execute(analysis_request)

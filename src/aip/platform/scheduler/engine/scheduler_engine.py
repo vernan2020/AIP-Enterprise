@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
 from threading import Event, RLock
 from typing import Any
 
@@ -9,8 +8,6 @@ from aip.platform.scheduler.configuration.scheduler_config import SchedulerConfi
 from aip.platform.scheduler.engine.execution_engine import ExecutionEngine
 from aip.platform.scheduler.events.scheduler_events import SchedulerEvent, SchedulerEventType
 from aip.platform.scheduler.exceptions.scheduler_exceptions import SchedulerError
-from aip.platform.scheduler.jobs.job_result import JobStatus
-from aip.platform.scheduler.jobs.scheduled_job import ScheduledJob
 from aip.platform.scheduler.locking.execution_lock import ExecutionLock
 from aip.platform.scheduler.monitoring.scheduler_health import SchedulerHealthMonitor
 from aip.platform.scheduler.queue.execution_queue import ExecutionQueue
@@ -57,7 +54,11 @@ class SchedulerEngine:
             self._started = True
             self._stopped.clear()
             self.health.record_uptime(0.0)
-            self.audit.record(SchedulerEvent(event_type=SchedulerEventType.SCHEDULER_STARTED, message="scheduler started"))
+            self.audit.record(
+                SchedulerEvent(
+                    event_type=SchedulerEventType.SCHEDULER_STARTED, message="scheduler started"
+                )
+            )
 
     def shutdown(self) -> None:
         with self._state_lock:
@@ -65,7 +66,11 @@ class SchedulerEngine:
                 raise SchedulerError("scheduler stopped")
             self._started = False
             self._stopped.set()
-            self.audit.record(SchedulerEvent(event_type=SchedulerEventType.SCHEDULER_STOPPED, message="scheduler stopped"))
+            self.audit.record(
+                SchedulerEvent(
+                    event_type=SchedulerEventType.SCHEDULER_STOPPED, message="scheduler stopped"
+                )
+            )
 
     def execute_job(self, job_id: str, *, context: dict[str, Any] | None = None) -> Any:
         with self._state_lock:

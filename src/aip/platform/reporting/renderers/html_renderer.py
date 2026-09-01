@@ -8,5 +8,7 @@ class HtmlRenderer(Renderer):
     """HTML renderer for reporting content."""
 
     def render(self, report: Report) -> str:
-        sections = "".join(f"<section><h2>{section.title}</h2></section>" for section in report.sections)
+        sections = "".join(
+            f"<section><h2>{section.title}</h2></section>" for section in report.sections
+        )
         return f"<html><body><h1>{report.title}</h1><h2>{report.subtitle or ''}</h2>{sections}</body></html>"

@@ -7,9 +7,16 @@ from aip.product.configured.readers.pipca_vector_reader import InstitutionalPiPC
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Inspect a PiPCA vector file without exposing confidential values")
+    parser = argparse.ArgumentParser(
+        description="Inspect a PiPCA vector file without exposing confidential values"
+    )
     parser.add_argument("path")
-    parser.add_argument("--search", dest="search", default=None, help="Filter diagnostics to lines containing the provided token")
+    parser.add_argument(
+        "--search",
+        dest="search",
+        default=None,
+        help="Filter diagnostics to lines containing the provided token",
+    )
     args = parser.parse_args()
 
     path = Path(args.path)
@@ -24,7 +31,8 @@ def main() -> None:
     trace = result.diagnostics.get("trace", {})
     if args.search:
         matches = [
-            entry for entry in trace.get("line_diagnostics", [])
+            entry
+            for entry in trace.get("line_diagnostics", [])
             if args.search.lower() in str(entry.get("raw_line", "")).lower()
         ]
         if not matches:
@@ -38,9 +46,15 @@ def main() -> None:
             print(f"raw_line_length={entry.get('raw_line_length')}")
             print(f"masked_raw_line={entry.get('masked_raw_line')}")
             print(f"parser_branch={entry.get('parser_branch', 'unknown')}")
-            print(f"issuer_slice[{issuer_slice.get('start')}:{issuer_slice.get('end')}]={issuer_slice.get('text', '')}")
-            print(f"product_series_slice[{product_series_slice.get('start')}:{product_series_slice.get('end')}]={product_series_slice.get('text', '')}")
-            print(f"maturity_slice[{maturity_slice.get('start')}:{maturity_slice.get('end')}]={maturity_slice.get('text', '')}")
+            print(
+                f"issuer_slice[{issuer_slice.get('start')}:{issuer_slice.get('end')}]={issuer_slice.get('text', '')}"
+            )
+            print(
+                f"product_series_slice[{product_series_slice.get('start')}:{product_series_slice.get('end')}]={product_series_slice.get('text', '')}"
+            )
+            print(
+                f"maturity_slice[{maturity_slice.get('start')}:{maturity_slice.get('end')}]={maturity_slice.get('text', '')}"
+            )
             print(f"parsed_issuer={entry.get('parsed_issuer', '')}")
             print(f"parsed_product={entry.get('parsed_product', '')}")
             print(f"parsed_series={entry.get('parsed_series', '')}")
@@ -53,7 +67,9 @@ def main() -> None:
 
     print("examples:")
     for record in result.records[:3]:
-        print(f"  - issuer={record.issuer} mnemonic={record.instrument_type_or_mnemonic} series={record.series_or_security_code} maturity={record.maturity_date_if_present}")
+        print(
+            f"  - issuer={record.issuer} mnemonic={record.instrument_type_or_mnemonic} series={record.series_or_security_code} maturity={record.maturity_date_if_present}"
+        )
 
 
 if __name__ == "__main__":

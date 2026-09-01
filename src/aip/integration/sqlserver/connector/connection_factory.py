@@ -10,7 +10,9 @@ from aip.integration.sqlserver.driver.driver_adapter import SQLServerDriverAdapt
 class SQLServerConnectionFactory(ABC):
     """Abstract connection factory for SQL Server adapters."""
 
-    def __init__(self, config: SQLServerConfig, driver: SQLServerDriverAdapter | None = None) -> None:
+    def __init__(
+        self, config: SQLServerConfig, driver: SQLServerDriverAdapter | None = None
+    ) -> None:
         self.config = config
         self.driver = driver
 
@@ -28,7 +30,9 @@ class DefaultSQLServerConnectionFactory(SQLServerConnectionFactory):
                 self._rows: list[dict[str, Any]] = []
                 self.executed: tuple[str, dict[str, Any]] | None = None
 
-            def execute(self, query: str, params: dict[str, Any] | None = None) -> "_FallbackCursor":
+            def execute(
+                self, query: str, params: dict[str, Any] | None = None
+            ) -> "_FallbackCursor":
                 self.executed = (query, params or {})
                 return self
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 from aip.integration.audit.synchronization_log import SynchronizationLog
 from aip.integration.contracts.synchronization import SynchronizationRequest

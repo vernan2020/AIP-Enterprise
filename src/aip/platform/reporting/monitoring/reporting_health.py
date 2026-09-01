@@ -32,7 +32,9 @@ class ReportingMonitor:
         self.metrics.record_renderer_failure(renderer_name)
 
     def record_template_usage(self, template_name: str) -> None:
-        self.health.template_usage[template_name] = self.health.template_usage.get(template_name, 0) + 1
+        self.health.template_usage[template_name] = (
+            self.health.template_usage.get(template_name, 0) + 1
+        )
         self.metrics.record_template_usage(template_name)
 
     def record_export_size(self, size_bytes: int) -> None:

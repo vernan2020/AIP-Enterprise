@@ -28,7 +28,9 @@ def future_value(
     if day_count_convention.upper() not in {"ACTUAL_365", "ACTUAL_360"}:
         raise InvalidCashFlowError("Unsupported day-count convention")
     time = Decimal((cash_flow.payment_date - valuation_date).days) / Decimal("365")
-    return cash_flow.amount * accumulation_factor(rate_value, time, compounding=compounding_value, frequency=frequency_value)
+    return cash_flow.amount * accumulation_factor(
+        rate_value, time, compounding=compounding_value, frequency=frequency_value
+    )
 
 
 def future_value_series(

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Any
 
 from aip.integration.audit.execution_result import ExecutionResult, ExecutionStatus
 from aip.integration.bccr.connector.http_client import HTTPClient
@@ -13,13 +12,22 @@ from aip.integration.bccr.validation.response_validator import ResponseValidator
 class BCCRSynchronizer:
     """Synchronizes BCCR indicator payloads with retry support."""
 
-    def __init__(self, *, client: HTTPClient, validator: ResponseValidator | None = None, normalizer: ResponseNormalizer | None = None, max_retries: int = 2) -> None:
+    def __init__(
+        self,
+        *,
+        client: HTTPClient,
+        validator: ResponseValidator | None = None,
+        normalizer: ResponseNormalizer | None = None,
+        max_retries: int = 2,
+    ) -> None:
         self.client = client
         self.validator = validator or ResponseValidator()
         self.normalizer = normalizer or ResponseNormalizer()
         self.max_retries = max_retries
 
-    def synchronize(self, request: BCCRRequest, cancellation_token: str | None = None) -> ExecutionResult:
+    def synchronize(
+        self, request: BCCRRequest, cancellation_token: str | None = None
+    ) -> ExecutionResult:
         if cancellation_token == "cancelled":
             return ExecutionResult(
                 execution_id="bccr-sync",
@@ -59,7 +67,11 @@ class BCCRSynchronizer:
                 continue
             normalized = self.normalizer.normalize(payload)
             if isinstance(normalized, dict):
-                if "indicators" in normalized and isinstance(normalized["indicators"], list) and normalized["indicators"]:
+                if (
+                    "indicators" in normalized
+                    and isinstance(normalized["indicators"], list)
+                    and normalized["indicators"]
+                ):
                     return ExecutionResult(
                         execution_id="bccr-sync",
                         correlation_id="system",

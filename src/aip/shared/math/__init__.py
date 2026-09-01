@@ -130,7 +130,7 @@ class SafeDecimal:
             New SafeDecimal with result.
         """
         exp_val = Decimal(str(exponent)) if not isinstance(exponent, Decimal) else exponent
-        result = self.value ** exp_val
+        result = self.value**exp_val
         return SafeDecimal(result, self.precision)
 
     def square_root(self) -> Self:

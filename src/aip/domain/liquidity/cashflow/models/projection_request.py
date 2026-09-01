@@ -40,7 +40,12 @@ class ProjectionRequest:
     def __post_init__(self) -> None:
         if self.valuation_date is None:
             raise ValueError("Valuation date is required")
-        if self.projection_type is not None and self.projection_type.strip().lower() == "scenario" and not self.scenario_name and self.scenario_provider is None:
+        if (
+            self.projection_type is not None
+            and self.projection_type.strip().lower() == "scenario"
+            and not self.scenario_name
+            and self.scenario_provider is None
+        ):
             raise ValueError("Scenario context is required for scenario projection")
         if self.behavioral_assumptions is None:
             object.__setattr__(self, "behavioral_assumptions", ())

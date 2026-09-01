@@ -23,4 +23,6 @@ class JobDefinition:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def resolved_connector_name(self) -> str:
-        return self.connector_name or (self.connector.name if self.connector is not None else "unknown")
+        return self.connector_name or (
+            self.connector.name if self.connector is not None else "unknown"
+        )

@@ -16,7 +16,10 @@ class CollateralAvailabilityPolicy(InstitutionalPolicy):
 
     def _evaluate_impl(self, context: PolicyContext) -> EvaluationResult:
         asset = self._coerce_asset(context)
-        if asset.get("collateral_available") is True and asset.get("operationally_available") is not False:
+        if (
+            asset.get("collateral_available") is True
+            and asset.get("operationally_available") is not False
+        ):
             return self._result(context, "PASSED", "Asset is available as collateral")
         return self._result(context, "FAILED", "Asset is not collateral-available")
 

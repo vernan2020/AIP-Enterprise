@@ -9,5 +9,4 @@ if TYPE_CHECKING:
 class ScenarioProvider(Protocol):
     """Protocol for providing the scenario name for a projection request."""
 
-    def get_scenario(self, request: ProjectionRequest) -> str:
-        ...
+    def get_scenario(self, request: ProjectionRequest) -> str: ...

@@ -4,7 +4,6 @@ import time
 from datetime import datetime, timezone
 from typing import Any
 
-from aip.product.configured.bootstrap.configured_application_factory import ConfiguredApplicationFactory
 from aip.product.demo.bootstrap.application_factory import DemoApplicationFactory
 from aip.product.demo.configuration.demo_config import DemoConfig
 from aip.product.demo.exceptions import DemoBootstrapError
@@ -14,19 +13,25 @@ from aip.product.demo.status.startup_status import StartupStatus
 class DemoBootstrap:
     """Bootstraps the demo product slice with startup status tracking."""
 
-    def __init__(self, config: DemoConfig | None = None) -> None:
+    def __init__(
+        self,
+        config: DemoConfig | None = None,
+        *,
+        source_config: Any | None = None,
+    ) -> None:
         self._config = config or DemoConfig()
-        self._factory = (
-            ConfiguredApplicationFactory(self._config)
-            if self._config.execution_mode == "CONFIGURED"
-            else DemoApplicationFactory(self._config)
+        self._factory = DemoApplicationFactory(
+            self._config,
+            source_config=source_config,
         )
 
     @property
     def factory(self) -> DemoApplicationFactory:
         return self._factory
 
-    def bootstrap(self, correlation_id: str | None = None) -> tuple[DemoApplicationFactory, list[StartupStatus]]:
+    def bootstrap(
+        self, correlation_id: str | None = None
+    ) -> tuple[DemoApplicationFactory, list[StartupStatus]]:
         correlation = correlation_id or f"demo-{int(time.time())}"
         steps: list[StartupStatus] = []
         for component_name, action in [
@@ -53,7 +58,7 @@ class DemoBootstrap:
                         completed_at=completed,
                     )
                 )
-            except Exception as exc:  # pragma: no cover - defensive guard
+            except Exception as exc:
                 completed = datetime.now(timezone.utc)
                 steps.append(
                     StartupStatus(

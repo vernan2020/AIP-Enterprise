@@ -61,7 +61,14 @@ class InstitutionalPolicy(Policy):
             return asset
         raise InstitutionalPolicyError("Asset context must be a dictionary")
 
-    def _result(self, context: PolicyContext, status: str, message: str, *, severity: PolicySeverity | None = None) -> EvaluationResult:
+    def _result(
+        self,
+        context: PolicyContext,
+        status: str,
+        message: str,
+        *,
+        severity: PolicySeverity | None = None,
+    ) -> EvaluationResult:
         return EvaluationResult(
             policy_id=self.policy_id,
             status=status,

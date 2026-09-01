@@ -9,7 +9,9 @@ from src.extensions.coopealianza.liquidity.stress.engine.stress_engine import St
 from src.extensions.coopealianza.liquidity.stress.models.stress_request import StressRequest
 
 
-def test_gap_and_stress_chain_preserve_deterministic_ordering(projection_request, stress_config) -> None:
+def test_gap_and_stress_chain_preserve_deterministic_ordering(
+    projection_request, stress_config
+) -> None:
     projection_result = CashFlowEngine().project(projection_request)
     gap_result = GapEngine().project(
         GapRequest(
@@ -28,7 +30,10 @@ def test_gap_and_stress_chain_preserve_deterministic_ordering(projection_request
         )
     )
 
-    assert projection_result.projected_cashflows[0].payment_date < projection_result.projected_cashflows[1].payment_date
+    assert (
+        projection_result.projected_cashflows[0].payment_date
+        < projection_result.projected_cashflows[1].payment_date
+    )
     assert gap_result.net_gap == Decimal("800000")
     assert stress_result.total_scenarios == 1
     assert stress_result.scenario_results[0].scenario_name == "parallel_shift"

@@ -8,6 +8,11 @@ from aip.platform.observability.providers.provider import LogProvider
 
 class LoggerFactory:
     @staticmethod
-    def create_logger(component: str, *, provider: LogProvider | None = None, config: ObservabilityConfig | None = None) -> Logger:
-        effective = config or ObservabilityConfig()
+    def create_logger(
+        component: str,
+        *,
+        provider: LogProvider | None = None,
+        config: ObservabilityConfig | None = None,
+    ) -> Logger:
+        _ = config or ObservabilityConfig()
         return Logger(provider=provider or NullProvider())

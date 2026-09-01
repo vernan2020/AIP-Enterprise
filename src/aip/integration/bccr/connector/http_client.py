@@ -15,7 +15,11 @@ class HTTPClient:
 
     def fetch(self, request: BCCRRequest) -> dict[str, Any]:
         indicator = request.indicator_codes[0] if request.indicator_codes else ""
-        url = f"https://api.bccr.fi.cr/indicators/{indicator}" if indicator else "https://api.bccr.fi.cr/indicators"
+        url = (
+            f"https://api.bccr.fi.cr/indicators/{indicator}"
+            if indicator
+            else "https://api.bccr.fi.cr/indicators"
+        )
         headers = {"Accept": "application/json"}
         if request.etag:
             headers["If-None-Match"] = request.etag

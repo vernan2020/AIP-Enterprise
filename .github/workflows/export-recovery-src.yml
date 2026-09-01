@@ -1,0 +1,63 @@
+name: Recovery Source Audit
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONPATH: src
+
+jobs:
+  audit-recovery-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout recovery branch
+        uses: actions/checkout@v4
+        with:
+          ref: recovery/full-runtime-rc1-20260829
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Validate materialized production source
+        shell: python
+        run: |
+          from pathlib import Path
+          import ast
+
+          required = [
+              "src/aip/domain/economic/economic_indicator_catalog.py",
+              "src/aip/domain/economic/economic_indicator_observation.py",
+              "src/aip/domain/economic/economic_indicator_series.py",
+              "src/aip/integration/economic/official_indicator_mappings.py",
+              "src/aip/integration/bccr/normalization/economic_series_parser.py",
+              "src/aip/product/configured/services/configured_portfolio_var_service.py",
+              "src/aip/product/configured/adapters/configured_economic_indicators_provider.py",
+              "src/aip/product/configured/adapters/configured_market_provider.py",
+              "src/aip/product/configured/adapters/configured_liquidity_provider.py",
+              "src/aip/product/configured/readers/institutional_icl_reader.py",
+              "src/aip/ui/modules/macro_intelligence/views/macro_intelligence_view.py",
+              "src/aip/ui/shell/main_window.py",
+              "src/aip/ui/application/main.py",
+              "src/aip/ui/application/app.py",
+              "src/aip/tools/preflight_runtime.py",
+          ]
+          missing = [item for item in required if not Path(item).is_file()]
+          if missing:
+              raise SystemExit("missing required source: " + ", ".join(missing))
+
+          for path in Path("src").rglob("*.py"):
+              data = path.read_bytes()
+              if b"\x00" in data:
+                  raise SystemExit(f"null byte in source: {path}")
+              ast.parse(data.decode("utf-8"), filename=str(path))
+
+          print(f"materialized source validated: {len(required)} critical modules")
+
+      - name: Compile production source
+        run: python -m compileall -q src

@@ -8,18 +8,20 @@ class SQLServerDriverAdapter(ABC):
     """Boundary for a production SQL Server driver implementation."""
 
     @abstractmethod
-    def connect(self, connection_string: str) -> Any:
-        ...
+    def connect(self, connection_string: str) -> Any: ...
 
     @abstractmethod
-    def execute(self, connection: Any, query: str, params: dict[str, Any] | None = None) -> tuple[list[dict[str, Any]], Any]:
-        ...
+    def execute(
+        self, connection: Any, query: str, params: dict[str, Any] | None = None
+    ) -> tuple[list[dict[str, Any]], Any]: ...
 
 
 class DriverProtocol(Protocol):
     def connect(self, connection_string: str) -> Any: ...
 
-    def execute(self, connection: Any, query: str, params: dict[str, Any] | None = None) -> tuple[list[dict[str, Any]], Any]: ...
+    def execute(
+        self, connection: Any, query: str, params: dict[str, Any] | None = None
+    ) -> tuple[list[dict[str, Any]], Any]: ...
 
 
 class PyOdbcDriverAdapter(SQLServerDriverAdapter):
@@ -33,7 +35,9 @@ class PyOdbcDriverAdapter(SQLServerDriverAdapter):
             raise RuntimeError("pyodbc driver is not available")
         return self._module.connect(connection_string)
 
-    def execute(self, connection: Any, query: str, params: dict[str, Any] | None = None) -> tuple[list[dict[str, Any]], Any]:
+    def execute(
+        self, connection: Any, query: str, params: dict[str, Any] | None = None
+    ) -> tuple[list[dict[str, Any]], Any]:
         if self._module is None:
             raise RuntimeError("pyodbc driver is not available")
 

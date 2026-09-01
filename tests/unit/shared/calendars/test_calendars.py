@@ -431,4 +431,3 @@ class TestBusinessDayConvention:
         )
         result = coupon_q.next_coupon_date(date(2024, 2, 15))
         assert result.month == 4
-

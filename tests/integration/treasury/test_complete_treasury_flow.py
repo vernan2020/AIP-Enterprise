@@ -21,7 +21,9 @@ from src.extensions.coopealianza.liquidity.stress.engine.stress_engine import St
 from src.extensions.coopealianza.liquidity.stress.models.stress_request import StressRequest
 
 
-def test_complete_treasury_flow_links_pricing_to_stress(analysis_request, treasury_instrument, yield_curve, mil_asset, mil_config, stress_config) -> None:
+def test_complete_treasury_flow_links_pricing_to_stress(
+    analysis_request, treasury_instrument, yield_curve, mil_asset, mil_config, stress_config
+) -> None:
     pricing_result = PricingEngine().price(
         PricingRequest(
             valuation_date=analysis_request.valuation_date,

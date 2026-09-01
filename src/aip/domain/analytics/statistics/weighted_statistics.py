@@ -22,11 +22,19 @@ class WeightedStatistics:
         self.weights = [weight / total_weight for weight in weights]
 
     def weighted_mean(self) -> Decimal:
-        return sum((value * weight for value, weight in zip(self.values, self.weights)), Decimal("0"))
+        return sum(
+            (value * weight for value, weight in zip(self.values, self.weights)), Decimal("0")
+        )
 
     def weighted_variance(self) -> Decimal:
         mean_value = self.weighted_mean()
-        return sum(((value - mean_value) ** 2 * weight for value, weight in zip(self.values, self.weights)), Decimal("0"))
+        return sum(
+            (
+                (value - mean_value) ** 2 * weight
+                for value, weight in zip(self.values, self.weights)
+            ),
+            Decimal("0"),
+        )
 
     def weighted_standard_deviation(self) -> Decimal:
         return self.weighted_variance().sqrt()

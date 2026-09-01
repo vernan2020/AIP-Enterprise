@@ -66,7 +66,10 @@ def _make_request(**overrides: Any) -> AnalysisRequest:
     curve = YieldCurve(
         valuation_date=date(2026, 1, 1),
         currency="USD",
-        points=(CurvePoint(tenor=Decimal("1"), zero_rate=Decimal("0.03")), CurvePoint(tenor=Decimal("10"), zero_rate=Decimal("0.04"))),
+        points=(
+            CurvePoint(tenor=Decimal("1"), zero_rate=Decimal("0.03")),
+            CurvePoint(tenor=Decimal("10"), zero_rate=Decimal("0.04")),
+        ),
     )
     request = AnalysisRequest(
         workflow_id="wf-1",
@@ -81,7 +84,12 @@ def _make_request(**overrides: Any) -> AnalysisRequest:
         requested_at=datetime(2026, 1, 1, tzinfo=UTC),
         context={
             "contractual_cashflows": (
-                CashFlow(payment_date=date(2026, 6, 1), amount=Decimal("100000"), currency="USD", cash_flow_type="coupon"),
+                CashFlow(
+                    payment_date=date(2026, 6, 1),
+                    amount=Decimal("100000"),
+                    currency="USD",
+                    cash_flow_type="coupon",
+                ),
             )
         },
     )
@@ -100,10 +108,34 @@ class _StubWorkflow:
 
 def test_all_orchestrators_coordinate_successfully() -> None:
     request = _make_request()
-    pricing = PricingOrchestrator(workflow=_StubWorkflow(AnalysisResult(workflow_id="wf", correlation_id="corr", status="COMPLETED", result={"ok": True})))
-    portfolio = PortfolioAnalysisOrchestrator(workflow=_StubWorkflow(AnalysisResult(workflow_id="wf", correlation_id="corr", status="COMPLETED", result={"ok": True})))
-    liquidity = LiquidityAnalysisOrchestrator(workflow=_StubWorkflow(AnalysisResult(workflow_id="wf", correlation_id="corr", status="COMPLETED", result={"ok": True})))
-    investment = InvestmentDecisionOrchestrator(workflow=_StubWorkflow(AnalysisResult(workflow_id="wf", correlation_id="corr", status="COMPLETED", result={"ok": True})))
+    pricing = PricingOrchestrator(
+        workflow=_StubWorkflow(
+            AnalysisResult(
+                workflow_id="wf", correlation_id="corr", status="COMPLETED", result={"ok": True}
+            )
+        )
+    )
+    portfolio = PortfolioAnalysisOrchestrator(
+        workflow=_StubWorkflow(
+            AnalysisResult(
+                workflow_id="wf", correlation_id="corr", status="COMPLETED", result={"ok": True}
+            )
+        )
+    )
+    liquidity = LiquidityAnalysisOrchestrator(
+        workflow=_StubWorkflow(
+            AnalysisResult(
+                workflow_id="wf", correlation_id="corr", status="COMPLETED", result={"ok": True}
+            )
+        )
+    )
+    investment = InvestmentDecisionOrchestrator(
+        workflow=_StubWorkflow(
+            AnalysisResult(
+                workflow_id="wf", correlation_id="corr", status="COMPLETED", result={"ok": True}
+            )
+        )
+    )
 
     assert pricing.execute(request).status == "COMPLETED"
     assert portfolio.execute(request).status == "COMPLETED"

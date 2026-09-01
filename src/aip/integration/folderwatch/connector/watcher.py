@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
 
 from aip.integration.folderwatch.configuration.folder_config import FolderWatchConfig
 from aip.integration.folderwatch.contracts.file_request import FileRequest
@@ -33,7 +32,9 @@ class FolderWatcher:
                 extension = str(file_info.get("extension") or Path(path).suffix)
                 size = int(file_info.get("size", 0))
                 if self._matches_filters(path, filename, extension, size):
-                    requests.append(FileRequest(path=path, filename=filename, extension=extension, size=size))
+                    requests.append(
+                        FileRequest(path=path, filename=filename, extension=extension, size=size)
+                    )
         return requests
 
     def _matches_filters(self, path: str, filename: str, extension: str, size: int) -> bool:
@@ -43,8 +44,12 @@ class FolderWatcher:
             return False
         if extension and self.config.extensions and extension not in self.config.extensions:
             return False
-        has_filename_match = not self.config.filename_patterns or any(pattern in filename for pattern in self.config.filename_patterns)
-        has_regex_match = not self.config.regex_patterns or any(__import__("re").search(pattern, filename) for pattern in self.config.regex_patterns)
+        has_filename_match = not self.config.filename_patterns or any(
+            pattern in filename for pattern in self.config.filename_patterns
+        )
+        has_regex_match = not self.config.regex_patterns or any(
+            __import__("re").search(pattern, filename) for pattern in self.config.regex_patterns
+        )
         if self.config.filename_patterns or self.config.regex_patterns:
             if not (has_filename_match or has_regex_match):
                 return False

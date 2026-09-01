@@ -60,9 +60,7 @@ class ServiceDescriptor(Generic[T]):
             ValueError: If the descriptor configuration is invalid.
         """
         if self.factory is None and self.implementation_type is None:
-            raise ValueError(
-                "Either implementation_type or factory must be provided"
-            )
+            raise ValueError("Either implementation_type or factory must be provided")
 
         if not isinstance(self.lifetime, ServiceLifetime):
             raise ValueError(
@@ -108,11 +106,7 @@ class ServiceDescriptor(Generic[T]):
         Returns:
             String describing the service descriptor.
         """
-        impl_name = (
-            self.implementation_type.__name__
-            if self.implementation_type
-            else "factory"
-        )
+        impl_name = self.implementation_type.__name__ if self.implementation_type else "factory"
         return (
             f"ServiceDescriptor("
             f"service={self.service_type.__name__}, "

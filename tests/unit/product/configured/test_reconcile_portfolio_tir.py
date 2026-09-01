@@ -13,7 +13,9 @@ import openpyxl
 from aip.tools.reconcile_portfolio_tir import main
 
 
-def test_reconcile_portfolio_tir_cli_writes_csv_and_reports_tir_summary(tmp_path: Path, monkeypatch) -> None:
+def test_reconcile_portfolio_tir_cli_writes_csv_and_reports_tir_summary(
+    tmp_path: Path, monkeypatch
+) -> None:
     investments_root = tmp_path / "Inversiones"
     year_root = investments_root / "2026"
     maestro_root = year_root / "maestro" / "julio"
@@ -26,36 +28,122 @@ def test_reconcile_portfolio_tir_cli_writes_csv_and_reports_tir_summary(tmp_path
     workbook = openpyxl.Workbook()
     worksheet = workbook.active
     worksheet.title = "Maestro"
-    worksheet.append([
-        "Emisor",
-        "ISIN",
-        "Serie",
-        "Código Producto",
-        "Clasificación",
-        "Reserva Liquidez",
-        "Moneda",
-        "Valor Mercado Colonizado",
-        "Saldo Principal",
-        "Saldo Valor Transado",
-        "Saldo Valor Compra",
-        "Saldo Valor Mercado",
-        "Porcentaje Valor Compra",
-        "Valuacion Acumulada",
-        "Amortizacion Acumulada",
-        "Interes Por Cobrar",
-        "Cantidad Participaciones",
-        "Monto Estimacion",
-        "Monto Deterioro",
-        "TIR",
-        "Tasa Nominal",
-        "Duracion",
-        "DV01",
-        "HHI",
-        "Fecha Vencimiento",
-    ])
-    worksheet.append(["Banco Central", "CR1234567890", "S240327", "TPTBA", "V.C", "S", "CRC", 1000000.0, 1000000.0, 1000000.0, 1000000.0, 980000.0, 95.0, 100000.0, 20000.0, 5000.0, 3000.0, 50.0, 1000.0, 5.2, 4.3, 3.5, 10000.0, 2500.0, "2027-03-24"])
-    worksheet.append(["Banco Central", "CR1234567891", "B180429", "TPTBA", "costo amortizado", "S", "USD", 250000.0, 250000.0, 250000.0, 250000.0, 250000.0, 100.0, 120000.0, 30000.0, 6000.0, 4000.0, 1500.0, 400.0, None, 6.1, 4.2, 12000.0, 3100.0, "2029-04-18"])
-    worksheet.append(["Banco Central", "CR1234567892", "S240328", "TPTBA", "V.C", "S", "CRC", 500000.0, 500000.0, 500000.0, 500000.0, 480000.0, 95.0, 100000.0, 20000.0, 5000.0, 3000.0, 50.0, 1000.0, None, None, 3.5, 10000.0, 2500.0, "2027-03-24"])
+    worksheet.append(
+        [
+            "Emisor",
+            "ISIN",
+            "Serie",
+            "Código Producto",
+            "Clasificación",
+            "Reserva Liquidez",
+            "Moneda",
+            "Valor Mercado Colonizado",
+            "Saldo Principal",
+            "Saldo Valor Transado",
+            "Saldo Valor Compra",
+            "Saldo Valor Mercado",
+            "Porcentaje Valor Compra",
+            "Valuacion Acumulada",
+            "Amortizacion Acumulada",
+            "Interes Por Cobrar",
+            "Cantidad Participaciones",
+            "Monto Estimacion",
+            "Monto Deterioro",
+            "TIR",
+            "Tasa Nominal",
+            "Duracion",
+            "DV01",
+            "HHI",
+            "Fecha Vencimiento",
+        ]
+    )
+    worksheet.append(
+        [
+            "Banco Central",
+            "CR1234567890",
+            "S240327",
+            "TPTBA",
+            "V.C",
+            "S",
+            "CRC",
+            1000000.0,
+            1000000.0,
+            1000000.0,
+            1000000.0,
+            980000.0,
+            95.0,
+            100000.0,
+            20000.0,
+            5000.0,
+            3000.0,
+            50.0,
+            1000.0,
+            5.2,
+            4.3,
+            3.5,
+            10000.0,
+            2500.0,
+            "2027-03-24",
+        ]
+    )
+    worksheet.append(
+        [
+            "Banco Central",
+            "CR1234567891",
+            "B180429",
+            "TPTBA",
+            "costo amortizado",
+            "S",
+            "USD",
+            250000.0,
+            250000.0,
+            250000.0,
+            250000.0,
+            250000.0,
+            100.0,
+            120000.0,
+            30000.0,
+            6000.0,
+            4000.0,
+            1500.0,
+            400.0,
+            None,
+            6.1,
+            4.2,
+            12000.0,
+            3100.0,
+            "2029-04-18",
+        ]
+    )
+    worksheet.append(
+        [
+            "Banco Central",
+            "CR1234567892",
+            "S240328",
+            "TPTBA",
+            "V.C",
+            "S",
+            "CRC",
+            500000.0,
+            500000.0,
+            500000.0,
+            500000.0,
+            480000.0,
+            95.0,
+            100000.0,
+            20000.0,
+            5000.0,
+            3000.0,
+            50.0,
+            1000.0,
+            None,
+            None,
+            3.5,
+            10000.0,
+            2500.0,
+            "2027-03-24",
+        ]
+    )
     workbook.save(workbook_path)
 
     vector_path = vector_root / "VectorPiPCA_20260729.txt"

@@ -28,11 +28,17 @@ def main(argv: list[str] | None = None) -> int:
     qt_app.setApplicationName(APP_NAME)
     qt_app.setApplicationVersion(APP_VERSION)
 
-    config = EnvironmentLoader().load()
-    bootstrap = DemoBootstrap(config)
-    bootstrap.bootstrap(correlation_id="corr-startup")
+    loader = EnvironmentLoader()
+    config = loader.load()
+    source_config = loader.load_source_config()
 
-    application = AIPApplication(raw_args)
+    bootstrap = DemoBootstrap(config, source_config=source_config)
+    factory, _startup_steps = bootstrap.bootstrap(correlation_id="corr-startup")
+
+    application = AIPApplication(
+        raw_args,
+        application_factory=factory,
+    )
     application.create_window()
     return application.exec()
 

@@ -42,7 +42,9 @@ class LiquidityView(QWidget):
             LiquidityMetricCard("Net Cash Flow", self._view_model.summary.net_cash_flow),
             LiquidityMetricCard("Liquidity Gap", self._view_model.summary.liquidity_gap),
             LiquidityMetricCard("HQLA Capacity", self._view_model.summary.hqla_capacity),
-            LiquidityMetricCard("MIL Eligible Capacity", self._view_model.summary.mil_eligible_capacity),
+            LiquidityMetricCard(
+                "MIL Eligible Capacity", self._view_model.summary.mil_eligible_capacity
+            ),
             LiquidityMetricCard("Stress Result", self._view_model.summary.stress_result),
             LiquidityMetricCard("Policy Status", self._view_model.summary.policy_status),
         ]

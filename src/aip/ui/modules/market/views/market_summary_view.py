@@ -13,7 +13,10 @@ class MarketSummaryView(QWidget):
             ("Market Date", getattr(summary, "market_date", "")),
             ("Curves Loaded", str(getattr(summary, "curves_loaded", 0))),
             ("Pricing Date", getattr(summary, "pricing_date", "")),
-            ("Relative Value Opportunities", str(getattr(summary, "relative_value_opportunities", 0))),
+            (
+                "Relative Value Opportunities",
+                str(getattr(summary, "relative_value_opportunities", 0)),
+            ),
             ("Average Yield", getattr(summary, "average_yield", "")),
             ("Average Duration", getattr(summary, "average_duration", "")),
             ("Average Spread", getattr(summary, "average_spread", "")),

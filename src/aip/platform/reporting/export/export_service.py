@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from io import BytesIO, TextIOBase
+from io import BytesIO
 from pathlib import Path
 from typing import BinaryIO
 
@@ -15,7 +15,9 @@ class ExportService:
     is_cancelled: bool = False
     _buffer: BytesIO = field(default_factory=BytesIO, init=False, repr=False)
 
-    def export_file(self, report_id: str, payload: BinaryIO | bytes, *, path: str | None = None) -> str:
+    def export_file(
+        self, report_id: str, payload: BinaryIO | bytes, *, path: str | None = None
+    ) -> str:
         if self.is_cancelled:
             raise RuntimeError("Export cancelled")
         data = payload.read() if hasattr(payload, "read") else payload

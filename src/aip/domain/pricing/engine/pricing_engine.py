@@ -23,7 +23,18 @@ class PricingEngine:
             raise PricingValidationError("Market yield cannot be negative")
 
         try:
-            clean_price, dirty_price, accrued_interest, market_value, yield_rate, duration, modified_duration, convexity, dv01, pvbp = self.pricing_service.price(
+            (
+                clean_price,
+                dirty_price,
+                accrued_interest,
+                market_value,
+                yield_rate,
+                duration,
+                modified_duration,
+                convexity,
+                dv01,
+                pvbp,
+            ) = self.pricing_service.price(
                 request.instrument,
                 valuation_date=request.valuation_date,
                 market_yield=request.market_yield,

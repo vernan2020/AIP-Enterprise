@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from PySide6.QtWidgets import QVBoxLayout, QTableWidget, QTableWidgetItem, QWidget
+from PySide6.QtWidgets import QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget
 
 
 class HealthCenterWidget(QWidget):
@@ -8,7 +8,9 @@ class HealthCenterWidget(QWidget):
         super().__init__()
         self._table = QTableWidget()
         self._table.setColumnCount(6)
-        self._table.setHorizontalHeaderLabels(["Component", "State", "Uptime", "Last Execution", "Response Time", "Warnings/Errors"])
+        self._table.setHorizontalHeaderLabels(
+            ["Component", "State", "Uptime", "Last Execution", "Response Time", "Warnings/Errors"]
+        )
         layout = QVBoxLayout(self)
         layout.addWidget(self._table)
         self._build_rows()

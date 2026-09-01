@@ -38,7 +38,9 @@ class YieldCurve:
         if self.interpolation_strategy == "linear":
             tenors = [point.tenor for point in self.points]
             zero_rates = [point.zero_rate for point in self.points]
-            return interpolate_linear(tenors, zero_rates, tenor, extrapolation=self.extrapolation_policy)
+            return interpolate_linear(
+                tenors, zero_rates, tenor, extrapolation=self.extrapolation_policy
+            )
         raise InterpolationError("Unsupported interpolation strategy")
 
     def discount_factor(self, tenor: Decimal) -> Decimal:

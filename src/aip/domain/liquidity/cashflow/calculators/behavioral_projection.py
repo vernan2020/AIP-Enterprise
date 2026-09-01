@@ -8,7 +8,9 @@ from aip.domain.liquidity.cashflow.models.projection_request import ProjectionRe
 class BehavioralProjection:
     """Apply configurable behavioral assumptions to contractual cash flows."""
 
-    def project(self, request: ProjectionRequest, parent_results: list[object] | None = None) -> tuple[ProjectedCashFlow, ...]:
+    def project(
+        self, request: ProjectionRequest, parent_results: list[object] | None = None
+    ) -> tuple[ProjectedCashFlow, ...]:
         if not request.behavioral_assumptions:
             raise BehavioralError("Behavioral assumptions are required")
         assumption_names = {assumption.name for assumption in request.behavioral_assumptions}
@@ -22,7 +24,9 @@ class BehavioralProjection:
                 for cash_flow in parent_result.contractual_cashflows
             )
         elif isinstance(parent_result, tuple):
-            base_cashflows = tuple(self._as_projected_cashflow(cash_flow) for cash_flow in parent_result)
+            base_cashflows = tuple(
+                self._as_projected_cashflow(cash_flow) for cash_flow in parent_result
+            )
         elif parent_result is not None:
             base_cashflows = (self._as_projected_cashflow(parent_result),)
         if not base_cashflows:
@@ -32,7 +36,9 @@ class BehavioralProjection:
             if cash_flow.amount <= 0:
                 continue
             for assumption in tuple(request.behavioral_assumptions):
-                adjusted_amount = cash_flow.amount * assumption.probability * assumption.effect_ratio
+                adjusted_amount = (
+                    cash_flow.amount * assumption.probability * assumption.effect_ratio
+                )
                 adjusted.append(
                     ProjectedCashFlow(
                         payment_date=cash_flow.payment_date,

@@ -23,15 +23,25 @@ from aip.domain.pricing.exceptions import PricingError
 class PricingService:
     """Application service that selects the appropriate pricer for an instrument."""
 
-    def price(self, instrument: object, *, valuation_date: date, market_yield: Decimal) -> tuple[Decimal, Decimal, Decimal, Decimal, Decimal, Decimal, Decimal, Decimal, Decimal, Decimal]:
+    def price(
+        self, instrument: object, *, valuation_date: date, market_yield: Decimal
+    ) -> tuple[
+        Decimal, Decimal, Decimal, Decimal, Decimal, Decimal, Decimal, Decimal, Decimal, Decimal
+    ]:
         if isinstance(instrument, GovernmentBond):
             return price_bond(instrument, valuation_date=valuation_date, market_yield=market_yield)
         if isinstance(instrument, TreasuryBill):
-            return price_treasury_bill(instrument, valuation_date=valuation_date, market_yield=market_yield)
+            return price_treasury_bill(
+                instrument, valuation_date=valuation_date, market_yield=market_yield
+            )
         if isinstance(instrument, ZeroCouponBond):
-            return price_zero_coupon(instrument, valuation_date=valuation_date, market_yield=market_yield)
+            return price_zero_coupon(
+                instrument, valuation_date=valuation_date, market_yield=market_yield
+            )
         if isinstance(instrument, FloatingRateBond):
-            return price_floating_rate(instrument, valuation_date=valuation_date, market_yield=market_yield)
+            return price_floating_rate(
+                instrument, valuation_date=valuation_date, market_yield=market_yield
+            )
         if isinstance(instrument, CertificateOfDeposit | CommercialPaper | Repo | ReverseRepo):
             return price_bond(instrument, valuation_date=valuation_date, market_yield=market_yield)
         if isinstance(instrument, Cash):

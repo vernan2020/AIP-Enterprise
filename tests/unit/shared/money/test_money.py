@@ -39,6 +39,7 @@ class TestCurrency:
     def test_currency_from_code_invalid_raises_error(self) -> None:
         """Test from_code with invalid code."""
         from src.aip.shared.validation.exceptions import InvalidFormatError
+
         with pytest.raises(InvalidFormatError):
             Currency.from_code("INVALID")
 
@@ -237,44 +238,24 @@ class TestExchangeRate:
 
     def test_exchange_rate_creation(self) -> None:
         """Test ExchangeRate can be created."""
-        rate = ExchangeRate(
-            Currency.USD,
-            Currency.EUR,
-            Decimal("0.92"),
-            date(2024, 7, 27)
-        )
+        rate = ExchangeRate(Currency.USD, Currency.EUR, Decimal("0.92"), date(2024, 7, 27))
         assert rate.from_currency == Currency.USD
         assert rate.to_currency == Currency.EUR
         assert rate.rate == Decimal("0.92")
 
     def test_exchange_rate_string_representation(self) -> None:
         """Test string representation."""
-        rate = ExchangeRate(
-            Currency.USD,
-            Currency.EUR,
-            Decimal("0.92"),
-            date(2024, 7, 27)
-        )
+        rate = ExchangeRate(Currency.USD, Currency.EUR, Decimal("0.92"), date(2024, 7, 27))
         assert "0.92" in str(rate)
 
     def test_exchange_rate_same_currency_raises_error(self) -> None:
         """Test same currency raises error."""
         with pytest.raises(ValueError):
-            ExchangeRate(
-                Currency.USD,
-                Currency.USD,
-                Decimal("1"),
-                date(2024, 7, 27)
-            )
+            ExchangeRate(Currency.USD, Currency.USD, Decimal("1"), date(2024, 7, 27))
 
     def test_exchange_rate_convert(self) -> None:
         """Test currency conversion."""
-        rate = ExchangeRate(
-            Currency.USD,
-            Currency.EUR,
-            Decimal("0.92"),
-            date(2024, 7, 27)
-        )
+        rate = ExchangeRate(Currency.USD, Currency.EUR, Decimal("0.92"), date(2024, 7, 27))
 
         usd_money = Money(Decimal("100"), Currency.USD)
         eur_money = rate.convert(usd_money)
@@ -284,12 +265,7 @@ class TestExchangeRate:
 
     def test_exchange_rate_convert_wrong_currency_raises_error(self) -> None:
         """Test converting wrong currency raises error."""
-        rate = ExchangeRate(
-            Currency.USD,
-            Currency.EUR,
-            Decimal("0.92"),
-            date(2024, 7, 27)
-        )
+        rate = ExchangeRate(Currency.USD, Currency.EUR, Decimal("0.92"), date(2024, 7, 27))
 
         gbp_money = Money(Decimal("100"), Currency.GBP)
 
@@ -298,12 +274,7 @@ class TestExchangeRate:
 
     def test_exchange_rate_inverse(self) -> None:
         """Test inverse exchange rate."""
-        rate = ExchangeRate(
-            Currency.USD,
-            Currency.EUR,
-            Decimal("0.92"),
-            date(2024, 7, 27)
-        )
+        rate = ExchangeRate(Currency.USD, Currency.EUR, Decimal("0.92"), date(2024, 7, 27))
 
         inverse = rate.inverse()
 
@@ -313,12 +284,7 @@ class TestExchangeRate:
 
     def test_exchange_rate_inverse_zero_rate_raises_error(self) -> None:
         """Test inverse raises error for zero rate branch."""
-        rate = ExchangeRate(
-            Currency.USD,
-            Currency.EUR,
-            Decimal("1.0"),
-            date(2024, 7, 27)
-        )
+        rate = ExchangeRate(Currency.USD, Currency.EUR, Decimal("1.0"), date(2024, 7, 27))
         object.__setattr__(rate, "rate", Decimal("0"))
 
         with pytest.raises(ValueError):

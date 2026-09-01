@@ -8,17 +8,24 @@ import pytest
 
 from aip.integration.audit.execution_result import ExecutionStatus
 from aip.integration.audit.synchronization_log import SynchronizationLog
-from aip.integration.contracts.connector import ConnectorType
-from aip.integration.events.synchronization_events import IntegrationEventBus, SynchronizationEvent, SynchronizationEventType
+from aip.integration.events.synchronization_events import (
+    IntegrationEventBus,
+    SynchronizationEvent,
+    SynchronizationEventType,
+)
 from aip.integration.exceptions.exceptions import IntegrationError
 from aip.integration.sqlserver.audit.sql_audit import SQLAudit
 from aip.integration.sqlserver.configuration.sql_config import SQLAuthentication, SQLServerConfig
-from aip.integration.sqlserver.connector.connection_factory import DefaultSQLServerConnectionFactory, SQLServerConnectionFactory
+from aip.integration.sqlserver.connector.connection_factory import (
+    DefaultSQLServerConnectionFactory,
+    SQLServerConnectionFactory,
+)
 from aip.integration.sqlserver.connector.connection_pool import ConnectionPool
 from aip.integration.sqlserver.connector.sql_connector import SQLServerConnector
 from aip.integration.sqlserver.contracts.sql_request import SQLRequest
-from aip.integration.sqlserver.contracts.sql_result import SQLExecutionResult
-from aip.integration.sqlserver.driver.driver_adapter import PyOdbcDriverAdapter, SQLServerDriverAdapter
+from aip.integration.sqlserver.driver.driver_adapter import (
+    PyOdbcDriverAdapter,
+)
 from aip.integration.sqlserver.monitoring.sql_health import SQLHealthMonitor
 from aip.integration.sqlserver.synchronization.sql_synchronizer import SQLSynchronizer
 from aip.integration.sqlserver.telemetry.sql_metrics import SQLMetrics
@@ -72,7 +79,9 @@ class StubFactory(SQLServerConnectionFactory):
 
 
 def test_sql_config_validates_required_settings() -> None:
-    config = SQLServerConfig(connection_string="Server=sql;Database=db", timeout_seconds=15, max_retries=2)
+    config = SQLServerConfig(
+        connection_string="Server=sql;Database=db", timeout_seconds=15, max_retries=2
+    )
     assert config.connection_string == "Server=sql;Database=db"
     assert config.timeout_seconds == 15
     assert config.max_retries == 2
@@ -102,7 +111,9 @@ def test_connection_pool_reuses_and_closes_connections() -> None:
 
 def test_sql_validator_accepts_valid_request_and_rejects_bad_schema() -> None:
     validator = SQLValidator()
-    request = SQLRequest(query_name="select_rows", query_text="SELECT * FROM table", parameters={"id": 1})
+    request = SQLRequest(
+        query_name="select_rows", query_text="SELECT * FROM table", parameters={"id": 1}
+    )
     result = validator.validate(request)
     assert result.ok is True
 
@@ -124,7 +135,9 @@ def test_sql_validator_handles_null_payload_and_bad_paging() -> None:
 
 
 def test_default_connection_factory_creates_cursor_and_connection() -> None:
-    factory = DefaultSQLServerConnectionFactory(SQLServerConfig(connection_string="Server=sql;Database=db"))
+    factory = DefaultSQLServerConnectionFactory(
+        SQLServerConfig(connection_string="Server=sql;Database=db")
+    )
     connection = factory.create_connection()
     cursor = connection.cursor()
     assert cursor.execute("SELECT 1", {"id": 1}).executed == ("SELECT 1", {"id": 1})
@@ -157,7 +170,9 @@ def test_sql_synchronizer_executes_parameterized_queries_and_streams_results() -
 
 
 def test_sql_connector_initializes_with_default_factory() -> None:
-    connector = SQLServerConnector(config=SQLServerConfig(connection_string="Server=sql;Database=db"))
+    connector = SQLServerConnector(
+        config=SQLServerConfig(connection_string="Server=sql;Database=db")
+    )
 
     connector.connect()
     assert connector.health() is True
@@ -324,12 +339,16 @@ def test_sql_synchronizer_returns_failed_result_for_timeout_and_validation_failu
 
     pool = ConnectionPool(factory=BoomFactory(), max_size=1)
     synchronizer = SQLSynchronizer(pool=pool, max_retries=0)
-    result = synchronizer.synchronize(SQLRequest(query_name="boom", query_text="SELECT 1", parameters={}))
+    result = synchronizer.synchronize(
+        SQLRequest(query_name="boom", query_text="SELECT 1", parameters={})
+    )
 
     assert result.status == ExecutionStatus.FAILED
     assert result.errors == ["bad request"]
 
-    failed_validation = synchronizer.synchronize(SQLRequest(query_name="", query_text="", parameters={}))
+    failed_validation = synchronizer.synchronize(
+        SQLRequest(query_name="", query_text="", parameters={})
+    )
     assert failed_validation.status == ExecutionStatus.FAILED
     assert failed_validation.errors
 
@@ -342,7 +361,14 @@ def test_connector_raises_for_cancelled_and_failed_synchronization() -> None:
     )
 
     with pytest.raises(IntegrationError, match="cancelled"):
-        connector.synchronize(SQLRequest(query_name="cancelled", query_text="SELECT 1", parameters={}, cancellation_token="cancelled"))
+        connector.synchronize(
+            SQLRequest(
+                query_name="cancelled",
+                query_text="SELECT 1",
+                parameters={},
+                cancellation_token="cancelled",
+            )
+        )
 
     class BrokenConnection:
         def cursor(self) -> None:
@@ -353,7 +379,9 @@ def test_connector_raises_for_cancelled_and_failed_synchronization() -> None:
 
     class BrokenFactory(SQLServerConnectionFactory):
         def __init__(self) -> None:
-            super().__init__(SQLServerConfig(connection_string="Server=sql;Database=db", max_retries=0))
+            super().__init__(
+                SQLServerConfig(connection_string="Server=sql;Database=db", max_retries=0)
+            )
 
         def create_connection(self) -> Any:
             return BrokenConnection()
@@ -492,7 +520,9 @@ def test_sql_connector_validation_failure_raises_error() -> None:
 
 
 def test_sql_connector_handles_timeout_and_validation_edges() -> None:
-    config = SQLServerConfig(connection_string="Server=sql;Database=db", timeout_seconds=10, max_retries=2)
+    config = SQLServerConfig(
+        connection_string="Server=sql;Database=db", timeout_seconds=10, max_retries=2
+    )
     connector = SQLServerConnector(
         config=config,
         connection_factory=StubFactory(connection=StubConnection()),
@@ -500,7 +530,12 @@ def test_sql_connector_handles_timeout_and_validation_edges() -> None:
     )
 
     assert connector.config.timeout_seconds == 10
-    assert connector.validate(SQLRequest(query_name="select", query_text="SELECT 1", parameters={"id": 1})).ok is True
+    assert (
+        connector.validate(
+            SQLRequest(query_name="select", query_text="SELECT 1", parameters={"id": 1})
+        ).ok
+        is True
+    )
 
 
 def test_sql_connector_validate_and_audit_cover_error_and_fallback_paths() -> None:
@@ -516,7 +551,15 @@ def test_sql_connector_validate_and_audit_cover_error_and_fallback_paths() -> No
         connector.validate(SQLRequest(query_name="", query_text="", parameters={}))
 
     connector.normalize({"x": 1})
-    connector.audit(SynchronizationLog(execution_id="x", correlation_id="y", connector="sqlserver", duration_seconds=0.0, records_processed=0))
+    connector.audit(
+        SynchronizationLog(
+            execution_id="x",
+            correlation_id="y",
+            connector="sqlserver",
+            duration_seconds=0.0,
+            records_processed=0,
+        )
+    )
 
 
 def test_connection_pool_closed_state_and_release_path() -> None:

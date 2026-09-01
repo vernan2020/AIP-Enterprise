@@ -2,10 +2,8 @@ from __future__ import annotations
 
 import os
 import subprocess
-import sys
 import venv
 from pathlib import Path
-import textwrap
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -42,6 +40,17 @@ def test_editable_install_imports_without_repo_path(tmp_path: Path) -> None:
 def test_console_entry_point_is_available_after_install(tmp_path: Path) -> None:
     venv_path = tmp_path / "venv"
     python_exe = _create_venv(venv_path)
-    subprocess.run([str(python_exe), "-m", "pip", "install", "-e", str(ROOT)], cwd=ROOT, check=True, capture_output=True, text=True)
-    entrypoint = subprocess.run([str(venv_path / ("Scripts" if os.name == "nt" else "bin") / "aip-enterprise"), "--help"], cwd=tmp_path, capture_output=True, text=True)
+    subprocess.run(
+        [str(python_exe), "-m", "pip", "install", "-e", str(ROOT)],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    entrypoint = subprocess.run(
+        [str(venv_path / ("Scripts" if os.name == "nt" else "bin") / "aip-enterprise"), "--help"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+    )
     assert entrypoint.returncode == 0

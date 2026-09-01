@@ -54,9 +54,7 @@ class ServiceAlreadyRegisteredError(DIException):
             message: Optional custom error message.
         """
         self.service_type = service_type
-        default_msg = (
-            f"Service of type '{service_type.__name__}' is already registered"
-        )
+        default_msg = f"Service of type '{service_type.__name__}' is already registered"
         super().__init__(message or default_msg)
 
 
@@ -72,9 +70,7 @@ class ResolutionError(DIException):
         """
         self.service_type = service_type
         self.reason = reason
-        message = (
-            f"Failed to resolve service '{service_type.__name__}': {reason}"
-        )
+        message = f"Failed to resolve service '{service_type.__name__}': {reason}"
         super().__init__(message)
 
 
@@ -101,7 +97,6 @@ class ScopeNotActiveError(DIException):
         """
         self.service_type = service_type
         message = (
-            f"Cannot resolve scoped service '{service_type.__name__}' "
-            "outside of an active scope"
+            f"Cannot resolve scoped service '{service_type.__name__}' " "outside of an active scope"
         )
         super().__init__(message)

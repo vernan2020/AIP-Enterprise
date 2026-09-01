@@ -11,7 +11,9 @@ from src.extensions.coopealianza.liquidity.mil.engine.mil_eligibility_engine imp
 from src.extensions.coopealianza.liquidity.mil.models.mil_request import MilRequest
 
 
-def test_hqla_and_mil_results_are_explainable_and_policy_aware(treasury_instrument, mil_asset, mil_config) -> None:
+def test_hqla_and_mil_results_are_explainable_and_policy_aware(
+    treasury_instrument, mil_asset, mil_config
+) -> None:
     hqla_result = HQLAEngine().evaluate(
         HQLARequest(
             valuation_date=date(2026, 1, 1),

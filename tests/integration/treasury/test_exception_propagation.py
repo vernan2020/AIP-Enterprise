@@ -10,7 +10,9 @@ from aip.domain.relative_value.exceptions import CurveNotAvailableError
 from aip.domain.relative_value.models.relative_value_request import RelativeValueRequest
 
 
-def test_exception_propagation_for_invalid_pricing_and_relative_value_inputs(treasury_instrument, analysis_request) -> None:
+def test_exception_propagation_for_invalid_pricing_and_relative_value_inputs(
+    treasury_instrument, analysis_request
+) -> None:
     with pytest.raises(PricingValidationError):
         PricingEngine().price(
             PricingRequest(

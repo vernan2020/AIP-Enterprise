@@ -6,15 +6,24 @@ from pathlib import Path
 import openpyxl
 import pytest
 
-from aip.product.configured.adapters.configured_portfolio_provider import ConfiguredPortfolioProvider
-from aip.product.configured.configuration.configured_source_config import ConfiguredSourceConfig, FolderWatchSourceConfig
-from aip.product.configured.readers.institutional_portfolio_master_reader import InstitutionalPortfolioMasterReader
+from aip.product.configured.adapters.configured_portfolio_provider import (
+    ConfiguredPortfolioProvider,
+)
+from aip.product.configured.configuration.configured_source_config import (
+    ConfiguredSourceConfig,
+    FolderWatchSourceConfig,
+)
+from aip.product.configured.readers.institutional_portfolio_master_reader import (
+    InstitutionalPortfolioMasterReader,
+)
 from aip.product.demo.configuration.demo_config import DemoConfig
 from aip.product.demo.configuration.environment_loader import EnvironmentLoader
 from aip.tools.diagnose_configured_sources import main as diagnose_main
 
 
-def test_environment_loader_defaults_configured_diagnostics_to_false(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_environment_loader_defaults_configured_diagnostics_to_false(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.delenv("AIP_CONFIGURED_DIAGNOSTIC_MODE", raising=False)
     config = EnvironmentLoader().load()
 
@@ -23,16 +32,30 @@ def test_environment_loader_defaults_configured_diagnostics_to_false(monkeypatch
 
 @pytest.mark.parametrize(
     ("value", "expected"),
-    [("true", True), ("1", True), ("yes", True), ("on", True), ("false", False), ("0", False), ("no", False), ("off", False), ("", False)],
+    [
+        ("true", True),
+        ("1", True),
+        ("yes", True),
+        ("on", True),
+        ("false", False),
+        ("0", False),
+        ("no", False),
+        ("off", False),
+        ("", False),
+    ],
 )
-def test_environment_loader_parses_configured_diagnostic_mode_values(monkeypatch: pytest.MonkeyPatch, value: str, expected: bool) -> None:
+def test_environment_loader_parses_configured_diagnostic_mode_values(
+    monkeypatch: pytest.MonkeyPatch, value: str, expected: bool
+) -> None:
     monkeypatch.setenv("AIP_CONFIGURED_DIAGNOSTIC_MODE", value)
     config = EnvironmentLoader().load()
 
     assert config.source_config["diagnostic_mode"] is expected
 
 
-def test_configured_source_config_prefers_explicit_metadata_override_over_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_configured_source_config_prefers_explicit_metadata_override_over_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("AIP_CONFIGURED_DIAGNOSTIC_MODE", "false")
     source_config = ConfiguredSourceConfig(diagnostic_mode=True, metadata={"diagnostic_mode": True})
 
@@ -55,15 +78,23 @@ def test_provider_enables_diagnostics_and_omits_trace_when_disabled(tmp_path: Pa
     workbook.save(maestro_path)
 
     vector_path = vector_dir / "29-07-2026.txt"
-    vector_path.write_text("BCCR  BC12M120826 12/08/2026  100.0 100.008344  2.842 0.000000 0\n", encoding="utf-8")
+    vector_path.write_text(
+        "BCCR  BC12M120826 12/08/2026  100.0 100.008344  2.842 0.000000 0\n", encoding="utf-8"
+    )
 
-    config = DemoConfig(execution_mode="CONFIGURED", demo_mode_enabled=False, data_cutoff_date=date(2026, 7, 29))
+    config = DemoConfig(
+        execution_mode="CONFIGURED", demo_mode_enabled=False, data_cutoff_date=date(2026, 7, 29)
+    )
     enabled_source_config = ConfiguredSourceConfig(
-        folder_watch=FolderWatchSourceConfig(enabled=True, portfolio_root=str(root), vector_path=str(vector_dir)),
+        folder_watch=FolderWatchSourceConfig(
+            enabled=True, portfolio_root=str(root), vector_path=str(vector_dir)
+        ),
         diagnostic_mode=True,
     )
     disabled_source_config = ConfiguredSourceConfig(
-        folder_watch=FolderWatchSourceConfig(enabled=True, portfolio_root=str(root), vector_path=str(vector_dir)),
+        folder_watch=FolderWatchSourceConfig(
+            enabled=True, portfolio_root=str(root), vector_path=str(vector_dir)
+        ),
         diagnostic_mode=False,
     )
 
@@ -77,7 +108,9 @@ def test_provider_enables_diagnostics_and_omits_trace_when_disabled(tmp_path: Pa
     assert "record_trace" not in disabled_payload["portfolio_master"]["diagnostics"]
 
 
-def test_diagnostic_cli_reports_safe_summary_and_exit_code(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+def test_diagnostic_cli_reports_safe_summary_and_exit_code(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     root = tmp_path / "institutional"
     maestro_dir = root / "Inversiones" / "2026" / "maestro" / "julio"
     vector_dir = root / "Inversiones" / "2026" / "vector" / "julio"
@@ -93,7 +126,9 @@ def test_diagnostic_cli_reports_safe_summary_and_exit_code(tmp_path: Path, monke
     workbook.save(maestro_path)
 
     vector_path = vector_dir / "29-07-2026.txt"
-    vector_path.write_text("BCCR  BC12M120826 12/08/2026  100.0 100.008344  2.842 0.000000 0\n", encoding="utf-8")
+    vector_path.write_text(
+        "BCCR  BC12M120826 12/08/2026  100.0 100.008344  2.842 0.000000 0\n", encoding="utf-8"
+    )
 
     monkeypatch.setenv("AIP_EXECUTION_MODE", "CONFIGURED")
     monkeypatch.setenv("AIP_DEMO_MODE_ENABLED", "false")
@@ -114,7 +149,9 @@ def test_diagnostic_cli_reports_safe_summary_and_exit_code(tmp_path: Path, monke
     assert "US1234567890" not in captured.out
 
 
-def test_diagnostic_cli_accepts_configured_mode_from_diagnostic_flag(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+def test_diagnostic_cli_accepts_configured_mode_from_diagnostic_flag(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     root = tmp_path / "institutional"
     maestro_dir = root / "Inversiones" / "2026" / "maestro" / "julio"
     vector_dir = root / "Inversiones" / "2026" / "vector" / "julio"
@@ -130,7 +167,9 @@ def test_diagnostic_cli_accepts_configured_mode_from_diagnostic_flag(tmp_path: P
     workbook.save(maestro_path)
 
     vector_path = vector_dir / "29-07-2026.txt"
-    vector_path.write_text("BCCR  BC12M120826 12/08/2026  100.0 100.008344  2.842 0.000000 0\n", encoding="utf-8")
+    vector_path.write_text(
+        "BCCR  BC12M120826 12/08/2026  100.0 100.008344  2.842 0.000000 0\n", encoding="utf-8"
+    )
 
     monkeypatch.delenv("AIP_EXECUTION_MODE", raising=False)
     monkeypatch.setenv("AIP_DEMO_MODE_ENABLED", "false")
@@ -147,7 +186,9 @@ def test_diagnostic_cli_accepts_configured_mode_from_diagnostic_flag(tmp_path: P
     assert "CONFIGURED SOURCE DIAGNOSTIC" in captured.out
 
 
-def test_price_vector_discovery_filters_pipca_candidates_with_windows_path_and_cli(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_price_vector_discovery_filters_pipca_candidates_with_windows_path_and_cli(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     workspace_root = tmp_path / "Windows Root With Spaces"
     portfolio_root = workspace_root / "Inversiones" / "2026"
     vector_dir = portfolio_root / "vector" / "julio"
@@ -164,7 +205,9 @@ def test_price_vector_discovery_filters_pipca_candidates_with_windows_path_and_c
     workbook.save(maestro_path)
 
     vector_path = vector_dir / "VectorPiPCA_20260729.txt"
-    vector_path.write_text("BCCR  BC12M120826 12/08/2026  100.0 100.008344  2.842 0.000000 0\n", encoding="utf-8")
+    vector_path.write_text(
+        "BCCR  BC12M120826 12/08/2026  100.0 100.008344  2.842 0.000000 0\n", encoding="utf-8"
+    )
 
     monkeypatch.setenv("AIP_EXECUTION_MODE", "CONFIGURED")
     monkeypatch.setenv("AIP_DEMO_MODE_ENABLED", "false")
@@ -175,7 +218,14 @@ def test_price_vector_discovery_filters_pipca_candidates_with_windows_path_and_c
     monkeypatch.setenv("AIP_DATA_CUTOFF_DATE", "2026-07-29")
 
     config = EnvironmentLoader().load()
-    provider = ConfiguredPortfolioProvider(config, ConfiguredSourceConfig.from_safe_dict(config.source_config) if hasattr(ConfiguredSourceConfig, "from_safe_dict") else None)
+    provider = ConfiguredPortfolioProvider(
+        config,
+        (
+            ConfiguredSourceConfig.from_safe_dict(config.source_config)
+            if hasattr(ConfiguredSourceConfig, "from_safe_dict")
+            else None
+        ),
+    )
     payload = provider.get_portfolio()
 
     assert payload["price_vector"]["file_name"] == "VectorPiPCA_20260729.txt"
@@ -193,7 +243,9 @@ def test_price_vector_discovery_filters_pipca_candidates_with_windows_path_and_c
     assert "Status: HEALTHY" in captured.out
 
 
-def test_configured_diagnostics_preserve_series_product_code_maturity_and_isin(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+def test_configured_diagnostics_preserve_series_product_code_maturity_and_isin(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     root = tmp_path / "institutional"
     maestro_dir = root / "Inversiones" / "2026" / "maestro" / "julio"
     vector_dir = root / "Inversiones" / "2026" / "vector" / "julio"
@@ -204,12 +256,23 @@ def test_configured_diagnostics_preserve_series_product_code_maturity_and_isin(t
     workbook = openpyxl.Workbook()
     worksheet = workbook.active
     worksheet.title = "Maestro"
-    worksheet.append(["serie", "código producto", "fecha vencimiento", "isin", "Valor de Mercado", "Valor en Libros"])
+    worksheet.append(
+        [
+            "serie",
+            "código producto",
+            "fecha vencimiento",
+            "isin",
+            "Valor de Mercado",
+            "Valor en Libros",
+        ]
+    )
     worksheet.append(["ABC-001", "BONO", "2029-04-18", "CR123", 1000000, 980000])
     workbook.save(maestro_path)
 
     vector_path = vector_dir / "29-07-2026.txt"
-    vector_path.write_text("BCCR  BC12M120826 12/08/2026  100.0 100.008344  2.842 0.000000 0\n", encoding="utf-8")
+    vector_path.write_text(
+        "BCCR  BC12M120826 12/08/2026  100.0 100.008344  2.842 0.000000 0\n", encoding="utf-8"
+    )
 
     monkeypatch.setenv("AIP_EXECUTION_MODE", "CONFIGURED")
     monkeypatch.setenv("AIP_DEMO_MODE_ENABLED", "false")
@@ -220,15 +283,21 @@ def test_configured_diagnostics_preserve_series_product_code_maturity_and_isin(t
     monkeypatch.setenv("AIP_DATA_CUTOFF_DATE", "2026-07-29")
 
     reader = InstitutionalPortfolioMasterReader()
-    read_result = reader.read(maestro_path, valuation_date_override=date(2026, 7, 29), diagnostic_mode=True)
+    read_result = reader.read(
+        maestro_path, valuation_date_override=date(2026, 7, 29), diagnostic_mode=True
+    )
     assert read_result.normalized_positions[0]["series"] == "ABC-001"
     assert read_result.normalized_positions[0]["product_code"] == "BONO"
     assert read_result.normalized_positions[0]["maturity_date"] == date(2029, 4, 18)
     assert read_result.normalized_positions[0]["isin"] == "CR123"
 
-    config = DemoConfig(execution_mode="CONFIGURED", demo_mode_enabled=False, data_cutoff_date=date(2026, 7, 29))
+    config = DemoConfig(
+        execution_mode="CONFIGURED", demo_mode_enabled=False, data_cutoff_date=date(2026, 7, 29)
+    )
     source_config = ConfiguredSourceConfig(
-        folder_watch=FolderWatchSourceConfig(enabled=True, portfolio_root=str(root), vector_path=str(vector_dir)),
+        folder_watch=FolderWatchSourceConfig(
+            enabled=True, portfolio_root=str(root), vector_path=str(vector_dir)
+        ),
         diagnostic_mode=True,
     )
     provider = ConfiguredPortfolioProvider(config, source_config)

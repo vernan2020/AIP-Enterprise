@@ -53,7 +53,9 @@ class InstrumentFactory:
                 currency=currency,
                 settlement_calendar=kwargs.get("settlement_calendar", "US"),
                 business_day_convention=kwargs.get("business_day_convention", "Following"),
-                day_count_convention=kwargs.get("day_count_convention", DayCountConvention.ACTUAL_365),
+                day_count_convention=kwargs.get(
+                    "day_count_convention", DayCountConvention.ACTUAL_365
+                ),
                 issue_date=kwargs.get("issue_date", date(2024, 1, 1)),
                 settlement_date=kwargs.get("settlement_date", date(2024, 1, 2)),
                 maturity_date=kwargs.get("maturity_date", date(2034, 1, 1)),
@@ -62,7 +64,9 @@ class InstrumentFactory:
                 book_value=kwargs.get("book_value", nominal_value or Decimal("1000")),
                 market_value=kwargs.get("market_value", nominal_value or Decimal("1000")),
                 face_value=kwargs.get("face_value", nominal_value or Decimal("1000")),
-                outstanding_amount=kwargs.get("outstanding_amount", nominal_value or Decimal("1000")),
+                outstanding_amount=kwargs.get(
+                    "outstanding_amount", nominal_value or Decimal("1000")
+                ),
                 yield_rate=kwargs.get("yield_rate", Decimal("0.05")),
                 duration=kwargs.get("duration", Decimal("0")),
                 modified_duration=kwargs.get("modified_duration", Decimal("0")),
@@ -84,7 +88,9 @@ class InstrumentFactory:
                 currency=currency,
                 settlement_calendar=kwargs.get("settlement_calendar", "US"),
                 business_day_convention=kwargs.get("business_day_convention", "Following"),
-                day_count_convention=kwargs.get("day_count_convention", DayCountConvention.ACTUAL_360),
+                day_count_convention=kwargs.get(
+                    "day_count_convention", DayCountConvention.ACTUAL_360
+                ),
                 issue_date=kwargs.get("issue_date", date(2024, 1, 1)),
                 settlement_date=kwargs.get("settlement_date", date(2024, 1, 2)),
                 maturity_date=kwargs.get("maturity_date", date(2024, 4, 1)),
@@ -93,7 +99,9 @@ class InstrumentFactory:
                 book_value=kwargs.get("book_value", nominal_value or Decimal("1000")),
                 market_value=kwargs.get("market_value", nominal_value or Decimal("1000")),
                 face_value=kwargs.get("face_value", nominal_value or Decimal("1000")),
-                outstanding_amount=kwargs.get("outstanding_amount", nominal_value or Decimal("1000")),
+                outstanding_amount=kwargs.get(
+                    "outstanding_amount", nominal_value or Decimal("1000")
+                ),
                 yield_rate=kwargs.get("yield_rate", Decimal("0.05")),
                 duration=kwargs.get("duration", Decimal("0")),
                 modified_duration=kwargs.get("modified_duration", Decimal("0")),
@@ -112,7 +120,9 @@ class InstrumentFactory:
                 currency=currency,
                 settlement_calendar=kwargs.get("settlement_calendar", "US"),
                 business_day_convention=kwargs.get("business_day_convention", "Following"),
-                day_count_convention=kwargs.get("day_count_convention", DayCountConvention.ACTUAL_365),
+                day_count_convention=kwargs.get(
+                    "day_count_convention", DayCountConvention.ACTUAL_365
+                ),
                 issue_date=kwargs.get("issue_date", date(2024, 1, 1)),
                 settlement_date=kwargs.get("settlement_date", date(2024, 1, 2)),
                 maturity_date=kwargs.get("maturity_date", date(2024, 4, 1)),
@@ -121,7 +131,9 @@ class InstrumentFactory:
                 book_value=kwargs.get("book_value", nominal_value or Decimal("1000")),
                 market_value=kwargs.get("market_value", nominal_value or Decimal("1000")),
                 face_value=kwargs.get("face_value", nominal_value or Decimal("1000")),
-                outstanding_amount=kwargs.get("outstanding_amount", nominal_value or Decimal("1000")),
+                outstanding_amount=kwargs.get(
+                    "outstanding_amount", nominal_value or Decimal("1000")
+                ),
                 yield_rate=kwargs.get("yield_rate", Decimal("0.05")),
                 duration=kwargs.get("duration", Decimal("0")),
                 modified_duration=kwargs.get("modified_duration", Decimal("0")),
@@ -143,7 +155,9 @@ class InstrumentFactory:
                 currency=currency,
                 settlement_calendar=kwargs.get("settlement_calendar", "US"),
                 business_day_convention=kwargs.get("business_day_convention", "Following"),
-                day_count_convention=kwargs.get("day_count_convention", DayCountConvention.ACTUAL_360),
+                day_count_convention=kwargs.get(
+                    "day_count_convention", DayCountConvention.ACTUAL_360
+                ),
                 issue_date=kwargs.get("issue_date", date(2024, 1, 1)),
                 settlement_date=kwargs.get("settlement_date", date(2024, 1, 2)),
                 maturity_date=kwargs.get("maturity_date", date(2025, 1, 1)),
@@ -152,7 +166,9 @@ class InstrumentFactory:
                 book_value=kwargs.get("book_value", nominal_value or Decimal("1000")),
                 market_value=kwargs.get("market_value", nominal_value or Decimal("1000")),
                 face_value=kwargs.get("face_value", nominal_value or Decimal("1000")),
-                outstanding_amount=kwargs.get("outstanding_amount", nominal_value or Decimal("1000")),
+                outstanding_amount=kwargs.get(
+                    "outstanding_amount", nominal_value or Decimal("1000")
+                ),
                 yield_rate=kwargs.get("yield_rate", Decimal("0.05")),
                 duration=kwargs.get("duration", Decimal("0")),
                 modified_duration=kwargs.get("modified_duration", Decimal("0")),
@@ -177,7 +193,9 @@ class InstrumentFactory:
                 currency=currency,
                 settlement_calendar=kwargs.get("settlement_calendar", "US"),
                 business_day_convention=kwargs.get("business_day_convention", "Following"),
-                day_count_convention=kwargs.get("day_count_convention", DayCountConvention.ACTUAL_365),
+                day_count_convention=kwargs.get(
+                    "day_count_convention", DayCountConvention.ACTUAL_365
+                ),
                 issue_date=kwargs.get("issue_date", date(2024, 1, 1)),
                 settlement_date=kwargs.get("settlement_date", date(2024, 1, 1)),
                 maturity_date=kwargs.get("maturity_date", date(2024, 1, 1)),
@@ -186,7 +204,9 @@ class InstrumentFactory:
                 book_value=kwargs.get("book_value", nominal_value or Decimal("1000")),
                 market_value=kwargs.get("market_value", nominal_value or Decimal("1000")),
                 face_value=kwargs.get("face_value", nominal_value or Decimal("1000")),
-                outstanding_amount=kwargs.get("outstanding_amount", nominal_value or Decimal("1000")),
+                outstanding_amount=kwargs.get(
+                    "outstanding_amount", nominal_value or Decimal("1000")
+                ),
                 yield_rate=kwargs.get("yield_rate", Decimal("0")),
                 duration=kwargs.get("duration", Decimal("0")),
                 modified_duration=kwargs.get("modified_duration", Decimal("0")),
@@ -204,7 +224,9 @@ class InstrumentFactory:
                 currency=currency,
                 settlement_calendar=kwargs.get("settlement_calendar", "US"),
                 business_day_convention=kwargs.get("business_day_convention", "Following"),
-                day_count_convention=kwargs.get("day_count_convention", DayCountConvention.ACTUAL_365),
+                day_count_convention=kwargs.get(
+                    "day_count_convention", DayCountConvention.ACTUAL_365
+                ),
                 issue_date=kwargs.get("issue_date", date(2024, 1, 1)),
                 settlement_date=kwargs.get("settlement_date", date(2024, 1, 2)),
                 maturity_date=kwargs.get("maturity_date", date(2024, 1, 2)),
@@ -213,7 +235,9 @@ class InstrumentFactory:
                 book_value=kwargs.get("book_value", nominal_value or Decimal("1000")),
                 market_value=kwargs.get("market_value", nominal_value or Decimal("1000")),
                 face_value=kwargs.get("face_value", nominal_value or Decimal("1000")),
-                outstanding_amount=kwargs.get("outstanding_amount", nominal_value or Decimal("1000")),
+                outstanding_amount=kwargs.get(
+                    "outstanding_amount", nominal_value or Decimal("1000")
+                ),
                 yield_rate=kwargs.get("yield_rate", Decimal("0.05")),
                 duration=kwargs.get("duration", Decimal("0")),
                 modified_duration=kwargs.get("modified_duration", Decimal("0")),
@@ -231,7 +255,9 @@ class InstrumentFactory:
                 currency=currency,
                 settlement_calendar=kwargs.get("settlement_calendar", "US"),
                 business_day_convention=kwargs.get("business_day_convention", "Following"),
-                day_count_convention=kwargs.get("day_count_convention", DayCountConvention.ACTUAL_365),
+                day_count_convention=kwargs.get(
+                    "day_count_convention", DayCountConvention.ACTUAL_365
+                ),
                 issue_date=kwargs.get("issue_date", date(2024, 1, 1)),
                 settlement_date=kwargs.get("settlement_date", date(2024, 1, 2)),
                 maturity_date=kwargs.get("maturity_date", date(2024, 2, 2)),
@@ -240,7 +266,9 @@ class InstrumentFactory:
                 book_value=kwargs.get("book_value", nominal_value or Decimal("1000")),
                 market_value=kwargs.get("market_value", nominal_value or Decimal("1000")),
                 face_value=kwargs.get("face_value", nominal_value or Decimal("1000")),
-                outstanding_amount=kwargs.get("outstanding_amount", nominal_value or Decimal("1000")),
+                outstanding_amount=kwargs.get(
+                    "outstanding_amount", nominal_value or Decimal("1000")
+                ),
                 yield_rate=kwargs.get("yield_rate", Decimal("0.05")),
                 duration=kwargs.get("duration", Decimal("0")),
                 modified_duration=kwargs.get("modified_duration", Decimal("0")),
@@ -258,7 +286,9 @@ class InstrumentFactory:
                 currency=currency,
                 settlement_calendar=kwargs.get("settlement_calendar", "US"),
                 business_day_convention=kwargs.get("business_day_convention", "Following"),
-                day_count_convention=kwargs.get("day_count_convention", DayCountConvention.ACTUAL_365),
+                day_count_convention=kwargs.get(
+                    "day_count_convention", DayCountConvention.ACTUAL_365
+                ),
                 issue_date=kwargs.get("issue_date", date(2024, 1, 1)),
                 settlement_date=kwargs.get("settlement_date", date(2024, 1, 2)),
                 maturity_date=kwargs.get("maturity_date", date(2024, 2, 2)),
@@ -267,7 +297,9 @@ class InstrumentFactory:
                 book_value=kwargs.get("book_value", nominal_value or Decimal("1000")),
                 market_value=kwargs.get("market_value", nominal_value or Decimal("1000")),
                 face_value=kwargs.get("face_value", nominal_value or Decimal("1000")),
-                outstanding_amount=kwargs.get("outstanding_amount", nominal_value or Decimal("1000")),
+                outstanding_amount=kwargs.get(
+                    "outstanding_amount", nominal_value or Decimal("1000")
+                ),
                 yield_rate=kwargs.get("yield_rate", Decimal("0.05")),
                 duration=kwargs.get("duration", Decimal("0")),
                 modified_duration=kwargs.get("modified_duration", Decimal("0")),
@@ -285,7 +317,9 @@ class InstrumentFactory:
                 currency=currency,
                 settlement_calendar=kwargs.get("settlement_calendar", "US"),
                 business_day_convention=kwargs.get("business_day_convention", "Following"),
-                day_count_convention=kwargs.get("day_count_convention", DayCountConvention.ACTUAL_365),
+                day_count_convention=kwargs.get(
+                    "day_count_convention", DayCountConvention.ACTUAL_365
+                ),
                 issue_date=kwargs.get("issue_date", date(2024, 1, 1)),
                 settlement_date=kwargs.get("settlement_date", date(2024, 1, 2)),
                 maturity_date=kwargs.get("maturity_date", date(2024, 2, 2)),
@@ -294,7 +328,9 @@ class InstrumentFactory:
                 book_value=kwargs.get("book_value", nominal_value or Decimal("1000")),
                 market_value=kwargs.get("market_value", nominal_value or Decimal("1000")),
                 face_value=kwargs.get("face_value", nominal_value or Decimal("1000")),
-                outstanding_amount=kwargs.get("outstanding_amount", nominal_value or Decimal("1000")),
+                outstanding_amount=kwargs.get(
+                    "outstanding_amount", nominal_value or Decimal("1000")
+                ),
                 yield_rate=kwargs.get("yield_rate", Decimal("0.05")),
                 duration=kwargs.get("duration", Decimal("0")),
                 modified_duration=kwargs.get("modified_duration", Decimal("0")),
@@ -312,7 +348,9 @@ class InstrumentFactory:
                 currency=currency,
                 settlement_calendar=kwargs.get("settlement_calendar", "US"),
                 business_day_convention=kwargs.get("business_day_convention", "Following"),
-                day_count_convention=kwargs.get("day_count_convention", DayCountConvention.ACTUAL_365),
+                day_count_convention=kwargs.get(
+                    "day_count_convention", DayCountConvention.ACTUAL_365
+                ),
                 issue_date=kwargs.get("issue_date", date(2024, 1, 1)),
                 settlement_date=kwargs.get("settlement_date", date(2024, 1, 2)),
                 maturity_date=kwargs.get("maturity_date", date(2024, 2, 2)),
@@ -321,7 +359,9 @@ class InstrumentFactory:
                 book_value=kwargs.get("book_value", nominal_value or Decimal("1000")),
                 market_value=kwargs.get("market_value", nominal_value or Decimal("1000")),
                 face_value=kwargs.get("face_value", nominal_value or Decimal("1000")),
-                outstanding_amount=kwargs.get("outstanding_amount", nominal_value or Decimal("1000")),
+                outstanding_amount=kwargs.get(
+                    "outstanding_amount", nominal_value or Decimal("1000")
+                ),
                 yield_rate=kwargs.get("yield_rate", Decimal("0.05")),
                 duration=kwargs.get("duration", Decimal("0")),
                 modified_duration=kwargs.get("modified_duration", Decimal("0")),

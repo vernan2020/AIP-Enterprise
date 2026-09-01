@@ -178,44 +178,28 @@ class TestLinearInterpolation:
     def test_interpolate_at_first_point(self) -> None:
         """Test interpolation at first point."""
         result = LinearInterpolation.interpolate(
-            Decimal("2"),
-            Decimal("2"),
-            Decimal("100"),
-            Decimal("3"),
-            Decimal("110")
+            Decimal("2"), Decimal("2"), Decimal("100"), Decimal("3"), Decimal("110")
         )
         assert result == Decimal("100.00")
 
     def test_interpolate_at_second_point(self) -> None:
         """Test interpolation at second point."""
         result = LinearInterpolation.interpolate(
-            Decimal("3"),
-            Decimal("2"),
-            Decimal("100"),
-            Decimal("3"),
-            Decimal("110")
+            Decimal("3"), Decimal("2"), Decimal("100"), Decimal("3"), Decimal("110")
         )
         assert result == Decimal("110.00")
 
     def test_interpolate_midpoint(self) -> None:
         """Test interpolation at midpoint."""
         result = LinearInterpolation.interpolate(
-            Decimal("2.5"),
-            Decimal("2"),
-            Decimal("100"),
-            Decimal("3"),
-            Decimal("110")
+            Decimal("2.5"), Decimal("2"), Decimal("100"), Decimal("3"), Decimal("110")
         )
         assert result == Decimal("105.00")
 
     def test_interpolate_outside_range(self) -> None:
         """Test interpolation outside range."""
         result = LinearInterpolation.interpolate(
-            Decimal("4"),
-            Decimal("2"),
-            Decimal("100"),
-            Decimal("3"),
-            Decimal("110")
+            Decimal("4"), Decimal("2"), Decimal("100"), Decimal("3"), Decimal("110")
         )
         assert result == Decimal("120.00")
 
@@ -223,11 +207,7 @@ class TestLinearInterpolation:
         """Test equal x values raises error."""
         with pytest.raises(ValueError):
             LinearInterpolation.interpolate(
-                Decimal("2.5"),
-                Decimal("2"),
-                Decimal("100"),
-                Decimal("2"),
-                Decimal("110")
+                Decimal("2.5"), Decimal("2"), Decimal("100"), Decimal("2"), Decimal("110")
             )
 
     def test_interpolate_curve_simple(self) -> None:

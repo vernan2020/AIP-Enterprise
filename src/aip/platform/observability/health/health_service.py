@@ -7,7 +7,9 @@ class HealthService:
     def __init__(self) -> None:
         self._components: dict[str, ComponentHealth] = {}
 
-    def update_component(self, name: str, status: HealthStatus, details: dict[str, object] | None = None) -> None:
+    def update_component(
+        self, name: str, status: HealthStatus, details: dict[str, object] | None = None
+    ) -> None:
         self._components[name] = ComponentHealth(name=name, status=status, details=details or {})
 
     def snapshot(self) -> dict[str, dict[str, object]]:

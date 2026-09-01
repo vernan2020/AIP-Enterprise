@@ -80,10 +80,15 @@ def equivalent_rate(
     elif from_key == "simple":
         effective_annual = rate
     else:
-        effective_annual = _power(Decimal("1") + rate / Decimal(frequency), Decimal(frequency)) - Decimal("1")
+        effective_annual = _power(
+            Decimal("1") + rate / Decimal(frequency), Decimal(frequency)
+        ) - Decimal("1")
     if to_key == "continuous":
         return Decimal(str(math.log(float(effective_annual + Decimal("1")))))
     if to_key == "simple":
         return effective_annual
     target_frequency = {"annual": 1, "semiannual": 2, "quarterly": 4, "monthly": 12}[to_key]
-    return Decimal(target_frequency) * (_power(Decimal("1") + effective_annual, Decimal("1") / Decimal(target_frequency)) - Decimal("1"))
+    return Decimal(target_frequency) * (
+        _power(Decimal("1") + effective_annual, Decimal("1") / Decimal(target_frequency))
+        - Decimal("1")
+    )

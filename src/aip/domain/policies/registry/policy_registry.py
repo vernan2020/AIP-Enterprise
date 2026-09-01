@@ -22,4 +22,6 @@ class PolicyRegistry:
         return [policy for policy in self._policies.values() if policy.category == category]
 
     def get_by_tags(self, tags: tuple[str, ...]) -> list[Policy]:
-        return [policy for policy in self._policies.values() if set(tags).issubset(set(policy.tags))]
+        return [
+            policy for policy in self._policies.values() if set(tags).issubset(set(policy.tags))
+        ]

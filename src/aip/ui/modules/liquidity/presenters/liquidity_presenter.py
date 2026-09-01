@@ -10,10 +10,20 @@ class LiquidityPresenter:
     """Presenter that adapts application-layer liquidity results into an immutable view model."""
 
     def __init__(self, demo_factory: DemoApplicationFactory | None = None) -> None:
-        self._demo_factory = demo_factory or DemoApplicationFactory(DemoConfig(execution_mode="DEMO", demo_mode_enabled=True))
+        self._demo_factory = demo_factory or DemoApplicationFactory(
+            DemoConfig(execution_mode="DEMO", demo_mode_enabled=True)
+        )
         self._correlation_id = "corr-demo-liquidity"
 
-    def build_view_model(self, *, theme: str = "light", filters: dict[str, str] | None = None, selected_section: str | None = None, loading: bool = False, error: str | None = None) -> LiquidityViewModel:
+    def build_view_model(
+        self,
+        *,
+        theme: str = "light",
+        filters: dict[str, str] | None = None,
+        selected_section: str | None = None,
+        loading: bool = False,
+        error: str | None = None,
+    ) -> LiquidityViewModel:
         workflow_result = self._demo_factory.initial_load_workflow().execute(self._correlation_id)
         liquidity = workflow_result["liquidity"]
         summary = type(
@@ -31,23 +41,52 @@ class LiquidityPresenter:
             },
         )()
         cashflow_rows = tuple(
-            LiquidityRow(section=row["section"], label=row["label"], value=row["value"], bucket=row.get("bucket", ""), status=row.get("status", "Healthy"))
+            LiquidityRow(
+                section=row["section"],
+                label=row["label"],
+                value=row["value"],
+                bucket=row.get("bucket", ""),
+                status=row.get("status", "Healthy"),
+            )
             for row in liquidity["cashflows"]
         )
         gap_rows = tuple(
-            LiquidityRow(section=row["section"], label=row["label"], value=row["value"], bucket=row.get("bucket", ""), status=row.get("status", "Balanced"))
+            LiquidityRow(
+                section=row["section"],
+                label=row["label"],
+                value=row["value"],
+                bucket=row.get("bucket", ""),
+                status=row.get("status", "Balanced"),
+            )
             for row in liquidity["gaps"]
         )
         hqla_rows = tuple(
-            LiquidityRow(section=row["section"], label=row["label"], value=row["value"], policy_reference=row.get("policy_reference", ""), status=row.get("status", "Eligible"))
+            LiquidityRow(
+                section=row["section"],
+                label=row["label"],
+                value=row["value"],
+                policy_reference=row.get("policy_reference", ""),
+                status=row.get("status", "Eligible"),
+            )
             for row in liquidity["hqla_rows"]
         )
         mil_rows = tuple(
-            LiquidityRow(section=row["section"], label=row["label"], value=row["value"], policy_reference=row.get("policy_reference", ""), status=row.get("status", "Eligible"))
+            LiquidityRow(
+                section=row["section"],
+                label=row["label"],
+                value=row["value"],
+                policy_reference=row.get("policy_reference", ""),
+                status=row.get("status", "Eligible"),
+            )
             for row in liquidity["mil_rows"]
         )
         stress_rows = tuple(
-            LiquidityRow(section=row["section"], label=row["label"], value=row["value"], status=row.get("status", "Stable"))
+            LiquidityRow(
+                section=row["section"],
+                label=row["label"],
+                value=row["value"],
+                status=row.get("status", "Stable"),
+            )
             for row in liquidity["stress_rows"]
         )
         return LiquidityViewModel(
@@ -61,15 +100,25 @@ class LiquidityPresenter:
             selected_section=selected_section,
             theme=theme,
             status="error" if error else "loaded",
-            warnings=("Application workflow returned a warning",) if not loading and not error else (),
+            warnings=(
+                ("Application workflow returned a warning",) if not loading and not error else ()
+            ),
             calculation_id=workflow_result["calculation_references"]["liquidity"],
             correlation_id=self._correlation_id,
             loading=loading,
             error=error,
         )
 
-    def refresh(self, *, theme: str = "light", filters: dict[str, str] | None = None, selected_section: str | None = None) -> LiquidityViewModel:
-        return self.build_view_model(theme=theme, filters=filters, selected_section=selected_section)
+    def refresh(
+        self,
+        *,
+        theme: str = "light",
+        filters: dict[str, str] | None = None,
+        selected_section: str | None = None,
+    ) -> LiquidityViewModel:
+        return self.build_view_model(
+            theme=theme, filters=filters, selected_section=selected_section
+        )
 
     def select(self, section: str | None) -> LiquidityViewModel:
         return self.build_view_model(selected_section=section)

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import csv
-import os
 import re
 import sys
 from collections import defaultdict
@@ -11,7 +10,9 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
 
-from aip.product.configured.adapters.configured_portfolio_provider import ConfiguredPortfolioProvider
+from aip.product.configured.adapters.configured_portfolio_provider import (
+    ConfiguredPortfolioProvider,
+)
 from aip.product.configured.configuration.configured_source_config import (
     BCCRSourceConfig,
     ConfiguredSourceConfig,
@@ -40,9 +41,13 @@ def _build_config() -> tuple[DemoConfig, ConfiguredSourceConfig]:
             enabled=bool(source_config_payload.get("sql_server", {}).get("enabled", False)),
             server=source_config_payload.get("sql_server", {}).get("server"),
             database=source_config_payload.get("sql_server", {}).get("database"),
-            authentication_mode=source_config_payload.get("sql_server", {}).get("authentication_mode", "windows"),
+            authentication_mode=source_config_payload.get("sql_server", {}).get(
+                "authentication_mode", "windows"
+            ),
             view=source_config_payload.get("sql_server", {}).get("view", "VISTA_1514_1515_1516"),
-            scenario_filters=tuple(source_config_payload.get("sql_server", {}).get("scenario_filters", ())),
+            scenario_filters=tuple(
+                source_config_payload.get("sql_server", {}).get("scenario_filters", ())
+            ),
         ),
         folder_watch=FolderWatchSourceConfig(
             enabled=bool(source_config_payload.get("folder_watch", {}).get("enabled", False)),
@@ -50,8 +55,12 @@ def _build_config() -> tuple[DemoConfig, ConfiguredSourceConfig]:
             icl_root=source_config_payload.get("folder_watch", {}).get("icl_root"),
             curves_path=source_config_payload.get("folder_watch", {}).get("curves_path"),
             vector_path=source_config_payload.get("folder_watch", {}).get("vector_path"),
-            portfolio_master_pattern=source_config_payload.get("folder_watch", {}).get("portfolio_master_pattern", r"Inversiones\{year}\maestro\{month}\*.xls*"),
-            icl_file_pattern=source_config_payload.get("folder_watch", {}).get("icl_file_pattern", r"ICL\Reportes ICL\*"),
+            portfolio_master_pattern=source_config_payload.get("folder_watch", {}).get(
+                "portfolio_master_pattern", r"Inversiones\{year}\maestro\{month}\*.xls*"
+            ),
+            icl_file_pattern=source_config_payload.get("folder_watch", {}).get(
+                "icl_file_pattern", r"ICL\Reportes ICL\*"
+            ),
         ),
         curves=CurvesSourceConfig(
             enabled=bool(source_config_payload.get("curves", {}).get("enabled", False)),
@@ -62,20 +71,28 @@ def _build_config() -> tuple[DemoConfig, ConfiguredSourceConfig]:
             enabled=bool(source_config_payload.get("vector", {}).get("enabled", False)),
             path=source_config_payload.get("vector", {}).get("path"),
             root=source_config_payload.get("vector", {}).get("root"),
-            directory_aliases=tuple(source_config_payload.get("vector", {}).get("directory_aliases", ())),
+            directory_aliases=tuple(
+                source_config_payload.get("vector", {}).get("directory_aliases", ())
+            ),
             file_pattern=source_config_payload.get("vector", {}).get("file_pattern"),
-            supported_extensions=tuple(source_config_payload.get("vector", {}).get("supported_extensions", ())),
+            supported_extensions=tuple(
+                source_config_payload.get("vector", {}).get("supported_extensions", ())
+            ),
         ),
         bccr=BCCRSourceConfig(
             enabled=bool(source_config_payload.get("bccr", {}).get("enabled", False)),
             base_url=source_config_payload.get("bccr", {}).get("base_url"),
-            timeout_seconds=float(source_config_payload.get("bccr", {}).get("timeout_seconds", 30.0)),
+            timeout_seconds=float(
+                source_config_payload.get("bccr", {}).get("timeout_seconds", 30.0)
+            ),
             retries=int(source_config_payload.get("bccr", {}).get("retries", 3)),
             cache_enabled=bool(source_config_payload.get("bccr", {}).get("cache_enabled", True)),
         ),
         diagnostic_mode=bool(source_config_payload.get("diagnostic_mode", False)),
         metadata={
-            "allow_prior_source_date": bool(source_config_payload.get("allow_prior_source_date", False)),
+            "allow_prior_source_date": bool(
+                source_config_payload.get("allow_prior_source_date", False)
+            ),
             "data_cutoff_date": source_config_payload.get("data_cutoff_date"),
         },
     )
@@ -103,7 +120,9 @@ def _coerce_decimal(value: Any) -> Decimal:
 def _format_decimal(value: Decimal | None, *, decimals: int = 2) -> str:
     if value is None:
         return ""
-    return format(value.quantize(Decimal("1" if decimals == 0 else f"1.{'0' * decimals}")), f",.{decimals}f")
+    return format(
+        value.quantize(Decimal("1" if decimals == 0 else f"1.{'0' * decimals}")), f",.{decimals}f"
+    )
 
 
 def _normalize_key(value: Any) -> str:
@@ -135,9 +154,13 @@ def _looks_like_monetary_field(name: str) -> bool:
     return any(marker in normalized for marker in monetary_markers)
 
 
-def _read_master_positions(master_path: str | Path, *, cutoff_date: date, provider: ConfiguredPortfolioProvider) -> list[dict[str, Any]]:
+def _read_master_positions(
+    master_path: str | Path, *, cutoff_date: date, provider: ConfiguredPortfolioProvider
+) -> list[dict[str, Any]]:
     reader = InstitutionalPortfolioMasterReader()
-    read_result = reader.read(master_path, valuation_date_override=cutoff_date, diagnostic_mode=True)
+    read_result = reader.read(
+        master_path, valuation_date_override=cutoff_date, diagnostic_mode=True
+    )
     positions: list[dict[str, Any]] = []
     for raw_position in read_result.normalized_positions:
         source_values = raw_position.get("source_values", {}) or {}
@@ -146,9 +169,14 @@ def _read_master_positions(master_path: str | Path, *, cutoff_date: date, provid
             "issuer": raw_position.get("issuer", ""),
             "series": raw_position.get("series", ""),
             "product_code": raw_position.get("product_code", ""),
-            "instrument": raw_position.get("product_code") or raw_position.get("series") or raw_position.get("contract_number") or "Instrument",
+            "instrument": raw_position.get("product_code")
+            or raw_position.get("series")
+            or raw_position.get("contract_number")
+            or "Instrument",
             "currency": str(raw_position.get("currency", "USD")).upper(),
-            "nominal": float(raw_position.get("traded_balance") or raw_position.get("principal_balance") or 0.0),
+            "nominal": float(
+                raw_position.get("traded_balance") or raw_position.get("principal_balance") or 0.0
+            ),
             "market_value": float(raw_position.get("market_value", 0.0) or 0.0),
             "book_value": float(raw_position.get("book_value", 0.0) or 0.0),
             "yield_value": float(raw_position.get("portfolio_yield", 0.0) or 0.0),
@@ -169,12 +197,16 @@ def _read_master_positions(master_path: str | Path, *, cutoff_date: date, provid
             "portfolio_yield": float(raw_position.get("portfolio_yield", 0.0) or 0.0),
             "liquidity_reserve_flag": raw_position.get("liquidity_reserve_flag", ""),
         }
-        payload_position["source_values"] = {str(key): value for key, value in source_values.items()} 
+        payload_position["source_values"] = {
+            str(key): value for key, value in source_values.items()
+        }
         positions.append(payload_position)
     return positions
 
 
-def _read_vector_records(vector_path: str | Path, *, cutoff_date: date, provider: ConfiguredPortfolioProvider) -> list[dict[str, Any]]:
+def _read_vector_records(
+    vector_path: str | Path, *, cutoff_date: date, provider: ConfiguredPortfolioProvider
+) -> list[dict[str, Any]]:
     reader = InstitutionalPiPCAVectorReader()
     read_result = reader.read(vector_path, source_cutoff=cutoff_date, diagnostic_mode=True)
     return [provider._normalize_vector_record(record) for record in read_result.records]
@@ -183,7 +215,9 @@ def _read_vector_records(vector_path: str | Path, *, cutoff_date: date, provider
 def _build_reconciliation_rows(enriched_positions: list[dict[str, Any]]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for position in enriched_positions:
-        vector_record = position.get("matched_vector_record") or position.get("vector_record") or None
+        vector_record = (
+            position.get("matched_vector_record") or position.get("vector_record") or None
+        )
         pipca_price = None
         pipca_yield = None
         if isinstance(vector_record, dict):
@@ -193,33 +227,51 @@ def _build_reconciliation_rows(enriched_positions: list[dict[str, Any]]) -> list
         aip_market_value = master_market_value
         if position.get("market_value_crc") not in (None, 0):
             aip_market_value = _coerce_decimal(position.get("market_value_crc"))
-        if isinstance(vector_record, dict) and pipca_price is not None and position.get("nominal") not in (None, 0):
+        if (
+            isinstance(vector_record, dict)
+            and pipca_price is not None
+            and position.get("nominal") not in (None, 0)
+        ):
             nominal = _coerce_decimal(position.get("nominal"))
             aip_market_value = (nominal * pipca_price) / Decimal("100")
         market_value_difference = aip_market_value - master_market_value
-        reserve_liquidity = position.get("source_values", {}).get("reserve liquidity") or position.get("source_values", {}).get("reserva liquidez") or position.get("liquidity_reserve_flag") or ""
+        reserve_liquidity = (
+            position.get("source_values", {}).get("reserve liquidity")
+            or position.get("source_values", {}).get("reserva liquidez")
+            or position.get("liquidity_reserve_flag")
+            or ""
+        )
         source_row = position.get("source_row")
-        rows.append({
-            "source_row": int(source_row) if source_row is not None else "",
-            "issuer": position.get("issuer", ""),
-            "source_values": position.get("source_values", {}),
-            "ISIN": position.get("isin", ""),
-            "series": position.get("series", ""),
-            "product_code": position.get("product_code", ""),
-            "currency": position.get("currency", ""),
-            "classification": position.get("classification", ""),
-            "reserve_liquidity": reserve_liquidity,
-            "nominal": _coerce_decimal(position.get("nominal")),
-            "book_value": _coerce_decimal(position.get("book_value")),
-            "master_market_value": master_market_value,
-            "matched_status": position.get("match_status") or position.get("vector_match", {}).get("match_status") or "UNMATCHED",
-            "match_method": position.get("match_method", "NO_VECTOR_MATCH"),
-            "pipca_price": _coerce_decimal(pipca_price) if pipca_price is not None else Decimal("0"),
-            "pipca_yield": _coerce_decimal(pipca_yield) if pipca_yield is not None else Decimal("0"),
-            "aip_market_value": aip_market_value,
-            "market_value_difference": market_value_difference,
-            "reason": position.get("reason_no_match") or ("matched" if position.get("match_status") == "MATCHED" else "unmatched"),
-        })
+        rows.append(
+            {
+                "source_row": int(source_row) if source_row is not None else "",
+                "issuer": position.get("issuer", ""),
+                "source_values": position.get("source_values", {}),
+                "ISIN": position.get("isin", ""),
+                "series": position.get("series", ""),
+                "product_code": position.get("product_code", ""),
+                "currency": position.get("currency", ""),
+                "classification": position.get("classification", ""),
+                "reserve_liquidity": reserve_liquidity,
+                "nominal": _coerce_decimal(position.get("nominal")),
+                "book_value": _coerce_decimal(position.get("book_value")),
+                "master_market_value": master_market_value,
+                "matched_status": position.get("match_status")
+                or position.get("vector_match", {}).get("match_status")
+                or "UNMATCHED",
+                "match_method": position.get("match_method", "NO_VECTOR_MATCH"),
+                "pipca_price": (
+                    _coerce_decimal(pipca_price) if pipca_price is not None else Decimal("0")
+                ),
+                "pipca_yield": (
+                    _coerce_decimal(pipca_yield) if pipca_yield is not None else Decimal("0")
+                ),
+                "aip_market_value": aip_market_value,
+                "market_value_difference": market_value_difference,
+                "reason": position.get("reason_no_match")
+                or ("matched" if position.get("match_status") == "MATCHED" else "unmatched"),
+            }
+        )
     return rows
 
 
@@ -232,7 +284,9 @@ def _build_group_summaries(rows: list[dict[str, Any]]) -> dict[str, list[tuple[s
             bucket_total = buckets[key][0] + _coerce_decimal(row.get("master_market_value"))
             bucket_count = buckets[key][1] + 1
             buckets[key] = (bucket_total, bucket_count)
-        groups[field_name] = [(key, total, count) for key, (total, count) in sorted(buckets.items())]
+        groups[field_name] = [
+            (key, total, count) for key, (total, count) in sorted(buckets.items())
+        ]
     return groups
 
 
@@ -312,8 +366,16 @@ def _print_fx_diagnostic(rows: list[dict[str, Any]]) -> None:
         if currency != "USD":
             continue
         source_values = row.get("source_values", {}) or {}
-        colonized = _coerce_decimal(source_values.get("valor mercado colonizado") if source_values.get("valor mercado colonizado") is not None else source_values.get("market value colonized"))
-        market_value = _coerce_decimal(source_values.get("saldo valor mercado") if source_values.get("saldo valor mercado") is not None else source_values.get("market value"))
+        colonized = _coerce_decimal(
+            source_values.get("valor mercado colonizado")
+            if source_values.get("valor mercado colonizado") is not None
+            else source_values.get("market value colonized")
+        )
+        market_value = _coerce_decimal(
+            source_values.get("saldo valor mercado")
+            if source_values.get("saldo valor mercado") is not None
+            else source_values.get("market value")
+        )
         if colonized == 0 or market_value == 0:
             continue
         implied_fx = colonized / market_value
@@ -323,7 +385,32 @@ def _print_fx_diagnostic(rows: list[dict[str, Any]]) -> None:
         print("  not available in Master; no USD rows with both fields")
         return
     ratios = [ratio for _, ratio in usd_rows]
-    weighted_ratio = sum((ratio * _coerce_decimal(row.get("source_values", {}).get("saldo valor mercado") or Decimal("0")) for row, ratio in usd_rows), Decimal("0")) / sum((_coerce_decimal(row.get("source_values", {}).get("saldo valor mercado") or Decimal("0")) for row, _ in usd_rows), Decimal("1")) if any(_coerce_decimal(row.get("source_values", {}).get("saldo valor mercado") or Decimal("0")) for row, _ in usd_rows) else Decimal("0")
+    weighted_ratio = (
+        sum(
+            (
+                ratio
+                * _coerce_decimal(
+                    row.get("source_values", {}).get("saldo valor mercado") or Decimal("0")
+                )
+                for row, ratio in usd_rows
+            ),
+            Decimal("0"),
+        )
+        / sum(
+            (
+                _coerce_decimal(
+                    row.get("source_values", {}).get("saldo valor mercado") or Decimal("0")
+                )
+                for row, _ in usd_rows
+            ),
+            Decimal("1"),
+        )
+        if any(
+            _coerce_decimal(row.get("source_values", {}).get("saldo valor mercado") or Decimal("0"))
+            for row, _ in usd_rows
+        )
+        else Decimal("0")
+    )
     print("USD FX DIAGNOSTIC")
     print(f"  usd_rows: {len(usd_rows)}")
     print(f"  min_implied_fx: {_format_decimal(min(ratios))}")
@@ -347,21 +434,47 @@ def _print_value_bridge(rows: list[dict[str, Any]]) -> None:
         if field_name == "book_value":
             value = sum((_coerce_decimal(row.get("book_value")) for row in rows), Decimal("0"))
         else:
-            value = sum((_coerce_decimal(row.get("source_values", {}).get(field_name)) for row in rows), Decimal("0"))
+            value = sum(
+                (_coerce_decimal(row.get("source_values", {}).get(field_name)) for row in rows),
+                Decimal("0"),
+            )
         print(f"{label}: {_format_decimal(value)}")
         print(f"  difference_to_control: {_format_decimal(value - control_value)}")
 
 
 def _print_top_usd_positions(rows: list[dict[str, Any]]) -> None:
     usd_rows = [row for row in rows if str(row.get("currency", "")).strip().upper() == "USD"]
-    usd_rows = sorted(usd_rows, key=lambda item: (_coerce_decimal(item.get("source_values", {}).get("saldo valor mercado") or item.get("source_values", {}).get("market value") or Decimal("0")), _coerce_decimal(item.get("source_values", {}).get("valor mercado colonizado") or Decimal("0"))), reverse=True)[:30]
+    usd_rows = sorted(
+        usd_rows,
+        key=lambda item: (
+            _coerce_decimal(
+                item.get("source_values", {}).get("saldo valor mercado")
+                or item.get("source_values", {}).get("market value")
+                or Decimal("0")
+            ),
+            _coerce_decimal(
+                item.get("source_values", {}).get("valor mercado colonizado") or Decimal("0")
+            ),
+        ),
+        reverse=True,
+    )[:30]
     print("TOP 30 USD POSITIONS")
     for index, row in enumerate(usd_rows, start=1):
         source_values = row.get("source_values", {}) or {}
-        colonized = _coerce_decimal(source_values.get("valor mercado colonizado") or source_values.get("market value colonized") or Decimal("0"))
-        market_value = _coerce_decimal(source_values.get("saldo valor mercado") or source_values.get("market value") or Decimal("0"))
+        colonized = _coerce_decimal(
+            source_values.get("valor mercado colonizado")
+            or source_values.get("market value colonized")
+            or Decimal("0")
+        )
+        market_value = _coerce_decimal(
+            source_values.get("saldo valor mercado")
+            or source_values.get("market value")
+            or Decimal("0")
+        )
         implied_fx = colonized / market_value if market_value != 0 else Decimal("0")
-        print(f"{index}. {row.get('issuer')} / {row.get('series')} / {row.get('product_code')} saldo_valor_mercado={_format_decimal(market_value)} valor_mercado_colonizado={_format_decimal(colonized)} implied_fx={_format_decimal(implied_fx)}")
+        print(
+            f"{index}. {row.get('issuer')} / {row.get('series')} / {row.get('product_code')} saldo_valor_mercado={_format_decimal(market_value)} valor_mercado_colonizado={_format_decimal(colonized)} implied_fx={_format_decimal(implied_fx)}"
+        )
 
 
 def _print_difference_rows(rows: list[dict[str, Any]]) -> None:
@@ -374,6 +487,7 @@ def _print_difference_rows(rows: list[dict[str, Any]]) -> None:
         if field_name == "saldo valor mercado":
             return _coerce_decimal(source_values.get("market value") or Decimal("0"))
         return Decimal("0")
+
     differences = []
     for row in rows:
         colonized = _field_value(row, "valor mercado colonizado")
@@ -382,10 +496,11 @@ def _print_difference_rows(rows: list[dict[str, Any]]) -> None:
     differences.sort(key=lambda item: item[0], reverse=True)
     print("TOP 30 POSITIONS CONTRIBUTING TO DIFFERENCE")
     for index, (_, row) in enumerate(differences[:30], start=1):
-        source_values = row.get("source_values", {}) or {}
         colonized = _field_value(row, "valor mercado colonizado")
         market_value = _field_value(row, "saldo valor mercado")
-        print(f"{index}. {row.get('issuer')} / {row.get('series')} / {row.get('product_code')} colonized={_format_decimal(colonized)} market_value={_format_decimal(market_value)} difference={_format_decimal(abs(colonized - market_value))}")
+        print(
+            f"{index}. {row.get('issuer')} / {row.get('series')} / {row.get('product_code')} colonized={_format_decimal(colonized)} market_value={_format_decimal(market_value)} difference={_format_decimal(abs(colonized - market_value))}"
+        )
 
 
 def _print_report(rows: list[dict[str, Any]], *, output_path: Path, cutoff_date: date) -> None:
@@ -398,9 +513,15 @@ def _print_report(rows: list[dict[str, Any]], *, output_path: Path, cutoff_date:
     totals = {
         "nominal": sum((_coerce_decimal(row.get("nominal")) for row in rows), Decimal("0")),
         "book_value": sum((_coerce_decimal(row.get("book_value")) for row in rows), Decimal("0")),
-        "master_market_value": sum((_coerce_decimal(row.get("master_market_value")) for row in rows), Decimal("0")),
-        "aip_market_value": sum((_coerce_decimal(row.get("aip_market_value")) for row in rows), Decimal("0")),
-        "market_value_difference": sum((_coerce_decimal(row.get("market_value_difference")) for row in rows), Decimal("0")),
+        "master_market_value": sum(
+            (_coerce_decimal(row.get("master_market_value")) for row in rows), Decimal("0")
+        ),
+        "aip_market_value": sum(
+            (_coerce_decimal(row.get("aip_market_value")) for row in rows), Decimal("0")
+        ),
+        "market_value_difference": sum(
+            (_coerce_decimal(row.get("market_value_difference")) for row in rows), Decimal("0")
+        ),
     }
     for label, value in totals.items():
         print(f"{label}: {_format_decimal(value)}")
@@ -408,9 +529,23 @@ def _print_report(rows: list[dict[str, Any]], *, output_path: Path, cutoff_date:
     print("MONETARY FIELDS FROM MASTER")
     monetary_fields: dict[str, Decimal] = {}
     for row in rows:
-        for key in ("nominal", "book_value", "master_market_value", "aip_market_value", "market_value_difference"):
-            monetary_fields[key] = monetary_fields.get(key, Decimal("0")) + _coerce_decimal(row.get(key))
-    for key in ("nominal", "book_value", "master_market_value", "aip_market_value", "market_value_difference"):
+        for key in (
+            "nominal",
+            "book_value",
+            "master_market_value",
+            "aip_market_value",
+            "market_value_difference",
+        ):
+            monetary_fields[key] = monetary_fields.get(key, Decimal("0")) + _coerce_decimal(
+                row.get(key)
+            )
+    for key in (
+        "nominal",
+        "book_value",
+        "master_market_value",
+        "aip_market_value",
+        "market_value_difference",
+    ):
         print(f"{key}: {_format_decimal(monetary_fields.get(key))}")
     print()
     _print_master_field_diagnostics(rows)
@@ -434,10 +569,9 @@ def _print_report(rows: list[dict[str, Any]], *, output_path: Path, cutoff_date:
         print(f"{key}: rows={count} total_market_value={_format_decimal(total)}")
     print()
     print("AMORTIZED COST VS MARKET PRICED")
-    amortized = sum(1 for row in rows if "amort" in str(row.get("classification", "")).lower())
     market_priced = 139
     other_expected_exclusions = 8
-    print(f"amortized_cost_positions: 45")
+    print("amortized_cost_positions: 45")
     print(f"market_priced_positions: {market_priced}")
     print(f"other_expected_exclusions: {other_expected_exclusions}")
     print()
@@ -451,16 +585,24 @@ def _print_report(rows: list[dict[str, Any]], *, output_path: Path, cutoff_date:
     _print_top_usd_positions(rows)
     print()
     print("TOP 30 DIFFERENCES")
-    top_rows = sorted(rows, key=lambda item: abs(_coerce_decimal(item.get("market_value_difference"))), reverse=True)[:30]
+    top_rows = sorted(
+        rows,
+        key=lambda item: abs(_coerce_decimal(item.get("market_value_difference"))),
+        reverse=True,
+    )[:30]
     for index, row in enumerate(top_rows, start=1):
-        print(f"{index}. {row.get('issuer')} / {row.get('series')} diff={_format_decimal(_coerce_decimal(row.get('market_value_difference')))} matched={row.get('matched_status')}")
+        print(
+            f"{index}. {row.get('issuer')} / {row.get('series')} diff={_format_decimal(_coerce_decimal(row.get('market_value_difference')))} matched={row.get('matched_status')}"
+        )
     print()
     print("TOP 30 POSITIONS CONTRIBUTING TO DIFFERENCE")
     _print_difference_rows(rows)
     print()
     print("METRIC DIAGNOSTICS")
     _print_metric_diagnostic("TIR", rows, control_value=Decimal("5.18"), percent=True)
-    _print_metric_diagnostic("Modified Duration", rows, control_value=Decimal("1.14"), percent=False)
+    _print_metric_diagnostic(
+        "Modified Duration", rows, control_value=Decimal("1.14"), percent=False
+    )
     _print_metric_diagnostic("HQLA", rows, control_value=Decimal("68.15"), percent=True)
     _print_metric_diagnostic("DV01", rows, control_value=Decimal("34297690"), percent=False)
     _print_metric_diagnostic("HHI", rows, control_value=Decimal("3610"), percent=False)
@@ -472,19 +614,31 @@ def _print_report(rows: list[dict[str, Any]], *, output_path: Path, cutoff_date:
     _print_control_comparison(rows)
 
 
-def _print_metric_diagnostic(name: str, rows: list[dict[str, Any]], *, control_value: Decimal, percent: bool) -> None:
+def _print_metric_diagnostic(
+    name: str, rows: list[dict[str, Any]], *, control_value: Decimal, percent: bool
+) -> None:
     if name == "TIR":
         tir_values = []
         for row in rows:
             source_values = row.get("source_values", {}) or {}
-            raw_tir = source_values.get("tir") or source_values.get("portfolio yield") or source_values.get("yield")
+            raw_tir = (
+                source_values.get("tir")
+                or source_values.get("portfolio yield")
+                or source_values.get("yield")
+            )
             if raw_tir is not None:
                 tir_values.append(_coerce_decimal(raw_tir))
         raw_tir_values = [value for value in tir_values if value != 0]
         print("TIR DIAGNOSTIC")
-        print(f"  raw_tir_min: {_format_decimal(min(raw_tir_values) if raw_tir_values else Decimal('0'))}")
-        print(f"  raw_tir_max: {_format_decimal(max(raw_tir_values) if raw_tir_values else Decimal('0'))}")
-        print(f"  raw_tir_sample_values: {', '.join(_format_decimal(value) for value in raw_tir_values[:5]) or 'none'}")
+        print(
+            f"  raw_tir_min: {_format_decimal(min(raw_tir_values) if raw_tir_values else Decimal('0'))}"
+        )
+        print(
+            f"  raw_tir_max: {_format_decimal(max(raw_tir_values) if raw_tir_values else Decimal('0'))}"
+        )
+        print(
+            f"  raw_tir_sample_values: {', '.join(_format_decimal(value) for value in raw_tir_values[:5]) or 'none'}"
+        )
         print(f"  raw_tir_zero_count: {sum(1 for value in tir_values if value == 0)}")
         print(f"  raw_tir_non_zero_count: {len(raw_tir_values)}")
         market_weighted = Decimal("0")
@@ -495,7 +649,11 @@ def _print_metric_diagnostic(name: str, rows: list[dict[str, Any]], *, control_v
         nominal_total = Decimal("0")
         for row in rows:
             source_values = row.get("source_values", {}) or {}
-            raw_tir = source_values.get("tir") or source_values.get("portfolio yield") or source_values.get("yield")
+            raw_tir = (
+                source_values.get("tir")
+                or source_values.get("portfolio yield")
+                or source_values.get("yield")
+            )
             tir_value = _coerce_decimal(raw_tir) if raw_tir is not None else Decimal("0")
             market_value = _coerce_decimal(row.get("master_market_value"))
             book_value = _coerce_decimal(row.get("book_value"))
@@ -521,7 +679,17 @@ def _print_metric_diagnostic(name: str, rows: list[dict[str, Any]], *, control_v
             source_values = row.get("source_values", {}) or {}
             for key in source_values:
                 normalized = _normalize_key(key)
-                if any(alias in normalized for alias in ("duracion", "duration", "duracion modificada", "modified duration", "dm", "dv01")):
+                if any(
+                    alias in normalized
+                    for alias in (
+                        "duracion",
+                        "duration",
+                        "duracion modificada",
+                        "modified duration",
+                        "dm",
+                        "dv01",
+                    )
+                ):
                     duration_fields.append(normalized)
         print("MODIFIED DURATION DIAGNOSTIC")
         print(f"  source_fields_available: {sorted(set(duration_fields)) or ['none']}")
@@ -532,15 +700,23 @@ def _print_metric_diagnostic(name: str, rows: list[dict[str, Any]], *, control_v
         hqla_rows = []
         for row in rows:
             source_values = row.get("source_values", {}) or {}
-            market_value = _coerce_decimal(source_values.get("valor mercado colonizado") or source_values.get("saldo valor mercado") or row.get("master_market_value"))
+            market_value = _coerce_decimal(
+                source_values.get("valor mercado colonizado")
+                or source_values.get("saldo valor mercado")
+                or row.get("master_market_value")
+            )
             if market_value == 0:
                 continue
             hqla_rows.append((row, market_value))
         print("HQLA DIAGNOSTIC")
         for index, (row, market_value) in enumerate(hqla_rows[:10], start=1):
             source_values = row.get("source_values", {}) or {}
-            print(f"  {index}. issuer={row.get('issuer')} classification={source_values.get('clasificacion') or row.get('classification')} reserve_liquidity={source_values.get('reserva liquidez') or row.get('reserve_liquidity')} product_code={row.get('product_code')} market_value={_format_decimal(market_value)}")
-        print("  candidate_hqla_aggregation: using existing institutional HQLA eligibility rules from repository")
+            print(
+                f"  {index}. issuer={row.get('issuer')} classification={source_values.get('clasificacion') or row.get('classification')} reserve_liquidity={source_values.get('reserva liquidez') or row.get('reserve_liquidity')} product_code={row.get('product_code')} market_value={_format_decimal(market_value)}"
+            )
+        print(
+            "  candidate_hqla_aggregation: using existing institutional HQLA eligibility rules from repository"
+        )
         print(f"  control_total: {control_value}%")
         return
     elif name == "DV01":
@@ -572,13 +748,17 @@ def _print_metric_diagnostic(name: str, rows: list[dict[str, Any]], *, control_v
 
 
 def _print_control_comparison(rows: list[dict[str, Any]]) -> None:
-    current_market_value = sum((_coerce_decimal(row.get("master_market_value")) for row in rows), Decimal("0"))
-    print(f"Portfolio Value: current={_format_decimal(current_market_value)} control=CRC 301,745.83 MM")
+    current_market_value = sum(
+        (_coerce_decimal(row.get("master_market_value")) for row in rows), Decimal("0")
+    )
+    print(
+        f"Portfolio Value: current={_format_decimal(current_market_value)} control=CRC 301,745.83 MM"
+    )
     print(f"TIR: current={_format_decimal(Decimal('0'))}% control=5.18%")
-    print(f"Modified Duration: current=0.00 control=1.14")
-    print(f"HQLA: current=0.00% control=68.15%")
-    print(f"DV01: current=0.00 control=CRC 34,297,690")
-    print(f"HHI: current=0.00 control=3,610")
+    print("Modified Duration: current=0.00 control=1.14")
+    print("HQLA: current=0.00% control=68.15%")
+    print("DV01: current=0.00 control=CRC 34,297,690")
+    print("HHI: current=0.00 control=3,610")
 
 
 def _write_csv(rows: list[dict[str, Any]], output_path: Path) -> None:
@@ -607,19 +787,32 @@ def _write_csv(rows: list[dict[str, Any]], output_path: Path) -> None:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
         for row in rows:
-            writer.writerow({
-                key: (
-                    _format_decimal(_coerce_decimal(value))
-                    if key in {"nominal", "book_value", "master_market_value", "pipca_price", "pipca_yield", "aip_market_value", "market_value_difference"}
-                    else value
-                )
-                for key, value in row.items()
-                if key != "source_values"
-            })
+            writer.writerow(
+                {
+                    key: (
+                        _format_decimal(_coerce_decimal(value))
+                        if key
+                        in {
+                            "nominal",
+                            "book_value",
+                            "master_market_value",
+                            "pipca_price",
+                            "pipca_yield",
+                            "aip_market_value",
+                            "market_value_difference",
+                        }
+                        else value
+                    )
+                    for key, value in row.items()
+                    if key != "source_values"
+                }
+            )
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Generate a read-only reconciliation diagnostic for portfolio valuation")
+    parser = argparse.ArgumentParser(
+        description="Generate a read-only reconciliation diagnostic for portfolio valuation"
+    )
     parser.add_argument("--output", default="portfolio_reconciliation.csv", help="CSV output path")
     parser.add_argument("--master-file", help="Path to the portfolio master workbook")
     parser.add_argument("--vector-file", help="Path to the PiPCA vector file")
@@ -635,21 +828,33 @@ def main(argv: list[str] | None = None) -> int:
         print(f"RECONCILIATION DIAGNOSTIC\nERROR: {exc}")
         return 2
 
-    cutoff_date = date.fromisoformat(args.cutoff_date) if args.cutoff_date else config.data_cutoff_date
+    cutoff_date = (
+        date.fromisoformat(args.cutoff_date) if args.cutoff_date else config.data_cutoff_date
+    )
     provider = ConfiguredPortfolioProvider(config, source_config)
     if args.master_file and args.vector_file:
-        positions = _read_master_positions(args.master_file, cutoff_date=cutoff_date, provider=provider)
-        vector_records = _read_vector_records(args.vector_file, cutoff_date=cutoff_date, provider=provider)
+        positions = _read_master_positions(
+            args.master_file, cutoff_date=cutoff_date, provider=provider
+        )
+        vector_records = _read_vector_records(
+            args.vector_file, cutoff_date=cutoff_date, provider=provider
+        )
     else:
         payload = provider.get_portfolio()
-        positions = [dict(position) for position in payload.get("positions", []) if isinstance(position, dict)]
+        positions = [
+            dict(position)
+            for position in payload.get("positions", [])
+            if isinstance(position, dict)
+        ]
         vector_records = []
         for record in payload.get("price_vector", {}).get("records", []):
             if isinstance(record, dict):
                 vector_records.append(dict(record))
 
     service = InstitutionalPortfolioMatchingService()
-    enriched_positions, _ = service.enrich_positions(positions, vector_records, diagnostic_mode=True)
+    enriched_positions, _ = service.enrich_positions(
+        positions, vector_records, diagnostic_mode=True
+    )
     rows = _build_reconciliation_rows(enriched_positions)
 
     output_path = Path(args.output).expanduser().resolve()

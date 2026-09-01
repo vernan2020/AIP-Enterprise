@@ -33,9 +33,23 @@ class RecommendationEngine:
         if policy_result is not None and policy_result.policy_summary.get("blocking"):
             raise RecommendationError("Blocking policy failed")
         if policy_result is not None and policy_result.policy_summary.get("disabled"):
-            return Recommendation("", RecommendationType.HOLD, score, Decimal("0.5"), "Disabled policy", policy_summary)
+            return Recommendation(
+                "",
+                RecommendationType.HOLD,
+                score,
+                Decimal("0.5"),
+                "Disabled policy",
+                policy_summary,
+            )
         if policy_result is not None and policy_result.policy_summary.get("not_applicable"):
-            return Recommendation("", RecommendationType.HOLD, score, Decimal("0.5"), "Policy not applicable", policy_summary)
+            return Recommendation(
+                "",
+                RecommendationType.HOLD,
+                score,
+                Decimal("0.5"),
+                "Policy not applicable",
+                policy_summary,
+            )
         buy_threshold = thresholds.get("buy", Decimal("0.8"))
         accumulate_threshold = thresholds.get("accumulate", Decimal("0.65"))
         if score >= buy_threshold:
@@ -48,4 +62,6 @@ class RecommendationEngine:
             recommendation = RecommendationType.REDUCE
         else:
             recommendation = RecommendationType.SELL
-        return Recommendation("", recommendation, score, Decimal("0.8"), "Score-based recommendation", policy_summary)
+        return Recommendation(
+            "", recommendation, score, Decimal("0.8"), "Score-based recommendation", policy_summary
+        )

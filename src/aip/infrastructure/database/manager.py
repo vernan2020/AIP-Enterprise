@@ -26,7 +26,9 @@ class DatabaseManager:
 
     def initialize(self) -> None:
         self._path.parent.mkdir(parents=True, exist_ok=True)
-        self._connection = duckdb.connect(database=str(self._path), read_only=self._settings.read_only)
+        self._connection = duckdb.connect(
+            database=str(self._path), read_only=self._settings.read_only
+        )
         self._create_schema()
 
     def _create_schema(self) -> None:

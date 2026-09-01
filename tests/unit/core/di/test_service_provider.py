@@ -24,6 +24,7 @@ class TestServiceProvider:
 
     def test_service_provider_creation(self) -> None:
         """Test service provider can be created."""
+
         class MyService:
             pass
 
@@ -34,6 +35,7 @@ class TestServiceProvider:
 
     def test_resolve_singleton(self) -> None:
         """Test resolving singleton service returns same instance."""
+
         class MyService:
             pass
 
@@ -47,6 +49,7 @@ class TestServiceProvider:
 
     def test_resolve_transient(self) -> None:
         """Test resolving transient service creates new instances."""
+
         class MyService:
             pass
 
@@ -60,6 +63,7 @@ class TestServiceProvider:
 
     def test_resolve_with_factory(self) -> None:
         """Test resolving service with factory function."""
+
         class MyService:
             def __init__(self, value: int) -> None:
                 self.value = value
@@ -79,6 +83,7 @@ class TestServiceProvider:
 
     def test_resolve_service_not_found(self) -> None:
         """Test resolving unregistered service raises error."""
+
         class UnregisteredService:
             pass
 
@@ -90,6 +95,7 @@ class TestServiceProvider:
 
     def test_constructor_injection_single_dependency(self) -> None:
         """Test constructor injection with single dependency."""
+
         class Logger:
             pass
 
@@ -108,6 +114,7 @@ class TestServiceProvider:
 
     def test_constructor_injection_multiple_dependencies(self) -> None:
         """Test constructor injection with multiple dependencies."""
+
         class Logger:
             pass
 
@@ -123,11 +130,13 @@ class TestServiceProvider:
         db_desc = ServiceDescriptor(Database)
         repo_desc = ServiceDescriptor(Repository)
 
-        provider = ServiceProvider({
-            Logger: logger_desc,
-            Database: db_desc,
-            Repository: repo_desc,
-        })
+        provider = ServiceProvider(
+            {
+                Logger: logger_desc,
+                Database: db_desc,
+                Repository: repo_desc,
+            }
+        )
 
         repo = provider.resolve(Repository)
         assert isinstance(repo.logger, Logger)
@@ -135,6 +144,7 @@ class TestServiceProvider:
 
     def test_constructor_injection_with_defaults(self) -> None:
         """Test constructor injection skips parameters with defaults."""
+
         class Logger:
             pass
 
@@ -154,6 +164,7 @@ class TestServiceProvider:
 
     def test_constructor_injection_missing_type_annotation(self) -> None:
         """Test constructor injection fails with missing type annotation."""
+
         class Repository:
             def __init__(self, dependency):  # type: ignore
                 self.dependency = dependency
@@ -167,6 +178,7 @@ class TestServiceProvider:
 
     def test_circular_dependency_direct(self) -> None:
         """Test detection of direct circular dependency."""
+
         class ServiceA:
             def __init__(self, service_b: "ServiceB") -> None:
                 self.service_b = service_b
@@ -187,6 +199,7 @@ class TestServiceProvider:
 
     def test_circular_dependency_indirect(self) -> None:
         """Test detection of indirect circular dependency."""
+
         class ServiceA:
             def __init__(self, service_b: "ServiceB") -> None:
                 self.service_b = service_b
@@ -203,17 +216,20 @@ class TestServiceProvider:
         service_b_desc = ServiceDescriptor(ServiceB)
         service_c_desc = ServiceDescriptor(ServiceC)
 
-        provider = ServiceProvider({
-            ServiceA: service_a_desc,
-            ServiceB: service_b_desc,
-            ServiceC: service_c_desc,
-        })
+        provider = ServiceProvider(
+            {
+                ServiceA: service_a_desc,
+                ServiceB: service_b_desc,
+                ServiceC: service_c_desc,
+            }
+        )
 
         with pytest.raises(CircularDependencyError):
             provider.resolve(ServiceA)
 
     def test_scoped_resolution_without_scope(self) -> None:
         """Test scoped resolution fails outside active scope."""
+
         class ScopedService:
             pass
 
@@ -225,6 +241,7 @@ class TestServiceProvider:
 
     def test_scoped_resolution_with_scope(self) -> None:
         """Test scoped resolution within active scope."""
+
         class ScopedService:
             pass
 
@@ -243,6 +260,7 @@ class TestServiceProvider:
 
     def test_nested_scopes(self) -> None:
         """Test nested service scopes."""
+
         class ScopedService:
             pass
 
@@ -265,6 +283,7 @@ class TestServiceProvider:
 
     def test_thread_safe_singleton(self) -> None:
         """Test singleton resolution is thread-safe."""
+
         class MyService:
             pass
 
@@ -291,6 +310,7 @@ class TestServiceProvider:
 
     def test_multiple_singleton_instances(self) -> None:
         """Test multiple singleton services maintain separate instances."""
+
         class ServiceA:
             pass
 
@@ -313,6 +333,7 @@ class TestServiceProvider:
 
     def test_repr(self) -> None:
         """Test provider string representation."""
+
         class ServiceA:
             pass
 
@@ -338,6 +359,7 @@ class TestDefaultServiceScope:
 
     def test_scope_get_instance_new(self) -> None:
         """Test getting new instance in scope."""
+
         class MyService:
             pass
 
@@ -349,6 +371,7 @@ class TestDefaultServiceScope:
 
     def test_scope_get_instance_cached(self) -> None:
         """Test getting cached instance from scope."""
+
         class MyService:
             pass
 
@@ -364,6 +387,7 @@ class TestDefaultServiceScope:
 
     def test_scope_dispose_clears_instances(self) -> None:
         """Test scope disposal clears instances."""
+
         class MyService:
             pass
 

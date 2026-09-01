@@ -29,7 +29,9 @@ class Policy(ABC):
         priority: int = 0,
     ) -> None:
         if not policy_id or not name or not description or not version:
-            raise PolicyValidationError("Policy identifier, name, description, and version are required")
+            raise PolicyValidationError(
+                "Policy identifier, name, description, and version are required"
+            )
         if not category:
             raise PolicyValidationError("Policy category is required")
         if not isinstance(severity, PolicySeverity):

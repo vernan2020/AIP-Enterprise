@@ -90,10 +90,22 @@ def _make_request(**overrides: Any) -> AnalysisRequest:
 
 def test_analysis_request_validates_required_identifiers() -> None:
     with pytest.raises(ContractValidationError):
-        AnalysisRequest(workflow_id="", correlation_id="corr", valuation_date=date(2026, 1, 1), instrument=_Instrument(), market_yield=Decimal("0.04"))
+        AnalysisRequest(
+            workflow_id="",
+            correlation_id="corr",
+            valuation_date=date(2026, 1, 1),
+            instrument=_Instrument(),
+            market_yield=Decimal("0.04"),
+        )
 
     with pytest.raises(ContractValidationError):
-        AnalysisRequest(workflow_id="wf", correlation_id="", valuation_date=date(2026, 1, 1), instrument=_Instrument(), market_yield=Decimal("0.04"))
+        AnalysisRequest(
+            workflow_id="wf",
+            correlation_id="",
+            valuation_date=date(2026, 1, 1),
+            instrument=_Instrument(),
+            market_yield=Decimal("0.04"),
+        )
 
 
 def test_analysis_request_and_result_defensively_copy_metadata() -> None:
@@ -189,7 +201,9 @@ def test_domain_event_dispatcher_preserves_order_and_isolates_handler_failure() 
 
 def test_domain_event_dispatcher_raises_when_configured() -> None:
     dispatcher = DomainEventDispatcher(raise_on_error=True)
-    dispatcher.subscribe("workflow_failed", lambda payload: (_ for _ in ()).throw(RuntimeError("boom")))
+    dispatcher.subscribe(
+        "workflow_failed", lambda payload: (_ for _ in ()).throw(RuntimeError("boom"))
+    )
     with pytest.raises(EventDispatchError):
         dispatcher.dispatch("workflow_failed", {"workflow_id": "wf"})
 
@@ -208,7 +222,9 @@ def test_base_workflow_lifecycle_transitions_are_deterministic() -> None:
         another.complete_execution()
 
 
-def test_relative_value_workflow_uses_existing_domain_engines_and_preserves_correlation_id() -> None:
+def test_relative_value_workflow_uses_existing_domain_engines_and_preserves_correlation_id() -> (
+    None
+):
     request = _make_request()
     workflow = RelativeValueWorkflow()
     result = workflow.execute(request)

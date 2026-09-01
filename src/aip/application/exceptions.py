@@ -33,7 +33,9 @@ class OrchestratorExecutionError(OrchestrationError):
     """Raised when an application orchestrator cannot complete successfully."""
 
 
-def translate_application_exception(exc: Exception, *, context: str = "workflow") -> ApplicationError:
+def translate_application_exception(
+    exc: Exception, *, context: str = "workflow"
+) -> ApplicationError:
     if isinstance(exc, ApplicationError):
         return exc
     if context == "orchestrator":

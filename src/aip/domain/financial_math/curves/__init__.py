@@ -7,4 +7,13 @@ from aip.domain.financial_math.curves.nelson_siegel import (
 from aip.domain.financial_math.curves.svensson import svensson_curve, svensson_zero_rate
 from aip.domain.financial_math.curves.yield_curve import YieldCurve
 
-__all__ = ["CurvePoint", "YieldCurve", "BootstrapResult", "bootstrap_zero_curve", "nelson_siegel_zero_rate", "nelson_siegel_curve", "svensson_zero_rate", "svensson_curve"]
+__all__ = [
+    "CurvePoint",
+    "YieldCurve",
+    "BootstrapResult",
+    "bootstrap_zero_curve",
+    "nelson_siegel_zero_rate",
+    "nelson_siegel_curve",
+    "svensson_zero_rate",
+    "svensson_curve",
+]

@@ -28,11 +28,7 @@ class TestDecimalEncoder:
 
     def test_encode_nested_decimal(self) -> None:
         """Test encoding nested Decimal."""
-        data = {
-            "portfolio": {
-                "value": Decimal("1000.50")
-            }
-        }
+        data = {"portfolio": {"value": Decimal("1000.50")}}
         result = json.dumps(data, cls=DecimalEncoder)
 
         assert "1000.50" in result
@@ -47,6 +43,7 @@ class TestDecimalEncoder:
 
     def test_decimal_encoder_unsupported_type_raises_type_error(self) -> None:
         """Test DecimalEncoder delegates unsupported types to JSON default."""
+
         class Unsupported:
             pass
 
@@ -74,6 +71,7 @@ class TestDateEncoder:
 
     def test_date_encoder_unsupported_type_raises_type_error(self) -> None:
         """Test DateEncoder delegates unsupported types to JSON default."""
+
         class Unsupported:
             pass
 
@@ -86,11 +84,7 @@ class TestJsonSerializer:
 
     def test_serialize_with_decimal(self) -> None:
         """Test serializing data with Decimal."""
-        data = {
-            "amount": Decimal("100.50"),
-            "quantity": 5,
-            "currency": "USD"
-        }
+        data = {"amount": Decimal("100.50"), "quantity": 5, "currency": "USD"}
 
         result = JsonSerializer.serialize(data)
 
@@ -99,10 +93,7 @@ class TestJsonSerializer:
 
     def test_serialize_with_date(self) -> None:
         """Test serializing data with date."""
-        data = {
-            "date": date(2024, 7, 27),
-            "name": "Test"
-        }
+        data = {"date": date(2024, 7, 27), "name": "Test"}
 
         result = JsonSerializer.serialize(data)
 
@@ -110,10 +101,7 @@ class TestJsonSerializer:
 
     def test_serialize_with_both_decimal_and_date(self) -> None:
         """Test serializing data with both Decimal and date."""
-        data = {
-            "amount": Decimal("100.50"),
-            "date": date(2024, 7, 27)
-        }
+        data = {"amount": Decimal("100.50"), "date": date(2024, 7, 27)}
 
         result = JsonSerializer.serialize(data)
 
@@ -167,7 +155,7 @@ class TestJsonSerializer:
         original_data = {
             "amount": Decimal("123.45"),
             "date": date(2024, 7, 27),
-            "name": "Test Portfolio"
+            "name": "Test Portfolio",
         }
 
         # Serialize
@@ -190,16 +178,16 @@ class TestJsonSerializer:
                         "ticker": "AAPL",
                         "quantity": Decimal("100"),
                         "value": Decimal("15000.00"),
-                        "purchase_date": date(2024, 1, 15)
+                        "purchase_date": date(2024, 1, 15),
                     },
                     {
                         "ticker": "MSFT",
                         "quantity": Decimal("50"),
                         "value": Decimal("20000.00"),
-                        "purchase_date": date(2024, 2, 20)
-                    }
+                        "purchase_date": date(2024, 2, 20),
+                    },
                 ],
-                "total_value": Decimal("35000.00")
+                "total_value": Decimal("35000.00"),
             }
         }
 

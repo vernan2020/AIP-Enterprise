@@ -42,7 +42,9 @@ def internal_rate_of_return(
             present_value += cash_flow.amount / ((Decimal("1") + rate) ** years)
         return present_value
 
-    result = (solver or bisection_solve)(function, Decimal("-0.99"), Decimal("1"), tolerance=tolerance, max_iterations=max_iterations)
+    result = (solver or bisection_solve)(
+        function, Decimal("-0.99"), Decimal("1"), tolerance=tolerance, max_iterations=max_iterations
+    )
     if not result.converged:
         raise ConvergenceError("IRR did not converge")
     return result.root
@@ -55,4 +57,9 @@ def money_weighted_return(
     tolerance: Decimal = Decimal("1e-10"),
     max_iterations: int = 100,
 ) -> Decimal:
-    return internal_rate_of_return(cash_flow_series, settlement_date=settlement_date, tolerance=tolerance, max_iterations=max_iterations)
+    return internal_rate_of_return(
+        cash_flow_series,
+        settlement_date=settlement_date,
+        tolerance=tolerance,
+        max_iterations=max_iterations,
+    )

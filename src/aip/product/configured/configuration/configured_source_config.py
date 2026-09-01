@@ -62,6 +62,9 @@ class BCCRSourceConfig:
     cache_enabled: bool = True
     indicator_configuration: tuple[str, ...] = ("FX",)
     series_config: tuple[str, ...] = ()
+    name: str | None = None
+    email: str | None = None
+    token: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -130,6 +133,9 @@ class ConfiguredSourceConfig:
                 "cache_enabled": self.bccr.cache_enabled,
             },
             "diagnostic_mode": self.resolve_diagnostic_mode(),
+            "allow_prior_source_date": bool(self.metadata.get("allow_prior_source_date", False)),
+            "icl_max_prior_days": int(self.metadata.get("icl_max_prior_days", 7)),
+            "data_cutoff_date": self.metadata.get("data_cutoff_date"),
         }
 
     @classmethod
@@ -155,17 +161,25 @@ class ConfiguredSourceConfig:
                 icl_root=folder_payload.get("icl_root"),
                 curves_path=folder_payload.get("curves_path"),
                 vector_path=folder_payload.get("vector_path"),
-                portfolio_master_pattern=folder_payload.get("portfolio_master_pattern", r"Inversiones\{year}\maestro\{month}\*.xls*"),
+                portfolio_master_pattern=folder_payload.get(
+                    "portfolio_master_pattern", r"Inversiones\{year}\maestro\{month}\*.xls*"
+                ),
                 icl_file_pattern=folder_payload.get("icl_file_pattern", r"ICL\Reportes ICL\*"),
-                supported_extensions=tuple(folder_payload.get("supported_extensions", (".xls", ".xlsx"))),
+                supported_extensions=tuple(
+                    folder_payload.get("supported_extensions", (".xls", ".xlsx"))
+                ),
                 recursive=bool(folder_payload.get("recursive", True)),
-                stale_data_threshold_seconds=int(folder_payload.get("stale_data_threshold_seconds", 3600)),
+                stale_data_threshold_seconds=int(
+                    folder_payload.get("stale_data_threshold_seconds", 3600)
+                ),
             ),
             curves=CurvesSourceConfig(
                 enabled=bool(curves_payload.get("enabled", False)),
                 workbook=curves_payload.get("workbook"),
                 sheet_mapping=tuple(curves_payload.get("sheet_mapping", ())),
-                stale_data_threshold_seconds=int(curves_payload.get("stale_data_threshold_seconds", 3600)),
+                stale_data_threshold_seconds=int(
+                    curves_payload.get("stale_data_threshold_seconds", 3600)
+                ),
             ),
             vector=VectorSourceConfig(
                 enabled=bool(vector_payload.get("enabled", False)),
@@ -173,8 +187,12 @@ class ConfiguredSourceConfig:
                 root=vector_payload.get("root"),
                 directory_aliases=tuple(vector_payload.get("directory_aliases", ())),
                 file_pattern=vector_payload.get("file_pattern"),
-                supported_extensions=tuple(vector_payload.get("supported_extensions", (".txt", ".xls", ".xlsx"))),
-                stale_data_threshold_seconds=int(vector_payload.get("stale_data_threshold_seconds", 3600)),
+                supported_extensions=tuple(
+                    vector_payload.get("supported_extensions", (".txt", ".xls", ".xlsx"))
+                ),
+                stale_data_threshold_seconds=int(
+                    vector_payload.get("stale_data_threshold_seconds", 3600)
+                ),
             ),
             bccr=BCCRSourceConfig(
                 enabled=bool(bccr_payload.get("enabled", False)),
@@ -184,10 +202,16 @@ class ConfiguredSourceConfig:
                 cache_enabled=bool(bccr_payload.get("cache_enabled", True)),
                 indicator_configuration=tuple(bccr_payload.get("indicator_configuration", ("FX",))),
                 series_config=tuple(bccr_payload.get("series_config", ())),
+                name=bccr_payload.get("name"),
+                email=bccr_payload.get("email"),
+                token=bccr_payload.get("token"),
             ),
             diagnostic_mode=bool(source_config_payload.get("diagnostic_mode", False)),
             metadata={
-                "allow_prior_source_date": bool(source_config_payload.get("allow_prior_source_date", False)),
+                "allow_prior_source_date": bool(
+                    source_config_payload.get("allow_prior_source_date", False)
+                ),
+                "icl_max_prior_days": int(source_config_payload.get("icl_max_prior_days", 7)),
                 "data_cutoff_date": source_config_payload.get("data_cutoff_date"),
             },
         )

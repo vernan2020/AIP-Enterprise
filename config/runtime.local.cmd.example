@@ -1,0 +1,17 @@
+@echo off
+REM AIP Enterprise local runtime overrides.
+REM Copy this file to config\runtime.local.cmd and set only values required
+REM by the workstation. runtime.local.cmd is intentionally excluded from Git.
+
+REM BCCR live API credentials. Leave unset to use the persisted local-history
+REM fallback when available.
+REM set "AIP_BCCR_NAME=YOUR_REGISTERED_NAME"
+REM set "AIP_BCCR_EMAIL=YOUR_REGISTERED_EMAIL"
+REM set "AIP_BCCR_TOKEN=YOUR_BCCR_TOKEN"
+
+REM Optional explicit source overrides. Normally EnvironmentLoader resolves the
+REM institutional Windows paths automatically.
+REM set "AIP_PORTFOLIO_ROOT=C:\path\to\investment-root"
+REM set "AIP_ICL_ROOT=C:\path\to\analysis-root"
+REM set "AIP_VECTOR_PATH=C:\path\to\vector-root"
+REM set "AIP_DATA_CUTOFF_DATE=2026-08-27"

@@ -27,9 +27,13 @@ from aip.domain.liquidity.cashflow.providers.scenario_provider import ScenarioPr
 
 
 class _StaticProvider(BehavioralProvider, ScenarioProvider, RolloverProvider):
-    def get_behavioral_assumptions(self, request: ProjectionRequest) -> tuple[BehavioralAssumption, ...]:
+    def get_behavioral_assumptions(
+        self, request: ProjectionRequest
+    ) -> tuple[BehavioralAssumption, ...]:
         return (
-            BehavioralAssumption("partial_renewal", probability=Decimal("0.8"), effect_ratio=Decimal("0.25")),
+            BehavioralAssumption(
+                "partial_renewal", probability=Decimal("0.8"), effect_ratio=Decimal("0.25")
+            ),
         )
 
     def get_scenario(self, request: ProjectionRequest) -> str:
@@ -43,8 +47,18 @@ def test_contractual_projection_projects_coupon_and_principal() -> None:
     request = ProjectionRequest(
         valuation_date=date(2024, 1, 1),
         contractual_cashflows=(
-            CashFlow(payment_date=date(2024, 2, 1), amount=Decimal("100"), currency="USD", cash_flow_type="coupon"),
-            CashFlow(payment_date=date(2025, 1, 1), amount=Decimal("1000"), currency="USD", cash_flow_type="principal"),
+            CashFlow(
+                payment_date=date(2024, 2, 1),
+                amount=Decimal("100"),
+                currency="USD",
+                cash_flow_type="coupon",
+            ),
+            CashFlow(
+                payment_date=date(2025, 1, 1),
+                amount=Decimal("1000"),
+                currency="USD",
+                cash_flow_type="principal",
+            ),
         ),
     )
     result = ContractualProjection().project(request)
@@ -57,19 +71,29 @@ def test_behavioral_projection_applies_partial_renewal_and_probability_weight() 
     request = ProjectionRequest(
         valuation_date=date(2024, 1, 1),
         contractual_cashflows=(
-            CashFlow(payment_date=date(2024, 2, 1), amount=Decimal("100"), currency="USD", cash_flow_type="coupon"),
+            CashFlow(
+                payment_date=date(2024, 2, 1),
+                amount=Decimal("100"),
+                currency="USD",
+                cash_flow_type="coupon",
+            ),
         ),
         behavioral_assumptions=(
-            BehavioralAssumption("partial_renewal", probability=Decimal("0.8"), effect_ratio=Decimal("0.25")),
+            BehavioralAssumption(
+                "partial_renewal", probability=Decimal("0.8"), effect_ratio=Decimal("0.25")
+            ),
         ),
     )
-    result = BehavioralProjection().project(request, [
-        ProjectionRequest(
-            valuation_date=date(2024, 1, 1),
-            contractual_cashflows=request.contractual_cashflows,
-            behavioral_assumptions=request.behavioral_assumptions,
-        )
-    ])
+    result = BehavioralProjection().project(
+        request,
+        [
+            ProjectionRequest(
+                valuation_date=date(2024, 1, 1),
+                contractual_cashflows=request.contractual_cashflows,
+                behavioral_assumptions=request.behavioral_assumptions,
+            )
+        ],
+    )
     assert result[0].amount == Decimal("20.0")
 
 
@@ -81,7 +105,12 @@ def test_rollover_coupon_and_amortization_calculators() -> None:
 
 def test_aggregation_groups_by_currency_bucket_and_scenario() -> None:
     projected = (
-        CashFlow(payment_date=date(2024, 2, 1), amount=Decimal("100"), currency="USD", cash_flow_type="coupon"),
+        CashFlow(
+            payment_date=date(2024, 2, 1),
+            amount=Decimal("100"),
+            currency="USD",
+            cash_flow_type="coupon",
+        ),
     )
     request = ProjectionRequest(valuation_date=date(2024, 1, 1), contractual_cashflows=projected)
     result = AggregationEngine().aggregate(projected, request)
@@ -94,9 +123,18 @@ def test_cashflow_engine_builds_explanation_and_projection_type() -> None:
     request = ProjectionRequest(
         valuation_date=date(2024, 1, 1),
         contractual_cashflows=(
-            CashFlow(payment_date=date(2024, 2, 1), amount=Decimal("100"), currency="USD", cash_flow_type="coupon"),
+            CashFlow(
+                payment_date=date(2024, 2, 1),
+                amount=Decimal("100"),
+                currency="USD",
+                cash_flow_type="coupon",
+            ),
         ),
-        behavioral_assumptions=(BehavioralAssumption("early_withdrawal", probability=Decimal("0.5"), effect_ratio=Decimal("0.2"))),
+        behavioral_assumptions=(
+            BehavioralAssumption(
+                "early_withdrawal", probability=Decimal("0.5"), effect_ratio=Decimal("0.2")
+            )
+        ),
     )
     result = CashFlowEngine().project(request)
     assert result.projection_type == "hybrid"
@@ -106,29 +144,51 @@ def test_cashflow_engine_builds_explanation_and_projection_type() -> None:
 
 def test_empty_and_negative_flows_raise_projection_error() -> None:
     with pytest.raises(ProjectionError):
-        ContractualProjection().project(ProjectionRequest(valuation_date=date(2024, 1, 1), contractual_cashflows=()))
+        ContractualProjection().project(
+            ProjectionRequest(valuation_date=date(2024, 1, 1), contractual_cashflows=())
+        )
     with pytest.raises(ProjectionError):
         ContractualProjection().project(
             ProjectionRequest(
                 valuation_date=date(2024, 1, 1),
-                contractual_cashflows=(SimpleNamespace(payment_date=date(2024, 2, 1), amount=Decimal("0"), currency="USD", cash_flow_type="coupon"),),
+                contractual_cashflows=(
+                    SimpleNamespace(
+                        payment_date=date(2024, 2, 1),
+                        amount=Decimal("0"),
+                        currency="USD",
+                        cash_flow_type="coupon",
+                    ),
+                ),
             )
         )
     with pytest.raises(ProjectionError):
         ContractualProjection().project(
             ProjectionRequest(
                 valuation_date=date(2024, 1, 1),
-                contractual_cashflows=(SimpleNamespace(payment_date=date(2024, 2, 1), amount=Decimal("-1"), currency="USD", cash_flow_type="coupon"),),
+                contractual_cashflows=(
+                    SimpleNamespace(
+                        payment_date=date(2024, 2, 1),
+                        amount=Decimal("-1"),
+                        currency="USD",
+                        cash_flow_type="coupon",
+                    ),
+                ),
             )
         )
 
 
 def test_provider_failures_raise_behavioral_error() -> None:
     class FailingProvider(BehavioralProvider):
-        def get_behavioral_assumptions(self, request: ProjectionRequest) -> tuple[BehavioralAssumption, ...]:
+        def get_behavioral_assumptions(
+            self, request: ProjectionRequest
+        ) -> tuple[BehavioralAssumption, ...]:
             raise RuntimeError("boom")
 
-    request = ProjectionRequest(valuation_date=date(2024, 1, 1), contractual_cashflows=(), behavioral_provider=FailingProvider())
+    request = ProjectionRequest(
+        valuation_date=date(2024, 1, 1),
+        contractual_cashflows=(),
+        behavioral_provider=FailingProvider(),
+    )
     with pytest.raises(BehavioralError):
         ProjectionEngine().project(request)
 
@@ -137,9 +197,24 @@ def test_reuse_of_analytics_statistics_and_explainability() -> None:
     request = ProjectionRequest(
         valuation_date=date(2024, 1, 1),
         contractual_cashflows=(
-            CashFlow(payment_date=date(2024, 2, 1), amount=Decimal("100"), currency="USD", cash_flow_type="coupon"),
-            CashFlow(payment_date=date(2024, 3, 1), amount=Decimal("200"), currency="USD", cash_flow_type="coupon"),
-            CashFlow(payment_date=date(2024, 4, 1), amount=Decimal("300"), currency="USD", cash_flow_type="coupon"),
+            CashFlow(
+                payment_date=date(2024, 2, 1),
+                amount=Decimal("100"),
+                currency="USD",
+                cash_flow_type="coupon",
+            ),
+            CashFlow(
+                payment_date=date(2024, 3, 1),
+                amount=Decimal("200"),
+                currency="USD",
+                cash_flow_type="coupon",
+            ),
+            CashFlow(
+                payment_date=date(2024, 4, 1),
+                amount=Decimal("300"),
+                currency="USD",
+                cash_flow_type="coupon",
+            ),
         ),
     )
     result = CashFlowEngine().project(request)

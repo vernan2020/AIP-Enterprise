@@ -1,0 +1,159 @@
+name: Recovery Runtime Validation
+
+on:
+  push:
+    branches:
+      - recovery/full-runtime-rc1-20260829
+  pull_request:
+    branches:
+      - release/core-v1.0
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  QT_QPA_PLATFORM: offscreen
+  PYTHONPATH: src
+
+jobs:
+  validate-certified-runtime:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout certified recovery branch
+        uses: actions/checkout@v4
+        with:
+          ref: recovery/full-runtime-rc1-20260829
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Validate materialized recovery source
+        shell: python
+        run: |
+          from pathlib import Path
+          root = Path('src')
+          if not root.is_dir():
+              raise SystemExit('materialized src directory is missing')
+          python_files = list(root.rglob('*.py'))
+          if not python_files:
+              raise SystemExit('materialized src contains no Python modules')
+          print(f'materialized Python modules: {len(python_files)}')
+
+      - name: Install Qt runtime libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libgl1 libxkbcommon-x11-0 libxcb-cursor0
+
+      - name: Validate critical production modules
+        shell: python
+        run: |
+          from pathlib import Path
+          required = [
+              'src/aip/product/configured/services/configured_portfolio_var_service.py',
+              'src/aip/product/configured/services/configured_portfolio_dv01_service.py',
+              'src/aip/product/configured/services/configured_portfolio_rate_shock_service.py',
+              'src/aip/product/configured/adapters/configured_economic_indicators_provider.py',
+              'src/aip/product/configured/adapters/configured_market_provider.py',
+              'src/aip/product/configured/adapters/configured_liquidity_provider.py',
+              'src/aip/product/configured/adapters/configured_portfolio_provider.py',
+              'src/aip/product/configured/readers/institutional_icl_reader.py',
+              'src/aip/product/configured/repositories/economic_historical_repository.py',
+              'src/aip/ui/modules/macro_intelligence/views/macro_intelligence_view.py',
+              'src/aip/product/economic/economic_snapshot_store.py',
+              'src/aip/integration/bccr/connector/rest_client.py',
+              'src/aip/integration/bccr/configuration/bccr_config.py',
+              'src/aip/integration/bccr/normalization/economic_series_parser.py',
+              'src/aip/ui/application/main.py',
+              'src/aip/ui/application/app.py',
+              'src/aip/tools/preflight_runtime.py',
+          ]
+          missing = [item for item in required if not Path(item).is_file()]
+          if missing:
+              raise SystemExit('missing critical modules: ' + ', '.join(missing))
+          invalid = []
+          for item in required:
+              data = Path(item).read_bytes()
+              if not data or b'\x00' in data:
+                  invalid.append(item)
+          if invalid:
+              raise SystemExit('invalid critical modules: ' + ', '.join(invalid))
+          print(f'critical production modules: PASS ({len(required)})')
+
+      - name: Compile production source
+        run: python -m compileall -q src
+
+      - name: Validate source tree hygiene
+        shell: python
+        run: |
+          from pathlib import Path
+          root = Path('src')
+          backups = []
+          null_bytes = []
+          for path in root.rglob('*'):
+              if not path.is_file():
+                  continue
+              name = path.name.lower()
+              if name.endswith('.bak') or '.before_' in name or name.endswith('~'):
+                  backups.append(str(path))
+              if path.suffix.lower() == '.py' and b'\x00' in path.read_bytes():
+                  null_bytes.append(str(path))
+          if backups:
+              raise SystemExit('backup artifacts found under src: ' + ', '.join(backups))
+          if null_bytes:
+              raise SystemExit('null bytes found in Python source: ' + ', '.join(null_bytes))
+          print('binary/source hygiene: PASS')
+
+      - name: Validate whitespace hygiene
+        run: git diff --check -- src
+
+      - name: Install runtime and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+
+      - name: Run institutional risk and liquidity regression suite
+        run: |
+          python -m pytest -q \
+            tests/unit/domain/liquidity \
+            tests/unit/domain/relative_value \
+            tests/unit/extensions/coopealianza/liquidity \
+            tests/unit/extensions/coopealianza/treasury/decision \
+            tests/unit/product/configured/context
+
+      - name: Run configured source and market regression suite
+        run: |
+          python -m pytest -q \
+            tests/unit/product/configured \
+            tests/unit/product/demo/test_configured_mode.py \
+            tests/unit/product/demo/test_configured_diagnostics_runtime.py \
+            tests/unit/product/demo/test_configured_portfolio_discovery.py \
+            tests/unit/product/demo/test_pipca_vector_discovery.py \
+            tests/unit/domain/market \
+            tests/unit/integration/bccr
+
+      - name: Run desktop workspace regression suite
+        run: |
+          python -m pytest -q \
+            tests/unit/ui/market \
+            tests/unit/ui/portfolio \
+            tests/unit/ui/liquidity \
+            tests/unit/ui/treasury \
+            tests/unit/ui/test_production_readiness.py \
+            tests/unit/ui/test_rc1_ui_bootstrap.py
+
+      - name: Build certified Windows recovery package
+        run: python scripts/recovery/build_windows_recovery_package.py
+
+      - name: Verify certified Windows recovery package
+        run: python scripts/recovery/verify_windows_recovery_package.py
+
+      - name: Upload certified recovery package
+        uses: actions/upload-artifact@v4
+        with:
+          name: AIP-Enterprise-RC1-Certified-Windows
+          path: dist/AIP-Enterprise-RC1-Certified-Windows.zip
+          if-no-files-found: error
+          retention-days: 30

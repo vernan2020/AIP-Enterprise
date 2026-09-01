@@ -96,5 +96,7 @@ class MarketService:
             curves=(curve,),
         )
 
-    def get_latest_snapshot(self, valuation_date: date, market: str, source: str) -> MarketSnapshot | None:
+    def get_latest_snapshot(
+        self, valuation_date: date, market: str, source: str
+    ) -> MarketSnapshot | None:
         return self._repository.get_latest(valuation_date, market, source)

@@ -31,7 +31,11 @@ class RelativeValueRequest:
     calculation_identifier: str | None = None
 
     def __post_init__(self) -> None:
-        for value, label in ((self.observed_market_price, "Observed market price"), (self.observed_market_yield, "Observed market yield"), (self.benchmark_yield, "Benchmark yield")):
+        for value, label in (
+            (self.observed_market_price, "Observed market price"),
+            (self.observed_market_yield, "Observed market yield"),
+            (self.benchmark_yield, "Benchmark yield"),
+        ):
             if value is None:
                 continue
             if not value.is_finite():

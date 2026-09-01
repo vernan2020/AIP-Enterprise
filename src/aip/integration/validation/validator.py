@@ -34,7 +34,9 @@ class Validator(ValidationPipeline):
         rules: Sequence[Callable[[Any], tuple[bool, str | None]]] | None = None,
     ) -> ValidationResult:
         if payload is None:
-            return ValidationResult(ok=False, issues=[ValidationIssue(field="payload", message="payload is required")])
+            return ValidationResult(
+                ok=False, issues=[ValidationIssue(field="payload", message="payload is required")]
+            )
 
         issues: list[ValidationIssue] = []
         if rules is not None:

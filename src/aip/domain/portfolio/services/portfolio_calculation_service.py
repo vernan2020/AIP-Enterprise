@@ -72,7 +72,9 @@ class PortfolioCalculationService:
         return weighted_sum / total_weight
 
     @staticmethod
-    def weighted_average_effective_yield(positions: Sequence[object], base_currency: Currency | None = None) -> Decimal:
+    def weighted_average_effective_yield(
+        positions: Sequence[object], base_currency: Currency | None = None
+    ) -> Decimal:
         """Calculate portfolio weighted yield using the validated effective-rate rule."""
         weighted_sum = Decimal("0")
         total_weight = Decimal("0")
@@ -129,7 +131,9 @@ class PortfolioCalculationService:
         """
         totals: dict[Currency, Decimal] = {}
         for position in positions:
-            totals[position.currency] = totals.get(position.currency, Decimal("0")) + position.market_value.amount
+            totals[position.currency] = (
+                totals.get(position.currency, Decimal("0")) + position.market_value.amount
+            )
 
         return {currency: Money(amount, currency) for currency, amount in totals.items()}
 
@@ -163,7 +167,9 @@ class PortfolioCalculationService:
         if isinstance(raw_currency, Currency):
             return raw_currency
         if isinstance(raw_currency, str) and raw_currency:
-            normalized_currency = PortfolioCalculationService._normalize_institutional_currency(raw_currency)
+            normalized_currency = PortfolioCalculationService._normalize_institutional_currency(
+                raw_currency
+            )
             if normalized_currency is None:
                 return None
             if isinstance(normalized_currency, Currency):
@@ -188,7 +194,13 @@ class PortfolioCalculationService:
             return None
 
         normalized_text = re.sub(r"\s+", " ", text).strip().casefold()
-        normalized_text = normalized_text.replace("ó", "o").replace("ú", "u").replace("á", "a").replace("é", "e").replace("í", "i")
+        normalized_text = (
+            normalized_text.replace("ó", "o")
+            .replace("ú", "u")
+            .replace("á", "a")
+            .replace("é", "e")
+            .replace("í", "i")
+        )
         normalized_text = normalized_text.replace("$", "").strip()
         normalized_text = re.sub(r"[^a-z]+", "", normalized_text)
         normalized_text = normalized_text.replace("costarricense", "").replace("costarricenses", "")
@@ -197,7 +209,13 @@ class PortfolioCalculationService:
             return normalized_text.upper()
         if normalized_text in {"us", "usd", "dolar", "dolares"}:
             return "USD"
-        if normalized_text in {"crc", "colon", "colones", "coloncostarricense", "colonescostarricenses"}:
+        if normalized_text in {
+            "crc",
+            "colon",
+            "colones",
+            "coloncostarricense",
+            "colonescostarricenses",
+        }:
             return "CRC"
         try:
             return Currency.from_code(text).value
@@ -225,15 +243,27 @@ class PortfolioCalculationService:
 
     @staticmethod
     def _resolve_effective_rate(position: object) -> Decimal | None:
-        master_tir = PortfolioCalculationService._resolve_position_value(position, "master_tir", "portfolio_yield", "yield_value", "tir")
-        facial_rate = PortfolioCalculationService._resolve_position_value(position, "facial_rate", "nominal_rate", "rate", "tasa nominal")
+        master_tir = PortfolioCalculationService._resolve_position_value(
+            position, "master_tir", "portfolio_yield", "yield_value", "tir"
+        )
+        facial_rate = PortfolioCalculationService._resolve_position_value(
+            position, "facial_rate", "nominal_rate", "rate", "tasa nominal"
+        )
 
         master_tir_value = PortfolioCalculationService._coerce_decimal(master_tir)
         facial_rate_value = PortfolioCalculationService._coerce_decimal(facial_rate)
 
-        if master_tir_value is not None and master_tir_value > Decimal("0") and master_tir_value.is_finite():
+        if (
+            master_tir_value is not None
+            and master_tir_value > Decimal("0")
+            and master_tir_value.is_finite()
+        ):
             return master_tir_value
-        if facial_rate_value is not None and facial_rate_value > Decimal("0") and facial_rate_value.is_finite():
+        if (
+            facial_rate_value is not None
+            and facial_rate_value > Decimal("0")
+            and facial_rate_value.is_finite()
+        ):
             return facial_rate_value
         return None
 
@@ -246,10 +276,15 @@ class PortfolioCalculationService:
 
             source_values = position.get("source_values") or {}
             if isinstance(source_values, dict):
-                normalized_source_values = {PortfolioCalculationService._normalize_lookup_key(key): value for key, value in source_values.items()}
+                normalized_source_values = {
+                    PortfolioCalculationService._normalize_lookup_key(key): value
+                    for key, value in source_values.items()
+                }
                 for key in keys:
                     normalized_key = PortfolioCalculationService._normalize_lookup_key(key)
-                    if normalized_key in normalized_source_values and normalized_source_values[normalized_key] not in (None, ""):
+                    if normalized_key in normalized_source_values and normalized_source_values[
+                        normalized_key
+                    ] not in (None, ""):
                         return normalized_source_values[normalized_key]
             return None
 

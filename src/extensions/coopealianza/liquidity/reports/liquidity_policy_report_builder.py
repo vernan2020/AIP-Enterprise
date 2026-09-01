@@ -46,11 +46,19 @@ class LiquidityPolicyReportBuilder:
                 getattr(item, "message", ""),
             ),
         )
-        blocking_failures = tuple(result.policy_id for result in ordered if result.status == "FAILED")
-        evidence = tuple({"policy_id": result.policy_id, "status": result.status} for result in ordered)
+        blocking_failures = tuple(
+            result.policy_id for result in ordered if result.status == "FAILED"
+        )
+        evidence = tuple(
+            {"policy_id": result.policy_id, "status": result.status} for result in ordered
+        )
         explanation = ExplanationBuilder().build(
             concise_conclusion="Institutional liquidity policy evaluation completed",
-            factors=[ExplanationFactor(name="evaluations", value=0, direction="higher_is_better", contribution=0)],
+            factors=[
+                ExplanationFactor(
+                    name="evaluations", value=0, direction="higher_is_better", contribution=0
+                )
+            ],
             assumptions=(),
             warnings=(),
             source_references=(),
@@ -68,7 +76,9 @@ class LiquidityPolicyReportBuilder:
             affected_assets=tuple(filter(None, [asset_id])),
             affected_issuers=(),
             policy_references=tuple(
-                (reference.source, reference.identifier) for result in ordered for reference in result.references
+                (reference.source, reference.identifier)
+                for result in ordered
+                for reference in result.references
             ),
             evidence=evidence,
             recommended_actions=(),
@@ -79,7 +89,9 @@ class LiquidityPolicyReportBuilder:
             explanation=explanation,
         )
 
-    def build_provider_assets(self, provider: PortfolioAssetProvider, portfolio_reference: str) -> tuple[dict[str, Any], ...]:
+    def build_provider_assets(
+        self, provider: PortfolioAssetProvider, portfolio_reference: str
+    ) -> tuple[dict[str, Any], ...]:
         try:
             assets = provider.get_assets(portfolio_reference)
         except Exception as exc:
@@ -92,11 +104,15 @@ class LiquidityPolicyReportBuilder:
             raise InstitutionalProviderError("Portfolio asset provider returned malformed data")
         return assets
 
-    def build_provider_policy_data(self, provider: InstitutionalPolicyProvider, portfolio_reference: str) -> dict[str, Any]:
+    def build_provider_policy_data(
+        self, provider: InstitutionalPolicyProvider, portfolio_reference: str
+    ) -> dict[str, Any]:
         try:
             data = provider.get_policy_data(portfolio_reference)
         except Exception as exc:
             raise InstitutionalProviderError("Institutional policy provider failed") from exc
         if not isinstance(data, dict):
-            raise InstitutionalProviderError("Institutional policy provider returned malformed data")
+            raise InstitutionalProviderError(
+                "Institutional policy provider returned malformed data"
+            )
         return data

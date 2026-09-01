@@ -76,7 +76,11 @@ class _StubInstrument(GovernmentBond):
 
 
 class _StubPricingService:
-    def price(self, instrument: Any, valuation_date: date, market_yield: Decimal) -> tuple[Decimal, Decimal, Decimal, Decimal, Decimal, Decimal, Decimal, Decimal, Decimal, Decimal]:
+    def price(
+        self, instrument: Any, valuation_date: date, market_yield: Decimal
+    ) -> tuple[
+        Decimal, Decimal, Decimal, Decimal, Decimal, Decimal, Decimal, Decimal, Decimal, Decimal
+    ]:
         return (
             Decimal("100"),
             Decimal("100"),
@@ -117,7 +121,12 @@ def _make_request() -> AnalysisRequest:
         benchmark_yield=Decimal("0.05"),
         context={
             "contractual_cashflows": (
-                CashFlow(payment_date=date(2026, 6, 1), amount=Decimal("100000"), currency="USD", cash_flow_type="coupon"),
+                CashFlow(
+                    payment_date=date(2026, 6, 1),
+                    amount=Decimal("100000"),
+                    currency="USD",
+                    cash_flow_type="coupon",
+                ),
             ),
         },
     )
@@ -152,7 +161,9 @@ def test_liquidity_workflow_translates_execution_failures() -> None:
     request = _make_request()
 
     class _FailingLiquidityWorkflow(LiquidityWorkflow):
-        def _execute_impl(self, request: AnalysisRequest, metrics: ExecutionMetrics) -> dict[str, object]:
+        def _execute_impl(
+            self, request: AnalysisRequest, metrics: ExecutionMetrics
+        ) -> dict[str, object]:
             raise RuntimeError("liquidity boom")
 
     workflow = _FailingLiquidityWorkflow()
@@ -278,18 +289,50 @@ def test_workflow_failures_propagate_and_emit_events() -> None:
 
     workflow = _FailingWorkflow(dispatcher=dispatcher)
     with pytest.raises(WorkflowExecutionError):
-        workflow.execute(AnalysisRequest(workflow_id="wf-2", correlation_id="corr-2", valuation_date=date(2026, 1, 1), instrument=_StubInstrument(), market_yield=Decimal("0.04"), curve=YieldCurve(valuation_date=date(2026, 1, 1), currency="USD", points=(CurvePoint(tenor=Decimal("1"), zero_rate=Decimal("0.03")),))))
+        workflow.execute(
+            AnalysisRequest(
+                workflow_id="wf-2",
+                correlation_id="corr-2",
+                valuation_date=date(2026, 1, 1),
+                instrument=_StubInstrument(),
+                market_yield=Decimal("0.04"),
+                curve=YieldCurve(
+                    valuation_date=date(2026, 1, 1),
+                    currency="USD",
+                    points=(CurvePoint(tenor=Decimal("1"), zero_rate=Decimal("0.03")),),
+                ),
+            )
+        )
 
     assert len(events) == 1
 
 
 def test_contracts_validate_required_identifiers_and_timezone() -> None:
     with pytest.raises(ContractValidationError):
-        AnalysisRequest(workflow_id="", correlation_id="corr", valuation_date=date(2026, 1, 1), instrument=_StubInstrument(), market_yield=Decimal("0.04"))
+        AnalysisRequest(
+            workflow_id="",
+            correlation_id="corr",
+            valuation_date=date(2026, 1, 1),
+            instrument=_StubInstrument(),
+            market_yield=Decimal("0.04"),
+        )
     with pytest.raises(ContractValidationError):
-        AnalysisRequest(workflow_id="wf", correlation_id="", valuation_date=date(2026, 1, 1), instrument=_StubInstrument(), market_yield=Decimal("0.04"))
+        AnalysisRequest(
+            workflow_id="wf",
+            correlation_id="",
+            valuation_date=date(2026, 1, 1),
+            instrument=_StubInstrument(),
+            market_yield=Decimal("0.04"),
+        )
     with pytest.raises(ContractValidationError):
-        AnalysisRequest(workflow_id="wf", correlation_id="corr", valuation_date=date(2026, 1, 1), instrument=_StubInstrument(), market_yield=Decimal("0.04"), requested_at=datetime(2026, 1, 1))
+        AnalysisRequest(
+            workflow_id="wf",
+            correlation_id="corr",
+            valuation_date=date(2026, 1, 1),
+            instrument=_StubInstrument(),
+            market_yield=Decimal("0.04"),
+            requested_at=datetime(2026, 1, 1),
+        )
 
 
 def test_results_preserve_metadata_and_decimals() -> None:
@@ -426,7 +469,10 @@ def test_analysis_request_copies_context_and_assigns_deterministic_ids() -> None
 def test_exception_translation_uses_application_specific_types() -> None:
     assert isinstance(translate_application_exception(ValueError("bad")), ContractValidationError)
     assert isinstance(translate_application_exception(RuntimeError("boom")), WorkflowExecutionError)
-    assert isinstance(translate_application_exception(KeyError("missing"), context="orchestrator"), OrchestratorExecutionError)
+    assert isinstance(
+        translate_application_exception(KeyError("missing"), context="orchestrator"),
+        OrchestratorExecutionError,
+    )
 
 
 def test_metrics_reject_negative_durations() -> None:

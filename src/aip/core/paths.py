@@ -1,13 +1,9 @@
 from __future__ import annotations
 
-from __future__ import annotations
-
+import importlib.resources as resources
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
-
-import importlib.resources as resources
 
 
 @dataclass(frozen=True, slots=True)
@@ -26,7 +22,13 @@ class ProjectPaths:
     @classmethod
     def discover_from_package(cls) -> "ProjectPaths":
         package_root = Path(os.getcwd())
-        return cls(package_root, package_root / "config", package_root / "database", package_root / "logs", package_root / "data")
+        return cls(
+            package_root,
+            package_root / "config",
+            package_root / "database",
+            package_root / "logs",
+            package_root / "data",
+        )
 
     @classmethod
     def default_config_dir(cls) -> Path:

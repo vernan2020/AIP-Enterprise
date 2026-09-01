@@ -51,12 +51,10 @@ class ImmutableList(Generic[T]):
         return iter(self._items)
 
     @overload
-    def __getitem__(self, index: int) -> T:
-        ...
+    def __getitem__(self, index: int) -> T: ...
 
     @overload
-    def __getitem__(self, index: slice) -> Self:
-        ...
+    def __getitem__(self, index: slice) -> Self: ...
 
     def __getitem__(self, index: int | slice) -> T | "ImmutableList[T]":
         """Get item by index or slice.

@@ -24,7 +24,12 @@ def svensson_zero_rate(
     scaled2 = tenor / tau2
     factor1 = (Decimal("1") - Decimal(str(math.exp(-float(scaled1))))) / scaled1
     factor2 = (Decimal("1") - Decimal(str(math.exp(-float(scaled2))))) / scaled2
-    return beta0 + beta1 * factor1 + beta2 * (factor1 - Decimal(str(math.exp(-float(scaled1))))) + beta3 * (factor2 - Decimal(str(math.exp(-float(scaled2)))))
+    return (
+        beta0
+        + beta1 * factor1
+        + beta2 * (factor1 - Decimal(str(math.exp(-float(scaled1)))))
+        + beta3 * (factor2 - Decimal(str(math.exp(-float(scaled2)))))
+    )
 
 
 def svensson_curve(
@@ -37,4 +42,9 @@ def svensson_curve(
     tau1: Decimal,
     tau2: Decimal,
 ) -> list[Decimal]:
-    return [svensson_zero_rate(tenor, beta0=beta0, beta1=beta1, beta2=beta2, beta3=beta3, tau1=tau1, tau2=tau2) for tenor in tenors]
+    return [
+        svensson_zero_rate(
+            tenor, beta0=beta0, beta1=beta1, beta2=beta2, beta3=beta3, tau1=tau1, tau2=tau2
+        )
+        for tenor in tenors
+    ]

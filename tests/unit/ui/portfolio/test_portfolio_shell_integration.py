@@ -1,23 +1,26 @@
 from __future__ import annotations
 
 from datetime import date
-from pathlib import Path
 
 import openpyxl
 
-from aip.product.configured.adapters.configured_portfolio_provider import ConfiguredPortfolioProvider
-from aip.product.configured.configuration.configured_source_config import ConfiguredSourceConfig, FolderWatchSourceConfig
+from aip.product.configured.adapters.configured_portfolio_provider import (
+    ConfiguredPortfolioProvider,
+)
+from aip.product.configured.configuration.configured_source_config import (
+    ConfiguredSourceConfig,
+    FolderWatchSourceConfig,
+)
 from aip.product.demo.bootstrap.application_factory import DemoApplicationFactory
 from aip.product.demo.configuration.demo_config import DemoConfig
 from aip.ui.modules.portfolio.models.portfolio_row import PortfolioRow
 from aip.ui.modules.portfolio.models.portfolio_summary import PortfolioSummary
 from aip.ui.modules.portfolio.presenters.portfolio_presenter import PortfolioPresenter
+from aip.ui.modules.portfolio.routing.portfolio_route import PortfolioRoute
 from aip.ui.modules.portfolio.viewmodels.portfolio_view_model import PortfolioViewModel
 from aip.ui.modules.portfolio.views.portfolio_view import PortfolioView
 from aip.ui.navigation.menu_registry import MenuRegistry
 from aip.ui.navigation.navigation_manager import NavigationManager
-from aip.ui.navigation.routes import Route
-from aip.ui.modules.portfolio.routing.portfolio_route import PortfolioRoute
 from aip.ui.shell.main_window import MainWindow
 from aip.ui.shell.workspace import Workspace
 
@@ -114,7 +117,9 @@ def test_portfolio_view_updates_from_view_model(qt_app) -> None:
     assert view.view_model().warnings[0] == "warning"
 
 
-def test_configured_bootstrap_nav_and_presenter_populate_viewmodel_and_table(tmp_path, qt_app) -> None:
+def test_configured_bootstrap_nav_and_presenter_populate_viewmodel_and_table(
+    tmp_path, qt_app
+) -> None:
     root = tmp_path / "institutional"
     maestro_dir = root / "Inversiones" / "2026" / "maestro" / "julio"
     vector_dir = root / "Inversiones" / "2026" / "vector" / "julio"
@@ -135,9 +140,13 @@ def test_configured_bootstrap_nav_and_presenter_populate_viewmodel_and_table(tmp
         encoding="utf-8",
     )
 
-    config = DemoConfig(execution_mode="CONFIGURED", demo_mode_enabled=False, data_cutoff_date=date(2026, 7, 29))
+    config = DemoConfig(
+        execution_mode="CONFIGURED", demo_mode_enabled=False, data_cutoff_date=date(2026, 7, 29)
+    )
     source_config = ConfiguredSourceConfig(
-        folder_watch=FolderWatchSourceConfig(enabled=True, portfolio_root=str(root), vector_path=str(vector_dir)),
+        folder_watch=FolderWatchSourceConfig(
+            enabled=True, portfolio_root=str(root), vector_path=str(vector_dir)
+        ),
     )
     provider = ConfiguredPortfolioProvider(config, source_config)
     payload = provider.get_portfolio()

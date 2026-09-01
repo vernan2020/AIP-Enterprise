@@ -133,7 +133,7 @@ class TestBusinessPeriod:
     def test_business_period_calendar_days(self, calendar: CostaRicaCalendar) -> None:
         """Test calendar_days calculation."""
         start = date(2024, 7, 29)  # Monday
-        end = date(2024, 8, 2)     # Friday
+        end = date(2024, 8, 2)  # Friday
         period = BusinessPeriod(start, end, calendar)
 
         assert period.calendar_days() == 5
@@ -141,7 +141,7 @@ class TestBusinessPeriod:
     def test_business_period_business_days(self, calendar: CostaRicaCalendar) -> None:
         """Test business_days calculation."""
         start = date(2024, 7, 29)  # Monday
-        end = date(2024, 8, 6)     # Tuesday next week
+        end = date(2024, 8, 6)  # Tuesday next week
         period = BusinessPeriod(start, end, calendar)
 
         # Mon, Tue, Wed, Thu, Fri, Mon, Tue
@@ -228,7 +228,7 @@ class TestDateRange:
     def test_date_range_business_days(self, calendar: CostaRicaCalendar) -> None:
         """Test business_days method."""
         start = date(2024, 7, 29)  # Monday
-        end = date(2024, 8, 6)     # Tuesday next week
+        end = date(2024, 8, 6)  # Tuesday next week
         dr = DateRange(start, end, calendar)
 
         business_dates = dr.business_days()
@@ -250,44 +250,28 @@ class TestBusinessDayCalculator:
 
     def test_days_between(self, calendar: CostaRicaCalendar) -> None:
         """Test days_between calculation."""
-        result = BusinessDayCalculator.days_between(
-            date(2024, 7, 29),
-            date(2024, 8, 2),
-            calendar
-        )
+        result = BusinessDayCalculator.days_between(date(2024, 7, 29), date(2024, 8, 2), calendar)
         assert result == 4  # 4 calendar days between
 
     def test_business_days_between(self, calendar: CostaRicaCalendar) -> None:
         """Test business_days_between calculation."""
         result = BusinessDayCalculator.business_days_between(
-            date(2024, 7, 29),
-            date(2024, 8, 6),
-            calendar
+            date(2024, 7, 29), date(2024, 8, 6), calendar
         )
         assert result == 7
 
     def test_add_business_days(self, calendar: CostaRicaCalendar) -> None:
         """Test add_business_days utility."""
-        result = BusinessDayCalculator.add_business_days(
-            date(2024, 7, 29),
-            4,
-            calendar
-        )
+        result = BusinessDayCalculator.add_business_days(date(2024, 7, 29), 4, calendar)
         # 4 business days from Monday: Tue, Wed, Thu, Fri
         assert result == date(2024, 8, 2)
 
     def test_next_business_day(self, calendar: CostaRicaCalendar) -> None:
         """Test next_business_day utility."""
-        result = BusinessDayCalculator.next_business_day(
-            date(2024, 7, 26),  # Friday
-            calendar
-        )
+        result = BusinessDayCalculator.next_business_day(date(2024, 7, 26), calendar)  # Friday
         assert result.weekday() == 0  # Monday
 
     def test_previous_business_day(self, calendar: CostaRicaCalendar) -> None:
         """Test previous_business_day utility."""
-        result = BusinessDayCalculator.previous_business_day(
-            date(2024, 7, 29),  # Monday
-            calendar
-        )
+        result = BusinessDayCalculator.previous_business_day(date(2024, 7, 29), calendar)  # Monday
         assert result.weekday() == 4  # Friday

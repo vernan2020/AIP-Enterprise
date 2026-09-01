@@ -29,8 +29,18 @@ class _StaticGapProvider(GapProvider):
         return ProjectionRequest(
             valuation_date=request.valuation_date,
             contractual_cashflows=(
-                CashFlow(payment_date=date(2024, 2, 1), amount=Decimal("100"), currency="USD", cash_flow_type="coupon"),
-                CashFlow(payment_date=date(2024, 3, 1), amount=Decimal("-40"), currency="USD", cash_flow_type="principal"),
+                CashFlow(
+                    payment_date=date(2024, 2, 1),
+                    amount=Decimal("100"),
+                    currency="USD",
+                    cash_flow_type="coupon",
+                ),
+                CashFlow(
+                    payment_date=date(2024, 3, 1),
+                    amount=Decimal("-40"),
+                    currency="USD",
+                    cash_flow_type="principal",
+                ),
             ),
             business_unit="treasury",
             portfolio_reference="pf-1",
@@ -48,13 +58,18 @@ class _BrokenGapProvider(GapProvider):
 
 
 class _RateProvider(ExchangeRatePolicyProvider):
-    def get_rate(self, from_currency: str, to_currency: str, valuation_date: date | None = None) -> Decimal:
+    def get_rate(
+        self, from_currency: str, to_currency: str, valuation_date: date | None = None
+    ) -> Decimal:
         return Decimal("1.10")
 
 
 class _PolicyProvider(LiquidityPolicyProvider):
     def get_policy(self, request: GapRequest) -> dict[str, object]:
-        return {"opening_liquidity": Decimal("50"), "bucket_configuration": ((date(2024, 1, 1), date(2024, 2, 15), "short"),)}
+        return {
+            "opening_liquidity": Decimal("50"),
+            "bucket_configuration": ((date(2024, 1, 1), date(2024, 2, 15), "short"),),
+        }
 
 
 def test_net_gap_reconciles_inflows_outflows_and_precision() -> None:
@@ -63,8 +78,18 @@ def test_net_gap_reconciles_inflows_outflows_and_precision() -> None:
         cashflow_request=ProjectionRequest(
             valuation_date=date(2024, 1, 1),
             contractual_cashflows=(
-                CashFlow(payment_date=date(2024, 2, 1), amount=Decimal("100.50"), currency="USD", cash_flow_type="coupon"),
-                CashFlow(payment_date=date(2024, 3, 1), amount=Decimal("-40.25"), currency="USD", cash_flow_type="principal"),
+                CashFlow(
+                    payment_date=date(2024, 2, 1),
+                    amount=Decimal("100.50"),
+                    currency="USD",
+                    cash_flow_type="coupon",
+                ),
+                CashFlow(
+                    payment_date=date(2024, 3, 1),
+                    amount=Decimal("-40.25"),
+                    currency="USD",
+                    cash_flow_type="principal",
+                ),
             ),
         ),
     )
@@ -84,12 +109,32 @@ def test_incremental_gap_is_bucket_based_and_deterministic() -> None:
         cashflow_request=ProjectionRequest(
             valuation_date=date(2024, 1, 1),
             contractual_cashflows=(
-                CashFlow(payment_date=date(2024, 2, 1), amount=Decimal("30"), currency="USD", cash_flow_type="coupon"),
-                CashFlow(payment_date=date(2024, 3, 1), amount=Decimal("-20"), currency="USD", cash_flow_type="principal"),
-                CashFlow(payment_date=date(2024, 4, 1), amount=Decimal("10"), currency="USD", cash_flow_type="deposit"),
+                CashFlow(
+                    payment_date=date(2024, 2, 1),
+                    amount=Decimal("30"),
+                    currency="USD",
+                    cash_flow_type="coupon",
+                ),
+                CashFlow(
+                    payment_date=date(2024, 3, 1),
+                    amount=Decimal("-20"),
+                    currency="USD",
+                    cash_flow_type="principal",
+                ),
+                CashFlow(
+                    payment_date=date(2024, 4, 1),
+                    amount=Decimal("10"),
+                    currency="USD",
+                    cash_flow_type="deposit",
+                ),
             ),
         ),
-        configuration={"bucket_configuration": ((date(2024, 1, 1), date(2024, 2, 29), "short"), (date(2024, 3, 1), date(2024, 4, 30), "long"))},
+        configuration={
+            "bucket_configuration": (
+                (date(2024, 1, 1), date(2024, 2, 29), "short"),
+                (date(2024, 3, 1), date(2024, 4, 30), "long"),
+            )
+        },
     )
 
     result = GapEngine().project(request)
@@ -107,9 +152,24 @@ def test_cumulative_gap_uses_opening_liquidity_and_unordered_input() -> None:
         cashflow_request=ProjectionRequest(
             valuation_date=date(2024, 1, 1),
             contractual_cashflows=(
-                CashFlow(payment_date=date(2024, 4, 1), amount=Decimal("-20"), currency="USD", cash_flow_type="loan"),
-                CashFlow(payment_date=date(2024, 2, 1), amount=Decimal("30"), currency="USD", cash_flow_type="coupon"),
-                CashFlow(payment_date=date(2024, 3, 1), amount=Decimal("-10"), currency="USD", cash_flow_type="principal"),
+                CashFlow(
+                    payment_date=date(2024, 4, 1),
+                    amount=Decimal("-20"),
+                    currency="USD",
+                    cash_flow_type="loan",
+                ),
+                CashFlow(
+                    payment_date=date(2024, 2, 1),
+                    amount=Decimal("30"),
+                    currency="USD",
+                    cash_flow_type="coupon",
+                ),
+                CashFlow(
+                    payment_date=date(2024, 3, 1),
+                    amount=Decimal("-10"),
+                    currency="USD",
+                    cash_flow_type="principal",
+                ),
             ),
         ),
         configuration={"opening_liquidity": Decimal("100")},
@@ -130,8 +190,18 @@ def test_contractual_gap_uses_cashflow_engine_output() -> None:
         cashflow_request=ProjectionRequest(
             valuation_date=date(2024, 1, 1),
             contractual_cashflows=(
-                CashFlow(payment_date=date(2024, 2, 1), amount=Decimal("50"), currency="USD", cash_flow_type="coupon"),
-                CashFlow(payment_date=date(2024, 3, 1), amount=Decimal("-10"), currency="USD", cash_flow_type="principal"),
+                CashFlow(
+                    payment_date=date(2024, 2, 1),
+                    amount=Decimal("50"),
+                    currency="USD",
+                    cash_flow_type="coupon",
+                ),
+                CashFlow(
+                    payment_date=date(2024, 3, 1),
+                    amount=Decimal("-10"),
+                    currency="USD",
+                    cash_flow_type="principal",
+                ),
             ),
         ),
     )
@@ -147,8 +217,19 @@ def test_behavioral_gap_preserves_assumptions_and_uses_behavioral_projection() -
         valuation_date=date(2024, 1, 1),
         cashflow_request=ProjectionRequest(
             valuation_date=date(2024, 1, 1),
-            contractual_cashflows=(CashFlow(payment_date=date(2024, 2, 1), amount=Decimal("20"), currency="USD", cash_flow_type="deposit"),),
-            behavioral_assumptions=(BehavioralAssumption(name="renewal", probability=Decimal("0.5"), effect_ratio=Decimal("0.5")),),
+            contractual_cashflows=(
+                CashFlow(
+                    payment_date=date(2024, 2, 1),
+                    amount=Decimal("20"),
+                    currency="USD",
+                    cash_flow_type="deposit",
+                ),
+            ),
+            behavioral_assumptions=(
+                BehavioralAssumption(
+                    name="renewal", probability=Decimal("0.5"), effect_ratio=Decimal("0.5")
+                ),
+            ),
             projection_type="behavioral",
         ),
         gap_type="behavioral",
@@ -165,7 +246,14 @@ def test_scenario_gap_isolated_and_comparison() -> None:
         valuation_date=date(2024, 1, 1),
         cashflow_request=ProjectionRequest(
             valuation_date=date(2024, 1, 1),
-            contractual_cashflows=(CashFlow(payment_date=date(2024, 2, 1), amount=Decimal("20"), currency="USD", cash_flow_type="deposit"),),
+            contractual_cashflows=(
+                CashFlow(
+                    payment_date=date(2024, 2, 1),
+                    amount=Decimal("20"),
+                    currency="USD",
+                    cash_flow_type="deposit",
+                ),
+            ),
             scenario_name="stress",
             projection_type="scenario",
         ),
@@ -184,9 +272,21 @@ def test_bucket_aggregation_rejects_overlapping_configuration() -> None:
         valuation_date=date(2024, 1, 1),
         cashflow_request=ProjectionRequest(
             valuation_date=date(2024, 1, 1),
-            contractual_cashflows=(CashFlow(payment_date=date(2024, 2, 1), amount=Decimal("10"), currency="USD", cash_flow_type="coupon"),),
+            contractual_cashflows=(
+                CashFlow(
+                    payment_date=date(2024, 2, 1),
+                    amount=Decimal("10"),
+                    currency="USD",
+                    cash_flow_type="coupon",
+                ),
+            ),
         ),
-        configuration={"bucket_configuration": ((date(2024, 1, 1), date(2024, 3, 1), "a"), (date(2024, 2, 1), date(2024, 4, 1), "b"))},
+        configuration={
+            "bucket_configuration": (
+                (date(2024, 1, 1), date(2024, 3, 1), "a"),
+                (date(2024, 2, 1), date(2024, 4, 1), "b"),
+            )
+        },
     )
 
     with pytest.raises(AggregationError):
@@ -198,7 +298,14 @@ def test_dimensional_aggregation_and_metadata() -> None:
         valuation_date=date(2024, 1, 1),
         cashflow_request=ProjectionRequest(
             valuation_date=date(2024, 1, 1),
-            contractual_cashflows=(CashFlow(payment_date=date(2024, 2, 1), amount=Decimal("10"), currency="USD", cash_flow_type="coupon"),),
+            contractual_cashflows=(
+                CashFlow(
+                    payment_date=date(2024, 2, 1),
+                    amount=Decimal("10"),
+                    currency="USD",
+                    cash_flow_type="coupon",
+                ),
+            ),
             business_unit="treasury",
             portfolio_reference="pf-1",
             product_type="loan",
@@ -221,8 +328,18 @@ def test_multi_currency_requires_policy_or_converts_explicitly() -> None:
         cashflow_request=ProjectionRequest(
             valuation_date=date(2024, 1, 1),
             contractual_cashflows=(
-                CashFlow(payment_date=date(2024, 2, 1), amount=Decimal("10"), currency="USD", cash_flow_type="coupon"),
-                CashFlow(payment_date=date(2024, 3, 1), amount=Decimal("5"), currency="EUR", cash_flow_type="deposit"),
+                CashFlow(
+                    payment_date=date(2024, 2, 1),
+                    amount=Decimal("10"),
+                    currency="USD",
+                    cash_flow_type="coupon",
+                ),
+                CashFlow(
+                    payment_date=date(2024, 3, 1),
+                    amount=Decimal("5"),
+                    currency="EUR",
+                    cash_flow_type="deposit",
+                ),
             ),
         ),
         currency="USD",
@@ -231,7 +348,14 @@ def test_multi_currency_requires_policy_or_converts_explicitly() -> None:
     with pytest.raises(CurrencyAggregationError):
         GapEngine().project(request)
 
-    result = GapEngine().project(GapRequest(valuation_date=date(2024, 1, 1), cashflow_request=request.cashflow_request, currency="USD", exchange_rate_policy_provider=_RateProvider()))
+    result = GapEngine().project(
+        GapRequest(
+            valuation_date=date(2024, 1, 1),
+            cashflow_request=request.cashflow_request,
+            currency="USD",
+            exchange_rate_policy_provider=_RateProvider(),
+        )
+    )
     assert result.currency == "USD"
 
 
@@ -240,7 +364,14 @@ def test_liquidity_position_and_explainability() -> None:
         valuation_date=date(2024, 1, 1),
         cashflow_request=ProjectionRequest(
             valuation_date=date(2024, 1, 1),
-            contractual_cashflows=(CashFlow(payment_date=date(2024, 2, 1), amount=Decimal("20"), currency="USD", cash_flow_type="coupon"),),
+            contractual_cashflows=(
+                CashFlow(
+                    payment_date=date(2024, 2, 1),
+                    amount=Decimal("20"),
+                    currency="USD",
+                    cash_flow_type="coupon",
+                ),
+            ),
         ),
         configuration={"opening_liquidity": Decimal("10")},
         assumptions=("assumption-a",),
@@ -259,8 +390,28 @@ def test_liquidity_position_and_explainability() -> None:
 
 def test_gap_analytics_and_providers() -> None:
     gaps = (
-        GapValue(period_start=date(2024, 2, 1), period_end=date(2024, 2, 1), net_gap=Decimal("10"), gross_inflow=Decimal("10"), gross_outflow=Decimal("0"), incremental_gap=Decimal("10"), cumulative_gap=Decimal("10"), currency="USD", bucket="short"),
-        GapValue(period_start=date(2024, 3, 1), period_end=date(2024, 3, 1), net_gap=Decimal("-5"), gross_inflow=Decimal("0"), gross_outflow=Decimal("5"), incremental_gap=Decimal("-5"), cumulative_gap=Decimal("5"), currency="EUR", bucket="long"),
+        GapValue(
+            period_start=date(2024, 2, 1),
+            period_end=date(2024, 2, 1),
+            net_gap=Decimal("10"),
+            gross_inflow=Decimal("10"),
+            gross_outflow=Decimal("0"),
+            incremental_gap=Decimal("10"),
+            cumulative_gap=Decimal("10"),
+            currency="USD",
+            bucket="short",
+        ),
+        GapValue(
+            period_start=date(2024, 3, 1),
+            period_end=date(2024, 3, 1),
+            net_gap=Decimal("-5"),
+            gross_inflow=Decimal("0"),
+            gross_outflow=Decimal("5"),
+            incremental_gap=Decimal("-5"),
+            cumulative_gap=Decimal("5"),
+            currency="EUR",
+            bucket="long",
+        ),
     )
 
     analytics = GapAnalytics().build(gaps)

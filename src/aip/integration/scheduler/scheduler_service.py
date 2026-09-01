@@ -8,7 +8,11 @@ from aip.core.exceptions import InfrastructureError
 from aip.integration.audit.execution_result import ExecutionResult, ExecutionStatus
 from aip.integration.audit.synchronization_log import SynchronizationLog
 from aip.integration.contracts.connector import ConnectorProtocol
-from aip.integration.contracts.synchronization import SynchronizationJob, SynchronizationRequest, SynchronizationScheduler
+from aip.integration.contracts.synchronization import (
+    SynchronizationJob,
+    SynchronizationRequest,
+    SynchronizationScheduler,
+)
 from aip.integration.events.synchronization_events import IntegrationEventBus, SynchronizationEvent
 from aip.integration.exceptions.exceptions import IntegrationError
 from aip.integration.scheduler.job_definition import JobDefinition
@@ -50,7 +54,9 @@ class SchedulerService(SynchronizationScheduler):
         if job_id not in self._jobs:
             return False
         job = self._jobs[job_id]
-        connector_name = job.connector_name or (job.connector.name if job.connector is not None else "unknown")
+        connector_name = job.connector_name or (
+            job.connector.name if job.connector is not None else "unknown"
+        )
         self._statuses[job_id] = {
             "status": ExecutionStatus.CANCELLED.value,
             "job_id": job_id,
@@ -94,7 +100,9 @@ class SchedulerService(SynchronizationScheduler):
         return self.cancel_job(job_id)
 
     def status(self, job_id: str) -> dict[str, Any]:
-        return dict(self._statuses.get(job_id, {"status": ExecutionStatus.PENDING.value, "job_id": job_id}))
+        return dict(
+            self._statuses.get(job_id, {"status": ExecutionStatus.PENDING.value, "job_id": job_id})
+        )
 
     def history(self, connector_name: str | None = None) -> list[dict[str, Any]]:
         items = [result.to_dict() for result in self._history]
@@ -111,7 +119,11 @@ class SchedulerService(SynchronizationScheduler):
 
         execution_id = f"{job.id}-{len(self._history) + 1}"
         started_at = datetime.now(UTC)
-        self._statuses[job.id] = {"status": ExecutionStatus.RUNNING.value, "job_id": job.id, "execution_id": execution_id}
+        self._statuses[job.id] = {
+            "status": ExecutionStatus.RUNNING.value,
+            "job_id": job.id,
+            "execution_id": execution_id,
+        }
         self._publish(SynchronizationEvent.started(job.id, connector.name, execution_id))
 
         try:
@@ -150,18 +162,22 @@ class SchedulerService(SynchronizationScheduler):
                 "execution_id": execution_id,
             }
             self._retry_attempts[job.id] = 0
-            connector.audit(SynchronizationLog(
-                execution_id=execution_id,
-                correlation_id=job.id,
-                connector=connector.name,
-                duration_seconds=0.0,
-                records_processed=records_processed,
-                warnings=[],
-                errors=[],
-                user="system",
-                timestamp=datetime.now(UTC),
-            ))
-            self._publish(SynchronizationEvent.completed(job.id, connector.name, execution_id, result))
+            connector.audit(
+                SynchronizationLog(
+                    execution_id=execution_id,
+                    correlation_id=job.id,
+                    connector=connector.name,
+                    duration_seconds=0.0,
+                    records_processed=records_processed,
+                    warnings=[],
+                    errors=[],
+                    user="system",
+                    timestamp=datetime.now(UTC),
+                )
+            )
+            self._publish(
+                SynchronizationEvent.completed(job.id, connector.name, execution_id, result)
+            )
             return result
         except Exception as exc:  # noqa: BLE001
             finished_at = datetime.now(UTC)
@@ -187,8 +203,14 @@ class SchedulerService(SynchronizationScheduler):
                 "error": str(exc),
             }
             if is_retry and self._retry_attempts.get(job.id, 0) > 1:
-                self._publish(SynchronizationEvent.retry(job.id, connector.name, execution_id, self._retry_attempts[job.id]))
-            self._publish(SynchronizationEvent.failed(job.id, connector.name, execution_id, str(exc)))
+                self._publish(
+                    SynchronizationEvent.retry(
+                        job.id, connector.name, execution_id, self._retry_attempts[job.id]
+                    )
+                )
+            self._publish(
+                SynchronizationEvent.failed(job.id, connector.name, execution_id, str(exc))
+            )
             return failed_result
         finally:
             connector.disconnect()

@@ -25,7 +25,9 @@ class LoggingManager:
             "{extra[component]:<14} | {extra[run_id]} | {message}"
         )
         base = logger.bind(component="SYSTEM", **current_context())
-        base.add(sys.stderr, level=self._settings.level, format=text_format, colorize=True, enqueue=True)
+        base.add(
+            sys.stderr, level=self._settings.level, format=text_format, colorize=True, enqueue=True
+        )
         base.add(
             log_dir / self._settings.application_filename,
             level=self._settings.level,

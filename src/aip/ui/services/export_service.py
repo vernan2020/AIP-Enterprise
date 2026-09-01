@@ -7,7 +7,9 @@ from typing import Any
 
 
 class TableExportService:
-    def export_records(self, path: Path | str, *, headers: list[str], rows: list[list[Any]], export_format: str) -> str:
+    def export_records(
+        self, path: Path | str, *, headers: list[str], rows: list[list[Any]], export_format: str
+    ) -> str:
         target = Path(path)
         if export_format == "csv":
             target = target.with_suffix(".csv")

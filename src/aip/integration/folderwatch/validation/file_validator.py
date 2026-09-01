@@ -9,7 +9,9 @@ class FileValidator(Validator):
 
     def validate(self, payload: object) -> ValidationResult:
         if not isinstance(payload, FileRequest):
-            return ValidationResult(ok=False, issues=[ValidationIssue(field="payload", message="payload is required")])
+            return ValidationResult(
+                ok=False, issues=[ValidationIssue(field="payload", message="payload is required")]
+            )
         issues: list[ValidationIssue] = []
         if not payload.path:
             issues.append(ValidationIssue(field="path", message="path is required"))

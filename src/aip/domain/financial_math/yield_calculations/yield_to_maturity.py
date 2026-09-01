@@ -53,7 +53,15 @@ def yield_to_maturity(
             present_value += cash_flow.amount / ((Decimal("1") + rate) ** years)
         return present_value - price
 
-    result = (solver or bisection_solve)(function, Decimal("-0.99"), Decimal("1"), tolerance=tolerance, max_iterations=max_iterations)
+    result = (solver or bisection_solve)(
+        function, Decimal("-0.99"), Decimal("1"), tolerance=tolerance, max_iterations=max_iterations
+    )
     if not result.converged:
         raise ConvergenceError("Yield-to-maturity did not converge")
-    return YieldSummary(rate=result.root, iterations=result.iterations, converged=result.converged, residual=result.residual, method=result.method)
+    return YieldSummary(
+        rate=result.root,
+        iterations=result.iterations,
+        converged=result.converged,
+        residual=result.residual,
+        method=result.method,
+    )

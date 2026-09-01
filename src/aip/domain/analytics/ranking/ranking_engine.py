@@ -28,7 +28,11 @@ class RankingEngine:
         else:
             ordered = sorted(items, key=lambda item: item.primary_score, reverse=True)
         if tie_breaker is not None:
-            ordered = sorted(ordered, key=lambda item: item.primary_score, reverse=ranking_order is RankingOrder.DESCENDING)
+            ordered = sorted(
+                ordered,
+                key=lambda item: item.primary_score,
+                reverse=ranking_order is RankingOrder.DESCENDING,
+            )
             for index in range(len(ordered)):
                 for inner in range(index + 1, len(ordered)):
                     if ordered[index].primary_score == ordered[inner].primary_score:

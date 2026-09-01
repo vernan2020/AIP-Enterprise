@@ -4,7 +4,14 @@ import platform
 
 from PySide6.QtWidgets import QDialog, QLabel, QVBoxLayout
 
-from aip.core.version import APP_DISPLAY_NAME, APP_DISPLAY_VERSION, APP_NAME, APP_RELEASE, APP_VERSION, ORGANIZATION
+from aip.core.version import (
+    APP_DISPLAY_NAME,
+    APP_DISPLAY_VERSION,
+    APP_NAME,
+    APP_RELEASE,
+    APP_VERSION,
+    ORGANIZATION,
+)
 
 
 class AboutDialog(QDialog):

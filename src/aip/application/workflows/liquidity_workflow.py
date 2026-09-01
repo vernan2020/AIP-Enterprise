@@ -27,9 +27,18 @@ class LiquidityWorkflow(BaseWorkflow):
 
     def execute(self, request: AnalysisRequest) -> AnalysisResult:
         self.begin_execution()
-        metrics = ExecutionMetrics(workflow_id=request.workflow_id, correlation_id=request.correlation_id)
+        metrics = ExecutionMetrics(
+            workflow_id=request.workflow_id, correlation_id=request.correlation_id
+        )
         metrics.record_start_timestamp(datetime.now(UTC))
-        self._dispatcher.dispatch("pre_workflow", {"workflow_id": request.workflow_id, "correlation_id": request.correlation_id, "request": request})
+        self._dispatcher.dispatch(
+            "pre_workflow",
+            {
+                "workflow_id": request.workflow_id,
+                "correlation_id": request.correlation_id,
+                "request": request,
+            },
+        )
         started_at = perf_counter()
         try:
             result = self._execute_impl(request, metrics)
@@ -38,7 +47,15 @@ class LiquidityWorkflow(BaseWorkflow):
             metrics.record_end_timestamp(datetime.now(UTC))
             metrics.mark_completed("COMPLETED")
             self.complete_execution()
-            self._dispatcher.dispatch("post_workflow", {"workflow_id": request.workflow_id, "correlation_id": request.correlation_id, "result": result, "metrics": metrics})
+            self._dispatcher.dispatch(
+                "post_workflow",
+                {
+                    "workflow_id": request.workflow_id,
+                    "correlation_id": request.correlation_id,
+                    "result": result,
+                    "metrics": metrics,
+                },
+            )
             return AnalysisResult(
                 workflow_id=request.workflow_id,
                 correlation_id=request.correlation_id,
@@ -48,7 +65,9 @@ class LiquidityWorkflow(BaseWorkflow):
                     "engine_sequence": metrics.engine_sequence,
                     "execution_time": str(elapsed),
                     "calculation_timestamp": datetime.now(UTC),
-                    "step_durations": {name: str(duration) for name, duration in metrics.step_durations.items()},
+                    "step_durations": {
+                        name: str(duration) for name, duration in metrics.step_durations.items()
+                    },
                 },
                 executed_at=datetime.now(UTC),
                 requested_at=request.requested_at,
@@ -68,10 +87,20 @@ class LiquidityWorkflow(BaseWorkflow):
             metrics.record_end_timestamp(datetime.now(UTC))
             metrics.mark_completed("FAILED")
             self.fail_execution()
-            self._dispatcher.dispatch("workflow_failed", {"workflow_id": request.workflow_id, "correlation_id": request.correlation_id, "error": str(translated), "metrics": metrics})
+            self._dispatcher.dispatch(
+                "workflow_failed",
+                {
+                    "workflow_id": request.workflow_id,
+                    "correlation_id": request.correlation_id,
+                    "error": str(translated),
+                    "metrics": metrics,
+                },
+            )
             raise translated from exc
 
-    def _execute_impl(self, request: AnalysisRequest, metrics: ExecutionMetrics) -> dict[str, object]:
+    def _execute_impl(
+        self, request: AnalysisRequest, metrics: ExecutionMetrics
+    ) -> dict[str, object]:
         contractual_cashflows = request.context.get("contractual_cashflows", ())
         projection_request = ProjectionRequest(
             valuation_date=request.valuation_date,
