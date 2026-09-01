@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   QT_QPA_PLATFORM: offscreen
@@ -43,6 +43,26 @@ jobs:
           path: dist/rebuilt-runtime-checkpoint
           if-no-files-found: error
           retention-days: 7
+
+      - name: Promote rebuilt checkpoint atomically
+        if: github.event_name == 'push' && github.ref == 'refs/heads/recovery/full-runtime-rc1-20260829'
+        shell: bash
+        run: |
+          set -euo pipefail
+          checkpoint="recovery/checkpoints/rc1-final-20260829"
+          candidate="dist/rebuilt-runtime-checkpoint"
+          rm -f "$checkpoint"/runtime_final.part*.b64
+          cp "$candidate/MANIFEST.json" "$checkpoint/MANIFEST.json"
+          cp "$candidate"/runtime_final.part*.b64 "$checkpoint/"
+          if git diff --quiet -- "$checkpoint"; then
+            echo "Canonical checkpoint already matches rebuilt materialized src."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$checkpoint/MANIFEST.json" "$checkpoint"/runtime_final.part*.b64
+          git commit -m "fix(recovery): replace corrupt RC1 checkpoint payload"
+          git push origin HEAD:recovery/full-runtime-rc1-20260829
 
       - name: Verify canonical runtime checkpoint
         run: python scripts/recovery/verify_runtime_checkpoint.py
