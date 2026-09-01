@@ -33,6 +33,17 @@ jobs:
       - name: Compile recovery control plane
         run: python -m compileall -q scripts/recovery
 
+      - name: Rebuild canonical checkpoint candidate
+        run: python scripts/recovery/rebuild_runtime_checkpoint.py --output-dir dist/rebuilt-runtime-checkpoint
+
+      - name: Upload rebuilt checkpoint candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: AIP-RC1-Rebuilt-Runtime-Checkpoint
+          path: dist/rebuilt-runtime-checkpoint
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Verify canonical runtime checkpoint
         run: python scripts/recovery/verify_runtime_checkpoint.py
 
