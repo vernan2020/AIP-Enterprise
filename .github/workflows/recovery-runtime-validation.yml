@@ -194,3 +194,31 @@ jobs:
           path: dist/AIP-Enterprise-RC1-Certified-Windows.zip
           if-no-files-found: error
           retention-days: 30
+
+  validate-windows-restore:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout certified recovery branch
+        uses: actions/checkout@v4
+        with:
+          ref: recovery/full-runtime-rc1-20260829
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Compile recovery control plane on Windows
+        run: python -m compileall -q scripts/recovery
+
+      - name: Verify checkpoint on Windows
+        run: python scripts/recovery/verify_runtime_checkpoint.py
+
+      - name: Restore checkpoint on Windows without directory rename
+        run: python scripts/recovery/restore_runtime_checkpoint.py --skip-backup
+
+      - name: Validate checkpoint marker on Windows
+        run: python scripts/recovery/runtime_checkpoint_status.py
+
+      - name: Compile restored source on Windows
+        run: python -m compileall -q src
