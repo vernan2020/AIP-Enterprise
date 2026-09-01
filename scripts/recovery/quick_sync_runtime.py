@@ -70,11 +70,15 @@ def _copy_member(archive: zipfile.ZipFile, member: str, target: Path) -> bool:
     return True
 
 
-def _overlay_runtime(root: Path, archive_path: Path) -> int:
+def _replace_runtime(root: Path, archive_path: Path) -> int:
     copied = 0
     with zipfile.ZipFile(archive_path, "r") as archive:
         prefix = _locate_prefix(archive)
         source_prefix = prefix + "src/aip/"
+
+        target_root = root / "src" / "aip"
+        if target_root.exists():
+            shutil.rmtree(target_root)
 
         for info in archive.infolist():
             name = info.filename
@@ -175,8 +179,8 @@ def main() -> int:
         archive_path = Path(temporary) / "runtime.zip"
         print("Downloading recovered runtime from GitHub...")
         _download_archive(archive_path)
-        print("Overlaying src/aip...")
-        copied = _overlay_runtime(root, archive_path)
+        print("Replacing src/aip with recovered runtime...")
+        copied = _replace_runtime(root, archive_path)
         print(f"Runtime files synchronized: {copied}")
 
     env = _runtime_environment(root)
