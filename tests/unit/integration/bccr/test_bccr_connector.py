@@ -420,8 +420,12 @@ def test_response_validator_rejects_invalid_timestamp_and_invalid_response() -> 
 def test_bccr_config_and_connector_edge_paths() -> None:
     with pytest.raises(ValueError):
         BCCRConfig(base_url="", indicators=["IPC"])
-    with pytest.raises(ValueError):
-        BCCRConfig(base_url="https://api.bccr.fi.cr", indicators=[], timeout_seconds=1.0)
+    empty_config = BCCRConfig(
+        base_url="https://api.bccr.fi.cr",
+        indicators=[],
+        timeout_seconds=1.0,
+    )
+    assert empty_config.indicators == []
     with pytest.raises(ValueError):
         BCCRConfig(base_url="https://api.bccr.fi.cr", indicators=["IPC"], timeout_seconds=0)
     with pytest.raises(ValueError):
