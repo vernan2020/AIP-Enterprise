@@ -1,254 +1,181 @@
 from __future__ import annotations
 
 import argparse
-import base64
-import hashlib
 import io
-import json
+import os
+import shutil
 import tarfile
+import tempfile
+import zipfile
+from datetime import datetime
 from pathlib import Path
-from typing import Any
 
-CHECKPOINT_DIR = Path("recovery/checkpoints/rc1-certified-src-20260829")
-MANIFEST_NAME = "MANIFEST.json"
-PART_GLOB = "runtime_src.part*.b64"
-MARKER_NAME = ".aip_runtime_checkpoint.sha256"
-
-CRITICAL_MEMBERS = {
-    "src/aip/product/configured/services/configured_portfolio_var_service.py",
-    "src/aip/product/configured/adapters/configured_market_provider.py",
-    "src/aip/product/configured/adapters/configured_liquidity_provider.py",
-    "src/aip/ui/modules/macro_intelligence/views/macro_intelligence_view.py",
-    "src/aip/product/economic/economic_snapshot_store.py",
-    "src/aip/ui/application/main.py",
-    "src/aip/ui/application/app.py",
-}
+from checkpoint_contract import (
+    CHECKPOINT_DIR,
+    MARKER_NAME,
+    CheckpointVerification,
+    decode_checkpoint_payload,
+    load_manifest,
+    validated_archive_members,
+    verify_checkpoint,
+)
 
 
-def _load_manifest(checkpoint_dir: Path) -> dict[str, Any]:
-    manifest_path = checkpoint_dir / MANIFEST_NAME
-    if not manifest_path.is_file():
-        raise RuntimeError(f"Checkpoint manifest not found: {manifest_path}")
-    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise RuntimeError("Checkpoint manifest must be a JSON object")
-    return payload
+def _backup_src(root: Path) -> Path | None:
+    source = root / "src"
+    if not source.is_dir():
+        return None
+
+    backup_dir = root / "recovery" / "local_backups"
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    backup = backup_dir / f"AIP_BEFORE_CHECKPOINT_RESTORE_{timestamp}.zip"
+
+    excluded_names = {"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"}
+    excluded_suffixes = {".pyc", ".pyo"}
+    with zipfile.ZipFile(backup, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for path in source.rglob("*"):
+            if not path.is_file():
+                continue
+            relative = path.relative_to(root)
+            if any(part in excluded_names for part in relative.parts):
+                continue
+            if path.suffix.lower() in excluded_suffixes:
+                continue
+            archive.write(path, relative.as_posix())
+    return backup
 
 
-def _declared_parts(checkpoint_dir: Path, manifest: dict[str, Any]) -> list[Path]:
-    raw_parts = manifest.get("parts")
-    if not isinstance(raw_parts, list) or not raw_parts:
-        raise RuntimeError("Checkpoint manifest does not declare any parts")
+def _extract_to_staging(
+    payload: bytes,
+    root: Path,
+) -> tuple[tempfile.TemporaryDirectory[str], Path, CheckpointVerification]:
+    checkpoint_dir = root / CHECKPOINT_DIR
+    manifest = load_manifest(checkpoint_dir)
 
-    names: list[str] = []
-    for item in raw_parts:
-        if not isinstance(item, str) or not item.strip():
-            raise RuntimeError("Checkpoint manifest contains an invalid part name")
-        name = item.strip()
-        path = Path(name)
-        if path.name != name or path.is_absolute() or ".." in path.parts:
-            raise RuntimeError(f"Unsafe checkpoint part name: {name}")
-        names.append(name)
+    temporary = tempfile.TemporaryDirectory(prefix=".aip-checkpoint-stage-", dir=root)
+    stage_root = Path(temporary.name)
+    try:
+        with tarfile.open(fileobj=io.BytesIO(payload), mode="r:*") as archive:
+            members, file_count = validated_archive_members(archive, manifest)
+            for member in members:
+                normalized = member.name.replace("\\", "/").rstrip("/")
+                destination = stage_root.joinpath(*normalized.split("/"))
+                if member.isdir():
+                    destination.mkdir(parents=True, exist_ok=True)
+                    continue
 
-    if len(names) != len(set(names)):
-        raise RuntimeError("Checkpoint manifest contains duplicate part names")
+                source = archive.extractfile(member)
+                if source is None:
+                    raise RuntimeError(f"Unable to read checkpoint member: {member.name}")
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                with source, destination.open("wb") as target:
+                    shutil.copyfileobj(source, target, length=1024 * 1024)
 
-    declared_count = manifest.get("part_count")
-    if declared_count != len(names):
-        raise RuntimeError(
-            "Checkpoint part count mismatch in manifest: "
-            f"declared {declared_count}, listed {len(names)}"
+                mode = member.mode & 0o777
+                if mode:
+                    try:
+                        os.chmod(destination, mode)
+                    except OSError:
+                        pass
+
+        staged_src = stage_root / "src"
+        if not staged_src.is_dir():
+            raise RuntimeError("Checkpoint staging did not produce a src tree")
+
+        missing_critical = [
+            item for item in manifest.critical_members if not (stage_root / item).is_file()
+        ]
+        if missing_critical:
+            raise RuntimeError(
+                "Staged checkpoint is missing critical runtime members: "
+                + ", ".join(missing_critical)
+            )
+
+        verification = CheckpointVerification(
+            digest=manifest.payload_sha256,
+            part_count=manifest.part_count,
+            archive_member_count=len(members),
+            archive_file_count=file_count,
+            critical_member_count=len(manifest.critical_members),
         )
-
-    actual_names = {path.name for path in checkpoint_dir.glob(PART_GLOB)}
-    expected_names = set(names)
-    missing = sorted(expected_names - actual_names)
-    extra = sorted(actual_names - expected_names)
-    if missing or extra:
-        details: list[str] = []
-        if missing:
-            details.append("missing=" + ",".join(missing))
-        if extra:
-            details.append("undeclared=" + ",".join(extra))
-        raise RuntimeError("Checkpoint part set mismatch: " + "; ".join(details))
-
-    parts = [checkpoint_dir / name for name in names]
-    for part in parts:
-        if not part.is_file():
-            raise RuntimeError(f"Checkpoint part is unavailable: {part}")
-    return parts
+        return temporary, staged_src, verification
+    except Exception:
+        temporary.cleanup()
+        raise
 
 
-def _decode_archive(parts: list[Path], manifest: dict[str, Any]) -> tuple[bytes, str]:
-    encoded = "".join(part.read_text(encoding="ascii").strip() for part in parts)
-    expected_encoded_chars = manifest.get("encoded_chars")
-    if isinstance(expected_encoded_chars, int) and len(encoded) != expected_encoded_chars:
-        raise RuntimeError(
-            "Checkpoint base64 length mismatch: "
-            f"expected {expected_encoded_chars}, got {len(encoded)}"
-        )
+def _replace_src_transactionally(root: Path, staged_src: Path) -> None:
+    target = root / "src"
+    previous = root / ".aip_src_before_checkpoint_restore"
+
+    if previous.exists():
+        shutil.rmtree(previous)
+
+    had_existing = target.exists()
+    if had_existing:
+        target.rename(previous)
 
     try:
-        payload = base64.b64decode(encoded, validate=True)
-    except Exception as exc:
-        raise RuntimeError("Checkpoint base64 payload is invalid") from exc
-
-    expected_bytes = manifest.get("archive_bytes")
-    if isinstance(expected_bytes, int) and len(payload) != expected_bytes:
-        raise RuntimeError(
-            "Checkpoint archive size mismatch: "
-            f"expected {expected_bytes}, got {len(payload)}"
-        )
-
-    expected_digest = manifest.get("archive_sha256")
-    if not isinstance(expected_digest, str) or len(expected_digest) != 64:
-        raise RuntimeError("Checkpoint manifest has an invalid archive SHA-256")
-    digest = hashlib.sha256(payload).hexdigest()
-    if digest != expected_digest:
-        raise RuntimeError(
-            "Checkpoint checksum mismatch: "
-            f"expected {expected_digest}, got {digest}"
-        )
-    return payload, digest
+        staged_src.rename(target)
+    except Exception:
+        if target.exists():
+            shutil.rmtree(target)
+        if had_existing and previous.exists():
+            previous.rename(target)
+        raise
+    else:
+        if previous.exists():
+            shutil.rmtree(previous)
 
 
-def _expected_source_files(manifest: dict[str, Any]) -> dict[str, tuple[int, str]]:
-    raw_files = manifest.get("source_files")
-    if not isinstance(raw_files, list) or not raw_files:
-        raise RuntimeError("Checkpoint manifest does not declare source files")
-
-    expected: dict[str, tuple[int, str]] = {}
-    for item in raw_files:
-        if not isinstance(item, dict):
-            raise RuntimeError("Checkpoint manifest contains an invalid source file record")
-        path = item.get("path")
-        size = item.get("size")
-        digest = item.get("sha256")
-        if (
-            not isinstance(path, str)
-            or not path.startswith("src/")
-            or not isinstance(size, int)
-            or size < 0
-            or not isinstance(digest, str)
-            or len(digest) != 64
-        ):
-            raise RuntimeError(f"Invalid source file record: {item!r}")
-        normalized = path.replace("\\", "/")
-        if normalized in expected:
-            raise RuntimeError(f"Duplicate source file in manifest: {normalized}")
-        expected[normalized] = (size, digest)
-
-    declared_count = manifest.get("source_file_count")
-    if declared_count != len(expected):
-        raise RuntimeError(
-            "Checkpoint source file count mismatch: "
-            f"declared {declared_count}, listed {len(expected)}"
-        )
-    return expected
-
-
-def _safe_members(archive: tarfile.TarFile) -> list[tarfile.TarInfo]:
-    safe: list[tarfile.TarInfo] = []
-    for member in archive.getmembers():
-        normalized = member.name.replace("\\", "/")
-        path = Path(normalized)
-        if (
-            path.is_absolute()
-            or ".." in path.parts
-            or not path.parts
-            or path.parts[0] != "src"
-        ):
-            raise RuntimeError(f"Unsafe checkpoint member: {member.name}")
-        if not (member.isdir() or member.isfile()):
-            raise RuntimeError(f"Unsupported checkpoint member type: {member.name}")
-        safe.append(member)
-    return safe
-
-
-def _verify_archive_files(
-    archive: tarfile.TarFile,
-    manifest: dict[str, Any],
-) -> tuple[int, int]:
-    expected = _expected_source_files(manifest)
-    safe_members = _safe_members(archive)
-    regular_members = {
-        member.name.replace("\\", "/"): member
-        for member in safe_members
-        if member.isfile()
-    }
-
-    missing = sorted(set(expected) - set(regular_members))
-    extra = sorted(set(regular_members) - set(expected))
-    if missing or extra:
-        details: list[str] = []
-        if missing:
-            details.append(f"missing={len(missing)}")
-        if extra:
-            details.append(f"extra={len(extra)}")
-        raise RuntimeError("Checkpoint source tree mismatch: " + "; ".join(details))
-
-    for path, (expected_size, expected_digest) in expected.items():
-        member = regular_members[path]
-        extracted = archive.extractfile(member)
-        if extracted is None:
-            raise RuntimeError(f"Unable to read checkpoint member: {path}")
-        data = extracted.read()
-        if len(data) != expected_size:
-            raise RuntimeError(
-                f"Checkpoint member size mismatch for {path}: "
-                f"expected {expected_size}, got {len(data)}"
-            )
-        digest = hashlib.sha256(data).hexdigest()
-        if digest != expected_digest:
-            raise RuntimeError(
-                f"Checkpoint member checksum mismatch for {path}: "
-                f"expected {expected_digest}, got {digest}"
-            )
-
-    missing_critical = sorted(CRITICAL_MEMBERS - set(expected))
-    if missing_critical:
-        raise RuntimeError(
-            "Certified checkpoint is missing critical runtime members: "
-            + ", ".join(missing_critical)
-        )
-    return len(expected), len(CRITICAL_MEMBERS)
-
-
-def verify_checkpoint(root: Path) -> tuple[str, int, int, int]:
+def restore_checkpoint(
+    root: Path,
+    *,
+    create_backup: bool = True,
+) -> tuple[CheckpointVerification, Path | None]:
     checkpoint_dir = root / CHECKPOINT_DIR
-    manifest = _load_manifest(checkpoint_dir)
-    parts = _declared_parts(checkpoint_dir, manifest)
-    payload, digest = _decode_archive(parts, manifest)
+    manifest = load_manifest(checkpoint_dir)
+    payload, digest = decode_checkpoint_payload(checkpoint_dir, manifest)
 
-    with tarfile.open(fileobj=io.BytesIO(payload), mode="r:*") as archive:
-        source_count, critical_count = _verify_archive_files(archive, manifest)
-
-    return digest, len(parts), source_count, critical_count
-
-
-def _restore(root: Path) -> tuple[str, int, int, int]:
-    checkpoint_dir = root / CHECKPOINT_DIR
-    manifest = _load_manifest(checkpoint_dir)
-    parts = _declared_parts(checkpoint_dir, manifest)
-    payload, digest = _decode_archive(parts, manifest)
-
-    with tarfile.open(fileobj=io.BytesIO(payload), mode="r:*") as archive:
-        source_count, critical_count = _verify_archive_files(archive, manifest)
-        archive.extractall(root, members=_safe_members(archive))
+    # Full archive validation and staging happen before src is touched.
+    temporary, staged_src, verification = _extract_to_staging(payload, root)
+    backup: Path | None = None
+    try:
+        if create_backup:
+            backup = _backup_src(root)
+        _replace_src_transactionally(root, staged_src)
+    finally:
+        temporary.cleanup()
 
     marker_path = root / MARKER_NAME
     marker_path.write_text(digest + "\n", encoding="ascii")
-    return digest, len(parts), source_count, critical_count
+    return verification, backup
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Verify or restore the certified AIP runtime checkpoint")
+    parser = argparse.ArgumentParser(
+        description="Verify or restore the canonical AIP Enterprise RC1 runtime checkpoint"
+    )
     parser.add_argument(
         "--verify",
         action="store_true",
-        help="Verify the certified checkpoint without modifying src",
+        help="Verify the canonical checkpoint without modifying src",
+    )
+    parser.add_argument(
+        "--skip-backup",
+        action="store_true",
+        help="Skip the restore-level ZIP backup because an outer installer already created one",
     )
     return parser
+
+
+def _print_verification(prefix: str, result: CheckpointVerification) -> None:
+    print(f"{prefix}: {result.digest}")
+    print(f"Validated checkpoint parts: {result.part_count}")
+    print(f"Validated archive members: {result.archive_member_count}")
+    print(f"Validated archive files: {result.archive_file_count}")
+    print(f"Validated critical runtime members: {result.critical_member_count}")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -256,16 +183,15 @@ def main(argv: list[str] | None = None) -> int:
     root = Path(__file__).resolve().parents[2]
 
     if args.verify:
-        digest, part_count, source_count, critical_count = verify_checkpoint(root)
-        print(f"AIP certified runtime checkpoint OK: {digest}")
-    else:
-        digest, part_count, source_count, critical_count = _restore(root)
-        print(f"AIP certified runtime checkpoint restored: {digest}")
-        print(f"Runtime marker written: {MARKER_NAME}")
+        result = verify_checkpoint(root)
+        _print_verification("AIP canonical runtime checkpoint OK", result)
+        return 0
 
-    print(f"Validated checkpoint parts: {part_count}")
-    print(f"Validated source files: {source_count}")
-    print(f"Validated critical runtime members: {critical_count}")
+    result, backup = restore_checkpoint(root, create_backup=not args.skip_backup)
+    _print_verification("AIP canonical runtime checkpoint restored", result)
+    print(f"Runtime marker written: {MARKER_NAME}")
+    if backup is not None:
+        print(f"Rollback backup retained: {backup}")
     return 0
 
 
