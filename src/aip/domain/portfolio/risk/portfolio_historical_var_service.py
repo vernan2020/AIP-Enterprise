@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from datetime import date
 from decimal import Decimal
 
 from aip.domain.portfolio.risk.historical_price_series import HistoricalPriceSeries
@@ -26,6 +27,23 @@ class PortfolioVaRPosition:
 
 
 @dataclass(frozen=True, slots=True)
+class PortfolioVaRPositionResult:
+    """Contribution of one title at the portfolio VeR scenario."""
+
+    security_key: str
+    series: str
+    issuer: str
+    currency: str
+    market_value_crc: Decimal
+    pnl_at_portfolio_var_scenario_crc: Decimal
+    contribution_at_var_scenario_percent: Decimal
+    individual_var_crc: Decimal
+    individual_var_percent: Decimal
+    real_price_observations: int
+    synthetic_price_observations: int
+
+
+@dataclass(frozen=True, slots=True)
 class PortfolioHistoricalVaRResult:
     """Auditable consolidated 95% historical VeR result."""
 
@@ -36,10 +54,21 @@ class PortfolioHistoricalVaRResult:
     horizon_observations: int
     confidence_level: Decimal
     percentile: Decimal
-    selected_scenario_rank: int
+    var_rank: int
+    var_scenario_number: int
+    var_scenario_lagged_date: date
+    var_scenario_date: date
     selected_scenario_pnl_crc: Decimal
     scenario_pnl_crc: tuple[Decimal, ...]
-    position_count: int
+    positions: tuple[PortfolioVaRPositionResult, ...]
+
+    @property
+    def selected_scenario_rank(self) -> int:
+        return self.var_rank
+
+    @property
+    def position_count(self) -> int:
+        return len(self.positions)
 
 
 class PortfolioHistoricalVaRService:
@@ -85,6 +114,7 @@ class PortfolioHistoricalVaRService:
             raise RuntimeError("institutional VeR scenario geometry is inconsistent")
 
         portfolio_scenarios = [Decimal("0") for _ in range(scenario_count)]
+        position_scenarios: list[tuple[PortfolioVaRPosition, tuple[Decimal, ...]]] = []
 
         for position in positions:
             prices = position.price_series.prices
@@ -99,6 +129,7 @@ class PortfolioHistoricalVaRService:
             if len(one_day_log_returns) != 520:
                 raise RuntimeError("expected 520 one-day returns from 521 prices")
 
+            pnl_values: list[Decimal] = []
             rolling_sum = sum(one_day_log_returns[: cls.HORIZON_OBSERVATIONS])
             for scenario_index in range(scenario_count):
                 if scenario_index > 0:
@@ -109,10 +140,17 @@ class PortfolioHistoricalVaRService:
 
                 price_return = math.exp(rolling_sum) - 1.0
                 pnl = position.market_value_crc * Decimal(str(price_return))
+                pnl_values.append(pnl)
                 portfolio_scenarios[scenario_index] += pnl
 
-        ordered = tuple(sorted(portfolio_scenarios))
-        selected = ordered[cls.SELECTED_SCENARIO_RANK - 1]
+            position_scenarios.append((position, tuple(pnl_values)))
+
+        ranked_indices = sorted(
+            range(scenario_count),
+            key=lambda index: portfolio_scenarios[index],
+        )
+        selected_index = ranked_indices[cls.SELECTED_SCENARIO_RANK - 1]
+        selected = portfolio_scenarios[selected_index]
         portfolio_var = max(Decimal("0"), -selected)
         market_value = sum(
             (position.market_value_crc for position in positions),
@@ -124,6 +162,40 @@ class PortfolioHistoricalVaRService:
             else Decimal("0")
         )
 
+        position_results: list[PortfolioVaRPositionResult] = []
+        for position, scenarios in position_scenarios:
+            pnl_at_selected = scenarios[selected_index]
+            individual_selected = sorted(scenarios)[cls.SELECTED_SCENARIO_RANK - 1]
+            individual_var = max(Decimal("0"), -individual_selected)
+            individual_var_percent = (
+                individual_var / position.market_value_crc * Decimal("100")
+                if position.market_value_crc > 0
+                else Decimal("0")
+            )
+            contribution = (
+                pnl_at_selected / selected * Decimal("100")
+                if selected != 0
+                else Decimal("0")
+            )
+            synthetic_count = position.price_series.synthetic_count
+            position_results.append(
+                PortfolioVaRPositionResult(
+                    security_key=position.security_key,
+                    series=position.series,
+                    issuer=position.issuer,
+                    currency=position.currency,
+                    market_value_crc=position.market_value_crc,
+                    pnl_at_portfolio_var_scenario_crc=pnl_at_selected,
+                    contribution_at_var_scenario_percent=contribution,
+                    individual_var_crc=individual_var,
+                    individual_var_percent=individual_var_percent,
+                    real_price_observations=(
+                        position.price_series.observation_count - synthetic_count
+                    ),
+                    synthetic_price_observations=synthetic_count,
+                )
+            )
+
         return PortfolioHistoricalVaRResult(
             portfolio_market_value_crc=market_value,
             portfolio_var_crc=portfolio_var,
@@ -132,8 +204,13 @@ class PortfolioHistoricalVaRService:
             horizon_observations=cls.HORIZON_OBSERVATIONS,
             confidence_level=cls.CONFIDENCE_LEVEL,
             percentile=cls.PERCENTILE,
-            selected_scenario_rank=cls.SELECTED_SCENARIO_RANK,
+            var_rank=cls.SELECTED_SCENARIO_RANK,
+            var_scenario_number=selected_index + 1,
+            var_scenario_lagged_date=common_dates[selected_index],
+            var_scenario_date=common_dates[
+                selected_index + cls.HORIZON_OBSERVATIONS
+            ],
             selected_scenario_pnl_crc=selected,
-            scenario_pnl_crc=ordered,
-            position_count=len(positions),
+            scenario_pnl_crc=tuple(portfolio_scenarios),
+            positions=tuple(position_results),
         )
