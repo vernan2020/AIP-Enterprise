@@ -1,0 +1,50 @@
+name: RC1 checkpoint inspection
+
+on:
+  push:
+    branches:
+      - fix/rc1-ci-runtime-20260901
+
+permissions:
+  contents: read
+
+jobs:
+  inspect-checkpoint:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Restore canonical runtime checkpoint
+        run: python scripts/recovery/restore_runtime_checkpoint.py
+      - name: Inspect recovered shell and runtime
+        run: |
+          python - <<'PY'
+          import ast
+          import hashlib
+          from pathlib import Path
+
+          root = Path('.')
+          shell = root / 'src/aip/ui/shell/main_window.py'
+          text = shell.read_text(encoding='utf-8')
+          tree = ast.parse(text)
+          init_args = None
+          for node in tree.body:
+              if isinstance(node, ast.ClassDef) and node.name == 'MainWindow':
+                  for item in node.body:
+                      if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)) and item.name == '__init__':
+                          init_args = [a.arg for a in item.args.args]
+                          init_args += [a.arg for a in item.args.kwonlyargs]
+                          break
+          print('MAIN_WINDOW_SIZE=', shell.stat().st_size)
+          print('MAIN_WINDOW_SHA256=', hashlib.sha256(shell.read_bytes()).hexdigest())
+          print('MAIN_WINDOW_INIT_ARGS=', init_args)
+          print('HAS_MACRO_INTELLIGENCE=', 'Macro Intelligence' in text or 'macro_intelligence' in text)
+          print('HAS_PRICE_RISK=', 'price_risk' in text.lower() or 'Riesgo de Precio' in text)
+          print('HAS_DEMO_FACTORY_ARG=', bool(init_args and 'demo_factory' in init_args))
+          rotation = root / 'src/aip/product/configured/services/institutional_portfolio_rotation_service.py'
+          print('HAS_ROTATION_SERVICE=', rotation.is_file())
+          PY
+      - name: Compile recovered source
+        run: python -m compileall -q src
