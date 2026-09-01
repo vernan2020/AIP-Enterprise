@@ -109,7 +109,7 @@ def _read_remote_manifest() -> dict[str, Any]:
         raise RuntimeError("Remote checkpoint directory is inconsistent")
     if manifest.get("encoding") != "base64":
         raise RuntimeError("Remote checkpoint encoding is not base64")
-    if manifest.get("archive_detection") != "tarfile r:*":
+    if manifest.get("archive_detection") != "tarfile r:*"):
         raise RuntimeError("Remote checkpoint archive contract is inconsistent")
 
     parts = manifest.get("parts")
@@ -196,6 +196,8 @@ def install(*, skip_backup: bool = False) -> int:
             print(f"Backup: {backup.name}")
         else:
             print("Backup: source tree not present; skipped")
+    else:
+        print("Creating source rollback backup... skipped by caller")
 
     print("Downloading recovery support files...")
     for remote in SUPPORT_FILES:
@@ -220,7 +222,7 @@ def install(*, skip_backup: bool = False) -> int:
 
     print("Restoring certified runtime transactionally...")
     restore_args = [sys.executable, "scripts/recovery/restore_runtime_checkpoint.py"]
-    if backup is not None:
+    if skip_backup or backup is not None:
         restore_args.append("--skip-backup")
     _run(root, restore_args)
 
