@@ -1,4 +1,5 @@
 {
+  "contract_version": "aip-runtime-checkpoint-v1",
   "checkpoint": "AIP Enterprise RC1 final recovered runtime",
   "checkpoint_directory": "recovery/checkpoints/rc1-final-20260829",
   "payload_sha256": "5c245fb32d1d0977e637bca5263c25fe519c6dc6bd109ae98823c5c31b2120ae",
@@ -49,11 +50,12 @@
   ],
   "runtime_guarantees": [
     "no secret values are stored in the checkpoint manifest",
-    "restore rejects absolute paths and parent traversal",
+    "restore rejects absolute paths, parent traversal, links, devices and unsupported archive members",
     "restore verifies SHA-256 before extraction",
     "restore uses only the exact part list declared by this manifest",
     "restore rejects undeclared checkpoint fragments",
     "restore validates critical production members before extraction",
+    "restore stages and replaces src transactionally",
     "launcher restores only when critical runtime modules are absent",
     "launcher performs configured preflight before opening the UI"
   ],
