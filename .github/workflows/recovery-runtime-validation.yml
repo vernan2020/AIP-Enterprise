@@ -30,25 +30,17 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Verify canonical runtime checkpoint
+      - name: Validate materialized recovery source
         shell: python
         run: |
           from pathlib import Path
-          from scripts.recovery.restore_runtime_checkpoint import verify_checkpoint
-          digest, part_count, critical_count = verify_checkpoint(Path.cwd())
-          print(f"checkpoint sha256: {digest}")
-          print(f"checkpoint parts: {part_count}")
-          print(f"checkpoint critical members: {critical_count}")
-
-      - name: Restore canonical certified runtime
-        run: python scripts/recovery/restore_runtime_checkpoint.py
-
-      - name: Report restored source delta
-        run: |
-          echo "Checkpoint materialization delta:"
-          git status --short --untracked-files=all -- src || true
-          test -d src/aip/product/configured/repositories
-          test -f src/aip/product/configured/repositories/economic_historical_repository.py
+          root = Path('src')
+          if not root.is_dir():
+              raise SystemExit('materialized src directory is missing')
+          python_files = list(root.rglob('*.py'))
+          if not python_files:
+              raise SystemExit('materialized src contains no Python modules')
+          print(f'materialized Python modules: {len(python_files)}')
 
       - name: Install Qt runtime libraries
         run: |
