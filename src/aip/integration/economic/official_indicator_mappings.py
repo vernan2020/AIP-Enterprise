@@ -5,7 +5,6 @@ from aip.integration.economic.indicator_source_mapper import (
     IndicatorSourceMapping,
 )
 
-
 OFFICIAL_INDICATOR_MAPPINGS: tuple[IndicatorSourceMapping, ...] = (
     IndicatorSourceMapping(logical_code="FX_BUY", source="BCCR", source_series_code="317"),
     IndicatorSourceMapping(logical_code="FX_SELL", source="BCCR", source_series_code="318"),

@@ -6,7 +6,6 @@ from datetime import date
 from aip.product.configured.repositories.economic_historical_repository import (
     EconomicHistoricalRepository,
 )
-
 from aip.product.economic.econometric_dataset import (
     EconometricDataPoint,
     EconometricMonthlyDataset,
