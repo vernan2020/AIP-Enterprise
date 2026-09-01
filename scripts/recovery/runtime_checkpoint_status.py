@@ -1,54 +1,60 @@
 from __future__ import annotations
 
-import json
+import argparse
 from pathlib import Path
 
-CHECKPOINT_DIR = Path("recovery/checkpoints/rc1-final-20260829")
-MANIFEST_NAME = "MANIFEST.json"
-MARKER_NAME = ".aip_runtime_checkpoint.sha256"
+from checkpoint_contract import CHECKPOINT_DIR, MARKER_NAME, load_manifest
 
 
-def main() -> int:
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Report AIP RC1 runtime checkpoint status")
+    parser.add_argument(
+        "--critical-only",
+        action="store_true",
+        help="Return success when all manifest-declared critical runtime files exist locally",
+    )
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = _parser().parse_args(argv)
     root = Path(__file__).resolve().parents[2]
-    manifest_path = root / CHECKPOINT_DIR / MANIFEST_NAME
+    checkpoint_dir = root / CHECKPOINT_DIR
     marker_path = root / MARKER_NAME
 
-    if not manifest_path.is_file():
-        print("Runtime checkpoint status: MISSING_MANIFEST")
-        return 1
-
     try:
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest = load_manifest(checkpoint_dir)
     except Exception as exc:
-        print(f"Runtime checkpoint status: INVALID_MANIFEST ({exc})")
-        return 1
+        print(f"Runtime checkpoint status: INVALID_OR_MISSING_MANIFEST ({exc})")
+        return 2
 
-    expected = manifest.get("payload_sha256")
-    critical = manifest.get("critical_members") or []
-    if not isinstance(expected, str) or len(expected) != 64:
-        print("Runtime checkpoint status: INVALID_DIGEST")
-        return 1
-    if not isinstance(critical, list) or not critical:
-        print("Runtime checkpoint status: INVALID_CRITICAL_MEMBERS")
-        return 1
-
-    if not marker_path.is_file():
-        print("Runtime checkpoint status: NOT_RESTORED")
-        return 1
-
-    actual = marker_path.read_text(encoding="ascii", errors="ignore").strip()
-    if actual != expected:
-        print("Runtime checkpoint status: STALE")
-        return 1
-
-    missing = [item for item in critical if not (root / item).is_file()]
+    missing = [item for item in manifest.critical_members if not (root / item).is_file()]
     if missing:
         print("Runtime checkpoint status: INCOMPLETE")
         for item in missing:
             print(f" - missing: {item}")
         return 1
 
-    print(f"Runtime checkpoint status: CERTIFIED ({expected})")
+    if args.critical_only:
+        print(
+            "Runtime checkpoint critical members: PRESENT "
+            f"({len(manifest.critical_members)}/{len(manifest.critical_members)})"
+        )
+        return 0
+
+    if not marker_path.is_file():
+        print("Runtime checkpoint status: PRESENT_NOT_MARKED")
+        return 1
+
+    actual = marker_path.read_text(encoding="ascii", errors="ignore").strip()
+    if actual != manifest.payload_sha256:
+        print("Runtime checkpoint status: STALE")
+        print(f" - expected: {manifest.payload_sha256}")
+        print(f" - marker:   {actual or '<empty>'}")
+        return 1
+
+    print(f"Runtime checkpoint status: CERTIFIED ({manifest.payload_sha256})")
+    print(f"Critical members: {len(manifest.critical_members)}")
     return 0
 
 
