@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import argparse
 import base64
+import binascii
 import datetime as dt
 import json
 import os
+import re
 import subprocess
 import sys
 import urllib.error
@@ -16,9 +18,11 @@ from typing import Any
 
 REPOSITORY = "vernan2020/AIP-Enterprise"
 BRANCH = "recovery/full-runtime-rc1-20260829"
+CONTRACT_VERSION = "aip-runtime-checkpoint-v1"
 CHECKPOINT_DIR = Path("recovery/checkpoints/rc1-final-20260829")
 MANIFEST_PATH = CHECKPOINT_DIR / "MANIFEST.json"
 SUPPORT_FILES = (
+    Path("scripts/recovery/checkpoint_contract.py"),
     Path("scripts/recovery/restore_runtime_checkpoint.py"),
     Path("scripts/recovery/runtime_checkpoint_status.py"),
     Path("scripts/recovery/verify_runtime_checkpoint.py"),
@@ -26,6 +30,8 @@ SUPPORT_FILES = (
     Path("run_aip_configured.cmd"),
 )
 USER_AGENT = "AIP-Enterprise-RC1-Recovery/1.0"
+_PART_NAME_RE = re.compile(r"^runtime_final\.part[0-9A-Za-z-]+\.b64$")
+_SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
 def _project_root() -> Path:
@@ -59,19 +65,28 @@ def _fetch_json(path: Path) -> dict[str, Any]:
     return payload
 
 
-def _download_file(remote_path: Path, local_path: Path) -> None:
+def _decode_github_contents(value: str, *, label: str) -> bytes:
+    normalized = "".join(value.split())
+    if not normalized:
+        raise RuntimeError(f"GitHub returned empty base64 content for {label}")
+    try:
+        return base64.b64decode(normalized, validate=True)
+    except (ValueError, binascii.Error) as exc:
+        raise RuntimeError(f"Invalid GitHub base64 content for {label}") from exc
+
+
+def _remote_file_bytes(remote_path: Path) -> bytes:
     payload = _fetch_json(remote_path)
     if payload.get("type") != "file":
         raise RuntimeError(f"GitHub path is not a file: {remote_path}")
     encoded = payload.get("content")
-    encoding = payload.get("encoding")
-    if encoding != "base64" or not isinstance(encoded, str):
+    if payload.get("encoding") != "base64" or not isinstance(encoded, str):
         raise RuntimeError(f"Unsupported GitHub content encoding for {remote_path}")
-    try:
-        data = base64.b64decode(encoded, validate=False)
-    except Exception as exc:
-        raise RuntimeError(f"Invalid GitHub base64 content for {remote_path}") from exc
+    return _decode_github_contents(encoded, label=str(remote_path))
 
+
+def _download_file(remote_path: Path, local_path: Path) -> None:
+    data = _remote_file_bytes(remote_path)
     local_path.parent.mkdir(parents=True, exist_ok=True)
     temporary = local_path.with_name(local_path.name + ".download")
     temporary.write_bytes(data)
@@ -79,21 +94,44 @@ def _download_file(remote_path: Path, local_path: Path) -> None:
 
 
 def _read_remote_manifest() -> dict[str, Any]:
-    payload = _fetch_json(MANIFEST_PATH)
-    encoded = payload.get("content")
-    if payload.get("encoding") != "base64" or not isinstance(encoded, str):
-        raise RuntimeError("Remote checkpoint manifest has unsupported encoding")
-    manifest = json.loads(base64.b64decode(encoded).decode("utf-8"))
+    try:
+        manifest = json.loads(_remote_file_bytes(MANIFEST_PATH).decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise RuntimeError("Remote checkpoint manifest is invalid JSON") from exc
     if not isinstance(manifest, dict):
         raise RuntimeError("Remote checkpoint manifest is invalid")
+    if manifest.get("contract_version") != CONTRACT_VERSION:
+        raise RuntimeError(
+            "Remote checkpoint contract mismatch: "
+            f"expected {CONTRACT_VERSION}, got {manifest.get('contract_version')!r}"
+        )
+    if manifest.get("checkpoint_directory") != CHECKPOINT_DIR.as_posix():
+        raise RuntimeError("Remote checkpoint directory is inconsistent")
+    if manifest.get("encoding") != "base64":
+        raise RuntimeError("Remote checkpoint encoding is not base64")
+    if manifest.get("archive_detection") != "tarfile r:*":
+        raise RuntimeError("Remote checkpoint archive contract is inconsistent")
+
     parts = manifest.get("parts")
     if not isinstance(parts, list) or not parts:
         raise RuntimeError("Remote checkpoint manifest has no parts")
-    if manifest.get("part_count") != len(parts):
+    names: list[str] = []
+    for item in parts:
+        if not isinstance(item, str) or not _PART_NAME_RE.fullmatch(item):
+            raise RuntimeError(f"Remote checkpoint has an invalid part name: {item!r}")
+        names.append(item)
+    if len(names) != len(set(names)):
+        raise RuntimeError("Remote checkpoint manifest contains duplicate parts")
+    if manifest.get("part_count") != len(names):
         raise RuntimeError("Remote checkpoint manifest part count is inconsistent")
+
     digest = manifest.get("payload_sha256")
-    if not isinstance(digest, str) or len(digest) != 64:
+    if not isinstance(digest, str) or not _SHA256_RE.fullmatch(digest):
         raise RuntimeError("Remote checkpoint manifest SHA-256 is invalid")
+
+    critical = manifest.get("critical_members")
+    if not isinstance(critical, list) or not critical:
+        raise RuntimeError("Remote checkpoint manifest has no critical members")
     return manifest
 
 
@@ -146,6 +184,7 @@ def install(*, skip_backup: bool = False) -> int:
     print(f"Source branch: {BRANCH}")
 
     manifest = _read_remote_manifest()
+    print(f"Checkpoint contract: {manifest['contract_version']}")
     print(f"Checkpoint SHA-256: {manifest['payload_sha256']}")
     print(f"Checkpoint parts: {manifest['part_count']}")
 
@@ -179,8 +218,14 @@ def install(*, skip_backup: bool = False) -> int:
     print("Verifying checkpoint before extraction...")
     _run(root, [sys.executable, "scripts/recovery/verify_runtime_checkpoint.py"])
 
-    print("Restoring certified runtime...")
-    _run(root, [sys.executable, "scripts/recovery/restore_runtime_checkpoint.py"])
+    print("Restoring certified runtime transactionally...")
+    restore_args = [sys.executable, "scripts/recovery/restore_runtime_checkpoint.py"]
+    if backup is not None:
+        restore_args.append("--skip-backup")
+    _run(root, restore_args)
+
+    print("Checking installed checkpoint marker and critical runtime...")
+    _run(root, [sys.executable, "scripts/recovery/runtime_checkpoint_status.py"])
 
     runtime_env = _runtime_env(root)
 
