@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aip.product.configured.repositories.institutional_macro_scenario_store import (
+from aip.product.configured.repositories.institutional_macro_scenario_compatibility_store import (
     InstitutionalMacroScenarioStore,
 )
 from aip.product.economic.institutional_macro_scenario import (
@@ -61,7 +61,7 @@ class InstitutionalMacroScenarioRepository:
     def list_versions(
         self,
         scenario_id: str,
-    ):
+    ) -> tuple[InstitutionalMacroScenario, ...]:
         return self._store.list_versions(
             scenario_id
         )
