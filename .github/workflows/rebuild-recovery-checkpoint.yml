@@ -1,0 +1,44 @@
+name: Rebuild Recovery Checkpoint
+
+on:
+  push:
+    branches:
+      - recovery/full-runtime-rc1-20260829
+    paths:
+      - scripts/recovery/rebuild_runtime_checkpoint.py
+      - .github/workflows/rebuild-recovery-checkpoint.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONPATH: src
+
+jobs:
+  rebuild-checkpoint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout recovery branch
+        uses: actions/checkout@v4
+        with:
+          ref: recovery/full-runtime-rc1-20260829
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Compile recovery control plane
+        run: python -m compileall -q scripts/recovery
+
+      - name: Rebuild canonical checkpoint candidate
+        run: python scripts/recovery/rebuild_runtime_checkpoint.py --output-dir dist/rebuilt-runtime-checkpoint
+
+      - name: Upload rebuilt checkpoint candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: AIP-RC1-Rebuilt-Runtime-Checkpoint
+          path: dist/rebuilt-runtime-checkpoint
+          if-no-files-found: error
+          retention-days: 7
