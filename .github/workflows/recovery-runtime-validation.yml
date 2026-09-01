@@ -30,6 +30,12 @@ jobs:
         with:
           python-version: '3.13'
 
+      - name: Compile recovery control plane
+        run: python -m compileall -q scripts/recovery
+
+      - name: Verify canonical runtime checkpoint
+        run: python scripts/recovery/verify_runtime_checkpoint.py
+
       - name: Validate materialized recovery source
         shell: python
         run: |
@@ -107,7 +113,7 @@ jobs:
           print('binary/source hygiene: PASS')
 
       - name: Validate whitespace hygiene
-        run: git diff --check -- src
+        run: git diff --check -- src scripts/recovery .github/workflows/recovery-runtime-validation.yml
 
       - name: Install runtime and test dependencies
         run: |
