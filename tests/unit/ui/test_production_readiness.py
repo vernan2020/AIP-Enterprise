@@ -18,7 +18,7 @@ def test_diagnostic_mode_exposes_metrics() -> None:
     window.toggle_diagnostic_mode(True)
     metrics = window.diagnostic_snapshot()
     assert metrics["diagnostic_mode"] is True
-    assert metrics["startup_time_ms"] >= 0
+    assert metrics["metrics"]["startup_time_ms"] >= 0
     assert "environment" in metrics
 
 

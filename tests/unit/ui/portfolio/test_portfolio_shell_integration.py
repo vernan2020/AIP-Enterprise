@@ -68,7 +68,7 @@ def test_main_window_opens_portfolio_workspace_from_shell(qt_app) -> None:
     window.open_workspace("portfolio")
 
     tab_titles = [window.workspace.tabText(index) for index in range(window.workspace.count())]
-    assert "Portfolio" in tab_titles
+    assert "Portafolio" in tab_titles
 
 
 def test_portfolio_view_updates_from_view_model(qt_app) -> None:
