@@ -11,7 +11,6 @@ import zipfile
 from datetime import datetime
 from pathlib import Path
 
-REPOSITORY = "vernan2020/AIP-Enterprise"
 BRANCH = "recovery/full-runtime-rc1-20260829"
 ARCHIVE_URL = (
     "https://codeload.github.com/vernan2020/AIP-Enterprise/zip/refs/heads/"
@@ -56,11 +55,19 @@ def _download_archive(destination: Path) -> None:
 
 
 def _locate_prefix(archive: zipfile.ZipFile) -> str:
-    names = archive.namelist()
-    for name in names:
+    for name in archive.namelist():
         if name.endswith("/src/aip/__init__.py"):
             return name[: -len("src/aip/__init__.py")]
     raise RuntimeError("Unable to locate src/aip in downloaded GitHub archive")
+
+
+def _copy_member(archive: zipfile.ZipFile, member: str, target: Path) -> bool:
+    if member not in archive.namelist():
+        return False
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with archive.open(member, "r") as source, target.open("wb") as destination:
+        shutil.copyfileobj(source, destination)
+    return True
 
 
 def _overlay_runtime(root: Path, archive_path: Path) -> int:
@@ -82,11 +89,16 @@ def _overlay_runtime(root: Path, archive_path: Path) -> int:
                 shutil.copyfileobj(source, destination)
             copied += 1
 
-        launcher_name = prefix + "run_aip_configured.cmd"
-        if launcher_name in archive.namelist():
-            target = root / "run_aip_configured.cmd"
-            with archive.open(launcher_name, "r") as source, target.open("wb") as destination:
-                shutil.copyfileobj(source, destination)
+        _copy_member(
+            archive,
+            prefix + "run_aip_configured.cmd",
+            root / "run_aip_configured.cmd",
+        )
+        _copy_member(
+            archive,
+            prefix + "scripts/recovery/enable_macro_projection.py",
+            root / "scripts" / "recovery" / "enable_macro_projection.py",
+        )
 
     return copied
 
@@ -104,16 +116,10 @@ def _runtime_environment(root: Path) -> dict[str, str]:
     return env
 
 
-def _run_preflight(root: Path, env: dict[str, str]) -> None:
-    result = subprocess.run(
-        [sys.executable, "-m", "aip.tools.preflight_runtime"],
-        cwd=root,
-        env=env,
-        text=True,
-        check=False,
-    )
+def _run_checked(command: list[str], *, root: Path, env: dict[str, str], label: str) -> None:
+    result = subprocess.run(command, cwd=root, env=env, text=True, check=False)
     if result.returncode != 0:
-        raise RuntimeError(f"AIP preflight failed with exit code {result.returncode}")
+        raise RuntimeError(f"{label} failed with exit code {result.returncode}")
 
 
 def _run_smoke(root: Path, env: dict[str, str]) -> None:
@@ -128,7 +134,6 @@ config = loader.load()
 sources = loader.load_source_config()
 factory, _ = DemoBootstrap(config, source_config=sources).bootstrap(correlation_id="quick-recovery-smoke")
 container = factory.container
-
 portfolio = container.resolve(PortfolioDataProvider).get_portfolio()
 liquidity = container.resolve(LiquidityDataProvider).get_liquidity()
 macro = container.resolve(EconomicIndicatorsProvider).get_indicators()
@@ -150,15 +155,12 @@ print("SCENARIO_STATUS=", projection.get("status"))
 print("SCENARIO_VERSION=", projection.get("version"))
 print("SCENARIO_ROWS=", len(projection.get("rows", [])))
 '''
-    result = subprocess.run(
+    _run_checked(
         [sys.executable, "-c", smoke_code],
-        cwd=root,
+        root=root,
         env=env,
-        text=True,
-        check=False,
+        label="Institutional smoke test",
     )
-    if result.returncode != 0:
-        raise RuntimeError(f"AIP smoke test failed with exit code {result.returncode}")
 
 
 def main() -> int:
@@ -177,13 +179,30 @@ def main() -> int:
         copied = _overlay_runtime(root, archive_path)
         print(f"Runtime files synchronized: {copied}")
 
+    env = _runtime_environment(root)
+
+    macro_patch = root / "scripts" / "recovery" / "enable_macro_projection.py"
+    if macro_patch.exists():
+        print("Enabling governed Macro Intelligence projection UI...")
+        _run_checked(
+            [sys.executable, str(macro_patch)],
+            root=root,
+            env=env,
+            label="Macro projection patch",
+        )
+
     print("Compiling recovered runtime...")
     if not compileall.compile_dir(str(root / "src" / "aip"), quiet=1, force=True):
         raise RuntimeError("Python compileall failed")
 
-    env = _runtime_environment(root)
     print("Running AIP preflight...")
-    _run_preflight(root, env)
+    _run_checked(
+        [sys.executable, "-m", "aip.tools.preflight_runtime"],
+        root=root,
+        env=env,
+        label="AIP preflight",
+    )
+
     print("Running institutional smoke test...")
     _run_smoke(root, env)
 
