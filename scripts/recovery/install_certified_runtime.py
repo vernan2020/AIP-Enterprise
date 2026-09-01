@@ -28,25 +28,22 @@ SUPPORT_FILES = (
     Path("scripts/recovery/certify_installed_runtime.py"),
     Path("run_aip_configured.cmd"),
 )
-USER_AGENT = "AIP-Enterprise-RC1-Recovery/1.1"
+USER_AGENT = "AIP-Enterprise-RC1-Recovery/1.2"
 _PART_NAME_RE = re.compile(r"^runtime_final\.part[0-9A-Za-z-]+\.b64$")
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+_GIT_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+_REMOTE_COMMIT: str | None = None
 
 
 def _project_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
-def _raw_url(path: Path) -> str:
-    remote_path = urllib.parse.quote(path.as_posix(), safe="/")
-    return f"https://raw.githubusercontent.com/{REPOSITORY}/{BRANCH}/{remote_path}"
-
-
-def _remote_file_bytes(remote_path: Path) -> bytes:
+def _request_bytes(url: str, *, label: str, accept: str) -> bytes:
     request = urllib.request.Request(
-        _raw_url(remote_path),
+        url,
         headers={
-            "Accept": "application/octet-stream",
+            "Accept": accept,
             "User-Agent": USER_AGENT,
             "Cache-Control": "no-cache",
         },
@@ -57,13 +54,13 @@ def _remote_file_bytes(remote_path: Path) -> bytes:
             with urllib.request.urlopen(request, timeout=60) as response:
                 data = response.read()
             if not data:
-                raise RuntimeError(f"GitHub RAW returned empty content for {remote_path}")
+                raise RuntimeError(f"GitHub returned empty content for {label}")
             return data
         except urllib.error.HTTPError as exc:
             last_error = exc
             if exc.code not in {408, 429, 500, 502, 503, 504}:
                 raise RuntimeError(
-                    f"GitHub RAW HTTP {exc.code} while reading {remote_path}"
+                    f"GitHub HTTP {exc.code} while reading {label}"
                 ) from exc
         except urllib.error.URLError as exc:
             last_error = exc
@@ -72,22 +69,72 @@ def _remote_file_bytes(remote_path: Path) -> bytes:
 
     if isinstance(last_error, urllib.error.URLError):
         raise RuntimeError(
-            f"Cannot reach GitHub RAW while reading {remote_path}: {last_error.reason}"
+            f"Cannot reach GitHub while reading {label}: {last_error.reason}"
         ) from last_error
-    raise RuntimeError(f"Unable to read GitHub RAW content for {remote_path}") from last_error
+    raise RuntimeError(f"Unable to read GitHub content for {label}") from last_error
 
 
-def _download_file(remote_path: Path, local_path: Path) -> None:
-    data = _remote_file_bytes(remote_path)
+def _resolve_source_commit() -> str:
+    """Resolve the mutable recovery branch exactly once per installer process."""
+    global _REMOTE_COMMIT
+    if _REMOTE_COMMIT is not None:
+        return _REMOTE_COMMIT
+
+    encoded_branch = urllib.parse.quote(BRANCH, safe="")
+    url = f"https://api.github.com/repos/{REPOSITORY}/commits/{encoded_branch}"
+    payload = _request_bytes(
+        url,
+        label=f"branch {BRANCH}",
+        accept="application/vnd.github+json",
+    )
+    try:
+        data = json.loads(payload.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise RuntimeError("GitHub branch resolution returned invalid JSON") from exc
+
+    commit = data.get("sha") if isinstance(data, dict) else None
+    if not isinstance(commit, str) or not _GIT_SHA_RE.fullmatch(commit):
+        raise RuntimeError("GitHub branch resolution returned an invalid commit SHA")
+    _REMOTE_COMMIT = commit
+    return commit
+
+
+def _raw_url(path: Path, *, commit: str | None = None) -> str:
+    remote_path = urllib.parse.quote(path.as_posix(), safe="/")
+    immutable_ref = commit or _resolve_source_commit()
+    if not _GIT_SHA_RE.fullmatch(immutable_ref):
+        raise RuntimeError(f"Invalid immutable recovery ref: {immutable_ref!r}")
+    return f"https://raw.githubusercontent.com/{REPOSITORY}/{immutable_ref}/{remote_path}"
+
+
+def _remote_file_bytes(remote_path: Path, *, commit: str | None = None) -> bytes:
+    immutable_ref = commit or _resolve_source_commit()
+    return _request_bytes(
+        _raw_url(remote_path, commit=immutable_ref),
+        label=f"{remote_path} at {immutable_ref}",
+        accept="application/octet-stream",
+    )
+
+
+def _download_file(
+    remote_path: Path,
+    local_path: Path,
+    *,
+    commit: str | None = None,
+) -> None:
+    data = _remote_file_bytes(remote_path, commit=commit)
     local_path.parent.mkdir(parents=True, exist_ok=True)
     temporary = local_path.with_name(local_path.name + ".download")
     temporary.write_bytes(data)
     os.replace(temporary, local_path)
 
 
-def _read_remote_manifest() -> dict[str, Any]:
+def _read_remote_manifest(*, commit: str | None = None) -> dict[str, Any]:
+    immutable_ref = commit or _resolve_source_commit()
     try:
-        manifest = json.loads(_remote_file_bytes(MANIFEST_PATH).decode("utf-8"))
+        manifest = json.loads(
+            _remote_file_bytes(MANIFEST_PATH, commit=immutable_ref).decode("utf-8")
+        )
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise RuntimeError("Remote checkpoint manifest is invalid JSON") from exc
     if not isinstance(manifest, dict):
@@ -174,9 +221,11 @@ def install(*, skip_backup: bool = False) -> int:
     print("AIP ENTERPRISE - CERTIFIED RUNTIME INSTALLER")
     print(f"Project root: {root}")
     print(f"Source branch: {BRANCH}")
-    print("Transport: GitHub RAW")
+    print("Transport: GitHub RAW pinned to immutable commit")
 
-    manifest = _read_remote_manifest()
+    source_commit = _resolve_source_commit()
+    manifest = _read_remote_manifest(commit=source_commit)
+    print(f"Source commit: {source_commit}")
     print(f"Checkpoint contract: {manifest['contract_version']}")
     print(f"Checkpoint SHA-256: {manifest['payload_sha256']}")
     print(f"Checkpoint parts: {manifest['part_count']}")
@@ -194,10 +243,14 @@ def install(*, skip_backup: bool = False) -> int:
 
     print("Downloading recovery support files...")
     for remote in SUPPORT_FILES:
-        _download_file(remote, root / remote)
+        _download_file(remote, root / remote, commit=source_commit)
 
     print("Downloading certified checkpoint manifest...")
-    _download_file(MANIFEST_PATH, root / MANIFEST_PATH)
+    _download_file(
+        MANIFEST_PATH,
+        root / MANIFEST_PATH,
+        commit=source_commit,
+    )
 
     checkpoint_local = root / CHECKPOINT_DIR
     declared_names = {str(name) for name in manifest["parts"]}
@@ -208,7 +261,7 @@ def install(*, skip_backup: bool = False) -> int:
     for index, name in enumerate(manifest["parts"], start=1):
         remote = CHECKPOINT_DIR / str(name)
         print(f"Downloading checkpoint part {index}/{manifest['part_count']}: {name}")
-        _download_file(remote, root / remote)
+        _download_file(remote, root / remote, commit=source_commit)
 
     print("Verifying checkpoint before extraction...")
     _run(root, [sys.executable, "scripts/recovery/verify_runtime_checkpoint.py"])
