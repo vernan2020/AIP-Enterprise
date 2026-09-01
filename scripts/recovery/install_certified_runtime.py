@@ -109,7 +109,7 @@ def _read_remote_manifest() -> dict[str, Any]:
         raise RuntimeError("Remote checkpoint directory is inconsistent")
     if manifest.get("encoding") != "base64":
         raise RuntimeError("Remote checkpoint encoding is not base64")
-    if manifest.get("archive_detection") != "tarfile r:*"):
+    if manifest.get("archive_detection") != "tarfile r:*":
         raise RuntimeError("Remote checkpoint archive contract is inconsistent")
 
     parts = manifest.get("parts")
