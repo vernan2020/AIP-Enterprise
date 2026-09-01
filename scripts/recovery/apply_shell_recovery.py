@@ -19,6 +19,23 @@ FILES = (
 )
 
 
+def _decode_github_base64(value: str, *, relative_path: str) -> bytes:
+    """Decode GitHub Contents API base64 safely.
+
+    GitHub wraps the ``content`` field with line breaks.  Strict base64
+    validation therefore requires whitespace normalization first.
+    """
+    normalized = "".join(value.split())
+    if not normalized:
+        raise RuntimeError(f"GitHub returned empty base64 content for {relative_path}")
+    try:
+        return base64.b64decode(normalized, validate=True)
+    except (ValueError, base64.binascii.Error) as exc:
+        raise RuntimeError(
+            f"GitHub returned invalid base64 content for {relative_path}"
+        ) from exc
+
+
 def _github_content(relative_path: str) -> bytes:
     encoded_path = urllib.parse.quote(relative_path, safe="/")
     encoded_ref = urllib.parse.quote(BRANCH, safe="")
@@ -34,7 +51,7 @@ def _github_content(relative_path: str) -> bytes:
         document = json.loads(response.read().decode("utf-8"))
     if document.get("encoding") != "base64" or not document.get("content"):
         raise RuntimeError(f"GitHub returned an invalid payload for {relative_path}")
-    return base64.b64decode(document["content"], validate=True)
+    return _decode_github_base64(document["content"], relative_path=relative_path)
 
 
 def _download(relative_path: str, destination: Path) -> None:
