@@ -21,6 +21,10 @@ from checkpoint_contract import (
 )
 
 
+_TRANSIENT_NAMES = {"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"}
+_TRANSIENT_SUFFIXES = {".pyc", ".pyo"}
+
+
 def _backup_src(root: Path) -> Path | None:
     source = root / "src"
     if not source.is_dir():
@@ -31,16 +35,14 @@ def _backup_src(root: Path) -> Path | None:
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     backup = backup_dir / f"AIP_BEFORE_CHECKPOINT_RESTORE_{timestamp}.zip"
 
-    excluded_names = {"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"}
-    excluded_suffixes = {".pyc", ".pyo"}
     with zipfile.ZipFile(backup, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         for path in source.rglob("*"):
             if not path.is_file():
                 continue
             relative = path.relative_to(root)
-            if any(part in excluded_names for part in relative.parts):
+            if any(part in _TRANSIENT_NAMES for part in relative.parts):
                 continue
-            if path.suffix.lower() in excluded_suffixes:
+            if path.suffix.lower() in _TRANSIENT_SUFFIXES:
                 continue
             archive.write(path, relative.as_posix())
     return backup
@@ -105,28 +107,144 @@ def _extract_to_staging(
         raise
 
 
-def _replace_src_transactionally(root: Path, staged_src: Path) -> None:
-    target = root / "src"
-    previous = root / ".aip_src_before_checkpoint_restore"
-
-    if previous.exists():
-        shutil.rmtree(previous)
-
-    had_existing = target.exists()
-    if had_existing:
-        target.rename(previous)
+def _remove_path(path: Path) -> None:
+    """Best-effort removal that handles ordinary Windows read-only attributes."""
+    if not path.exists():
+        return
+    try:
+        if path.is_dir():
+            shutil.rmtree(path)
+        else:
+            path.unlink()
+        return
+    except PermissionError:
+        pass
 
     try:
-        staged_src.rename(target)
-    except Exception:
-        if target.exists():
-            shutil.rmtree(target)
-        if had_existing and previous.exists():
-            previous.rename(target)
+        os.chmod(path, 0o700)
+    except OSError:
+        pass
+
+    if path.is_dir():
+        def _onerror(function, filename, _exc_info):  # type: ignore[no-untyped-def]
+            try:
+                os.chmod(filename, 0o700)
+                function(filename)
+            except OSError:
+                raise
+
+        shutil.rmtree(path, onerror=_onerror)
+    else:
+        path.unlink()
+
+
+def _snapshot_src(target: Path, snapshot: Path) -> None:
+    if snapshot.exists():
+        _remove_path(snapshot)
+    if target.is_dir():
+        shutil.copytree(target, snapshot, copy_function=shutil.copy2)
+
+
+def _relative_files(tree: Path) -> set[Path]:
+    return {
+        path.relative_to(tree)
+        for path in tree.rglob("*")
+        if path.is_file()
+        and not any(part in _TRANSIENT_NAMES for part in path.relative_to(tree).parts)
+        and path.suffix.lower() not in _TRANSIENT_SUFFIXES
+    }
+
+
+def _copy_file_replace(source: Path, destination: Path) -> None:
+    """Replace one file safely, with a Windows ACL-compatible fallback."""
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    temporary = destination.with_name(destination.name + ".aip-restore-new")
+    if temporary.exists():
+        _remove_path(temporary)
+    shutil.copy2(source, temporary)
+    try:
+        try:
+            os.replace(temporary, destination)
+        except PermissionError:
+            # Some Windows directory ACLs deny delete/rename while still allowing
+            # writes. The pre-restore snapshot preserves rollback semantics.
+            shutil.copy2(temporary, destination)
+            temporary.unlink()
+    finally:
+        if temporary.exists():
+            _remove_path(temporary)
+
+
+def _synchronize_tree(source: Path, target: Path) -> None:
+    """Make target match source without renaming the target directory itself."""
+    target.mkdir(parents=True, exist_ok=True)
+    expected_files = _relative_files(source)
+
+    # Install/replace every certified file first. The fully validated source tree
+    # already exists in staging, so no unverified bytes reach the live runtime.
+    for relative in sorted(expected_files, key=lambda item: item.as_posix().casefold()):
+        _copy_file_replace(source / relative, target / relative)
+
+    # Remove files that do not belong to the certified checkpoint, including
+    # interpreter caches that could otherwise retain stale modules.
+    existing_files = [path for path in target.rglob("*") if path.is_file()]
+    for path in existing_files:
+        relative = path.relative_to(target)
+        if relative not in expected_files:
+            _remove_path(path)
+
+    # Remove empty directories left by stale modules, deepest first. Never rename
+    # or replace the live src directory itself; this is the Windows-safe invariant.
+    directories = sorted(
+        (path for path in target.rglob("*") if path.is_dir()),
+        key=lambda item: len(item.parts),
+        reverse=True,
+    )
+    for directory in directories:
+        try:
+            directory.rmdir()
+        except OSError:
+            pass
+
+
+def _replace_src_transactionally(root: Path, staged_src: Path) -> None:
+    """Install staged src with a local snapshot and automatic rollback.
+
+    Windows can reject a rename of the live ``src`` directory even when all files
+    within it are readable/writable (for example because of ACLs, antivirus, or a
+    transient directory handle). Therefore transactionality is implemented as:
+
+    1. copy the existing src to a private snapshot;
+    2. synchronize the fully validated staged tree into live src;
+    3. on any failure, synchronize the snapshot back;
+    4. remove the snapshot only after success.
+
+    This preserves rollback while avoiding a top-level directory rename.
+    """
+    target = root / "src"
+    previous = root / ".aip_src_before_checkpoint_restore"
+    had_existing = target.is_dir()
+
+    if had_existing:
+        _snapshot_src(target, previous)
+
+    try:
+        _synchronize_tree(staged_src, target)
+    except Exception as install_error:
+        if had_existing and previous.is_dir():
+            try:
+                _synchronize_tree(previous, target)
+            except Exception as rollback_error:
+                raise RuntimeError(
+                    "Certified runtime installation failed and automatic src rollback "
+                    f"also failed. install={install_error}; rollback={rollback_error}"
+                ) from install_error
+        elif target.exists():
+            _remove_path(target)
         raise
     else:
         if previous.exists():
-            shutil.rmtree(previous)
+            _remove_path(previous)
 
 
 def restore_checkpoint(
