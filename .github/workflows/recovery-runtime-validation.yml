@@ -30,10 +30,25 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Use materialized production source
+      - name: Verify canonical runtime checkpoint
+        shell: python
         run: |
-          echo "Certification source: GitHub materialized src tree"
-          test -d src/aip
+          from pathlib import Path
+          from scripts.recovery.restore_runtime_checkpoint import verify_checkpoint
+          digest, part_count, critical_count = verify_checkpoint(Path.cwd())
+          print(f"checkpoint sha256: {digest}")
+          print(f"checkpoint parts: {part_count}")
+          print(f"checkpoint critical members: {critical_count}")
+
+      - name: Restore canonical certified runtime
+        run: python scripts/recovery/restore_runtime_checkpoint.py
+
+      - name: Report restored source delta
+        run: |
+          echo "Checkpoint materialization delta:"
+          git status --short --untracked-files=all -- src || true
+          test -d src/aip/product/configured/repositories
+          test -f src/aip/product/configured/repositories/economic_historical_repository.py
 
       - name: Install Qt runtime libraries
         run: |
@@ -53,6 +68,7 @@ jobs:
               'src/aip/product/configured/adapters/configured_liquidity_provider.py',
               'src/aip/product/configured/adapters/configured_portfolio_provider.py',
               'src/aip/product/configured/readers/institutional_icl_reader.py',
+              'src/aip/product/configured/repositories/economic_historical_repository.py',
               'src/aip/ui/modules/macro_intelligence/views/macro_intelligence_view.py',
               'src/aip/product/economic/economic_snapshot_store.py',
               'src/aip/integration/bccr/connector/rest_client.py',
