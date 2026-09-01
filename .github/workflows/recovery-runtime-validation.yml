@@ -30,6 +30,19 @@ jobs:
         with:
           python-version: '3.13'
 
+      - name: Restore certified runtime checkpoint
+        run: |
+          python scripts/recovery/restore_runtime_checkpoint.py
+          python - <<'PY'
+          from pathlib import Path
+          from scripts.recovery.restore_runtime_checkpoint import verify_checkpoint
+
+          digest, part_count, critical_count = verify_checkpoint(Path.cwd())
+          print(f'checkpoint SHA256: {digest}')
+          print(f'checkpoint parts: {part_count}')
+          print(f'checkpoint critical members: {critical_count}')
+          PY
+
       - name: Install Qt runtime libraries
         run: |
           sudo apt-get update
@@ -50,6 +63,9 @@ jobs:
               'src/aip/product/configured/readers/institutional_icl_reader.py',
               'src/aip/ui/modules/macro_intelligence/views/macro_intelligence_view.py',
               'src/aip/product/economic/economic_snapshot_store.py',
+              'src/aip/integration/bccr/connector/rest_client.py',
+              'src/aip/integration/bccr/configuration/bccr_config.py',
+              'src/aip/integration/bccr/normalization/economic_series_parser.py',
               'src/aip/ui/application/main.py',
               'src/aip/ui/application/app.py',
               'src/aip/tools/preflight_runtime.py',
