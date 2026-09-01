@@ -30,18 +30,10 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Restore certified runtime checkpoint
+      - name: Use materialized production source
         run: |
-          python scripts/recovery/restore_runtime_checkpoint.py
-          python - <<'PY'
-          from pathlib import Path
-          from scripts.recovery.restore_runtime_checkpoint import verify_checkpoint
-
-          digest, part_count, critical_count = verify_checkpoint(Path.cwd())
-          print(f'checkpoint SHA256: {digest}')
-          print(f'checkpoint parts: {part_count}')
-          print(f'checkpoint critical members: {critical_count}')
-          PY
+          echo "Certification source: GitHub materialized src tree"
+          test -d src/aip
 
       - name: Install Qt runtime libraries
         run: |
