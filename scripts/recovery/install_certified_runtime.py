@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import argparse
-import base64
-import binascii
 import datetime as dt
 import json
 import os
 import re
 import subprocess
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -29,7 +28,7 @@ SUPPORT_FILES = (
     Path("scripts/recovery/certify_installed_runtime.py"),
     Path("run_aip_configured.cmd"),
 )
-USER_AGENT = "AIP-Enterprise-RC1-Recovery/1.0"
+USER_AGENT = "AIP-Enterprise-RC1-Recovery/1.1"
 _PART_NAME_RE = re.compile(r"^runtime_final\.part[0-9A-Za-z-]+\.b64$")
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
@@ -38,51 +37,44 @@ def _project_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
-def _api_url(path: Path) -> str:
-    encoded_path = "/".join(urllib.parse.quote(part, safe="") for part in path.parts)
-    query = urllib.parse.urlencode({"ref": BRANCH})
-    return f"https://api.github.com/repos/{REPOSITORY}/contents/{encoded_path}?{query}"
-
-
-def _fetch_json(path: Path) -> dict[str, Any]:
-    request = urllib.request.Request(
-        _api_url(path),
-        headers={
-            "Accept": "application/vnd.github+json",
-            "User-Agent": USER_AGENT,
-            "X-GitHub-Api-Version": "2022-11-28",
-        },
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=60) as response:
-            payload = json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        raise RuntimeError(f"GitHub HTTP {exc.code} while reading {path}") from exc
-    except urllib.error.URLError as exc:
-        raise RuntimeError(f"Cannot reach GitHub while reading {path}: {exc.reason}") from exc
-    if not isinstance(payload, dict):
-        raise RuntimeError(f"Unexpected GitHub response for {path}")
-    return payload
-
-
-def _decode_github_contents(value: str, *, label: str) -> bytes:
-    normalized = "".join(value.split())
-    if not normalized:
-        raise RuntimeError(f"GitHub returned empty base64 content for {label}")
-    try:
-        return base64.b64decode(normalized, validate=True)
-    except (ValueError, binascii.Error) as exc:
-        raise RuntimeError(f"Invalid GitHub base64 content for {label}") from exc
+def _raw_url(path: Path) -> str:
+    remote_path = urllib.parse.quote(path.as_posix(), safe="/")
+    return f"https://raw.githubusercontent.com/{REPOSITORY}/{BRANCH}/{remote_path}"
 
 
 def _remote_file_bytes(remote_path: Path) -> bytes:
-    payload = _fetch_json(remote_path)
-    if payload.get("type") != "file":
-        raise RuntimeError(f"GitHub path is not a file: {remote_path}")
-    encoded = payload.get("content")
-    if payload.get("encoding") != "base64" or not isinstance(encoded, str):
-        raise RuntimeError(f"Unsupported GitHub content encoding for {remote_path}")
-    return _decode_github_contents(encoded, label=str(remote_path))
+    request = urllib.request.Request(
+        _raw_url(remote_path),
+        headers={
+            "Accept": "application/octet-stream",
+            "User-Agent": USER_AGENT,
+            "Cache-Control": "no-cache",
+        },
+    )
+    last_error: Exception | None = None
+    for attempt in range(1, 4):
+        try:
+            with urllib.request.urlopen(request, timeout=60) as response:
+                data = response.read()
+            if not data:
+                raise RuntimeError(f"GitHub RAW returned empty content for {remote_path}")
+            return data
+        except urllib.error.HTTPError as exc:
+            last_error = exc
+            if exc.code not in {408, 429, 500, 502, 503, 504}:
+                raise RuntimeError(
+                    f"GitHub RAW HTTP {exc.code} while reading {remote_path}"
+                ) from exc
+        except urllib.error.URLError as exc:
+            last_error = exc
+        if attempt < 3:
+            time.sleep(float(attempt))
+
+    if isinstance(last_error, urllib.error.URLError):
+        raise RuntimeError(
+            f"Cannot reach GitHub RAW while reading {remote_path}: {last_error.reason}"
+        ) from last_error
+    raise RuntimeError(f"Unable to read GitHub RAW content for {remote_path}") from last_error
 
 
 def _download_file(remote_path: Path, local_path: Path) -> None:
@@ -182,6 +174,7 @@ def install(*, skip_backup: bool = False) -> int:
     print("AIP ENTERPRISE - CERTIFIED RUNTIME INSTALLER")
     print(f"Project root: {root}")
     print(f"Source branch: {BRANCH}")
+    print("Transport: GitHub RAW")
 
     manifest = _read_remote_manifest()
     print(f"Checkpoint contract: {manifest['contract_version']}")
