@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import binascii
 import compileall
 import json
 import shutil
@@ -22,7 +23,7 @@ FILES = (
 def _decode_github_base64(value: str, *, relative_path: str) -> bytes:
     """Decode GitHub Contents API base64 safely.
 
-    GitHub wraps the ``content`` field with line breaks.  Strict base64
+    GitHub wraps the ``content`` field with line breaks. Strict Base64
     validation therefore requires whitespace normalization first.
     """
     normalized = "".join(value.split())
@@ -30,7 +31,7 @@ def _decode_github_base64(value: str, *, relative_path: str) -> bytes:
         raise RuntimeError(f"GitHub returned empty base64 content for {relative_path}")
     try:
         return base64.b64decode(normalized, validate=True)
-    except (ValueError, base64.binascii.Error) as exc:
+    except (ValueError, binascii.Error) as exc:
         raise RuntimeError(
             f"GitHub returned invalid base64 content for {relative_path}"
         ) from exc
