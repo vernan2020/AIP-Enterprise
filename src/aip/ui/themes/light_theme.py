@@ -4,7 +4,7 @@ from aip.ui.themes.palette import ThemePalette
 
 
 class LightTheme:
-    """AIP Enterprise 2.0 light analytical theme."""
+    """Tema claro AIP Enterprise 2.0, gobernado por el Libro de Marca Coopealianza."""
 
     def stylesheet(self) -> str:
         p = ThemePalette()
@@ -15,13 +15,13 @@ class LightTheme:
         }}
         QWidget {{
             color: {p.text};
-            font-family: "Segoe UI";
-            font-size: 10pt;
+            font-family: "Lucida Sans Unicode";
+            font-size: 9.5pt;
         }}
         QToolTip {{
             background-color: {p.navy_950};
             color: {p.inverse};
-            border: 1px solid {p.navy_700};
+            border: 1px solid {p.brand_celeste};
             padding: 5px 7px;
         }}
         QToolBar {{
@@ -41,12 +41,12 @@ class LightTheme:
             font-weight: 600;
         }}
         QToolBar QToolButton:hover {{
-            background: {p.surface_hover};
-            color: {p.navy_700};
+            background: {p.blue_050};
+            color: {p.brand_blue};
         }}
         QToolBar QToolButton:pressed {{
             background: {p.surface_selected};
-            color: {p.navy_800};
+            color: {p.blue_800};
         }}
         QMenuBar {{
             background: {p.surface};
@@ -58,8 +58,8 @@ class LightTheme:
             padding: 5px 9px;
         }}
         QMenuBar::item:selected {{
-            background: {p.surface_hover};
-            color: {p.navy_700};
+            background: {p.blue_050};
+            color: {p.brand_blue};
         }}
         QMenu {{
             background: {p.surface};
@@ -73,7 +73,7 @@ class LightTheme:
         }}
         QMenu::item:selected {{
             background: {p.surface_selected};
-            color: {p.navy_800};
+            color: {p.blue_800};
         }}
         QStatusBar {{
             background: {p.surface};
@@ -88,15 +88,15 @@ class LightTheme:
             border-radius: 5px;
             padding: 5px 7px;
             selection-background-color: {p.surface_selected};
-            selection-color: {p.navy_900};
+            selection-color: {p.blue_900};
         }}
         QLineEdit:hover, QTextEdit:hover, QPlainTextEdit:hover, QComboBox:hover,
         QDateEdit:hover {{
-            border-color: {p.border_strong};
+            border-color: {p.blue_300};
         }}
         QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus, QComboBox:focus,
         QDateEdit:focus {{
-            border: 1px solid {p.blue_500};
+            border: 1px solid {p.brand_celeste};
         }}
         QComboBox::drop-down {{
             border: none;
@@ -107,19 +107,19 @@ class LightTheme:
             color: {p.text};
             border: 1px solid {p.border};
             selection-background-color: {p.surface_selected};
-            selection-color: {p.navy_900};
+            selection-color: {p.blue_900};
         }}
         QPushButton {{
             background: {p.surface};
-            color: {p.navy_700};
-            border: 1px solid {p.border_strong};
+            color: {p.brand_blue};
+            border: 1px solid {p.blue_300};
             border-radius: 5px;
             padding: 6px 11px;
             font-weight: 600;
         }}
         QPushButton:hover {{
-            background: {p.surface_hover};
-            border-color: {p.blue_500};
+            background: {p.blue_050};
+            border-color: {p.brand_celeste};
         }}
         QPushButton:pressed {{
             background: {p.surface_selected};
@@ -145,12 +145,12 @@ class LightTheme:
             font-weight: 600;
         }}
         QTabBar::tab:hover {{
-            color: {p.navy_700};
+            color: {p.brand_blue};
             background: {p.blue_050};
         }}
         QTabBar::tab:selected {{
-            color: {p.navy_800};
-            border-bottom: 2px solid {p.blue_600};
+            color: {p.brand_blue};
+            border-bottom: 2px solid {p.brand_celeste};
             background: {p.surface};
         }}
         QTableView, QTableWidget, QTreeView, QListView, QListWidget {{
@@ -160,7 +160,7 @@ class LightTheme:
             border: 1px solid {p.border};
             gridline-color: {p.grid};
             selection-background-color: {p.surface_selected};
-            selection-color: {p.navy_950};
+            selection-color: {p.blue_950 if hasattr(p, 'blue_950') else p.navy_950};
             outline: none;
         }}
         QTableView::item, QTableWidget::item, QTreeView::item, QListView::item {{
@@ -173,7 +173,7 @@ class LightTheme:
         }}
         QHeaderView::section {{
             background: {p.surface_alt};
-            color: {p.text_secondary};
+            color: {p.blue_800};
             border: none;
             border-right: 1px solid {p.border};
             border-bottom: 1px solid {p.border};
@@ -188,12 +188,22 @@ class LightTheme:
             margin-top: 9px;
             padding-top: 7px;
             font-weight: 700;
-            color: {p.navy_800};
+            color: {p.brand_blue};
         }}
         QGroupBox::title {{
             subcontrol-origin: margin;
             left: 10px;
             padding: 0 5px;
+        }}
+        QProgressBar {{
+            background: {p.surface_alt};
+            border: 1px solid {p.border};
+            border-radius: 4px;
+            text-align: center;
+        }}
+        QProgressBar::chunk {{
+            background: {p.brand_mint};
+            border-radius: 3px;
         }}
         QScrollArea {{
             background: transparent;
@@ -213,7 +223,7 @@ class LightTheme:
             border-radius: 4px;
         }}
         QScrollBar::handle:vertical:hover {{
-            background: {p.muted};
+            background: {p.brand_celeste};
         }}
         QScrollBar:horizontal {{
             background: transparent;
@@ -224,6 +234,9 @@ class LightTheme:
             background: {p.border_strong};
             min-width: 30px;
             border-radius: 4px;
+        }}
+        QScrollBar::handle:horizontal:hover {{
+            background: {p.brand_celeste};
         }}
         QScrollBar::add-line, QScrollBar::sub-line {{
             width: 0px;
@@ -237,7 +250,7 @@ class LightTheme:
         }}
         QDockWidget::title {{
             background: {p.surface_alt};
-            color: {p.navy_800};
+            color: {p.brand_blue};
             border-bottom: 1px solid {p.border};
             padding: 6px;
             font-weight: 700;
