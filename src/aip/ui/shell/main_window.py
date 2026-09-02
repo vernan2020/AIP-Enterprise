@@ -27,6 +27,7 @@ from aip.product.demo.configuration.environment_loader import EnvironmentLoader
 from aip.ui.dialogs.about_dialog import AboutDialog
 from aip.ui.modules.executive.presenters.executive_presenter import ExecutivePresenter
 from aip.ui.modules.executive.views.executive_workspace import ExecutiveWorkspace
+from aip.ui.modules.home.home_workspace import HomeWorkspace
 from aip.ui.modules.liquidity.presenters.liquidity_presenter import LiquidityPresenter
 from aip.ui.modules.liquidity.views.liquidity_view import LiquidityView
 from aip.ui.modules.market.presenters.market_presenter import MarketPresenter
@@ -37,7 +38,10 @@ from aip.ui.modules.treasury.presenters.treasury_presenter import TreasuryPresen
 from aip.ui.modules.treasury.views.treasury_view import TreasuryView
 from aip.ui.navigation.navigation_manager import NavigationManager
 from aip.ui.navigation.routes import Route
-from aip.ui.services.diagnostic_service import DiagnosticMetricsStore, ProductionReadinessService
+from aip.ui.services.diagnostic_service import (
+    DiagnosticMetricsStore,
+    ProductionReadinessService,
+)
 from aip.ui.services.export_service import TableExportService
 from aip.ui.services.notification_service import NotificationService
 from aip.ui.services.theme_service import ThemeService
@@ -175,10 +179,7 @@ class MainWindow(QMainWindow):
         self.setStatusBar(self._status_bar)
         self._header = self._build_header()
 
-        self._workspace.add_tab(
-            "Inicio",
-            QTextEdit("AIP Enterprise · Plataforma institucional de inteligencia financiera"),
-        )
+        self._workspace.add_tab("Inicio", self._create_home_workspace())
 
         self._content_splitter = QSplitter(Qt.Orientation.Horizontal)
         self._content_splitter.setObjectName("contentSplitter")
@@ -187,7 +188,7 @@ class MainWindow(QMainWindow):
         self._content_splitter.addWidget(self._workspace)
         self._content_splitter.setStretchFactor(0, 0)
         self._content_splitter.setStretchFactor(1, 1)
-        self._content_splitter.setSizes([150, 1450])
+        self._content_splitter.setSizes([168, 1432])
 
         container = QWidget(self)
         layout = QVBoxLayout(container)
@@ -234,35 +235,66 @@ class MainWindow(QMainWindow):
         self._refresh_status_panel()
         self.open_workspace("executive")
 
+    def _create_home_workspace(self) -> HomeWorkspace:
+        home = HomeWorkspace(self._demo_factory)
+        home.route_requested.connect(self.open_workspace)
+        return home
+
     def _build_header(self) -> QWidget:
         frame = QFrame(self)
         frame.setObjectName("institutionalHeader")
+        frame.setMinimumHeight(58)
         frame.setStyleSheet(
-            "QFrame#institutionalHeader { background: #1f4e79; }"
-            "QLabel { color: white; border: none; }"
-            "QDateEdit { min-width: 110px; padding: 4px; }"
+            "QFrame#institutionalHeader {background:#173F63; border:none;}"
+            "QFrame#institutionalHeader QLabel {background:transparent; border:none; color:#FFFFFF;}"
+            "QLabel#headerMode {background:#245A84; border:1px solid #4E7EA2; border-radius:10px; "
+            "padding:4px 9px; color:#EAF3FA; font-size:9px; font-weight:700;}"
+            "QLabel#headerStatus {background:#246B5A; border:1px solid #4A907F; border-radius:10px; "
+            "padding:4px 9px; color:#FFFFFF; font-size:9px; font-weight:700;}"
+            "QDateEdit {min-width:112px; padding:5px 8px; background:#FFFFFF; color:#17324D; "
+            "border:1px solid #B9CAD7; border-radius:5px;}"
         )
         layout = QHBoxLayout(frame)
-        layout.setContentsMargins(12, 7, 12, 7)
+        layout.setContentsMargins(15, 8, 15, 8)
+        layout.setSpacing(10)
         execution_mode = self._config.execution_mode
-        title = QLabel("AIP HYBRID" if execution_mode == "CONFIGURED" else APP_DISPLAY_NAME)
-        title.setStyleSheet("font-size: 14px; font-weight: 700;")
-        mode = QLabel("MODO CONFIGURADO" if execution_mode == "CONFIGURED" else "MODO DEMO")
-        mode.setStyleSheet("font-size: 10px;")
-        status = QLabel("SISTEMA LISTO")
-        status.setStyleSheet("font-size: 10px; font-weight: 600;")
 
+        title_box = QVBoxLayout()
+        title_box.setSpacing(0)
+        title = QLabel("AIP HYBRID" if execution_mode == "CONFIGURED" else APP_DISPLAY_NAME)
+        title.setStyleSheet(
+            "font-size:15px; font-weight:800; letter-spacing:0.7px; background:transparent;"
+        )
+        subtitle = QLabel("FINANCIAL INTELLIGENCE PLATFORM")
+        subtitle.setStyleSheet(
+            "font-size:8px; color:#BFD3E2; letter-spacing:1px; background:transparent;"
+        )
+        title_box.addWidget(title)
+        title_box.addWidget(subtitle)
+        layout.addLayout(title_box)
+
+        mode = QLabel(
+            "MODO CONFIGURADO" if execution_mode == "CONFIGURED" else "MODO DEMO"
+        )
+        mode.setObjectName("headerMode")
+        layout.addWidget(mode)
+        layout.addStretch(1)
+
+        self._header_status = QLabel("SISTEMA LISTO")
+        self._header_status.setObjectName("headerStatus")
+        layout.addWidget(self._header_status)
+
+        cutoff_label = QLabel("CORTE")
+        cutoff_label.setStyleSheet(
+            "font-size:8px; color:#BFD3E2; font-weight:700; background:transparent;"
+        )
+        layout.addWidget(cutoff_label)
         self._date_edit = QDateEdit()
         self._date_edit.setCalendarPopup(True)
         active = self._valuation_context.valuation_date
         self._date_edit.setDate(QDate(active.year, active.month, active.day))
         self._date_edit.setDisplayFormat("dd/MM/yyyy")
         self._date_edit.dateChanged.connect(self._handle_qdate_changed)
-
-        layout.addWidget(title)
-        layout.addWidget(mode)
-        layout.addStretch(1)
-        layout.addWidget(status)
         layout.addWidget(self._date_edit)
         return frame
 
@@ -282,10 +314,7 @@ class MainWindow(QMainWindow):
 
     def _build_workspace_widget(self, route_id: str) -> tuple[QWidget, str]:
         if route_id == "home":
-            return (
-                QTextEdit("AIP Enterprise · Plataforma institucional de inteligencia financiera"),
-                "Inicio",
-            )
+            return (self._create_home_workspace(), "Inicio")
         if route_id == "executive":
             return (
                 ExecutiveWorkspace(presenter=ExecutivePresenter(self._demo_factory)),
@@ -340,6 +369,7 @@ class MainWindow(QMainWindow):
             return
         self._date_edit.setEnabled(False)
         self._status_bar.set_message(f"Cambiando fecha de corte a {value.strftime('%d/%m/%Y')}...")
+        self._header_status.setText("ACTUALIZANDO")
         QApplication.processEvents()
         try:
             self._demo_factory.set_data_cutoff_date(value)
@@ -347,10 +377,12 @@ class MainWindow(QMainWindow):
             self._refresh_open_workspaces()
             self._refresh_status_panel()
             self._status_bar.set_message(f"Fecha de corte activa: {value.strftime('%d/%m/%Y')}")
+            self._header_status.setText("SISTEMA LISTO")
         except Exception as exc:
             self._date_edit.blockSignals(True)
             self._date_edit.setDate(QDate(previous.year, previous.month, previous.day))
             self._date_edit.blockSignals(False)
+            self._header_status.setText("REVISAR")
             QMessageBox.critical(
                 self,
                 "Cambio de fecha no completado",
@@ -375,6 +407,7 @@ class MainWindow(QMainWindow):
     def _handle_refresh_all(self) -> None:
         try:
             self._status_bar.set_message("Actualizando fuentes institucionales...")
+            self._header_status.setText("ACTUALIZANDO")
             workflow = self._demo_factory.refresh_all_workflow()
             result = workflow.execute("corr-refresh-all")
             refreshed = self._refresh_open_workspaces()
@@ -382,8 +415,10 @@ class MainWindow(QMainWindow):
             self._status_bar.set_message(
                 f"Actualización completada · {result['valuation_date']} · {refreshed} módulos"
             )
+            self._header_status.setText("SISTEMA LISTO")
         except Exception as exc:
             self._status_bar.set_message("Actualización fallida")
+            self._header_status.setText("REVISAR")
             QMessageBox.critical(self, "Refresh failed", str(exc))
 
     def refresh_all(self) -> dict[str, object]:
