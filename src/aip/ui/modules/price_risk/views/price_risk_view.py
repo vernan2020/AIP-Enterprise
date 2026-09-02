@@ -37,12 +37,23 @@ class _PriceRiskWorker(QObject):
     def load(self) -> None:
         try:
             self.result_ready.emit(self._presenter.build_view_model())
-        except Exception as exc:  # defensive UI boundary
+        except Exception as exc:
             self.failed.emit(str(exc))
 
 
 class PriceRiskView(QWidget):
-    """AIP Hybrid workspace for historical VaR and interest-rate sensitivity."""
+    """Espacio AIP Hybrid para VeR histórico y sensibilidad a tasas."""
+
+    _STATUS_TRANSLATIONS = {
+        "LOADING": "CARGANDO",
+        "READY": "LISTO",
+        "AVAILABLE": "DISPONIBLE",
+        "UNAVAILABLE": "NO DISPONIBLE",
+        "CALCULATED": "CALCULADO",
+        "DATA_UNAVAILABLE": "DATOS NO DISPONIBLES",
+        "POLICY_EXCLUDED": "EXCLUIDO POR POLÍTICA",
+        "ERROR": "ERROR",
+    }
 
     load_requested = Signal()
 
@@ -60,6 +71,10 @@ class PriceRiskView(QWidget):
         self._setup_worker()
         self._set_loading_state(initial=True)
         QTimer.singleShot(0, self._request_load)
+
+    @classmethod
+    def _translate_status(cls, value: str) -> str:
+        return cls._STATUS_TRANSLATIONS.get(value.strip().upper(), value)
 
     def _build_ui(self) -> None:
         outer = QVBoxLayout(self)
@@ -129,7 +144,7 @@ class PriceRiskView(QWidget):
             ("eligible_vm", "Exposición", "Valor de mercado elegible"),
             ("scenarios", "Escenarios", "Simulaciones históricas"),
             ("horizon", "Horizonte", "Observaciones por escenario"),
-            ("rank", "Rank", "Percentil regulatorio"),
+            ("rank", "Posición Percentil", "Percentil regulatorio"),
         )
         for index, (key, caption, helper) in enumerate(price_kpis):
             kpi_grid.addWidget(self._metric_card(key, caption, helper), index // 4, index % 4)
@@ -155,7 +170,7 @@ class PriceRiskView(QWidget):
 
         charts = QHBoxLayout()
         charts.setSpacing(8)
-        contribution_group = QGroupBox("Top 10 · contribución al VeR")
+        contribution_group = QGroupBox("10 principales · contribución al VeR")
         contribution_group.setStyleSheet(self._group_style())
         contribution_layout = QVBoxLayout(contribution_group)
         self._contribution_chart = RiskBarChartWidget(
@@ -181,12 +196,12 @@ class PriceRiskView(QWidget):
                 "Serie",
                 "Emisor",
                 "Moneda",
-                "Valor Mercado",
-                "P&L Escenario",
+                "Valor de Mercado",
+                "Resultado del Escenario",
                 "Contribución %",
                 "VeR Individual %",
                 "Obs. Reales",
-                "Backfill",
+                "Obs. Sintéticas",
             ]
         )
         self._table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
@@ -248,7 +263,7 @@ class PriceRiskView(QWidget):
             item = QLabel(text)
             item.setStyleSheet("font-weight:700; color:#17324D;")
             grid.addWidget(item, 0, column)
-        for row_index, label in enumerate(("DV01", "% DV01", "Valor Mercado", "Posiciones"), 1):
+        for row_index, label in enumerate(("DV01", "% DV01", "Valor de Mercado", "Posiciones"), 1):
             grid.addWidget(QLabel(label), row_index, 0)
         for column, key in enumerate(("lt1", "1to5", "gt5"), 1):
             for row_index, metric in enumerate(("value", "percent", "market_value", "positions"), 1):
@@ -355,7 +370,7 @@ class PriceRiskView(QWidget):
             self._request_load()
             return
         if not isinstance(view_model, PriceRiskViewModel):
-            self._on_load_failed("El worker devolvió un ViewModel inválido")
+            self._on_load_failed("El proceso devolvió un modelo de vista inválido")
             return
         self._bind_view_model(view_model)
         self._table.setEnabled(True)
@@ -412,7 +427,7 @@ class PriceRiskView(QWidget):
             if vm.scenario_start_date != "-"
             else "-"
         )
-        self._status_label.setText(vm.status)
+        self._status_label.setText(self._translate_status(vm.status))
         self._diagnostic_label.setText(vm.diagnostic or "")
         self._contribution_chart.set_data(vm.var_contribution_points)
         self._pareto_chart.set_data(vm.var_pareto_points)
