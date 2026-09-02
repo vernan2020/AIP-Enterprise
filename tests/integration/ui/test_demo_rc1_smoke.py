@@ -27,12 +27,7 @@ def test_demo_rc1_smoke_navigation_and_refresh() -> None:
     app.processEvents()
 
     assert workspace.count() >= 6
-    assert workspace.tabText(workspace.currentIndex()) in {
-        "Portfolio",
-        "Market",
-        "Liquidity",
-        "Treasury",
-    }
+    assert workspace.tabText(workspace.currentIndex()) == "Tesorería"
 
     summary = window.refresh_all()
     assert summary["status"] == "completed"
