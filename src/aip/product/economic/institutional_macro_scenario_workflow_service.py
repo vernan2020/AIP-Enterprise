@@ -6,7 +6,6 @@ from uuid import uuid4
 from aip.product.configured.repositories.institutional_macro_scenario_repository import (
     InstitutionalMacroScenarioRepository,
 )
-
 from aip.product.economic.institutional_macro_scenario_workflow import (
     ScenarioReviewResolution,
     ScenarioWorkflowEvent,
