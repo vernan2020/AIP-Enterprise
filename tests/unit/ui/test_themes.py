@@ -41,5 +41,5 @@ def test_theme_service_inserts_coopealianza_logo_once(qt_app) -> None:
     assert len(logos) == 1
     assert logos[0].pixmap() is not None
     assert not logos[0].pixmap().isNull()
-    assert logos[0].width() == 178
-    assert logos[0].height() == 44
+    assert logos[0].width() == 236
+    assert logos[0].height() == 48
