@@ -1,0 +1,95 @@
+name: Apply Coopealianza Header Logo
+
+on:
+  push:
+    branches:
+      - recovery/full-runtime-rc1-20260829
+    paths:
+      - .github/workflows/apply-coopealianza-header-logo.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply-logo:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: recovery/full-runtime-rc1-20260829
+          fetch-depth: 0
+
+      - name: Insert official Coopealianza logo in institutional header
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path("src/aip/ui/shell/main_window.py")
+          text = path.read_text(encoding="utf-8")
+
+          import_anchor = "from aip.ui.navigation.navigation_manager import NavigationManager\n"
+          import_line = (
+              "from aip.ui.resources.coopealianza_logo import coopealianza_logo_pixmap\n"
+          )
+          if import_line not in text:
+              if import_anchor not in text:
+                  raise SystemExit("Navigation import anchor not found")
+              text = text.replace(import_anchor, import_anchor + import_line, 1)
+
+          old_style = (
+              '        frame.setMinimumHeight(58)\n'
+              '        frame.setStyleSheet(\n'
+              '            "QFrame#institutionalHeader {background:#173F63; border:none;}"\n'
+          )
+          new_style = (
+              '        frame.setMinimumHeight(66)\n'
+              '        frame.setStyleSheet(\n'
+              '            "QFrame#institutionalHeader {background:#00345F; border:none;}"\n'
+          )
+          if old_style in text:
+              text = text.replace(old_style, new_style, 1)
+
+          anchor = (
+              '        execution_mode = self._config.execution_mode\n\n'
+              '        title_box = QVBoxLayout()\n'
+          )
+          replacement = (
+              '        execution_mode = self._config.execution_mode\n\n'
+              '        logo = QLabel()\n'
+              '        logo.setObjectName("coopealianzaHeaderLogo")\n'
+              '        logo.setFixedSize(236, 48)\n'
+              '        logo.setAlignment(Qt.AlignmentFlag.AlignCenter)\n'
+              '        logo.setPixmap(\n'
+              '            coopealianza_logo_pixmap().scaled(\n'
+              '                220,\n'
+              '                42,\n'
+              '                Qt.AspectRatioMode.KeepAspectRatio,\n'
+              '                Qt.TransformationMode.SmoothTransformation,\n'
+              '            )\n'
+              '        )\n'
+              '        logo.setStyleSheet(\n'
+              '            "QLabel#coopealianzaHeaderLogo {background:#FFFFFF; "\n'
+              '            "border:1px solid #D5DEE3; border-radius:7px; padding:2px 6px;}"\n'
+              '        )\n'
+              '        layout.addWidget(logo)\n\n'
+              '        title_box = QVBoxLayout()\n'
+          )
+          if 'logo.setObjectName("coopealianzaHeaderLogo")' not in text:
+              if anchor not in text:
+                  raise SystemExit("Header insertion anchor not found")
+              text = text.replace(anchor, replacement, 1)
+
+          path.write_text(text, encoding="utf-8")
+
+      - name: Validate syntax
+        run: python -m py_compile src/aip/ui/shell/main_window.py src/aip/ui/resources/coopealianza_logo.py
+
+      - name: Commit header branding
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/aip/ui/shell/main_window.py
+          git diff --cached --quiet && exit 0
+          git commit -m "feat(brand): insertar logo Coopealianza en header institucional"
+          git push origin HEAD:recovery/full-runtime-rc1-20260829
