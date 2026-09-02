@@ -23,7 +23,7 @@ from aip.ui.modules.liquidity.viewmodels.liquidity_view_model import LiquidityVi
 
 
 class _LiquidityBarChart(QWidget):
-    """Simple native bar chart for values already calculated by the application layer."""
+    """Gráfico de barras nativo para valores calculados por la capa de aplicación."""
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -76,7 +76,21 @@ class _LiquidityBarChart(QWidget):
 
 
 class LiquidityView(QWidget):
-    """Institutional liquidity dashboard for ICL, HQLA, MIL and maturities."""
+    """Panel institucional de liquidez para ICL, HQLA, MIL y vencimientos."""
+
+    _DISPLAY_TRANSLATIONS = {
+        "READY": "LISTO",
+        "LOADED": "CARGADO",
+        "AVAILABLE": "DISPONIBLE",
+        "UNAVAILABLE": "NO DISPONIBLE",
+        "ELIGIBLE": "ELEGIBLE",
+        "NOT ELIGIBLE": "NO ELEGIBLE",
+        "INELIGIBLE": "NO ELEGIBLE",
+        "PASS": "CUMPLE",
+        "FAIL": "NO CUMPLE",
+        "NOT CONFIGURED": "NO CONFIGURADO",
+        "NOT_CONFIGURED": "NO CONFIGURADO",
+    }
 
     def __init__(self, presenter: LiquidityPresenter | None = None) -> None:
         super().__init__()
@@ -86,6 +100,11 @@ class LiquidityView(QWidget):
         self._kpis: dict[str, QLabel] = {}
         self._build_ui()
         self.bind_view_model(self._view_model)
+
+    @classmethod
+    def _translate(cls, value: object) -> str:
+        text = str(value)
+        return cls._DISPLAY_TRANSLATIONS.get(text.strip().upper(), text)
 
     @staticmethod
     def _format_crc_mm(value: float) -> str:
@@ -161,8 +180,8 @@ class LiquidityView(QWidget):
             ("liquid_fund", "Fondo líquido", "Activos líquidos ICL"),
             ("hqla", "HQLA", "Capacidad ajustada elegible"),
             ("mil", "MIL", "Capacidad de garantía elegible"),
-            ("maturity30", "Vence ≤30D", "Valor de mercado contractual"),
-            ("net_outflow", "Salida neta 30D", "Dato fuente ICL"),
+            ("maturity30", "Vence ≤30 días", "Valor de mercado contractual"),
+            ("net_outflow", "Salida neta 30 días", "Dato fuente ICL"),
         )
         for index, definition in enumerate(definitions):
             kpis.addWidget(self._metric_card(*definition), index // 4, index % 4)
@@ -235,7 +254,7 @@ class LiquidityView(QWidget):
                 "Vencimiento",
                 "Días",
                 "Tramo",
-                "Valor Mercado",
+                "Valor de Mercado",
             )
         )
         layout.addWidget(table)
@@ -252,7 +271,7 @@ class LiquidityView(QWidget):
                 "Emisor",
                 "Moneda",
                 "Clasificación",
-                "Valor Mercado",
+                "Valor de Mercado",
                 "Factor",
                 "Capacidad",
                 "Estado",
@@ -267,7 +286,7 @@ class LiquidityView(QWidget):
         page = QWidget()
         layout = QVBoxLayout(page)
         layout.setContentsMargins(4, 8, 4, 4)
-        group = QGroupBox("Stress de liquidez")
+        group = QGroupBox("Estrés de liquidez")
         group.setStyleSheet(self._group_style())
         group_layout = QVBoxLayout(group)
         self._stress_status = QLabel("-")
@@ -279,7 +298,7 @@ class LiquidityView(QWidget):
         self._policy_status = QLabel("-")
         self._policy_status.setStyleSheet("color:#667788; padding:0 10px 10px 10px;")
         notice = QLabel(
-            "El panel sólo muestra resultados de stress calculados por el motor institucional. "
+            "El panel sólo muestra resultados de estrés calculados por el motor institucional. "
             "No se generan escenarios ni supuestos dentro de la interfaz."
         )
         notice.setWordWrap(True)
@@ -289,7 +308,7 @@ class LiquidityView(QWidget):
         group_layout.addWidget(notice)
         layout.addWidget(group)
         layout.addStretch(1)
-        self._tabs.addTab(page, "Stress")
+        self._tabs.addTab(page, "Estrés")
 
     @staticmethod
     def _set_item(table: QTableWidget, row: int, column: int, value: str) -> None:
@@ -307,10 +326,10 @@ class LiquidityView(QWidget):
                 row.label,
                 row.issuer,
                 row.currency,
-                row.classification,
+                self._translate(row.classification),
                 row.maturity_date,
                 str(row.days_to_maturity if row.days_to_maturity is not None else "-"),
-                row.bucket,
+                self._translate(row.bucket),
                 self._format_crc_mm(row.market_value_crc),
             )
             for column, value in enumerate(values):
@@ -329,11 +348,11 @@ class LiquidityView(QWidget):
                 row.label,
                 row.issuer,
                 row.currency,
-                row.classification,
+                self._translate(row.classification),
                 self._format_crc_mm(row.market_value_crc),
                 f"{row.factor:.2%}",
                 self._format_crc_mm(float(row.value)),
-                row.status,
+                self._translate(row.status),
                 row.policy_reference,
             )
             for column, value in enumerate(values):
@@ -363,28 +382,30 @@ class LiquidityView(QWidget):
         self._flow_chart.set_data(
             (
                 ("Fondo líquido", getattr(summary, "liquid_asset_fund_total", 0.0)),
-                ("Entradas 30D", getattr(summary, "total_inflows_30d", 0.0)),
-                ("Salidas 30D", getattr(summary, "total_outflows_30d", 0.0)),
+                ("Entradas 30 días", getattr(summary, "total_inflows_30d", 0.0)),
+                ("Salidas 30 días", getattr(summary, "total_outflows_30d", 0.0)),
                 ("Salida neta", getattr(summary, "net_cash_outflow_30d", 0.0)),
             )
         )
         self._maturity_chart.set_data(
             (
-                ("≤30D", getattr(summary, "maturity_30d_crc", 0.0)),
-                ("≤90D", getattr(summary, "maturity_90d_crc", 0.0)),
-                ("≤180D", getattr(summary, "maturity_180d_crc", 0.0)),
-                ("≤270D", getattr(summary, "maturity_270d_crc", 0.0)),
+                ("≤30 días", getattr(summary, "maturity_30d_crc", 0.0)),
+                ("≤90 días", getattr(summary, "maturity_90d_crc", 0.0)),
+                ("≤180 días", getattr(summary, "maturity_180d_crc", 0.0)),
+                ("≤270 días", getattr(summary, "maturity_270d_crc", 0.0)),
             )
         )
         self._populate_maturities(view_model.maturity_rows)
         self._populate_eligibility(self._hqla_table, view_model.hqla_rows)
         self._populate_eligibility(self._mil_table, view_model.mil_rows)
-        self._stress_status.setText(f"Resultado: {getattr(summary, 'stress_result', '-')}")
-        self._policy_status.setText(f"Política: {getattr(summary, 'policy_status', '-')}")
-        self._status.setText(
-            getattr(summary, "configuration_message", "")
-            or (view_model.error or view_model.status)
+        self._stress_status.setText(
+            f"Resultado: {self._translate(getattr(summary, 'stress_result', '-'))}"
         )
+        self._policy_status.setText(
+            f"Política: {self._translate(getattr(summary, 'policy_status', '-'))}"
+        )
+        message = getattr(summary, "configuration_message", "") or (view_model.error or view_model.status)
+        self._status.setText(self._translate(message))
 
     def view_model(self) -> LiquidityViewModel:
         return self._view_model
