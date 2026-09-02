@@ -12,10 +12,11 @@ PACKAGE_ROOT_NAME = "AIP_RC1_CERTIFIED"
 INCLUDED_FILES = [
     Path("run_aip_configured.cmd"),
     Path("config/runtime.local.cmd.example"),
-    Path("scripts/recovery/apply_windows_recovery.py"),
 ]
 INCLUDED_DIRS = [
     Path("src"),
+    Path("scripts/recovery"),
+    Path("recovery/checkpoints/rc1-final-20260829"),
 ]
 EXCLUDED_SUFFIXES = {".pyc", ".pyo"}
 EXCLUDED_NAMES = {"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"}
@@ -106,6 +107,8 @@ def main() -> int:
             )
 
         installer_source = root / "scripts" / "recovery" / "apply_windows_recovery.py"
+        if not installer_source.is_file():
+            raise RuntimeError("Certified Windows installer is missing")
         shutil.copy2(installer_source, package_dir / "apply_windows_recovery.py")
         _write_apply_cmd(package_dir)
 
@@ -125,6 +128,8 @@ def main() -> int:
             ],
             "installation_guarantees": [
                 "payload SHA-256 is validated before installation",
+                "package contains the complete certified src runtime",
+                "package contains the complete recovery control plane and canonical checkpoint",
                 "existing recovery-owned runtime files are backed up before replacement",
                 "src replacement is transactional",
                 "local credentials are not packaged or overwritten",
