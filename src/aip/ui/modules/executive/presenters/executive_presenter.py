@@ -1,16 +1,54 @@
 from __future__ import annotations
 
+from decimal import Decimal
+
+from aip.product.configured.services.configured_macro_intelligence_service import (
+    ConfiguredMacroIntelligenceService,
+)
+from aip.product.configured.services.configured_treasury_insight_service import (
+    ConfiguredTreasuryInsightService,
+    TreasuryInsightItem,
+)
 from aip.product.demo.bootstrap.application_factory import DemoApplicationFactory
 from aip.ui.modules.executive.models.executive_row import ExecutiveRow
 from aip.ui.modules.executive.viewmodels.executive_view_model import ExecutiveViewModel
 
 
 class ExecutivePresenter:
-    """Presenter that adapts application-layer outputs into an executive cockpit view model."""
+    """Adapt certified application outputs into an integrated executive cockpit."""
 
     def __init__(self, demo_factory: DemoApplicationFactory | None = None) -> None:
         self._demo_factory = demo_factory or DemoApplicationFactory()
-        self._correlation_id = "corr-demo-executive"
+        self._correlation_id = "corr-executive"
+
+    @staticmethod
+    def _decimal(value: object) -> Decimal:
+        if isinstance(value, Decimal):
+            return value
+        try:
+            return Decimal(str(value))
+        except (TypeError, ValueError):
+            return Decimal("0")
+
+    @classmethod
+    def _format_crc_mm(cls, value: object) -> str:
+        return f"₡{cls._decimal(value) / Decimal('1000000'):,.2f} MM"
+
+    @staticmethod
+    def _executive_row(
+        item: TreasuryInsightItem,
+        *,
+        category: str,
+        timestamp: str,
+    ) -> ExecutiveRow:
+        return ExecutiveRow(
+            title=item.title,
+            detail=item.detail,
+            category=category,
+            severity=item.severity,
+            source=item.source,
+            timestamp=timestamp,
+        )
 
     def build_view_model(
         self,
@@ -24,89 +62,121 @@ class ExecutivePresenter:
         portfolio = workflow_result["portfolio"]
         liquidity = workflow_result["liquidity"]
         market = workflow_result["market"]
-        summary = (
-            f"Portfolio Market Value: {portfolio['market_value']:,.2f}",
-            f"Book Value: {portfolio['book_value']:,.2f}",
-            f"Liquidity Position: {liquidity['cash_position']:.2f}",
-            f"Liquidity Gap: {liquidity['liquidity_gap']:.2f}",
-            f"HQLA Capacity: {liquidity['hqla_capacity']:.2f}",
-            f"MIL Capacity: {liquidity['mil_eligible_capacity']:.2f}",
-            f"Stress Status: {liquidity['stress_result']}",
-            f"Treasury Recommendation Status: {portfolio['relative_value_opportunity']}",
+        valuation_date = str(
+            portfolio.get("valuation_date")
+            or liquidity.get("liquidity_date")
+            or market.get("market_date")
+            or "-"
         )
-        currency_distribution = portfolio.get("currency_distribution", ()) or ()
-        positions = portfolio.get("positions", []) or []
-        top_issuers = (
-            ", ".join(position.get("issuer", "N/A") for position in positions[:2])
-            if positions
-            else "N/A"
+
+        insights = ConfiguredTreasuryInsightService.build(
+            liquidity=liquidity,
+            market=market,
+        )
+        recommendations = tuple(
+            self._executive_row(item, category="Tesorería", timestamp=valuation_date)
+            for item in insights.observations
+        ) + tuple(
+            self._executive_row(item, category="Mercado / RV", timestamp=valuation_date)
+            for item in insights.opportunities
+        )
+        alerts = list(
+            self._executive_row(item, category="Liquidez", timestamp=valuation_date)
+            for item in insights.alerts
+        )
+        for warning in workflow_result.get("warnings", ()) or ():
+            alerts.append(
+                ExecutiveRow(
+                    title="Advertencia de fuente o cálculo",
+                    detail=str(warning),
+                    category="Sistema",
+                    severity="Informativa",
+                    source="AIP Runtime",
+                    timestamp=valuation_date,
+                )
+            )
+
+        macro_scenario = "No disponible"
+        macro_horizon = "-"
+        try:
+            macro_service = self._demo_factory.container.resolve(
+                ConfiguredMacroIntelligenceService
+            )
+            macro = macro_service.get_projection()
+            if str(macro.get("status") or "").upper() == "AVAILABLE":
+                macro_scenario = (
+                    f"{macro.get('scenario_type', '-')} · v{macro.get('version', '-')} · "
+                    f"{macro.get('scenario_status', '-')}"
+                )
+                macro_horizon = f"{int(macro.get('horizon') or 0)} meses"
+            else:
+                macro_scenario = str(macro.get("status") or "No disponible")
+        except Exception:
+            pass
+
+        summary = (
+            f"Portafolio: {self._format_crc_mm(portfolio.get('market_value'))}",
+            f"TIR: {self._decimal(portfolio.get('weighted_yield')):.2f}%",
+            f"HQLA: {self._decimal(portfolio.get('hqla_percent')):.1f}%",
+            f"ICL Total: {self._decimal(liquidity.get('icl_total')):.2f}",
+            f"RV Mercado: {int(market.get('market_relative_value_count') or 0)} títulos",
+            f"Macro: {macro_scenario}",
         )
         portfolio_view = (
-            f"Market Value: {portfolio['market_value']:,.2f}",
-            f"Yield: {portfolio['weighted_yield']:.2f}%",
-            f"Modified Duration: {portfolio['modified_duration']:.2f}",
-            f"Concentration: {currency_distribution[0] if currency_distribution else 'N/A'}",
-            f"Asset Allocation: {','.join(currency_distribution)}",
-            f"Top Issuers: {top_issuers}",
+            f"Valor Mercado: {self._format_crc_mm(portfolio.get('market_value'))}",
+            f"Valor Libros: {self._format_crc_mm(portfolio.get('book_value'))}",
+            f"TIR ponderada: {self._decimal(portfolio.get('weighted_yield')):.2f}%",
+            f"Duración modificada: {self._decimal(portfolio.get('modified_duration')):.2f}",
+            f"HQLA: {self._decimal(portfolio.get('hqla_percent')):.1f}%",
+            f"MIL: {self._decimal(portfolio.get('mil_eligible_percent')):.1f}%",
         )
         liquidity_view = (
-            f"Cash Position: {liquidity['cash_position']:.2f}",
-            f"Gap: {liquidity['liquidity_gap']:.2f}",
-            f"Coverage: {liquidity['policy_status']}",
-            f"HQLA: {liquidity['hqla_capacity']:.2f}",
-            f"MIL: {liquidity['mil_eligible_capacity']:.2f}",
-            f"Stress Result: {liquidity['stress_result']}",
-            f"Policy Compliance: {liquidity['policy_status']}",
+            f"Posición de caja: {self._format_crc_mm(liquidity.get('cash_position'))}",
+            f"Brecha: {self._format_crc_mm(liquidity.get('liquidity_gap'))}",
+            f"HQLA: {self._format_crc_mm(liquidity.get('hqla_capacity'))}",
+            f"MIL: {self._format_crc_mm(liquidity.get('mil_eligible_capacity'))}",
+            f"ICL Total: {self._decimal(liquidity.get('icl_total')):.2f}",
+            f"Stress: {liquidity.get('stress_result') or 'No configurado'}",
         )
         market_view = (
-            f"Yield Curves: {'/'.join(curve['label'] for curve in market['curves'])}",
-            f"Relative Value Opportunities: {market['relative_value_opportunities']}",
-            f"Spread Summary: {market['average_spread']:.2f}",
-            f"Market Status: {market['market_status']}",
+            f"Curvas: {len(market.get('curves', ()) or ())}",
+            f"RV Portafolio: {int(market.get('relative_value_opportunities') or 0)}",
+            f"RV Mercado: {int(market.get('market_relative_value_count') or 0)}",
+            f"Fuera de portafolio: {int(market.get('market_outside_portfolio_count') or 0)}",
+            f"Rotaciones: {int(market.get('portfolio_rotation_candidate_count') or 0)}",
+            f"Estado: {market.get('market_status') or 'N/D'}",
         )
-        recommendations = (
-            ExecutiveRow(
-                title="Treasury Buffer Review",
-                detail="Maintain cash buffer ahead of next rollover",
-                category="Treasury",
-                severity="High",
-                source="Treasury Ops",
-            ),
-            ExecutiveRow(
-                title="Funding Window",
-                detail="Reprice term funding before rollover",
-                category="Funding",
-                severity="Medium",
-                source="Funding Desk",
-            ),
-        )
-        alerts = (
-            ExecutiveRow(
-                title="Demo Mode Badge",
-                detail="Deterministic demo data is active",
-                category="System",
-                severity="Medium",
-                source="Demo Platform",
-            ),
-        )
-        trends = (
-            ("30 Days", ("92", "95", "97", "94")),
-            ("90 Days", ("88", "91", "94", "96")),
-            ("12 Months", ("80", "84", "87", "91")),
-        )
+
         return ExecutiveViewModel(
+            title="COCKPIT EJECUTIVO",
+            subtitle="Portafolio · Liquidez · Mercado · Macro Intelligence",
             summary=summary,
             portfolio=portfolio_view,
             liquidity=liquidity_view,
             market=market_view,
             recommendations=recommendations,
-            alerts=alerts,
-            trends=trends,
+            alerts=tuple(alerts),
+            trends=(),
             filters=filters or {},
             theme_name=theme,
             status="loaded" if not error else "error",
             loading=loading,
             error=error,
+            valuation_date=valuation_date,
+            portfolio_market_value=self._format_crc_mm(portfolio.get("market_value")),
+            weighted_yield=f"{self._decimal(portfolio.get('weighted_yield')):.2f}%",
+            modified_duration=f"{self._decimal(portfolio.get('modified_duration')):.2f}",
+            hqla_percent=f"{self._decimal(portfolio.get('hqla_percent')):.1f}%",
+            mil_percent=f"{self._decimal(portfolio.get('mil_eligible_percent')):.1f}%",
+            liquidity_gap=self._format_crc_mm(liquidity.get("liquidity_gap")),
+            icl_total=f"{self._decimal(liquidity.get('icl_total')):.2f}",
+            relative_value_count=int(market.get("market_relative_value_count") or 0),
+            rotation_candidate_count=int(
+                market.get("portfolio_rotation_candidate_count") or 0
+            ),
+            macro_scenario=macro_scenario,
+            macro_horizon=macro_horizon,
+            data_quality_status=str(portfolio.get("data_quality_status") or "N/D"),
         )
 
     def refresh(
