@@ -25,29 +25,46 @@ class ThemeService:
     def _apply_coopealianza_header_branding(widget: QWidget) -> None:
         """Inserta el logo oficial de Coopealianza en el header institucional.
 
-        El PNG se carga desde un activo embebido del runtime para que la interfaz
-        no dependa de una ruta local. Se conserva el arte original sobre una
-        placa blanca y el fondo del header utiliza el Azul Coopealianza oficial.
+        El header claro preserva el arte original del logotipo, mantiene el blanco
+        como superficie predominante y utiliza Azul/Celeste/Menta Coopealianza
+        como estructura y estados. El activo queda embebido en el runtime y no
+        depende de rutas locales del usuario.
         """
 
         header = widget.findChild(QWidget, "institutionalHeader")
         if header is None:
             return
 
-        header.setMinimumHeight(60)
+        header.setMinimumHeight(66)
         header.setStyleSheet(
-            "QFrame#institutionalHeader {background:#005EB8; border:none; "
-            "border-bottom:3px solid #00A9E0;}"
-            "QFrame#institutionalHeader QLabel {background:transparent; border:none; color:#FFFFFF;}"
-            "QLabel#coopealianzaHeaderLogo {background:#FFFFFF; border:1px solid #D5DEE3; "
-            "border-radius:7px; padding:2px 7px;}"
-            "QLabel#headerMode {background:#1675C5; border:1px solid #73B3DD; border-radius:10px; "
-            "padding:4px 9px; color:#FFFFFF; font-size:9px; font-weight:700;}"
-            "QLabel#headerStatus {background:#167A68; border:1px solid #40C1AC; border-radius:10px; "
-            "padding:4px 9px; color:#FFFFFF; font-size:9px; font-weight:700;}"
+            "QFrame#institutionalHeader {background:#FFFFFF; border:none; "
+            "border-bottom:2px solid #00A9E0;}"
+            "QFrame#institutionalHeader QLabel {background:transparent; border:none; color:#00345F;}"
+            "QLabel#coopealianzaHeaderLogo {background:transparent; border:none;}"
+            "QLabel#headerMode {background:#F0F8FC; border:1px solid #73B3DD; border-radius:10px; "
+            "padding:4px 9px; color:#005EB8; font-size:9px; font-weight:700;}"
+            "QLabel#headerStatus {background:#E2F6F1; border:1px solid #40C1AC; border-radius:10px; "
+            "padding:4px 9px; color:#167A68; font-size:9px; font-weight:700;}"
             "QDateEdit {min-width:112px; padding:5px 8px; background:#FFFFFF; color:#00345F; "
             "border:1px solid #73B3DD; border-radius:5px;}"
         )
+
+        title = header.findChild(QLabel, "headerTitle")
+        if title is not None:
+            title.setStyleSheet(
+                "font-size:15px; font-weight:800; letter-spacing:0.7px; "
+                "color:#00345F; background:transparent;"
+            )
+        subtitle = header.findChild(QLabel, "headerSubtitle")
+        if subtitle is not None:
+            subtitle.setStyleSheet(
+                "font-size:8px; color:#00A9E0; letter-spacing:1px; background:transparent;"
+            )
+        asof = header.findChild(QLabel, "headerAsOf")
+        if asof is not None:
+            asof.setStyleSheet(
+                "font-size:8px; color:#566D7C; font-weight:700; background:transparent;"
+            )
 
         if header.findChild(QLabel, "coopealianzaHeaderLogo") is not None:
             return
@@ -63,12 +80,12 @@ class ThemeService:
 
         logo = QLabel(header)
         logo.setObjectName("coopealianzaHeaderLogo")
-        logo.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        logo.setFixedSize(178, 44)
+        logo.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
+        logo.setFixedSize(236, 48)
         logo.setPixmap(
             pixmap.scaled(
-                162,
-                38,
+                220,
+                42,
                 Qt.AspectRatioMode.KeepAspectRatio,
                 Qt.TransformationMode.SmoothTransformation,
             )
