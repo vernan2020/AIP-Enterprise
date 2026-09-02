@@ -151,14 +151,15 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e '.[dev]'
 
-      - name: Run institutional risk and liquidity regression suite
+      - name: Run institutional risk, liquidity and recovery regression suite
         run: |
           python -m pytest -q \
             tests/unit/domain/liquidity \
             tests/unit/domain/relative_value \
             tests/unit/extensions/coopealianza/liquidity \
             tests/unit/extensions/coopealianza/treasury/decision \
-            tests/unit/product/configured/context
+            tests/unit/product/configured/context \
+            tests/unit/recovery
 
       - name: Run configured source and market regression suite
         run: |
