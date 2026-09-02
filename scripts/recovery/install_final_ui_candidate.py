@@ -3,10 +3,12 @@ from __future__ import annotations
 import compileall
 import os
 import shutil
+import ssl
 import subprocess
 import sys
 import tarfile
 import tempfile
+import urllib.error
 import urllib.request
 from datetime import datetime
 from pathlib import Path, PurePosixPath
@@ -15,7 +17,8 @@ from pathlib import Path, PurePosixPath
 REPOSITORY = "vernan2020/AIP-Enterprise"
 SOURCE_COMMIT = "cdde4045dd28bb8a7d779cce5f6dfac68d12ab38"
 ARCHIVE_URL = f"https://codeload.github.com/{REPOSITORY}/tar.gz/{SOURCE_COMMIT}"
-USER_AGENT = "AIP-Enterprise-Final-UI/1.0"
+USER_AGENT = "AIP-Enterprise-Final-UI/1.1"
+TLS_CIPHERS = "DEFAULT:@SECLEVEL=1"
 
 CRITICAL_FILES = (
     "ui/shell/main_window.py",
@@ -33,6 +36,22 @@ CRITICAL_FILES = (
 )
 
 
+def _tls_context() -> ssl.SSLContext:
+    """Return a verified TLS context compatible with the corporate CA chain.
+
+    Python 3.13/OpenSSL 3 defaults to security level 2. Some institutional
+    TLS inspection chains still use a 1024-bit CA key, which OpenSSL rejects as
+    ``CA certificate key too weak``. Security level 1 accepts that legacy CA
+    while preserving certificate validation and hostname verification.
+    """
+
+    context = ssl.create_default_context()
+    context.set_ciphers(TLS_CIPHERS)
+    if context.verify_mode != ssl.CERT_REQUIRED or not context.check_hostname:
+        raise RuntimeError("El contexto TLS perdió la validación de certificado")
+    return context
+
+
 def _project_root() -> Path:
     root = Path.cwd().resolve()
     if not (root / "src" / "aip").is_dir():
@@ -48,9 +67,20 @@ def _download_archive(destination: Path) -> None:
         ARCHIVE_URL,
         headers={"User-Agent": USER_AGENT, "Cache-Control": "no-cache"},
     )
-    with urllib.request.urlopen(request, timeout=120) as response:
-        with destination.open("wb") as handle:
-            shutil.copyfileobj(response, handle)
+    try:
+        with urllib.request.urlopen(
+            request,
+            timeout=120,
+            context=_tls_context(),
+        ) as response:
+            with destination.open("wb") as handle:
+                shutil.copyfileobj(response, handle)
+    except urllib.error.URLError as exc:
+        raise RuntimeError(
+            "No se pudo descargar el candidato visual desde GitHub con TLS "
+            "verificado compatible con la CA corporativa. "
+            f"Detalle: {exc}"
+        ) from exc
 
 
 def _extract_aip_source(archive: Path, staging_src: Path) -> Path:
@@ -87,11 +117,7 @@ def _extract_aip_source(archive: Path, staging_src: Path) -> Path:
 
             relative_text = member.name[len(source_prefix) :]
             relative = PurePosixPath(relative_text)
-            if (
-                not relative_text
-                or relative.is_absolute()
-                or ".." in relative.parts
-            ):
+            if not relative_text or relative.is_absolute() or ".." in relative.parts:
                 raise RuntimeError(f"Ruta insegura en el paquete: {member.name}")
 
             destination = staging_aip.joinpath(*relative.parts)
@@ -181,6 +207,7 @@ def main() -> int:
     print("=" * 80)
     print(f"Proyecto: {root}")
     print(f"Commit fuente: {SOURCE_COMMIT}")
+    print("TLS: verificación ON · compatibilidad corporativa OpenSSL SECLEVEL=1")
     print("Alcance: src/aip únicamente; no modifica bases ni archivos institucionales")
 
     with tempfile.TemporaryDirectory(prefix="aip-final-ui-") as temporary:
