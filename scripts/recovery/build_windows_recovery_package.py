@@ -65,6 +65,7 @@ def _write_apply_cmd(package_dir: Path) -> None:
         "setlocal\r\n"
         "cd /d \"%~dp0\"\r\n"
         "if exist \"..\\.venv\\Scripts\\activate.bat\" call \"..\\.venv\\Scripts\\activate.bat\"\r\n"
+        "set \"AIP_DEEP_PREFLIGHT=true\"\r\n"
         "python apply_windows_recovery.py\r\n"
         "if errorlevel 1 (\r\n"
         "  echo.\r\n"
@@ -134,6 +135,7 @@ def main() -> int:
                 "src replacement is transactional",
                 "local credentials are not packaged or overwritten",
                 "project .venv is activated automatically when present",
+                "deep configured preflight materializes portfolio, market, liquidity and macro providers",
                 "compileall and configured preflight run before the certified marker is written",
                 "failed post-install validation triggers automatic rollback to the pre-install runtime",
                 "rollback backup is preserved after both successful and failed installation",
