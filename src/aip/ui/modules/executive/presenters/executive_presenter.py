@@ -15,7 +15,19 @@ from aip.ui.modules.executive.viewmodels.executive_view_model import ExecutiveVi
 
 
 class ExecutivePresenter:
-    """Adapt certified application outputs into an integrated executive cockpit."""
+    """Adapta resultados certificados al panel ejecutivo integrado."""
+
+    _STATUS_TRANSLATIONS = {
+        "AVAILABLE": "DISPONIBLE",
+        "UNAVAILABLE": "NO DISPONIBLE",
+        "APPROVED": "APROBADO",
+        "DRAFT": "BORRADOR",
+        "READY": "LISTO",
+        "LOADED": "CARGADO",
+        "PASS": "CUMPLE",
+        "FAIL": "NO CUMPLE",
+        "NOT_CONFIGURED": "NO CONFIGURADO",
+    }
 
     def __init__(self, demo_factory: DemoApplicationFactory | None = None) -> None:
         self._demo_factory = demo_factory or DemoApplicationFactory()
@@ -29,6 +41,11 @@ class ExecutivePresenter:
             return Decimal(str(value))
         except (TypeError, ValueError):
             return Decimal("0")
+
+    @classmethod
+    def _translate_status(cls, value: object) -> str:
+        text = str(value or "N/D")
+        return cls._STATUS_TRANSLATIONS.get(text.strip().upper(), text)
 
     @classmethod
     def _format_crc_mm(cls, value: object) -> str:
@@ -77,7 +94,7 @@ class ExecutivePresenter:
             self._executive_row(item, category="Tesorería", timestamp=valuation_date)
             for item in insights.observations
         ) + tuple(
-            self._executive_row(item, category="Mercado / RV", timestamp=valuation_date)
+            self._executive_row(item, category="Mercado / Valor Relativo", timestamp=valuation_date)
             for item in insights.opportunities
         )
         alerts = list(
@@ -91,7 +108,7 @@ class ExecutivePresenter:
                     detail=str(warning),
                     category="Sistema",
                     severity="Informativa",
-                    source="AIP Runtime",
+                    source="Entorno AIP",
                     timestamp=valuation_date,
                 )
             )
@@ -106,11 +123,11 @@ class ExecutivePresenter:
             if str(macro.get("status") or "").upper() == "AVAILABLE":
                 macro_scenario = (
                     f"{macro.get('scenario_type', '-')} · v{macro.get('version', '-')} · "
-                    f"{macro.get('scenario_status', '-')}"
+                    f"{self._translate_status(macro.get('scenario_status'))}"
                 )
                 macro_horizon = f"{int(macro.get('horizon') or 0)} meses"
             else:
-                macro_scenario = str(macro.get("status") or "No disponible")
+                macro_scenario = self._translate_status(macro.get("status") or "No disponible")
         except Exception:
             pass
 
@@ -119,12 +136,12 @@ class ExecutivePresenter:
             f"TIR: {self._decimal(portfolio.get('weighted_yield')):.2f}%",
             f"HQLA: {self._decimal(portfolio.get('hqla_percent')):.1f}%",
             f"ICL Total: {self._decimal(liquidity.get('icl_total')):.2f}",
-            f"RV Mercado: {int(market.get('market_relative_value_count') or 0)} títulos",
-            f"Macro: {macro_scenario}",
+            f"Valor relativo de mercado: {int(market.get('market_relative_value_count') or 0)} títulos",
+            f"Escenario macroeconómico: {macro_scenario}",
         )
         portfolio_view = (
-            f"Valor Mercado: {self._format_crc_mm(portfolio.get('market_value'))}",
-            f"Valor Libros: {self._format_crc_mm(portfolio.get('book_value'))}",
+            f"Valor de mercado: {self._format_crc_mm(portfolio.get('market_value'))}",
+            f"Valor en libros: {self._format_crc_mm(portfolio.get('book_value'))}",
             f"TIR ponderada: {self._decimal(portfolio.get('weighted_yield')):.2f}%",
             f"Duración modificada: {self._decimal(portfolio.get('modified_duration')):.2f}",
             f"HQLA: {self._decimal(portfolio.get('hqla_percent')):.1f}%",
@@ -136,20 +153,20 @@ class ExecutivePresenter:
             f"HQLA: {self._format_crc_mm(liquidity.get('hqla_capacity'))}",
             f"MIL: {self._format_crc_mm(liquidity.get('mil_eligible_capacity'))}",
             f"ICL Total: {self._decimal(liquidity.get('icl_total')):.2f}",
-            f"Stress: {liquidity.get('stress_result') or 'No configurado'}",
+            f"Estrés: {self._translate_status(liquidity.get('stress_result') or 'No configurado')}",
         )
         market_view = (
             f"Curvas: {len(market.get('curves', ()) or ())}",
-            f"RV Portafolio: {int(market.get('relative_value_opportunities') or 0)}",
-            f"RV Mercado: {int(market.get('market_relative_value_count') or 0)}",
+            f"Valor relativo en portafolio: {int(market.get('relative_value_opportunities') or 0)}",
+            f"Valor relativo de mercado: {int(market.get('market_relative_value_count') or 0)}",
             f"Fuera de portafolio: {int(market.get('market_outside_portfolio_count') or 0)}",
             f"Rotaciones: {int(market.get('portfolio_rotation_candidate_count') or 0)}",
-            f"Estado: {market.get('market_status') or 'N/D'}",
+            f"Estado: {self._translate_status(market.get('market_status') or 'N/D')}",
         )
 
         return ExecutiveViewModel(
-            title="COCKPIT EJECUTIVO",
-            subtitle="Portafolio · Liquidez · Mercado · Macro Intelligence",
+            title="PANEL EJECUTIVO",
+            subtitle="Portafolio · Liquidez · Mercado · Inteligencia Macroeconómica",
             summary=summary,
             portfolio=portfolio_view,
             liquidity=liquidity_view,
