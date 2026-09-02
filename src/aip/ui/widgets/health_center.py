@@ -4,12 +4,21 @@ from PySide6.QtWidgets import QTableWidget, QTableWidgetItem, QVBoxLayout, QWidg
 
 
 class HealthCenterWidget(QWidget):
+    """Centro de estado de los componentes operativos de la aplicación."""
+
     def __init__(self) -> None:
         super().__init__()
         self._table = QTableWidget()
         self._table.setColumnCount(6)
         self._table.setHorizontalHeaderLabels(
-            ["Component", "State", "Uptime", "Last Execution", "Response Time", "Warnings/Errors"]
+            [
+                "Componente",
+                "Estado",
+                "Tiempo Activo",
+                "Última Ejecución",
+                "Tiempo de Respuesta",
+                "Advertencias/Errores",
+            ]
         )
         layout = QVBoxLayout(self)
         layout.addWidget(self._table)
@@ -23,14 +32,14 @@ class HealthCenterWidget(QWidget):
 
     def component_rows(self) -> list[tuple[str, str, str, str, str, str]]:
         return [
-            ("Application", "Healthy", "00:10:00", "now", "12ms", "0/0"),
-            ("Integration Hub", "Healthy", "00:12:00", "now", "15ms", "0/0"),
-            ("Scheduler", "Healthy", "00:08:00", "now", "8ms", "0/0"),
-            ("Notifications", "Healthy", "00:09:00", "now", "6ms", "0/0"),
-            ("Observability", "Healthy", "00:07:00", "now", "9ms", "0/0"),
-            ("Reporting", "Healthy", "00:06:00", "now", "7ms", "0/0"),
-            ("SQL", "Healthy", "00:05:00", "now", "11ms", "0/0"),
-            ("Folder Watch", "Healthy", "00:04:00", "now", "5ms", "0/0"),
-            ("BCCR", "Healthy", "00:03:00", "now", "4ms", "0/0"),
-            ("Data Quality", "Healthy", "00:02:00", "now", "3ms", "0/0"),
+            ("Aplicación", "Saludable", "00:10:00", "ahora", "12 ms", "0/0"),
+            ("Centro de Integraciones", "Saludable", "00:12:00", "ahora", "15 ms", "0/0"),
+            ("Programador", "Saludable", "00:08:00", "ahora", "8 ms", "0/0"),
+            ("Notificaciones", "Saludable", "00:09:00", "ahora", "6 ms", "0/0"),
+            ("Observabilidad", "Saludable", "00:07:00", "ahora", "9 ms", "0/0"),
+            ("Reportes", "Saludable", "00:06:00", "ahora", "7 ms", "0/0"),
+            ("SQL", "Saludable", "00:05:00", "ahora", "11 ms", "0/0"),
+            ("Monitoreo de Carpetas", "Saludable", "00:04:00", "ahora", "5 ms", "0/0"),
+            ("BCCR", "Saludable", "00:03:00", "ahora", "4 ms", "0/0"),
+            ("Calidad de Datos", "Saludable", "00:02:00", "ahora", "3 ms", "0/0"),
         ]
