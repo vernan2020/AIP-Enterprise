@@ -4,10 +4,12 @@ from PySide6.QtWidgets import QLabel, QTextEdit, QVBoxLayout, QWidget
 
 
 class InspectorPanel(QWidget):
-    """Context inspector for selected workspace content."""
+    """Inspector contextual del contenido seleccionado."""
 
     def __init__(self) -> None:
         super().__init__()
         layout = QVBoxLayout(self)
         layout.addWidget(QLabel("Inspector"))
-        layout.addWidget(QTextEdit("Select an item to inspect details."))
+        detail = QTextEdit("Seleccione un elemento para inspeccionar sus detalles.")
+        detail.setReadOnly(True)
+        layout.addWidget(detail)
