@@ -9,7 +9,7 @@ from aip.ui.shell.workspace import Workspace
 
 
 class Sidebar(QWidget):
-    """Navegador pasivo de módulos de AIP Enterprise."""
+    """Navegador compacto de módulos de AIP Enterprise."""
 
     route_requested = Signal(str)
 
@@ -32,8 +32,8 @@ class Sidebar(QWidget):
     ) -> None:
         super().__init__()
         self.setObjectName("navigationSidebar")
-        self.setMinimumWidth(150)
-        self.setMaximumWidth(185)
+        self.setMinimumWidth(146)
+        self.setMaximumWidth(160)
         self._navigation = navigation
         self._application_factory = application_factory
         self._workspace: Workspace | None = None
@@ -46,8 +46,8 @@ class Sidebar(QWidget):
 
     def _build_ui(self) -> None:
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(7, 9, 7, 9)
-        layout.setSpacing(8)
+        layout.setContentsMargins(6, 8, 6, 8)
+        layout.setSpacing(7)
 
         self._search = QLineEdit()
         self._search.setObjectName("moduleSearch")
@@ -57,7 +57,7 @@ class Sidebar(QWidget):
         self._tree = QListWidget()
         self._tree.setObjectName("moduleList")
         self._tree.addItems([label for label, _route in self._ITEMS])
-        self._tree.setSpacing(2)
+        self._tree.setSpacing(1)
         self._tree.itemClicked.connect(self._on_item_clicked)
         self._tree.itemDoubleClicked.connect(self._on_item_clicked)
 
@@ -66,15 +66,15 @@ class Sidebar(QWidget):
 
     def _apply_local_style(self) -> None:
         self.setStyleSheet(
-            "QWidget#navigationSidebar {background:#F6F8FA; border-right:1px solid #D7E0E8;}"
-            "QLineEdit#moduleSearch {background:#FFFFFF; border:1px solid #CDD8E1; border-radius:6px; "
-            "padding:7px 8px; color:#243746;}"
-            "QLineEdit#moduleSearch:focus {border-color:#6F9ABA;}"
+            "QWidget#navigationSidebar {background:#F7F9FA; border-right:1px solid #D5DEE3;}"
+            "QLineEdit#moduleSearch {background:#FFFFFF; border:1px solid #D5DEE3; border-radius:5px; "
+            "padding:6px 7px; color:#183247;}"
+            "QLineEdit#moduleSearch:focus {border-color:#00A9E0;}"
             "QListWidget#moduleList {background:transparent; border:none; outline:none;}"
-            "QListWidget#moduleList::item {padding:8px 9px; margin:1px 0; border-radius:6px; color:#354B5E;}"
-            "QListWidget#moduleList::item:hover {background:#E8F0F6; color:#174E78;}"
-            "QListWidget#moduleList::item:selected {background:#DCE9F5; color:#174E78; "
-            "font-weight:700; border-left:3px solid #1F5A8A;}"
+            "QListWidget#moduleList::item {padding:7px 8px; margin:1px 0; border-radius:5px; color:#566D7C;}"
+            "QListWidget#moduleList::item:hover {background:#F0F8FC; color:#005EB8;}"
+            "QListWidget#moduleList::item:selected {background:#DDEFFA; color:#00345F; "
+            "font-weight:700; border-left:3px solid #00A9E0;}"
         )
 
     def _apply_filter(self, value: str) -> None:
