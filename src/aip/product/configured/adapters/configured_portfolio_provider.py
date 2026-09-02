@@ -129,6 +129,8 @@ class ConfiguredPortfolioProvider:
                     else None
                 )
                 position["duration_diagnostic"] = duration_result.diagnostic
+                position["duration_included"] = duration_result.included_in_portfolio_duration
+                position["duration_exclusion_reason"] = duration_result.exclusion_reason
 
                 hqla_result = PortfolioHQLAService.calculate(position)
                 position["hqla_eligible"] = hqla_result.eligible
@@ -1215,6 +1217,8 @@ class ConfiguredPortfolioProvider:
         weighted_sum = Decimal("0")
         total_weight = Decimal("0")
         for position in positions:
+            if position.get("duration_included") is False:
+                continue
             raw_duration = position.get("modified_duration")
             if raw_duration in (None, ""):
                 continue

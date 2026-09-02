@@ -14,21 +14,43 @@ class DurationResult:
     source: str
     next_repricing_date: date | None = None
     diagnostic: str | None = None
+    included_in_portfolio_duration: bool = True
+    exclusion_reason: str | None = None
 
 
 class PortfolioDurationService:
     """Institutional duration rules for configured portfolio positions."""
 
     _PERIOD_MONTHS = {
+        "1": 12,
+        "1.0": 12,
+        "2": 6,
+        "2.0": 6,
+        "3": 4,
+        "3.0": 4,
+        "4": 3,
+        "4.0": 3,
+        "6": 2,
+        "6.0": 2,
+        "12": 1,
+        "12.0": 1,
         "mensual": 1,
         "monthly": 1,
+        "bimestral": 2,
+        "cada 2 meses": 2,
         "trimestral": 3,
         "quarterly": 3,
+        "cada 3 meses": 3,
+        "cuatrimestral": 4,
+        "cada 4 meses": 4,
         "semestral": 6,
         "semiannual": 6,
+        "cada 6 meses": 6,
         "anual": 12,
         "annual": 12,
+        "cada 12 meses": 12,
     }
+    _DAYS_PER_YEAR = Decimal("365")
     _MATURITY_PROXY_PRODUCTS = {"cdp-ci", "icp", "mil"}
 
     @classmethod
@@ -54,13 +76,15 @@ class PortfolioDurationService:
             "NOT_APPLICABLE",
             "INSTITUTIONAL_CLASSIFICATION",
             diagnostic="No supported duration treatment for position",
+            included_in_portfolio_duration=False,
+            exclusion_reason="NOT_A_SUPPORTED_FIXED_INCOME_SECURITY",
         )
 
     @classmethod
     def _variable_rate_duration(
         cls, position: dict[str, Any], valuation_date: date
     ) -> DurationResult:
-        months = cls._PERIOD_MONTHS.get(cls._text(position.get("periodicity")))
+        months = cls._period_months(position.get("periodicity"))
         last_payment = cls._as_date(position.get("last_interest_payment_date"))
         maturity = cls._as_date(position.get("maturity_date"))
 
@@ -82,9 +106,9 @@ class PortfolioDurationService:
 
         days = max((next_repricing - valuation_date).days, 0)
         return DurationResult(
-            Decimal(days) / Decimal("365"),
+            Decimal(days) / cls._DAYS_PER_YEAR,
             "NEXT_REPRICING",
-            "MASTER_VARIABLE_RATE",
+            "NEXT_COUPON_DATE",
             next_repricing_date=next_repricing,
         )
 
@@ -100,25 +124,27 @@ class PortfolioDurationService:
             )
         days = max((maturity - valuation_date).days, 0)
         return DurationResult(
-            Decimal(days) / Decimal("365"),
+            Decimal(days) / cls._DAYS_PER_YEAR,
             "MATURITY_PROXY",
             "CONTRACTUAL_MATURITY",
+            included_in_portfolio_duration=False,
+            exclusion_reason="LIQUIDITY_OPERATION_OUTSIDE_FIXED_INCOME_DURATION",
         )
 
     @classmethod
     def _fixed_rate_duration(cls, position: dict[str, Any], valuation_date: date) -> DurationResult:
-        market_yield = cls._decimal(position.get("market_yield"))
+        market_yield, yield_source = cls._resolve_discount_yield(position)
         coupon_rate = cls._decimal(position.get("nominal_rate"))
         nominal = cls._decimal(position.get("nominal"))
         maturity = cls._as_date(position.get("maturity_date"))
-        months = cls._PERIOD_MONTHS.get(cls._text(position.get("periodicity")))
+        months = cls._period_months(position.get("periodicity"))
 
-        if market_yield is None or market_yield <= 0:
+        if market_yield is None:
             return DurationResult(
                 None,
                 "MARKET_DURATION_UNAVAILABLE",
-                "PIPCA_MARKET_YIELD",
-                diagnostic="PiPCA market yield is unavailable",
+                "YIELD_UNAVAILABLE",
+                diagnostic="Market yield, master TIR and facial-rate fallback are unavailable",
             )
         if (
             coupon_rate is None
@@ -130,7 +156,7 @@ class PortfolioDurationService:
             return DurationResult(
                 None,
                 "MARKET_DURATION_UNAVAILABLE",
-                "PIPCA_MARKET_YIELD",
+                yield_source,
                 diagnostic="Insufficient fixed-rate cash-flow data",
             )
         if maturity <= valuation_date:
@@ -151,9 +177,10 @@ class PortfolioDurationService:
         pv_total = Decimal("0")
         weighted_time = Decimal("0")
         for payment_date in payment_dates:
-            years = Decimal((payment_date - valuation_date).days) / Decimal("365")
+            years = Decimal((payment_date - valuation_date).days) / cls._DAYS_PER_YEAR
             amount = coupon + (nominal if payment_date == maturity else Decimal("0"))
-            pv = amount / ((Decimal("1") + y) ** years)
+            periods = frequency * years
+            pv = amount / ((Decimal("1") + (y / frequency)) ** periods)
             pv_total += pv
             weighted_time += years * pv
 
@@ -161,13 +188,31 @@ class PortfolioDurationService:
             return DurationResult(
                 None,
                 "MARKET_DURATION_UNAVAILABLE",
-                "PIPCA_MARKET_YIELD",
+                yield_source,
                 diagnostic="Present value is non-positive",
             )
 
         macaulay = weighted_time / pv_total
         modified = macaulay / (Decimal("1") + (y / frequency))
-        return DurationResult(modified, "MODIFIED_DURATION", "PIPCA_MARKET_YIELD")
+        return DurationResult(modified, "MODIFIED_DURATION", yield_source)
+
+    @classmethod
+    def _resolve_discount_yield(cls, position: dict[str, Any]) -> tuple[Decimal | None, str]:
+        candidates = (
+            ("market_yield", "PIPCA_MARKET_YIELD"),
+            ("portfolio_yield", "MASTER_TIR"),
+            ("yield_value", "MASTER_TIR"),
+            ("nominal_rate", "FACIAL_RATE_FALLBACK"),
+        )
+        for field_name, source in candidates:
+            value = cls._decimal(position.get(field_name))
+            if value is not None and value > 0:
+                return value, source
+        return None, "YIELD_UNAVAILABLE"
+
+    @classmethod
+    def _period_months(cls, value: Any) -> int | None:
+        return cls._PERIOD_MONTHS.get(cls._text(value))
 
     @staticmethod
     def _is_variable(position: dict[str, Any]) -> bool:
