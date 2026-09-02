@@ -4,7 +4,7 @@ from aip.ui.themes.palette import DarkThemePalette
 
 
 class DarkTheme:
-    """AIP Enterprise 2.0 dark trading-desk theme."""
+    """Tema oscuro analítico AIP Enterprise 2.0 derivado de la marca Coopealianza."""
 
     def stylesheet(self) -> str:
         p = DarkThemePalette()
@@ -15,13 +15,13 @@ class DarkTheme:
         }}
         QWidget {{
             color: {p.text};
-            font-family: "Segoe UI";
-            font-size: 10pt;
+            font-family: "Lucida Sans Unicode";
+            font-size: 9.5pt;
         }}
         QToolTip {{
-            background-color: #07111A;
+            background-color: #00182C;
             color: {p.text};
-            border: 1px solid {p.border_strong};
+            border: 1px solid {p.celeste};
             padding: 5px 7px;
         }}
         QToolBar {{
@@ -42,7 +42,7 @@ class DarkTheme:
         }}
         QToolBar QToolButton:hover {{
             background: {p.surface_hover};
-            color: {p.text};
+            color: {p.primary};
         }}
         QToolBar QToolButton:pressed {{
             background: {p.surface_selected};
@@ -59,7 +59,7 @@ class DarkTheme:
         }}
         QMenuBar::item:selected {{
             background: {p.surface_hover};
-            color: {p.text};
+            color: {p.primary};
         }}
         QMenu {{
             background: {p.surface_alt};
@@ -96,7 +96,7 @@ class DarkTheme:
         }}
         QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus, QComboBox:focus,
         QDateEdit:focus {{
-            border: 1px solid {p.primary};
+            border: 1px solid {p.celeste};
         }}
         QComboBox::drop-down {{
             border: none;
@@ -119,7 +119,7 @@ class DarkTheme:
         }}
         QPushButton:hover {{
             background: {p.surface_hover};
-            border-color: {p.primary};
+            border-color: {p.celeste};
         }}
         QPushButton:pressed {{
             background: {p.surface_selected};
@@ -145,12 +145,12 @@ class DarkTheme:
             font-weight: 600;
         }}
         QTabBar::tab:hover {{
-            color: {p.text};
+            color: {p.primary};
             background: {p.surface_hover};
         }}
         QTabBar::tab:selected {{
             color: {p.primary};
-            border-bottom: 2px solid {p.primary};
+            border-bottom: 2px solid {p.celeste};
             background: {p.surface};
         }}
         QTableView, QTableWidget, QTreeView, QListView, QListWidget {{
@@ -188,12 +188,22 @@ class DarkTheme:
             margin-top: 9px;
             padding-top: 7px;
             font-weight: 700;
-            color: {p.text};
+            color: {p.primary};
         }}
         QGroupBox::title {{
             subcontrol-origin: margin;
             left: 10px;
             padding: 0 5px;
+        }}
+        QProgressBar {{
+            background: {p.surface_alt};
+            border: 1px solid {p.border};
+            border-radius: 4px;
+            text-align: center;
+        }}
+        QProgressBar::chunk {{
+            background: {p.mint};
+            border-radius: 3px;
         }}
         QScrollArea {{
             background: transparent;
@@ -213,7 +223,7 @@ class DarkTheme:
             border-radius: 4px;
         }}
         QScrollBar::handle:vertical:hover {{
-            background: {p.muted};
+            background: {p.celeste};
         }}
         QScrollBar:horizontal {{
             background: transparent;
@@ -224,6 +234,9 @@ class DarkTheme:
             background: {p.border_strong};
             min-width: 30px;
             border-radius: 4px;
+        }}
+        QScrollBar::handle:horizontal:hover {{
+            background: {p.celeste};
         }}
         QScrollBar::add-line, QScrollBar::sub-line {{
             width: 0px;
@@ -237,7 +250,7 @@ class DarkTheme:
         }}
         QDockWidget::title {{
             background: {p.surface_alt};
-            color: {p.text};
+            color: {p.primary};
             border-bottom: 1px solid {p.border};
             padding: 6px;
             font-weight: 700;
