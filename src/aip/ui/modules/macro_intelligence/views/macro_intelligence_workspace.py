@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from decimal import Decimal
 
 from PySide6.QtCore import QObject, QPointF, QRectF, QRunnable, Qt, QThreadPool, QTimer, Signal, Slot
@@ -36,6 +37,39 @@ from aip.ui.modules.macro_intelligence.presenters.macro_intelligence_presenter i
 from aip.ui.modules.macro_intelligence.viewmodels.macro_intelligence_view_model import (
     MacroProjectionViewModel,
 )
+
+
+_MONTHS = (
+    "ene",
+    "feb",
+    "mar",
+    "abr",
+    "may",
+    "jun",
+    "jul",
+    "ago",
+    "sep",
+    "oct",
+    "nov",
+    "dic",
+)
+
+
+def _format_period(value: date, *, include_year: bool = True) -> str:
+    month = _MONTHS[value.month - 1]
+    return f"{month}-{value.year}" if include_year else f"{month}-{str(value.year)[2:]}"
+
+
+def _translate_status(value: object) -> str:
+    text = str(value or "N/D")
+    return {
+        "AVAILABLE": "DISPONIBLE",
+        "UNAVAILABLE": "NO DISPONIBLE",
+        "APPROVED": "APROBADO",
+        "DRAFT": "BORRADOR",
+        "LOADING": "CARGANDO",
+        "READY": "LISTO",
+    }.get(text.strip().upper(), text)
 
 
 class _EconomicWorkerSignals(QObject):
@@ -112,7 +146,7 @@ class _MacroMetricCard(QFrame):
 
 
 class _ProjectionChart(QWidget):
-    """Presentation-only line chart for one approved macro driver trajectory."""
+    """Gráfico de presentación para una trayectoria macroeconómica aprobada."""
 
     _LABELS = {
         "FX_SELL": "USD/CRC",
@@ -199,7 +233,7 @@ class _ProjectionChart(QWidget):
             painter.drawText(
                 QRectF(x - 36, top + height + 8, 72, 20),
                 Qt.AlignmentFlag.AlignHCenter,
-                row.period.strftime("%b-%y"),
+                _format_period(row.period, include_year=False),
             )
 
         title_font = QFont(self.font())
@@ -215,7 +249,7 @@ class _ProjectionChart(QWidget):
 
 
 class MacroIntelligenceWorkspace(QWidget):
-    """Advanced macro workspace backed by BCCR observations and approved scenario v4."""
+    """Espacio macroeconómico avanzado con observaciones BCCR y escenario aprobado."""
 
     _CARD_DEFINITIONS = (
         ("FX_SELL", "USD / CRC"),
@@ -284,12 +318,12 @@ class MacroIntelligenceWorkspace(QWidget):
         header.setObjectName("macroHeader")
         header_layout = QHBoxLayout(header)
         title_box = QVBoxLayout()
-        title = QLabel("MACRO INTELLIGENCE")
+        title = QLabel("INTELIGENCIA MACROECONÓMICA")
         title_font = QFont()
         title_font.setPointSize(15)
         title_font.setBold(True)
         title.setFont(title_font)
-        self._status_label = QLabel("Cargando snapshot y escenario institucional...")
+        self._status_label = QLabel("Cargando información observada y escenario institucional...")
         self._status_label.setStyleSheet("color:#667788; font-size:9px;")
         title_box.addWidget(title)
         title_box.addWidget(self._status_label)
@@ -318,7 +352,7 @@ class MacroIntelligenceWorkspace(QWidget):
             (
                 ("scenario", "Escenario", "Identificador gobernado"),
                 ("version", "Versión", "Última versión aprobada"),
-                ("dataset", "Dataset", "Fecha base de estimación"),
+                ("dataset", "Datos Base", "Fecha base de estimación"),
                 ("horizon", "Horizonte", "Trayectoria mensual"),
             )
         ):
@@ -379,7 +413,7 @@ class MacroIntelligenceWorkspace(QWidget):
         self._projection_note.setStyleSheet("color:#617386; padding:3px 8px;")
         group_layout.addWidget(self._projection_note)
         layout.addWidget(group, 1)
-        self._tabs.addTab(page, "Proyección 12M")
+        self._tabs.addTab(page, "Proyección 12 meses")
 
     def _build_projection_table_tab(self) -> None:
         page = QWidget()
@@ -394,7 +428,7 @@ class MacroIntelligenceWorkspace(QWidget):
         self._projection_table.setAlternatingRowColors(True)
         self._projection_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         layout.addWidget(self._projection_table)
-        self._tabs.addTab(page, "Matriz de Drivers")
+        self._tabs.addTab(page, "Matriz de Variables")
 
     def _build_market_curves_tab(self) -> None:
         page = QWidget()
@@ -412,9 +446,9 @@ class MacroIntelligenceWorkspace(QWidget):
         layout.setContentsMargins(4, 8, 4, 4)
         strip = QHBoxLayout()
         stages = (
-            ("1", "MACRO", "7 drivers aprobados"),
-            ("2", "MERCADOS", "Curvas · tasas · FX"),
-            ("3", "BALANCE", "ALM · repricing · liquidez"),
+            ("1", "MACRO", "7 variables aprobadas"),
+            ("2", "MERCADOS", "Curvas · tasas · tipo de cambio"),
+            ("3", "BALANCE", "ALM · reprecio · liquidez"),
             ("4", "RESULTADOS", "NII · EVE · ROA · solvencia"),
         )
         for index, (number, title, detail) in enumerate(stages):
@@ -440,8 +474,8 @@ class MacroIntelligenceWorkspace(QWidget):
         governance = QGroupBox("Gobierno del escenario y alcance del módulo")
         governance_layout = QVBoxLayout(governance)
         self._governance_text = QLabel(
-            "La trayectoria macro se consume desde el escenario institucional APPROVED. "
-            "El impacto financiero sobre Coopealianza se mostrará aquí cuando el Cooperative Impact Engine "
+            "La trayectoria macroeconómica se consume desde el escenario institucional APROBADO. "
+            "El impacto financiero sobre Coopealianza se mostrará aquí cuando el Motor de Impacto Financiero "
             "publique resultados auditables; la interfaz no estima impactos por su cuenta."
         )
         self._governance_text.setWordWrap(True)
@@ -487,25 +521,26 @@ class MacroIntelligenceWorkspace(QWidget):
             return
 
         dataset = projection.dataset_as_of_date.strftime("%d/%m/%Y") if projection.dataset_as_of_date else "-"
+        translated_scenario_status = _translate_status(projection.scenario_status)
         self._scenario_badge.setText(
-            f"{projection.scenario_type} · v{projection.version} · {projection.scenario_status}"
+            f"{projection.scenario_type} · v{projection.version} · {translated_scenario_status}"
         )
         self._governance_labels["scenario"].setText(projection.scenario_id)
-        self._governance_labels["version"].setText(f"v{projection.version} · {projection.scenario_status}")
+        self._governance_labels["version"].setText(f"v{projection.version} · {translated_scenario_status}")
         self._governance_labels["dataset"].setText(dataset)
-        self._governance_labels["horizon"].setText(f"{projection.horizon} meses · 7 drivers")
+        self._governance_labels["horizon"].setText(f"{projection.horizon} meses · 7 variables")
         if projection.first_period and projection.last_period:
             self._projection_range.setText(
-                f"{projection.first_period.strftime('%b-%Y')} → {projection.last_period.strftime('%b-%Y')}"
+                f"{_format_period(projection.first_period)} → {_format_period(projection.last_period)}"
             )
         self._projection_note.setText(
             "Trayectoria gobernada consumida directamente del escenario institucional aprobado. "
-            "Los valores del gráfico no se recalculan en la UI."
+            "Los valores del gráfico no se recalculan en la interfaz."
         )
         self._projection_table.setRowCount(len(projection.rows))
         for row_index, row in enumerate(projection.rows):
             values = (
-                row.period.strftime("%b-%Y"),
+                _format_period(row.period),
                 f"₡{row.fx_sell:,.2f}",
                 f"{row.tpm:.2f}%",
                 f"{row.tbp:.2f}%",
@@ -551,7 +586,7 @@ class MacroIntelligenceWorkspace(QWidget):
     @Slot(object)
     def _handle_snapshot(self, snapshot: object) -> None:
         if not isinstance(snapshot, EconomicSnapshot):
-            self._handle_load_error("Respuesta inesperada del EconomicViewModel")
+            self._handle_load_error("Respuesta inesperada del modelo económico")
             return
         try:
             self._apply_snapshot(snapshot, persisted=False)
@@ -563,7 +598,7 @@ class MacroIntelligenceWorkspace(QWidget):
     def _handle_load_error(self, message: str) -> None:
         if self._snapshot is not None:
             self._status_label.setText(
-                f"BCCR no disponible · mostrando último snapshot válido · {message}"
+                f"BCCR no disponible · mostrando última información válida · {message}"
             )
         else:
             self._status_label.setText(f"Información observada no disponible · {message}")
@@ -587,7 +622,7 @@ class MacroIntelligenceWorkspace(QWidget):
         self._populate_curve(self._tri_usd_table, snapshot.tri_usd_curve)
         cutoff = snapshot.cutoff_date.strftime("%d/%m/%Y") if snapshot.cutoff_date else "N/D"
         parts = [f"Fuente observada: {snapshot.source}", f"Última información: {cutoff}"]
-        parts.append("Snapshot local" if persisted else f"Cache: {snapshot.cache_entries} entradas")
+        parts.append("Información local" if persisted else f"Caché: {snapshot.cache_entries} entradas")
         parts.append("Diagnósticos: OK" if not snapshot.diagnostics else f"Diagnósticos: {len(snapshot.diagnostics)}")
         self._status_label.setText(" · ".join(parts))
 
