@@ -5,25 +5,25 @@ from PySide6.QtWidgets import QToolBar
 
 
 class Ribbon(QToolBar):
-    """Compact top-level navigation for the institutional AIP desktop shell."""
+    """Navegación superior compacta del entorno institucional AIP."""
 
     _LABELS = (
-        "Home",
-        "Executive",
-        "Portfolio",
-        "Market",
-        "Price Risk",
-        "Macro Intelligence",
-        "Liquidity",
-        "Treasury",
-        "Refresh All",
-        "Reports",
-        "Administration",
-        "Help",
+        "Inicio",
+        "Ejecutivo",
+        "Portafolio",
+        "Mercado",
+        "Riesgo de Precio",
+        "Inteligencia Macroeconómica",
+        "Liquidez",
+        "Tesorería",
+        "Actualizar Todo",
+        "Reportes",
+        "Administración",
+        "Ayuda",
     )
 
     def __init__(self) -> None:
-        super().__init__("Ribbon")
+        super().__init__("Navegación")
         self.setObjectName("aipRibbon")
         self.setMovable(False)
         self.setFloatable(False)
@@ -46,5 +46,5 @@ class Ribbon(QToolBar):
         )
 
     def action(self, label: str) -> QAction:
-        """Return a registered ribbon action by its stable label."""
+        """Devuelve una acción registrada por su etiqueta estable."""
         return self._actions[label]
