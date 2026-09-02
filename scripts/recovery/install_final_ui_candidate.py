@@ -15,9 +15,9 @@ from pathlib import Path, PurePosixPath
 
 
 REPOSITORY = "vernan2020/AIP-Enterprise"
-SOURCE_COMMIT = "cdde4045dd28bb8a7d779cce5f6dfac68d12ab38"
+SOURCE_COMMIT = "8f4dd9922dd5310a921db07943110a399995b179"
 ARCHIVE_URL = f"https://codeload.github.com/{REPOSITORY}/tar.gz/{SOURCE_COMMIT}"
-USER_AGENT = "AIP-Enterprise-Final-UI/1.2"
+USER_AGENT = "AIP-Enterprise-Final-UI/1.3"
 TLS_CIPHERS = "DEFAULT:@SECLEVEL=1"
 
 CRITICAL_FILES = (
@@ -78,13 +78,7 @@ def _download_archive(destination: Path) -> None:
 
 
 def _candidate_source_prefixes(members: list[tarfile.TarInfo]) -> tuple[str, ...]:
-    """Return every archive prefix that exposes a ``src/aip`` package.
-
-    The repository still contains an old nested ``AIP-Enterprise/src/aip`` tree
-    in addition to the authoritative root ``src/aip`` runtime.  Selecting the
-    first ``__init__.py`` therefore restores only the small legacy tree.  We
-    enumerate all candidates and let the extractor select the complete runtime.
-    """
+    """Return every archive prefix that exposes a ``src/aip`` package."""
 
     marker = "/src/aip/"
     prefixes: set[str] = set()
@@ -126,8 +120,6 @@ def _select_authoritative_source_prefix(
     for prefix in candidates:
         count = _candidate_file_count(members, prefix)
         has_critical = _candidate_contains_critical_files(names, prefix)
-        # Prefer a candidate that contains every critical runtime component;
-        # then prefer the largest tree; finally prefer the shallower archive path.
         depth = len(PurePosixPath(prefix).parts)
         ranked.append((has_critical, count, -depth, prefix))
 
@@ -212,7 +204,10 @@ def _smoke(root: Path, source_root: Path, *, label: str) -> None:
     env["PYTHONPATH"] = str(source_root)
     env["QT_QPA_PLATFORM"] = "offscreen"
     code = r'''
+import base64
 from PySide6.QtWidgets import QApplication, QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
+from PySide6.QtGui import QPixmap
+from aip.ui.assets.coopealianza_logo import COOPEALIANZA_LOGO_PNG_BASE64
 from aip.ui.services.theme_service import ThemeService
 from aip.ui.shell.main_window import MainWindow
 from aip.ui.modules.executive.views.executive_workspace import ExecutiveWorkspace
@@ -222,6 +217,10 @@ from aip.ui.modules.price_risk.views.price_risk_view import PriceRiskView
 from aip.ui.modules.macro_intelligence.views.macro_intelligence_workspace import MacroIntelligenceWorkspace
 from aip.ui.modules.liquidity.views.liquidity_view import LiquidityView
 from aip.ui.modules.treasury.views.treasury_view import TreasuryView
+raw = base64.b64decode(COOPEALIANZA_LOGO_PNG_BASE64, validate=True)
+assert raw.startswith(b"\x89PNG\r\n\x1a\n")
+probe = QPixmap()
+assert probe.loadFromData(raw, "PNG") and not probe.isNull()
 app = QApplication.instance() or QApplication([])
 root = QWidget()
 layout = QVBoxLayout(root)
