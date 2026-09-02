@@ -4,35 +4,67 @@ import argparse
 import compileall
 import json
 import shutil
+import subprocess
 import tempfile
 import urllib.parse
-import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
 REPOSITORY = "vernan2020/AIP-Enterprise"
-USER_AGENT = "AIP-Enterprise-Visual-Recovery/2.0"
+USER_AGENT = "AIP-Enterprise-Visual-Recovery/2.1"
 UI_PREFIX = "src/aip/ui/"
 SUPPORT_FILES = {
     "src/aip/product/configured/services/configured_portfolio_dashboard_analytics_service.py",
 }
 
 
-def _request_bytes(url: str) -> bytes:
-    request = urllib.request.Request(
-        url,
-        headers={
-            "User-Agent": USER_AGENT,
-            "Accept": "application/vnd.github+json",
-            "Cache-Control": "no-cache",
-        },
+def _curl_executable() -> str:
+    executable = shutil.which("curl.exe") or shutil.which("curl")
+    if executable is None:
+        raise RuntimeError(
+            "No se encontró curl.exe. Windows 10/11 normalmente lo incluye en el sistema."
+        )
+    return executable
+
+
+def _request_bytes(url: str, *, accept_json: bool = False) -> bytes:
+    command = [
+        _curl_executable(),
+        "--fail",
+        "--location",
+        "--silent",
+        "--show-error",
+        "--retry",
+        "3",
+        "--connect-timeout",
+        "20",
+        "--max-time",
+        "120",
+        "--ssl-no-revoke",
+        "--header",
+        f"User-Agent: {USER_AGENT}",
+        "--header",
+        "Cache-Control: no-cache",
+    ]
+    if accept_json:
+        command.extend(["--header", "Accept: application/vnd.github+json"])
+    command.append(url)
+    completed = subprocess.run(
+        command,
+        check=False,
+        capture_output=True,
     )
-    with urllib.request.urlopen(request, timeout=60) as response:
-        return response.read()
+    if completed.returncode != 0:
+        detail = completed.stderr.decode("utf-8", errors="replace").strip()
+        raise RuntimeError(
+            "No fue posible descargar desde GitHub mediante curl.exe"
+            f" (código {completed.returncode}).\nURL: {url}\nDetalle: {detail}"
+        )
+    return completed.stdout
 
 
 def _request_json(url: str) -> dict[str, object]:
-    return json.loads(_request_bytes(url).decode("utf-8"))
+    return json.loads(_request_bytes(url, accept_json=True).decode("utf-8"))
 
 
 def _validate_commit(commit: str) -> tuple[str, str]:
@@ -155,6 +187,7 @@ def main() -> int:
         raise RuntimeError(f"No parece una instalación AIP válida: {project_root}")
 
     (project_root / ".recovery").mkdir(parents=True, exist_ok=True)
+    print(f"Transporte: {_curl_executable()} (TLS de Windows/curl, no urllib de Python)")
     commit, tree_sha = _validate_commit(args.commit)
     paths = _visual_paths(tree_sha)
 
@@ -177,6 +210,7 @@ def main() -> int:
         raise RuntimeError("La capa visual instalada no supera compilación final")
 
     print("CAPA VISUAL AIP ENTERPRISE 2.0: INSTALADA")
+    print("Logo Coopealianza: integrado en el header institucional")
     print("La base de datos, fuentes configuradas y cálculos financieros no fueron modificados.")
     return 0
 
