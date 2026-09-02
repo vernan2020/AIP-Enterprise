@@ -28,7 +28,7 @@ from aip.ui.modules.market.viewmodels.market_view_model import (
 
 
 class _MarketCurveChart(QWidget):
-    """Native Qt chart for observed PiPCA points and the official fitted curve."""
+    """Gráfico Qt para puntos PiPCA observados y curva oficial ajustada."""
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -106,7 +106,21 @@ class _MarketCurveChart(QWidget):
 
 
 class MarketView(QWidget):
-    """AIP Hybrid market workspace: curves, relative value and rotation screening."""
+    """Espacio de mercado AIP Hybrid: curvas, valor relativo y preselección de rotaciones."""
+
+    _DISPLAY_TRANSLATIONS = {
+        "CHEAP": "SUBVALUADO",
+        "RICH": "SOBREVALUADO",
+        "FAIR": "EN VALOR",
+        "NEUTRAL": "NEUTRAL",
+        "SCREENING": "PRESELECCIÓN",
+        "PASS": "CUMPLE",
+        "FAIL": "NO CUMPLE",
+        "AVAILABLE": "DISPONIBLE",
+        "UNAVAILABLE": "NO DISPONIBLE",
+        "READY": "LISTO",
+        "LOADED": "CARGADO",
+    }
 
     def __init__(self, presenter: MarketPresenter | None = None) -> None:
         super().__init__()
@@ -116,6 +130,11 @@ class MarketView(QWidget):
         self._kpis: dict[str, QLabel] = {}
         self._build_ui()
         self.bind_view_model(self._view_model)
+
+    @classmethod
+    def _translate(cls, value: object) -> str:
+        text = str(value)
+        return cls._DISPLAY_TRANSLATIONS.get(text.strip().upper(), text)
 
     @staticmethod
     def _group_style() -> str:
@@ -164,7 +183,7 @@ class MarketView(QWidget):
         font.setPointSize(15)
         font.setBold(True)
         title.setFont(font)
-        subtitle = QLabel("PiPCA · Nelson-Siegel · RV Portafolio · RV Mercado · Rotación")
+        subtitle = QLabel("PiPCA · Nelson-Siegel · Valor Relativo Portafolio · Valor Relativo Mercado · Rotación")
         subtitle.setStyleSheet("color:#667788; font-size:10px;")
         title_box.addWidget(title)
         title_box.addWidget(subtitle)
@@ -182,13 +201,13 @@ class MarketView(QWidget):
         kpis.setHorizontalSpacing(7)
         definitions = (
             ("curves", "Curvas", "Curvas institucionales cargadas"),
-            ("portfolio_rv", "RV Portafolio", "Oportunidades detectadas"),
+            ("portfolio_rv", "Valor Relativo Portafolio", "Oportunidades detectadas"),
             ("market_rv", "Universo PiPCA", "Títulos comparados contra curva"),
-            ("outside", "Fuera portafolio", "Alternativas del universo de mercado"),
-            ("cheap", "Baratos", "Clasificación de RV mercado"),
-            ("rich", "Caros", "Clasificación de RV mercado"),
+            ("outside", "Fuera del portafolio", "Alternativas del universo de mercado"),
+            ("cheap", "Subvaluados", "Clasificación de valor relativo"),
+            ("rich", "Sobrevaluados", "Clasificación de valor relativo"),
             ("rotation", "Rotación", "Candidatos preliminares"),
-            ("spread", "Spread medio", "RV portafolio · puntos base"),
+            ("spread", "Diferencial medio", "Valor relativo · puntos base"),
         )
         for index, definition in enumerate(definitions):
             kpis.addWidget(self._metric_card(*definition), index // 4, index % 4)
@@ -202,8 +221,8 @@ class MarketView(QWidget):
         )
         root.addWidget(self._tabs, 1)
         self._build_curve_tab()
-        self._portfolio_table = self._build_rv_tab("RV Portafolio")
-        self._market_table = self._build_rv_tab("RV Mercado")
+        self._portfolio_table = self._build_rv_tab("Valor Relativo Portafolio")
+        self._market_table = self._build_rv_tab("Valor Relativo Mercado")
         self._rotation_table = self._build_rotation_tab()
 
         self._status = QLabel("")
@@ -265,7 +284,7 @@ class MarketView(QWidget):
                 "Plazo",
                 "TIR Mercado",
                 "TIR Curva",
-                "Spread bp",
+                "Diferencial pb",
                 "Clasificación",
                 "VM / Precio",
                 "En portafolio",
@@ -280,7 +299,7 @@ class MarketView(QWidget):
         layout = QVBoxLayout(page)
         layout.setContentsMargins(4, 8, 4, 4)
         note = QLabel(
-            "Screening preliminar: compara posiciones del portafolio contra alternativas del universo PiPCA."
+            "Preselección preliminar: compara posiciones del portafolio contra alternativas del universo PiPCA."
         )
         note.setStyleSheet("color:#617386; padding:3px;")
         layout.addWidget(note)
@@ -288,11 +307,11 @@ class MarketView(QWidget):
             (
                 "Origen",
                 "Emisor origen",
-                "Spread origen",
+                "Diferencial origen",
                 "Destino",
                 "Emisor destino",
-                "Spread destino",
-                "Pickup bp",
+                "Diferencial destino",
+                "Mejora pb",
                 "Estado",
             )
         )
@@ -338,7 +357,7 @@ class MarketView(QWidget):
                 f"{row.market_yield:.3f}%",
                 f"{row.curve_yield:.3f}%",
                 f"{row.spread_bp:+.1f}",
-                row.classification,
+                self._translate(row.classification),
                 exposure,
                 in_portfolio,
             )
@@ -359,7 +378,7 @@ class MarketView(QWidget):
                 row.target_issuer,
                 f"{row.target_spread_bp:+.1f}",
                 f"{row.spread_pickup_bp:+.1f}",
-                row.screening_status,
+                self._translate(row.screening_status),
             )
             for column, value in enumerate(values):
                 self._set_item(table, row_index, column, value)
@@ -373,7 +392,7 @@ class MarketView(QWidget):
         curve = self._view_model.curves[index]
         self._curve_chart.set_curve(curve)
         self._curve_metrics.setText(
-            f"{curve.official_model} · Obs {curve.observation_count} · "
+            f"{curve.official_model} · Observaciones {curve.observation_count} · "
             f"RMSE {curve.rmse:.4f} · R² {curve.r_squared:.4f}"
         )
 
@@ -392,7 +411,7 @@ class MarketView(QWidget):
             "cheap": str(getattr(summary, "market_cheap_count", 0)),
             "rich": str(getattr(summary, "market_rich_count", 0)),
             "rotation": str(getattr(summary, "rotation_candidate_count", 0)),
-            "spread": f"{getattr(summary, 'average_spread', '0.00')} bp",
+            "spread": f"{getattr(summary, 'average_spread', '0.00')} pb",
         }
         for key, value in values.items():
             self._kpis[key].setText(value)
@@ -414,10 +433,8 @@ class MarketView(QWidget):
             market_mode=True,
         )
         self._populate_rotation(view_model.rotation_rows)
-        self._status.setText(
-            getattr(summary, "configuration_message", "")
-            or (view_model.error or view_model.status)
-        )
+        message = getattr(summary, "configuration_message", "") or (view_model.error or view_model.status)
+        self._status.setText(self._translate(message))
 
     def view_model(self) -> MarketViewModel:
         return self._view_model
