@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import json
 from collections.abc import Iterable
 from datetime import date
-import json
 from typing import Any
 
 from aip.product.configured.repositories.institutional_macro_scenario_store import (
