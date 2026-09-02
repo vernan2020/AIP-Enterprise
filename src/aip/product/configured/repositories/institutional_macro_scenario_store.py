@@ -69,8 +69,7 @@ class InstitutionalMacroScenarioStore:
 
     def _create_schema(self) -> None:
         connection = self._database.connection
-        connection.execute(
-            """
+        connection.execute("""
             CREATE TABLE IF NOT EXISTS institutional_macro_scenarios (
                 scenario_id VARCHAR NOT NULL,
                 version INTEGER NOT NULL,
@@ -85,18 +84,14 @@ class InstitutionalMacroScenarioStore:
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 PRIMARY KEY (scenario_id, version)
             )
-            """
-        )
-        connection.execute(
-            """
+            """)
+        connection.execute("""
             CREATE INDEX IF NOT EXISTS idx_macro_scenario_status
             ON institutional_macro_scenarios (
                 scenario_id, scenario_type, status, version
             )
-            """
-        )
-        connection.execute(
-            """
+            """)
+        connection.execute("""
             CREATE TABLE IF NOT EXISTS institutional_macro_scenario_reviews (
                 scenario_id VARCHAR NOT NULL,
                 version INTEGER NOT NULL,
@@ -108,10 +103,8 @@ class InstitutionalMacroScenarioStore:
                 reason VARCHAR NOT NULL,
                 PRIMARY KEY (scenario_id, version, indicator_code)
             )
-            """
-        )
-        connection.execute(
-            """
+            """)
+        connection.execute("""
             CREATE TABLE IF NOT EXISTS institutional_macro_scenario_events (
                 event_id VARCHAR PRIMARY KEY,
                 scenario_id VARCHAR NOT NULL,
@@ -124,16 +117,13 @@ class InstitutionalMacroScenarioStore:
                 comment VARCHAR,
                 reason VARCHAR
             )
-            """
-        )
-        connection.execute(
-            """
+            """)
+        connection.execute("""
             CREATE INDEX IF NOT EXISTS idx_macro_scenario_events_version
             ON institutional_macro_scenario_events (
                 scenario_id, version, event_at
             )
-            """
-        )
+            """)
 
     @staticmethod
     def _normalize_scenario_id(value: str) -> str:
@@ -167,9 +157,7 @@ class InstitutionalMacroScenarioStore:
             "governance_model_family": item.governance_model_family,
             "institutional_status": item.institutional_status,
             "data_as_of_date": (
-                item.data_as_of_date.isoformat()
-                if item.data_as_of_date is not None
-                else None
+                item.data_as_of_date.isoformat() if item.data_as_of_date is not None else None
             ),
             "forecast_origin_period": (
                 item.forecast_origin_period.isoformat()
@@ -238,12 +226,10 @@ class InstitutionalMacroScenarioStore:
                     target_period=date.fromisoformat(str(point["target_period"])),
                     point_forecast=float(point["point_forecast"]),
                     lower_bound=(
-                        None if point.get("lower_bound") is None
-                        else float(point["lower_bound"])
+                        None if point.get("lower_bound") is None else float(point["lower_bound"])
                     ),
                     upper_bound=(
-                        None if point.get("upper_bound") is None
-                        else float(point["upper_bound"])
+                        None if point.get("upper_bound") is None else float(point["upper_bound"])
                     ),
                     confidence_level=float(point["confidence_level"]),
                 )
@@ -258,39 +244,39 @@ class InstitutionalMacroScenarioStore:
                     governance_model_family=item.get("governance_model_family"),
                     institutional_status=str(item["institutional_status"]),
                     data_as_of_date=cls._date_or_none(item.get("data_as_of_date")),
-                    forecast_origin_period=cls._date_or_none(
-                        item.get("forecast_origin_period")
-                    ),
+                    forecast_origin_period=cls._date_or_none(item.get("forecast_origin_period")),
                     last_observed_value=(
-                        None if item.get("last_observed_value") is None
+                        None
+                        if item.get("last_observed_value") is None
                         else float(item["last_observed_value"])
                     ),
                     historical_observations=int(item["historical_observations"]),
                     weighted_relative_score=(
-                        None if item.get("weighted_relative_score") is None
+                        None
+                        if item.get("weighted_relative_score") is None
                         else float(item["weighted_relative_score"])
                     ),
                     improvement_vs_naive=(
-                        None if item.get("improvement_vs_naive") is None
+                        None
+                        if item.get("improvement_vs_naive") is None
                         else float(item["improvement_vs_naive"])
                     ),
                     dynamic_stability_status=item.get("dynamic_stability_status"),
                     dynamic_stability_ratio=(
-                        None if item.get("dynamic_stability_ratio") is None
+                        None
+                        if item.get("dynamic_stability_ratio") is None
                         else float(item["dynamic_stability_ratio"])
                     ),
                     data_lag_days=(
-                        None if item.get("data_lag_days") is None
-                        else int(item["data_lag_days"])
+                        None if item.get("data_lag_days") is None else int(item["data_lag_days"])
                     ),
                     data_lag_months=(
-                        None if item.get("data_lag_months") is None
+                        None
+                        if item.get("data_lag_months") is None
                         else int(item["data_lag_months"])
                     ),
                     is_current_period=item.get("is_current_period"),
-                    approved_for_base_scenario=bool(
-                        item["approved_for_base_scenario"]
-                    ),
+                    approved_for_base_scenario=bool(item["approved_for_base_scenario"]),
                     reason_codes=tuple(str(x) for x in item.get("reason_codes", [])),
                     warnings=tuple(str(x) for x in item.get("warnings", [])),
                     points=points,
@@ -409,25 +395,29 @@ class InstitutionalMacroScenarioStore:
             """,
             [normalized],
         ).fetchall()
-        return tuple(
-            self._scenario_from_payload(str(row[0]), status=str(row[1])) for row in rows
-        )
+        return tuple(self._scenario_from_payload(str(row[0]), status=str(row[1])) for row in rows)
 
     def statistics(self) -> dict[str, int]:
         self.initialize()
         connection = self._database.connection
-        total = int(connection.execute(
-            "SELECT COUNT(*) FROM institutional_macro_scenarios"
-        ).fetchone()[0])
-        approved = int(connection.execute(
-            "SELECT COUNT(*) FROM institutional_macro_scenarios WHERE status = 'APPROVED'"
-        ).fetchone()[0])
-        drafts = int(connection.execute(
-            "SELECT COUNT(*) FROM institutional_macro_scenarios WHERE status = 'DRAFT'"
-        ).fetchone()[0])
-        superseded = int(connection.execute(
-            "SELECT COUNT(*) FROM institutional_macro_scenarios WHERE status = 'SUPERSEDED'"
-        ).fetchone()[0])
+        total = int(
+            connection.execute("SELECT COUNT(*) FROM institutional_macro_scenarios").fetchone()[0]
+        )
+        approved = int(
+            connection.execute(
+                "SELECT COUNT(*) FROM institutional_macro_scenarios WHERE status = 'APPROVED'"
+            ).fetchone()[0]
+        )
+        drafts = int(
+            connection.execute(
+                "SELECT COUNT(*) FROM institutional_macro_scenarios WHERE status = 'DRAFT'"
+            ).fetchone()[0]
+        )
+        superseded = int(
+            connection.execute(
+                "SELECT COUNT(*) FROM institutional_macro_scenarios WHERE status = 'SUPERSEDED'"
+            ).fetchone()[0]
+        )
         return {
             "scenarios": total,
             "drafts": drafts,

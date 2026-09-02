@@ -71,9 +71,7 @@ class MasterHistoricalPriceRepository:
         normalized_issuer = self._normalize_key(issuer)
         security_key = normalized_isin or normalized_series
         files = [
-            (day, path)
-            for day, path in sorted(self._file_index().items())
-            if day <= cutoff_date
+            (day, path) for day, path in sorted(self._file_index().items()) if day <= cutoff_date
         ]
         observations: list[HistoricalPriceObservation] = []
         files_read = 0
@@ -113,9 +111,7 @@ class MasterHistoricalPriceRepository:
         status = (
             "COMPLETE_REAL_HISTORY"
             if len(observation_tuple) >= limit
-            else "PARTIAL_REAL_HISTORY"
-            if observation_tuple
-            else "MASTER_HISTORY_UNAVAILABLE"
+            else "PARTIAL_REAL_HISTORY" if observation_tuple else "MASTER_HISTORY_UNAVAILABLE"
         )
         diagnostic = None
         if ambiguous_dates:
@@ -163,11 +159,15 @@ class MasterHistoricalPriceRepository:
                 except ValueError:
                     continue
                 current = discovered.get(master_date)
-                if current is None or self._prefer_candidate(
-                    current=current,
-                    challenger=path,
-                    valuation_date=master_date,
-                ) == path:
+                if (
+                    current is None
+                    or self._prefer_candidate(
+                        current=current,
+                        challenger=path,
+                        valuation_date=master_date,
+                    )
+                    == path
+                ):
                     discovered[master_date] = path
         self._file_index_cache = discovered
         return discovered
@@ -181,9 +181,7 @@ class MasterHistoricalPriceRepository:
             valuation_date_override=valuation_date,
             diagnostic_mode=False,
         )
-        positions = tuple(
-            item for item in result.normalized_positions if isinstance(item, dict)
-        )
+        positions = tuple(item for item in result.normalized_positions if isinstance(item, dict))
         self._position_cache[path] = positions
         return positions
 
@@ -277,7 +275,11 @@ class MasterHistoricalPriceRepository:
         if current_exact != challenger_exact:
             return challenger if challenger_exact else current
         try:
-            return challenger if challenger.stat().st_mtime_ns > current.stat().st_mtime_ns else current
+            return (
+                challenger
+                if challenger.stat().st_mtime_ns > current.stat().st_mtime_ns
+                else current
+            )
         except OSError:
             return min((current, challenger), key=lambda path: str(path).casefold())
 

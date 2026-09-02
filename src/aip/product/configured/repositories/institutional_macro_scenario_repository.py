@@ -21,10 +21,7 @@ class InstitutionalMacroScenarioRepository:
         *,
         store: InstitutionalMacroScenarioStore | None = None,
     ) -> None:
-        self._store = (
-            store
-            or InstitutionalMacroScenarioStore()
-        )
+        self._store = store or InstitutionalMacroScenarioStore()
 
     @property
     def store(
@@ -36,17 +33,13 @@ class InstitutionalMacroScenarioRepository:
         self,
         scenario: InstitutionalMacroScenario,
     ) -> None:
-        self._store.insert(
-            scenario
-        )
+        self._store.insert(scenario)
 
     def next_version(
         self,
         scenario_id: str,
     ) -> int:
-        return self._store.next_version(
-            scenario_id
-        )
+        return self._store.next_version(scenario_id)
 
     def get(
         self,
@@ -62,9 +55,7 @@ class InstitutionalMacroScenarioRepository:
         self,
         scenario_id: str,
     ) -> tuple[InstitutionalMacroScenario, ...]:
-        return self._store.list_versions(
-            scenario_id
-        )
+        return self._store.list_versions(scenario_id)
 
     def statistics(
         self,
@@ -85,9 +76,7 @@ class InstitutionalMacroScenarioRepository:
         self,
         **kwargs,
     ) -> None:
-        self._store.approve_version(
-            **kwargs
-        )
+        self._store.approve_version(**kwargs)
 
     def review_resolutions(
         self,
@@ -118,10 +107,7 @@ class InstitutionalMacroScenarioRepository:
         tuple[str, int],
         ...,
     ]:
-        return (
-            self._store
-            .approved_versions_for_scenario(
-                scenario_id=scenario_id,
-                scenario_type=scenario_type,
-            )
+        return self._store.approved_versions_for_scenario(
+            scenario_id=scenario_id,
+            scenario_type=scenario_type,
         )

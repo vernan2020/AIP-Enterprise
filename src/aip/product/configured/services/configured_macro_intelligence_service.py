@@ -30,9 +30,7 @@ class ConfiguredMacroIntelligenceService:
         scenario_id: str = DEFAULT_SCENARIO_ID,
     ) -> dict[str, Any]:
         versions = self._repository.list_versions(scenario_id)
-        approved = tuple(
-            item for item in versions if str(item.status).upper() == "APPROVED"
-        )
+        approved = tuple(item for item in versions if str(item.status).upper() == "APPROVED")
         if not approved:
             return {
                 "status": "UNAVAILABLE",

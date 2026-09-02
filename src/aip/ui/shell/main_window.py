@@ -116,9 +116,8 @@ class MainWindow(QMainWindow):
             from aip.product.configured.context.valuation_date_context import (
                 ValuationDateContext as ProductValuationDateContext,
             )
-            source_context = self._demo_factory.container.resolve(
-                ProductValuationDateContext
-            )
+
+            source_context = self._demo_factory.container.resolve(ProductValuationDateContext)
         except Exception:
             source_context = None
         try:
@@ -161,9 +160,7 @@ class MainWindow(QMainWindow):
             self._ribbon.action(label).triggered.connect(
                 lambda _checked=False, route=route_id: self.open_workspace(route)
             )
-        self._ribbon.action("Refresh All").triggered.connect(
-            self._handle_refresh_all
-        )
+        self._ribbon.action("Refresh All").triggered.connect(self._handle_refresh_all)
         self.addToolBar(Qt.ToolBarArea.TopToolBarArea, self._ribbon)
         self._add_operational_menu_actions()
 
@@ -180,9 +177,7 @@ class MainWindow(QMainWindow):
 
         self._workspace.add_tab(
             "Inicio",
-            QTextEdit(
-                "AIP Enterprise · Plataforma institucional de inteligencia financiera"
-            ),
+            QTextEdit("AIP Enterprise · Plataforma institucional de inteligencia financiera"),
         )
 
         self._content_splitter = QSplitter(Qt.Orientation.Horizontal)
@@ -206,8 +201,7 @@ class MainWindow(QMainWindow):
         self._dock_inspector.setObjectName("contextInspectorDock")
         self._dock_inspector.setWidget(self._inspector)
         self._dock_inspector.setAllowedAreas(
-            Qt.DockWidgetArea.LeftDockWidgetArea
-            | Qt.DockWidgetArea.RightDockWidgetArea
+            Qt.DockWidgetArea.LeftDockWidgetArea | Qt.DockWidgetArea.RightDockWidgetArea
         )
         self.addDockWidget(
             Qt.DockWidgetArea.RightDockWidgetArea,
@@ -251,13 +245,9 @@ class MainWindow(QMainWindow):
         layout = QHBoxLayout(frame)
         layout.setContentsMargins(12, 7, 12, 7)
         execution_mode = self._config.execution_mode
-        title = QLabel(
-            "AIP HYBRID" if execution_mode == "CONFIGURED" else APP_DISPLAY_NAME
-        )
+        title = QLabel("AIP HYBRID" if execution_mode == "CONFIGURED" else APP_DISPLAY_NAME)
         title.setStyleSheet("font-size: 14px; font-weight: 700;")
-        mode = QLabel(
-            "MODO CONFIGURADO" if execution_mode == "CONFIGURED" else "MODO DEMO"
-        )
+        mode = QLabel("MODO CONFIGURADO" if execution_mode == "CONFIGURED" else "MODO DEMO")
         mode.setStyleSheet("font-size: 10px;")
         status = QLabel("SISTEMA LISTO")
         status.setStyleSheet("font-size: 10px; font-weight: 600;")
@@ -293,9 +283,7 @@ class MainWindow(QMainWindow):
     def _build_workspace_widget(self, route_id: str) -> tuple[QWidget, str]:
         if route_id == "home":
             return (
-                QTextEdit(
-                    "AIP Enterprise · Plataforma institucional de inteligencia financiera"
-                ),
+                QTextEdit("AIP Enterprise · Plataforma institucional de inteligencia financiera"),
                 "Inicio",
             )
         if route_id == "executive":
@@ -315,6 +303,7 @@ class MainWindow(QMainWindow):
                 PriceRiskPresenter,
             )
             from aip.ui.modules.price_risk.views.price_risk_view import PriceRiskView
+
             return (
                 PriceRiskView(presenter=PriceRiskPresenter(self._demo_factory)),
                 "Riesgo de Precio",
@@ -323,6 +312,7 @@ class MainWindow(QMainWindow):
             from aip.ui.modules.macro_intelligence.views.macro_intelligence_view import (
                 MacroIntelligenceView,
             )
+
             return (
                 MacroIntelligenceView(application_factory=self._demo_factory),
                 "Macro Intelligence",
@@ -342,27 +332,21 @@ class MainWindow(QMainWindow):
         return (QTextEdit(route_id), route_id.title())
 
     def _handle_qdate_changed(self, value: QDate) -> None:
-        self._handle_valuation_date_changed(
-            date(value.year(), value.month(), value.day())
-        )
+        self._handle_valuation_date_changed(date(value.year(), value.month(), value.day()))
 
     def _handle_valuation_date_changed(self, value: date) -> None:
         previous = self._valuation_context.valuation_date
         if value == previous:
             return
         self._date_edit.setEnabled(False)
-        self._status_bar.set_message(
-            f"Cambiando fecha de corte a {value.strftime('%d/%m/%Y')}..."
-        )
+        self._status_bar.set_message(f"Cambiando fecha de corte a {value.strftime('%d/%m/%Y')}...")
         QApplication.processEvents()
         try:
             self._demo_factory.set_data_cutoff_date(value)
             self._valuation_context.set_valuation_date(value)
             self._refresh_open_workspaces()
             self._refresh_status_panel()
-            self._status_bar.set_message(
-                f"Fecha de corte activa: {value.strftime('%d/%m/%Y')}"
-            )
+            self._status_bar.set_message(f"Fecha de corte activa: {value.strftime('%d/%m/%Y')}")
         except Exception as exc:
             self._date_edit.blockSignals(True)
             self._date_edit.setDate(QDate(previous.year, previous.month, previous.day))
@@ -506,14 +490,14 @@ class MainWindow(QMainWindow):
         table = current_widget
         if not (hasattr(table, "columnCount") and hasattr(table, "rowCount")):
             table = getattr(current_widget, "table", None)
-        if table is None or not (
-            hasattr(table, "columnCount") and hasattr(table, "rowCount")
-        ):
+        if table is None or not (hasattr(table, "columnCount") and hasattr(table, "rowCount")):
             raise RuntimeError("Active workspace tab does not expose a table")
         headers = [
-            table.horizontalHeaderItem(index).text()
-            if table.horizontalHeaderItem(index) is not None
-            else str(index)
+            (
+                table.horizontalHeaderItem(index).text()
+                if table.horizontalHeaderItem(index) is not None
+                else str(index)
+            )
             for index in range(table.columnCount())
         ]
         rows: list[list[object]] = []

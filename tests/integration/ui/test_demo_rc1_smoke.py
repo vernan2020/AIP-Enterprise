@@ -18,7 +18,7 @@ def test_demo_rc1_smoke_navigation_and_refresh() -> None:
     assert any("DEMO MODE" in widget.text().upper() for widget in window.findChildren(QLabel))
 
     workspace = window.workspace
-    assert any(workspace.tabText(index) == "Executive" for index in range(workspace.count()))
+    assert any(workspace.tabText(index) == "Ejecutivo" for index in range(workspace.count()))
 
     window.open_workspace("portfolio")
     window.open_workspace("market")

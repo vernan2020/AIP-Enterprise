@@ -35,7 +35,9 @@ class HistoricalPriceSeriesService:
             raise TypeError("valuation_date must be datetime.date")
         if not target_dates:
             raise ValueError("target_dates cannot be empty")
-        if tuple(sorted(target_dates)) != target_dates or len(set(target_dates)) != len(target_dates):
+        if tuple(sorted(target_dates)) != target_dates or len(set(target_dates)) != len(
+            target_dates
+        ):
             raise ValueError("target_dates must be unique and ascending")
         if target_dates[-1] > valuation_date:
             raise ValueError("target_dates cannot exceed valuation_date")

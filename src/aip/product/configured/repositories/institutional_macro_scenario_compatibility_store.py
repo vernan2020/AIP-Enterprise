@@ -160,7 +160,7 @@ class InstitutionalMacroScenarioStore(_InstitutionalMacroScenarioStore):
                 )
             connection.execute(
                 "UPDATE institutional_macro_scenarios "
-                f"SET {self._PAYLOAD_COLUMN} = \"{quoted_source}\" "
+                f'SET {self._PAYLOAD_COLUMN} = "{quoted_source}" '
                 f"WHERE {self._PAYLOAD_COLUMN} IS NULL"
             )
             connection.execute(
@@ -183,25 +183,22 @@ class InstitutionalMacroScenarioStore(_InstitutionalMacroScenarioStore):
             return False
         indicator_columns = self._table_columns(self._RELATIONAL_INDICATOR_TABLE)
         point_columns = self._table_columns(self._RELATIONAL_POINT_TABLE)
-        return (
-            self._RELATIONAL_INDICATOR_COLUMNS.issubset(indicator_columns)
-            and self._RELATIONAL_POINT_COLUMNS.issubset(point_columns)
-        )
+        return self._RELATIONAL_INDICATOR_COLUMNS.issubset(
+            indicator_columns
+        ) and self._RELATIONAL_POINT_COLUMNS.issubset(point_columns)
 
     def _build_normalized_relational_payloads(
         self,
     ) -> tuple[tuple[str, int, str], ...]:
         connection = self._database.connection
-        parent_rows = connection.execute(
-            """
+        parent_rows = connection.execute("""
             SELECT
                 scenario_id, version, scenario_type, status,
                 dataset_as_of_date, horizon_months, created_at,
                 created_by, description
             FROM institutional_macro_scenarios
             ORDER BY scenario_id, version
-            """
-        ).fetchall()
+            """).fetchall()
 
         payloads: list[tuple[str, int, str]] = []
         for parent in parent_rows:
@@ -290,17 +287,12 @@ class InstitutionalMacroScenarioStore(_InstitutionalMacroScenarioStore):
                         target_period=self._required_date(
                             point[1],
                             context=(
-                                f"{scenario_id} v{version} {indicator_code} "
-                                f"horizon {point[0]}"
+                                f"{scenario_id} v{version} {indicator_code} " f"horizon {point[0]}"
                             ),
                         ),
                         point_forecast=float(point[2]),
-                        lower_bound=(
-                            None if point[3] is None else float(point[3])
-                        ),
-                        upper_bound=(
-                            None if point[4] is None else float(point[4])
-                        ),
+                        lower_bound=(None if point[3] is None else float(point[3])),
+                        upper_bound=(None if point[4] is None else float(point[4])),
                         confidence_level=float(point[5]),
                     )
                     for point in point_rows
@@ -316,29 +308,15 @@ class InstitutionalMacroScenarioStore(_InstitutionalMacroScenarioStore):
                         institutional_status=str(item[5]),
                         data_as_of_date=self._date_or_none(item[6]),
                         forecast_origin_period=self._date_or_none(item[7]),
-                        last_observed_value=(
-                            None if item[8] is None else float(item[8])
-                        ),
+                        last_observed_value=(None if item[8] is None else float(item[8])),
                         historical_observations=int(item[9]),
-                        weighted_relative_score=(
-                            None if item[10] is None else float(item[10])
-                        ),
-                        improvement_vs_naive=(
-                            None if item[11] is None else float(item[11])
-                        ),
+                        weighted_relative_score=(None if item[10] is None else float(item[10])),
+                        improvement_vs_naive=(None if item[11] is None else float(item[11])),
                         dynamic_stability_status=item[12],
-                        dynamic_stability_ratio=(
-                            None if item[13] is None else float(item[13])
-                        ),
-                        data_lag_days=(
-                            None if item[14] is None else int(item[14])
-                        ),
-                        data_lag_months=(
-                            None if item[15] is None else int(item[15])
-                        ),
-                        is_current_period=(
-                            None if item[16] is None else bool(item[16])
-                        ),
+                        dynamic_stability_ratio=(None if item[13] is None else float(item[13])),
+                        data_lag_days=(None if item[14] is None else int(item[14])),
+                        data_lag_months=(None if item[15] is None else int(item[15])),
+                        is_current_period=(None if item[16] is None else bool(item[16])),
                         approved_for_base_scenario=bool(item[17]),
                         reason_codes=self._decode_sequence_text(item[18]),
                         warnings=self._decode_sequence_text(item[19]),
@@ -362,9 +340,7 @@ class InstitutionalMacroScenarioStore(_InstitutionalMacroScenarioStore):
                 created_by=str(parent[7]),
                 description=parent[8],
             )
-            payloads.append(
-                (scenario_id, version, self._scenario_payload(scenario))
-            )
+            payloads.append((scenario_id, version, self._scenario_payload(scenario)))
 
         return tuple(payloads)
 
@@ -449,8 +425,7 @@ class InstitutionalMacroScenarioStore(_InstitutionalMacroScenarioStore):
         connection.execute("BEGIN TRANSACTION")
         try:
             if has_audit:
-                connection.execute(
-                    f"""
+                connection.execute(f"""
                     INSERT INTO institutional_macro_scenario_events (
                         event_id, scenario_id, version, event_type,
                         from_status, to_status, actor, event_at,
@@ -466,19 +441,14 @@ class InstitutionalMacroScenarioStore(_InstitutionalMacroScenarioStore):
                         FROM institutional_macro_scenario_events current
                         WHERE current.event_id = legacy.event_id
                     )
-                    """
-                )
-                missing_events = int(
-                    connection.execute(
-                        f"""
+                    """)
+                missing_events = int(connection.execute(f"""
                         SELECT COUNT(*)
                         FROM {self._LEGACY_AUDIT_TABLE} legacy
                         LEFT JOIN institutional_macro_scenario_events current
                           ON current.event_id = legacy.event_id
                         WHERE current.event_id IS NULL
-                        """
-                    ).fetchone()[0]
-                )
+                        """).fetchone()[0])
                 if missing_events:
                     raise RuntimeError(
                         "Institutional macro scenario audit migration left "
@@ -486,8 +456,7 @@ class InstitutionalMacroScenarioStore(_InstitutionalMacroScenarioStore):
                     )
 
             if has_reviews:
-                connection.execute(
-                    f"""
+                connection.execute(f"""
                     INSERT INTO institutional_macro_scenario_reviews (
                         scenario_id, version, indicator_code, resolution,
                         actor, resolved_at, comment, reason
@@ -505,11 +474,8 @@ class InstitutionalMacroScenarioStore(_InstitutionalMacroScenarioStore):
                           AND current.version = legacy.version
                           AND current.indicator_code = legacy.indicator_code
                     )
-                    """
-                )
-                missing_reviews = int(
-                    connection.execute(
-                        f"""
+                    """)
+                missing_reviews = int(connection.execute(f"""
                         SELECT COUNT(*)
                         FROM {self._LEGACY_REVIEW_TABLE} legacy
                         LEFT JOIN institutional_macro_scenario_reviews current
@@ -517,9 +483,7 @@ class InstitutionalMacroScenarioStore(_InstitutionalMacroScenarioStore):
                          AND current.version = legacy.version
                          AND current.indicator_code = legacy.indicator_code
                         WHERE current.scenario_id IS NULL
-                        """
-                    ).fetchone()[0]
-                )
+                        """).fetchone()[0])
                 if missing_reviews:
                     raise RuntimeError(
                         "Institutional macro scenario review migration left "
@@ -544,9 +508,7 @@ class InstitutionalMacroScenarioStore(_InstitutionalMacroScenarioStore):
         return tuple(str(row[0]) for row in rows)
 
     def _table_columns(self, table_name: str) -> frozenset[str]:
-        return frozenset(
-            column.lower() for column in self._table_column_names(table_name)
-        )
+        return frozenset(column.lower() for column in self._table_column_names(table_name))
 
     @staticmethod
     def _required_date(value: Any, *, context: str) -> date:
@@ -582,11 +544,7 @@ class InstitutionalMacroScenarioStore(_InstitutionalMacroScenarioStore):
 
         for separator in ("|", ";"):
             if separator in text:
-                return tuple(
-                    item.strip()
-                    for item in text.split(separator)
-                    if item.strip()
-                )
+                return tuple(item.strip() for item in text.split(separator) if item.strip())
         return (text,)
 
     @classmethod
@@ -603,8 +561,6 @@ class InstitutionalMacroScenarioStore(_InstitutionalMacroScenarioStore):
 
         for column in columns:
             normalized = column.lower()
-            if "json" in normalized and (
-                "scenario" in normalized or "payload" in normalized
-            ):
+            if "json" in normalized and ("scenario" in normalized or "payload" in normalized):
                 return column
         return None

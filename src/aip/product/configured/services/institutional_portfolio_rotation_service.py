@@ -96,9 +96,7 @@ class InstitutionalPortfolioRotationService:
                 if spread_improvement <= 0.0:
                     continue
 
-                yield_improvement = (
-                    target["market_yield"] - source["market_yield"]
-                ) * 100.0
+                yield_improvement = (target["market_yield"] - source["market_yield"]) * 100.0
                 tenor_difference = target["tenor"] - source["tenor"]
 
                 status = self._screening_status(
@@ -215,9 +213,7 @@ class InstitutionalPortfolioRotationService:
 
         market_price_raw = item.get("market_price")
         try:
-            market_price = (
-                float(market_price_raw) if market_price_raw is not None else None
-            )
+            market_price = float(market_price_raw) if market_price_raw is not None else None
         except (TypeError, ValueError):
             market_price = None
 

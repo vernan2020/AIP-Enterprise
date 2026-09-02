@@ -91,8 +91,7 @@ def test_store_migrates_legacy_scenario_json_column_without_losing_row(
     database_path.parent.mkdir(parents=True, exist_ok=True)
     connection = duckdb.connect(str(database_path))
     try:
-        connection.execute(
-            """
+        connection.execute("""
             CREATE TABLE institutional_macro_scenarios (
                 scenario_id VARCHAR NOT NULL,
                 version INTEGER NOT NULL,
@@ -107,8 +106,7 @@ def test_store_migrates_legacy_scenario_json_column_without_losing_row(
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 PRIMARY KEY (scenario_id, version)
             )
-            """
-        )
+            """)
         connection.execute(
             """
             INSERT INTO institutional_macro_scenarios (
@@ -153,13 +151,11 @@ def test_store_migrates_legacy_scenario_json_column_without_losing_row(
                 "PRAGMA table_info('institutional_macro_scenarios')"
             ).fetchall()
         }
-        row = connection.execute(
-            """
+        row = connection.execute("""
             SELECT scenario_json, scenario_payload_json, status
             FROM institutional_macro_scenarios
             WHERE scenario_id = 'BASE-MACRO-INSTITUTIONAL' AND version = 4
-            """
-        ).fetchone()
+            """).fetchone()
     finally:
         connection.close()
 
@@ -182,8 +178,7 @@ def _create_normalized_legacy_schema(database_path: Path) -> None:
     )
     connection = duckdb.connect(str(database_path))
     try:
-        connection.execute(
-            """
+        connection.execute("""
             CREATE TABLE institutional_macro_scenarios (
                 scenario_id VARCHAR NOT NULL,
                 version INTEGER NOT NULL,
@@ -196,10 +191,8 @@ def _create_normalized_legacy_schema(database_path: Path) -> None:
                 description VARCHAR,
                 PRIMARY KEY (scenario_id, version)
             )
-            """
-        )
-        connection.execute(
-            """
+            """)
+        connection.execute("""
             CREATE TABLE institutional_macro_scenario_indicators (
                 scenario_id VARCHAR NOT NULL,
                 version INTEGER NOT NULL,
@@ -226,10 +219,8 @@ def _create_normalized_legacy_schema(database_path: Path) -> None:
                 diagnostic VARCHAR,
                 PRIMARY KEY (scenario_id, version, indicator_code)
             )
-            """
-        )
-        connection.execute(
-            """
+            """)
+        connection.execute("""
             CREATE TABLE institutional_macro_scenario_points (
                 scenario_id VARCHAR NOT NULL,
                 version INTEGER NOT NULL,
@@ -242,10 +233,8 @@ def _create_normalized_legacy_schema(database_path: Path) -> None:
                 confidence_level DOUBLE NOT NULL,
                 PRIMARY KEY (scenario_id, version, indicator_code, horizon)
             )
-            """
-        )
-        connection.execute(
-            """
+            """)
+        connection.execute("""
             CREATE TABLE institutional_macro_scenario_audit (
                 event_id VARCHAR NOT NULL,
                 scenario_id VARCHAR NOT NULL,
@@ -258,10 +247,8 @@ def _create_normalized_legacy_schema(database_path: Path) -> None:
                 comment VARCHAR,
                 reason VARCHAR
             )
-            """
-        )
-        connection.execute(
-            """
+            """)
+        connection.execute("""
             CREATE TABLE institutional_macro_scenario_review_resolutions (
                 scenario_id VARCHAR NOT NULL,
                 version INTEGER NOT NULL,
@@ -272,8 +259,7 @@ def _create_normalized_legacy_schema(database_path: Path) -> None:
                 comment VARCHAR NOT NULL,
                 reason VARCHAR NOT NULL
             )
-            """
-        )
+            """)
 
         for version, status in ((3, "SUPERSEDED"), (4, "APPROVED")):
             connection.execute(
@@ -291,11 +277,7 @@ def _create_normalized_legacy_schema(database_path: Path) -> None:
                 ],
             )
             for offset, indicator_code in enumerate(indicator_codes):
-                reason_codes = (
-                    '["MULTI_HORIZON_APPROVED"]'
-                    if offset % 2
-                    else "MODEL_EQUIVALENCE"
-                )
+                reason_codes = '["MULTI_HORIZON_APPROVED"]' if offset % 2 else "MODEL_EQUIVALENCE"
                 connection.execute(
                     """
                     INSERT INTO institutional_macro_scenario_indicators
@@ -455,12 +437,18 @@ def test_store_migrates_normalized_relational_scenarios_and_workflow_history(
 
     connection = duckdb.connect(str(database_path))
     try:
-        assert connection.execute(
-            "SELECT COUNT(*) FROM institutional_macro_scenario_events"
-        ).fetchone()[0] == 2
-        assert connection.execute(
-            "SELECT COUNT(*) FROM institutional_macro_scenario_reviews"
-        ).fetchone()[0] == 1
+        assert (
+            connection.execute(
+                "SELECT COUNT(*) FROM institutional_macro_scenario_events"
+            ).fetchone()[0]
+            == 2
+        )
+        assert (
+            connection.execute(
+                "SELECT COUNT(*) FROM institutional_macro_scenario_reviews"
+            ).fetchone()[0]
+            == 1
+        )
     finally:
         connection.close()
 

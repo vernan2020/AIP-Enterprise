@@ -109,9 +109,7 @@ class PiPCAHistoricalPriceRepository:
         status = (
             "COMPLETE_REAL_HISTORY"
             if len(observations) >= limit
-            else "PARTIAL_REAL_HISTORY"
-            if observations
-            else "PIPCA_HISTORY_UNAVAILABLE"
+            else "PARTIAL_REAL_HISTORY" if observations else "PIPCA_HISTORY_UNAVAILABLE"
         )
         diagnostic = None
         if ambiguous_dates:
@@ -142,7 +140,9 @@ class PiPCAHistoricalPriceRepository:
                 if match is None:
                     continue
                 try:
-                    vector_date = date(int(match.group(1)), int(match.group(2)), int(match.group(3)))
+                    vector_date = date(
+                        int(match.group(1)), int(match.group(2)), int(match.group(3))
+                    )
                 except ValueError:
                     continue
                 current = discovered.get(vector_date)
@@ -233,7 +233,9 @@ class PiPCAHistoricalPriceRepository:
     ) -> tuple[InstitutionalVectorRecord | None, bool]:
         if not candidates:
             return None, False
-        prices = {candidate.market_price for candidate in candidates if candidate.market_price is not None}
+        prices = {
+            candidate.market_price for candidate in candidates if candidate.market_price is not None
+        }
         if len(prices) > 1:
             return None, True
         return candidates[0], False

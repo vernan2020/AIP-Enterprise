@@ -123,8 +123,7 @@ class PortfolioHistoricalVaRService:
                 raise ValueError(f"invalid price in historical series {position.security_key}")
 
             one_day_log_returns = [
-                math.log(numeric[index] / numeric[index - 1])
-                for index in range(1, len(numeric))
+                math.log(numeric[index] / numeric[index - 1]) for index in range(1, len(numeric))
             ]
             if len(one_day_log_returns) != 520:
                 raise RuntimeError("expected 520 one-day returns from 521 prices")
@@ -157,9 +156,7 @@ class PortfolioHistoricalVaRService:
             Decimal("0"),
         )
         var_percent = (
-            portfolio_var / market_value * Decimal("100")
-            if market_value > 0
-            else Decimal("0")
+            portfolio_var / market_value * Decimal("100") if market_value > 0 else Decimal("0")
         )
 
         position_results: list[PortfolioVaRPositionResult] = []
@@ -173,9 +170,7 @@ class PortfolioHistoricalVaRService:
                 else Decimal("0")
             )
             contribution = (
-                pnl_at_selected / selected * Decimal("100")
-                if selected != 0
-                else Decimal("0")
+                pnl_at_selected / selected * Decimal("100") if selected != 0 else Decimal("0")
             )
             synthetic_count = position.price_series.synthetic_count
             position_results.append(
@@ -207,9 +202,7 @@ class PortfolioHistoricalVaRService:
             var_rank=cls.SELECTED_SCENARIO_RANK,
             var_scenario_number=selected_index + 1,
             var_scenario_lagged_date=common_dates[selected_index],
-            var_scenario_date=common_dates[
-                selected_index + cls.HORIZON_OBSERVATIONS
-            ],
+            var_scenario_date=common_dates[selected_index + cls.HORIZON_OBSERVATIONS],
             selected_scenario_pnl_crc=selected,
             scenario_pnl_crc=tuple(portfolio_scenarios),
             positions=tuple(position_results),
