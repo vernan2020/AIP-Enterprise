@@ -9,13 +9,7 @@ from aip.ui.shell.workspace import Workspace
 
 
 class Sidebar(QWidget):
-    """Passive module navigator for AIP Enterprise.
-
-    The sidebar deliberately does not construct presenters, providers or
-    workspaces.  It only emits a stable route id; MainWindow owns all view
-    construction so every module receives the same application factory and
-    dependency container.
-    """
+    """Passive module navigator for AIP Enterprise."""
 
     route_requested = Signal(str)
 
@@ -38,35 +32,50 @@ class Sidebar(QWidget):
     ) -> None:
         super().__init__()
         self.setObjectName("navigationSidebar")
-        self.setMinimumWidth(140)
-        self.setMaximumWidth(175)
+        self.setMinimumWidth(150)
+        self.setMaximumWidth(185)
         self._navigation = navigation
-        # Retained only for backwards constructor compatibility.  It is never
-        # used to create child modules.
         self._application_factory = application_factory
         self._workspace: Workspace | None = None
         self._route_by_label = dict(self._ITEMS)
         self._build_ui()
+        self._apply_local_style()
 
     def set_workspace(self, workspace: Workspace) -> None:
         self._workspace = workspace
 
     def _build_ui(self) -> None:
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(4, 4, 4, 4)
-        layout.setSpacing(4)
+        layout.setContentsMargins(7, 9, 7, 9)
+        layout.setSpacing(8)
 
         self._search = QLineEdit()
-        self._search.setPlaceholderText("Buscar módulo")
+        self._search.setObjectName("moduleSearch")
+        self._search.setPlaceholderText("Buscar módulo...")
         self._search.textChanged.connect(self._apply_filter)
 
         self._tree = QListWidget()
+        self._tree.setObjectName("moduleList")
         self._tree.addItems([label for label, _route in self._ITEMS])
+        self._tree.setSpacing(2)
         self._tree.itemClicked.connect(self._on_item_clicked)
         self._tree.itemDoubleClicked.connect(self._on_item_clicked)
 
         layout.addWidget(self._search)
-        layout.addWidget(self._tree)
+        layout.addWidget(self._tree, 1)
+
+    def _apply_local_style(self) -> None:
+        self.setStyleSheet(
+            "QWidget#navigationSidebar {background:#F6F8FA; border-right:1px solid #D7E0E8;}"
+            "QLineEdit#moduleSearch {background:#FFFFFF; border:1px solid #CDD8E1; border-radius:6px; "
+            "padding:7px 8px; color:#243746;}"
+            "QLineEdit#moduleSearch:focus {border-color:#6F9ABA;}"
+            "QListWidget#moduleList {background:transparent; border:none; outline:none;}"
+            "QListWidget#moduleList::item {padding:8px 9px; margin:1px 0; border-radius:6px; color:#354B5E;}"
+            "QListWidget#moduleList::item:hover {background:#E8F0F6; color:#174E78;}"
+            "QListWidget#moduleList::item:selected {background:#DCE9F5; color:#174E78; "
+            "font-weight:700; border-left:3px solid #1F5A8A;}"
+        )
 
     def _apply_filter(self, value: str) -> None:
         needle = value.strip().casefold()
@@ -81,7 +90,5 @@ class Sidebar(QWidget):
         try:
             self._navigation.navigate(route_id)
         except Exception:
-            # Navigation history is ancillary; workspace activation must still
-            # work if a route manager implementation is more restrictive.
             pass
         self.route_requested.emit(route_id)
