@@ -17,7 +17,7 @@ from pathlib import Path, PurePosixPath
 REPOSITORY = "vernan2020/AIP-Enterprise"
 SOURCE_COMMIT = "cdde4045dd28bb8a7d779cce5f6dfac68d12ab38"
 ARCHIVE_URL = f"https://codeload.github.com/{REPOSITORY}/tar.gz/{SOURCE_COMMIT}"
-USER_AGENT = "AIP-Enterprise-Final-UI/1.1"
+USER_AGENT = "AIP-Enterprise-Final-UI/1.2"
 TLS_CIPHERS = "DEFAULT:@SECLEVEL=1"
 
 CRITICAL_FILES = (
@@ -37,13 +37,7 @@ CRITICAL_FILES = (
 
 
 def _tls_context() -> ssl.SSLContext:
-    """Return a verified TLS context compatible with the corporate CA chain.
-
-    Python 3.13/OpenSSL 3 defaults to security level 2. Some institutional
-    TLS inspection chains still use a 1024-bit CA key, which OpenSSL rejects as
-    ``CA certificate key too weak``. Security level 1 accepts that legacy CA
-    while preserving certificate validation and hostname verification.
-    """
+    """Return a verified TLS context compatible with the corporate CA chain."""
 
     context = ssl.create_default_context()
     context.set_ciphers(TLS_CIPHERS)
@@ -83,26 +77,83 @@ def _download_archive(destination: Path) -> None:
         ) from exc
 
 
+def _candidate_source_prefixes(members: list[tarfile.TarInfo]) -> tuple[str, ...]:
+    """Return every archive prefix that exposes a ``src/aip`` package.
+
+    The repository still contains an old nested ``AIP-Enterprise/src/aip`` tree
+    in addition to the authoritative root ``src/aip`` runtime.  Selecting the
+    first ``__init__.py`` therefore restores only the small legacy tree.  We
+    enumerate all candidates and let the extractor select the complete runtime.
+    """
+
+    marker = "/src/aip/"
+    prefixes: set[str] = set()
+    for member in members:
+        if not member.isfile() or not member.name.endswith("/src/aip/__init__.py"):
+            continue
+        root_prefix = member.name.split(marker, 1)[0]
+        prefixes.add(f"{root_prefix}/src/aip/")
+    return tuple(sorted(prefixes))
+
+
+def _candidate_file_count(
+    members: list[tarfile.TarInfo],
+    source_prefix: str,
+) -> int:
+    return sum(
+        1
+        for member in members
+        if member.isfile() and member.name.startswith(source_prefix)
+    )
+
+
+def _candidate_contains_critical_files(
+    names: set[str],
+    source_prefix: str,
+) -> bool:
+    return all(f"{source_prefix}{relative}" in names for relative in CRITICAL_FILES)
+
+
+def _select_authoritative_source_prefix(
+    members: list[tarfile.TarInfo],
+) -> tuple[str, int]:
+    candidates = _candidate_source_prefixes(members)
+    if not candidates:
+        raise RuntimeError("El paquete descargado no contiene ningún src/aip/__init__.py")
+
+    names = {member.name for member in members if member.isfile()}
+    ranked: list[tuple[bool, int, int, str]] = []
+    for prefix in candidates:
+        count = _candidate_file_count(members, prefix)
+        has_critical = _candidate_contains_critical_files(names, prefix)
+        # Prefer a candidate that contains every critical runtime component;
+        # then prefer the largest tree; finally prefer the shallower archive path.
+        depth = len(PurePosixPath(prefix).parts)
+        ranked.append((has_critical, count, -depth, prefix))
+
+    ranked.sort(reverse=True)
+    has_critical, count, _negative_depth, prefix = ranked[0]
+    diagnostics = ", ".join(
+        f"{item[3]}={item[1]} archivos{' + críticos' if item[0] else ''}"
+        for item in ranked
+    )
+    print(f"      Árboles src/aip detectados: {diagnostics}")
+
+    if not has_critical:
+        raise RuntimeError(
+            "Ningún árbol src/aip del paquete contiene todos los componentes "
+            "críticos del candidato visual"
+        )
+    return prefix, count
+
+
 def _extract_aip_source(archive: Path, staging_src: Path) -> Path:
     staging_aip = staging_src / "aip"
     staging_aip.mkdir(parents=True, exist_ok=True)
 
     with tarfile.open(archive, "r:gz") as bundle:
         members = bundle.getmembers()
-        init_member = next(
-            (
-                member
-                for member in members
-                if member.isfile() and member.name.endswith("/src/aip/__init__.py")
-            ),
-            None,
-        )
-        if init_member is None:
-            raise RuntimeError("El paquete descargado no contiene src/aip/__init__.py")
-
-        marker = "/src/aip/"
-        root_prefix = init_member.name.split(marker, 1)[0]
-        source_prefix = f"{root_prefix}/src/aip/"
+        source_prefix, expected_files = _select_authoritative_source_prefix(members)
 
         extracted = 0
         for member in members:
@@ -129,10 +180,16 @@ def _extract_aip_source(archive: Path, staging_src: Path) -> Path:
                 shutil.copyfileobj(source, target)
             extracted += 1
 
+    if extracted != expected_files:
+        raise RuntimeError(
+            "Extracción inconsistente: "
+            f"se esperaban {expected_files} archivos y se recuperaron {extracted}"
+        )
     if extracted < 100:
         raise RuntimeError(
             f"Extracción incompleta: sólo se recuperaron {extracted} archivos"
         )
+    print(f"      Árbol autoritativo: {source_prefix} ({extracted} archivos)")
     return staging_aip
 
 
@@ -219,7 +276,7 @@ def main() -> int:
         _download_archive(archive)
         print(f"      Descarga: {archive.stat().st_size:,} bytes")
 
-        print("[2/6] Extrayendo src/aip de forma segura...")
+        print("[2/6] Detectando y extrayendo src/aip autoritativo...")
         staging_aip = _extract_aip_source(archive, staging_src)
         _verify_files(staging_aip)
 
