@@ -5,6 +5,8 @@ import datetime as dt
 import json
 import os
 import re
+import shutil
+import ssl
 import subprocess
 import sys
 import time
@@ -39,6 +41,70 @@ def _project_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
+def _is_certificate_verification_error(error: Exception | None) -> bool:
+    if error is None:
+        return False
+    reason = error.reason if isinstance(error, urllib.error.URLError) else error
+    return isinstance(reason, ssl.SSLCertVerificationError) or (
+        "CERTIFICATE_VERIFY_FAILED" in str(reason)
+    )
+
+
+def _request_bytes_with_windows_curl(
+    url: str,
+    *,
+    label: str,
+    accept: str,
+) -> bytes:
+    """Download with Windows curl/Schannel while preserving TLS validation."""
+    executable = shutil.which("curl.exe")
+    if executable is None:
+        raise RuntimeError(
+            "Python rejected the network certificate and curl.exe is unavailable"
+        )
+
+    command = [
+        executable,
+        "--fail",
+        "--location",
+        "--silent",
+        "--show-error",
+        "--retry",
+        "3",
+        "--connect-timeout",
+        "20",
+        "--max-time",
+        "120",
+        "--ssl-no-revoke",
+        "--header",
+        f"Accept: {accept}",
+        "--header",
+        f"User-Agent: {USER_AGENT}",
+        "--header",
+        "Cache-Control: no-cache",
+        url,
+    ]
+    try:
+        completed = subprocess.run(
+            command,
+            check=False,
+            capture_output=True,
+            timeout=150,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(f"Windows curl timed out while reading {label}") from exc
+
+    if completed.returncode != 0:
+        detail = completed.stderr.decode("utf-8", errors="replace").strip()
+        raise RuntimeError(
+            f"Windows curl failed while reading {label} "
+            f"(exit code {completed.returncode}): {detail}"
+        )
+    if not completed.stdout:
+        raise RuntimeError(f"GitHub returned empty content for {label}")
+    return completed.stdout
+
+
 def _request_bytes(url: str, *, label: str, accept: str) -> bytes:
     request = urllib.request.Request(
         url,
@@ -66,6 +132,17 @@ def _request_bytes(url: str, *, label: str, accept: str) -> bytes:
             last_error = exc
         if attempt < 3:
             time.sleep(float(attempt))
+
+    if os.name == "nt" and _is_certificate_verification_error(last_error):
+        print(
+            "Python TLS rejected the institutional network certificate; "
+            "retrying securely with the Windows certificate store..."
+        )
+        return _request_bytes_with_windows_curl(
+            url,
+            label=label,
+            accept=accept,
+        )
 
     if isinstance(last_error, urllib.error.URLError):
         raise RuntimeError(
