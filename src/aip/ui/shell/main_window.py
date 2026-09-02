@@ -60,13 +60,7 @@ from aip.ui.widgets.settings_center import SettingsCenterDialog
 
 
 class MainWindow(QMainWindow):
-    """Institutional desktop shell for AIP Enterprise.
-
-    ``demo_factory`` is a legacy parameter name retained for API compatibility.
-    In CONFIGURED mode it is the already composed institutional application
-    factory created during bootstrap. The shell never creates a second
-    container when that factory is supplied.
-    """
+    """Entorno de escritorio institucional de AIP Enterprise."""
 
     def __init__(
         self,
@@ -139,7 +133,7 @@ class MainWindow(QMainWindow):
             Route("portfolio", "Portafolio", "portfolio"),
             Route("market", "Mercado", "market"),
             Route("price_risk", "Riesgo de Precio", "risk"),
-            Route("macro_intelligence", "Macro Intelligence", "macro"),
+            Route("macro_intelligence", "Inteligencia Macroeconómica", "macro"),
             Route("liquidity", "Liquidez", "liquidity"),
             Route("treasury", "Tesorería", "treasury"),
             Route("reports", "Reportes", "reports"),
@@ -150,21 +144,21 @@ class MainWindow(QMainWindow):
     def _build_ui(self) -> None:
         self._ribbon = Ribbon()
         ribbon_routes = {
-            "Home": "home",
-            "Executive": "executive",
-            "Portfolio": "portfolio",
-            "Market": "market",
-            "Price Risk": "price_risk",
-            "Macro Intelligence": "macro_intelligence",
-            "Liquidity": "liquidity",
-            "Treasury": "treasury",
-            "Reports": "reports",
+            "Inicio": "home",
+            "Ejecutivo": "executive",
+            "Portafolio": "portfolio",
+            "Mercado": "market",
+            "Riesgo de Precio": "price_risk",
+            "Inteligencia Macroeconómica": "macro_intelligence",
+            "Liquidez": "liquidity",
+            "Tesorería": "treasury",
+            "Reportes": "reports",
         }
         for label, route_id in ribbon_routes.items():
             self._ribbon.action(label).triggered.connect(
                 lambda _checked=False, route=route_id: self.open_workspace(route)
             )
-        self._ribbon.action("Refresh All").triggered.connect(self._handle_refresh_all)
+        self._ribbon.action("Actualizar Todo").triggered.connect(self._handle_refresh_all)
         self.addToolBar(Qt.ToolBarArea.TopToolBarArea, self._ribbon)
         self._add_operational_menu_actions()
 
@@ -210,7 +204,7 @@ class MainWindow(QMainWindow):
         )
         self._dock_inspector.hide()
 
-        self._dock_notifications = QDockWidget("Notifications", self)
+        self._dock_notifications = QDockWidget("Notificaciones", self)
         self._dock_notifications.setWidget(self._notifications_panel)
         self._dock_notifications.setAllowedAreas(Qt.DockWidgetArea.AllDockWidgetAreas)
         self.addDockWidget(
@@ -221,7 +215,7 @@ class MainWindow(QMainWindow):
 
         self._system_status_text = QTextEdit()
         self._system_status_text.setReadOnly(True)
-        self._dock_status = QDockWidget("System Status", self)
+        self._dock_status = QDockWidget("Estado del Sistema", self)
         self._dock_status.setWidget(self._system_status_text)
         self._dock_status.setAllowedAreas(Qt.DockWidgetArea.AllDockWidgetAreas)
         self.addDockWidget(
@@ -265,7 +259,7 @@ class MainWindow(QMainWindow):
         title.setStyleSheet(
             "font-size:15px; font-weight:800; letter-spacing:0.7px; background:transparent;"
         )
-        subtitle = QLabel("FINANCIAL INTELLIGENCE PLATFORM")
+        subtitle = QLabel("PLATAFORMA DE INTELIGENCIA FINANCIERA")
         subtitle.setStyleSheet(
             "font-size:8px; color:#BFD3E2; letter-spacing:1px; background:transparent;"
         )
@@ -300,7 +294,7 @@ class MainWindow(QMainWindow):
 
     def open_workspace(self, route_id: str) -> None:
         if self._workspace is None:
-            raise RuntimeError("Workspace not initialized")
+            raise RuntimeError("Espacio de trabajo no inicializado")
         try:
             widget, title = self._build_workspace_widget(route_id)
             self._workspace.open_tab(title, widget)
@@ -344,7 +338,7 @@ class MainWindow(QMainWindow):
 
             return (
                 MacroIntelligenceView(application_factory=self._demo_factory),
-                "Macro Intelligence",
+                "Inteligencia Macroeconómica",
             )
         if route_id == "liquidity":
             return (
@@ -419,7 +413,7 @@ class MainWindow(QMainWindow):
         except Exception as exc:
             self._status_bar.set_message("Actualización fallida")
             self._header_status.setText("REVISAR")
-            QMessageBox.critical(self, "Refresh failed", str(exc))
+            QMessageBox.critical(self, "Actualización fallida", str(exc))
 
     def refresh_all(self) -> dict[str, object]:
         workflow = self._demo_factory.refresh_all_workflow()
@@ -441,14 +435,14 @@ class MainWindow(QMainWindow):
             status = self._demo_factory.build_system_status()
             source_states = status.source_states
             lines = [
-                f"Environment: {status.environment}",
-                f"Execution Mode: {status.execution_mode}",
-                f"Demo Mode: {self._demo_factory.config.demo_mode_enabled}",
-                f"Valuation Date: {self._valuation_context.valuation_date.isoformat()}",
+                f"Entorno: {status.environment}",
+                f"Modo de ejecución: {status.execution_mode}",
+                f"Modo demostración: {self._demo_factory.config.demo_mode_enabled}",
+                f"Fecha de valoración: {self._valuation_context.valuation_date.isoformat()}",
                 *[f"{name}: {state}" for name, state in sorted(source_states.items())],
             ]
         except Exception as exc:
-            lines = [f"System status unavailable: {exc}"]
+            lines = [f"Estado del sistema no disponible: {exc}"]
         self._system_status_text.setPlainText("\n".join(lines))
 
     def toggle_diagnostic_mode(self, enabled: bool) -> None:
@@ -468,7 +462,7 @@ class MainWindow(QMainWindow):
         return snapshot
 
     def _add_operational_menu_actions(self) -> None:
-        view_menu = self.menuBar().addMenu("View")
+        view_menu = self.menuBar().addMenu("Vista")
         inspector_action = QAction("Inspector", self)
         inspector_action.setCheckable(True)
         inspector_action.triggered.connect(self._toggle_inspector)
@@ -476,15 +470,15 @@ class MainWindow(QMainWindow):
         self._inspector_action = inspector_action
         view_menu.addSeparator()
         for label, handler in (
-            ("Health Center", self.show_health_center),
-            ("Settings Center", self.show_settings_center),
-            ("Log Viewer", self.show_log_viewer),
+            ("Centro de Estado", self.show_health_center),
+            ("Centro de Configuración", self.show_settings_center),
+            ("Visor de Registros", self.show_log_viewer),
         ):
             action = QAction(label, self)
             action.triggered.connect(handler)
             view_menu.addAction(action)
-        help_menu = self.menuBar().addMenu("Help")
-        about_action = QAction("About", self)
+        help_menu = self.menuBar().addMenu("Ayuda")
+        about_action = QAction("Acerca de", self)
         about_action.triggered.connect(self.show_about)
         help_menu.addAction(about_action)
 
@@ -492,13 +486,13 @@ class MainWindow(QMainWindow):
         self._dock_inspector.setVisible(visible)
 
     def show_health_center(self) -> None:
-        self._show_dialog("Health Center", HealthCenterWidget())
+        self._show_dialog("Centro de Estado", HealthCenterWidget())
 
     def show_settings_center(self) -> None:
-        self._show_dialog("Settings Center", SettingsCenterDialog())
+        self._show_dialog("Centro de Configuración", SettingsCenterDialog())
 
     def show_log_viewer(self) -> None:
-        self._show_dialog("Log Viewer", LogViewerDialog())
+        self._show_dialog("Visor de Registros", LogViewerDialog())
 
     def show_about(self) -> None:
         AboutDialog().exec()
@@ -518,15 +512,15 @@ class MainWindow(QMainWindow):
         export_format: str = "csv",
     ) -> str:
         if self._workspace is None:
-            raise RuntimeError("Workspace not initialized")
+            raise RuntimeError("Espacio de trabajo no inicializado")
         current_widget = self._workspace.currentWidget()
         if current_widget is None:
-            raise RuntimeError("No active workspace tab")
+            raise RuntimeError("No hay una pestaña activa")
         table = current_widget
         if not (hasattr(table, "columnCount") and hasattr(table, "rowCount")):
             table = getattr(current_widget, "table", None)
         if table is None or not (hasattr(table, "columnCount") and hasattr(table, "rowCount")):
-            raise RuntimeError("Active workspace tab does not expose a table")
+            raise RuntimeError("La pestaña activa no expone una tabla")
         headers = [
             (
                 table.horizontalHeaderItem(index).text()
@@ -543,7 +537,7 @@ class MainWindow(QMainWindow):
                 row.append(item.text() if item is not None else "")
             rows.append(row)
         return self._export_service.export_records(
-            path or "workspace-export",
+            path or "exportacion-espacio-trabajo",
             headers=headers,
             rows=rows,
             export_format=export_format,
@@ -552,7 +546,7 @@ class MainWindow(QMainWindow):
     @property
     def workspace(self) -> Workspace:
         if self._workspace is None:
-            raise RuntimeError("Workspace not initialized")
+            raise RuntimeError("Espacio de trabajo no inicializado")
         return self._workspace
 
     @property
