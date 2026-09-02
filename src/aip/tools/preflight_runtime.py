@@ -103,7 +103,19 @@ def _run_deep_checks(
             failures,
         )
         if liquidity is not None:
-            print(f"Deep liquidity: keys={len(liquidity)}")
+            icl_source_file = liquidity.get("icl_source_file")
+            icl_source_date = liquidity.get("icl_source_date")
+            if not icl_source_file:
+                failures.append("liquidity provider did not load an institutional ICL source file")
+            if not icl_source_date:
+                failures.append("liquidity provider did not return an ICL source date")
+            print(
+                "Deep liquidity: "
+                f"keys={len(liquidity)}; "
+                f"ICL={liquidity.get('icl_total')}; "
+                f"source_date={icl_source_date}; "
+                f"source_file={icl_source_file}"
+            )
     except Exception as exc:
         failures.append(f"liquidity materialization failed: {type(exc).__name__}: {exc}")
 
