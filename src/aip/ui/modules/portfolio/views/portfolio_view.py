@@ -29,7 +29,7 @@ from aip.ui.modules.portfolio.widgets.portfolio_status_badge import PortfolioSta
 
 
 class PortfolioView(QWidget):
-    """Institutional portfolio dashboard and position explorer."""
+    """Panel institucional del portafolio y explorador de posiciones."""
 
     def __init__(self, presenter: PortfolioPresenter | None = None) -> None:
         super().__init__()
@@ -43,7 +43,7 @@ class PortfolioView(QWidget):
         self._details = PortfolioDetailsView(
             self._view_model.rows[0] if self._view_model.rows else None
         )
-        self._status_bar = PortfolioStatusBadge("Portfolio ready")
+        self._status_bar = PortfolioStatusBadge("Portafolio listo")
         self._content_splitter: QSplitter | None = None
         self._kpis: dict[str, QLabel] = {}
         self._build_ui()
@@ -57,6 +57,17 @@ class PortfolioView(QWidget):
             "font-weight:700; color:#22384C; background:#FFFFFF;}"
             "QGroupBox::title {subcontrol-origin:margin; left:10px; padding:0 5px;}"
         )
+
+    @staticmethod
+    def _translate_status(value: str) -> str:
+        return {
+            "ready": "listo",
+            "loaded": "cargado",
+            "loading": "cargando",
+            "error": "error",
+            "available": "disponible",
+            "unavailable": "no disponible",
+        }.get(value.strip().casefold(), value)
 
     def _metric_card(self, key: str, title: str, helper: str) -> QFrame:
         card = QFrame()
@@ -127,8 +138,8 @@ class PortfolioView(QWidget):
         kpi_grid.setHorizontalSpacing(7)
         kpi_grid.setVerticalSpacing(7)
         definitions = (
-            ("health", "Health Score", "Pendiente metodología certificada"),
-            ("state", "Estado", "Gobierno del dashboard"),
+            ("health", "Indicador de Salud", "Pendiente metodología certificada"),
+            ("state", "Estado", "Gobierno del panel"),
             ("market_value", "Valor", "Valor de mercado CRC"),
             ("yield", "TIR", "Rendimiento ponderado"),
             ("duration", "Duración", "Duración modificada"),
@@ -159,7 +170,7 @@ class PortfolioView(QWidget):
         layout.setHorizontalSpacing(8)
         layout.setVerticalSpacing(8)
 
-        issuer_group = QGroupBox("Concentración por emisor · Top 10")
+        issuer_group = QGroupBox("Concentración por emisor · 10 principales")
         issuer_group.setStyleSheet(self._group_style())
         issuer_layout = QVBoxLayout(issuer_group)
         self._issuer_chart = PortfolioDashboardBarChart()
@@ -173,11 +184,11 @@ class PortfolioView(QWidget):
         duration_layout.addWidget(self._duration_chart)
         layout.addWidget(duration_group, 0, 1)
 
-        opportunity_group = QGroupBox("Radar de oportunidades · spread vs curva")
+        opportunity_group = QGroupBox("Radar de oportunidades · diferencial vs curva")
         opportunity_group.setStyleSheet(self._group_style())
         opportunity_layout = QVBoxLayout(opportunity_group)
         self._opportunity_chart = PortfolioDashboardBarChart(
-            value_formatter=lambda value: f"{value:+.1f} bp"
+            value_formatter=lambda value: f"{value:+.1f} pb"
         )
         opportunity_layout.addWidget(self._opportunity_chart)
         layout.addWidget(opportunity_group, 1, 0)
@@ -193,7 +204,7 @@ class PortfolioView(QWidget):
         self._dashboard_note.setWordWrap(True)
         self._dashboard_note.setStyleSheet("color:#617386; padding:4px 2px;")
         layout.addWidget(self._dashboard_note, 2, 0, 1, 2)
-        self._tabs.addTab(page, "Dashboard")
+        self._tabs.addTab(page, "Panel")
 
     def _build_positions_tab(self) -> None:
         page = QWidget()
@@ -240,8 +251,8 @@ class PortfolioView(QWidget):
         self._dashboard_note.setText(
             f"Calidad de datos: {view_model.data_quality_status} · "
             f"MIL elegible: {summary.mil_eligible_percent} · "
-            f"DV01: {view_model.dv01_status}. "
-            "Health Score permanece N/D hasta certificar su metodología institucional."
+            f"DV01: {self._translate_status(view_model.dv01_status)}. "
+            "El Indicador de Salud permanece N/D hasta certificar su metodología institucional."
         )
 
     def refresh(self) -> None:
@@ -268,7 +279,7 @@ class PortfolioView(QWidget):
         if positions_layout is not None:
             positions_layout.addWidget(self._content_splitter, 1)
 
-        self._status_bar.setText(view_model.status)
+        self._status_bar.setText(self._translate_status(view_model.status))
         self._status_bar.setToolTip(view_model.error or "")
 
     def view_model(self) -> PortfolioViewModel:
