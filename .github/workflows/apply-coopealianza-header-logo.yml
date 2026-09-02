@@ -37,18 +37,44 @@ jobs:
                   raise SystemExit("Navigation import anchor not found")
               text = text.replace(import_anchor, import_anchor + import_line, 1)
 
-          old_style = (
-              '        frame.setMinimumHeight(58)\n'
-              '        frame.setStyleSheet(\n'
-              '            "QFrame#institutionalHeader {background:#173F63; border:none;}"\n'
+          # Header final: blanco predominante, identidad Coopealianza y máxima legibilidad.
+          text = text.replace("frame.setMinimumHeight(58)", "frame.setMinimumHeight(66)", 1)
+          text = text.replace("frame.setMinimumHeight(66)", "frame.setMinimumHeight(66)", 1)
+          text = text.replace(
+              '"QFrame#institutionalHeader {background:#173F63; border:none;}"',
+              '"QFrame#institutionalHeader {background:#FFFFFF; border:none; border-bottom:2px solid #00A9E0;}"',
+              1,
           )
-          new_style = (
-              '        frame.setMinimumHeight(66)\n'
-              '        frame.setStyleSheet(\n'
-              '            "QFrame#institutionalHeader {background:#00345F; border:none;}"\n'
+          text = text.replace(
+              '"QFrame#institutionalHeader {background:#00345F; border:none;}"',
+              '"QFrame#institutionalHeader {background:#FFFFFF; border:none; border-bottom:2px solid #00A9E0;}"',
+              1,
           )
-          if old_style in text:
-              text = text.replace(old_style, new_style, 1)
+          text = text.replace(
+              '"QFrame#institutionalHeader QLabel {background:transparent; border:none; color:#FFFFFF;}"',
+              '"QFrame#institutionalHeader QLabel {background:transparent; border:none; color:#00345F;}"',
+              1,
+          )
+          text = text.replace(
+              '"QLabel#headerMode {background:#245A84; border:1px solid #4E7EA2; border-radius:10px; "',
+              '"QLabel#headerMode {background:#F0F8FC; border:1px solid #73B3DD; border-radius:10px; "',
+              1,
+          )
+          text = text.replace(
+              '"padding:4px 9px; color:#EAF3FA; font-size:9px; font-weight:700;}"',
+              '"padding:4px 9px; color:#005EB8; font-size:9px; font-weight:700;}"',
+              1,
+          )
+          text = text.replace(
+              '"QLabel#headerStatus {background:#246B5A; border:1px solid #4A907F; border-radius:10px; "',
+              '"QLabel#headerStatus {background:#E2F6F1; border:1px solid #40C1AC; border-radius:10px; "',
+              1,
+          )
+          text = text.replace(
+              '"padding:4px 9px; color:#FFFFFF; font-size:9px; font-weight:700;}"',
+              '"padding:4px 9px; color:#167A68; font-size:9px; font-weight:700;}"',
+              1,
+          )
 
           anchor = (
               '        execution_mode = self._config.execution_mode\n\n'
@@ -59,7 +85,7 @@ jobs:
               '        logo = QLabel()\n'
               '        logo.setObjectName("coopealianzaHeaderLogo")\n'
               '        logo.setFixedSize(236, 48)\n'
-              '        logo.setAlignment(Qt.AlignmentFlag.AlignCenter)\n'
+              '        logo.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)\n'
               '        logo.setPixmap(\n'
               '            coopealianza_logo_pixmap().scaled(\n'
               '                220,\n'
@@ -69,8 +95,7 @@ jobs:
               '            )\n'
               '        )\n'
               '        logo.setStyleSheet(\n'
-              '            "QLabel#coopealianzaHeaderLogo {background:#FFFFFF; "\n'
-              '            "border:1px solid #D5DEE3; border-radius:7px; padding:2px 6px;}"\n'
+              '            "QLabel#coopealianzaHeaderLogo {background:transparent; border:none;}"\n'
               '        )\n'
               '        layout.addWidget(logo)\n\n'
               '        title_box = QVBoxLayout()\n'
@@ -79,6 +104,35 @@ jobs:
               if anchor not in text:
                   raise SystemExit("Header insertion anchor not found")
               text = text.replace(anchor, replacement, 1)
+          else:
+              text = text.replace(
+                  'logo.setAlignment(Qt.AlignmentFlag.AlignCenter)',
+                  'logo.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)',
+                  1,
+              )
+              text = text.replace(
+                  '"QLabel#coopealianzaHeaderLogo {background:#FFFFFF; "\n'
+                  '            "border:1px solid #D5DEE3; border-radius:7px; padding:2px 6px;}"',
+                  '"QLabel#coopealianzaHeaderLogo {background:transparent; border:none;}"',
+                  1,
+              )
+
+          # Texto del producto sobre el header blanco.
+          text = text.replace(
+              '"font-size:15px; font-weight:800; letter-spacing:0.7px; background:transparent;"',
+              '"font-size:15px; font-weight:800; letter-spacing:0.7px; color:#00345F; background:transparent;"',
+              1,
+          )
+          text = text.replace(
+              '"font-size:8px; color:#BFD3E2; letter-spacing:1px; background:transparent;"',
+              '"font-size:8px; color:#00A9E0; letter-spacing:1px; background:transparent;"',
+              1,
+          )
+          text = text.replace(
+              '"font-size:8px; color:#BFD3E2; font-weight:700; background:transparent;"',
+              '"font-size:8px; color:#566D7C; font-weight:700; background:transparent;"',
+              1,
+          )
 
           path.write_text(text, encoding="utf-8")
 
