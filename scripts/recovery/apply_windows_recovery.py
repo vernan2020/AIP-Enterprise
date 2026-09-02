@@ -6,7 +6,6 @@ import os
 import shutil
 import subprocess
 import sys
-import tempfile
 import zipfile
 from datetime import datetime
 from hashlib import sha256
@@ -15,6 +14,14 @@ from pathlib import Path
 PACKAGE_DIR_NAME = "AIP_RC1_CERTIFIED"
 PAYLOAD_DIR_NAME = "payload"
 MANIFEST_NAME = "manifest.json"
+CERTIFIED_MARKER_NAME = ".aip_certified_runtime.json"
+
+ROLLBACK_TARGETS = (
+    Path("src"),
+    Path("run_aip_configured.cmd"),
+    Path("scripts/recovery"),
+    Path("config/runtime.local.cmd.example"),
+)
 
 
 def _hash_file(path: Path) -> str:
@@ -98,15 +105,11 @@ def _resolve_project_root(package_root: Path, explicit: str | None) -> Path:
 def _backup_project(project_root: Path) -> Path:
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_path = project_root / f"AIP_BEFORE_CERTIFIED_RECOVERY_{stamp}.zip"
-    include_roots = [
-        project_root / "src",
-        project_root / "run_aip_configured.cmd",
-        project_root / "scripts" / "recovery",
-    ]
     with zipfile.ZipFile(backup_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-        for source in include_roots:
+        for relative in ROLLBACK_TARGETS:
+            source = project_root / relative
             if source.is_file():
-                archive.write(source, source.relative_to(project_root).as_posix())
+                archive.write(source, relative.as_posix())
             elif source.is_dir():
                 for file_path in sorted(path for path in source.rglob("*") if path.is_file()):
                     archive.write(
@@ -114,6 +117,32 @@ def _backup_project(project_root: Path) -> Path:
                         file_path.relative_to(project_root).as_posix(),
                     )
     return backup_path
+
+
+def _remove_path(path: Path) -> None:
+    if path.is_symlink() or path.is_file():
+        path.unlink()
+    elif path.is_dir():
+        shutil.rmtree(path)
+
+
+def _restore_backup(project_root: Path, backup_path: Path) -> None:
+    """Restore every recovery-owned target to its exact pre-install state."""
+    for relative in ROLLBACK_TARGETS:
+        target = project_root / relative
+        if target.exists() or target.is_symlink():
+            _remove_path(target)
+
+    marker = project_root / CERTIFIED_MARKER_NAME
+    if marker.exists() or marker.is_symlink():
+        _remove_path(marker)
+
+    with zipfile.ZipFile(backup_path, "r") as archive:
+        for info in archive.infolist():
+            candidate = Path(info.filename)
+            if candidate.is_absolute() or ".." in candidate.parts:
+                raise RuntimeError(f"Unsafe rollback archive member: {info.filename}")
+        archive.extractall(project_root)
 
 
 def _copy_non_src_payload(payload_root: Path, project_root: Path) -> None:
@@ -175,6 +204,22 @@ def _run_validation(project_root: Path) -> None:
             )
 
 
+def _write_install_marker(project_root: Path, manifest: dict) -> None:
+    marker = project_root / CERTIFIED_MARKER_NAME
+    marker.write_text(
+        json.dumps(
+            {
+                "package_version": manifest.get("package_version"),
+                "source_commit": manifest.get("source_commit"),
+                "installed_at": datetime.now().isoformat(timespec="seconds"),
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Apply certified AIP RC1 runtime recovery")
     parser.add_argument("--project-root", default=None)
@@ -195,26 +240,28 @@ def main(argv: list[str] | None = None) -> int:
     try:
         _replace_src_transactionally(package_root / PAYLOAD_DIR_NAME, project_root)
         _copy_non_src_payload(package_root / PAYLOAD_DIR_NAME, project_root)
-        marker = project_root / ".aip_certified_runtime.json"
-        marker.write_text(
-            json.dumps(
-                {
-                    "package_version": manifest.get("package_version"),
-                    "source_commit": manifest.get("source_commit"),
-                    "installed_at": datetime.now().isoformat(timespec="seconds"),
-                },
-                indent=2,
-            )
-            + "\n",
-            encoding="utf-8",
-        )
         _run_validation(project_root)
+        _write_install_marker(project_root, manifest)
     except Exception as exc:
         print(f"RECOVERY FAILED: {exc}", file=sys.stderr)
-        print(f"Rollback backup preserved at: {backup_path}", file=sys.stderr)
+        try:
+            _restore_backup(project_root, backup_path)
+        except Exception as rollback_exc:
+            print(
+                f"AUTOMATIC ROLLBACK FAILED: {rollback_exc}",
+                file=sys.stderr,
+            )
+            print(
+                f"Manual rollback backup preserved at: {backup_path}",
+                file=sys.stderr,
+            )
+            return 2
+        print("Automatic rollback: PASS", file=sys.stderr)
+        print(f"Project restored from: {backup_path.name}", file=sys.stderr)
         return 1
 
     print("AIP certified runtime installed successfully.")
+    print(f"Rollback backup preserved at: {backup_path.name}")
     print("Next step: run run_aip_configured.cmd")
     return 0
 
