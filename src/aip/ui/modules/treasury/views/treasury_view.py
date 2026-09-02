@@ -24,17 +24,33 @@ from aip.ui.modules.treasury.widgets.treasury_status_badge import TreasuryStatus
 
 
 class TreasuryView(QWidget):
-    """Treasury decision-support workspace backed by certified liquidity and market outputs."""
+    """Espacio de apoyo a decisiones de tesorería con datos certificados."""
+
+    _STATUS_TRANSLATIONS = {
+        "ready": "Listo",
+        "loaded": "Cargado",
+        "loading": "Cargando",
+        "available": "Disponible",
+        "unavailable": "No disponible",
+        "pass": "Cumple",
+        "fail": "No cumple",
+        "screening": "Preselección",
+        "not configured": "No configurado",
+    }
 
     def __init__(self, presenter: TreasuryPresenter | None = None) -> None:
         super().__init__()
         self.setObjectName("treasuryWorkspace")
         self._presenter = presenter or TreasuryPresenter()
         self._view_model = self._presenter.build_view_model()
-        self._status_badge = TreasuryStatusBadge("Ready")
+        self._status_badge = TreasuryStatusBadge("Listo")
         self._kpis: dict[str, QLabel] = {}
         self._build_ui()
         self.bind_view_model(self._view_model)
+
+    @classmethod
+    def _translate_status(cls, value: str) -> str:
+        return cls._STATUS_TRANSLATIONS.get(value.strip().casefold(), value)
 
     @staticmethod
     def _group_style() -> str:
@@ -102,13 +118,13 @@ class TreasuryView(QWidget):
         kpis.setVerticalSpacing(7)
         definitions = (
             ("cash", "Posición de caja", "Disponibilidad informada"),
-            ("gap", "Brecha liquidez", "Brecha institucional"),
+            ("gap", "Brecha de liquidez", "Brecha institucional"),
             ("hqla", "HQLA", "Capacidad ajustada"),
             ("mil", "MIL", "Garantía elegible"),
-            ("maturity", "Vence ≤30D", "Vencimientos contractuales"),
+            ("maturity", "Vence ≤30 días", "Vencimientos contractuales"),
             ("icl", "ICL Total", "Indicador institucional"),
-            ("rotation", "Rotaciones RV", "Candidatos preliminares"),
-            ("policy", "Política / Stress", "Estado de motores"),
+            ("rotation", "Rotaciones de valor relativo", "Candidatos preliminares"),
+            ("policy", "Política / Estrés", "Estado de motores"),
         )
         for index, definition in enumerate(definitions):
             kpis.addWidget(self._metric_card(*definition), index // 4, index % 4)
@@ -122,7 +138,7 @@ class TreasuryView(QWidget):
         )
         self._alerts_table = self._build_table_tab("Alertas")
         self._observations_table = self._build_table_tab("Observaciones")
-        self._opportunities_table = self._build_table_tab("Oportunidades RV")
+        self._opportunities_table = self._build_table_tab("Oportunidades de valor relativo")
         layout.addWidget(self._tabs, 1)
 
         governance = QGroupBox("Gobierno de la decisión")
@@ -161,11 +177,17 @@ class TreasuryView(QWidget):
         self._tabs.addTab(page, title)
         return table
 
-    @staticmethod
-    def _populate_table(table: QTableWidget, rows: tuple[TreasuryRow, ...]) -> None:
+    @classmethod
+    def _populate_table(cls, table: QTableWidget, rows: tuple[TreasuryRow, ...]) -> None:
         table.setRowCount(len(rows))
         for row_index, row in enumerate(rows):
-            values = (row.title, row.detail, row.severity, row.source, row.timestamp)
+            values = (
+                row.title,
+                row.detail,
+                cls._translate_status(row.severity),
+                row.source,
+                row.timestamp,
+            )
             for column, value in enumerate(values):
                 item = QTableWidgetItem(value)
                 if column in {2, 4}:
@@ -191,14 +213,17 @@ class TreasuryView(QWidget):
             "maturity": view_model.maturity_30d,
             "icl": view_model.icl_total,
             "rotation": str(view_model.rotation_candidate_count),
-            "policy": f"{view_model.policy_status} / {view_model.stress_status}",
+            "policy": (
+                f"{self._translate_status(view_model.policy_status)} / "
+                f"{self._translate_status(view_model.stress_status)}"
+            ),
         }
         for key, value in values.items():
             self._kpis[key].setText(value)
         self._populate_table(self._alerts_table, view_model.alerts)
         self._populate_table(self._observations_table, view_model.recommendations)
         self._populate_table(self._opportunities_table, view_model.opportunities)
-        self._status_badge.setText(view_model.status)
+        self._status_badge.setText(self._translate_status(view_model.status))
         self._status_badge.setToolTip(view_model.error or "")
 
     def view_model(self) -> TreasuryViewModel:
