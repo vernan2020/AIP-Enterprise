@@ -21,9 +21,9 @@ class InstitutionalMacroScenarioStore(_InstitutionalMacroScenarioStore):
     Production installations can contain either a denormalized scenario table
     with the immutable document stored under a legacy JSON column name, or the
     earlier normalized relational layout where metadata, indicators and points
-    live in separate tables.  Both migrations preserve the original evidence,
+    live in separate tables. Both migrations preserve the original evidence,
     reconstruct the canonical immutable JSON payload and retain workflow audit
-    and review history.  Unknown layouts fail loudly instead of fabricating
+    and review history. Unknown layouts fail loudly instead of fabricating
     scenario data.
     """
 
@@ -102,14 +102,10 @@ class InstitutionalMacroScenarioStore(_InstitutionalMacroScenarioStore):
         self._sync_legacy_workflow_tables_if_present()
 
     def _migrate_legacy_payload_column_if_required(self) -> None:
-        connection = self._database.connection
-        rows = connection.execute(
-            "PRAGMA table_info('institutional_macro_scenarios')"
-        ).fetchall()
-        if not rows:
+        columns = self._table_column_names("institutional_macro_scenarios")
+        if not columns:
             return
 
-        columns = tuple(str(row[1]) for row in rows)
         column_lookup = {column.lower(): column for column in columns}
         if self._PAYLOAD_COLUMN in column_lookup:
             self._ensure_updated_at_column_if_required(columns)
@@ -534,11 +530,23 @@ class InstitutionalMacroScenarioStore(_InstitutionalMacroScenarioStore):
             connection.execute("ROLLBACK")
             raise
 
-    def _table_columns(self, table_name: str) -> frozenset[str]:
+    def _table_column_names(self, table_name: str) -> tuple[str, ...]:
         rows = self._database.connection.execute(
-            f"PRAGMA table_info('{table_name}')"
+            """
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_schema = current_schema()
+              AND table_name = ?
+            ORDER BY ordinal_position
+            """,
+            [table_name],
         ).fetchall()
-        return frozenset(str(row[1]).lower() for row in rows)
+        return tuple(str(row[0]) for row in rows)
+
+    def _table_columns(self, table_name: str) -> frozenset[str]:
+        return frozenset(
+            column.lower() for column in self._table_column_names(table_name)
+        )
 
     @staticmethod
     def _required_date(value: Any, *, context: str) -> date:
