@@ -21,7 +21,15 @@ class TreasuryInsightResult:
 
 
 class ConfiguredTreasuryInsightService:
-    """Build auditable treasury insights from certified application outputs."""
+    """Construye señales auditables de tesorería desde resultados certificados."""
+
+    _STATUS_TRANSLATIONS = {
+        "SCREENING": "PRESELECCIÓN",
+        "PASS": "CUMPLE",
+        "FAIL": "NO CUMPLE",
+        "AVAILABLE": "DISPONIBLE",
+        "UNAVAILABLE": "NO DISPONIBLE",
+    }
 
     @staticmethod
     def _decimal(value: object) -> Decimal:
@@ -60,7 +68,7 @@ class ConfiguredTreasuryInsightService:
                     title="Brecha de liquidez negativa",
                     detail=f"Brecha calculada: {cls._format_crc_mm(liquidity_gap)}.",
                     severity="Alta",
-                    source="Liquidity Engine",
+                    source="Motor de Liquidez",
                 )
             )
 
@@ -72,7 +80,7 @@ class ConfiguredTreasuryInsightService:
                     f"MIL {cls._format_crc_mm(mil_capacity)}."
                 ),
                 severity="Informativa",
-                source="Liquidity Engine",
+                source="Motor de Liquidez",
             )
         )
 
@@ -85,7 +93,7 @@ class ConfiguredTreasuryInsightService:
                         f"{cls._format_crc_mm(maturity_30d)}."
                     ),
                     severity="Informativa",
-                    source="Portfolio Maturity Engine",
+                    source="Motor de Vencimientos del Portafolio",
                 )
             )
 
@@ -106,13 +114,14 @@ class ConfiguredTreasuryInsightService:
             for pickup, item in ranked[:5]:
                 source_series = str(item.get("source_series") or "Origen")
                 target_series = str(item.get("target_series") or "Destino")
-                status = str(item.get("screening_status") or "SCREENING")
+                raw_status = str(item.get("screening_status") or "SCREENING").upper()
+                status = cls._STATUS_TRANSLATIONS.get(raw_status, raw_status)
                 opportunities.append(
                     TreasuryInsightItem(
                         title=f"Rotación {source_series} → {target_series}",
-                        detail=f"Mejora preliminar de spread: {pickup:+.1f} bp · {status}.",
+                        detail=f"Mejora preliminar del diferencial: {pickup:+.1f} pb · {status}.",
                         severity="Oportunidad",
-                        source="Relative Value Engine",
+                        source="Motor de Valor Relativo",
                     )
                 )
 
