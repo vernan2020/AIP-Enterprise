@@ -9,7 +9,7 @@ from aip.ui.shell.workspace import Workspace
 
 
 class Sidebar(QWidget):
-    """Passive module navigator for AIP Enterprise."""
+    """Navegador pasivo de módulos de AIP Enterprise."""
 
     route_requested = Signal(str)
 
@@ -19,7 +19,7 @@ class Sidebar(QWidget):
         ("Portafolio", "portfolio"),
         ("Mercado", "market"),
         ("Riesgo de Precio", "price_risk"),
-        ("Macro Intelligence", "macro_intelligence"),
+        ("Inteligencia Macroeconómica", "macro_intelligence"),
         ("Liquidez", "liquidity"),
         ("Tesorería", "treasury"),
         ("Reportes", "reports"),
