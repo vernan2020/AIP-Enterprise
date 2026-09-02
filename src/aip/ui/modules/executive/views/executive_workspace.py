@@ -24,18 +24,32 @@ from aip.ui.modules.executive.widgets.executive_status_card import ExecutiveStat
 
 
 class ExecutiveWorkspace(QWidget):
-    """Compact management cockpit for the integrated AIP Hybrid runtime."""
+    """Panel compacto de gestión para el entorno integrado AIP Hybrid."""
+
+    _STATUS_TRANSLATIONS = {
+        "ready": "Listo",
+        "loaded": "Cargado",
+        "loading": "Cargando",
+        "available": "Disponible",
+        "unavailable": "No disponible",
+        "approved": "Aprobado",
+        "error": "Error",
+    }
 
     def __init__(self, presenter: ExecutivePresenter | None = None) -> None:
         super().__init__()
         self.setObjectName("executiveWorkspace")
         self._presenter = presenter or ExecutivePresenter()
         self._view_model = self._presenter.build_view_model()
-        self._status_card = ExecutiveStatusCard("Ready")
+        self._status_card = ExecutiveStatusCard("Listo")
         self._kpis: dict[str, QLabel] = {}
         self._panel_labels: dict[str, QLabel] = {}
         self._build_ui()
         self.bind_view_model(self._view_model)
+
+    @classmethod
+    def _translate_status(cls, value: str) -> str:
+        return cls._STATUS_TRANSLATIONS.get(value.strip().casefold(), value)
 
     @staticmethod
     def _group_style() -> str:
@@ -88,12 +102,12 @@ class ExecutiveWorkspace(QWidget):
 
         header = QHBoxLayout()
         title_box = QVBoxLayout()
-        self._title = QLabel("COCKPIT EJECUTIVO")
+        self._title = QLabel("PANEL EJECUTIVO")
         title_font = QFont()
         title_font.setPointSize(15)
         title_font.setBold(True)
         self._title.setFont(title_font)
-        self._subtitle = QLabel("Portafolio · Liquidez · Mercado · Macro Intelligence")
+        self._subtitle = QLabel("Portafolio · Liquidez · Mercado · Inteligencia Macroeconómica")
         self._subtitle.setStyleSheet("color:#667788; font-size:10px;")
         title_box.addWidget(self._title)
         title_box.addWidget(self._subtitle)
@@ -122,9 +136,9 @@ class ExecutiveWorkspace(QWidget):
             ("duration", "Duración", "Duración modificada"),
             ("hqla", "HQLA", "Elegibilidad del portafolio"),
             ("mil", "MIL", "Elegibilidad de garantía"),
-            ("gap", "Brecha Liquidez", "Posición institucional"),
+            ("gap", "Brecha de Liquidez", "Posición institucional"),
             ("icl", "ICL Total", "Cobertura 30 días"),
-            ("rv", "RV / Rotación", "Universo mercado y candidatos"),
+            ("rv", "Valor Relativo / Rotación", "Universo de mercado y candidatos"),
         )
         for index, definition in enumerate(definitions):
             kpis.addWidget(self._metric_card(*definition), index // 4, index % 4)
@@ -172,7 +186,7 @@ class ExecutiveWorkspace(QWidget):
         return group
 
     def _macro_panel(self) -> QGroupBox:
-        group = QGroupBox("MACRO INTELLIGENCE")
+        group = QGroupBox("INTELIGENCIA MACROECONÓMICA")
         group.setStyleSheet(self._group_style())
         group.setMinimumHeight(160)
         layout = QVBoxLayout(group)
@@ -185,7 +199,7 @@ class ExecutiveWorkspace(QWidget):
         self._macro_horizon = QLabel("-")
         self._macro_horizon.setStyleSheet("color:#667788; padding:0 5px;")
         note = QLabel(
-            "Escenario institucional aprobado consumido por el runtime. El impacto financiero "
+            "Escenario institucional aprobado consumido por el entorno de ejecución. El impacto financiero "
             "se incorporará cuando el motor de transmisión publique resultados auditables."
         )
         note.setWordWrap(True)
@@ -216,11 +230,17 @@ class ExecutiveWorkspace(QWidget):
         table.setMinimumHeight(210)
         return table
 
-    @staticmethod
-    def _populate_rows(table: QTableWidget, rows: tuple[ExecutiveRow, ...]) -> None:
+    @classmethod
+    def _populate_rows(cls, table: QTableWidget, rows: tuple[ExecutiveRow, ...]) -> None:
         table.setRowCount(len(rows))
         for row_index, row in enumerate(rows):
-            values = (row.title, row.detail, row.category, row.severity, row.source)
+            values = (
+                row.title,
+                row.detail,
+                row.category,
+                cls._translate_status(row.severity),
+                row.source,
+            )
             for column, value in enumerate(values):
                 item = QTableWidgetItem(value)
                 if column in {2, 3}:
@@ -262,7 +282,7 @@ class ExecutiveWorkspace(QWidget):
         self._macro_horizon.setText(f"Horizonte: {view_model.macro_horizon}")
         self._populate_rows(self._alerts_table, view_model.alerts)
         self._populate_rows(self._recommendations_table, view_model.recommendations)
-        self._status_card.setText(view_model.status)
+        self._status_card.setText(self._translate_status(view_model.status))
         self._status_card.setToolTip(view_model.error or "")
 
     def view_model(self) -> ExecutiveViewModel:
