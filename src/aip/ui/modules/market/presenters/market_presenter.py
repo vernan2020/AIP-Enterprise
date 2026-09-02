@@ -17,16 +17,20 @@ from aip.ui.services.display_localization import translate_status
 
 
 class MarketPresenter:
-    """Normaliza la analítica de mercado de la aplicación para la interfaz de escritorio."""
+    """Adapta la analítica institucional de mercado a presentación."""
 
     _CLASSIFICATION_TRANSLATIONS = {
         "CHEAP": "BARATO",
         "RICH": "CARO",
+        "FAIR": "EN VALOR",
         "NEUTRAL": "NEUTRAL",
         "BUY": "COMPRAR",
         "SELL": "VENDER",
         "HOLD": "MANTENER",
         "SCREENING": "PRESELECCIÓN",
+        "CANDIDATE": "CANDIDATO",
+        "REVIEW": "REVISAR",
+        "DISCARD": "DESCARTAR",
         "PASS": "CUMPLE",
         "FAIL": "NO CUMPLE",
         "AVAILABLE": "DISPONIBLE",
@@ -55,41 +59,51 @@ class MarketPresenter:
             return "N/D"
         return cls._CLASSIFICATION_TRANSLATIONS.get(raw.upper(), raw)
 
+    @staticmethod
+    def _currency_from_curve(curve_id: object) -> str:
+        token = str(curve_id or "").upper()
+        return "USD" if token.endswith("_USD") else "CRC"
+
     @classmethod
     def _build_curve_contracts(
         cls,
         raw_curves: list[dict[str, Any]],
     ) -> tuple[tuple[CurvePoint, ...], tuple[MarketCurveViewData, ...]]:
-        legacy_points: list[CurvePoint] = []
+        chart_points: list[CurvePoint] = []
         curves: list[MarketCurveViewData] = []
 
         for raw in raw_curves:
+            curve_id = str(raw.get("curve_id") or "UNSPECIFIED")
+            label = str(raw.get("label") or curve_id)
+
             if "observed_points" not in raw:
-                legacy_points.append(
+                tenor = cls._float(raw.get("tenor"))
+                rate = cls._float(raw.get("value"))
+                chart_points.append(
                     CurvePoint(
-                        label=str(raw.get("label") or "Curva"),
-                        value=f"{cls._float(raw.get('value')):.2f}",
-                        tenor=str(raw.get("tenor") or ""),
+                        label=label,
+                        value=f"{rate:.4f}",
+                        tenor=tenor,
+                        curve_id=curve_id,
+                        series="OBSERVED",
+                        yield_value=rate,
                     )
                 )
                 continue
 
-            curve_id = str(raw.get("curve_id") or "UNSPECIFIED")
-            label = str(raw.get("label") or curve_id)
             observed = tuple(
-                (
-                    cls._float(point.get("tenor")),
-                    cls._float(point.get("yield")),
-                )
+                (cls._float(point.get("tenor")), cls._float(point.get("yield")))
                 for point in raw.get("observed_points", ())
                 if isinstance(point, dict)
             )
             fitted = tuple(
-                (
-                    cls._float(point.get("tenor")),
-                    cls._float(point.get("yield")),
-                )
+                (cls._float(point.get("tenor")), cls._float(point.get("yield")))
                 for point in raw.get("nelson_siegel_points", ())
+                if isinstance(point, dict)
+            )
+            polynomial = tuple(
+                (cls._float(point.get("tenor")), cls._float(point.get("yield")))
+                for point in raw.get("polynomial_degree2_points", ())
                 if isinstance(point, dict)
             )
             model = raw.get("nelson_siegel") or {}
@@ -107,16 +121,24 @@ class MarketPresenter:
                     fitted_points=fitted,
                 )
             )
-            for tenor, rate in fitted:
-                legacy_points.append(
-                    CurvePoint(
-                        label=f"{label} {tenor:g}A",
-                        value=f"{rate:.2f}",
-                        tenor=f"{tenor:g}",
+            for series, points in (
+                ("OBSERVED", observed),
+                ("NELSON_SIEGEL", fitted),
+                ("POLYNOMIAL_G2", polynomial),
+            ):
+                for tenor, rate in points:
+                    chart_points.append(
+                        CurvePoint(
+                            label=f"{label} {tenor:g}A",
+                            value=f"{rate:.4f}",
+                            tenor=tenor,
+                            curve_id=curve_id,
+                            series=series,
+                            yield_value=rate,
+                        )
                     )
-                )
 
-        return tuple(legacy_points), tuple(curves)
+        return tuple(chart_points), tuple(curves)
 
     @classmethod
     def _portfolio_rv_rows(
@@ -139,6 +161,8 @@ class MarketPresenter:
                     spread_bp=cls._float(entry.get("spread_bp")),
                     classification=cls._translate_classification(entry.get("classification")),
                     market_value_crc=cls._float(entry.get("market_value_crc")),
+                    position_count=int(entry.get("position_count") or 0),
+                    in_portfolio=True,
                 )
             )
         return tuple(rows)
@@ -152,7 +176,7 @@ class MarketPresenter:
             RelativeValueViewRow(
                 series=str(entry.get("series") or ""),
                 issuer=str(entry.get("issuer") or ""),
-                currency=str(entry.get("currency") or ""),
+                currency=str(entry.get("currency") or cls._currency_from_curve(entry.get("curve_id"))),
                 curve_id=str(entry.get("curve_id") or ""),
                 tenor=cls._float(entry.get("tenor")),
                 market_yield=cls._float(entry.get("market_yield")),
@@ -180,6 +204,7 @@ class MarketPresenter:
     ) -> tuple[RotationViewRow, ...]:
         rows: list[RotationViewRow] = []
         for entry in entries:
+            target_in_portfolio = entry.get("target_in_portfolio")
             rows.append(
                 RotationViewRow(
                     source_series=str(entry.get("source_series") or ""),
@@ -194,6 +219,20 @@ class MarketPresenter:
                     screening_status=cls._translate_classification(
                         entry.get("screening_status") or "SCREENING"
                     ),
+                    currency=str(
+                        entry.get("target_currency")
+                        or entry.get("source_currency")
+                        or cls._currency_from_curve(entry.get("target_curve_id"))
+                    ),
+                    curve_id=str(entry.get("target_curve_id") or entry.get("source_curve_id") or ""),
+                    yield_improvement_bp=cls._float(entry.get("yield_improvement_bp")),
+                    tenor_difference_years=cls._float(entry.get("tenor_difference_years")),
+                    rotation_score=cls._float(entry.get("rotation_score")),
+                    signal_type=str(entry.get("signal_type") or ""),
+                    target_in_portfolio=(
+                        "SÍ" if target_in_portfolio is True else "NO" if target_in_portfolio is False else ""
+                    ),
+                    explanation=str(entry.get("explanation") or ""),
                 )
             )
         return tuple(rows)
@@ -233,37 +272,6 @@ class MarketPresenter:
                         pvbp="-",
                     )
                 )
-                continue
-
-            average_spread = cls._float(market.get("average_spread"))
-            rows.append(
-                MarketRow(
-                    issuer=str(entry.get("issuer") or ""),
-                    instrument=str(entry.get("instrument") or ""),
-                    currency=str(entry.get("currency") or "USD"),
-                    recommendation=cls._translate_classification(
-                        entry.get("recommendation") or "BUY"
-                    ),
-                    confidence=(
-                        "Alta"
-                        if str(entry.get("confidence") or "High").strip().upper() == "HIGH"
-                        else str(entry.get("confidence") or "N/D")
-                    ),
-                    spread=f"{average_spread:.2f}",
-                    z_spread=f"{average_spread:.2f}",
-                    benchmark_spread="0.05",
-                    market_value=f"{cls._float(market.get('average_yield')):.2f}",
-                    book_value="98.00",
-                    clean_price="99.00",
-                    dirty_price="100.00",
-                    accrued_interest="1.00",
-                    duration=f"{cls._float(market.get('average_duration')):.2f}",
-                    modified_duration="4.20",
-                    convexity="0.10",
-                    dv01="0.01",
-                    pvbp="0.02",
-                )
-            )
         return tuple(rows)
 
     def build_view_model(
