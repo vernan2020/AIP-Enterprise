@@ -23,7 +23,7 @@ from aip.ui.modules.price_risk.viewmodels.price_risk_view_model import PriceRisk
 
 
 class PriceRiskPresenter:
-    """Adapta los resultados certificados de VeR, DV01 y sensibilidad para la UI."""
+    """Adapta resultados certificados de VeR, DV01 y sensibilidad para la UI."""
 
     def __init__(self, demo_factory: DemoApplicationFactory) -> None:
         self._application_factory = demo_factory
@@ -51,6 +51,12 @@ class PriceRiskPresenter:
     def _format_percent(cls, value: object, *, decimals: int = 2) -> str:
         return f"{cls._decimal(value):.{decimals}f}%"
 
+    @classmethod
+    def _format_duration(cls, value: object) -> str:
+        if value is None:
+            return "N/A"
+        return f"{cls._decimal(value):.2f}"
+
     @staticmethod
     def _format_date(value: object) -> str:
         if value is None:
@@ -75,7 +81,9 @@ class PriceRiskPresenter:
     ) -> tuple[str, str, str, int, RiskChartPoint]:
         rows = tuple(getattr(dv01_result, "by_bucket", ()) or ())
         row = next((item for item in rows if str(item.key) == bucket_key), None)
-        total_dv01 = cls._decimal(getattr(dv01_result, "total_dv01_crc", Decimal("0")))
+        total_dv01 = cls._decimal(
+            getattr(dv01_result, "total_dv01_crc", Decimal("0"))
+        )
         if row is None:
             point = RiskChartPoint(bucket_key, Decimal("0"), Decimal("0"))
             return "-", "-", "-", 0, point
@@ -109,11 +117,12 @@ class PriceRiskPresenter:
             ),
             reverse=True,
         )
-
         all_contribution_points = tuple(
             RiskChartPoint(
                 str(getattr(item, "series", "")),
-                cls._decimal(getattr(item, "contribution_at_var_scenario_percent", 0)),
+                cls._decimal(
+                    getattr(item, "contribution_at_var_scenario_percent", Decimal("0"))
+                ),
             )
             for item in contribution_rows
         )
@@ -140,7 +149,9 @@ class PriceRiskPresenter:
             contribution = cls._decimal(
                 getattr(item, "contribution_at_var_scenario_percent", Decimal("0"))
             )
-            market_value = cls._decimal(getattr(item, "market_value_crc", Decimal("0")))
+            market_value = cls._decimal(
+                getattr(item, "market_value_crc", Decimal("0"))
+            )
             issuer_values[issuer] += contribution
             currency_values[currency] += market_value
             total_market_value += market_value
@@ -157,9 +168,11 @@ class PriceRiskPresenter:
             RiskChartPoint(
                 label,
                 value,
-                (value / total_market_value * Decimal("100"))
-                if total_market_value
-                else Decimal("0"),
+                (
+                    value / total_market_value * Decimal("100")
+                    if total_market_value
+                    else Decimal("0")
+                ),
             )
             for label, value in sorted(
                 currency_values.items(),
@@ -167,7 +180,6 @@ class PriceRiskPresenter:
                 reverse=True,
             )
         )
-
         return (
             top_contribution_points,
             tuple(pareto_points),
@@ -176,9 +188,72 @@ class PriceRiskPresenter:
             cumulative,
         )
 
+    @classmethod
+    def _build_var_rows(
+        cls,
+        positions: tuple[object, ...],
+        dv01_result: object | None,
+    ) -> tuple[PriceRiskRow, ...]:
+        details = {
+            str(item.security_key): item
+            for item in tuple(getattr(dv01_result, "title_details", ()) or ())
+        }
+        ordered_positions = tuple(
+            sorted(
+                positions,
+                key=lambda item: cls._decimal(
+                    getattr(item, "contribution_at_var_scenario_percent", Decimal("0"))
+                ),
+                reverse=True,
+            )
+        )
+        rows: list[PriceRiskRow] = []
+        for position in ordered_positions:
+            security_key = str(position.security_key)
+            detail = details.get(security_key)
+            rows.append(
+                PriceRiskRow(
+                    series=str(position.series),
+                    issuer=str(position.issuer),
+                    currency=str(position.currency),
+                    market_value=cls._format_crc_mm(position.market_value_crc),
+                    pnl_scenario=cls._format_crc(
+                        position.pnl_at_portfolio_var_scenario_crc
+                    ),
+                    contribution_percent=cls._format_percent(
+                        position.contribution_at_var_scenario_percent,
+                        decimals=4,
+                    ),
+                    individual_var_percent=cls._format_percent(
+                        position.individual_var_percent,
+                        decimals=4,
+                    ),
+                    real_observations=int(position.real_price_observations),
+                    synthetic_observations=int(position.synthetic_price_observations),
+                    security_key=security_key,
+                    modified_duration=(
+                        cls._format_duration(detail.modified_duration)
+                        if detail is not None
+                        else "N/A"
+                    ),
+                    dv01=(
+                        cls._format_crc_mm(detail.dv01_crc)
+                        if detail is not None and detail.dv01_crc is not None
+                        else "N/A"
+                    ),
+                    bucket=(str(detail.bucket) if detail is not None else "N/A"),
+                    dv01_status=(
+                        str(detail.status) if detail is not None else "UNAVAILABLE"
+                    ),
+                )
+            )
+        return tuple(rows)
+
     def build_view_model(self) -> PriceRiskViewModel:
         try:
-            var_service = self._application_factory.container.resolve(ConfiguredPortfolioVaRService)
+            var_service = self._application_factory.container.resolve(
+                ConfiguredPortfolioVaRService
+            )
             var_result = var_service.calculate()
         except Exception as exc:
             return PriceRiskViewModel(status="ERROR", diagnostic=str(exc))
@@ -186,7 +261,9 @@ class PriceRiskPresenter:
         dv01_result = None
         dv01_diagnostic: str | None = None
         try:
-            dv01_service = self._application_factory.container.resolve(ConfiguredPortfolioDV01Service)
+            dv01_service = self._application_factory.container.resolve(
+                ConfiguredPortfolioDV01Service
+            )
             dv01_result = dv01_service.calculate()
         except Exception as exc:
             dv01_diagnostic = str(exc)
@@ -225,12 +302,18 @@ class PriceRiskPresenter:
                 "dv01_total": self._format_crc_mm(dv01_result.total_dv01_crc),
                 "dv01_crc": self._format_crc_mm(dv01_result.dv01_crc_currency),
                 "dv01_usd": self._format_crc_mm(dv01_result.dv01_usd_currency),
-                "dv01_coverage_percent": self._format_percent(dv01_result.coverage_percent),
+                "dv01_coverage_percent": self._format_percent(
+                    dv01_result.coverage_percent
+                ),
                 "dv01_eligible_market_value": self._format_crc_mm(
                     dv01_result.calculated_market_value_crc
                 ),
-                "dv01_calculated_positions": int(dv01_result.calculated_position_count),
-                "dv01_excluded_positions": int(dv01_result.policy_excluded_position_count),
+                "dv01_calculated_positions": int(
+                    dv01_result.calculated_position_count
+                ),
+                "dv01_excluded_positions": int(
+                    dv01_result.policy_excluded_position_count
+                ),
                 "dv01_data_gaps": int(dv01_result.data_unavailable_position_count),
                 "dv01_status": str(dv01_result.status),
             }
@@ -240,7 +323,10 @@ class PriceRiskPresenter:
                 ("1to5", "1 a 5 años"),
                 ("gt5", "> 5 años"),
             ):
-                value, share, market_value, count, point = self._bucket_payload(dv01_result, key)
+                value, share, market_value, count, point = self._bucket_payload(
+                    dv01_result,
+                    key,
+                )
                 bucket_payload[alias] = (value, share, market_value, count)
                 bucket_rows.append(point)
             bucket_points = tuple(bucket_rows)
@@ -251,7 +337,9 @@ class PriceRiskPresenter:
                     str(item.key),
                     self._decimal(item.dv01_crc),
                     (
-                        self._decimal(item.dv01_crc) / total_dv01 * Decimal("100")
+                        self._decimal(item.dv01_crc)
+                        / total_dv01
+                        * Decimal("100")
                         if total_dv01
                         else Decimal("0")
                     ),
@@ -274,20 +362,27 @@ class PriceRiskPresenter:
                     shock_bp=int(item.shock_bp),
                     shock_label=f"{item.shock_bp:+d} pb",
                     delta_eve=self._format_crc_mm(item.delta_eve_crc),
-                    shocked_market_value=self._format_crc_mm(item.shocked_market_value_crc),
+                    shocked_market_value=self._format_crc_mm(
+                        item.shocked_market_value_crc
+                    ),
                     delta_eve_crc=self._decimal(item.delta_eve_crc),
                 )
                 for item in ordered_scenarios
             )
             rate_shock_points = tuple(
-                RiskChartPoint(row.shock_label, row.delta_eve_crc) for row in rate_shock_rows
+                RiskChartPoint(row.shock_label, row.delta_eve_crc)
+                for row in rate_shock_rows
             )
-            rate_shock_coverage = self._format_percent(rate_shock_result.coverage_percent)
+            rate_shock_coverage = self._format_percent(
+                rate_shock_result.coverage_percent
+            )
             rate_shock_status = str(rate_shock_result.status)
             if rate_shock_result.worst_shock_bp is not None:
                 worst_shock = f"{int(rate_shock_result.worst_shock_bp):+d} pb"
             if rate_shock_result.worst_delta_eve_crc is not None:
-                worst_delta_eve = self._format_crc_mm(rate_shock_result.worst_delta_eve_crc)
+                worst_delta_eve = self._format_crc_mm(
+                    rate_shock_result.worst_delta_eve_crc
+                )
 
         portfolio_var = var_result.portfolio_var
         combined_diagnostics = tuple(
@@ -295,7 +390,11 @@ class PriceRiskPresenter:
             for item in (
                 var_result.diagnostic,
                 f"DV01: {dv01_diagnostic}" if dv01_diagnostic else None,
-                f"Sensibilidad: {rate_shock_diagnostic}" if rate_shock_diagnostic else None,
+                (
+                    f"Sensibilidad: {rate_shock_diagnostic}"
+                    if rate_shock_diagnostic
+                    else None
+                ),
             )
             if item
         )
@@ -304,8 +403,12 @@ class PriceRiskPresenter:
         if portfolio_var is None:
             return PriceRiskViewModel(
                 valuation_date=self._format_date(var_result.valuation_date),
-                eligible_market_value=self._format_crc_mm(var_result.eligible_market_value_crc),
-                calculated_market_value=self._format_crc_mm(var_result.calculated_market_value_crc),
+                eligible_market_value=self._format_crc_mm(
+                    var_result.eligible_market_value_crc
+                ),
+                calculated_market_value=self._format_crc_mm(
+                    var_result.calculated_market_value_crc
+                ),
                 policy_excluded_market_value=self._format_crc_mm(
                     var_result.policy_excluded_market_value_crc
                 ),
@@ -324,8 +427,12 @@ class PriceRiskPresenter:
                 dv01_crc=str(dv01_values["dv01_crc"]),
                 dv01_usd=str(dv01_values["dv01_usd"]),
                 dv01_coverage_percent=str(dv01_values["dv01_coverage_percent"]),
-                dv01_eligible_market_value=str(dv01_values["dv01_eligible_market_value"]),
-                dv01_calculated_positions=int(dv01_values["dv01_calculated_positions"]),
+                dv01_eligible_market_value=str(
+                    dv01_values["dv01_eligible_market_value"]
+                ),
+                dv01_calculated_positions=int(
+                    dv01_values["dv01_calculated_positions"]
+                ),
                 dv01_excluded_positions=int(dv01_values["dv01_excluded_positions"]),
                 dv01_data_gaps=int(dv01_values["dv01_data_gaps"]),
                 dv01_status=str(dv01_values["dv01_status"]),
@@ -339,35 +446,7 @@ class PriceRiskPresenter:
                 diagnostic=diagnostic,
             )
 
-        ordered_positions = tuple(
-            sorted(
-                portfolio_var.positions,
-                key=lambda item: self._decimal(item.contribution_at_var_scenario_percent),
-                reverse=True,
-            )
-        )
-        rows = tuple(
-            PriceRiskRow(
-                series=str(position.series),
-                issuer=str(position.issuer),
-                currency=str(position.currency),
-                market_value=self._format_crc_mm(position.market_value_crc),
-                pnl_scenario=self._format_crc(position.pnl_at_portfolio_var_scenario_crc),
-                contribution_percent=self._format_percent(
-                    position.contribution_at_var_scenario_percent,
-                    decimals=4,
-                ),
-                individual_var_percent=self._format_percent(
-                    position.individual_var_percent,
-                    decimals=4,
-                ),
-                real_observations=int(position.real_price_observations),
-                synthetic_observations=int(position.synthetic_price_observations),
-                security_key=str(position.security_key),
-            )
-            for position in ordered_positions
-        )
-
+        rows = self._build_var_rows(tuple(portfolio_var.positions), dv01_result)
         (
             top_contribution_points,
             pareto_points,
@@ -379,13 +458,22 @@ class PriceRiskPresenter:
         return PriceRiskViewModel(
             valuation_date=self._format_date(var_result.valuation_date),
             var_crc=self._format_crc_mm(portfolio_var.portfolio_var_crc),
-            var_percent=self._format_percent(portfolio_var.portfolio_var_percent, decimals=4),
-            eligible_market_value=self._format_crc_mm(var_result.eligible_market_value_crc),
-            calculated_market_value=self._format_crc_mm(var_result.calculated_market_value_crc),
+            var_percent=self._format_percent(
+                portfolio_var.portfolio_var_percent,
+                decimals=4,
+            ),
+            eligible_market_value=self._format_crc_mm(
+                var_result.eligible_market_value_crc
+            ),
+            calculated_market_value=self._format_crc_mm(
+                var_result.calculated_market_value_crc
+            ),
             policy_excluded_market_value=self._format_crc_mm(
                 var_result.policy_excluded_market_value_crc
             ),
-            history_excluded_market_value=self._format_crc_mm(var_result.excluded_market_value_crc),
+            history_excluded_market_value=self._format_crc_mm(
+                var_result.excluded_market_value_crc
+            ),
             coverage_percent=self._format_percent(var_result.coverage_percent),
             contribution_reconciliation_percent=self._format_percent(
                 contribution_reconciliation,
@@ -400,7 +488,9 @@ class PriceRiskPresenter:
             scenario_count=int(portfolio_var.scenario_count),
             var_rank=int(portfolio_var.var_rank),
             scenario_number=int(portfolio_var.var_scenario_number),
-            scenario_start_date=self._format_date(portfolio_var.var_scenario_lagged_date),
+            scenario_start_date=self._format_date(
+                portfolio_var.var_scenario_lagged_date
+            ),
             scenario_end_date=self._format_date(portfolio_var.var_scenario_date),
             dv01_total=str(dv01_values["dv01_total"]),
             dv01_crc=str(dv01_values["dv01_crc"]),
