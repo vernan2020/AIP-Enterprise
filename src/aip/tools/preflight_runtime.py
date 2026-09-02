@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
 from typing import Any
 
@@ -11,11 +12,16 @@ def _exists(path: str | None) -> bool:
     return bool(path and Path(path).exists())
 
 
+def _env_flag(name: str) -> bool:
+    return os.getenv(name, "").strip().lower() in {"1", "true", "yes", "on"}
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Validate AIP configured runtime readiness")
     parser.add_argument(
         "--deep",
         action="store_true",
+        default=_env_flag("AIP_DEEP_PREFLIGHT"),
         help="Materialize configured providers and require institutional data before returning READY.",
     )
     return parser
