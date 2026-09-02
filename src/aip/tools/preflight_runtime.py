@@ -7,6 +7,18 @@ from typing import Any
 
 from aip.product.demo.configuration.environment_loader import EnvironmentLoader
 
+_REQUIRED_MACRO_CODES = {
+    "FX_SELL",
+    "TPM",
+    "TBP",
+    "INFLATION",
+    "IMAE",
+    "GDP",
+    "UNEMPLOYMENT",
+    "TRI_CRC_12M",
+    "TRI_USD_12M",
+}
+
 
 def _exists(path: str | None) -> bool:
     return bool(path and Path(path).exists())
@@ -77,10 +89,13 @@ def _run_deep_checks(
             valuation_date = portfolio.get("valuation_date")
             if valuation_date is None:
                 failures.append("portfolio provider returned no valuation_date")
+            if float(portfolio.get("market_value") or 0.0) <= 0.0:
+                failures.append("portfolio provider returned non-positive market value")
             print(
                 "Deep portfolio: "
                 f"{len(positions) if isinstance(positions, list) else 0} positions; "
-                f"valuation_date={valuation_date}"
+                f"valuation_date={valuation_date}; "
+                f"market_value={portfolio.get('market_value')}"
             )
     except Exception as exc:
         failures.append(f"portfolio materialization failed: {type(exc).__name__}: {exc}")
@@ -92,7 +107,20 @@ def _run_deep_checks(
             failures,
         )
         if market is not None:
-            print(f"Deep market: keys={len(market)}")
+            curves = market.get("curves")
+            curve_count = len(curves) if isinstance(curves, list) else 0
+            if market.get("market_status") != "Configured":
+                failures.append(
+                    f"market provider status is {market.get('market_status')!r}, expected 'Configured'"
+                )
+            if curve_count != 3:
+                failures.append(f"market provider built {curve_count} curves; expected 3")
+            print(
+                "Deep market: "
+                f"status={market.get('market_status')}; "
+                f"curves={curve_count}; "
+                f"RV={market.get('market_relative_value_count')}"
+            )
     except Exception as exc:
         failures.append(f"market materialization failed: {type(exc).__name__}: {exc}")
 
@@ -109,10 +137,15 @@ def _run_deep_checks(
                 failures.append("liquidity provider did not load an institutional ICL source file")
             if not icl_source_date:
                 failures.append("liquidity provider did not return an ICL source date")
+            if float(liquidity.get("hqla_capacity") or 0.0) <= 0.0:
+                failures.append("liquidity provider returned non-positive HQLA capacity")
+            if float(liquidity.get("mil_eligible_capacity") or 0.0) <= 0.0:
+                failures.append("liquidity provider returned non-positive MIL capacity")
             print(
                 "Deep liquidity: "
-                f"keys={len(liquidity)}; "
                 f"ICL={liquidity.get('icl_total')}; "
+                f"HQLA={liquidity.get('hqla_capacity')}; "
+                f"MIL={liquidity.get('mil_eligible_capacity')}; "
                 f"source_date={icl_source_date}; "
                 f"source_file={icl_source_file}"
             )
@@ -129,13 +162,27 @@ def _run_deep_checks(
             indicators = economic.get("indicators")
             if not isinstance(indicators, list) or not indicators:
                 failures.append("economic provider returned no indicators")
+                indicator_codes: set[str] = set()
+            else:
+                indicator_codes = {
+                    str(item.get("code"))
+                    for item in indicators
+                    if isinstance(item, dict) and item.get("code")
+                }
             status = economic.get("status")
             if status != "AVAILABLE":
                 failures.append(f"economic provider status is {status!r}, expected 'AVAILABLE'")
+            missing_macro = sorted(_REQUIRED_MACRO_CODES - indicator_codes)
+            if missing_macro:
+                failures.append(
+                    "economic provider is missing required macro drivers: "
+                    + ", ".join(missing_macro)
+                )
             print(
                 "Deep macro: "
-                f"{len(indicators) if isinstance(indicators, list) else 0} indicators; "
-                f"source={economic.get('source')}; status={status}"
+                f"{len(indicator_codes)} indicators; "
+                f"source={economic.get('source')}; status={status}; "
+                f"required_missing={missing_macro or 'none'}"
             )
     except Exception as exc:
         failures.append(f"economic materialization failed: {type(exc).__name__}: {exc}")
