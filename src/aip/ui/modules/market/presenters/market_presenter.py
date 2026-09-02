@@ -13,10 +13,25 @@ from aip.ui.modules.market.viewmodels.market_view_model import (
     RelativeValueViewRow,
     RotationViewRow,
 )
+from aip.ui.services.display_localization import translate_status
 
 
 class MarketPresenter:
-    """Normalize application-layer market analytics for the desktop UI."""
+    """Normaliza la analítica de mercado de la aplicación para la interfaz de escritorio."""
+
+    _CLASSIFICATION_TRANSLATIONS = {
+        "CHEAP": "BARATO",
+        "RICH": "CARO",
+        "NEUTRAL": "NEUTRAL",
+        "BUY": "COMPRAR",
+        "SELL": "VENDER",
+        "HOLD": "MANTENER",
+        "SCREENING": "PRESELECCIÓN",
+        "PASS": "CUMPLE",
+        "FAIL": "NO CUMPLE",
+        "AVAILABLE": "DISPONIBLE",
+        "UNAVAILABLE": "NO DISPONIBLE",
+    }
 
     def __init__(self, demo_factory: DemoApplicationFactory | None = None) -> None:
         self._demo_factory = demo_factory or DemoApplicationFactory(
@@ -34,6 +49,13 @@ class MarketPresenter:
             return default
 
     @classmethod
+    def _translate_classification(cls, value: object) -> str:
+        raw = str(value or "").strip()
+        if not raw:
+            return "N/D"
+        return cls._CLASSIFICATION_TRANSLATIONS.get(raw.upper(), raw)
+
+    @classmethod
     def _build_curve_contracts(
         cls,
         raw_curves: list[dict[str, Any]],
@@ -45,7 +67,7 @@ class MarketPresenter:
             if "observed_points" not in raw:
                 legacy_points.append(
                     CurvePoint(
-                        label=str(raw.get("label") or "Curve"),
+                        label=str(raw.get("label") or "Curva"),
                         value=f"{cls._float(raw.get('value')):.2f}",
                         tenor=str(raw.get("tenor") or ""),
                     )
@@ -115,7 +137,7 @@ class MarketPresenter:
                     market_yield=cls._float(entry.get("market_yield")),
                     curve_yield=cls._float(entry.get("curve_yield")),
                     spread_bp=cls._float(entry.get("spread_bp")),
-                    classification=str(entry.get("classification") or ""),
+                    classification=cls._translate_classification(entry.get("classification")),
                     market_value_crc=cls._float(entry.get("market_value_crc")),
                 )
             )
@@ -136,7 +158,7 @@ class MarketPresenter:
                 market_yield=cls._float(entry.get("market_yield")),
                 curve_yield=cls._float(entry.get("curve_yield")),
                 spread_bp=cls._float(entry.get("spread_bp")),
-                classification=str(entry.get("classification") or ""),
+                classification=cls._translate_classification(entry.get("classification")),
                 market_price=(
                     cls._float(entry.get("market_price"))
                     if entry.get("market_price") is not None
@@ -169,7 +191,9 @@ class MarketPresenter:
                     spread_pickup_bp=cls._float(
                         entry.get("spread_pickup_bp", entry.get("spread_improvement_bp"))
                     ),
-                    screening_status=str(entry.get("screening_status") or ""),
+                    screening_status=cls._translate_classification(
+                        entry.get("screening_status") or "SCREENING"
+                    ),
                 )
             )
         return tuple(rows)
@@ -190,8 +214,10 @@ class MarketPresenter:
                         issuer=str(entry.get("issuer") or ""),
                         instrument=str(entry.get("series") or entry.get("instrument") or ""),
                         currency=str(entry.get("currency") or ""),
-                        recommendation=str(entry.get("classification") or "NEUTRAL"),
-                        confidence="Institutional",
+                        recommendation=cls._translate_classification(
+                            entry.get("classification") or "NEUTRAL"
+                        ),
+                        confidence="Institucional",
                         spread=f"{spread:.2f}",
                         z_spread=f"{spread:.2f}",
                         benchmark_spread="0.00",
@@ -215,8 +241,14 @@ class MarketPresenter:
                     issuer=str(entry.get("issuer") or ""),
                     instrument=str(entry.get("instrument") or ""),
                     currency=str(entry.get("currency") or "USD"),
-                    recommendation=str(entry.get("recommendation") or "BUY"),
-                    confidence=str(entry.get("confidence") or "High"),
+                    recommendation=cls._translate_classification(
+                        entry.get("recommendation") or "BUY"
+                    ),
+                    confidence=(
+                        "Alta"
+                        if str(entry.get("confidence") or "High").strip().upper() == "HIGH"
+                        else str(entry.get("confidence") or "N/D")
+                    ),
                     spread=f"{average_spread:.2f}",
                     z_spread=f"{average_spread:.2f}",
                     benchmark_spread="0.05",
@@ -274,7 +306,7 @@ class MarketPresenter:
             average_yield=f"{self._float(market.get('average_yield')):.2f}%",
             average_duration=f"{self._float(market.get('average_duration')):.2f}",
             average_spread=f"{self._float(market.get('average_spread')):.2f}",
-            market_status=str(market.get("market_status") or "Unavailable"),
+            market_status=translate_status(market.get("market_status") or "UNAVAILABLE"),
             market_relative_value_count=int(market.get("market_relative_value_count") or 0),
             market_cheap_count=int(market.get("market_cheap_count") or 0),
             market_neutral_count=int(market.get("market_neutral_count") or 0),
