@@ -24,9 +24,7 @@ class PortfolioDV01BucketService:
             "1",
         }
         raw_date = (
-            position.get("next_repricing_date")
-            if is_variable
-            else position.get("maturity_date")
+            position.get("next_repricing_date") if is_variable else position.get("maturity_date")
         )
         reference_date = cls._as_date(raw_date)
         if reference_date is None:

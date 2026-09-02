@@ -29,8 +29,8 @@ def test_var_pareto_preserves_signed_contributions_and_reconciles_to_100() -> No
         _position("C", "G", "USD", "-10", "100"),
     )
 
-    top, pareto, issuer, currencies, reconciliation = (
-        PriceRiskPresenter._build_var_chart_contracts(positions)
+    top, pareto, issuer, currencies, reconciliation = PriceRiskPresenter._build_var_chart_contracts(
+        positions
     )
 
     assert tuple(point.value for point in top) == (
@@ -45,9 +45,7 @@ def test_var_pareto_preserves_signed_contributions_and_reconciles_to_100() -> No
     )
     assert reconciliation == Decimal("100")
     assert sum((point.value for point in issuer), Decimal("0")) == Decimal("100")
-    assert sum((point.secondary_value for point in currencies), Decimal("0")) == Decimal(
-        "100"
-    )
+    assert sum((point.secondary_value for point in currencies), Decimal("0")) == Decimal("100")
 
 
 def test_var_currency_distribution_uses_calculated_market_value() -> None:

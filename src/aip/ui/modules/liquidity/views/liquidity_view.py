@@ -404,7 +404,9 @@ class LiquidityView(QWidget):
         self._policy_status.setText(
             f"Política: {self._translate(getattr(summary, 'policy_status', '-'))}"
         )
-        message = getattr(summary, "configuration_message", "") or (view_model.error or view_model.status)
+        message = getattr(summary, "configuration_message", "") or (
+            view_model.error or view_model.status
+        )
         self._status.setText(self._translate(message))
 
     def view_model(self) -> LiquidityViewModel:

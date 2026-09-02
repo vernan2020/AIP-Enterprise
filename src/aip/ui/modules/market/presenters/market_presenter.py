@@ -176,7 +176,9 @@ class MarketPresenter:
             RelativeValueViewRow(
                 series=str(entry.get("series") or ""),
                 issuer=str(entry.get("issuer") or ""),
-                currency=str(entry.get("currency") or cls._currency_from_curve(entry.get("curve_id"))),
+                currency=str(
+                    entry.get("currency") or cls._currency_from_curve(entry.get("curve_id"))
+                ),
                 curve_id=str(entry.get("curve_id") or ""),
                 tenor=cls._float(entry.get("tenor")),
                 market_yield=cls._float(entry.get("market_yield")),
@@ -224,13 +226,17 @@ class MarketPresenter:
                         or entry.get("source_currency")
                         or cls._currency_from_curve(entry.get("target_curve_id"))
                     ),
-                    curve_id=str(entry.get("target_curve_id") or entry.get("source_curve_id") or ""),
+                    curve_id=str(
+                        entry.get("target_curve_id") or entry.get("source_curve_id") or ""
+                    ),
                     yield_improvement_bp=cls._float(entry.get("yield_improvement_bp")),
                     tenor_difference_years=cls._float(entry.get("tenor_difference_years")),
                     rotation_score=cls._float(entry.get("rotation_score")),
                     signal_type=str(entry.get("signal_type") or ""),
                     target_in_portfolio=(
-                        "SÍ" if target_in_portfolio is True else "NO" if target_in_portfolio is False else ""
+                        "SÍ"
+                        if target_in_portfolio is True
+                        else "NO" if target_in_portfolio is False else ""
                     ),
                     explanation=str(entry.get("explanation") or ""),
                 )
@@ -319,12 +325,8 @@ class MarketPresenter:
             market_cheap_count=int(market.get("market_cheap_count") or 0),
             market_neutral_count=int(market.get("market_neutral_count") or 0),
             market_rich_count=int(market.get("market_rich_count") or 0),
-            market_outside_portfolio_count=int(
-                market.get("market_outside_portfolio_count") or 0
-            ),
-            rotation_candidate_count=int(
-                market.get("portfolio_rotation_candidate_count") or 0
-            ),
+            market_outside_portfolio_count=int(market.get("market_outside_portfolio_count") or 0),
+            rotation_candidate_count=int(market.get("portfolio_rotation_candidate_count") or 0),
             configuration_message=str(market.get("configuration_message") or ""),
         )
 

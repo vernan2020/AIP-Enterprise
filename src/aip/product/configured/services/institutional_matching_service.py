@@ -76,7 +76,9 @@ class InstitutionalPortfolioMatchingService:
         match_summary["reconciliation"] = reconciliation
 
         for position in master_positions:
-            match_result = self._match_position(position, normalized_vector_records, indexes=indexes)
+            match_result = self._match_position(
+                position, normalized_vector_records, indexes=indexes
+            )
             enriched_position = dict(position)
             enriched_position["matching_diagnostics"] = self._build_position_diagnostics(position)
             enriched_position["vector_match"] = {
@@ -136,9 +138,7 @@ class InstitutionalPortfolioMatchingService:
         total_positions = len(enriched_positions)
         if total_positions:
             match_summary["match_percentage"] = round(
-                (total_positions - match_summary["unmatched_positions"])
-                / total_positions
-                * 100.0,
+                (total_positions - match_summary["unmatched_positions"]) / total_positions * 100.0,
                 2,
             )
         if diagnostic_mode:
@@ -326,9 +326,7 @@ class InstitutionalPortfolioMatchingService:
             1 for item in position_reconciliation if item["classification"] == "MATCHED"
         )
         expected_unmatched = sum(
-            1
-            for item in position_reconciliation
-            if item["classification"] == "UNMATCHED_EXPECTED"
+            1 for item in position_reconciliation if item["classification"] == "UNMATCHED_EXPECTED"
         )
         review_required = sum(
             1
@@ -340,9 +338,7 @@ class InstitutionalPortfolioMatchingService:
             1,
         )
         eligible_match_percentage = round(
-            (matched_positions / len(eligible_positions) * 100.0)
-            if eligible_positions
-            else 0.0,
+            (matched_positions / len(eligible_positions) * 100.0) if eligible_positions else 0.0,
             1,
         )
         return {
@@ -367,15 +363,9 @@ class InstitutionalPortfolioMatchingService:
                 "conflicting duplicates require review."
             ),
             "known_government_positions": {
-                "B180429": self._build_known_position_entry(
-                    position_reconciliation, "b180429"
-                ),
-                "S240327": self._build_known_position_entry(
-                    position_reconciliation, "s240327"
-                ),
-                "CRS240129": self._build_known_position_entry(
-                    position_reconciliation, "crs240129"
-                ),
+                "B180429": self._build_known_position_entry(position_reconciliation, "b180429"),
+                "S240327": self._build_known_position_entry(position_reconciliation, "s240327"),
+                "CRS240129": self._build_known_position_entry(position_reconciliation, "crs240129"),
             },
         }
 
@@ -412,9 +402,9 @@ class InstitutionalPortfolioMatchingService:
                 record.get("instrument_type_or_mnemonic", "")
             ) != self._normalize_text(reference.get("instrument_type_or_mnemonic", "")):
                 return False
-            if self._coerce_date(
-                record.get("maturity_date_if_present")
-            ) != self._coerce_date(reference.get("maturity_date_if_present")):
+            if self._coerce_date(record.get("maturity_date_if_present")) != self._coerce_date(
+                reference.get("maturity_date_if_present")
+            ):
                 return False
         return True
 
@@ -432,6 +422,12 @@ class InstitutionalPortfolioMatchingService:
         return False
 
     def _deduplicate_records(self, records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        if any(
+            record.get("market_price") is None or record.get("market_yield") is None
+            for record in records
+        ):
+            return list(records)
+
         deduped: list[dict[str, Any]] = []
         seen: set[tuple[str, str, str, str, str, str]] = set()
         indexed_records = list(enumerate(records))
@@ -447,9 +443,7 @@ class InstitutionalPortfolioMatchingService:
                 self._normalize_text(record.get("issuer", "")),
                 self._normalize_text(record.get("instrument_type_or_mnemonic", "")),
                 self._normalize_text(record.get("series_or_security_code", "")),
-                self._serialize_date(
-                    self._coerce_date(record.get("maturity_date_if_present"))
-                )
+                self._serialize_date(self._coerce_date(record.get("maturity_date_if_present")))
                 or "",
                 str(record.get("market_price")),
                 str(record.get("market_yield")),
@@ -552,8 +546,7 @@ class InstitutionalPortfolioMatchingService:
                 record.get("normalized_issuer_key") or record.get("issuer", "")
             ),
             "normalized_series_key": self._normalize_text(
-                record.get("normalized_series_key")
-                or record.get("series_or_security_code", "")
+                record.get("normalized_series_key") or record.get("series_or_security_code", "")
             ),
             "isin_if_present": self._normalize_text(record.get("isin_if_present", "")),
             "maturity_date_if_present": record.get("maturity_date_if_present"),
@@ -594,9 +587,7 @@ class InstitutionalPortfolioMatchingService:
             candidates = indexes.series_maturity.get(series_key, [])
             deduped = self._deduplicate_records(candidates)
             if len(deduped) == 1:
-                return InstitutionalMatchResult(
-                    "SERIES_MATURITY", 0.8, deduped[0], False, False
-                )
+                return InstitutionalMatchResult("SERIES_MATURITY", 0.8, deduped[0], False, False)
             if len(deduped) > 1:
                 return InstitutionalMatchResult("SERIES_MATURITY", 0.7, None, True, True)
 
@@ -609,9 +600,7 @@ class InstitutionalPortfolioMatchingService:
                     "ISSUER_PRODUCT_MATURITY", 0.6, deduped[0], False, False
                 )
             if len(deduped) > 1:
-                return InstitutionalMatchResult(
-                    "ISSUER_PRODUCT_MATURITY", 0.5, None, True, True
-                )
+                return InstitutionalMatchResult("ISSUER_PRODUCT_MATURITY", 0.5, None, True, True)
 
         return InstitutionalMatchResult("NO_VECTOR_MATCH", 0.0, None, False, True)
 

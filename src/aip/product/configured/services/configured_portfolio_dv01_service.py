@@ -66,9 +66,7 @@ class ConfiguredPortfolioDV01Service:
     def calculate(self) -> ConfiguredPortfolioDV01Result:
         portfolio = self._portfolio_provider.get_portfolio()
         positions = [
-            position
-            for position in portfolio.get("positions", [])
-            if isinstance(position, dict)
+            position for position in portfolio.get("positions", []) if isinstance(position, dict)
         ]
         raw_valuation_date = portfolio.get("valuation_date")
         if isinstance(raw_valuation_date, date):
@@ -76,9 +74,7 @@ class ConfiguredPortfolioDV01Service:
         elif isinstance(raw_valuation_date, str):
             valuation_date = date.fromisoformat(raw_valuation_date[:10])
         else:
-            raise ValueError(
-                "Portfolio valuation date is unavailable for DV01 bucket aggregation"
-            )
+            raise ValueError("Portfolio valuation date is unavailable for DV01 bucket aggregation")
 
         aggregate = PortfolioDV01AggregationService.calculate(
             positions,
@@ -183,9 +179,7 @@ class ConfiguredPortfolioDV01Service:
         for security_key, item in grouped.items():
             duration_weight = item["duration_weight"]
             modified_duration = (
-                item["duration_weighted_sum"] / duration_weight
-                if duration_weight > 0
-                else None
+                item["duration_weighted_sum"] / duration_weight if duration_weight > 0 else None
             )
             calculated_count = int(item["calculated_count"])
             policy_excluded_count = int(item["policy_excluded_count"])

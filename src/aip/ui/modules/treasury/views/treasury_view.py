@@ -159,9 +159,7 @@ class TreasuryView(QWidget):
         page_layout = QVBoxLayout(page)
         page_layout.setContentsMargins(4, 8, 4, 4)
         table = QTableWidget(0, 5)
-        table.setHorizontalHeaderLabels(
-            ["Señal", "Detalle", "Severidad", "Fuente", "Corte"]
-        )
+        table.setHorizontalHeaderLabels(["Señal", "Detalle", "Severidad", "Fuente", "Corte"])
         table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         table.setAlternatingRowColors(True)

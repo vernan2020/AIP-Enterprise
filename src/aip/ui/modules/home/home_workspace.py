@@ -25,7 +25,11 @@ class HomeWorkspace(QWidget):
         ("Portafolio", "Valuación, concentración y oportunidades", "portfolio"),
         ("Mercado", "Curvas PiPCA, valor relativo y rotación", "market"),
         ("Riesgo de Precio", "VeR histórico y sensibilidad DV01", "price_risk"),
-        ("Inteligencia Macroeconómica", "BCCR y escenario institucional aprobado", "macro_intelligence"),
+        (
+            "Inteligencia Macroeconómica",
+            "BCCR y escenario institucional aprobado",
+            "macro_intelligence",
+        ),
         ("Liquidez", "ICL, HQLA, MIL y vencimientos", "liquidity"),
         ("Tesorería", "Alertas, capacidad y oportunidades de valor relativo", "treasury"),
         ("Reportes", "Salida institucional y trazabilidad", "reports"),
@@ -154,9 +158,7 @@ class HomeWorkspace(QWidget):
         config = self._application_factory.config
         mode = str(config.execution_mode).upper()
         cutoff = config.data_cutoff_date.strftime("%d/%m/%Y")
-        self._context_labels["mode"].setText(
-            "CONFIGURADO" if mode == "CONFIGURED" else mode
-        )
+        self._context_labels["mode"].setText("CONFIGURADO" if mode == "CONFIGURED" else mode)
         self._context_labels["cutoff"].setText(cutoff)
         self._context_labels["environment"].setText(
             str(getattr(config, "environment_name", "AIP")).upper()

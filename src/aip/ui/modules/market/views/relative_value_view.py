@@ -56,8 +56,7 @@ class RelativeValueView(QWidget):
         table.verticalHeader().setDefaultSectionSize(27)
         table.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
         table.setVerticalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
-        table.setStyleSheet(
-            """
+        table.setStyleSheet("""
             QTableWidget#relativeValueTable {
                 background:#FFFFFF;
                 alternate-background-color:#F7F9FA;
@@ -78,8 +77,7 @@ class RelativeValueView(QWidget):
                 padding:6px 5px;
                 font-weight:700;
             }
-            """
-        )
+            """)
 
         header = table.horizontalHeader()
         header.setStretchLastSection(False)

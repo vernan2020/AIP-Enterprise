@@ -116,9 +116,7 @@ class ExecutivePresenter:
         macro_scenario = "No disponible"
         macro_horizon = "-"
         try:
-            macro_service = self._demo_factory.container.resolve(
-                ConfiguredMacroIntelligenceService
-            )
+            macro_service = self._demo_factory.container.resolve(ConfiguredMacroIntelligenceService)
             macro = macro_service.get_projection()
             if str(macro.get("status") or "").upper() == "AVAILABLE":
                 macro_scenario = (
@@ -188,9 +186,7 @@ class ExecutivePresenter:
             liquidity_gap=self._format_crc_mm(liquidity.get("liquidity_gap")),
             icl_total=f"{self._decimal(liquidity.get('icl_total')):.2f}",
             relative_value_count=int(market.get("market_relative_value_count") or 0),
-            rotation_candidate_count=int(
-                market.get("portfolio_rotation_candidate_count") or 0
-            ),
+            rotation_candidate_count=int(market.get("portfolio_rotation_candidate_count") or 0),
             macro_scenario=macro_scenario,
             macro_horizon=macro_horizon,
             data_quality_status=str(portfolio.get("data_quality_status") or "N/D"),

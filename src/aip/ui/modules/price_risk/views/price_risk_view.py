@@ -2,15 +2,15 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from PySide6.QtCore import QObject, QThread, QTimer, Qt, Signal, Slot
+from PySide6.QtCore import QObject, Qt, QThread, QTimer, Signal, Slot
 from PySide6.QtGui import QColor, QFont
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QFrame,
     QGridLayout,
     QGroupBox,
-    QHeaderView,
     QHBoxLayout,
+    QHeaderView,
     QLabel,
     QLineEdit,
     QScrollArea,
@@ -264,9 +264,7 @@ class PriceRiskView(QWidget):
         issuer_group = QGroupBox("Contribución al VeR por emisor")
         issuer_group.setStyleSheet(self._group_style())
         issuer_layout = QVBoxLayout(issuer_group)
-        self._issuer_chart = RiskBarChartWidget(
-            value_formatter=lambda value: f"{value:+.2f}%"
-        )
+        self._issuer_chart = RiskBarChartWidget(value_formatter=lambda value: f"{value:+.2f}%")
         issuer_layout.addWidget(self._issuer_chart)
         analytics.addWidget(issuer_group, 1, 0)
 
@@ -370,9 +368,7 @@ class PriceRiskView(QWidget):
         shock_group = QGroupBox("Sensibilidad a shocks paralelos de tasas · ΔEVE aproximado")
         shock_group.setStyleSheet(self._group_style())
         shock_layout = QVBoxLayout(shock_group)
-        self._shock_chart = RiskBarChartWidget(
-            value_formatter=lambda value: self._format_mm(value)
-        )
+        self._shock_chart = RiskBarChartWidget(value_formatter=lambda value: self._format_mm(value))
         shock_layout.addWidget(self._shock_chart)
         charts.addWidget(shock_group, 1, 0)
 

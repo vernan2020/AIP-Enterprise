@@ -61,8 +61,7 @@ class MarketMetricCard(QFrame):
         self._helper_label.setWordWrap(True)
         layout.addWidget(self._helper_label)
 
-        self.setStyleSheet(
-            """
+        self.setStyleSheet("""
             QFrame#marketMetricCard {
                 background-color: #FFFFFF;
                 border: 1px solid #D5DEE3;
@@ -76,8 +75,7 @@ class MarketMetricCard(QFrame):
             QLabel#marketMetricTitle { color: #566D7C; }
             QLabel#marketMetricValue { color: #00345F; }
             QLabel#marketMetricHelper { color: #7B8D98; }
-            """
-        )
+            """)
         self._apply_status(status, self._value)
 
     def text(self) -> str:

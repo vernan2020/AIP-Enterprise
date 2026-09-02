@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-
 _STATUS_TRANSLATIONS = {
     "READY": "LISTO",
     "LOADED": "CARGADO",

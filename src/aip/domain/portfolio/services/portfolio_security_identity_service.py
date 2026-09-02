@@ -20,14 +20,11 @@ class PortfolioSecurityIdentityService:
         return cls.build(
             isin=str(position.get("isin") or "").strip(),
             series=str(
-                position.get("series")
-                or position.get("series_or_security_code")
-                or ""
+                position.get("series") or position.get("series_or_security_code") or ""
             ).strip(),
             issuer=str(position.get("issuer") or "").strip(),
             maturity_date=cls._as_date(
-                position.get("maturity_date")
-                or position.get("maturity_date_if_present")
+                position.get("maturity_date") or position.get("maturity_date_if_present")
             ),
         )
 

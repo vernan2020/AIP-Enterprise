@@ -82,9 +82,7 @@ class ConfiguredPortfolioDashboardAnalyticsService:
         portfolio: dict[str, Any],
         market: dict[str, Any] | None = None,
     ) -> PortfolioDashboardAnalytics:
-        positions = [
-            item for item in portfolio.get("positions", ()) if isinstance(item, dict)
-        ]
+        positions = [item for item in portfolio.get("positions", ()) if isinstance(item, dict)]
         total = sum(
             (cls._decimal(position.get("market_value_crc")) for position in positions),
             start=Decimal("0"),

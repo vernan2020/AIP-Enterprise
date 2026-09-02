@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import base64
-from datetime import date, datetime, timezone
-from typing import Any
+from datetime import date
 
 from PySide6.QtCore import QDate, Qt
 from PySide6.QtGui import QAction, QPixmap
@@ -22,7 +21,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from aip.core.version import APP_DISPLAY_NAME, APP_DISPLAY_VERSION
+from aip.core.version import APP_DISPLAY_VERSION
 from aip.product.demo.bootstrap.application_factory import DemoApplicationFactory
 from aip.product.demo.configuration.environment_loader import EnvironmentLoader
 from aip.ui.assets.coopealianza_logo import COOPEALIANZA_LOGO_PNG_BASE64
@@ -297,9 +296,7 @@ class MainWindow(QMainWindow):
         title_box.addWidget(subtitle)
         layout.addLayout(title_box)
 
-        mode = QLabel(
-            "MODO CONFIGURADO" if execution_mode == "CONFIGURED" else "MODO DEMO"
-        )
+        mode = QLabel("MODO CONFIGURADO" if execution_mode == "CONFIGURED" else "MODO DEMO")
         mode.setObjectName("headerMode")
         layout.addWidget(mode)
         layout.addStretch(1)
@@ -442,9 +439,7 @@ class MainWindow(QMainWindow):
 
         status_action = view_menu.addAction("Estado del Sistema")
         status_action.setCheckable(True)
-        status_action.triggered.connect(
-            lambda checked: self._dock_status.setVisible(bool(checked))
-        )
+        status_action.triggered.connect(lambda checked: self._dock_status.setVisible(bool(checked)))
 
         tools_menu = self.menuBar().addMenu("Herramientas")
         tools_menu.addAction("Centro de Estado", self._show_health_center)

@@ -213,9 +213,7 @@ class ExecutiveWorkspace(QWidget):
     @staticmethod
     def _decision_table() -> QTableWidget:
         table = QTableWidget(0, 5)
-        table.setHorizontalHeaderLabels(
-            ["Señal", "Detalle", "Categoría", "Severidad", "Fuente"]
-        )
+        table.setHorizontalHeaderLabels(["Señal", "Detalle", "Categoría", "Severidad", "Fuente"])
         table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         table.setAlternatingRowColors(True)

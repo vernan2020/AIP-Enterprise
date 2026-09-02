@@ -5,7 +5,6 @@ from PySide6.QtGui import QColor, QFont, QPainter, QPen, QPolygonF
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QComboBox,
-    QFrame,
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
@@ -13,9 +12,9 @@ from PySide6.QtWidgets import (
     QLabel,
     QPlainTextEdit,
     QSplitter,
-    QTabWidget,
     QTableWidget,
     QTableWidgetItem,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -242,9 +241,7 @@ class MarketView(QWidget):
             "QTabBar::tab:selected {color:#005EB8; border-bottom:2px solid #00A9E0;}"
         )
 
-        self._relative_value_view = RelativeValueView(
-            self._view_model.portfolio_relative_value
-        )
+        self._relative_value_view = RelativeValueView(self._view_model.portfolio_relative_value)
         self._relative_value_view.table().currentCellChanged.connect(
             self._on_portfolio_selection_changed
         )
@@ -601,7 +598,9 @@ class MarketView(QWidget):
                 row.target_in_portfolio or "-",
             )
             for column, value in enumerate(values):
-                self._set_item(table, row_index, column, value, row_index, numeric=column in {3, 4, 5, 6})
+                self._set_item(
+                    table, row_index, column, value, row_index, numeric=column in {3, 4, 5, 6}
+                )
                 if column == 7:
                     item = table.item(row_index, column)
                     if item is not None:
@@ -633,7 +632,9 @@ class MarketView(QWidget):
             "spread_bp": f"{row.spread_bp:+.2f} pb",
             "tenor": f"{row.tenor:.2f} años",
             "market_value_crc": (
-                "-" if row.market_value_crc is None else f"₡{row.market_value_crc / 1_000_000:,.2f} MM"
+                "-"
+                if row.market_value_crc is None
+                else f"₡{row.market_value_crc / 1_000_000:,.2f} MM"
             ),
             "market_price": "-" if row.market_price is None else f"{row.market_price:,.4f}",
             "position_count": str(row.position_count) if row.position_count else "-",
@@ -682,7 +683,11 @@ class MarketView(QWidget):
             self._on_curve_changed(target_index)
         self._on_curve_changed(self._curve_selector.currentIndex())
 
-        message = getattr(view_model.summary, "configuration_message", "") or view_model.error or view_model.status
+        message = (
+            getattr(view_model.summary, "configuration_message", "")
+            or view_model.error
+            or view_model.status
+        )
         self._status.setText(str(message))
 
     def view_model(self) -> MarketViewModel:

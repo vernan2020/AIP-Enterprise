@@ -57,19 +57,11 @@ class PortfolioDV01AggregationService:
             Decimal("0"),
         )
         policy_excluded_market_value = sum(
-            (
-                result.market_value_crc
-                for _, result in rows
-                if result.status == "POLICY_EXCLUDED"
-            ),
+            (result.market_value_crc for _, result in rows if result.status == "POLICY_EXCLUDED"),
             Decimal("0"),
         )
         data_unavailable_market_value = sum(
-            (
-                result.market_value_crc
-                for _, result in rows
-                if result.status == "DATA_UNAVAILABLE"
-            ),
+            (result.market_value_crc for _, result in rows if result.status == "DATA_UNAVAILABLE"),
             Decimal("0"),
         )
         total_dv01 = sum(
@@ -89,9 +81,7 @@ class PortfolioDV01AggregationService:
             data_unavailable_market_value_crc=data_unavailable_market_value,
             coverage_percent=coverage_percent,
             total_dv01_crc=total_dv01,
-            calculated_position_count=sum(
-                1 for _, result in rows if result.status == "CALCULATED"
-            ),
+            calculated_position_count=sum(1 for _, result in rows if result.status == "CALCULATED"),
             policy_excluded_position_count=sum(
                 1 for _, result in rows if result.status == "POLICY_EXCLUDED"
             ),

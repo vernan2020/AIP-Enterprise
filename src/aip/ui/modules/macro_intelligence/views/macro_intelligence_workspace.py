@@ -3,7 +3,17 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
-from PySide6.QtCore import QObject, QPointF, QRectF, QRunnable, Qt, QThreadPool, QTimer, Signal, Slot
+from PySide6.QtCore import (
+    QObject,
+    QPointF,
+    QRectF,
+    QRunnable,
+    Qt,
+    QThreadPool,
+    QTimer,
+    Signal,
+    Slot,
+)
 from PySide6.QtGui import QColor, QFont, QPainter, QPen, QPolygonF
 from PySide6.QtWidgets import (
     QComboBox,
@@ -37,7 +47,6 @@ from aip.ui.modules.macro_intelligence.presenters.macro_intelligence_presenter i
 from aip.ui.modules.macro_intelligence.viewmodels.macro_intelligence_view_model import (
     MacroProjectionViewModel,
 )
-
 
 _MONTHS = (
     "ene",
@@ -138,7 +147,11 @@ class _MacroMetricCard(QFrame):
             self._change.setText(f"{symbol} {change:+.2f}")
         else:
             self._change.setText(f"{symbol} {change:+.2f} pp")
-        date_text = indicator.observation_date.strftime("%d/%m/%Y") if indicator.observation_date else "Sin fecha"
+        date_text = (
+            indicator.observation_date.strftime("%d/%m/%Y")
+            if indicator.observation_date
+            else "Sin fecha"
+        )
         source = indicator.source or "BCCR"
         if indicator.derived:
             source += " · derivado"
@@ -177,7 +190,9 @@ class _ProjectionChart(QWidget):
         rows = self._projection.rows
         if not rows:
             painter.setPen(QColor("#718096"))
-            painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "Proyección institucional no disponible")
+            painter.drawText(
+                self.rect(), Qt.AlignmentFlag.AlignCenter, "Proyección institucional no disponible"
+            )
             return
 
         values = [row.value_for(self._driver_code) for row in rows]
@@ -423,7 +438,9 @@ class MacroIntelligenceWorkspace(QWidget):
         self._projection_table.setHorizontalHeaderLabels(
             ["Periodo", "USD/CRC", "TPM", "TBP", "TRI CRC 12M", "TRI USD 12M", "Inflación", "IMAE"]
         )
-        self._projection_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self._projection_table.horizontalHeader().setSectionResizeMode(
+            QHeaderView.ResizeMode.Stretch
+        )
         self._projection_table.verticalHeader().setVisible(False)
         self._projection_table.setAlternatingRowColors(True)
         self._projection_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
@@ -515,18 +532,26 @@ class MacroIntelligenceWorkspace(QWidget):
         projection = self._projection
         if projection.status != "AVAILABLE":
             self._scenario_badge.setText("Escenario: no disponible")
-            self._projection_note.setText(projection.diagnostic or "No existe escenario institucional aprobado.")
+            self._projection_note.setText(
+                projection.diagnostic or "No existe escenario institucional aprobado."
+            )
             self._projection_table.setRowCount(0)
             self._projection_chart.set_projection(projection, "TPM")
             return
 
-        dataset = projection.dataset_as_of_date.strftime("%d/%m/%Y") if projection.dataset_as_of_date else "-"
+        dataset = (
+            projection.dataset_as_of_date.strftime("%d/%m/%Y")
+            if projection.dataset_as_of_date
+            else "-"
+        )
         translated_scenario_status = _translate_status(projection.scenario_status)
         self._scenario_badge.setText(
             f"{projection.scenario_type} · v{projection.version} · {translated_scenario_status}"
         )
         self._governance_labels["scenario"].setText(projection.scenario_id)
-        self._governance_labels["version"].setText(f"v{projection.version} · {translated_scenario_status}")
+        self._governance_labels["version"].setText(
+            f"v{projection.version} · {translated_scenario_status}"
+        )
         self._governance_labels["dataset"].setText(dataset)
         self._governance_labels["horizon"].setText(f"{projection.horizon} meses · 7 variables")
         if projection.first_period and projection.last_period:
@@ -552,7 +577,9 @@ class MacroIntelligenceWorkspace(QWidget):
             for column, value in enumerate(values):
                 item = QTableWidgetItem(value)
                 if column > 0:
-                    item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+                    item.setTextAlignment(
+                        Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+                    )
                 self._projection_table.setItem(row_index, column, item)
         self._refresh_projection_chart()
 
@@ -622,8 +649,14 @@ class MacroIntelligenceWorkspace(QWidget):
         self._populate_curve(self._tri_usd_table, snapshot.tri_usd_curve)
         cutoff = snapshot.cutoff_date.strftime("%d/%m/%Y") if snapshot.cutoff_date else "N/D"
         parts = [f"Fuente observada: {snapshot.source}", f"Última información: {cutoff}"]
-        parts.append("Información local" if persisted else f"Caché: {snapshot.cache_entries} entradas")
-        parts.append("Diagnósticos: OK" if not snapshot.diagnostics else f"Diagnósticos: {len(snapshot.diagnostics)}")
+        parts.append(
+            "Información local" if persisted else f"Caché: {snapshot.cache_entries} entradas"
+        )
+        parts.append(
+            "Diagnósticos: OK"
+            if not snapshot.diagnostics
+            else f"Diagnósticos: {len(snapshot.diagnostics)}"
+        )
         self._status_label.setText(" · ".join(parts))
 
     @staticmethod
@@ -635,7 +668,9 @@ class MacroIntelligenceWorkspace(QWidget):
                 MacroIntelligenceWorkspace._format_decimal(point.value),
                 MacroIntelligenceWorkspace._format_decimal(point.previous_value),
                 MacroIntelligenceWorkspace._format_change(point.absolute_change),
-                {"UP": "▲ SUBE", "DOWN": "▼ BAJA", "STABLE": "■ ESTABLE"}.get(point.trend, point.trend or "N/D"),
+                {"UP": "▲ SUBE", "DOWN": "▼ BAJA", "STABLE": "■ ESTABLE"}.get(
+                    point.trend, point.trend or "N/D"
+                ),
             )
             for column, value in enumerate(values):
                 item = QTableWidgetItem(value)

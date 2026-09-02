@@ -62,9 +62,7 @@ class TreasuryPresenter:
             market=market,
         )
         rotation_count = (
-            int(market.get("portfolio_rotation_candidate_count") or 0)
-            if market is not None
-            else 0
+            int(market.get("portfolio_rotation_candidate_count") or 0) if market is not None else 0
         )
         policy_status = str(liquidity.get("policy_status") or "No evaluado")
         stress_status = str(liquidity.get("stress_result") or "No configurado")
@@ -81,9 +79,7 @@ class TreasuryPresenter:
                 self._row(item, valuation_date) for item in insights.observations
             ),
             alerts=tuple(self._row(item, valuation_date) for item in insights.alerts),
-            opportunities=tuple(
-                self._row(item, valuation_date) for item in insights.opportunities
-            ),
+            opportunities=tuple(self._row(item, valuation_date) for item in insights.opportunities),
             filters=filters or {},
             theme_name=theme,
             status="loaded" if not error else "error",
