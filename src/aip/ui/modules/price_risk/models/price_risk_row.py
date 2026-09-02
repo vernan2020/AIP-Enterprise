@@ -18,6 +18,10 @@ class PriceRiskRow:
     real_observations: int
     synthetic_observations: int
     security_key: str
+    modified_duration: str = "N/A"
+    dv01: str = "N/A"
+    bucket: str = "N/A"
+    dv01_status: str = "UNAVAILABLE"
 
 
 @dataclass(frozen=True, slots=True)
