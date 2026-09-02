@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import base64
 from datetime import date, datetime, timezone
 from typing import Any
 
 from PySide6.QtCore import QDate, Qt
-from PySide6.QtGui import QAction
+from PySide6.QtGui import QAction, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QDateEdit,
@@ -24,6 +25,7 @@ from PySide6.QtWidgets import (
 from aip.core.version import APP_DISPLAY_NAME, APP_DISPLAY_VERSION
 from aip.product.demo.bootstrap.application_factory import DemoApplicationFactory
 from aip.product.demo.configuration.environment_loader import EnvironmentLoader
+from aip.ui.assets.coopealianza_logo import COOPEALIANZA_LOGO_PNG_BASE64
 from aip.ui.dialogs.about_dialog import AboutDialog
 from aip.ui.modules.executive.presenters.executive_presenter import ExecutivePresenter
 from aip.ui.modules.executive.views.executive_workspace import ExecutiveWorkspace
@@ -234,34 +236,62 @@ class MainWindow(QMainWindow):
         home.route_requested.connect(self.open_workspace)
         return home
 
+    def _build_logo_label(self) -> QLabel:
+        logo_label = QLabel()
+        logo_label.setObjectName("coopealianzaHeaderLogo")
+        logo_label.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
+        logo_label.setFixedSize(220, 42)
+        pixmap = QPixmap()
+        if pixmap.loadFromData(base64.b64decode(COOPEALIANZA_LOGO_PNG_BASE64)):
+            pixmap = pixmap.scaled(
+                220,
+                41,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
+            logo_label.setPixmap(pixmap)
+        else:
+            logo_label.setText("Coopealianza")
+        logo_label.setStyleSheet("background:transparent; border:none;")
+        return logo_label
+
     def _build_header(self) -> QWidget:
         frame = QFrame(self)
         frame.setObjectName("institutionalHeader")
-        frame.setMinimumHeight(58)
+        frame.setMinimumHeight(62)
+        frame.setMaximumHeight(66)
         frame.setStyleSheet(
-            "QFrame#institutionalHeader {background:#173F63; border:none;}"
+            "QFrame#institutionalHeader {background:#005EB8; border:none;}"
             "QFrame#institutionalHeader QLabel {background:transparent; border:none; color:#FFFFFF;}"
-            "QLabel#headerMode {background:#245A84; border:1px solid #4E7EA2; border-radius:10px; "
-            "padding:4px 9px; color:#EAF3FA; font-size:9px; font-weight:700;}"
-            "QLabel#headerStatus {background:#246B5A; border:1px solid #4A907F; border-radius:10px; "
+            "QLabel#headerMode {background:#00477F; border:1px solid #00A9E0; border-radius:10px; "
             "padding:4px 9px; color:#FFFFFF; font-size:9px; font-weight:700;}"
-            "QDateEdit {min-width:112px; padding:5px 8px; background:#FFFFFF; color:#17324D; "
-            "border:1px solid #B9CAD7; border-radius:5px;}"
+            "QLabel#headerStatus {background:#2B9E8B; border:1px solid #40C1AC; border-radius:10px; "
+            "padding:4px 9px; color:#FFFFFF; font-size:9px; font-weight:700;}"
+            "QDateEdit {min-width:112px; padding:5px 8px; background:#FFFFFF; color:#00345F; "
+            "border:1px solid #73B3DD; border-radius:5px;}"
         )
         layout = QHBoxLayout(frame)
         layout.setContentsMargins(15, 8, 15, 8)
-        layout.setSpacing(10)
+        layout.setSpacing(12)
         execution_mode = self._config.execution_mode
+
+        layout.addWidget(self._build_logo_label())
+
+        separator = QFrame()
+        separator.setFrameShape(QFrame.Shape.VLine)
+        separator.setFixedHeight(34)
+        separator.setStyleSheet("color:#73B3DD; background:#73B3DD; max-width:1px;")
+        layout.addWidget(separator)
 
         title_box = QVBoxLayout()
         title_box.setSpacing(0)
-        title = QLabel("AIP HYBRID" if execution_mode == "CONFIGURED" else APP_DISPLAY_NAME)
+        title = QLabel("AIP ENTERPRISE 2.0")
         title.setStyleSheet(
-            "font-size:15px; font-weight:800; letter-spacing:0.7px; background:transparent;"
+            "font-size:14px; font-weight:800; letter-spacing:0.7px; background:transparent;"
         )
         subtitle = QLabel("PLATAFORMA DE INTELIGENCIA FINANCIERA")
         subtitle.setStyleSheet(
-            "font-size:8px; color:#BFD3E2; letter-spacing:1px; background:transparent;"
+            "font-size:8px; color:#D9F4FC; letter-spacing:1px; background:transparent;"
         )
         title_box.addWidget(title)
         title_box.addWidget(subtitle)
@@ -280,7 +310,7 @@ class MainWindow(QMainWindow):
 
         cutoff_label = QLabel("CORTE")
         cutoff_label.setStyleSheet(
-            "font-size:8px; color:#BFD3E2; font-weight:700; background:transparent;"
+            "font-size:8px; color:#D9F4FC; font-weight:700; background:transparent;"
         )
         layout.addWidget(cutoff_label)
         self._date_edit = QDateEdit()
@@ -351,207 +381,117 @@ class MainWindow(QMainWindow):
                 "Tesorería",
             )
         if route_id == "reports":
-            return (QTextEdit("Reportes institucionales"), "Reportes")
-        return (QTextEdit(route_id), route_id.title())
+            from aip.ui.modules.reports.views.reports_view import ReportsView
+
+            return (ReportsView(), "Reportes")
+        raise KeyError(f"Ruta desconocida: {route_id}")
 
     def _handle_qdate_changed(self, value: QDate) -> None:
-        self._handle_valuation_date_changed(date(value.year(), value.month(), value.day()))
-
-    def _handle_valuation_date_changed(self, value: date) -> None:
-        previous = self._valuation_context.valuation_date
-        if value == previous:
-            return
-        self._date_edit.setEnabled(False)
-        self._status_bar.set_message(f"Cambiando fecha de corte a {value.strftime('%d/%m/%Y')}...")
-        self._header_status.setText("ACTUALIZANDO")
-        QApplication.processEvents()
+        selected = date(value.year(), value.month(), value.day())
         try:
-            self._demo_factory.set_data_cutoff_date(value)
-            self._valuation_context.set_valuation_date(value)
-            self._refresh_open_workspaces()
-            self._refresh_status_panel()
-            self._status_bar.set_message(f"Fecha de corte activa: {value.strftime('%d/%m/%Y')}")
-            self._header_status.setText("SISTEMA LISTO")
+            self._valuation_context.set_valuation_date(selected)
         except Exception as exc:
+            current = self._valuation_context.valuation_date
             self._date_edit.blockSignals(True)
-            self._date_edit.setDate(QDate(previous.year, previous.month, previous.day))
+            self._date_edit.setDate(QDate(current.year, current.month, current.day))
             self._date_edit.blockSignals(False)
-            self._header_status.setText("REVISAR")
-            QMessageBox.critical(
+            QMessageBox.warning(
                 self,
-                "Cambio de fecha no completado",
-                f"No fue posible cargar el corte {value:%d/%m/%Y}.\n\n{exc}",
+                "Fecha de valoración",
+                f"No se pudo cambiar la fecha de valoración.\n\nDetalle:\n{exc}",
             )
-        finally:
-            self._date_edit.setEnabled(True)
-
-    def _refresh_open_workspaces(self) -> int:
-        workspace = self._workspace
-        if workspace is None:
-            return 0
-        refreshed = 0
-        for index in range(workspace.count()):
-            widget = workspace.widget(index)
-            refresh_method = getattr(widget, "refresh", None)
-            if callable(refresh_method):
-                refresh_method()
-                refreshed += 1
-        return refreshed
+            return
+        self._status_bar.set_message(f"Corte activo: {selected:%d/%m/%Y}")
+        self._handle_refresh_all()
 
     def _handle_refresh_all(self) -> None:
-        try:
-            self._status_bar.set_message("Actualizando fuentes institucionales...")
-            self._header_status.setText("ACTUALIZANDO")
-            workflow = self._demo_factory.refresh_all_workflow()
-            result = workflow.execute("corr-refresh-all")
-            refreshed = self._refresh_open_workspaces()
-            self._refresh_status_panel()
-            self._status_bar.set_message(
-                f"Actualización completada · {result['valuation_date']} · {refreshed} módulos"
-            )
-            self._header_status.setText("SISTEMA LISTO")
-        except Exception as exc:
-            self._status_bar.set_message("Actualización fallida")
-            self._header_status.setText("REVISAR")
-            QMessageBox.critical(self, "Actualización fallida", str(exc))
-
-    def refresh_all(self) -> dict[str, object]:
-        workflow = self._demo_factory.refresh_all_workflow()
-        result = workflow.execute("corr-refresh-all")
-        refreshed = self._refresh_open_workspaces()
+        if self._workspace is None:
+            return
+        self._header_status.setText("ACTUALIZANDO")
+        refreshed = 0
+        for index in range(self._workspace.count()):
+            widget = self._workspace.widget(index)
+            refresh = getattr(widget, "refresh", None)
+            if callable(refresh):
+                try:
+                    refresh()
+                    refreshed += 1
+                except Exception as exc:
+                    self._notifications.push(
+                        "warning",
+                        f"No se pudo actualizar {self._workspace.tabText(index)}: {exc}",
+                    )
+        self._header_status.setText("SISTEMA LISTO")
+        self._status_bar.set_message(f"Actualización completada · {refreshed} módulos")
         self._refresh_status_panel()
-        return {
-            "status": "completed",
-            "correlation_id": result["correlation_id"],
-            "valuation_date": result["valuation_date"],
-            "refreshed_workspaces": refreshed,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        }
+
+    def _add_operational_menu_actions(self) -> None:
+        view_menu = self.menuBar().addMenu("Vista")
+        inspector_action = view_menu.addAction("Inspector")
+        inspector_action.setCheckable(True)
+        inspector_action.triggered.connect(
+            lambda checked: self._dock_inspector.setVisible(bool(checked))
+        )
+        self._inspector_action = inspector_action
+
+        notifications_action = view_menu.addAction("Notificaciones")
+        notifications_action.setCheckable(True)
+        notifications_action.triggered.connect(
+            lambda checked: self._dock_notifications.setVisible(bool(checked))
+        )
+
+        status_action = view_menu.addAction("Estado del Sistema")
+        status_action.setCheckable(True)
+        status_action.triggered.connect(
+            lambda checked: self._dock_status.setVisible(bool(checked))
+        )
+
+        tools_menu = self.menuBar().addMenu("Herramientas")
+        tools_menu.addAction("Centro de Estado", self._show_health_center)
+        tools_menu.addAction("Configuración", self._show_settings_center)
+        tools_menu.addAction("Visor de Registros", self._show_log_viewer)
+        tools_menu.addSeparator()
+        tools_menu.addAction("Tema Claro", lambda: self._set_theme("light"))
+        tools_menu.addAction("Tema Oscuro", lambda: self._set_theme("dark"))
+
+        help_menu = self.menuBar().addMenu("Ayuda")
+        help_menu.addAction("Acerca de AIP Enterprise", self._show_about)
+
+    def _show_health_center(self) -> None:
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Centro de Estado")
+        layout = QVBoxLayout(dialog)
+        layout.addWidget(HealthCenterWidget())
+        dialog.resize(820, 560)
+        dialog.exec()
+
+    def _show_settings_center(self) -> None:
+        SettingsCenterDialog(self).exec()
+
+    def _show_log_viewer(self) -> None:
+        LogViewerDialog(self).exec()
+
+    def _show_about(self) -> None:
+        AboutDialog(self).exec()
+
+    def _set_theme(self, theme_name: str) -> None:
+        self._theme_service.set_theme(theme_name)
+        self._apply_theme()
+
+    def _apply_theme(self) -> None:
+        app = QApplication.instance()
+        if app is not None:
+            app.setStyleSheet(self._theme_service.stylesheet())
 
     def _refresh_status_panel(self) -> None:
         if self._system_status_text is None:
             return
         try:
-            status = self._demo_factory.build_system_status()
-            source_states = status.source_states
-            lines = [
-                f"Entorno: {status.environment}",
-                f"Modo de ejecución: {status.execution_mode}",
-                f"Modo demostración: {self._demo_factory.config.demo_mode_enabled}",
-                f"Fecha de valoración: {self._valuation_context.valuation_date.isoformat()}",
-                *[f"{name}: {state}" for name, state in sorted(source_states.items())],
-            ]
+            report = self._diagnostic_service.evaluate()
+            self._system_status_text.setPlainText(str(report))
         except Exception as exc:
-            lines = [f"Estado del sistema no disponible: {exc}"]
-        self._system_status_text.setPlainText("\n".join(lines))
+            self._system_status_text.setPlainText(f"Diagnóstico no disponible: {exc}")
 
-    def toggle_diagnostic_mode(self, enabled: bool) -> None:
-        self._diagnostic_mode = enabled
-        self._diagnostic_metrics.diagnostic_mode = enabled
-        self._refresh_status_panel()
-
-    def diagnostic_snapshot(self) -> dict[str, Any]:
-        snapshot = self._diagnostic_service.diagnostic_snapshot()
-        snapshot.update(
-            {
-                "diagnostic_mode": self._diagnostic_mode,
-                "valuation_date": self._valuation_context.valuation_date.isoformat(),
-                "execution_mode": self._config.execution_mode,
-            }
-        )
-        return snapshot
-
-    def _add_operational_menu_actions(self) -> None:
-        view_menu = self.menuBar().addMenu("Vista")
-        inspector_action = QAction("Inspector", self)
-        inspector_action.setCheckable(True)
-        inspector_action.triggered.connect(self._toggle_inspector)
-        view_menu.addAction(inspector_action)
-        self._inspector_action = inspector_action
-        view_menu.addSeparator()
-        for label, handler in (
-            ("Centro de Estado", self.show_health_center),
-            ("Centro de Configuración", self.show_settings_center),
-            ("Visor de Registros", self.show_log_viewer),
-        ):
-            action = QAction(label, self)
-            action.triggered.connect(handler)
-            view_menu.addAction(action)
-        help_menu = self.menuBar().addMenu("Ayuda")
-        about_action = QAction("Acerca de", self)
-        about_action.triggered.connect(self.show_about)
-        help_menu.addAction(about_action)
-
-    def _toggle_inspector(self, visible: bool) -> None:
-        self._dock_inspector.setVisible(visible)
-
-    def show_health_center(self) -> None:
-        self._show_dialog("Centro de Estado", HealthCenterWidget())
-
-    def show_settings_center(self) -> None:
-        self._show_dialog("Centro de Configuración", SettingsCenterDialog())
-
-    def show_log_viewer(self) -> None:
-        self._show_dialog("Visor de Registros", LogViewerDialog())
-
-    def show_about(self) -> None:
-        AboutDialog().exec()
-
-    def _show_dialog(self, title: str, widget: QWidget) -> None:
-        dialog = QDialog(self)
-        dialog.setWindowTitle(title)
-        layout = QVBoxLayout(dialog)
-        layout.addWidget(widget)
-        dialog.resize(760, 540)
-        dialog.exec()
-
-    def export_current_workspace_table(
-        self,
-        path: str | None = None,
-        *,
-        export_format: str = "csv",
-    ) -> str:
-        if self._workspace is None:
-            raise RuntimeError("Espacio de trabajo no inicializado")
-        current_widget = self._workspace.currentWidget()
-        if current_widget is None:
-            raise RuntimeError("No hay una pestaña activa")
-        table = current_widget
-        if not (hasattr(table, "columnCount") and hasattr(table, "rowCount")):
-            table = getattr(current_widget, "table", None)
-        if table is None or not (hasattr(table, "columnCount") and hasattr(table, "rowCount")):
-            raise RuntimeError("La pestaña activa no expone una tabla")
-        headers = [
-            (
-                table.horizontalHeaderItem(index).text()
-                if table.horizontalHeaderItem(index) is not None
-                else str(index)
-            )
-            for index in range(table.columnCount())
-        ]
-        rows: list[list[object]] = []
-        for row_index in range(table.rowCount()):
-            row: list[object] = []
-            for column_index in range(table.columnCount()):
-                item = table.item(row_index, column_index)
-                row.append(item.text() if item is not None else "")
-            rows.append(row)
-        return self._export_service.export_records(
-            path or "exportacion-espacio-trabajo",
-            headers=headers,
-            rows=rows,
-            export_format=export_format,
-        )
-
-    @property
-    def workspace(self) -> Workspace:
-        if self._workspace is None:
-            raise RuntimeError("Espacio de trabajo no inicializado")
-        return self._workspace
-
-    @property
-    def inspector(self) -> InspectorPanel:
-        return self._inspector
-
-    def _apply_theme(self) -> None:
-        self._theme_service.apply(self)
+    def closeEvent(self, event) -> None:  # noqa: N802
+        self._window_state.save(self)
+        super().closeEvent(event)
