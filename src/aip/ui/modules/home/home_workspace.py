@@ -16,7 +16,7 @@ from aip.product.demo.bootstrap.application_factory import DemoApplicationFactor
 
 
 class HomeWorkspace(QWidget):
-    """Landing workspace for AIP Hybrid navigation and runtime context."""
+    """Pantalla inicial para navegación y contexto operativo de AIP Hybrid."""
 
     route_requested = Signal(str)
 
@@ -25,9 +25,9 @@ class HomeWorkspace(QWidget):
         ("Portafolio", "Valuación, concentración y oportunidades", "portfolio"),
         ("Mercado", "Curvas PiPCA, valor relativo y rotación", "market"),
         ("Riesgo de Precio", "VeR histórico y sensibilidad DV01", "price_risk"),
-        ("Macro Intelligence", "BCCR y escenario institucional aprobado", "macro_intelligence"),
+        ("Inteligencia Macroeconómica", "BCCR y escenario institucional aprobado", "macro_intelligence"),
         ("Liquidez", "ICL, HQLA, MIL y vencimientos", "liquidity"),
-        ("Tesorería", "Alertas, capacidad y oportunidades RV", "treasury"),
+        ("Tesorería", "Alertas, capacidad y oportunidades de valor relativo", "treasury"),
         ("Reportes", "Salida institucional y trazabilidad", "reports"),
     )
 
@@ -55,7 +55,7 @@ class HomeWorkspace(QWidget):
         title_font.setBold(True)
         title.setFont(title_font)
         title.setStyleSheet("color:#FFFFFF; border:none; background:transparent;")
-        subtitle = QLabel("Financial Intelligence · Portafolio · ALM · Liquidez · Mercado")
+        subtitle = QLabel("Inteligencia Financiera · Portafolio · ALM · Liquidez · Mercado")
         subtitle.setStyleSheet(
             "color:#DCE9F5; font-size:10px; border:none; background:transparent;"
         )
@@ -98,7 +98,7 @@ class HomeWorkspace(QWidget):
         root.addStretch(1)
 
         note = QLabel(
-            "Los módulos consumen cálculos y datos del runtime institucional. La interfaz no sustituye "
+            "Los módulos consumen cálculos y datos del entorno institucional de ejecución. La interfaz no sustituye "
             "los motores de dominio ni ejecuta decisiones financieras automáticamente."
         )
         note.setWordWrap(True)
@@ -171,9 +171,9 @@ class HomeWorkspace(QWidget):
             )
             total = len(source_states)
             self._context_labels["sources"].setText(
-                f"{healthy}/{total} operativas" if total else "Runtime compuesto"
+                f"{healthy}/{total} operativas" if total else "Entorno compuesto"
             )
             self._hero_status.setText("SISTEMA LISTO")
         except Exception:
             self._context_labels["sources"].setText("Estado disponible en diagnóstico")
-            self._hero_status.setText("RUNTIME ACTIVO")
+            self._hero_status.setText("ENTORNO ACTIVO")
