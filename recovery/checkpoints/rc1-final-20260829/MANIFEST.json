@@ -2,7 +2,7 @@
   "contract_version": "aip-runtime-checkpoint-v1",
   "checkpoint": "AIP Enterprise RC1 final recovered runtime",
   "checkpoint_directory": "recovery/checkpoints/rc1-final-20260829",
-  "payload_sha256": "052dd65cd7b8701b061c30479f9e9ea427aa5c9c42ab893ef6f8e396617638ef",
+  "payload_sha256": "5bf31fc58a79815f3a2a850d8041441f5a01d62aaf52fd4cfc6be7bb1a001898",
   "encoding": "base64",
   "archive_detection": "tarfile r:*",
   "part_count": 33,
