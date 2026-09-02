@@ -20,6 +20,7 @@ ROLLBACK_TARGETS = (
     Path("src"),
     Path("run_aip_configured.cmd"),
     Path("scripts/recovery"),
+    Path("recovery/checkpoints/rc1-final-20260829"),
     Path("config/runtime.local.cmd.example"),
 )
 
