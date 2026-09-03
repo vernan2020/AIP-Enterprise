@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
+from typing import cast
 
 from PySide6.QtCore import QDate, Qt
 from PySide6.QtGui import QAction
@@ -472,7 +473,7 @@ class MainWindow(QMainWindow):
         self._apply_theme()
 
     def _apply_theme(self) -> None:
-        app = QApplication.instance()
+        app = cast(QApplication | None, QApplication.instance())
         if app is not None:
             app.setStyleSheet(self._theme_service.stylesheet())
 

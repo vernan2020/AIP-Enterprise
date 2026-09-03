@@ -101,8 +101,8 @@ class HomeWorkspace(QWidget):
         modules = QGridLayout()
         modules.setHorizontalSpacing(10)
         modules.setVerticalSpacing(10)
-        for index, (title, detail, route) in enumerate(self._MODULES):
-            modules.addWidget(self._module_card(title, detail, route), index // 4, index % 4)
+        for index, (module_title, detail, route) in enumerate(self._MODULES):
+            modules.addWidget(self._module_card(module_title, detail, route), index // 4, index % 4)
         root.addLayout(modules)
         root.addStretch(1)
 

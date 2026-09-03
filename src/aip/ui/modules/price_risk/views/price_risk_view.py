@@ -395,11 +395,11 @@ class PriceRiskView(QWidget):
             item = QLabel(text)
             item.setStyleSheet("font-weight:700; color:#00345F;")
             grid.addWidget(item, 0, column)
-        for row_index, label in enumerate(
+        for row_index, row_label in enumerate(
             ("DV01", "% DV01", "Valor de Mercado", "Posiciones"),
             1,
         ):
-            grid.addWidget(QLabel(label), row_index, 0)
+            grid.addWidget(QLabel(row_label), row_index, 0)
         for column, key in enumerate(("lt1", "1to5", "gt5"), 1):
             for row_index, metric in enumerate(
                 ("value", "percent", "market_value", "positions"),
@@ -625,11 +625,12 @@ class PriceRiskView(QWidget):
     def _filter_table(self, text: str) -> None:
         needle = text.strip().casefold()
         for row in range(self._table.rowCount()):
-            haystack = " ".join(
-                self._table.item(row, column).text()
-                for column in range(min(3, self._table.columnCount()))
-                if self._table.item(row, column) is not None
-            ).casefold()
+            values: list[str] = []
+            for column in range(min(3, self._table.columnCount())):
+                item = self._table.item(row, column)
+                if item is not None:
+                    values.append(item.text())
+            haystack = " ".join(values).casefold()
             self._table.setRowHidden(row, bool(needle) and needle not in haystack)
 
     def refresh(self) -> None:

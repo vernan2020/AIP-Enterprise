@@ -263,7 +263,8 @@ class PortfolioView(QWidget):
         self._view_model = view_model
         self._bind_dashboard(view_model)
 
-        positions_layout = self._tabs.widget(1).layout()
+        positions_page = self._tabs.widget(1)
+        positions_layout = positions_page.layout() if positions_page is not None else None
         if positions_layout is not None and self._content_splitter is not None:
             positions_layout.removeWidget(self._content_splitter)
             self._content_splitter.hide()
@@ -277,7 +278,7 @@ class PortfolioView(QWidget):
         self._content_splitter.setStretchFactor(0, 3)
         self._content_splitter.setStretchFactor(1, 1)
         if positions_layout is not None:
-            positions_layout.addWidget(self._content_splitter, 1)
+            positions_layout.addWidget(self._content_splitter)
 
         self._status_bar.setText(self._translate_status(view_model.status))
         self._status_bar.setToolTip(view_model.error or "")

@@ -109,7 +109,7 @@ class _MarketCurveChart(QWidget):
 
         painter.setPen(QPen(QColor("#005EB8"), 2.6))
         fitted = QPolygonF([map_point(point) for point in curve.fitted_points])
-        if len(fitted) >= 2:
+        if fitted.size() >= 2:
             painter.drawPolyline(fitted)
 
         painter.setPen(QPen(QColor("#FFFFFF"), 1))
