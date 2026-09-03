@@ -10,7 +10,7 @@ from aip.ui.modules.price_risk.views.price_risk_view import PriceRiskView
 
 
 class _StubPresenter:
-    def build_view_model(self) -> PriceRiskViewModel:
+    def build_view_model(self, *, force_refresh: bool = False) -> PriceRiskViewModel:
         return _view_model()
 
 

@@ -58,9 +58,9 @@ def test_icp_regression_removes_exact_19_billion_exposure_difference() -> None:
     )
 
     assert eligible == institutional_exposure
-    assert sum((cast(Decimal, row["market_value_crc"]) for row in positions), Decimal("0")) - eligible == Decimal(
-        "19000000000"
-    )
+    assert sum(
+        (cast(Decimal, row["market_value_crc"]) for row in positions), Decimal("0")
+    ) - eligible == Decimal("19000000000")
 
 
 def test_calculate_reuses_portfolio_loaded_to_resolve_valuation_date() -> None:
@@ -95,6 +95,39 @@ def test_calculate_reuses_portfolio_loaded_to_resolve_valuation_date() -> None:
     assert provider.calls == 1
 
 
+def test_calculate_accepts_shared_portfolio_without_reloading_provider() -> None:
+    class _Provider:
+        calls = 0
+
+        def get_portfolio(self) -> dict[str, Any]:
+            self.calls += 1
+            raise AssertionError("shared portfolio must avoid a provider reload")
+
+    provider = _Provider()
+    portfolio = {"valuation_date": date(2026, 8, 28), "positions": []}
+    service = ConfiguredPortfolioVaRService.__new__(ConfiguredPortfolioVaRService)
+    service._portfolio_provider = provider
+    service._result_cache = {}
+    service._valuation_date_context = None
+    service._config = cast(Any, object())
+    sentinel = cast(ConfiguredPortfolioVaRResult, object())
+
+    def _calculate_uncached(
+        _self: ConfiguredPortfolioVaRService,
+        *,
+        valuation_date: date | None = None,
+        portfolio: dict[str, Any] | None = None,
+    ) -> ConfiguredPortfolioVaRResult:
+        assert valuation_date == date(2026, 8, 28)
+        assert portfolio is not None
+        return sentinel
+
+    service._calculate_uncached = MethodType(_calculate_uncached, service)  # type: ignore[method-assign]
+
+    assert service.calculate(portfolio=portfolio) is sentinel
+    assert provider.calls == 0
+
+
 def _record(*, series: str, normalized_series: str) -> InstitutionalVectorRecord:
     return InstitutionalVectorRecord(
         issuer="G",
@@ -126,3 +159,25 @@ def test_pipca_builds_one_series_index_per_vector_file(tmp_path: Path) -> None:
     assert repository._records_for_series(path, "serieb") == (second,)
     assert repository._records_by_series_cache[path] is index
     assert set(index) == {"seriea", "serieb"}
+
+
+def test_pipca_cold_start_preloads_only_recent_requested_window(tmp_path: Path) -> None:
+    repository = PiPCAHistoricalPriceRepository(tmp_path, preload_workers=4)
+    dates = tuple(date(2026, 8, day) for day in range(24, 29))
+    paths = tuple(tmp_path / "vector" / f"VectorPiPCA_{day:%Y%m%d}.txt" for day in dates)
+    repository._file_index_cache = dict(zip(dates, paths, strict=True))
+    loaded: list[Path] = []
+
+    def _records(
+        _self: PiPCAHistoricalPriceRepository,
+        path: Path,
+    ) -> tuple[InstitutionalVectorRecord, ...]:
+        loaded.append(path)
+        _self._record_cache[path] = ()
+        return ()
+
+    repository._records = MethodType(_records, repository)  # type: ignore[method-assign]
+    repository._preload_recent_records(dates=dates, limit=3)
+
+    assert set(loaded) == set(paths[-3:])
+    assert set(repository._record_cache) == set(paths[-3:])

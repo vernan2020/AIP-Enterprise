@@ -5,6 +5,7 @@ import unicodedata
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
+from threading import RLock
 from typing import Any
 
 from aip.domain.portfolio.services.portfolio_calculation_service import PortfolioCalculationService
@@ -70,6 +71,8 @@ class ConfiguredPortfolioProvider:
         self._source_config = source_config or ConfiguredSourceConfig()
         self._health_provider = health_provider
         self._valuation_date_context = valuation_date_context
+        self._portfolio_cache: dict[date, dict[str, Any]] = {}
+        self._cache_lock = RLock()
 
     def _current_cutoff_date(self) -> date:
         if self._valuation_date_context is not None:
@@ -77,6 +80,30 @@ class ConfiguredPortfolioProvider:
         return self._read_cutoff_date_override() or self._config.data_cutoff_date
 
     def get_portfolio(self) -> dict[str, Any]:
+        cutoff_date = self._current_cutoff_date()
+        with self._cache_lock:
+            cached = self._portfolio_cache.get(cutoff_date)
+            if cached is not None:
+                return cached
+
+            portfolio = self._load_portfolio()
+            if cutoff_date == self._current_cutoff_date():
+                self._portfolio_cache[cutoff_date] = portfolio
+                while len(self._portfolio_cache) > 3:
+                    oldest = min(self._portfolio_cache)
+                    self._portfolio_cache.pop(oldest, None)
+            return portfolio
+
+    def clear_cache(self, *, valuation_date: date | None = None) -> None:
+        """Invalidate cached portfolio payloads after an explicit source refresh."""
+
+        with self._cache_lock:
+            if valuation_date is None:
+                self._portfolio_cache.clear()
+                return
+            self._portfolio_cache.pop(valuation_date, None)
+
+    def _load_portfolio(self) -> dict[str, Any]:
         sql_enabled = self._source_config.sql_server.enabled
         folder_enabled = self._source_config.folder_watch.enabled
         source_status = (

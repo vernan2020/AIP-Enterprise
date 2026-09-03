@@ -405,6 +405,19 @@ class MainWindow(QMainWindow):
         if self._workspace is None:
             return
         self._header_status.setText("ACTUALIZANDO")
+        try:
+            from aip.product.configured.adapters.configured_portfolio_provider import (
+                ConfiguredPortfolioProvider,
+            )
+            from aip.product.configured.services.configured_portfolio_var_service import (
+                ConfiguredPortfolioVaRService,
+            )
+
+            self._demo_factory.container.resolve(ConfiguredPortfolioProvider).clear_cache()
+            self._demo_factory.container.resolve(ConfiguredPortfolioVaRService).clear_result_cache()
+        except Exception:
+            # Demo mode and reduced test containers do not register configured caches.
+            pass
         refreshed = 0
         for index in range(self._workspace.count()):
             widget = self._workspace.widget(index)

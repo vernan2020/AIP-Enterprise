@@ -96,21 +96,81 @@ class PortfolioDurationService:
                 diagnostic="Variable-rate position has unsupported periodicity",
             )
 
-        anchor = last_payment or valuation_date
-        next_repricing = cls._advance_months(anchor, months)
-        while next_repricing <= valuation_date:
-            next_repricing = cls._advance_months(next_repricing, months)
+        next_repricing = cls._next_coupon_date(
+            valuation_date=valuation_date,
+            months=months,
+            last_payment=last_payment,
+            maturity=maturity,
+        )
+
+        if next_repricing is None:
+            return DurationResult(
+                None,
+                "REPRICING_UNAVAILABLE",
+                "MASTER_VARIABLE_RATE",
+                diagnostic="Variable-rate position has no usable coupon schedule",
+            )
 
         if maturity is not None and next_repricing > maturity:
             next_repricing = maturity
 
         days = max((next_repricing - valuation_date).days, 0)
+        time_to_coupon = Decimal(days) / cls._DAYS_PER_YEAR
+        discount_yield, yield_source = cls._resolve_discount_yield(position)
+        if discount_yield is not None:
+            frequency = Decimal(12) / Decimal(months)
+            modified_duration = time_to_coupon / (
+                Decimal("1") + (cls._rate_decimal(discount_yield) / frequency)
+            )
+            diagnostic = f"Variable-rate discount yield: {yield_source}"
+        else:
+            modified_duration = time_to_coupon
+            diagnostic = "Discount yield unavailable; undiscounted next-coupon proxy used"
         return DurationResult(
-            Decimal(days) / cls._DAYS_PER_YEAR,
+            modified_duration,
             "NEXT_REPRICING",
             "NEXT_COUPON_DATE",
             next_repricing_date=next_repricing,
+            diagnostic=diagnostic,
         )
+
+    @classmethod
+    def _next_coupon_date(
+        cls,
+        *,
+        valuation_date: date,
+        months: int,
+        last_payment: date | None,
+        maturity: date | None,
+    ) -> date | None:
+        """Resolve the first contractual coupon date after valuation.
+
+        The master normally supplies the last interest-payment date.  When it
+        is absent, the contractual maturity schedule is the authoritative
+        fallback; anchoring on the valuation date would incorrectly assign a
+        complete coupon period to every variable-rate title.
+        """
+
+        if maturity is not None and maturity <= valuation_date:
+            return maturity
+
+        if last_payment is not None:
+            next_coupon = last_payment
+            while next_coupon <= valuation_date:
+                next_coupon = cls._advance_months(next_coupon, months)
+            if maturity is not None and next_coupon > maturity:
+                return maturity
+            return next_coupon
+
+        if maturity is None:
+            return None
+
+        next_coupon = maturity
+        while True:
+            previous_coupon = cls._advance_months(next_coupon, -months)
+            if previous_coupon <= valuation_date:
+                return next_coupon
+            next_coupon = previous_coupon
 
     @classmethod
     def _maturity_proxy(cls, position: dict[str, Any], valuation_date: date) -> DurationResult:

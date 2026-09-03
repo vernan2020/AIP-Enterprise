@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
@@ -42,11 +43,13 @@ class PiPCAHistoricalPriceRepository:
         investment_root: str | Path,
         *,
         reader: InstitutionalPiPCAVectorReader | None = None,
+        preload_workers: int = 8,
     ) -> None:
         root = Path(investment_root)
         nested = root / "Inversiones"
         self._investment_root = nested if nested.is_dir() else root
         self._reader = reader or InstitutionalPiPCAVectorReader()
+        self._preload_workers = max(1, preload_workers)
         self._file_index_cache: dict[date, Path] | None = None
         self._record_cache: dict[Path, tuple[InstitutionalVectorRecord, ...]] = {}
         self._records_by_series_cache: dict[
@@ -77,6 +80,7 @@ class PiPCAHistoricalPriceRepository:
         )
 
         dates = self.available_vector_dates(cutoff_date=cutoff_date)
+        self._preload_recent_records(dates=dates, limit=limit)
         observations: list[HistoricalPriceObservation] = []
         files_read = 0
         ambiguous_dates = 0
@@ -130,6 +134,25 @@ class PiPCAHistoricalPriceRepository:
             status=status,
             diagnostic=diagnostic,
         )
+
+    def _preload_recent_records(self, *, dates: tuple[date, ...], limit: int) -> None:
+        """Read the most likely historical window concurrently on cold start."""
+
+        recent_dates = dates[-limit:]
+        paths = tuple(
+            self._file_index()[vector_date]
+            for vector_date in recent_dates
+            if self._file_index()[vector_date] not in self._record_cache
+        )
+        if not paths:
+            return
+        if self._preload_workers == 1 or len(paths) == 1:
+            for path in paths:
+                self._records(path)
+            return
+        workers = min(self._preload_workers, len(paths))
+        with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="pipca-history") as pool:
+            tuple(pool.map(self._records, paths))
 
     def _file_index(self) -> dict[date, Path]:
         if self._file_index_cache is not None:

@@ -63,8 +63,10 @@ class ConfiguredPortfolioDV01Service:
     def __init__(self, portfolio_provider: PortfolioDataProvider) -> None:
         self._portfolio_provider = portfolio_provider
 
-    def calculate(self) -> ConfiguredPortfolioDV01Result:
-        portfolio = self._portfolio_provider.get_portfolio()
+    def calculate(
+        self, *, portfolio: dict[str, Any] | None = None
+    ) -> ConfiguredPortfolioDV01Result:
+        portfolio = portfolio or self._portfolio_provider.get_portfolio()
         positions = [
             position for position in portfolio.get("positions", []) if isinstance(position, dict)
         ]

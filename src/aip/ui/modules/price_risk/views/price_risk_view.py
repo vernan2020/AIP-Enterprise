@@ -34,10 +34,10 @@ class _PriceRiskWorker(QObject):
         super().__init__()
         self._presenter = presenter
 
-    @Slot()
-    def load(self) -> None:
+    @Slot(bool)
+    def load(self, force_refresh: bool = False) -> None:
         try:
-            self.result_ready.emit(self._presenter.build_view_model())
+            self.result_ready.emit(self._presenter.build_view_model(force_refresh=force_refresh))
         except Exception as exc:
             self.failed.emit(str(exc))
 
@@ -61,7 +61,7 @@ class PriceRiskView(QWidget):
         "ERROR": "ERROR",
     }
 
-    load_requested = Signal()
+    load_requested = Signal(bool)
 
     def __init__(self, presenter: PriceRiskPresenter) -> None:
         super().__init__()
@@ -70,6 +70,7 @@ class PriceRiskView(QWidget):
         self._view_model = PriceRiskViewModel(status="LOADING")
         self._loading = False
         self._refresh_pending = False
+        self._refresh_pending_force = False
         self._closing = False
         self._kpi_labels: dict[str, QLabel] = {}
         self._quality_labels: dict[str, QLabel] = {}
@@ -77,7 +78,7 @@ class PriceRiskView(QWidget):
         self._build_ui()
         self._setup_worker()
         self._set_loading_state(initial=True)
-        QTimer.singleShot(0, self._request_load)
+        QTimer.singleShot(0, lambda: self._request_load(force_refresh=False))
 
     @classmethod
     def _translate_status(cls, value: str) -> str:
@@ -438,15 +439,16 @@ class PriceRiskView(QWidget):
         self._worker_thread.finished.connect(self._worker.deleteLater)
         self._worker_thread.start()
 
-    def _request_load(self) -> None:
+    def _request_load(self, *, force_refresh: bool = False) -> None:
         if self._closing:
             return
         if self._loading:
             self._refresh_pending = True
+            self._refresh_pending_force = self._refresh_pending_force or force_refresh
             return
         self._loading = True
         self._set_loading_state(initial=False)
-        self.load_requested.emit()
+        self.load_requested.emit(force_refresh)
 
     def _set_loading_state(self, *, initial: bool) -> None:
         self._date_label.setText("Corte: cargando..." if initial else "Corte: actualizando...")
@@ -467,8 +469,10 @@ class PriceRiskView(QWidget):
             return
         self._loading = False
         if self._refresh_pending:
+            force_refresh = self._refresh_pending_force
             self._refresh_pending = False
-            self._request_load()
+            self._refresh_pending_force = False
+            self._request_load(force_refresh=force_refresh)
             return
         if not isinstance(view_model, PriceRiskViewModel):
             self._on_load_failed("El proceso devolvió un modelo de vista inválido")
@@ -629,7 +633,7 @@ class PriceRiskView(QWidget):
             self._table.setRowHidden(row, bool(needle) and needle not in haystack)
 
     def refresh(self) -> None:
-        self._request_load()
+        self._request_load(force_refresh=True)
 
     def closeEvent(self, event) -> None:  # noqa: N802
         self._closing = True

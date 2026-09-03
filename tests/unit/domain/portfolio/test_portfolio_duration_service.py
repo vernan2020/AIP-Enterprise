@@ -63,6 +63,7 @@ def test_variable_coupon_duration_uses_next_coupon_date() -> None:
             "product_code": "BOND",
             "periodicity": "trimestral",
             "variable_rate_flag": "S",
+            "market_yield": Decimal("0.06"),
             "last_interest_payment_date": date(2026, 6, 30),
             "maturity_date": date(2030, 6, 30),
         },
@@ -72,7 +73,25 @@ def test_variable_coupon_duration_uses_next_coupon_date() -> None:
     assert result.method == "NEXT_REPRICING"
     assert result.source == "NEXT_COUPON_DATE"
     assert result.next_repricing_date == date(2026, 9, 30)
-    assert result.modified_duration == Decimal("34") / Decimal("365")
+    assert result.modified_duration == (Decimal("34") / Decimal("365")) / Decimal("1.015")
+
+
+def test_variable_coupon_infers_schedule_from_maturity_when_last_payment_is_missing() -> None:
+    result = PortfolioDurationService.calculate(
+        {
+            "product_code": "BOND",
+            "periodicity": "trimestral",
+            "variable_rate_flag": "S",
+            "market_yield": Decimal("0.06"),
+            "last_interest_payment_date": None,
+            "maturity_date": date(2030, 6, 30),
+        },
+        date(2026, 8, 27),
+    )
+
+    assert result.method == "NEXT_REPRICING"
+    assert result.next_repricing_date == date(2026, 9, 30)
+    assert result.modified_duration == (Decimal("34") / Decimal("365")) / Decimal("1.015")
 
 
 def test_liquidity_operations_do_not_reduce_consolidated_fixed_income_duration() -> None:

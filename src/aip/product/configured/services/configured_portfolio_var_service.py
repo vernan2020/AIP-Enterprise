@@ -345,6 +345,7 @@ class ConfiguredPortfolioVaRService:
         self,
         *,
         valuation_date: date | None = None,
+        portfolio: dict[str, Any] | None = None,
         force_refresh: bool = False,
     ) -> ConfiguredPortfolioVaRResult:
         """
@@ -370,10 +371,11 @@ class ConfiguredPortfolioVaRService:
         # repositorios históricos.
         # --------------------------------------------------------
 
-        portfolio: dict[str, Any] | None = None
-
         if valuation_date is not None:
             effective_date = valuation_date
+
+        elif portfolio is not None:
+            effective_date = self._resolve_valuation_date(portfolio)
 
         else:
             portfolio = self._portfolio_provider.get_portfolio()

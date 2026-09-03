@@ -4,6 +4,9 @@ from collections import defaultdict
 from datetime import date, datetime
 from decimal import Decimal
 
+from aip.product.configured.adapters.configured_portfolio_provider import (
+    ConfiguredPortfolioProvider,
+)
 from aip.product.configured.services.configured_portfolio_dv01_service import (
     ConfiguredPortfolioDV01Service,
 )
@@ -239,10 +242,17 @@ class PriceRiskPresenter:
             )
         return tuple(rows)
 
-    def build_view_model(self) -> PriceRiskViewModel:
+    def build_view_model(self, *, force_refresh: bool = False) -> PriceRiskViewModel:
         try:
+            portfolio_provider = self._application_factory.container.resolve(
+                ConfiguredPortfolioProvider
+            )
+            portfolio = portfolio_provider.get_portfolio()
             var_service = self._application_factory.container.resolve(ConfiguredPortfolioVaRService)
-            var_result = var_service.calculate()
+            var_result = var_service.calculate(
+                portfolio=portfolio,
+                force_refresh=force_refresh,
+            )
         except Exception as exc:
             return PriceRiskViewModel(status="ERROR", diagnostic=str(exc))
 
@@ -252,7 +262,7 @@ class PriceRiskPresenter:
             dv01_service = self._application_factory.container.resolve(
                 ConfiguredPortfolioDV01Service
             )
-            dv01_result = dv01_service.calculate()
+            dv01_result = dv01_service.calculate(portfolio=portfolio)
         except Exception as exc:
             dv01_diagnostic = str(exc)
 
@@ -262,7 +272,7 @@ class PriceRiskPresenter:
             rate_shock_service = self._application_factory.container.resolve(
                 ConfiguredPortfolioRateShockService
             )
-            rate_shock_result = rate_shock_service.calculate()
+            rate_shock_result = rate_shock_service.calculate(portfolio=portfolio)
         except Exception as exc:
             rate_shock_diagnostic = str(exc)
 
