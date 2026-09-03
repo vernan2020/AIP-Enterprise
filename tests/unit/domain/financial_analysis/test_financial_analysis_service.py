@@ -11,11 +11,17 @@ from aip.domain.financial_analysis.models import (
 from aip.domain.financial_analysis.services import FinancialAnalysisService
 
 
-def _line(entity: FinancialEntity, cutoff: date, name: str, amount: str) -> FinancialStatementLine:
+def _line(
+    entity: FinancialEntity,
+    cutoff: date,
+    name: str,
+    amount: str,
+    statement_type: FinancialStatementType = FinancialStatementType.BALANCE_SHEET,
+) -> FinancialStatementLine:
     return FinancialStatementLine(
         entity=entity,
         statement_date=cutoff,
-        statement_type=FinancialStatementType.BALANCE_SHEET,
+        statement_type=statement_type,
         account_code=name[:4],
         account_name=name,
         amount=Decimal(amount),
@@ -31,8 +37,20 @@ def test_snapshot_selects_coopealianza_and_builds_peer_comparison() -> None:
         _line(coopealianza, cutoff, "TOTAL ACTIVO", "810000000000"),
         _line(coopealianza, cutoff, "TOTAL PASIVO", "650000000000"),
         _line(coopealianza, cutoff, "TOTAL PATRIMONIO", "160000000000"),
-        _line(coopealianza, cutoff, "RESULTADO DEL PERIODO", "8000000000"),
-        _line(coopealianza, cutoff, "ROA", "1.25"),
+        _line(
+            coopealianza,
+            cutoff,
+            "RESULTADO DEL PERIODO",
+            "8000000000",
+            FinancialStatementType.INCOME_STATEMENT,
+        ),
+        _line(
+            coopealianza,
+            cutoff,
+            "ROA",
+            "1.25",
+            FinancialStatementType.INDICATORS,
+        ),
         _line(coopealianza, previous, "TOTAL ACTIVO", "800000000000"),
         _line(peer, cutoff, "TOTAL ACTIVO", "300000000000"),
     )

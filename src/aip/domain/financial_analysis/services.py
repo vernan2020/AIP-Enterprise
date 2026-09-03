@@ -79,7 +79,21 @@ class FinancialAnalysisService:
             selected_entity_id=selected.entity_id,
             cutoff_date=effective_date,
         )
-        status = "AVAILABLE" if current else "UNAVAILABLE"
+        statement_types = {line.statement_type for line in current}
+        has_balance = FinancialStatementType.BALANCE_SHEET in statement_types
+        has_income = FinancialStatementType.INCOME_STATEMENT in statement_types
+        status = "AVAILABLE" if has_balance and has_income else "PARTIAL"
+        coverage_diagnostics = list(diagnostics)
+        if not has_balance:
+            coverage_diagnostics.append(
+                "Cobertura parcial: falta el Balance de Situación oficial de SUGEF "
+                "para la entidad y el corte seleccionados."
+            )
+        if not has_income:
+            coverage_diagnostics.append(
+                "Cobertura parcial: falta el Estado de Resultados oficial de SUGEF "
+                "para la entidad y el corte seleccionados."
+            )
         return FinancialAnalysisSnapshot(
             status=status,
             cutoff_date=effective_date,
@@ -90,7 +104,7 @@ class FinancialAnalysisService:
             statement_lines=tuple(sorted(current, key=self._line_sort_key)),
             peer_summaries=peers,
             rating=rating,
-            diagnostics=diagnostics,
+            diagnostics=tuple(coverage_diagnostics),
             source_files=source_files,
         )
 

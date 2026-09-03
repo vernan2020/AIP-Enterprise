@@ -98,7 +98,7 @@ class FinancialAnalysisView(QWidget):
         self._tabs = QTabWidget()
         self._tabs.setDocumentMode(True)
         self._statement_table = self._table(
-            ["Estado", "Cuenta", "Descripción", "Saldo", "Moneda", "Trazabilidad"]
+            ["Estado", "Cuenta", "Descripción", "Valor", "Moneda", "Trazabilidad"]
         )
         self._peer_table = self._table(
             ["Entidad", "Categoría", "Activos", "Cartera", "Patrimonio", "Resultado", "ROA", "ROE"]
@@ -236,7 +236,10 @@ class FinancialAnalysisView(QWidget):
         self._bind_rating(view_model)
         self._diagnostics.clear()
         self._diagnostics.addItems(list(view_model.diagnostics) or ["Sin incidencias de calidad."])
-        status = "Disponible" if view_model.status == "AVAILABLE" else "Pendiente de datos"
+        status = {
+            "AVAILABLE": "Estados completos",
+            "PARTIAL": "Cobertura parcial",
+        }.get(view_model.status, "Pendiente de datos")
         self._source_status.setText(
             f"{view_model.source_name} · {status} · {view_model.source_file_count} archivo(s) procesado(s)"
         )

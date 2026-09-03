@@ -138,4 +138,4 @@ class FinancialAnalysisSnapshot:
 
     @property
     def available(self) -> bool:
-        return self.status == "AVAILABLE" and bool(self.statement_lines)
+        return self.status in {"AVAILABLE", "PARTIAL"} and bool(self.statement_lines)

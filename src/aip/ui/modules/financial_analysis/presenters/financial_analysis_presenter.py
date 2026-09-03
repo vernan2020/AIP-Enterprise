@@ -60,7 +60,11 @@ class FinancialAnalysisPresenter:
                 statement=cls._statement_label(item.statement_type.value),
                 account_code=item.account_code,
                 account_name=item.account_name,
-                amount=cls._money(item.amount),
+                amount=cls._statement_value(
+                    item.amount,
+                    item.statement_type.value,
+                    item.account_code,
+                ),
                 currency=item.currency,
                 trace=(
                     f"{item.trace.file_path} · {item.trace.sheet_name} · fila {item.trace.row_number}"
@@ -154,6 +158,14 @@ class FinancialAnalysisPresenter:
         if value is None:
             return "-"
         return f"₡{value / Decimal('1000000'):,.2f} MM"
+
+    @classmethod
+    def _statement_value(cls, value: Decimal, statement_type: str, account_code: str) -> str:
+        if statement_type != "INDICATORS":
+            return cls._money(value)
+        if account_code in {"PROPORTIONAL_SUPERVISION", "EQUITY_COMMITMENT"}:
+            return "Sí" if value == Decimal("1") else "No"
+        return f"{value * Decimal('100'):,.3f}%"
 
     @staticmethod
     def _percent(value: Decimal | None) -> str:
