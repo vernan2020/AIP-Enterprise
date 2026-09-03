@@ -105,12 +105,12 @@ def rebuild(root: Path, output_dir: Path) -> tuple[str, int, int, int, int]:
     digest = hashlib.sha256(payload).hexdigest()
     encoded = base64.b64encode(payload).decode("ascii")
     chunks = _split_evenly(encoded, current_manifest.part_count)
+    manifest_payload = _candidate_manifest(root, digest, len(files))
 
     if output_dir.exists():
         shutil.rmtree(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    manifest_payload = _candidate_manifest(root, digest, len(files))
     (output_dir / MANIFEST_NAME).write_text(
         json.dumps(manifest_payload, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",

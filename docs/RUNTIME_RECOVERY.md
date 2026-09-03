@@ -9,7 +9,7 @@ AIP Enterprise debe iniciar en modo `CONFIGURED` usando las fuentes instituciona
 - Repositorio: `vernan2020/AIP-Enterprise`
 - Rama: `recovery/full-runtime-rc1-20260829`
 - Checkpoint: `recovery/checkpoints/rc1-final-20260829`
-- SHA-256 del payload: `491ade50a8c6f0c5e02458050dabc7d8ed69a2088c4fcf78aa793c27f1ea0c72`
+- SHA-256 del payload: `8adfbebb527a13b43f3cf56cf0250866e7be3dbe6134829097fd191f3039779c`
 - Partes declaradas: 33
 
 `recovery/checkpoints` contiene únicamente este checkpoint final.

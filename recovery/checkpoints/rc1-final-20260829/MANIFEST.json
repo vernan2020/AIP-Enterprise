@@ -2,7 +2,7 @@
   "contract_version": "aip-runtime-checkpoint-v1",
   "checkpoint": "AIP Enterprise RC1 final recovered runtime",
   "checkpoint_directory": "recovery/checkpoints/rc1-final-20260829",
-  "payload_sha256": "479b848620cf82a4704b20a40ca159c8af8ec18b19ffe9a09dc68c7bbec9edba",
+  "payload_sha256": "8adfbebb527a13b43f3cf56cf0250866e7be3dbe6134829097fd191f3039779c",
   "encoding": "base64",
   "archive_detection": "tarfile r:*",
   "part_count": 33,
@@ -65,6 +65,6 @@
     "liquidity_treasury_relative_value_tests": "175 passed",
     "canonical_checkpoint_digest_validation": "PASS",
     "checkpoint_payload_rebuilt_from_materialized_src": "PASS",
-    "checkpoint_source_file_count": 918
+    "checkpoint_source_file_count": 924
   }
 }

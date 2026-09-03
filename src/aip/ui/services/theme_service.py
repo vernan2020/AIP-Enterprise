@@ -1,12 +1,7 @@
 from __future__ import annotations
 
-import base64
-
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QLabel, QWidget
 
-from aip.ui.assets.coopealianza_logo import COOPEALIANZA_LOGO_PNG_BASE64
 from aip.ui.themes.dark_theme import DarkTheme
 from aip.ui.themes.light_theme import LightTheme
 
@@ -46,12 +41,11 @@ class ThemeService:
 
     @staticmethod
     def _apply_coopealianza_header_branding(widget: QWidget) -> None:
-        """Inserta el logo oficial de Coopealianza en el header institucional.
+        """Aplica la identidad visual del encabezado institucional secundario.
 
-        El header claro preserva el arte original del logotipo, mantiene el blanco
-        como superficie predominante y utiliza Azul/Celeste/Menta Coopealianza
-        como estructura y estados. El activo queda embebido en el runtime y no
-        depende de rutas locales del usuario.
+        El logotipo se reserva para el ribbon blanco principal. El encabezado
+        secundario muestra únicamente la identidad del producto, el modo de
+        ejecución, el estado y la fecha de corte.
         """
 
         header = widget.findChild(QWidget, "institutionalHeader")
@@ -89,32 +83,9 @@ class ThemeService:
                 "font-size:8px; color:#566D7C; font-weight:700; background:transparent;"
             )
 
-        if header.findChild(QLabel, "coopealianzaHeaderLogo") is not None:
-            return
-
-        layout = header.layout()
-        if layout is None or not hasattr(layout, "insertWidget"):
-            return
-
-        pixmap = QPixmap()
-        raw = base64.b64decode(COOPEALIANZA_LOGO_PNG_BASE64)
-        if not pixmap.loadFromData(raw, "PNG"):
-            return
-
-        logo = QLabel(header)
-        logo.setObjectName("coopealianzaHeaderLogo")
-        logo.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
-        logo.setFixedSize(236, 48)
-        logo.setPixmap(
-            pixmap.scaled(
-                220,
-                42,
-                Qt.AspectRatioMode.KeepAspectRatio,
-                Qt.TransformationMode.SmoothTransformation,
-            )
-        )
-        logo.setToolTip("Coopealianza R.L.")
-        layout.insertWidget(0, logo)
+        logo = header.findChild(QLabel, "coopealianzaHeaderLogo")
+        if logo is not None:
+            logo.hide()
 
     def set_dark(self) -> None:
         self._theme = DarkTheme()

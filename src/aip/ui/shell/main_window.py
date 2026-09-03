@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import base64
 from datetime import date
 
 from PySide6.QtCore import QDate, Qt
-from PySide6.QtGui import QAction, QPixmap
+from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QApplication,
     QDateEdit,
@@ -24,7 +23,6 @@ from PySide6.QtWidgets import (
 from aip.core.version import APP_DISPLAY_VERSION
 from aip.product.demo.bootstrap.application_factory import DemoApplicationFactory
 from aip.product.demo.configuration.environment_loader import EnvironmentLoader
-from aip.ui.assets.coopealianza_logo import COOPEALIANZA_LOGO_PNG_BASE64
 from aip.ui.dialogs.about_dialog import AboutDialog
 from aip.ui.modules.executive.presenters.executive_presenter import ExecutivePresenter
 from aip.ui.modules.executive.views.executive_workspace import ExecutiveWorkspace
@@ -235,25 +233,6 @@ class MainWindow(QMainWindow):
         home.route_requested.connect(self.open_workspace)
         return home
 
-    def _build_logo_label(self) -> QLabel:
-        logo_label = QLabel()
-        logo_label.setObjectName("coopealianzaHeaderLogo")
-        logo_label.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
-        logo_label.setFixedSize(220, 42)
-        pixmap = QPixmap()
-        if pixmap.loadFromData(base64.b64decode(COOPEALIANZA_LOGO_PNG_BASE64)):
-            pixmap = pixmap.scaled(
-                220,
-                41,
-                Qt.AspectRatioMode.KeepAspectRatio,
-                Qt.TransformationMode.SmoothTransformation,
-            )
-            logo_label.setPixmap(pixmap)
-        else:
-            logo_label.setText("Coopealianza")
-        logo_label.setStyleSheet("background:transparent; border:none;")
-        return logo_label
-
     def _build_header(self) -> QWidget:
         frame = QFrame(self)
         frame.setObjectName("institutionalHeader")
@@ -273,14 +252,6 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(15, 8, 15, 8)
         layout.setSpacing(12)
         execution_mode = self._config.execution_mode
-
-        layout.addWidget(self._build_logo_label())
-
-        separator = QFrame()
-        separator.setFrameShape(QFrame.Shape.VLine)
-        separator.setFixedHeight(34)
-        separator.setStyleSheet("color:#73B3DD; background:#73B3DD; max-width:1px;")
-        layout.addWidget(separator)
 
         title_box = QVBoxLayout()
         title_box.setSpacing(0)
