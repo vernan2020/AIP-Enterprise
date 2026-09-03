@@ -15,9 +15,14 @@ env:
   QT_QPA_PLATFORM: offscreen
   PYTHONPATH: src
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   runtime-source:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -56,6 +61,7 @@ jobs:
 
   quality:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -77,6 +83,7 @@ jobs:
 
   tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -97,13 +104,14 @@ jobs:
           pip install -e .[dev]
       - name: Run unit tests
         if: matrix.suite == 'unit'
-        run: pytest tests/unit -q -W error
+        run: pytest tests/unit -q -W error -o faulthandler_timeout=300
       - name: Run integration tests
         if: matrix.suite == 'integration'
-        run: pytest tests/integration -q -W error
+        run: pytest tests/integration -q -W error -o faulthandler_timeout=300
 
   coverage:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -120,11 +128,12 @@ jobs:
           pip install -e .[dev]
       - name: Coverage validation
         run: |
-          pytest --cov=src --cov-report=term-missing -q -W error
+          pytest --cov=src --cov-report=term-missing -q -W error -o faulthandler_timeout=300
           coverage report --fail-under=90
 
   package:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

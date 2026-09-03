@@ -16,9 +16,14 @@ env:
   QT_QPA_PLATFORM: offscreen
   PYTHONPATH: src
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate-certified-runtime:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - name: Checkout certified recovery branch
         uses: actions/checkout@v4
@@ -198,6 +203,7 @@ jobs:
 
   validate-windows-restore:
     runs-on: windows-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout certified recovery branch
         uses: actions/checkout@v4

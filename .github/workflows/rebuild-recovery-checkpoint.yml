@@ -17,9 +17,14 @@ permissions:
 env:
   PYTHONPATH: src
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   rebuild-checkpoint:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout recovery branch
         uses: actions/checkout@v4

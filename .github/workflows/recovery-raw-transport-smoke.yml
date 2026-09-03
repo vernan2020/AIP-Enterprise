@@ -9,9 +9,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   raw-transport-smoke:
     runs-on: windows-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout recovery branch
         uses: actions/checkout@v4
