@@ -182,8 +182,9 @@ class ConfiguredPortfolioVaRService:
     Se excluyen:
 
     1. posiciones cuya clasificación inicia con "C.A";
-    2. operaciones cuyo product_code es "MIL";
-    3. posiciones con valor de mercado no positivo.
+    2. instrumentos cuyo product_code es "ICP";
+    3. operaciones cuyo product_code es "MIL";
+    4. posiciones con valor de mercado no positivo.
 
     El resto constituye el universo sujeto a VER.
 
@@ -369,6 +370,8 @@ class ConfiguredPortfolioVaRService:
         # repositorios históricos.
         # --------------------------------------------------------
 
+        portfolio: dict[str, Any] | None = None
+
         if valuation_date is not None:
             effective_date = valuation_date
 
@@ -391,7 +394,10 @@ class ConfiguredPortfolioVaRService:
         # CACHE MISS
         # --------------------------------------------------------
 
-        result = self._calculate_uncached(valuation_date=effective_date)
+        result = self._calculate_uncached(
+            valuation_date=effective_date,
+            portfolio=portfolio,
+        )
 
         self._result_cache[effective_date] = result
 
@@ -431,6 +437,7 @@ class ConfiguredPortfolioVaRService:
         self,
         *,
         valuation_date: date | None = None,
+        portfolio: dict[str, Any] | None = None,
     ) -> ConfiguredPortfolioVaRResult:
         """
         Calcula el VER para el portafolio del corte vigente.
@@ -451,7 +458,7 @@ class ConfiguredPortfolioVaRService:
         # CURRENT PORTFOLIO
         # ========================================================
 
-        portfolio = self._portfolio_provider.get_portfolio()
+        portfolio = portfolio or self._portfolio_provider.get_portfolio()
 
         positions = [
             position
@@ -968,7 +975,10 @@ class ConfiguredPortfolioVaRService:
         1. classification inicia con "C.A"
            -> COST_AMORTIZED
 
-        2. product_code == "MIL"
+        2. product_code == "ICP"
+           -> ICP_OPERATION
+
+        3. product_code == "MIL"
            -> MIL_OPERATION
 
         El resto permanece elegible, sujeto a VM > 0.
@@ -980,6 +990,9 @@ class ConfiguredPortfolioVaRService:
 
         if classification.startswith("C.A"):
             return "COST_AMORTIZED"
+
+        if product_code == "ICP":
+            return "ICP_OPERATION"
 
         if product_code == "MIL":
             return "MIL_OPERATION"

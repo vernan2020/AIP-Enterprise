@@ -49,7 +49,10 @@ class PiPCAHistoricalPriceRepository:
         self._reader = reader or InstitutionalPiPCAVectorReader()
         self._file_index_cache: dict[date, Path] | None = None
         self._record_cache: dict[Path, tuple[InstitutionalVectorRecord, ...]] = {}
-        self._series_index_cache: dict[tuple[Path, str], tuple[InstitutionalVectorRecord, ...]] = {}
+        self._records_by_series_cache: dict[
+            Path,
+            dict[str, tuple[InstitutionalVectorRecord, ...]],
+        ] = {}
 
     def available_vector_dates(self, *, cutoff_date: date) -> tuple[date, ...]:
         return tuple(day for day in sorted(self._file_index()) if day <= cutoff_date)
@@ -169,22 +172,25 @@ class PiPCAHistoricalPriceRepository:
         path: Path,
         normalized_series: str,
     ) -> tuple[InstitutionalVectorRecord, ...]:
-        key = (path, normalized_series)
-        cached = self._series_index_cache.get(key)
-        if cached is not None:
-            return cached
         records = self._records(path)
-        if normalized_series:
-            filtered = tuple(
-                record
-                for record in records
-                if self._normalize(record.series_or_security_code) == normalized_series
-                or self._normalize(record.normalized_series_key) == normalized_series
-            )
-        else:
-            filtered = records
-        self._series_index_cache[key] = filtered
-        return filtered
+        if not normalized_series:
+            return records
+
+        index = self._records_by_series_cache.get(path)
+        if index is None:
+            mutable_index: dict[str, list[InstitutionalVectorRecord]] = {}
+            for record in records:
+                keys = {
+                    self._normalize(record.series_or_security_code),
+                    self._normalize(record.normalized_series_key),
+                }
+                for key in keys:
+                    if key:
+                        mutable_index.setdefault(key, []).append(record)
+            index = {key: tuple(items) for key, items in mutable_index.items()}
+            self._records_by_series_cache[path] = index
+
+        return index.get(normalized_series, ())
 
     @classmethod
     def _matching_records(
