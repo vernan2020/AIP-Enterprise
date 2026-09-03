@@ -69,7 +69,7 @@ class BCCRSourceConfig:
 
 @dataclass(frozen=True, slots=True)
 class SUGEFFinancialSourceConfig:
-    """Fuente SUGEF con importación local y referencia institucional de respaldo."""
+    """Fuente SUGEF REST, con importación local y referencia de respaldo."""
 
     enabled: bool = True
     root: str | None = None
@@ -77,6 +77,13 @@ class SUGEFFinancialSourceConfig:
     supported_extensions: tuple[str, ...] = (".csv", ".xls", ".xlsx")
     recursive: bool = True
     cache_enabled: bool = True
+    api_enabled: bool = True
+    api_base_url: str = "https://www.sugef.fi.cr/Bccr.Sugef.Reportes_SitioWeb.API"
+    api_version: str = "1.0"
+    api_entity_codes: tuple[str, ...] = ("3004045138",)
+    api_timeout_seconds: float = 90.0
+    api_retries: int = 2
+    api_backoff_seconds: float = 1.0
     official_information_url: str = (
         "https://www.sugef.fi.cr/reportes/Informacion_Financiera_Contable.aspx"
     )
@@ -162,6 +169,13 @@ class ConfiguredSourceConfig:
                 "supported_extensions": list(self.sugef_financial.supported_extensions),
                 "recursive": self.sugef_financial.recursive,
                 "cache_enabled": self.sugef_financial.cache_enabled,
+                "api_enabled": self.sugef_financial.api_enabled,
+                "api_base_url": self.sugef_financial.api_base_url,
+                "api_version": self.sugef_financial.api_version,
+                "api_entity_codes": list(self.sugef_financial.api_entity_codes),
+                "api_timeout_seconds": self.sugef_financial.api_timeout_seconds,
+                "api_retries": self.sugef_financial.api_retries,
+                "api_backoff_seconds": self.sugef_financial.api_backoff_seconds,
                 "official_information_url": self.sugef_financial.official_information_url,
                 "supervised_entities_url": self.sugef_financial.supervised_entities_url,
                 "download_endpoint": self.sugef_financial.download_endpoint,
@@ -250,6 +264,20 @@ class ConfiguredSourceConfig:
                 ),
                 recursive=bool(sugef_payload.get("recursive", True)),
                 cache_enabled=bool(sugef_payload.get("cache_enabled", True)),
+                api_enabled=bool(sugef_payload.get("api_enabled", True)),
+                api_base_url=sugef_payload.get(
+                    "api_base_url",
+                    "https://www.sugef.fi.cr/Bccr.Sugef.Reportes_SitioWeb.API",
+                ),
+                api_version=str(sugef_payload.get("api_version", "1.0")),
+                api_entity_codes=tuple(
+                    str(value).strip()
+                    for value in sugef_payload.get("api_entity_codes", ("3004045138",))
+                    if str(value).strip()
+                ),
+                api_timeout_seconds=float(sugef_payload.get("api_timeout_seconds", 90.0)),
+                api_retries=int(sugef_payload.get("api_retries", 2)),
+                api_backoff_seconds=float(sugef_payload.get("api_backoff_seconds", 1.0)),
                 official_information_url=sugef_payload.get(
                     "official_information_url",
                     "https://www.sugef.fi.cr/reportes/Informacion_Financiera_Contable.aspx",

@@ -32,7 +32,7 @@ class ConfiguredFinancialAnalysisService:
         self._valuation_date_context = valuation_date_context
         self._reader = reader or SUGEFFinancialStatementReader(config)
         self._analysis = analysis_service or FinancialAnalysisService()
-        self._cached_result: SUGEFFinancialReadResult | None = None
+        self._cached_results: dict[date, SUGEFFinancialReadResult] = {}
         self._lock = RLock()
 
     def load(
@@ -42,8 +42,8 @@ class ConfiguredFinancialAnalysisService:
         cutoff_date: date | None = None,
         force_refresh: bool = False,
     ) -> FinancialAnalysisSnapshot:
-        result = self._read(force_refresh=force_refresh)
         requested_date = cutoff_date or self._valuation_date_context.value
+        result = self._read(cutoff_date=requested_date, force_refresh=force_refresh)
         return self._analysis.build_snapshot(
             result.lines,
             selected_entity_id=selected_entity_id,
@@ -52,12 +52,17 @@ class ConfiguredFinancialAnalysisService:
             source_files=result.source_files,
         )
 
-    def _read(self, *, force_refresh: bool) -> SUGEFFinancialReadResult:
+    def _read(
+        self, *, cutoff_date: date, force_refresh: bool
+    ) -> SUGEFFinancialReadResult:
         with self._lock:
-            if force_refresh or not self._config.cache_enabled or self._cached_result is None:
-                self._cached_result = self._reader.read()
-                return self._cached_result
-            current_fingerprint = self._reader.fingerprint()
-            if current_fingerprint != self._cached_result.fingerprint:
-                self._cached_result = self._reader.read()
-            return self._cached_result
+            cached = self._cached_results.get(cutoff_date)
+            if force_refresh or not self._config.cache_enabled or cached is None:
+                result = self._reader.read(cutoff_date=cutoff_date)
+                self._cached_results[cutoff_date] = result
+                return result
+            current_fingerprint = self._reader.fingerprint(cutoff_date=cutoff_date)
+            if current_fingerprint != cached.fingerprint:
+                cached = self._reader.read(cutoff_date=cutoff_date)
+                self._cached_results[cutoff_date] = cached
+            return cached

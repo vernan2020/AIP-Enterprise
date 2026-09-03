@@ -20,11 +20,11 @@ class _Reader:
         self.read_count = 0
         self.current_fingerprint = "A"
 
-    def read(self) -> SUGEFFinancialReadResult:
+    def read(self, *, cutoff_date: date | None = None) -> SUGEFFinancialReadResult:
         self.read_count += 1
         return SUGEFFinancialReadResult((), (), (), self.current_fingerprint)
 
-    def fingerprint(self) -> str:
+    def fingerprint(self, *, cutoff_date: date | None = None) -> str:
         return self.current_fingerprint
 
 
@@ -47,7 +47,7 @@ def test_service_reuses_cache_until_source_fingerprint_changes() -> None:
 
 def test_service_exposes_reference_data_for_july_cutoff() -> None:
     service = ConfiguredFinancialAnalysisService(
-        SUGEFFinancialSourceConfig(),
+        SUGEFFinancialSourceConfig(api_enabled=False),
         ValuationDateContext(date(2026, 7, 30)),
     )
 

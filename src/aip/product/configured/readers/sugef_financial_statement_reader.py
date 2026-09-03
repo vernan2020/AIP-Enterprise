@@ -22,6 +22,9 @@ from aip.domain.financial_analysis.models import (
 from aip.product.configured.configuration.configured_source_config import (
     SUGEFFinancialSourceConfig,
 )
+from aip.product.configured.readers.sugef_financial_api_client import (
+    SUGEFFinancialApiClient,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -99,20 +102,71 @@ class SUGEFFinancialStatementReader:
     }
     _REQUIRED = frozenset(("entity_name", "statement_date", "account_name", "amount"))
 
-    def __init__(self, config: SUGEFFinancialSourceConfig) -> None:
+    def __init__(
+        self,
+        config: SUGEFFinancialSourceConfig,
+        *,
+        api_client: SUGEFFinancialApiClient | None = None,
+    ) -> None:
         self._config = config
+        self._api_client = api_client or SUGEFFinancialApiClient(config)
 
-    def read(self) -> SUGEFFinancialReadResult:
+    def read(self, *, cutoff_date: date | None = None) -> SUGEFFinancialReadResult:
         configured_paths = self._discover_files()
         paths = configured_paths
         diagnostics: list[str] = []
         lines: list[FinancialStatementLine] = []
+        api_endpoints: tuple[str, ...] = ()
+        if self._config.enabled and self._config.api_enabled and cutoff_date is not None:
+            api_result = self._api_client.read(cutoff_date)
+            lines.extend(api_result.lines)
+            api_endpoints = api_result.endpoints
+            diagnostics.extend(api_result.diagnostics)
         for path in paths:
             try:
                 lines.extend(self._read_file(path, diagnostics))
             except Exception as exc:
                 diagnostics.append(f"{path.name}: no se pudo leer ({type(exc).__name__}: {exc})")
-        if not lines:
+        if lines and api_endpoints:
+            # The bundled official matrix supplies peer indicators while the REST API
+            # supplies the selected institutions' authoritative accounting balances.
+            reference = self._reference_file()
+            if reference is not None:
+                reference_lines = self._read_file(reference, diagnostics)
+                live_entities = {
+                    self._entity_match_key(line.entity.name): line.entity for line in lines
+                }
+                live_accounts = {
+                    (
+                        self._entity_match_key(line.entity.name),
+                        line.statement_type,
+                        self._normalize(line.account_name),
+                    )
+                    for line in lines
+                }
+                live_date = max(line.statement_date for line in lines)
+                for reference_line in reference_lines:
+                    entity_key = self._entity_match_key(reference_line.entity.name)
+                    account_key = (
+                        entity_key,
+                        reference_line.statement_type,
+                        self._normalize(reference_line.account_name),
+                    )
+                    if account_key in live_accounts:
+                        continue
+                    lines.append(
+                        self._with_context(
+                            reference_line,
+                            statement_date=live_date,
+                            entity=live_entities.get(entity_key, reference_line.entity),
+                        )
+                    )
+                paths = (*paths, reference)
+                diagnostics.append(
+                    "Los pares comparables provienen de la matriz institucional; "
+                    "los saldos de la entidad consultada provienen de la API SUGEF."
+                )
+        elif not lines:
             reference = self._reference_file()
             if reference is not None:
                 paths = (reference,)
@@ -121,11 +175,11 @@ class SUGEFFinancialStatementReader:
                     "Mostrando la matriz institucional de referencia de julio 2026; "
                     "use Actualizar fuente cuando agregue una exportación SUGEF más reciente."
                 )
-        if not configured_paths and self._config.root:
+        if not configured_paths and self._config.root and not api_endpoints:
             diagnostics.append(
                 "No se encontraron exportaciones SUGEF compatibles en la ruta configurada."
             )
-        elif not configured_paths and not self._config.root:
+        elif not configured_paths and not self._config.root and not api_endpoints:
             diagnostics.append(
                 "Ruta SUGEF local no configurada; se activó la referencia institucional incluida."
             )
@@ -135,17 +189,43 @@ class SUGEFFinancialStatementReader:
             )
         return SUGEFFinancialReadResult(
             lines=tuple(lines),
-            source_files=tuple(str(path) for path in paths),
+            source_files=(*api_endpoints, *(str(path) for path in paths)),
             diagnostics=tuple(diagnostics),
-            fingerprint=self._fingerprint(paths),
+            fingerprint=self._fingerprint(paths, cutoff_date=cutoff_date),
         )
 
-    def fingerprint(self) -> str:
+    def fingerprint(self, *, cutoff_date: date | None = None) -> str:
         paths = self._discover_files()
         if not paths:
             reference = self._reference_file()
             paths = (reference,) if reference is not None else ()
-        return self._fingerprint(paths)
+        return self._fingerprint(paths, cutoff_date=cutoff_date)
+
+    @staticmethod
+    def _with_context(
+        line: FinancialStatementLine,
+        *,
+        statement_date: date,
+        entity: FinancialEntity,
+    ) -> FinancialStatementLine:
+        return FinancialStatementLine(
+            entity=entity,
+            statement_date=statement_date,
+            statement_type=line.statement_type,
+            account_code=line.account_code,
+            account_name=line.account_name,
+            amount=line.amount,
+            currency=line.currency,
+            trace=line.trace,
+        )
+
+    @classmethod
+    def _entity_match_key(cls, name: str) -> str:
+        normalized = cls._normalize(name)
+        for token in ("COOPEALIANZA", "COOPEANDE"):
+            if token in normalized:
+                return token
+        return normalized
 
     @classmethod
     def _reference_file(cls) -> Path | None:
@@ -401,8 +481,9 @@ class SUGEFFinancialStatementReader:
         return f"SUGEF-{digest}"
 
     @staticmethod
-    def _fingerprint(paths: tuple[Path, ...]) -> str:
+    def _fingerprint(paths: tuple[Path, ...], *, cutoff_date: date | None = None) -> str:
         digest = hashlib.sha256()
+        digest.update(str(cutoff_date or "").encode("ascii"))
         for path in paths:
             try:
                 stat = path.stat()

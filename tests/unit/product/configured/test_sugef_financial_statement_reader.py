@@ -37,7 +37,7 @@ def test_reader_normalizes_xlsx_and_preserves_source_trace(tmp_path) -> None:
     workbook.save(path)
 
     reader = SUGEFFinancialStatementReader(
-        SUGEFFinancialSourceConfig(enabled=True, root=str(tmp_path))
+        SUGEFFinancialSourceConfig(enabled=True, root=str(tmp_path), api_enabled=False)
     )
     result = reader.read()
 
