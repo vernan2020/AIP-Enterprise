@@ -148,7 +148,6 @@ class ConfiguredDependencyComposition:
         )
         container.register_instance(
             ConfiguredMacroIntelligenceService,
-            ConfiguredFinancialAnalysisService,
             macro_intelligence_service,
         )
 
@@ -197,6 +196,7 @@ class ConfiguredDependencyComposition:
             ConfiguredPortfolioDV01Service,
             ConfiguredPortfolioRateShockService,
             ConfiguredMacroIntelligenceService,
+            ConfiguredFinancialAnalysisService,
             BCCRConfig,
             BCCRConnector,
             ValuationDateContext,
