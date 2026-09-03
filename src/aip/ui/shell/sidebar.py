@@ -22,6 +22,7 @@ class Sidebar(QWidget):
         ("Inteligencia Macroeconómica", "macro_intelligence"),
         ("Liquidez", "liquidity"),
         ("Tesorería", "treasury"),
+        ("Análisis Financiero", "financial_analysis"),
         ("Reportes", "reports"),
     )
 

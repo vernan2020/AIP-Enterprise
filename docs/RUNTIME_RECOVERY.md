@@ -47,6 +47,28 @@ El `EnvironmentLoader` prioriza variables explícitas y, cuando no se suministra
 - ICL bajo `Liquidez e Inversiones - Documentos/General/Análisis Financiero`;
 - último corte Maestro disponible cuando no existe `AIP_DATA_CUTOFF_DATE` explícito.
 
+## Análisis Financiero SUGEF
+
+El módulo **Análisis Financiero** consume exportaciones oficiales mensuales de la sección
+Información Financiera Contable de SUGEF. La ingesta reconoce archivos `.csv`, `.xls` y `.xlsx`,
+normaliza entidad, fecha, estado financiero, cuenta, saldo y moneda, y conserva trazabilidad a
+archivo, hoja y fila.
+
+Configuración local:
+
+- `AIP_SUGEF_FINANCIAL_ENABLED=true`;
+- `AIP_SUGEF_FINANCIAL_ROOT=<carpeta con exportaciones oficiales>`;
+- `AIP_SUGEF_FINANCIAL_FILE_PATTERN=*` (opcional).
+
+La fuente oficial documentada es
+`https://www.sugef.fi.cr/reportes/Informacion_Financiera_Contable.aspx`. El endpoint interno de
+descarga del portal dinámico no se configura por defecto y permanece pendiente de validación en
+el entorno institucional. El módulo nunca sustituye una descarga fallida con datos de demostración.
+
+Los KPIs publicados por SUGEF, como ROA y ROE, tienen prioridad. Solo cuando no existen se muestra
+una razón simple derivada de resultado/activo o resultado/patrimonio, sin etiquetarla como indicador
+regulatorio. La capa de dominio realiza todos los cálculos; Qt únicamente presenta el contrato.
+
 ## BCCR y Macro Intelligence
 
 Las credenciales BCCR live son opcionales en runtime. Si están disponibles, AIP puede consultar BCCR usando la integración configurada y su caché. Si no están disponibles, Macro Intelligence debe utilizar únicamente el histórico oficial persistido y el escenario institucional aprobado; no se imputan observaciones ni se almacenan secretos en GitHub.

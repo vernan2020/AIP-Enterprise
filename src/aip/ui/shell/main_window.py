@@ -135,6 +135,7 @@ class MainWindow(QMainWindow):
             Route("macro_intelligence", "Inteligencia Macroeconómica", "macro"),
             Route("liquidity", "Liquidez", "liquidity"),
             Route("treasury", "Tesorería", "treasury"),
+            Route("financial_analysis", "Análisis Financiero", "financial_analysis"),
             Route("reports", "Reportes", "reports"),
         ]
         self._navigation.register_many(routes)
@@ -151,6 +152,7 @@ class MainWindow(QMainWindow):
             "Inteligencia Macroeconómica": "macro_intelligence",
             "Liquidez": "liquidity",
             "Tesorería": "treasury",
+            "Análisis Financiero": "financial_analysis",
             "Reportes": "reports",
         }
         for label, route_id in ribbon_routes.items():
@@ -347,6 +349,20 @@ class MainWindow(QMainWindow):
             return (
                 TreasuryView(presenter=TreasuryPresenter(self._demo_factory)),
                 "Tesorería",
+            )
+        if route_id == "financial_analysis":
+            from aip.ui.modules.financial_analysis.presenters.financial_analysis_presenter import (
+                FinancialAnalysisPresenter,
+            )
+            from aip.ui.modules.financial_analysis.views.financial_analysis_view import (
+                FinancialAnalysisView,
+            )
+
+            return (
+                FinancialAnalysisView(
+                    presenter=FinancialAnalysisPresenter(self._demo_factory)
+                ),
+                "Análisis Financiero",
             )
         if route_id == "reports":
             from aip.ui.modules.reports.views.reports_view import ReportsView

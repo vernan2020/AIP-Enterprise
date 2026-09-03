@@ -32,6 +32,11 @@ class HomeWorkspace(QWidget):
         ),
         ("Liquidez", "ICL, HQLA, MIL y vencimientos", "liquidity"),
         ("Tesorería", "Alertas, capacidad y oportunidades de valor relativo", "treasury"),
+        (
+            "Análisis Financiero",
+            "Estados SUGEF, evolución y comparación de entidades",
+            "financial_analysis",
+        ),
         ("Reportes", "Salida institucional y trazabilidad", "reports"),
     )
 
