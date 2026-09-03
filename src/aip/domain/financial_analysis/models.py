@@ -14,6 +14,20 @@ class FinancialStatementType(StrEnum):
     UNKNOWN = "UNKNOWN"
 
 
+class RatingDirection(StrEnum):
+    HIGHER_IS_BETTER = "HIGHER_IS_BETTER"
+    LOWER_IS_BETTER = "LOWER_IS_BETTER"
+    BINARY = "BINARY"
+
+
+class RatingLevel(StrEnum):
+    OUTSTANDING = "OUTSTANDING"
+    SATISFACTORY = "SATISFACTORY"
+    IMPROVABLE = "IMPROVABLE"
+    CRITICAL = "CRITICAL"
+    UNAVAILABLE = "UNAVAILABLE"
+
+
 @dataclass(frozen=True, slots=True)
 class SourceTrace:
     source_name: str
@@ -67,6 +81,46 @@ class EntityFinancialSummary:
 
 
 @dataclass(frozen=True, slots=True)
+class RatingIndicatorAssessment:
+    code: str
+    label: str
+    dimension: str
+    direction: RatingDirection
+    weight_percent: Decimal
+    value: Decimal | None
+    percentile_15: Decimal | None
+    midpoint: Decimal | None
+    percentile_85: Decimal | None
+    level: RatingLevel
+    contribution: Decimal | None
+    peer_count: int
+    source_account: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class RatingDimensionAssessment:
+    name: str
+    weight_percent: Decimal
+    score: Decimal
+    available_indicators: int
+    total_indicators: int
+
+
+@dataclass(frozen=True, slots=True)
+class EntityFinancialRating:
+    status: str
+    methodology_code: str
+    methodology_version: str
+    effective_date: date
+    score: Decimal | None
+    grade: str | None
+    coverage_percent: Decimal
+    indicators: tuple[RatingIndicatorAssessment, ...] = field(default_factory=tuple)
+    dimensions: tuple[RatingDimensionAssessment, ...] = field(default_factory=tuple)
+    diagnostics: tuple[str, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True, slots=True)
 class FinancialAnalysisSnapshot:
     status: str
     cutoff_date: date | None
@@ -76,6 +130,7 @@ class FinancialAnalysisSnapshot:
     metrics: tuple[FinancialMetric, ...] = field(default_factory=tuple)
     statement_lines: tuple[FinancialStatementLine, ...] = field(default_factory=tuple)
     peer_summaries: tuple[EntityFinancialSummary, ...] = field(default_factory=tuple)
+    rating: EntityFinancialRating | None = None
     diagnostics: tuple[str, ...] = field(default_factory=tuple)
     source_name: str = "SUGEF"
     source_url: str = "https://www.sugef.fi.cr/reportes/Informacion_Financiera_Contable.aspx"

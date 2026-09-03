@@ -69,6 +69,24 @@ Los KPIs publicados por SUGEF, como ROA y ROE, tienen prioridad. Solo cuando no 
 una razón simple derivada de resultado/activo o resultado/patrimonio, sin etiquetarla como indicador
 regulatorio. La capa de dominio realiza todos los cálculos; Qt únicamente presenta el contrato.
 
+### Calificación institucional
+
+La pestaña **Calificación** ejecuta la metodología oficial `08ME14-01`, versión 01, vigente desde
+el 27/06/2025. Usa percentiles P15 y P85 del grupo comparable, el punto medio entre ambos límites,
+la dirección económica de cada indicador y la escala cualitativa `AA`, `A`, `BB`, `B`, `CC`.
+
+La distribución oficial es: Rentabilidad 20% (3 indicadores), Calidad de la Cartera 25%
+(10% cartera al día, 5% cobertura y 10% morosidad), Desempeño Operativo 15% (2), Solvencia 20%
+(2), Liquidez 10% (1) y Supervisión proporcional 10% (supervisión y garantía estatal, 5% cada
+una). La calificación se bloquea si no están disponibles los 13 indicadores; no se extrapolan ni
+se sustituyen valores faltantes.
+
+Los nombres admitidos incluyen los rótulos completos de la metodología y las abreviaturas usadas
+en las exportaciones institucionales. Los dos indicadores binarios deben venir explícitamente como
+`0` o `1`. El libro `MATRIZ EVALUACION INDICADORES ENTIDADES JULIO 2026.xlsx` se usa únicamente
+como referencia de linaje: conserva el esquema anterior de 15 indicadores, IQR/media acotada y
+ponderaciones 20/20/20/20/10/10, por lo que no gobierna el cálculo oficial.
+
 ## BCCR y Macro Intelligence
 
 Las credenciales BCCR live son opcionales en runtime. Si están disponibles, AIP puede consultar BCCR usando la integración configurada y su caché. Si no están disponibles, Macro Intelligence debe utilizar únicamente el histórico oficial persistido y el escenario institucional aprobado; no se imputan observaciones ni se almacenan secretos en GitHub.

@@ -12,6 +12,7 @@ from aip.domain.financial_analysis.models import (
     FinancialMetric,
     FinancialStatementLine,
 )
+from aip.domain.financial_analysis.ratings import FinancialEntityRatingService
 
 
 class FinancialAnalysisService:
@@ -72,6 +73,11 @@ class FinancialAnalysisService:
         )
         metrics = self._metrics(current, previous)
         peers = self._peer_summaries(lines, effective_date)
+        rating = FinancialEntityRatingService().evaluate(
+            lines,
+            selected_entity_id=selected.entity_id,
+            cutoff_date=effective_date,
+        )
         status = "AVAILABLE" if current else "UNAVAILABLE"
         return FinancialAnalysisSnapshot(
             status=status,
@@ -82,6 +88,7 @@ class FinancialAnalysisService:
             metrics=metrics,
             statement_lines=tuple(sorted(current, key=self._line_sort_key)),
             peer_summaries=peers,
+            rating=rating,
             diagnostics=diagnostics,
             source_files=source_files,
         )

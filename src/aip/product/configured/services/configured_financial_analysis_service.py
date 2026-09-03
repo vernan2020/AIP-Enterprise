@@ -14,6 +14,8 @@ from aip.product.configured.readers.sugef_financial_statement_reader import (
     SUGEFFinancialStatementReader,
 )
 
+FinancialAnalysisApplicationSnapshot = FinancialAnalysisSnapshot
+
 
 class ConfiguredFinancialAnalysisService:
     """Caso de uso de análisis SUGEF con caché invalidada por cambios de archivo."""
