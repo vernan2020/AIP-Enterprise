@@ -51,9 +51,10 @@ def test_reader_normalizes_xlsx_and_preserves_source_trace(tmp_path) -> None:
     assert str(path) in result.source_files
 
 
-def test_reader_reports_unconfigured_source_without_fabricating_data() -> None:
+def test_reader_uses_institutional_reference_when_local_source_is_not_configured() -> None:
     result = SUGEFFinancialStatementReader(SUGEFFinancialSourceConfig()).read()
 
-    assert result.lines == ()
-    assert any("desactivada" in message for message in result.diagnostics)
-    assert any("pendiente de validación" in message for message in result.diagnostics)
+    assert len(result.lines) == 493
+    assert any(line.entity.name == "COOPEALIANZA R.L." for line in result.lines)
+    assert any(line.account_code == "ROA" for line in result.lines)
+    assert any("referencia institucional" in message for message in result.diagnostics)

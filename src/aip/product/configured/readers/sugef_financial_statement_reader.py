@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import importlib.resources as resources
 import unicodedata
 from dataclasses import dataclass
 from datetime import date, datetime
@@ -35,6 +36,8 @@ class SUGEFFinancialStatementReader:
     """Lee exportaciones oficiales sin acoplar el dominio al diseño de cada archivo."""
 
     _SOURCE_NAME = "SUGEF - Información Financiera Contable"
+    _REFERENCE_PACKAGE = "aip.product.demo.data"
+    _REFERENCE_FILE = "sugef_indicators_july_2026.csv"
     _ALIASES = {
         "entity_id": (
             "CODIGO ENTIDAD",
@@ -73,7 +76,8 @@ class SUGEFFinancialStatementReader:
         self._config = config
 
     def read(self) -> SUGEFFinancialReadResult:
-        paths = self._discover_files()
+        configured_paths = self._discover_files()
+        paths = configured_paths
         diagnostics: list[str] = []
         lines: list[FinancialStatementLine] = []
         for path in paths:
@@ -81,13 +85,26 @@ class SUGEFFinancialStatementReader:
                 lines.extend(self._read_file(path, diagnostics))
             except Exception as exc:
                 diagnostics.append(f"{path.name}: no se pudo leer ({type(exc).__name__}: {exc})")
-        if not self._config.enabled:
-            diagnostics.append("Fuente SUGEF desactivada: configure AIP_SUGEF_FINANCIAL_ROOT.")
-        elif not paths:
-            diagnostics.append("No se encontraron exportaciones SUGEF compatibles en la ruta configurada.")
-        if self._config.download_endpoint is None:
+        if not lines:
+            reference = self._reference_file()
+            if reference is not None:
+                paths = (reference,)
+                lines.extend(self._read_file(reference, diagnostics))
+                diagnostics.append(
+                    "Mostrando la matriz institucional de referencia de julio 2026; "
+                    "use Actualizar fuente cuando agregue una exportación SUGEF más reciente."
+                )
+        if not configured_paths and self._config.root:
             diagnostics.append(
-                "Descarga automática pendiente de validación; la ingesta utiliza exportaciones oficiales."
+                "No se encontraron exportaciones SUGEF compatibles en la ruta configurada."
+            )
+        elif not configured_paths and not self._config.root:
+            diagnostics.append(
+                "Ruta SUGEF local no configurada; se activó la referencia institucional incluida."
+            )
+        if self._config.download_endpoint is None and configured_paths:
+            diagnostics.append(
+                "La actualización utiliza las exportaciones oficiales disponibles en la ruta configurada."
             )
         return SUGEFFinancialReadResult(
             lines=tuple(lines),
@@ -97,7 +114,21 @@ class SUGEFFinancialStatementReader:
         )
 
     def fingerprint(self) -> str:
-        return self._fingerprint(self._discover_files())
+        paths = self._discover_files()
+        if not paths:
+            reference = self._reference_file()
+            paths = (reference,) if reference is not None else ()
+        return self._fingerprint(paths)
+
+    @classmethod
+    def _reference_file(cls) -> Path | None:
+        try:
+            resource = resources.files(cls._REFERENCE_PACKAGE).joinpath(cls._REFERENCE_FILE)
+            if resource.is_file():
+                return Path(str(resource))
+        except (ModuleNotFoundError, OSError, TypeError):
+            return None
+        return None
 
     def _discover_files(self) -> tuple[Path, ...]:
         if not self._config.enabled or not self._config.root:

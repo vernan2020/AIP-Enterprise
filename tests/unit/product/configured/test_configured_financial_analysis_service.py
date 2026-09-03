@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
+from decimal import Decimal
 
 from aip.product.configured.configuration.configured_source_config import (
     SUGEFFinancialSourceConfig,
@@ -42,3 +43,26 @@ def test_service_reuses_cache_until_source_fingerprint_changes() -> None:
     reader.current_fingerprint = "B"
     service.load()
     assert reader.read_count == 2
+
+
+def test_service_exposes_reference_data_for_july_cutoff() -> None:
+    service = ConfiguredFinancialAnalysisService(
+        SUGEFFinancialSourceConfig(),
+        ValuationDateContext(date(2026, 7, 30)),
+    )
+
+    snapshot = service.load()
+
+    assert snapshot.status == "AVAILABLE"
+    assert snapshot.cutoff_date == date(2026, 7, 30)
+    assert snapshot.selected_entity is not None
+    assert snapshot.selected_entity.name == "COOPEALIANZA R.L."
+    assert len(snapshot.entities) == 38
+    assert len(snapshot.statement_lines) == 13
+    assert snapshot.rating is not None
+    assert snapshot.rating.status == "COMPLETE"
+    assert snapshot.rating.coverage_percent == 100
+    metrics = {item.code: item.value for item in snapshot.metrics}
+    assert metrics["LOANS"] is None
+    assert metrics["ROA"] is not None and metrics["ROA"].quantize(Decimal("0.01")) == Decimal("1.04")
+    assert metrics["ROE"] is not None and metrics["ROE"].quantize(Decimal("0.01")) == Decimal("5.74")

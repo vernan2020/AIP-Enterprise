@@ -11,6 +11,7 @@ from aip.domain.financial_analysis.models import (
     FinancialEntity,
     FinancialMetric,
     FinancialStatementLine,
+    FinancialStatementType,
 )
 from aip.domain.financial_analysis.ratings import FinancialEntityRatingService
 
@@ -99,8 +100,22 @@ class FinancialAnalysisService:
         current: tuple[FinancialStatementLine, ...],
         previous: tuple[FinancialStatementLine, ...],
     ) -> tuple[FinancialMetric, ...]:
-        current_values = {code: cls._find_value(current, terms) for code, terms in cls._ACCOUNT_TERMS.items()}
-        previous_values = {code: cls._find_value(previous, terms) for code, terms in cls._ACCOUNT_TERMS.items()}
+        current_values = {
+            code: cls._find_value(
+                current,
+                terms,
+                allow_indicators=code in {"ROA_PUBLISHED", "ROE_PUBLISHED"},
+            )
+            for code, terms in cls._ACCOUNT_TERMS.items()
+        }
+        previous_values = {
+            code: cls._find_value(
+                previous,
+                terms,
+                allow_indicators=code in {"ROA_PUBLISHED", "ROE_PUBLISHED"},
+            )
+            for code, terms in cls._ACCOUNT_TERMS.items()
+        }
         definitions = (
             ("ASSETS", "Activos", "CRC"),
             ("LOANS", "Cartera de crédito", "CRC"),
@@ -126,10 +141,10 @@ class FinancialAnalysisService:
         previous_assets = previous_values["ASSETS"][0]
         previous_equity = previous_values["EQUITY"][0]
         previous_result = previous_values["NET_INCOME"][0]
-        roa = current_values["ROA_PUBLISHED"][0]
-        roe = current_values["ROE_PUBLISHED"][0]
-        previous_roa = previous_values["ROA_PUBLISHED"][0]
-        previous_roe = previous_values["ROE_PUBLISHED"][0]
+        roa = cls._published_percent(current_values["ROA_PUBLISHED"][0])
+        roe = cls._published_percent(current_values["ROE_PUBLISHED"][0])
+        previous_roa = cls._published_percent(previous_values["ROA_PUBLISHED"][0])
+        previous_roe = cls._published_percent(previous_values["ROE_PUBLISHED"][0])
         metrics.extend(
             (
                 FinancialMetric(
@@ -179,7 +194,16 @@ class FinancialAnalysisService:
         summaries: list[EntityFinancialSummary] = []
         for entity_lines in grouped.values():
             data = tuple(entity_lines)
-            values = {code: cls._find_value(data, terms)[0] for code, terms in cls._ACCOUNT_TERMS.items()}
+            values = {
+                code: cls._find_value(
+                    data,
+                    terms,
+                    allow_indicators=code in {"ROA_PUBLISHED", "ROE_PUBLISHED"},
+                )[0]
+                for code, terms in cls._ACCOUNT_TERMS.items()
+            }
+            values["ROA_PUBLISHED"] = cls._published_percent(values["ROA_PUBLISHED"])
+            values["ROE_PUBLISHED"] = cls._published_percent(values["ROE_PUBLISHED"])
             summaries.append(
                 EntityFinancialSummary(
                     entity=data[0].entity,
@@ -214,9 +238,16 @@ class FinancialAnalysisService:
         cls,
         lines: tuple[FinancialStatementLine, ...],
         terms: tuple[str, ...],
+        *,
+        allow_indicators: bool = False,
     ) -> tuple[Decimal | None, str | None]:
         candidates: list[tuple[int, int, FinancialStatementLine]] = []
         for line in lines:
+            if (
+                line.statement_type is FinancialStatementType.INDICATORS
+                and not allow_indicators
+            ):
+                continue
             normalized = cls._normalize(line.account_name)
             for term in terms:
                 if normalized == term:
@@ -227,6 +258,12 @@ class FinancialAnalysisService:
             return (None, None)
         selected = min(candidates, key=lambda item: (item[0], item[1], item[2].account_code))[2]
         return (selected.amount, selected.account_code or selected.account_name)
+
+    @staticmethod
+    def _published_percent(value: Decimal | None) -> Decimal | None:
+        if value is None:
+            return None
+        return value * Decimal("100") if abs(value) <= Decimal("1") else value
 
     @staticmethod
     def _ratio_percent(numerator: Decimal | None, denominator: Decimal | None) -> Decimal | None:

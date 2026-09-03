@@ -69,9 +69,9 @@ class BCCRSourceConfig:
 
 @dataclass(frozen=True, slots=True)
 class SUGEFFinancialSourceConfig:
-    """Fuente local de exportaciones oficiales de información financiera SUGEF."""
+    """Fuente SUGEF con importación local y referencia institucional de respaldo."""
 
-    enabled: bool = False
+    enabled: bool = True
     root: str | None = None
     file_pattern: str = "*"
     supported_extensions: tuple[str, ...] = (".csv", ".xls", ".xlsx")
@@ -242,7 +242,7 @@ class ConfiguredSourceConfig:
                 token=bccr_payload.get("token"),
             ),
             sugef_financial=SUGEFFinancialSourceConfig(
-                enabled=bool(sugef_payload.get("enabled", False)),
+                enabled=bool(sugef_payload.get("enabled", True)),
                 root=sugef_payload.get("root"),
                 file_pattern=sugef_payload.get("file_pattern", "*"),
                 supported_extensions=tuple(

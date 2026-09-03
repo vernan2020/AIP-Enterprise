@@ -450,7 +450,7 @@ class EnvironmentLoader:
         root = _normalize_path_value(os.getenv("AIP_SUGEF_FINANCIAL_ROOT"))
         enabled_flag = os.getenv(
             "AIP_SUGEF_FINANCIAL_ENABLED",
-            "true" if root else "false",
+            "true",
         )
         return {
             "enabled": str(enabled_flag).lower() == "true",
