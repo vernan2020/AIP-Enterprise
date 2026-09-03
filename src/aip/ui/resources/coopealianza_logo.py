@@ -13,5 +13,5 @@ def coopealianza_logo_pixmap() -> QPixmap:
     """Devuelve el logo institucional sin depender del sistema de archivos."""
 
     pixmap = QPixmap()
-    pixmap.loadFromData(base64.b64decode(_LOGO_PNG_BASE64), b"PNG")
+    pixmap.loadFromData(base64.b64decode(_LOGO_PNG_BASE64))
     return pixmap

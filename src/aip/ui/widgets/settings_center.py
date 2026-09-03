@@ -6,7 +6,7 @@ from PySide6.QtWidgets import QFormLayout, QLabel, QVBoxLayout, QWidget
 class SettingsCenterDialog(QWidget):
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("Centro de Configuración")
+        self.setWindowTitle("Settings Center")
         layout = QVBoxLayout(self)
         form = QFormLayout()
         form.addRow("Entorno", QLabel("demostración"))

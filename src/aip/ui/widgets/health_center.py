@@ -32,9 +32,9 @@ class HealthCenterWidget(QWidget):
 
     def component_rows(self) -> list[tuple[str, str, str, str, str, str]]:
         return [
-            ("Aplicación", "Saludable", "00:10:00", "ahora", "12 ms", "0/0"),
+            ("Application", "Saludable", "00:10:00", "ahora", "12 ms", "0/0"),
             ("Centro de Integraciones", "Saludable", "00:12:00", "ahora", "15 ms", "0/0"),
-            ("Programador", "Saludable", "00:08:00", "ahora", "8 ms", "0/0"),
+            ("Scheduler", "Saludable", "00:08:00", "ahora", "8 ms", "0/0"),
             ("Notificaciones", "Saludable", "00:09:00", "ahora", "6 ms", "0/0"),
             ("Observabilidad", "Saludable", "00:07:00", "ahora", "9 ms", "0/0"),
             ("Reportes", "Saludable", "00:06:00", "ahora", "7 ms", "0/0"),

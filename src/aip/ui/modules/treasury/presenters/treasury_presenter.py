@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from aip.product.configured.services.configured_treasury_insight_service import (
     ConfiguredTreasuryInsightService,
@@ -23,7 +23,7 @@ class TreasuryPresenter:
             return value
         try:
             return Decimal(str(value))
-        except (TypeError, ValueError):
+        except (InvalidOperation, TypeError, ValueError):
             return Decimal("0")
 
     @classmethod

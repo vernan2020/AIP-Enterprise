@@ -74,7 +74,7 @@ class Ribbon(QToolBar):
 
         pixmap = QPixmap()
         payload = base64.b64decode(COOPEALIANZA_LOGO_PNG_BASE64)
-        if pixmap.loadFromData(payload, b"PNG"):
+        if pixmap.loadFromData(payload):
             label.setPixmap(
                 pixmap.scaled(
                     214,
