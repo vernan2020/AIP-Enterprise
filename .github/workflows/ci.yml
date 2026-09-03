@@ -14,6 +14,9 @@ on:
 env:
   QT_QPA_PLATFORM: offscreen
   PYTHONPATH: src
+  # CI must remain deterministic; live SUGEF access is enabled by default
+  # in the installed configured runtime and exercised through mocked clients.
+  AIP_SUGEF_FINANCIAL_API_ENABLED: "false"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}

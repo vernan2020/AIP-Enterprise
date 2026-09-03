@@ -15,6 +15,9 @@ permissions:
 env:
   QT_QPA_PLATFORM: offscreen
   PYTHONPATH: src
+  # Recovery validates the packaged runtime without depending on external
+  # network latency. The installed configured runtime keeps SUGEF enabled.
+  AIP_SUGEF_FINANCIAL_API_ENABLED: "false"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
