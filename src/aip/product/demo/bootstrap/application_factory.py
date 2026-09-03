@@ -88,14 +88,13 @@ class DemoApplicationFactory:
 
         self._configured_source_config = configured_source_config
 
-        self._configured_factory = ConfiguredApplicationFactory(
+        configured_factory = ConfiguredApplicationFactory(
             self._config,
             configured_source_config,
         )
-
-        self._container = self._configured_factory.container
-
-        self._config = self._configured_factory.config
+        self._configured_factory = configured_factory
+        self._container = configured_factory.container
+        self._config = configured_factory.config
 
     # =============================================================
     # VALUATION DATE

@@ -48,7 +48,7 @@ class MarketPresenter:
         if value is None:
             return default
         try:
-            return float(value)
+            return float(str(value))
         except (TypeError, ValueError):
             return default
 

@@ -4,6 +4,9 @@ from collections import defaultdict
 from datetime import date, datetime
 from decimal import Decimal
 
+from aip.domain.portfolio.risk.portfolio_historical_var_service import (
+    PortfolioVaRPosition,
+)
 from aip.product.configured.adapters.configured_portfolio_provider import (
     ConfiguredPortfolioProvider,
 )
@@ -41,6 +44,13 @@ class PriceRiskPresenter:
             return Decimal(str(value))
         except (TypeError, ValueError):
             return Decimal("0")
+
+    @staticmethod
+    def _integer(value: object) -> int:
+        try:
+            return int(str(value))
+        except (TypeError, ValueError):
+            return 0
 
     @classmethod
     def _format_crc(cls, value: object) -> str:
@@ -101,7 +111,7 @@ class PriceRiskPresenter:
     @classmethod
     def _build_var_chart_contracts(
         cls,
-        positions: tuple[object, ...],
+        positions: tuple[PortfolioVaRPosition, ...],
     ) -> tuple[
         tuple[RiskChartPoint, ...],
         tuple[RiskChartPoint, ...],
@@ -188,7 +198,7 @@ class PriceRiskPresenter:
     @classmethod
     def _build_var_rows(
         cls,
-        positions: tuple[object, ...],
+        positions: tuple[PortfolioVaRPosition, ...],
         dv01_result: object | None,
     ) -> tuple[PriceRiskRow, ...]:
         details = {
@@ -403,9 +413,9 @@ class PriceRiskPresenter:
                 dv01_usd=str(dv01_values["dv01_usd"]),
                 dv01_coverage_percent=str(dv01_values["dv01_coverage_percent"]),
                 dv01_eligible_market_value=str(dv01_values["dv01_eligible_market_value"]),
-                dv01_calculated_positions=int(dv01_values["dv01_calculated_positions"]),
-                dv01_excluded_positions=int(dv01_values["dv01_excluded_positions"]),
-                dv01_data_gaps=int(dv01_values["dv01_data_gaps"]),
+                dv01_calculated_positions=self._integer(dv01_values["dv01_calculated_positions"]),
+                dv01_excluded_positions=self._integer(dv01_values["dv01_excluded_positions"]),
+                dv01_data_gaps=self._integer(dv01_values["dv01_data_gaps"]),
                 dv01_status=str(dv01_values["dv01_status"]),
                 rate_shock_coverage_percent=rate_shock_coverage,
                 rate_shock_status=rate_shock_status,
@@ -460,9 +470,9 @@ class PriceRiskPresenter:
             dv01_usd=str(dv01_values["dv01_usd"]),
             dv01_coverage_percent=str(dv01_values["dv01_coverage_percent"]),
             dv01_eligible_market_value=str(dv01_values["dv01_eligible_market_value"]),
-            dv01_calculated_positions=int(dv01_values["dv01_calculated_positions"]),
-            dv01_excluded_positions=int(dv01_values["dv01_excluded_positions"]),
-            dv01_data_gaps=int(dv01_values["dv01_data_gaps"]),
+            dv01_calculated_positions=self._integer(dv01_values["dv01_calculated_positions"]),
+            dv01_excluded_positions=self._integer(dv01_values["dv01_excluded_positions"]),
+            dv01_data_gaps=self._integer(dv01_values["dv01_data_gaps"]),
             dv01_status=str(dv01_values["dv01_status"]),
             dv01_bucket_lt1_value=bucket_payload["lt1"][0],
             dv01_bucket_lt1_percent=bucket_payload["lt1"][1],

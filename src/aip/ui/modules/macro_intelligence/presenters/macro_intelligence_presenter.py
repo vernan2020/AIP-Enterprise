@@ -35,7 +35,7 @@ class MacroIntelligencePresenter:
     @staticmethod
     def _float(value: object) -> float:
         try:
-            return float(value)
+            return float(str(value))
         except (TypeError, ValueError):
             return 0.0
 

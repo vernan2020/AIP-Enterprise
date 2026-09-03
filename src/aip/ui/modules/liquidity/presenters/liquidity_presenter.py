@@ -23,7 +23,7 @@ class LiquidityPresenter:
         if value is None:
             return 0.0
         try:
-            return float(value)
+            return float(str(value))
         except (TypeError, ValueError):
             return 0.0
 

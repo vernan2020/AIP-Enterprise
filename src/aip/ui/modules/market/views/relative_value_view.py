@@ -93,7 +93,7 @@ class RelativeValueView(QWidget):
         if value in (None, ""):
             return "-"
         try:
-            return f"{float(value):,.{decimals}f}{suffix}"
+            return f"{float(str(value)):,.{decimals}f}{suffix}"
         except (TypeError, ValueError):
             return str(value)
 

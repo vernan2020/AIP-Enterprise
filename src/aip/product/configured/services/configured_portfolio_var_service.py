@@ -455,6 +455,10 @@ class ConfiguredPortfolioVaRService:
         # ========================================================
 
         self._ensure_historical_repositories()
+        historical_repository = self._historical_repository
+        master_historical_repository = self._master_historical_repository
+        assert historical_repository is not None
+        assert master_historical_repository is not None
 
         # ========================================================
         # CURRENT PORTFOLIO
@@ -548,9 +552,7 @@ class ConfiguredPortfolioVaRService:
         # historical market window.
         # ========================================================
 
-        available_dates = self._historical_repository.available_vector_dates(
-            cutoff_date=(effective_date)
-        )
+        available_dates = historical_repository.available_vector_dates(cutoff_date=(effective_date))
 
         if len(available_dates) < self.REQUIRED_PRICES:
 
@@ -644,7 +646,7 @@ class ConfiguredPortfolioVaRService:
             # SOURCE 1: PiPCA
             # ====================================================
 
-            pipca_history = self._historical_repository.get_observations(
+            pipca_history = historical_repository.get_observations(
                 series=(title.series),
                 issuer=(title.issuer),
                 product_code=(title.product_code),
@@ -667,7 +669,7 @@ class ConfiguredPortfolioVaRService:
 
             if not historical_observations:
 
-                master_history = self._master_historical_repository.get_observations(
+                master_history = master_historical_repository.get_observations(
                     isin=(title.isin),
                     series=(title.series),
                     issuer=(title.issuer),

@@ -341,7 +341,7 @@ class InstitutionalMarketCurveService:
                 for column in range(pivot_index, 4):
                     augmented[row_index][column] -= factor * augmented[pivot_index][column]
 
-        solution = tuple(augmented[index][3] for index in range(3))
+        solution = (augmented[0][3], augmented[1][3], augmented[2][3])
         if not all(math.isfinite(value) for value in solution):
             return None
         return solution

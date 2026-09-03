@@ -1193,11 +1193,13 @@ class ConfiguredPortfolioProvider:
         position["market_value_crc"] = float(market_value_crc or 0.0)
         position["market_value"] = float(market_value_local or 0.0)
 
-        vector_match = (
-            position.get("vector_match") if isinstance(position.get("vector_match"), dict) else {}
+        raw_vector_match = position.get("vector_match")
+        vector_match: dict[Any, Any] = (
+            raw_vector_match if isinstance(raw_vector_match, dict) else {}
         )
-        vector_record = (
-            position.get("vector_record") if isinstance(position.get("vector_record"), dict) else {}
+        raw_vector_record = position.get("vector_record")
+        vector_record: dict[Any, Any] = (
+            raw_vector_record if isinstance(raw_vector_record, dict) else {}
         )
 
         if vector_record:
