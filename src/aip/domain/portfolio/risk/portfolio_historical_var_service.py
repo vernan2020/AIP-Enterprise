@@ -75,8 +75,10 @@ class PortfolioHistoricalVaRService:
     """Institutional historical simulation VeR.
 
     Methodology: 521 prices, log returns, 21-observation horizon, exactly
-    500 overlapping historical scenarios and the lower 5% tail. With 500
-    scenarios the selected observation is the 25th worst (1-based).
+    500 overlapping historical scenarios and the lower 5% tail. Scenario
+    profit or loss is the accumulated log return multiplied by current market
+    value, matching the institutional Coopealianza model. With 500 scenarios
+    the selected observation is the 25th worst (1-based).
     """
 
     REQUIRED_PRICES = 521
@@ -137,8 +139,15 @@ class PortfolioHistoricalVaRService:
                     ]
                     rolling_sum -= one_day_log_returns[scenario_index - 1]
 
-                price_return = math.exp(rolling_sum) - 1.0
-                pnl = position.market_value_crc * Decimal(str(price_return))
+                # Institutional reconciliation rule:
+                #
+                # The approved Coopealianza workbook applies the accumulated
+                # 21-observation logarithmic return directly to current market
+                # value. Converting it back to a simple return with
+                # ``exp(rolling_sum) - 1`` understates losses and does not
+                # reconcile with the regulatory VeR reference.
+                log_return = rolling_sum
+                pnl = position.market_value_crc * Decimal(str(log_return))
                 pnl_values.append(pnl)
                 portfolio_scenarios[scenario_index] += pnl
 
