@@ -359,9 +359,7 @@ class MainWindow(QMainWindow):
             )
 
             return (
-                FinancialAnalysisView(
-                    presenter=FinancialAnalysisPresenter(self._demo_factory)
-                ),
+                FinancialAnalysisView(presenter=FinancialAnalysisPresenter(self._demo_factory)),
                 "Análisis Financiero",
             )
         if route_id == "reports":

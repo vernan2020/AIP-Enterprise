@@ -243,8 +243,10 @@ class SUGEFFinancialStatementReader:
         root = Path(self._config.root)
         if not root.exists() or not root.is_dir():
             return ()
-        iterator = root.rglob(self._config.file_pattern) if self._config.recursive else root.glob(
-            self._config.file_pattern
+        iterator = (
+            root.rglob(self._config.file_pattern)
+            if self._config.recursive
+            else root.glob(self._config.file_pattern)
         )
         extensions = {value.lower() for value in self._config.supported_extensions}
         try:
@@ -259,9 +261,7 @@ class SUGEFFinancialStatementReader:
             return ()
         return tuple(sorted(files, key=lambda item: str(item).casefold()))
 
-    def _read_file(
-        self, path: Path, diagnostics: list[str]
-    ) -> list[FinancialStatementLine]:
+    def _read_file(self, path: Path, diagnostics: list[str]) -> list[FinancialStatementLine]:
         suffix = path.suffix.lower()
         if suffix == ".csv":
             return self._read_csv(path, diagnostics)
@@ -271,9 +271,7 @@ class SUGEFFinancialStatementReader:
             return self._read_xls(path, diagnostics)
         return []
 
-    def _read_csv(
-        self, path: Path, diagnostics: list[str]
-    ) -> list[FinancialStatementLine]:
+    def _read_csv(self, path: Path, diagnostics: list[str]) -> list[FinancialStatementLine]:
         raw = path.read_text(encoding="utf-8-sig", errors="replace")
         try:
             dialect = csv.Sniffer().sniff(raw[:8192], delimiters=",;\t|")
@@ -282,9 +280,7 @@ class SUGEFFinancialStatementReader:
         rows = list(csv.reader(raw.splitlines(), dialect=dialect))
         return self._parse_rows(path, "CSV", rows, diagnostics)
 
-    def _read_xlsx(
-        self, path: Path, diagnostics: list[str]
-    ) -> list[FinancialStatementLine]:
+    def _read_xlsx(self, path: Path, diagnostics: list[str]) -> list[FinancialStatementLine]:
         workbook = openpyxl.load_workbook(path, read_only=True, data_only=True)
         result: list[FinancialStatementLine] = []
         try:
@@ -295,9 +291,7 @@ class SUGEFFinancialStatementReader:
             workbook.close()
         return result
 
-    def _read_xls(
-        self, path: Path, diagnostics: list[str]
-    ) -> list[FinancialStatementLine]:
+    def _read_xls(self, path: Path, diagnostics: list[str]) -> list[FinancialStatementLine]:
         workbook = xlrd.open_workbook(path, on_demand=True)
         result: list[FinancialStatementLine] = []
         try:

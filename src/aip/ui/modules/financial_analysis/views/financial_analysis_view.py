@@ -160,9 +160,7 @@ class FinancialAnalysisView(QWidget):
         layout.addWidget(summary)
 
         tables = QHBoxLayout()
-        self._rating_dimension_table = self._table(
-            ["Dimensión", "Puntaje", "Peso", "Cobertura"]
-        )
+        self._rating_dimension_table = self._table(["Dimensión", "Puntaje", "Peso", "Cobertura"])
         self._rating_dimension_table.setMinimumWidth(390)
         self._rating_indicator_table = self._table(
             [
@@ -259,11 +257,20 @@ class FinancialAnalysisView(QWidget):
     def _bind_statements(self, view_model: FinancialAnalysisViewModel) -> None:
         self._statement_table.setRowCount(len(view_model.statement_rows))
         for row_index, row in enumerate(view_model.statement_rows):
-            values = (row.statement, row.account_code, row.account_name, row.amount, row.currency, row.trace)
+            values = (
+                row.statement,
+                row.account_code,
+                row.account_name,
+                row.amount,
+                row.currency,
+                row.trace,
+            )
             for column, value in enumerate(values):
                 item = QTableWidgetItem(value)
                 if column == 3:
-                    item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+                    item.setTextAlignment(
+                        Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+                    )
                 self._statement_table.setItem(row_index, column, item)
 
     def _bind_peers(self, view_model: FinancialAnalysisViewModel) -> None:
@@ -282,7 +289,9 @@ class FinancialAnalysisView(QWidget):
             for column, value in enumerate(values):
                 item = QTableWidgetItem(value)
                 if column >= 2:
-                    item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+                    item.setTextAlignment(
+                        Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+                    )
                 self._peer_table.setItem(row_index, column, item)
 
     def _bind_rating(self, view_model: FinancialAnalysisViewModel) -> None:

@@ -67,15 +67,13 @@ class FinancialAnalysisService:
         current = tuple(
             line
             for line in lines
-            if line.entity.entity_id == selected.entity_id
-            and line.statement_date == effective_date
+            if line.entity.entity_id == selected.entity_id and line.statement_date == effective_date
         )
         previous_date = next((value for value in dates if value < effective_date), None)
         previous = tuple(
             line
             for line in lines
-            if line.entity.entity_id == selected.entity_id
-            and line.statement_date == previous_date
+            if line.entity.entity_id == selected.entity_id and line.statement_date == previous_date
         )
         metrics = self._metrics(current, previous)
         peers = self._peer_summaries(lines, effective_date)
@@ -149,7 +147,9 @@ class FinancialAnalysisService:
                 value=current_values[code][0],
                 unit=unit,
                 previous_value=previous_values[code][0],
-                change_percent=cls._change_percent(current_values[code][0], previous_values[code][0]),
+                change_percent=cls._change_percent(
+                    current_values[code][0], previous_values[code][0]
+                ),
                 source_account=current_values[code][1],
             )
             for code, label, unit in definitions
@@ -177,8 +177,7 @@ class FinancialAnalysisService:
                         else cls._ratio_percent(previous_result, previous_assets)
                     ),
                     source_account=(
-                        current_values["ROA_PUBLISHED"][1]
-                        or "DERIVADO SIMPLE: resultado / activos"
+                        current_values["ROA_PUBLISHED"][1] or "DERIVADO SIMPLE: resultado / activos"
                     ),
                 ),
                 FinancialMetric(
@@ -262,10 +261,7 @@ class FinancialAnalysisService:
     ) -> tuple[Decimal | None, str | None]:
         candidates: list[tuple[int, int, FinancialStatementLine]] = []
         for line in lines:
-            if (
-                line.statement_type is FinancialStatementType.INDICATORS
-                and not allow_indicators
-            ):
+            if line.statement_type is FinancialStatementType.INDICATORS and not allow_indicators:
                 continue
             normalized = cls._normalize(line.account_name)
             for term in terms:

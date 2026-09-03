@@ -88,17 +88,14 @@ class SUGEFFinancialApiClient:
                     endpoints.add(endpoint)
                 except (HTTPError, URLError, TimeoutError, ValueError, OSError) as exc:
                     diagnostics.append(
-                        f"SUGEF API {report_name} ({entity_code}): "
-                        f"{type(exc).__name__}: {exc}"
+                        f"SUGEF API {report_name} ({entity_code}): " f"{type(exc).__name__}: {exc}"
                     )
 
         if lines:
             diagnostics.append(
                 "Balance, Estado de Resultados e Indicadores consultados en la API pública oficial de SUGEF."
             )
-        return SUGEFApiReadResult(
-            tuple(lines), tuple(sorted(endpoints)), tuple(diagnostics)
-        )
+        return SUGEFApiReadResult(tuple(lines), tuple(sorted(endpoints)), tuple(diagnostics))
 
     def _read_report(
         self,

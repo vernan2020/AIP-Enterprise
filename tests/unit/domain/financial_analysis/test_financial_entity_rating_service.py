@@ -53,7 +53,9 @@ def _cohort(*, selected_factors: dict[str, Decimal]) -> tuple[FinancialStatement
             factor = selected_factors[definition.code]
             selected_value = factor_to_value[definition.direction][factor]
             values = (selected_value,) + tuple(
-                value for value in map(Decimal, ("1", "2", "3", "4", "5")) if value != selected_value
+                value
+                for value in map(Decimal, ("1", "2", "3", "4", "5"))
+                if value != selected_value
             )
         for entity, value in zip(entities, values, strict=True):
             lines.append(_line(entity, name, value))
@@ -62,8 +64,7 @@ def _cohort(*, selected_factors: dict[str, Decimal]) -> tuple[FinancialStatement
 
 def test_official_methodology_can_reach_full_score() -> None:
     factors = {
-        definition.code: Decimal("1")
-        for definition in FinancialEntityRatingService.INDICATORS
+        definition.code: Decimal("1") for definition in FinancialEntityRatingService.INDICATORS
     }
 
     rating = FinancialEntityRatingService().evaluate(
@@ -131,8 +132,7 @@ def test_official_grade_boundaries(score: str, grade: str) -> None:
 
 def test_rating_is_not_emitted_when_an_official_indicator_is_missing() -> None:
     factors = {
-        definition.code: Decimal("1")
-        for definition in FinancialEntityRatingService.INDICATORS
+        definition.code: Decimal("1") for definition in FinancialEntityRatingService.INDICATORS
     }
     lines = tuple(
         line

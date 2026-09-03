@@ -64,7 +64,11 @@ def test_service_exposes_reference_data_for_july_cutoff() -> None:
     assert snapshot.rating.coverage_percent == 100
     metrics = {item.code: item.value for item in snapshot.metrics}
     assert metrics["LOANS"] is None
-    assert metrics["ROA"] is not None and metrics["ROA"].quantize(Decimal("0.01")) == Decimal("1.04")
-    assert metrics["ROE"] is not None and metrics["ROE"].quantize(Decimal("0.01")) == Decimal("5.74")
+    assert metrics["ROA"] is not None and metrics["ROA"].quantize(Decimal("0.01")) == Decimal(
+        "1.04"
+    )
+    assert metrics["ROE"] is not None and metrics["ROE"].quantize(Decimal("0.01")) == Decimal(
+        "5.74"
+    )
     assert any("falta el Balance" in item for item in snapshot.diagnostics)
     assert any("falta el Estado de Resultados" in item for item in snapshot.diagnostics)

@@ -26,7 +26,9 @@ def test_financial_analysis_is_available_in_ribbon_and_sidebar(qt_app) -> None:
     window = MainWindow()
 
     assert window._ribbon.action("Análisis Financiero").text() == "Análisis Financiero"
-    labels = [window._sidebar._tree.item(index).text() for index in range(window._sidebar._tree.count())]
+    labels = [
+        window._sidebar._tree.item(index).text() for index in range(window._sidebar._tree.count())
+    ]
     assert "Análisis Financiero" in labels
 
 

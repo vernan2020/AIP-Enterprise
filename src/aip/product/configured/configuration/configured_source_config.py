@@ -101,9 +101,7 @@ class ConfiguredSourceConfig:
     curves: CurvesSourceConfig = field(default_factory=CurvesSourceConfig)
     vector: VectorSourceConfig = field(default_factory=VectorSourceConfig)
     bccr: BCCRSourceConfig = field(default_factory=BCCRSourceConfig)
-    sugef_financial: SUGEFFinancialSourceConfig = field(
-        default_factory=SUGEFFinancialSourceConfig
-    )
+    sugef_financial: SUGEFFinancialSourceConfig = field(default_factory=SUGEFFinancialSourceConfig)
     diagnostic_mode: bool | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 

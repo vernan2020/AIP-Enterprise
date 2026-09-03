@@ -481,18 +481,14 @@ class EnvironmentLoader:
             "api_version": os.getenv("AIP_SUGEF_FINANCIAL_API_VERSION", "1.0"),
             "api_entity_codes": tuple(
                 value.strip()
-                for value in os.getenv(
-                    "AIP_SUGEF_FINANCIAL_ENTITY_CODES", "3004045138"
-                ).split(",")
+                for value in os.getenv("AIP_SUGEF_FINANCIAL_ENTITY_CODES", "3004045138").split(",")
                 if value.strip()
             ),
             "api_timeout_seconds": float(
                 os.getenv("AIP_SUGEF_FINANCIAL_API_TIMEOUT_SECONDS", "90")
             ),
             "api_retries": int(os.getenv("AIP_SUGEF_FINANCIAL_API_RETRIES", "2")),
-            "api_backoff_seconds": float(
-                os.getenv("AIP_SUGEF_FINANCIAL_API_BACKOFF_SECONDS", "1")
-            ),
+            "api_backoff_seconds": float(os.getenv("AIP_SUGEF_FINANCIAL_API_BACKOFF_SECONDS", "1")),
             "official_information_url": os.getenv(
                 "AIP_SUGEF_FINANCIAL_INFORMATION_URL",
                 "https://www.sugef.fi.cr/reportes/Informacion_Financiera_Contable.aspx",

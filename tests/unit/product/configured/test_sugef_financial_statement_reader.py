@@ -32,7 +32,16 @@ def test_reader_normalizes_xlsx_and_preserves_source_trace(tmp_path) -> None:
         ]
     )
     sheet.append(
-        ["007", "Coopealianza R.L.", "Cooperativas", "31/07/2026", "500", "Resultado neto", 8_341_000_000, "CRC"]
+        [
+            "007",
+            "Coopealianza R.L.",
+            "Cooperativas",
+            "31/07/2026",
+            "500",
+            "Resultado neto",
+            8_341_000_000,
+            "CRC",
+        ]
     )
     workbook.save(path)
 

@@ -52,9 +52,7 @@ class ConfiguredFinancialAnalysisService:
             source_files=result.source_files,
         )
 
-    def _read(
-        self, *, cutoff_date: date, force_refresh: bool
-    ) -> SUGEFFinancialReadResult:
+    def _read(self, *, cutoff_date: date, force_refresh: bool) -> SUGEFFinancialReadResult:
         with self._lock:
             cached = self._cached_results.get(cutoff_date)
             if force_refresh or not self._config.cache_enabled or cached is None:

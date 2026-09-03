@@ -184,9 +184,9 @@ class FinancialEntityRatingService:
 
         dimensions = self._dimensions(tuple(assessments))
         available = sum(item.contribution is not None for item in assessments)
-        coverage = (
-            Decimal(available) / Decimal(len(self.INDICATORS)) * Decimal("100")
-        ).quantize(Decimal("0.01"))
+        coverage = (Decimal(available) / Decimal(len(self.INDICATORS)) * Decimal("100")).quantize(
+            Decimal("0.01")
+        )
         complete = available == len(self.INDICATORS)
         score = None
         grade = None
@@ -231,12 +231,12 @@ class FinancialEntityRatingService:
             level = (
                 RatingLevel.OUTSTANDING
                 if value == Decimal("1")
-                else RatingLevel.CRITICAL
-                if value == Decimal("0")
-                else RatingLevel.UNAVAILABLE
+                else RatingLevel.CRITICAL if value == Decimal("0") else RatingLevel.UNAVAILABLE
             )
-            contribution = definition.weight_percent if value == Decimal("1") else (
-                Decimal("0") if value == Decimal("0") else None
+            contribution = (
+                definition.weight_percent
+                if value == Decimal("1")
+                else (Decimal("0") if value == Decimal("0") else None)
             )
             return RatingIndicatorAssessment(
                 code=definition.code,

@@ -136,9 +136,7 @@ class FinancialAnalysisPresenter:
             rating_status=rating.status if rating is not None else "INCOMPLETE",
             rating_score=(f"{rating.score:,.3f}" if rating and rating.score is not None else "-"),
             rating_grade=rating.grade if rating and rating.grade else "Sin emitir",
-            rating_coverage=(
-                f"{rating.coverage_percent:,.2f}%" if rating is not None else "0.00%"
-            ),
+            rating_coverage=(f"{rating.coverage_percent:,.2f}%" if rating is not None else "0.00%"),
             rating_methodology=(
                 f"{rating.methodology_code} · {rating.methodology_version}"
                 if rating is not None
