@@ -307,8 +307,8 @@ class FinancialAnalysisView(QWidget):
 
         self._rating_dimension_table.setRowCount(len(view_model.rating_dimensions))
         for row_index, row in enumerate(view_model.rating_dimensions):
-            values = (row.name, row.score, row.weight, row.coverage)
-            for column, value in enumerate(values):
+            dimension_values = (row.name, row.score, row.weight, row.coverage)
+            for column, value in enumerate(dimension_values):
                 item = QTableWidgetItem(value)
                 if column > 0:
                     item.setTextAlignment(
@@ -318,7 +318,7 @@ class FinancialAnalysisView(QWidget):
 
         self._rating_indicator_table.setRowCount(len(view_model.rating_indicators))
         for row_index, row in enumerate(view_model.rating_indicators):
-            values = (
+            indicator_values = (
                 row.indicator,
                 row.dimension,
                 row.value,
@@ -330,7 +330,7 @@ class FinancialAnalysisView(QWidget):
                 row.contribution,
                 row.source_account,
             )
-            for column, value in enumerate(values):
+            for column, value in enumerate(indicator_values):
                 item = QTableWidgetItem(value)
                 if column in {2, 3, 4, 5, 8}:
                     item.setTextAlignment(

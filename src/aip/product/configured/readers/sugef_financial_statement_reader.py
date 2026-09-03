@@ -332,8 +332,8 @@ class SUGEFFinancialStatementReader:
             return []
 
         result: list[FinancialStatementLine] = []
-        for row_number, row in enumerate(iterator, start=header_index + 2):
-            values = tuple(row)
+        for row_number, statement_row in enumerate(iterator, start=header_index + 2):
+            values = tuple(statement_row)
             entity_name = self._field(values, mapping, "entity_name")
             statement_date = self._date(self._raw_field(values, mapping, "statement_date"))
             account_name = self._field(values, mapping, "account_name")
