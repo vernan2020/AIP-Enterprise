@@ -66,7 +66,7 @@ class FinancialAnalysisService:
         if selected is None or effective_date is None:
             return FinancialAnalysisSnapshot(
                 status="UNAVAILABLE",
-                cutoff_date=effective_date,
+                cutoff_date=effective_date or cutoff_date,
                 selected_entity=selected,
                 entities=entities,
                 available_dates=dates,
