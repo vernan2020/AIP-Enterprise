@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import unicodedata
 from calendar import monthrange
 from collections import defaultdict
 from datetime import date
@@ -14,7 +15,17 @@ from aip.domain.financial_analysis.models import (
 
 
 class OfficialRatingIndicatorCalculator:
-    """Deriva indicadores de 08ME14-01 desde saldos oficiales de SUGEF."""
+    """Completa indicadores 08ME14-01 únicamente desde información oficial SUGEF.
+
+    Regla de precedencia institucional:
+    1. Si SUGEF publica directamente el indicador para la entidad y el corte,
+       se conserva ese valor y no se genera ningún sustituto calculado.
+    2. Solo cuando el indicador no está publicado se intenta derivarlo desde
+       Balance de Situación y Estado de Resultados obtenidos de SUGEF.
+    3. Si faltan los saldos o la historia necesaria, el indicador permanece
+       no disponible. Nunca se incorporan matrices de referencia ni estimaciones
+       externas a SUGEF.
+    """
 
     _ASSETS = "10000"
     _EQUITY = "25000"
@@ -30,20 +41,35 @@ class OfficialRatingIndicatorCalculator:
             "Margen de Intermediación Financiera",
             _INTERMEDIATION_RESULT,
             _ASSETS,
+            ("MARGEN DE INTERMEDIACION FINANCIERA", "MARGEN DE INTERM FINANCIERA"),
         ),
-        ("ROA", "ROA", _FINAL_RESULT, _ASSETS),
-        ("ROE", "ROE", _FINAL_RESULT, _EQUITY),
+        (
+            "ROA",
+            "ROA",
+            _FINAL_RESULT,
+            _ASSETS,
+            ("ROA", "RETURN ON ASSETS", "RENDIMIENTO SOBRE ACTIVOS"),
+        ),
+        (
+            "ROE",
+            "ROE",
+            _FINAL_RESULT,
+            _EQUITY,
+            ("ROE", "RETURN ON EQUITY", "RENDIMIENTO SOBRE PATRIMONIO"),
+        ),
         (
             "OPERATING_EFFICIENCY",
             "Eficiencia Operativa",
             _ADMIN_EXPENSE,
             _GROSS_OPERATING_RESULT,
+            ("EFICIENCIA OPERATIVA",),
         ),
         (
             "ADMIN_EXPENSE_ASSETS",
             "Gasto Administrativo sobre Activos",
             _ADMIN_EXPENSE,
             _ASSETS,
+            ("GASTO ADMINISTRATIVO SOBRE ACTIVOS",),
         ),
     )
 
@@ -75,7 +101,9 @@ class OfficialRatingIndicatorCalculator:
         results = self._dated_results(lines, cutoff_date=cutoff_date)
         monthly_balances = self._monthly_balances(lines, cutoff_date=cutoff_date)
         output: list[FinancialStatementLine] = []
-        for code, label, numerator_code, denominator_code in self._DEFINITIONS:
+        for code, label, numerator_code, denominator_code, aliases in self._DEFINITIONS:
+            if self._has_published_indicator(current, aliases):
+                continue
             numerator = results.get(numerator_code, {}).get(cutoff_date)
             if numerator is None:
                 continue
@@ -107,6 +135,27 @@ class OfficialRatingIndicatorCalculator:
                 )
             )
         return tuple(output)
+
+    @classmethod
+    def _has_published_indicator(
+        cls,
+        current: tuple[FinancialStatementLine, ...],
+        aliases: tuple[str, ...],
+    ) -> bool:
+        normalized_aliases = tuple(cls._normalize(value) for value in aliases)
+        for line in current:
+            if line.statement_type is not FinancialStatementType.INDICATORS:
+                continue
+            if line.account_code.startswith("CALC:"):
+                continue
+            normalized_name = cls._normalize(line.account_name)
+            if any(
+                normalized_name == alias
+                or (len(alias) > 5 and normalized_name.startswith(alias))
+                for alias in normalized_aliases
+            ):
+                return True
+        return False
 
     @classmethod
     def _dated_results(
@@ -207,10 +256,19 @@ class OfficialRatingIndicatorCalculator:
             amount=value,
             currency="RATIO",
             trace=SourceTrace(
-                source_name="Cálculo 08ME14-01 sobre API pública SUGEF",
+                source_name="Cálculo 08ME14-01 sobre estados financieros SUGEF",
                 source_url=source_url,
                 file_path=formula,
                 sheet_name="08ME14-01 V01",
                 row_number=0,
             ),
+        )
+
+    @staticmethod
+    def _normalize(value: str) -> str:
+        decomposed = unicodedata.normalize("NFKD", value)
+        return " ".join(
+            "".join(character for character in decomposed if not unicodedata.combining(character))
+            .upper()
+            .split()
         )
