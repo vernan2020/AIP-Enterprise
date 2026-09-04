@@ -171,6 +171,7 @@ class FinancialAnalysisView(QWidget):
                 "Indicador",
                 "Dimensión",
                 "Valor",
+                "Pares",
                 "P15",
                 "Punto medio",
                 "P85",
@@ -179,6 +180,9 @@ class FinancialAnalysisView(QWidget):
                 "Aporte",
                 "Cuenta fuente",
             ]
+        )
+        self._rating_indicator_table.horizontalHeaderItem(3).setToolTip(
+            "Cantidad de entidades con un valor comparable disponible para el indicador."
         )
         tables.addWidget(self._rating_dimension_table, 2)
         tables.addWidget(self._rating_indicator_table, 5)
@@ -326,6 +330,7 @@ class FinancialAnalysisView(QWidget):
                 row.indicator,
                 row.dimension,
                 row.value,
+                row.peer_count,
                 row.percentile_15,
                 row.midpoint,
                 row.percentile_85,
@@ -336,7 +341,7 @@ class FinancialAnalysisView(QWidget):
             )
             for column, value in enumerate(indicator_values):
                 item = QTableWidgetItem(value)
-                if column in {2, 3, 4, 5, 8}:
+                if column in {2, 3, 4, 5, 6, 9}:
                     item.setTextAlignment(
                         Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
                     )
