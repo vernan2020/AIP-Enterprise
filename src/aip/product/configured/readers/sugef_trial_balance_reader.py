@@ -88,8 +88,7 @@ class SUGEFTrialBalanceReader:
             except (HTTPError, URLError, TimeoutError, ValueError, OSError) as exc:
                 scope = entity_code or "todas las entidades"
                 diagnostics.append(
-                    f"SUGEF API Balanza de Comprobación ({scope}): "
-                    f"{type(exc).__name__}: {exc}"
+                    f"SUGEF API Balanza de Comprobación ({scope}): " f"{type(exc).__name__}: {exc}"
                 )
 
         if lines:
