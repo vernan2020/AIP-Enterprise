@@ -78,7 +78,7 @@ jobs:
       - name: Ruff
         run: ruff check src tests
       - name: Black
-        run: black --check src tests
+        run: black --check --diff src tests
       - name: mypy
         run: mypy src
       - name: compileall
