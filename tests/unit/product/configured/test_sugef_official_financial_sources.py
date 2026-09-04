@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
+from urllib.error import URLError
 
 from aip.domain.financial_analysis.models import FinancialStatementType
 from aip.product.configured.configuration.configured_source_config import (
@@ -26,6 +27,11 @@ class _OfficialStubClient(SUGEFOfficialFinancialApiClient):
         self.indicator_entity_codes: list[str] = []
         self.requests: list[tuple[str, str, str]] = []
 
+    @staticmethod
+    def _iso_period(period: str, *, default: str = "20260701") -> str:
+        token = period if len(period) == 8 and period.isdigit() else default
+        return f"{token[:4]}-{token[4:6]}-01T00:00:00"
+
     def _post_json(self, endpoint: str, payload: dict[str, object]) -> dict[str, object]:
         parameters = payload["parametrosEntidad"]
         assert isinstance(parameters, dict)
@@ -40,13 +46,14 @@ class _OfficialStubClient(SUGEFOfficialFinancialApiClient):
 
         if "BalanceSituacion" in endpoint:
             if entity_code == "":
+                statement_period = self._iso_period(period)
                 rows = [
                     {
                         "codigoSector": "6",
                         "descripcionSector": "Cooperativas",
                         "codigoEntidad": code,
                         "nombreEntidad": name,
-                        "periodo": "2026-07-01T00:00:00",
+                        "periodo": statement_period,
                         "cuentaIASEF": "10000",
                         "nombreCuenta": "ACTIVO TOTAL",
                         "saldoIASEF": 500_000_000_000 + index,
@@ -90,6 +97,9 @@ class _OfficialStubClient(SUGEFOfficialFinancialApiClient):
 
         if "EstadoResultados" in endpoint:
             peers = _PEERS if entity_code == "" else (_PEERS[0],)
+            statement_period = (
+                self._iso_period(period) if entity_code == "" else "2026-07-01T00:00:00"
+            )
             return {
                 "tieneError": False,
                 "listaEstadoResultadosAnalisisFinancieroEntidad": [
@@ -98,7 +108,7 @@ class _OfficialStubClient(SUGEFOfficialFinancialApiClient):
                         "descripcionSector": "Cooperativas",
                         "codigoEntidad": code,
                         "nombreEntidad": name,
-                        "periodo": "2026-07-01T00:00:00",
+                        "periodo": statement_period,
                         "cuentaIASEF": "30000",
                         "nombreCuenta": "RESULTADO FINAL",
                         "saldoIASEF": 8_000_000_000 + index,
@@ -108,6 +118,12 @@ class _OfficialStubClient(SUGEFOfficialFinancialApiClient):
             }
 
         self.indicator_entity_codes.append(entity_code)
+        peers = _PEERS if entity_code == "" else (_PEERS[0],)
+        values = {
+            "3004045138": 1.10,
+            "3004000001": 0.90,
+            "3004000002": 1.30,
+        }
         return {
             "tieneError": False,
             "listaIndicadoresFinancierosEntidad": [
@@ -119,21 +135,30 @@ class _OfficialStubClient(SUGEFOfficialFinancialApiClient):
                     "periodo": "2026-07-01T00:00:00",
                     "codigoIndicador": "ROA",
                     "nombreIndicador": "ROA",
-                    "valorIndicador": value,
+                    "valorIndicador": values[code],
                 }
-                for (code, name), value in zip(_PEERS, (1.10, 0.90, 1.30), strict=True)
+                for code, name in peers
             ],
         }
 
 
-def test_official_api_uses_blank_entity_for_sfn_comparative_universe() -> None:
+class _PeerIndicatorFailureStubClient(_OfficialStubClient):
+    def _post_json(self, endpoint: str, payload: dict[str, object]) -> dict[str, object]:
+        parameters = payload["parametrosEntidad"]
+        assert isinstance(parameters, dict)
+        if str(parameters["codigoEntidad"]) == "" and "IndicadoresFinancieros" in endpoint:
+            raise URLError("peer indicator endpoint unavailable")
+        return super()._post_json(endpoint, payload)
+
+
+def test_official_api_uses_direct_entity_and_blank_entity_for_indicators() -> None:
     client = _OfficialStubClient(
         SUGEFFinancialSourceConfig(api_retries=0, api_entity_codes=("3004045138",))
     )
 
     result = client.read(date(2026, 7, 31))
 
-    assert client.indicator_entity_codes == [""]
+    assert client.indicator_entity_codes == ["3004045138", ""]
     indicator_lines = tuple(
         line for line in result.lines if line.statement_type is FinancialStatementType.INDICATORS
     )
@@ -145,23 +170,62 @@ def test_official_api_uses_blank_entity_for_sfn_comparative_universe() -> None:
         and line.statement_date == date(2026, 7, 31)
     )
     assert {line.entity.entity_id for line in peer_balances} == {code for code, _ in _PEERS}
-    assert any("todas las entidades" in message for message in result.diagnostics)
+    assert any("universo comparativo SFN" in message for message in result.diagnostics)
 
 
-def test_official_api_requests_methodology_grade_history_for_sfn_peers() -> None:
+def test_official_api_requests_monthly_methodology_history_for_sfn_peers() -> None:
     client = _OfficialStubClient(
         SUGEFFinancialSourceConfig(api_retries=0, api_entity_codes=("3004045138",))
     )
 
-    client.read(date(2026, 7, 31))
+    result = client.read(date(2026, 7, 31))
 
-    assert ("", "BALANCE", "20250801-20260701") in client.requests
-    assert (
-        "",
-        "INCOME",
-        "20250501,20250601,20250701,20251201,20260501,20260601,20260701",
-    ) in client.requests
-    assert ("", "INDICATORS", "20260501,20260601,20260701") in client.requests
+    peer_balance_requests = {
+        period
+        for entity_code, report, period in client.requests
+        if entity_code == "" and report == "BALANCE"
+    }
+    assert peer_balance_requests == set(client._peer_balance_periods(date(2026, 7, 31)))
+
+    peer_income_requests = {
+        period
+        for entity_code, report, period in client.requests
+        if entity_code == "" and report == "INCOME"
+    }
+    assert peer_income_requests == set(client._peer_income_periods(date(2026, 7, 31)))
+    assert ("", "INDICATORS", "20260701") in client.requests
+    assert ("3004045138", "INDICATORS", "20260701") in client.requests
+
+    for code, _ in _PEERS:
+        balance_dates = {
+            line.statement_date
+            for line in result.lines
+            if line.entity.entity_id == code
+            and line.statement_type is FinancialStatementType.BALANCE_SHEET
+        }
+        assert len(balance_dates) == 12
+        assert min(balance_dates) == date(2025, 8, 31)
+        assert max(balance_dates) == date(2026, 7, 31)
+
+
+def test_direct_entity_indicator_survives_peer_indicator_failure() -> None:
+    client = _PeerIndicatorFailureStubClient(
+        SUGEFFinancialSourceConfig(api_retries=0, api_entity_codes=("3004045138",))
+    )
+
+    result = client.read(date(2026, 7, 31))
+
+    primary_indicators = tuple(
+        line
+        for line in result.lines
+        if line.entity.entity_id == "3004045138"
+        and line.statement_type is FinancialStatementType.INDICATORS
+    )
+    assert any(line.account_name == "ROA" for line in primary_indicators)
+    assert any(
+        "ReporteIndicadoresFinancierosEntidad (SFN completo)" in message
+        for message in result.diagnostics
+    )
 
 
 def test_official_reader_never_activates_bundled_reference_matrix() -> None:
