@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import site
 import subprocess
 import venv
 from pathlib import Path
@@ -16,6 +17,17 @@ def _create_venv(path: Path) -> Path:
     if os.name == "nt":
         return path / "Scripts" / "python.exe"
     return path / "bin" / "python"
+
+
+def _installed_runtime_environment() -> dict[str, str]:
+    """Expose the runner's preinstalled dependencies to the nested packaging venv."""
+    environment = dict(os.environ)
+    inherited_paths = [path for path in site.getsitepackages() if Path(path).is_dir()]
+    existing = environment.get("PYTHONPATH")
+    if existing:
+        inherited_paths.append(existing)
+    environment["PYTHONPATH"] = os.pathsep.join(inherited_paths)
+    return environment
 
 
 def test_editable_install_imports_without_repo_path(tmp_path: Path) -> None:
@@ -73,5 +85,6 @@ def test_console_entry_point_is_available_after_install(tmp_path: Path) -> None:
         cwd=tmp_path,
         capture_output=True,
         text=True,
+        env=_installed_runtime_environment(),
     )
     assert entrypoint.returncode == 0

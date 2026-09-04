@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-from datetime import date
-from typing import cast
+import os
+import time
+from datetime import date, datetime, timezone
+from typing import Any, cast
 
 from PySide6.QtCore import QDate, Qt
 from PySide6.QtGui import QAction
@@ -61,6 +63,19 @@ from aip.ui.widgets.settings_center import SettingsCenterDialog
 
 class MainWindow(QMainWindow):
     """Entorno de escritorio institucional de AIP Enterprise."""
+
+    _WORKSPACE_TITLES = {
+        "home": "Inicio",
+        "executive": "Ejecutivo",
+        "portfolio": "Portafolio",
+        "market": "Mercado",
+        "price_risk": "Riesgo de Precio",
+        "macro_intelligence": "Inteligencia Macroeconómica",
+        "liquidity": "Liquidez",
+        "treasury": "Tesorería",
+        "financial_analysis": "Análisis Financiero",
+        "reports": "Reportes",
+    }
 
     def __init__(
         self,
@@ -296,11 +311,22 @@ class MainWindow(QMainWindow):
     def open_workspace(self, route_id: str) -> None:
         if self._workspace is None:
             raise RuntimeError("Espacio de trabajo no inicializado")
+        title = self._WORKSPACE_TITLES.get(route_id)
+        if title is not None:
+            for index in range(self._workspace.count()):
+                if self._workspace.tabText(index) == title:
+                    self._workspace.setCurrentIndex(index)
+                    return
         try:
             widget, title = self._build_workspace_widget(route_id)
             self._workspace.open_tab(title, widget)
         except Exception as exc:
             self._status_bar.set_message(f"No se pudo abrir {route_id}")
+            if os.getenv("QT_QPA_PLATFORM", "").strip().casefold() in {
+                "offscreen",
+                "minimal",
+            }:
+                raise RuntimeError(f"No fue posible abrir {route_id}: {exc}") from exc
             QMessageBox.critical(
                 self,
                 "Módulo no disponible",
@@ -371,26 +397,68 @@ class MainWindow(QMainWindow):
 
     def _handle_qdate_changed(self, value: QDate) -> None:
         selected = date(value.year(), value.month(), value.day())
+        previous = self._valuation_context.valuation_date
+        if selected == previous:
+            return
+        self._date_edit.setEnabled(False)
+        self._header_status.setText("ACTUALIZANDO")
+        self._status_bar.set_message(f"Cambiando fecha de corte a {selected:%d/%m/%Y}...")
+        QApplication.processEvents()
         try:
+            self._demo_factory.set_data_cutoff_date(selected)
             self._valuation_context.set_valuation_date(selected)
+            summary = self.refresh_all()
+            self._status_bar.set_message(
+                "Fecha de corte activa: "
+                f"{selected:%d/%m/%Y} · "
+                f"{summary['refreshed_workspaces']} módulos"
+            )
+            self._header_status.setText("SISTEMA LISTO")
         except Exception as exc:
-            current = self._valuation_context.valuation_date
+            try:
+                self._demo_factory.set_data_cutoff_date(previous)
+                self._valuation_context.set_valuation_date(previous)
+            except Exception:
+                pass
             self._date_edit.blockSignals(True)
-            self._date_edit.setDate(QDate(current.year, current.month, current.day))
+            self._date_edit.setDate(QDate(previous.year, previous.month, previous.day))
             self._date_edit.blockSignals(False)
+            self._header_status.setText("REVISAR")
+            self._status_bar.set_message("Cambio de fecha no completado")
+            if os.getenv("QT_QPA_PLATFORM", "").strip().casefold() in {
+                "offscreen",
+                "minimal",
+            }:
+                raise
             QMessageBox.warning(
                 self,
                 "Fecha de valoración",
                 f"No se pudo cambiar la fecha de valoración.\n\nDetalle:\n{exc}",
             )
-            return
-        self._status_bar.set_message(f"Corte activo: {selected:%d/%m/%Y}")
-        self._handle_refresh_all()
+        finally:
+            self._date_edit.setEnabled(True)
 
     def _handle_refresh_all(self) -> None:
-        if self._workspace is None:
-            return
         self._header_status.setText("ACTUALIZANDO")
+        try:
+            summary = self.refresh_all()
+            self._status_bar.set_message(
+                "Actualización completada · "
+                f"{summary['valuation_date']} · "
+                f"{summary['refreshed_workspaces']} módulos"
+            )
+            self._header_status.setText("SISTEMA LISTO")
+        except Exception as exc:
+            self._header_status.setText("REVISAR")
+            self._status_bar.set_message("Actualización fallida")
+            if os.getenv("QT_QPA_PLATFORM", "").strip().casefold() in {
+                "offscreen",
+                "minimal",
+            }:
+                raise
+            QMessageBox.critical(self, "Actualización fallida", str(exc))
+
+    def _clear_configured_caches(self) -> None:
         try:
             from aip.product.configured.adapters.configured_portfolio_provider import (
                 ConfiguredPortfolioProvider,
@@ -403,8 +471,13 @@ class MainWindow(QMainWindow):
             self._demo_factory.container.resolve(ConfiguredPortfolioVaRService).clear_result_cache()
         except Exception:
             # Demo mode and reduced test containers do not register configured caches.
-            pass
+            return
+
+    def _refresh_open_workspaces(self) -> tuple[int, tuple[str, ...]]:
+        if self._workspace is None:
+            return (0, ())
         refreshed = 0
+        errors: list[str] = []
         for index in range(self._workspace.count()):
             widget = self._workspace.widget(index)
             refresh = getattr(widget, "refresh", None)
@@ -417,9 +490,42 @@ class MainWindow(QMainWindow):
                         "warning",
                         f"No se pudo actualizar {self._workspace.tabText(index)}: {exc}",
                     )
-        self._header_status.setText("SISTEMA LISTO")
-        self._status_bar.set_message(f"Actualización completada · {refreshed} módulos")
+                    errors.append(f"{self._workspace.tabText(index)}: {exc}")
+        return (refreshed, tuple(errors))
+
+    def refresh_all(self) -> dict[str, object]:
+        started = time.perf_counter()
+        self._clear_configured_caches()
+        result = self._demo_factory.refresh_all_workflow().execute("corr-refresh-all")
+        refreshed, errors = self._refresh_open_workspaces()
         self._refresh_status_panel()
+        duration_ms = (time.perf_counter() - started) * 1000.0
+        self._diagnostic_metrics.record_refresh_all_duration(duration_ms)
+        return {
+            "status": "completed",
+            "correlation_id": result["correlation_id"],
+            "valuation_date": result["valuation_date"],
+            "refreshed_workspaces": refreshed,
+            "workspace_errors": errors,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+
+    def toggle_diagnostic_mode(self, enabled: bool) -> None:
+        self._diagnostic_mode = enabled
+        self._diagnostic_metrics.diagnostic_mode = enabled
+        self._refresh_status_panel()
+
+    def diagnostic_snapshot(self) -> dict[str, Any]:
+        snapshot = self._diagnostic_service.diagnostic_snapshot()
+        snapshot.update(
+            {
+                "diagnostic_mode": self._diagnostic_mode,
+                "valuation_date": self._valuation_context.valuation_date.isoformat(),
+                "execution_mode": self._config.execution_mode,
+                "metrics": self._diagnostic_metrics.snapshot(),
+            }
+        )
+        return snapshot
 
     def _add_operational_menu_actions(self) -> None:
         view_menu = self.menuBar().addMenu("Vista")
@@ -468,6 +574,52 @@ class MainWindow(QMainWindow):
     def _show_about(self) -> None:
         AboutDialog(self).exec()
 
+    def export_current_workspace_table(
+        self,
+        path: str | None = None,
+        *,
+        export_format: str = "csv",
+    ) -> str:
+        current_widget = self.workspace.currentWidget()
+        if current_widget is None:
+            raise RuntimeError("No hay una pestaña activa")
+        table: Any = current_widget
+        if not (hasattr(table, "columnCount") and hasattr(table, "rowCount")):
+            table = getattr(current_widget, "table", None)
+        if table is None or not (hasattr(table, "columnCount") and hasattr(table, "rowCount")):
+            raise RuntimeError("La pestaña activa no expone una tabla")
+        headers = [
+            (
+                table.horizontalHeaderItem(index).text()
+                if table.horizontalHeaderItem(index) is not None
+                else str(index)
+            )
+            for index in range(table.columnCount())
+        ]
+        rows: list[list[object]] = []
+        for row_index in range(table.rowCount()):
+            row: list[object] = []
+            for column_index in range(table.columnCount()):
+                item = table.item(row_index, column_index)
+                row.append(item.text() if item is not None else "")
+            rows.append(row)
+        return self._export_service.export_records(
+            path or "exportacion-espacio-trabajo",
+            headers=headers,
+            rows=rows,
+            export_format=export_format,
+        )
+
+    @property
+    def workspace(self) -> Workspace:
+        if self._workspace is None:
+            raise RuntimeError("Espacio de trabajo no inicializado")
+        return self._workspace
+
+    @property
+    def inspector(self) -> InspectorPanel:
+        return self._inspector
+
     def _set_theme(self, theme_name: str) -> None:
         self._theme_service.set_theme(theme_name)
         self._apply_theme()
@@ -481,10 +633,18 @@ class MainWindow(QMainWindow):
         if self._system_status_text is None:
             return
         try:
-            report = self._diagnostic_service.evaluate()
-            self._system_status_text.setPlainText(str(report))
+            status = self._demo_factory.build_system_status()
+            source_states = status.source_states
+            lines = [
+                f"Entorno: {status.environment}",
+                f"Modo de ejecución: {status.execution_mode}",
+                f"Modo demostración: {self._demo_factory.config.demo_mode_enabled}",
+                f"Fecha de valoración: {self._valuation_context.valuation_date.isoformat()}",
+                *[f"{name}: {state}" for name, state in sorted(source_states.items())],
+            ]
         except Exception as exc:
-            self._system_status_text.setPlainText(f"Diagnóstico no disponible: {exc}")
+            lines = [f"Estado del sistema no disponible: {exc}"]
+        self._system_status_text.setPlainText("\n".join(lines))
 
     def closeEvent(self, event) -> None:  # noqa: N802
         self._window_state.save(self)

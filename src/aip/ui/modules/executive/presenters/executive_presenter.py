@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from aip.product.configured.services.configured_macro_intelligence_service import (
     ConfiguredMacroIntelligenceService,
@@ -39,7 +39,7 @@ class ExecutivePresenter:
             return value
         try:
             return Decimal(str(value))
-        except (TypeError, ValueError):
+        except (InvalidOperation, TypeError, ValueError):
             return Decimal("0")
 
     @classmethod

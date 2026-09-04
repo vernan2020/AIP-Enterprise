@@ -15,7 +15,7 @@ def test_demo_rc1_smoke_navigation_and_refresh() -> None:
     window.show()
     app.processEvents()
 
-    assert any("DEMO MODE" in widget.text().upper() for widget in window.findChildren(QLabel))
+    assert any("MODO DEMO" in widget.text().upper() for widget in window.findChildren(QLabel))
 
     workspace = window.workspace
     assert any(workspace.tabText(index) == "Ejecutivo" for index in range(workspace.count()))
