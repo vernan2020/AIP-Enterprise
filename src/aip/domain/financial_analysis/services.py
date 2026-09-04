@@ -6,6 +6,9 @@ from datetime import date
 from decimal import Decimal, DivisionByZero, InvalidOperation
 
 from aip.domain.financial_analysis.indicator_calculator import OfficialRatingIndicatorCalculator
+from aip.domain.financial_analysis.indicator_reconciliation import (
+    FinancialIndicatorReconciliationService,
+)
 from aip.domain.financial_analysis.models import (
     EntityFinancialSummary,
     FinancialAnalysisSnapshot,
@@ -46,8 +49,10 @@ class FinancialAnalysisService:
         self,
         *,
         indicator_calculator: OfficialRatingIndicatorCalculator | None = None,
+        reconciliation_service: FinancialIndicatorReconciliationService | None = None,
     ) -> None:
         self._indicator_calculator = indicator_calculator or OfficialRatingIndicatorCalculator()
+        self._reconciliation = reconciliation_service or FinancialIndicatorReconciliationService()
 
     def build_snapshot(
         self,
@@ -60,8 +65,11 @@ class FinancialAnalysisService:
     ) -> FinancialAnalysisSnapshot:
         entities = self._entities(lines)
         dates = tuple(sorted({line.statement_date for line in lines}, reverse=True))
-        effective_date = self._effective_date(dates, cutoff_date)
         selected = self._selected_entity(entities, selected_entity_id)
+        accounting_dates = (
+            self._complete_accounting_dates(lines, selected.entity_id) if selected is not None else ()
+        )
+        effective_date = self._effective_date(accounting_dates or dates, cutoff_date)
 
         if selected is None or effective_date is None:
             return FinancialAnalysisSnapshot(
@@ -74,24 +82,42 @@ class FinancialAnalysisService:
                 source_files=source_files,
             )
 
-        lines = self._indicator_calculator.augment(lines, cutoff_date=effective_date)
+        # La línea operacional conserva la prelación SUGEF: publicado primero,
+        # cálculo 08ME14-01 únicamente cuando el indicador no fue publicado.
+        operational_lines = self._indicator_calculator.augment(
+            lines,
+            cutoff_date=effective_date,
+        )
+        # En paralelo se generan cálculos sombra para poder auditar y reconciliar
+        # el valor oficial sin sustituirlo en la calificación.
+        reconciliation_lines = self._indicator_calculator.augment(
+            lines,
+            cutoff_date=effective_date,
+            include_shadow_calculations=True,
+        )
 
         current = tuple(
             line
-            for line in lines
+            for line in operational_lines
             if line.entity.entity_id == selected.entity_id and line.statement_date == effective_date
         )
-        previous_date = next((value for value in dates if value < effective_date), None)
+        prior_dates = accounting_dates or dates
+        previous_date = next((value for value in prior_dates if value < effective_date), None)
         previous = tuple(
             line
-            for line in lines
+            for line in operational_lines
             if line.entity.entity_id == selected.entity_id and line.statement_date == previous_date
         )
         metrics = self._metrics(current, previous)
-        peers = self._peer_summaries(lines, effective_date)
+        peers = self._peer_summaries(operational_lines, effective_date)
         rating = SUGEFOnlyFinancialEntityRatingService().evaluate(
-            lines,
+            operational_lines,
             selected_entity_id=selected.entity_id,
+            cutoff_date=effective_date,
+        )
+        reconciliations = self._reconciliation.reconcile(
+            reconciliation_lines,
+            entity_id=selected.entity_id,
             cutoff_date=effective_date,
         )
         statement_types = {line.statement_type for line in current}
@@ -99,6 +125,11 @@ class FinancialAnalysisService:
         has_income = FinancialStatementType.INCOME_STATEMENT in statement_types
         status = "AVAILABLE" if has_balance and has_income else "PARTIAL"
         coverage_diagnostics = list(diagnostics)
+        if accounting_dates and cutoff_date is not None and effective_date < cutoff_date:
+            coverage_diagnostics.append(
+                "Corte efectivo de análisis alineado al último mes con Balance de Situación y "
+                f"Estado de Resultados SUGEF completos: {effective_date:%d/%m/%Y}."
+            )
         if not has_balance:
             coverage_diagnostics.append(
                 "Cobertura parcial: falta el Balance de Situación oficial de SUGEF "
@@ -119,6 +150,7 @@ class FinancialAnalysisService:
             statement_lines=tuple(sorted(current, key=self._line_sort_key)),
             peer_summaries=peers,
             rating=rating,
+            indicator_reconciliations=reconciliations,
             diagnostics=tuple(coverage_diagnostics),
             source_files=source_files,
         )
@@ -329,6 +361,27 @@ class FinancialAnalysisService:
     def _entities(lines: tuple[FinancialStatementLine, ...]) -> tuple[FinancialEntity, ...]:
         unique = {line.entity.entity_id: line.entity for line in lines}
         return tuple(sorted(unique.values(), key=lambda item: item.name.casefold()))
+
+    @staticmethod
+    def _complete_accounting_dates(
+        lines: tuple[FinancialStatementLine, ...],
+        entity_id: str,
+    ) -> tuple[date, ...]:
+        by_date: dict[date, set[FinancialStatementType]] = defaultdict(set)
+        for line in lines:
+            if line.entity.entity_id == entity_id:
+                by_date[line.statement_date].add(line.statement_type)
+        return tuple(
+            sorted(
+                (
+                    statement_date
+                    for statement_date, statement_types in by_date.items()
+                    if FinancialStatementType.BALANCE_SHEET in statement_types
+                    and FinancialStatementType.INCOME_STATEMENT in statement_types
+                ),
+                reverse=True,
+            )
+        )
 
     @staticmethod
     def _effective_date(dates: tuple[date, ...], requested: date | None) -> date | None:
