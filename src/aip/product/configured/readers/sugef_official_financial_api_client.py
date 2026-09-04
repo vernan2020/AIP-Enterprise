@@ -74,7 +74,11 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
 
         effective_cutoff = self._primary_statement_cutoff(lines)
         if effective_cutoff is not None:
-            effective_period = f"{effective_cutoff:%Y%m%d}"
+            effective_period = date(
+                effective_cutoff.year,
+                effective_cutoff.month,
+                1,
+            ).strftime("%Y%m%d")
 
             # Fase 2: indicadores directos de la entidad configurada. No se debe
             # depender de la consulta masiva del SFN para los valores propios.
