@@ -87,6 +87,7 @@ class SUGEFCreditQualityReader:
         diagnostics: list[str] = []
         endpoints: set[str] = set()
         buckets: list[_BucketRow] = []
+        direct_entity_codes = set(self._config.api_entity_codes)
 
         scopes = [*self._config.api_entity_codes, ""]
         for entity_code in dict.fromkeys(scopes):
@@ -100,19 +101,28 @@ class SUGEFCreditQualityReader:
                     days_arrears="",
                 )
                 endpoints.add(response.endpoint)
-                buckets.extend(self._normalize_rows(response.rows, response.endpoint))
+                normalized = self._normalize_rows(response.rows, response.endpoint)
+                if entity_code == "":
+                    # El universo SFN vuelve a incluir las entidades consultadas
+                    # directamente. Se excluyen solo esas entidades del scope SFN
+                    # para evitar doble conteo, pero se conservan todas las filas
+                    # legítimas de cada banda (por ejemplo, distintas monedas).
+                    normalized = tuple(
+                        row for row in normalized if row.entity.entity_id not in direct_entity_codes
+                    )
+                buckets.extend(normalized)
             except (HTTPError, URLError, TimeoutError, ValueError, OSError) as exc:
                 scope = entity_code or "SFN completo"
                 diagnostics.append(
                     f"SUGEF API ReporteDiasAtraso ({scope}): {type(exc).__name__}: {exc}"
                 )
 
-        lines, calc_diagnostics = self._calculate(tuple(self._deduplicate(buckets)))
+        lines, calc_diagnostics = self._calculate(tuple(buckets))
         diagnostics.extend(calc_diagnostics)
         if lines:
             diagnostics.append(
                 "Indicadores de calidad de cartera calculados desde ReporteDiasAtraso "
-                "SUGEF, normativa CONASSIF 14-21, sin completar bandas ausentes con cero."
+                "SUGEF, sin completar bandas ausentes con cero ni descartar filas por moneda."
             )
         return SUGEFCreditQualityReadResult(
             lines=lines,
@@ -208,13 +218,6 @@ class SUGEFCreditQualityReader:
                 )
             )
         return tuple(result)
-
-    @staticmethod
-    def _deduplicate(rows: list[_BucketRow]) -> tuple[_BucketRow, ...]:
-        unique: dict[tuple[str, date, CreditAgingBand], _BucketRow] = {}
-        for row in rows:
-            unique.setdefault((row.entity.entity_id, row.statement_date, row.band), row)
-        return tuple(unique.values())
 
     @classmethod
     def _indicator_line(
