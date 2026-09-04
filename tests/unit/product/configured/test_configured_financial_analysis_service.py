@@ -59,7 +59,5 @@ def test_service_does_not_expose_bundled_reference_data_when_sugef_is_disabled()
     assert snapshot.statement_lines == ()
     assert snapshot.rating is None
     assert all(metric.value is None for metric in snapshot.metrics)
-    assert any(
-        "no se utiliza información de respaldo" in item for item in snapshot.diagnostics
-    )
+    assert any("no se utiliza información de respaldo" in item for item in snapshot.diagnostics)
     assert all("referencia institucional" not in item for item in snapshot.diagnostics)
