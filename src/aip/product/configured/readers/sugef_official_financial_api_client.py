@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date
+from urllib.error import HTTPError, URLError
 
 from aip.domain.financial_analysis.models import FinancialStatementLine, FinancialStatementType
 from aip.product.configured.configuration.configured_source_config import (
@@ -16,12 +17,11 @@ from aip.product.configured.readers.sugef_financial_api_client import (
 class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
     """Gateway SUGEF estricto para estados oficiales y universo comparativo SFN.
 
-    Balance y resultados se descargan para las entidades configuradas, incluyendo
-    la historia mínima necesaria para 08ME14-01. Los indicadores se solicitan una
-    sola vez con ``codigoEntidad`` vacío, modalidad documentada por SUGEF para
-    retornar todas las entidades del Sistema Financiero Nacional. De esta forma
-    los percentiles P15/P85 se construyen exclusivamente con información pública
-    oficial y no requieren matrices institucionales de respaldo.
+    Para las entidades configuradas descarga la historia mínima requerida por
+    08ME14-01. Además consulta el corte comparativo del SFN con ``codigoEntidad``
+    vacío para Balance, Resultados e Indicadores, modalidad documentada por SUGEF.
+    Así la pantalla de pares y los percentiles P15/P85 se construyen únicamente
+    con información pública oficial, sin matrices institucionales de respaldo.
     """
 
     _BALANCE_REPORT = (
@@ -64,16 +64,14 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
                 )
             )
 
+        peer_periods = self._peer_periods(cutoff_date)
         # El manual oficial SUGEF establece que codigoEntidad="" devuelve todas
-        # las entidades del SFN para ReporteIndicadoresFinancierosEntidad.
-        jobs.append(
+        # las entidades del SFN para estos tres reportes por entidad financiera.
+        jobs.extend(
             (
-                "",
-                self._period_range(
-                    cutoff_date,
-                    lookback_months=self._COMPARATIVE_LOOKBACK_MONTHS,
-                ),
-                *self._INDICATOR_REPORT,
+                ("", peer_periods, *self._BALANCE_REPORT),
+                ("", peer_periods, *self._INCOME_REPORT),
+                ("", peer_periods, *self._INDICATOR_REPORT),
             )
         )
 
@@ -89,29 +87,30 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
                     report_name,
                     list_key,
                     statement_type,
-                ): (entity_code, report_name, statement_type)
+                ): (entity_code, report_name)
                 for entity_code, period, report_name, list_key, statement_type in jobs
             }
             for future in as_completed(futures):
-                entity_code, report_name, statement_type = futures[future]
+                entity_code, report_name = futures[future]
                 try:
                     report_lines, endpoint = future.result()
                     lines.extend(report_lines)
                     endpoints.add(endpoint)
-                except Exception as exc:  # boundary: convert source failure to diagnostics
+                except (HTTPError, URLError, TimeoutError, ValueError, OSError) as exc:
                     scope = entity_code or "SFN completo"
                     diagnostics.append(
                         f"SUGEF API {report_name} ({scope}): "
                         f"{type(exc).__name__}: {exc}"
                     )
 
+        lines = self._deduplicate(lines)
         lines = self._clip_to_primary_statement_cutoff(lines)
         if lines:
             latest_date = max(line.statement_date for line in lines)
             diagnostics.extend(
                 (
                     "Balance y Estado de Resultados consultados exclusivamente en la API pública oficial de SUGEF.",
-                    "Indicadores comparativos consultados para todas las entidades del Sistema Financiero Nacional mediante la modalidad oficial codigoEntidad vacío.",
+                    "Balance, Resultados e Indicadores comparativos consultados para todas las entidades del Sistema Financiero Nacional mediante la modalidad oficial codigoEntidad vacío.",
                     "Último corte SUGEF utilizable en el conjunto oficial: "
                     f"{latest_date.strftime('%d/%m/%Y')}.",
                 )
@@ -124,6 +123,31 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
             endpoints=tuple(sorted(endpoints)),
             diagnostics=tuple(diagnostics),
         )
+
+    @classmethod
+    def _peer_periods(cls, cutoff_date: date) -> str:
+        periods = tuple(
+            cls._shift_month(date(cutoff_date.year, cutoff_date.month, 1), -offset)
+            for offset in range(cls._COMPARATIVE_LOOKBACK_MONTHS + 1)
+        )
+        return ",".join(f"{period:%Y%m%d}" for period in sorted(periods))
+
+    @staticmethod
+    def _deduplicate(lines: list[FinancialStatementLine]) -> list[FinancialStatementLine]:
+        unique: dict[
+            tuple[str, date, FinancialStatementType, str, str],
+            FinancialStatementLine,
+        ] = {}
+        for line in lines:
+            key = (
+                line.entity.entity_id,
+                line.statement_date,
+                line.statement_type,
+                line.account_code,
+                line.account_name,
+            )
+            unique[key] = line
+        return list(unique.values())
 
     def _clip_to_primary_statement_cutoff(
         self,
