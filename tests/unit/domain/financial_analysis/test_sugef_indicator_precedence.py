@@ -11,7 +11,6 @@ from aip.domain.financial_analysis.models import (
     SourceTrace,
 )
 
-
 _ENTITY = FinancialEntity("3004045138", "COOPEALIANZA R.L.", "Cooperativas")
 _API_TRACE = SourceTrace(
     source_name="SUGEF API pública",
