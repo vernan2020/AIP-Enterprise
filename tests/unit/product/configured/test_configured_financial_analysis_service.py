@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import date
-from decimal import Decimal
 
 from aip.product.configured.configuration.configured_source_config import (
     SUGEFFinancialSourceConfig,
@@ -45,7 +44,7 @@ def test_service_reuses_cache_until_source_fingerprint_changes() -> None:
     assert reader.read_count == 2
 
 
-def test_service_exposes_reference_data_for_july_cutoff() -> None:
+def test_service_does_not_expose_bundled_reference_data_when_sugef_is_disabled() -> None:
     service = ConfiguredFinancialAnalysisService(
         SUGEFFinancialSourceConfig(api_enabled=False),
         ValuationDateContext(date(2026, 7, 30)),
@@ -53,22 +52,14 @@ def test_service_exposes_reference_data_for_july_cutoff() -> None:
 
     snapshot = service.load()
 
-    assert snapshot.status == "PARTIAL"
+    assert snapshot.status == "UNAVAILABLE"
     assert snapshot.cutoff_date == date(2026, 7, 30)
-    assert snapshot.selected_entity is not None
-    assert snapshot.selected_entity.name == "COOPEALIANZA R.L."
-    assert len(snapshot.entities) == 38
-    assert len(snapshot.statement_lines) == 13
-    assert snapshot.rating is not None
-    assert snapshot.rating.status == "COMPLETE"
-    assert snapshot.rating.coverage_percent == 100
-    metrics = {item.code: item.value for item in snapshot.metrics}
-    assert metrics["LOANS"] is None
-    assert metrics["ROA"] is not None and metrics["ROA"].quantize(Decimal("0.01")) == Decimal(
-        "1.04"
+    assert snapshot.selected_entity is None
+    assert snapshot.entities == ()
+    assert snapshot.statement_lines == ()
+    assert snapshot.rating is None
+    assert all(metric.value is None for metric in snapshot.metrics)
+    assert any(
+        "no se utiliza información de respaldo" in item for item in snapshot.diagnostics
     )
-    assert metrics["ROE"] is not None and metrics["ROE"].quantize(Decimal("0.01")) == Decimal(
-        "5.74"
-    )
-    assert any("falta el Balance" in item for item in snapshot.diagnostics)
-    assert any("falta el Estado de Resultados" in item for item in snapshot.diagnostics)
+    assert all("referencia institucional" not in item for item in snapshot.diagnostics)
