@@ -56,7 +56,7 @@ class InstitutionalEntityFlagService:
         entities = {
             line.entity.entity_id: line.entity
             for line in lines
-            if line.statement_date <= cutoff_date
+            if line.statement_date == cutoff_date
         }
         additions: list[FinancialStatementLine] = []
         for entity in entities.values():
