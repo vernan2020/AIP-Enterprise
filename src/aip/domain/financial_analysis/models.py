@@ -28,6 +28,15 @@ class RatingLevel(StrEnum):
     UNAVAILABLE = "UNAVAILABLE"
 
 
+class FinancialIndicatorReconciliationStatus(StrEnum):
+    MATCH = "MATCH"
+    TOLERANCE = "TOLERANCE"
+    MISMATCH = "MISMATCH"
+    PUBLISHED_ONLY = "PUBLISHED_ONLY"
+    CALCULATED_ONLY = "CALCULATED_ONLY"
+    MISSING_INPUT = "MISSING_INPUT"
+
+
 @dataclass(frozen=True, slots=True)
 class SourceTrace:
     source_name: str
@@ -121,6 +130,19 @@ class EntityFinancialRating:
 
 
 @dataclass(frozen=True, slots=True)
+class FinancialIndicatorReconciliation:
+    code: str
+    label: str
+    published_value: Decimal | None
+    calculated_value: Decimal | None
+    difference: Decimal | None
+    tolerance: Decimal
+    status: FinancialIndicatorReconciliationStatus
+    published_source: str | None = None
+    calculated_source: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class FinancialAnalysisSnapshot:
     status: str
     cutoff_date: date | None
@@ -131,6 +153,9 @@ class FinancialAnalysisSnapshot:
     statement_lines: tuple[FinancialStatementLine, ...] = field(default_factory=tuple)
     peer_summaries: tuple[EntityFinancialSummary, ...] = field(default_factory=tuple)
     rating: EntityFinancialRating | None = None
+    indicator_reconciliations: tuple[FinancialIndicatorReconciliation, ...] = field(
+        default_factory=tuple
+    )
     diagnostics: tuple[str, ...] = field(default_factory=tuple)
     source_name: str = "SUGEF"
     source_url: str = "https://www.sugef.fi.cr/reportes/Informacion_Financiera_Contable.aspx"
