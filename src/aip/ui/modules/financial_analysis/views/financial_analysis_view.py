@@ -71,7 +71,10 @@ class FinancialAnalysisView(QWidget):
         self._refresh_button = QPushButton("Actualizar fuente")
         self._refresh_button.clicked.connect(self._refresh)
         header.addWidget(self._refresh_button)
-        self._cutoff = QLabel("Corte: -")
+        self._cutoff = QLabel("Corte SUGEF: -")
+        self._cutoff.setToolTip(
+            "Último corte oficial SUGEF disponible que no excede el corte general de AIP."
+        )
         self._cutoff.setStyleSheet(
             "padding:7px 11px; background:#F3F6F9; border:1px solid #D7E0E8; "
             "border-radius:6px; font-weight:600;"
@@ -222,7 +225,7 @@ class FinancialAnalysisView(QWidget):
         self._view_model = view_model
         self._title.setText(view_model.title)
         self._subtitle.setText(view_model.subtitle)
-        self._cutoff.setText(f"Corte: {view_model.cutoff_date}")
+        self._cutoff.setText(f"Corte SUGEF: {view_model.cutoff_date}")
         self._bind_entities(view_model)
         metrics = {item.code: item for item in view_model.metrics}
         for code in self._KPI_ORDER:
