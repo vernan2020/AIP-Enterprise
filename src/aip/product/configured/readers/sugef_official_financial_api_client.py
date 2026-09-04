@@ -100,9 +100,7 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
             # Fase 4: historia del universo SFN. Balance se obtiene mes a mes para
             # garantizar 12 observaciones por entidad y Resultados únicamente para
             # los períodos necesarios para la anualización móvil de 08ME14-01.
-            peer_history_jobs: list[
-                tuple[str, str, str, str, FinancialStatementType]
-            ] = []
+            peer_history_jobs: list[tuple[str, str, str, str, FinancialStatementType]] = []
             peer_history_jobs.extend(
                 ("", period, *self._BALANCE_REPORT)
                 for period in self._peer_balance_periods(effective_cutoff)
