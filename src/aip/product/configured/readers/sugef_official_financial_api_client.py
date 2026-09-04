@@ -84,21 +84,30 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
             ]
             self._execute_jobs(primary_indicator_jobs, lines, endpoints, diagnostics)
 
-            # Fase 3: universo SFN. Balance se obtiene mes a mes para garantizar
-            # 12 observaciones por entidad; Resultados se consulta únicamente para
-            # los períodos necesarios para anualización móvil; Indicadores usa el
-            # corte contable efectivo exacto.
-            peer_jobs: list[tuple[str, str, str, str, FinancialStatementType]] = []
-            peer_jobs.extend(
+            # Fase 3: indicadores comparativos SFN en una llamada dedicada. Esta
+            # consulta no compite con la descarga histórica de Balance/Resultados.
+            self._execute_jobs(
+                [("", effective_period, *self._INDICATOR_REPORT)],
+                lines,
+                endpoints,
+                diagnostics,
+            )
+
+            # Fase 4: historia del universo SFN. Balance se obtiene mes a mes para
+            # garantizar 12 observaciones por entidad y Resultados únicamente para
+            # los períodos necesarios para la anualización móvil de 08ME14-01.
+            peer_history_jobs: list[
+                tuple[str, str, str, str, FinancialStatementType]
+            ] = []
+            peer_history_jobs.extend(
                 ("", period, *self._BALANCE_REPORT)
                 for period in self._peer_balance_periods(effective_cutoff)
             )
-            peer_jobs.extend(
+            peer_history_jobs.extend(
                 ("", period, *self._INCOME_REPORT)
                 for period in self._peer_income_periods(effective_cutoff)
             )
-            peer_jobs.append(("", effective_period, *self._INDICATOR_REPORT))
-            self._execute_jobs(peer_jobs, lines, endpoints, diagnostics)
+            self._execute_jobs(peer_history_jobs, lines, endpoints, diagnostics)
 
         lines = self._deduplicate(lines)
         lines = self._clip_to_primary_statement_cutoff(lines)
@@ -107,7 +116,7 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
             diagnostics.extend(
                 (
                     "Balance y Estado de Resultados consultados exclusivamente en la API pública oficial de SUGEF.",
-                    "Indicadores de la entidad seleccionada se consultan directamente en SUGEF; el universo comparativo SFN se consulta mediante codigoEntidad vacío.",
+                    "Indicadores de la entidad seleccionada se consultan directamente en SUGEF; el universo comparativo SFN se consulta mediante codigoEntidad vacío en una llamada dedicada.",
                     "La historia comparativa de Balance se consulta mes a mes y Resultados por los períodos requeridos por 08ME14-01 para preservar 12 observaciones por entidad.",
                     "Último corte SUGEF utilizable en el conjunto oficial: "
                     f"{latest_date.strftime('%d/%m/%Y')}.",
