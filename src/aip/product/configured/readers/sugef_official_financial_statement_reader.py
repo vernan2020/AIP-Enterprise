@@ -53,9 +53,7 @@ class SUGEFOfficialFinancialStatementReader(SUGEFFinancialStatementReader):
             try:
                 lines.extend(self._read_file(path, diagnostics))
             except Exception as exc:
-                diagnostics.append(
-                    f"{path.name}: no se pudo leer ({type(exc).__name__}: {exc})"
-                )
+                diagnostics.append(f"{path.name}: no se pudo leer ({type(exc).__name__}: {exc})")
 
         if not lines:
             diagnostics.append(
