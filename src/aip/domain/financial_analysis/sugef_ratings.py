@@ -5,8 +5,12 @@ from dataclasses import replace
 from aip.domain.financial_analysis.models import (
     EntityFinancialRating,
     FinancialStatementLine,
+    RatingDirection,
 )
-from aip.domain.financial_analysis.ratings import FinancialEntityRatingService
+from aip.domain.financial_analysis.ratings import (
+    FinancialEntityRatingService,
+    RatingIndicatorDefinition,
+)
 
 
 class SUGEFOnlyFinancialEntityRatingService(FinancialEntityRatingService):
@@ -17,6 +21,31 @@ class SUGEFOnlyFinancialEntityRatingService(FinancialEntityRatingService):
     cuando el indicador no está publicado y existen estados financieros SUGEF
     suficientes. No se admite una tercera fuente de respaldo.
     """
+
+    # Los nombres públicos de SUGEF no siempre coinciden literalmente con la
+    # denominación de 08ME14-01. Estos alias pertenecen al adaptador SUGEF y no
+    # contaminan la definición metodológica de dominio.
+    _SUGEF_ALIASES: dict[str, tuple[str, ...]] = {
+        "ROE": (
+            "RENTABILIDAD NOMINAL SOBRE PATRIMONIO PROMEDIO",
+        ),
+        "OPERATING_EFFICIENCY": (
+            "GASTOS DE ADMINISTRACION / UTILIDAD OPERACIONAL BRUTA",
+            "GASTOS DE ADMINISTRACION/UTILIDAD OPERACIONAL BRUTA",
+            "GASTOS ADMINISTRATIVOS / UTILIDAD OPERACIONAL BRUTA",
+        ),
+    }
+
+    @classmethod
+    def _find_indicator(
+        cls,
+        lines: tuple[FinancialStatementLine, ...],
+        definition: RatingIndicatorDefinition,
+    ) -> FinancialStatementLine | None:
+        aliases = cls._SUGEF_ALIASES.get(definition.code, ())
+        if aliases:
+            definition = replace(definition, aliases=(*definition.aliases, *aliases))
+        return super()._find_indicator(lines, definition)
 
     @classmethod
     def _source_priority(cls, line: FinancialStatementLine) -> int:
@@ -46,9 +75,19 @@ class SUGEFOnlyFinancialEntityRatingService(FinancialEntityRatingService):
             for message in result.diagnostics
             if "referencia institucional" not in message.lower()
             and "origen de la calificación" not in message.lower()
+            and "se requieren al menos" not in message.lower()
+        )
+        peer_diagnostics = tuple(
+            f"{item.label}: {item.peer_count} entidades comparables disponibles; "
+            f"mínimo metodológico {self.MINIMUM_PEERS}."
+            for item in result.indicators
+            if item.direction is not RatingDirection.BINARY
+            and item.value is not None
+            and item.contribution is None
         )
         diagnostics = (
             *diagnostics,
+            *peer_diagnostics,
             "Prelación de fuentes: indicador publicado por SUGEF; en su ausencia, "
             "cálculo 08ME14-01 desde estados financieros SUGEF; sin otra fuente de respaldo.",
             f"Trazabilidad: {published} publicados por SUGEF, {calculated} calculados "
