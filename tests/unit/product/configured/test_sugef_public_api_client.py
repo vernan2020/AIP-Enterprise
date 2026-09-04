@@ -160,9 +160,7 @@ def test_financial_reports_support_entity_sector_and_total_wrappers() -> None:
         periods="20260701",
     )
     _, _, total_payload = client.calls[-1]
-    assert total_payload == {
-        "parametrosTotal": {"periodos": "20260701", "codigoCuenta": ""}
-    }
+    assert total_payload == {"parametrosTotal": {"periodos": "20260701", "codigoCuenta": ""}}
 
 
 def test_gateway_rejects_external_or_unknown_operation_families() -> None:
