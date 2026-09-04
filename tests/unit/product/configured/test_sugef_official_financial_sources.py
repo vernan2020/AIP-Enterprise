@@ -155,16 +155,13 @@ def test_official_api_requests_methodology_grade_history_for_sfn_peers() -> None
 
     client.read(date(2026, 7, 31))
 
-    blank_requests = {
-        report: period
-        for entity_code, report, period in client.requests
-        if entity_code == ""
-    }
-    assert blank_requests["BALANCE"] == "20250801-20260701"
-    assert blank_requests["INCOME"] == (
-        "20250501,20250601,20250701,20251201,20260501,20260601,20260701"
-    )
-    assert blank_requests["INDICATORS"] == "20260501,20260601,20260701"
+    assert ("", "BALANCE", "20250801-20260701") in client.requests
+    assert (
+        "",
+        "INCOME",
+        "20250501,20250601,20250701,20251201,20260501,20260601,20260701",
+    ) in client.requests
+    assert ("", "INDICATORS", "20260501,20260601,20260701") in client.requests
 
 
 def test_official_reader_never_activates_bundled_reference_matrix() -> None:
