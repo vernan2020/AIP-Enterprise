@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import unicodedata
+from datetime import date
 from decimal import Decimal
 
 from aip.domain.financial_analysis.models import (
@@ -40,7 +41,7 @@ class FinancialIndicatorReconciliationService:
         lines: tuple[FinancialStatementLine, ...],
         *,
         entity_id: str,
-        cutoff_date,
+        cutoff_date: date,
     ) -> tuple[FinancialIndicatorReconciliation, ...]:
         current = tuple(
             line
@@ -115,7 +116,10 @@ class FinancialIndicatorReconciliationService:
             if line.account_code.startswith("CALC:"):
                 continue
             name = cls._normalize(line.account_name)
-            if any(name == alias or (len(alias) > 5 and name.startswith(alias)) for alias in normalized_aliases):
+            if any(
+                name == alias or (len(alias) > 5 and name.startswith(alias))
+                for alias in normalized_aliases
+            ):
                 candidates.append(line)
         if not candidates:
             return None
