@@ -24,11 +24,19 @@ class _OfficialStubClient(SUGEFOfficialFinancialApiClient):
     def __init__(self, config: SUGEFFinancialSourceConfig) -> None:
         super().__init__(config)
         self.indicator_entity_codes: list[str] = []
+        self.requests: list[tuple[str, str, str]] = []
 
     def _post_json(self, endpoint: str, payload: dict[str, object]) -> dict[str, object]:
         parameters = payload["parametrosEntidad"]
         assert isinstance(parameters, dict)
         entity_code = str(parameters["codigoEntidad"])
+        period = str(parameters["periodos"])
+        report = (
+            "BALANCE"
+            if "BalanceSituacion" in endpoint
+            else "INCOME" if "EstadoResultados" in endpoint else "INDICATORS"
+        )
+        self.requests.append((entity_code, report, period))
 
         if "BalanceSituacion" in endpoint:
             if entity_code == "":
@@ -138,6 +146,25 @@ def test_official_api_uses_blank_entity_for_sfn_comparative_universe() -> None:
     )
     assert {line.entity.entity_id for line in peer_balances} == {code for code, _ in _PEERS}
     assert any("todas las entidades" in message for message in result.diagnostics)
+
+
+def test_official_api_requests_methodology_grade_history_for_sfn_peers() -> None:
+    client = _OfficialStubClient(
+        SUGEFFinancialSourceConfig(api_retries=0, api_entity_codes=("3004045138",))
+    )
+
+    client.read(date(2026, 7, 31))
+
+    blank_requests = {
+        report: period
+        for entity_code, report, period in client.requests
+        if entity_code == ""
+    }
+    assert blank_requests["BALANCE"] == "20250801-20260701"
+    assert blank_requests["INCOME"] == (
+        "20250501,20250601,20250701,20251201,20260501,20260601,20260701"
+    )
+    assert blank_requests["INDICATORS"] == "20260501,20260601,20260701"
 
 
 def test_official_reader_never_activates_bundled_reference_matrix() -> None:
