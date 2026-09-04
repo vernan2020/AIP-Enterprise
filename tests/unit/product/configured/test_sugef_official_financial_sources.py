@@ -157,11 +157,7 @@ class _PublicationLagStubClient(_OfficialStubClient):
         assert isinstance(parameters, dict)
         entity_code = str(parameters["codigoEntidad"])
         period = str(parameters["periodos"])
-        if (
-            entity_code == "3004045138"
-            and "20260801" in period
-            and "BalanceSituacion" in endpoint
-        ):
+        if entity_code == "3004045138" and "20260801" in period and "BalanceSituacion" in endpoint:
             self.requests.append((entity_code, "BALANCE", period))
             raise URLError("August accounting cutoff not published")
         return super()._post_json(endpoint, payload)
@@ -258,11 +254,12 @@ def test_official_api_falls_back_to_latest_complete_accounting_cutoff() -> None:
     assert ("3004045138", "INDICATORS", "20260701") in client.requests
     assert ("3004045138", "INDICATORS", "20260801") not in client.requests
     assert any(
-        "Corte solicitado en AIP: 31/08/2026" in message
-        and "31/07/2026" in message
+        "Corte solicitado en AIP: 31/08/2026" in message and "31/07/2026" in message
         for message in result.diagnostics
     )
-    assert all("August accounting cutoff not published" not in message for message in result.diagnostics)
+    assert all(
+        "August accounting cutoff not published" not in message for message in result.diagnostics
+    )
 
 
 def test_report_range_continues_with_prior_month_after_api_error() -> None:
