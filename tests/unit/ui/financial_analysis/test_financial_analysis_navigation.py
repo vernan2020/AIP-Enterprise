@@ -1,5 +1,11 @@
 from __future__ import annotations
 
+from datetime import date
+
+from aip.domain.financial_analysis.models import FinancialAnalysisSnapshot
+from aip.ui.modules.financial_analysis.presenters.financial_analysis_presenter import (
+    FinancialAnalysisPresenter,
+)
 from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model import (
     FinancialAnalysisViewModel,
 )
@@ -44,3 +50,15 @@ def test_financial_analysis_exposes_methodology_rating_tab(qt_app) -> None:
     assert "Calificación oficial" not in view._rating_heading.text()
     assert view._cutoff.text().startswith("Corte SUGEF:")
     assert "corte general de AIP" in view._cutoff.toolTip()
+
+
+def test_presenter_does_not_show_requested_date_as_sugef_cutoff_without_data() -> None:
+    snapshot = FinancialAnalysisSnapshot(
+        status="UNAVAILABLE",
+        cutoff_date=date(2026, 8, 31),
+        selected_entity=None,
+    )
+
+    view_model = FinancialAnalysisPresenter._from_snapshot(snapshot)
+
+    assert view_model.cutoff_date == "No disponible"
