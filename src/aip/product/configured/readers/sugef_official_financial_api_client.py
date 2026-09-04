@@ -18,11 +18,10 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
     """Gateway SUGEF estricto para estados oficiales y universo comparativo SFN.
 
     La entidad configurada se consulta de forma directa para Balance, Resultados
-    e Indicadores. El universo comparativo se consulta con ``codigoEntidad`` vacío,
-    pero la historia de Balance se solicita mes a mes y la de Resultados por cada
-    período requerido por 08ME14-01. Así se evita depender de una respuesta masiva
-    que puede no conservar 12 observaciones por entidad y se mantiene la entidad
-    seleccionada disponible aun si una consulta comparativa del SFN falla.
+    e Indicadores. Antes de descargar historia y pares se resuelve el último corte
+    contable completo disponible que no excede la fecha solicitada. El universo
+    comparativo se consulta con ``codigoEntidad`` vacío y la historia de Balance
+    se solicita mes a mes para preservar 12 observaciones por entidad.
     """
 
     _BALANCE_REPORT = (
@@ -49,28 +48,34 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
         endpoints: set[str] = set()
         diagnostics: list[str] = []
 
-        # Fase 1: estados de las entidades configuradas. Estos estados determinan
-        # el último corte contable utilizable antes de consultar indicadores y pares.
-        primary_jobs: list[tuple[str, str, str, str, FinancialStatementType]] = []
-        for entity_code in self._config.api_entity_codes:
-            primary_jobs.append(
-                (
-                    entity_code,
-                    self._period_range(
-                        cutoff_date,
-                        lookback_months=self._AVERAGE_LOOKBACK_MONTHS,
-                    ),
-                    *self._BALANCE_REPORT,
+        # Fase 0: confirmar un corte contable completo de la entidad principal.
+        # Se sondea mes a mes para que un mes todavía no publicado por SUGEF no
+        # invalide toda la lectura solicitada por el corte general de AIP.
+        resolved_cutoff = self._resolve_primary_statement_cutoff(cutoff_date, diagnostics)
+
+        # Fase 1: una vez resuelto el corte, descargar la historia necesaria de
+        # las entidades configuradas sin incluir meses aún no utilizables.
+        if resolved_cutoff is not None:
+            primary_jobs: list[tuple[str, str, str, str, FinancialStatementType]] = []
+            for entity_code in self._config.api_entity_codes:
+                primary_jobs.append(
+                    (
+                        entity_code,
+                        self._period_range(
+                            resolved_cutoff,
+                            lookback_months=self._AVERAGE_LOOKBACK_MONTHS,
+                        ),
+                        *self._BALANCE_REPORT,
+                    )
                 )
-            )
-            primary_jobs.append(
-                (
-                    entity_code,
-                    self._result_periods(cutoff_date),
-                    *self._INCOME_REPORT,
+                primary_jobs.append(
+                    (
+                        entity_code,
+                        self._result_periods(resolved_cutoff),
+                        *self._INCOME_REPORT,
+                    )
                 )
-            )
-        self._execute_jobs(primary_jobs, lines, endpoints, diagnostics)
+            self._execute_jobs(primary_jobs, lines, endpoints, diagnostics)
 
         effective_cutoff = self._primary_statement_cutoff(lines)
         if effective_cutoff is not None:
@@ -113,15 +118,24 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
 
         lines = self._deduplicate(lines)
         lines = self._clip_to_primary_statement_cutoff(lines)
-        if lines:
-            latest_date = max(line.statement_date for line in lines)
+        effective_cutoff = self._primary_statement_cutoff(lines)
+        if lines and effective_cutoff is not None:
+            if effective_cutoff < cutoff_date:
+                diagnostics.append(
+                    "Corte solicitado en AIP: "
+                    f"{cutoff_date.strftime('%d/%m/%Y')}; último corte contable SUGEF "
+                    f"completo utilizable: {effective_cutoff.strftime('%d/%m/%Y')}."
+                )
+            else:
+                diagnostics.append(
+                    "Corte contable SUGEF completo confirmado: "
+                    f"{effective_cutoff.strftime('%d/%m/%Y')}."
+                )
             diagnostics.extend(
                 (
                     "Balance y Estado de Resultados consultados exclusivamente en la API pública oficial de SUGEF.",
                     "Indicadores de la entidad seleccionada se consultan directamente en SUGEF; el universo comparativo SFN se consulta mediante codigoEntidad vacío en una llamada dedicada.",
                     "La historia comparativa de Balance se consulta mes a mes y Resultados por los períodos requeridos por 08ME14-01 para preservar 12 observaciones por entidad.",
-                    "Último corte SUGEF utilizable en el conjunto oficial: "
-                    f"{latest_date.strftime('%d/%m/%Y')}.",
                 )
             )
         else:
@@ -132,6 +146,67 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
             endpoints=tuple(sorted(endpoints)),
             diagnostics=tuple(diagnostics),
         )
+
+    def _resolve_primary_statement_cutoff(
+        self,
+        requested_cutoff: date,
+        diagnostics: list[str],
+    ) -> date | None:
+        if not self._config.api_entity_codes:
+            diagnostics.append("No hay códigos de entidad SUGEF configurados.")
+            return None
+
+        primary = self._config.api_entity_codes[0]
+        requested_month = date(requested_cutoff.year, requested_cutoff.month, 1)
+        probe_failures: list[str] = []
+
+        for offset in range(self._COMPARATIVE_LOOKBACK_MONTHS + 1):
+            candidate = self._shift_month(requested_month, -offset)
+            period = candidate.strftime("%Y%m%d")
+            try:
+                balance_lines, _ = self._read_report(
+                    primary,
+                    period,
+                    *self._BALANCE_REPORT,
+                )
+                income_lines, _ = self._read_report(
+                    primary,
+                    period,
+                    *self._INCOME_REPORT,
+                )
+            except (HTTPError, URLError, TimeoutError, ValueError, OSError) as exc:
+                probe_failures.append(
+                    f"Sondeo SUGEF {candidate.strftime('%d/%m/%Y')}: "
+                    f"{type(exc).__name__}: {exc}"
+                )
+                continue
+
+            balance_dates = {
+                line.statement_date
+                for line in balance_lines
+                if line.entity.entity_id == primary
+                and line.statement_type is FinancialStatementType.BALANCE_SHEET
+            }
+            income_dates = {
+                line.statement_date
+                for line in income_lines
+                if line.entity.entity_id == primary
+                and line.statement_type is FinancialStatementType.INCOME_STATEMENT
+            }
+            common_dates = balance_dates & income_dates
+            if common_dates:
+                return max(common_dates)
+            probe_failures.append(
+                "Sondeo SUGEF "
+                f"{candidate.strftime('%d/%m/%Y')}: no existe un corte común de Balance y Resultados."
+            )
+
+        diagnostics.append(
+            "No se encontró un corte contable SUGEF completo (Balance + Estado de Resultados) "
+            f"que no exceda {requested_cutoff.strftime('%d/%m/%Y')} dentro de la ventana de publicación."
+        )
+        diagnostics.extend(probe_failures)
+        return None
 
     def _execute_jobs(
         self,
