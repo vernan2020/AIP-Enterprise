@@ -48,6 +48,7 @@ class RatingIndicatorRow:
     indicator: str
     dimension: str
     value: str
+    peer_count: str
     percentile_15: str
     midpoint: str
     percentile_85: str
