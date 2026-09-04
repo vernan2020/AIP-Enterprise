@@ -80,12 +80,18 @@ jobs:
               'src/aip/product/configured/services/configured_portfolio_var_service.py',
               'src/aip/product/configured/services/configured_portfolio_dv01_service.py',
               'src/aip/product/configured/services/configured_portfolio_rate_shock_service.py',
+              'src/aip/product/configured/services/configured_financial_analysis_service.py',
               'src/aip/product/configured/adapters/configured_economic_indicators_provider.py',
               'src/aip/product/configured/adapters/configured_market_provider.py',
               'src/aip/product/configured/adapters/configured_liquidity_provider.py',
               'src/aip/product/configured/adapters/configured_portfolio_provider.py',
               'src/aip/product/configured/readers/institutional_icl_reader.py',
+              'src/aip/product/configured/readers/sugef_official_financial_api_client.py',
+              'src/aip/product/configured/readers/sugef_official_financial_statement_reader.py',
               'src/aip/product/configured/repositories/economic_historical_repository.py',
+              'src/aip/domain/financial_analysis/services.py',
+              'src/aip/domain/financial_analysis/sugef_ratings.py',
+              'src/aip/ui/modules/financial_analysis/views/financial_analysis_view.py',
               'src/aip/ui/modules/macro_intelligence/views/macro_intelligence_view.py',
               'src/aip/product/economic/economic_snapshot_store.py',
               'src/aip/integration/bccr/connector/rest_client.py',
@@ -149,7 +155,7 @@ jobs:
             tests/unit/product/configured/context \
             tests/unit/recovery
 
-      - name: Run configured source and market regression suite
+      - name: Run configured source, financial analysis and market regression suite
         run: |
           python -m pytest -q \
             tests/unit/product/configured \
@@ -157,6 +163,7 @@ jobs:
             tests/unit/product/demo/test_configured_diagnostics_runtime.py \
             tests/unit/product/demo/test_configured_portfolio_discovery.py \
             tests/unit/product/demo/test_pipca_vector_discovery.py \
+            tests/unit/domain/financial_analysis \
             tests/unit/domain/market \
             tests/unit/integration/bccr
 
@@ -167,6 +174,7 @@ jobs:
             tests/unit/ui/portfolio \
             tests/unit/ui/liquidity \
             tests/unit/ui/treasury \
+            tests/unit/ui/financial_analysis \
             tests/unit/ui/test_production_readiness.py \
             tests/unit/ui/test_rc1_ui_bootstrap.py
 
