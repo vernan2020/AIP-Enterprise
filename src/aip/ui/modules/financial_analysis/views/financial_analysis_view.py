@@ -181,9 +181,11 @@ class FinancialAnalysisView(QWidget):
                 "Cuenta fuente",
             ]
         )
-        self._rating_indicator_table.horizontalHeaderItem(3).setToolTip(
-            "Cantidad de entidades con un valor comparable disponible para el indicador."
-        )
+        peer_header = self._rating_indicator_table.horizontalHeaderItem(3)
+        if peer_header is not None:
+            peer_header.setToolTip(
+                "Cantidad de entidades con un valor comparable disponible para el indicador."
+            )
         tables.addWidget(self._rating_dimension_table, 2)
         tables.addWidget(self._rating_indicator_table, 5)
         layout.addLayout(tables, 1)
