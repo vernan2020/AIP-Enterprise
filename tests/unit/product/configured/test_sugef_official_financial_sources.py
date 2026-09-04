@@ -13,7 +13,6 @@ from aip.product.configured.readers.sugef_official_financial_statement_reader im
     SUGEFOfficialFinancialStatementReader,
 )
 
-
 _PEERS = (
     ("3004045138", "COOPEALIANZA R.L."),
     ("3004000001", "COOPERATIVA PAR 1"),
