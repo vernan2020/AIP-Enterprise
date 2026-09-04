@@ -59,6 +59,17 @@ class RatingIndicatorRow:
 
 
 @dataclass(frozen=True, slots=True)
+class IndicatorReconciliationRow:
+    indicator: str
+    published_value: str
+    calculated_value: str
+    difference: str
+    status: str
+    published_source: str
+    calculated_source: str
+
+
+@dataclass(frozen=True, slots=True)
 class FinancialAnalysisViewModel:
     title: str = "ANÁLISIS FINANCIERO"
     subtitle: str = "Estados financieros y comparación de entidades supervisadas por SUGEF"
@@ -77,6 +88,9 @@ class FinancialAnalysisViewModel:
     rating_methodology: str = "08ME14-01"
     rating_dimensions: tuple[RatingDimensionRow, ...] = field(default_factory=tuple)
     rating_indicators: tuple[RatingIndicatorRow, ...] = field(default_factory=tuple)
+    indicator_reconciliations: tuple[IndicatorReconciliationRow, ...] = field(
+        default_factory=tuple
+    )
     rating_diagnostics: tuple[str, ...] = field(default_factory=tuple)
     diagnostics: tuple[str, ...] = field(default_factory=tuple)
     source_name: str = "SUGEF"
