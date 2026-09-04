@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+from decimal import Decimal
+
+from aip.ui.modules.financial_analysis.presenters.financial_analysis_presenter import (
+    FinancialAnalysisPresenter,
+)
 from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model import (
     FinancialAnalysisViewModel,
     RatingIndicatorRow,
@@ -35,3 +40,22 @@ def test_rating_table_exposes_comparable_peer_count(qt_app) -> None:
 
     assert view._rating_indicator_table.horizontalHeaderItem(3).text() == "Pares"
     assert view._rating_indicator_table.item(0, 3).text() == "2"
+
+
+def test_statement_value_formats_only_true_binary_methodology_indicators() -> None:
+    assert (
+        FinancialAnalysisPresenter._statement_value(
+            Decimal("0.035"),
+            "INDICATORS",
+            "EQUITY_COMMITMENT",
+        )
+        == "3.500%"
+    )
+    assert (
+        FinancialAnalysisPresenter._statement_value(
+            Decimal("1"),
+            "INDICATORS",
+            "STATE_GUARANTEE",
+        )
+        == "Sí"
+    )
