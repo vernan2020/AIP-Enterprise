@@ -82,14 +82,10 @@ class FinancialAnalysisService:
                 source_files=source_files,
             )
 
-        # La línea operacional conserva la prelación SUGEF: publicado primero,
-        # cálculo 08ME14-01 únicamente cuando el indicador no fue publicado.
         operational_lines = self._indicator_calculator.augment(
             lines,
             cutoff_date=effective_date,
         )
-        # En paralelo se generan cálculos sombra para poder auditar y reconciliar
-        # el valor oficial sin sustituirlo en la calificación.
         reconciliation_lines = self._indicator_calculator.augment(
             lines,
             cutoff_date=effective_date,
@@ -101,8 +97,8 @@ class FinancialAnalysisService:
             for line in operational_lines
             if line.entity.entity_id == selected.entity_id and line.statement_date == effective_date
         )
-        prior_dates = accounting_dates or dates
-        previous_date = next((value for value in prior_dates if value < effective_date), None)
+        comparison_dates = self._financial_statement_dates(operational_lines, selected.entity_id)
+        previous_date = next((value for value in comparison_dates if value < effective_date), None)
         previous = tuple(
             line
             for line in operational_lines
@@ -379,6 +375,24 @@ class FinancialAnalysisService:
                     if FinancialStatementType.BALANCE_SHEET in statement_types
                     and FinancialStatementType.INCOME_STATEMENT in statement_types
                 ),
+                reverse=True,
+            )
+        )
+
+    @staticmethod
+    def _financial_statement_dates(
+        lines: tuple[FinancialStatementLine, ...],
+        entity_id: str,
+    ) -> tuple[date, ...]:
+        return tuple(
+            sorted(
+                {
+                    line.statement_date
+                    for line in lines
+                    if line.entity.entity_id == entity_id
+                    and line.statement_type
+                    in {FinancialStatementType.BALANCE_SHEET, FinancialStatementType.INCOME_STATEMENT}
+                },
                 reverse=True,
             )
         )
