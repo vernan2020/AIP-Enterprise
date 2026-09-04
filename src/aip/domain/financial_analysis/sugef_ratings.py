@@ -26,9 +26,7 @@ class SUGEFOnlyFinancialEntityRatingService(FinancialEntityRatingService):
     # denominación de 08ME14-01. Estos alias pertenecen al adaptador SUGEF y no
     # contaminan la definición metodológica de dominio.
     _SUGEF_ALIASES: dict[str, tuple[str, ...]] = {
-        "ROE": (
-            "RENTABILIDAD NOMINAL SOBRE PATRIMONIO PROMEDIO",
-        ),
+        "ROE": ("RENTABILIDAD NOMINAL SOBRE PATRIMONIO PROMEDIO",),
         "OPERATING_EFFICIENCY": (
             "GASTOS DE ADMINISTRACION / UTILIDAD OPERACIONAL BRUTA",
             "GASTOS DE ADMINISTRACION/UTILIDAD OPERACIONAL BRUTA",
