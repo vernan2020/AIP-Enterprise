@@ -25,6 +25,11 @@ class OfficialRatingIndicatorCalculator:
     3. Si faltan los saldos o la historia necesaria, el indicador permanece
        no disponible. Nunca se incorporan matrices de referencia ni estimaciones
        externas a SUGEF.
+
+    Para auditoría y reconciliación, ``include_shadow_calculations=True`` permite
+    reproducir el indicador aun cuando exista una publicación SUGEF. Ese cálculo
+    paralelo nunca sustituye el valor oficial; la capa de calificación mantiene
+    la precedencia de la publicación SUGEF.
     """
 
     _ASSETS = "10000"
@@ -78,6 +83,7 @@ class OfficialRatingIndicatorCalculator:
         lines: tuple[FinancialStatementLine, ...],
         *,
         cutoff_date: date,
+        include_shadow_calculations: bool = False,
     ) -> tuple[FinancialStatementLine, ...]:
         derived: list[FinancialStatementLine] = []
         by_entity: dict[str, list[FinancialStatementLine]] = defaultdict(list)
@@ -85,7 +91,13 @@ class OfficialRatingIndicatorCalculator:
             if line.statement_date <= cutoff_date:
                 by_entity[line.entity.entity_id].append(line)
         for entity_lines in by_entity.values():
-            derived.extend(self._derive_entity(tuple(entity_lines), cutoff_date=cutoff_date))
+            derived.extend(
+                self._derive_entity(
+                    tuple(entity_lines),
+                    cutoff_date=cutoff_date,
+                    include_shadow_calculations=include_shadow_calculations,
+                )
+            )
         return (*lines, *derived)
 
     def _derive_entity(
@@ -93,6 +105,7 @@ class OfficialRatingIndicatorCalculator:
         lines: tuple[FinancialStatementLine, ...],
         *,
         cutoff_date: date,
+        include_shadow_calculations: bool,
     ) -> tuple[FinancialStatementLine, ...]:
         current = tuple(line for line in lines if line.statement_date == cutoff_date)
         if not current:
@@ -102,7 +115,7 @@ class OfficialRatingIndicatorCalculator:
         monthly_balances = self._monthly_balances(lines, cutoff_date=cutoff_date)
         output: list[FinancialStatementLine] = []
         for code, label, numerator_code, denominator_code, aliases in self._DEFINITIONS:
-            if self._has_published_indicator(current, aliases):
+            if self._has_published_indicator(current, aliases) and not include_shadow_calculations:
                 continue
             numerator = results.get(numerator_code, {}).get(cutoff_date)
             if numerator is None:
