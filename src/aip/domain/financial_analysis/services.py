@@ -5,6 +5,7 @@ from collections import defaultdict
 from datetime import date
 from decimal import Decimal, DivisionByZero, InvalidOperation
 
+from aip.domain.financial_analysis.indicator_calculator import OfficialRatingIndicatorCalculator
 from aip.domain.financial_analysis.models import (
     EntityFinancialSummary,
     FinancialAnalysisSnapshot,
@@ -39,6 +40,13 @@ class FinancialAnalysisService:
         ),
     }
 
+    def __init__(
+        self,
+        *,
+        indicator_calculator: OfficialRatingIndicatorCalculator | None = None,
+    ) -> None:
+        self._indicator_calculator = indicator_calculator or OfficialRatingIndicatorCalculator()
+
     def build_snapshot(
         self,
         lines: tuple[FinancialStatementLine, ...],
@@ -63,6 +71,8 @@ class FinancialAnalysisService:
                 diagnostics=diagnostics,
                 source_files=source_files,
             )
+
+        lines = self._indicator_calculator.augment(lines, cutoff_date=effective_date)
 
         current = tuple(
             line
@@ -259,20 +269,32 @@ class FinancialAnalysisService:
         *,
         allow_indicators: bool = False,
     ) -> tuple[Decimal | None, str | None]:
-        candidates: list[tuple[int, int, FinancialStatementLine]] = []
+        candidates: list[tuple[int, int, int, FinancialStatementLine]] = []
         for line in lines:
             if line.statement_type is FinancialStatementType.INDICATORS and not allow_indicators:
                 continue
             normalized = cls._normalize(line.account_name)
             for term in terms:
                 if normalized == term:
-                    candidates.append((0, len(normalized), line))
+                    candidates.append((cls._source_priority(line), 0, len(normalized), line))
                 elif term in normalized:
-                    candidates.append((1, len(normalized), line))
+                    candidates.append((cls._source_priority(line), 1, len(normalized), line))
         if not candidates:
             return (None, None)
-        selected = min(candidates, key=lambda item: (item[0], item[1], item[2].account_code))[2]
+        selected = min(
+            candidates,
+            key=lambda item: (item[0], item[1], item[2], item[3].account_code),
+        )[3]
         return (selected.amount, selected.account_code or selected.account_name)
+
+    @staticmethod
+    def _source_priority(line: FinancialStatementLine) -> int:
+        source = line.trace.source_name.upper() if line.trace is not None else ""
+        if "CALCULO 08ME14-01" in FinancialAnalysisService._normalize(source):
+            return 0
+        if "API PUBLICA" in FinancialAnalysisService._normalize(source):
+            return 1
+        return 2
 
     @staticmethod
     def _published_percent(value: Decimal | None) -> Decimal | None:

@@ -63,7 +63,11 @@ class FinancialEntityRatingService:
             "Calidad de la Cartera",
             Decimal("10"),
             RatingDirection.HIGHER_IS_BETTER,
-            ("CARTERA DE CREDITO AL DIA",),
+            (
+                "CARTERA DE CREDITO AL DIA",
+                "CARTERA AL DIA Y CON ATRASO HASTA 90 DIAS/CARTERA TOTAL",
+                "CARTERA AL DIA Y CON ATRASO DE HASTA 90 DIAS",
+            ),
         ),
         RatingIndicatorDefinition(
             "COVERAGE_ARREARS",
@@ -71,7 +75,11 @@ class FinancialEntityRatingService:
             "Calidad de la Cartera",
             Decimal("5"),
             RatingDirection.HIGHER_IS_BETTER,
-            ("COBERTURA DE CARTERA EN ATRASO", "COBERTURA DE CREDITO AL DIA"),
+            (
+                "COBERTURA DE CARTERA EN ATRASO",
+                "ESTIMACIONES SOBRE CARTERA DE CREDITOS / CARTERA CON ATRASO MAYOR A 90 DIAS",
+                "COBERTURA DE CREDITO AL DIA",
+            ),
         ),
         RatingIndicatorDefinition(
             "DELINQUENCY_90",
@@ -83,6 +91,7 @@ class FinancialEntityRatingService:
                 "MOROSIDAD >90 DIAS Y COBRO JUDICIAL / CARTERA DIRECTA",
                 "MOROSIDAD >90D Y COBRO JUDICIAL / CARTERA DIRECTA",
                 "MOROSIDAD >90 DIAS",
+                "MOROSIDAD MAYOR A 90 DIAS Y COBRO JUDICIAL / CARTERA DIRECTA",
             ),
         ),
         RatingIndicatorDefinition(
@@ -183,6 +192,18 @@ class FinancialEntityRatingService:
                 )
 
         dimensions = self._dimensions(tuple(assessments))
+        live_count = sum(
+            item.source_account is not None
+            and ("API pública" in item.source_account or "Cálculo 08ME14-01" in item.source_account)
+            for item in assessments
+        )
+        if live_count:
+            diagnostics.append(
+                f"Origen de la calificación: {live_count}/13 indicadores provienen "
+                "de la API SUGEF o se calculan sobre sus saldos; "
+                f"{len(assessments) - live_count}/13 usan la referencia institucional "
+                "por ausencia de insumos públicos suficientes."
+            )
         available = sum(item.contribution is not None for item in assessments)
         coverage = (Decimal(available) / Decimal(len(self.INDICATORS)) * Decimal("100")).quantize(
             Decimal("0.01")
@@ -225,6 +246,8 @@ class FinancialEntityRatingService:
         source_account = None
         if selected_line is not None:
             source_account = selected_line.account_code or selected_line.account_name
+            if selected_line.trace is not None:
+                source_account = f"{source_account} · {selected_line.trace.source_name}"
         if definition.direction is RatingDirection.BINARY:
             if value not in {Decimal("0"), Decimal("1")}:
                 value = None
@@ -308,15 +331,28 @@ class FinancialEntityRatingService:
         definition: RatingIndicatorDefinition,
     ) -> FinancialStatementLine | None:
         aliases = tuple(cls._normalize(value) for value in definition.aliases)
-        candidates: list[tuple[int, int, str, FinancialStatementLine]] = []
+        candidates: list[tuple[int, int, int, str, FinancialStatementLine]] = []
         for line in lines:
             name = cls._normalize(line.account_name)
             for alias in aliases:
                 if name == alias:
-                    candidates.append((0, len(name), line.account_code, line))
+                    candidates.append(
+                        (cls._source_priority(line), 0, len(name), line.account_code, line)
+                    )
                 elif len(alias) > 5 and name.startswith(alias):
-                    candidates.append((1, len(name), line.account_code, line))
-        return min(candidates, key=lambda item: item[:3])[3] if candidates else None
+                    candidates.append(
+                        (cls._source_priority(line), 1, len(name), line.account_code, line)
+                    )
+        return min(candidates, key=lambda item: item[:4])[4] if candidates else None
+
+    @classmethod
+    def _source_priority(cls, line: FinancialStatementLine) -> int:
+        source = cls._normalize(line.trace.source_name) if line.trace is not None else ""
+        if "CALCULO 08ME14-01" in source:
+            return 0
+        if "API PUBLICA" in source:
+            return 1
+        return 2
 
     @classmethod
     def _dimensions(

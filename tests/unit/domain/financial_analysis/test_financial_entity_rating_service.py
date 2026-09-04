@@ -10,6 +10,7 @@ from aip.domain.financial_analysis.models import (
     FinancialStatementLine,
     FinancialStatementType,
     RatingDirection,
+    SourceTrace,
 )
 from aip.domain.financial_analysis.ratings import FinancialEntityRatingService
 
@@ -151,3 +152,30 @@ def test_rating_is_not_emitted_when_an_official_indicator_is_missing() -> None:
     assert rating.grade is None
     assert rating.coverage_percent == Decimal("92.31")
     assert "13 indicadores" in rating.diagnostics[0]
+
+
+def test_live_sugef_indicator_has_priority_over_reference_alias() -> None:
+    entity = FinancialEntity("0", "Entidad 0")
+    reference = _line(entity, "Cartera de crédito al día", Decimal("0.10"))
+    live = FinancialStatementLine(
+        entity=entity,
+        statement_date=CUTOFF,
+        statement_type=FinancialStatementType.INDICATORS,
+        account_code="63000",
+        account_name="Cartera al día y con atraso hasta 90 días/Cartera total",
+        amount=Decimal("0.96"),
+        trace=SourceTrace(
+            source_name="SUGEF - API pública de Información Financiera Contable",
+            source_url="https://www.sugef.fi.cr",
+            file_path="api",
+            sheet_name="indicadores",
+            row_number=1,
+        ),
+    )
+    definition = next(
+        item for item in FinancialEntityRatingService.INDICATORS if item.code == "CURRENT_PORTFOLIO"
+    )
+
+    selected = FinancialEntityRatingService._find_indicator((reference, live), definition)
+
+    assert selected is live

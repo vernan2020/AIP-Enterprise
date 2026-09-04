@@ -136,6 +136,7 @@ class SUGEFFinancialStatementReader:
                 live_entities = {
                     self._entity_match_key(line.entity.name): line.entity for line in lines
                 }
+                live_date = max(line.statement_date for line in lines)
                 live_accounts = {
                     (
                         self._entity_match_key(line.entity.name),
@@ -143,8 +144,8 @@ class SUGEFFinancialStatementReader:
                         self._normalize(line.account_name),
                     )
                     for line in lines
+                    if line.statement_date == live_date
                 }
-                live_date = max(line.statement_date for line in lines)
                 for reference_line in reference_lines:
                     entity_key = self._entity_match_key(reference_line.entity.name)
                     account_key = (
@@ -163,8 +164,9 @@ class SUGEFFinancialStatementReader:
                     )
                 paths = (*paths, reference)
                 diagnostics.append(
-                    "Los pares comparables provienen de la matriz institucional; "
-                    "los saldos de la entidad consultada provienen de la API SUGEF."
+                    "Los saldos e indicadores disponibles de la entidad consultada "
+                    "provienen de la API SUGEF; la matriz institucional conserva los "
+                    "pares y los insumos que la API pública no suministra."
                 )
         elif not lines:
             reference = self._reference_file()
