@@ -52,9 +52,7 @@ class SUGEFAccountCatalogReader:
             return SUGEFAccountCatalogReadResult(
                 entries=(),
                 endpoint=None,
-                diagnostics=(
-                    f"SUGEF API catálogo contable: {type(exc).__name__}: {exc}",
-                ),
+                diagnostics=(f"SUGEF API catálogo contable: {type(exc).__name__}: {exc}",),
             )
 
         entries: list[SUGEFAccountCatalogEntry] = []
@@ -112,12 +110,12 @@ class SUGEFAccountCatalogReader:
 
     @classmethod
     def _normalize(cls, row: Mapping[str, Any]) -> SUGEFAccountCatalogEntry | None:
-        account_code = cls._identifier(row.get("cuentaCatalogoSugef"), preserve_leading=True)
+        account_code = cls._identifier(row.get("cuentaCatalogoSugef"))
         catalog_type_code = cls._identifier(row.get("codigoTipoCatalogo"))
         account_name = cls._text(row.get("nombreCuenta"))
         if not account_code or not catalog_type_code or not account_name:
             return None
-        parent = cls._identifier(row.get("cuentaPadre"), preserve_leading=True) or None
+        parent = cls._identifier(row.get("cuentaPadre")) or None
         return SUGEFAccountCatalogEntry(
             account_code=account_code,
             catalog_type_code=catalog_type_code,
@@ -149,7 +147,7 @@ class SUGEFAccountCatalogReader:
         return str(value or "").strip()
 
     @classmethod
-    def _identifier(cls, value: Any, *, preserve_leading: bool = False) -> str:
+    def _identifier(cls, value: Any) -> str:
         if value is None or isinstance(value, bool):
             return ""
         if isinstance(value, str):
