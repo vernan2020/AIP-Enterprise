@@ -13,6 +13,9 @@ from aip.product.configured.readers.sugef_financial_statement_reader import (
     SUGEFFinancialReadResult,
     SUGEFFinancialStatementReader,
 )
+from aip.product.configured.readers.sugef_official_financial_statement_reader import (
+    SUGEFOfficialFinancialStatementReader,
+)
 
 FinancialAnalysisApplicationSnapshot = FinancialAnalysisSnapshot
 
@@ -30,7 +33,9 @@ class ConfiguredFinancialAnalysisService:
     ) -> None:
         self._config = config
         self._valuation_date_context = valuation_date_context
-        self._reader = reader or SUGEFFinancialStatementReader(config)
+        # Runtime productivo: nunca completa saldos/indicadores con la matriz
+        # histórica incluida en el paquete. Solo API pública o exportación SUGEF.
+        self._reader = reader or SUGEFOfficialFinancialStatementReader(config)
         self._analysis = analysis_service or FinancialAnalysisService()
         self._cached_results: dict[date, SUGEFFinancialReadResult] = {}
         self._lock = RLock()
