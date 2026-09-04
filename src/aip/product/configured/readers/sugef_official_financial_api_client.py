@@ -18,10 +18,12 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
     """Gateway SUGEF estricto para estados oficiales y universo comparativo SFN.
 
     Para las entidades configuradas descarga la historia mínima requerida por
-    08ME14-01. Además consulta el corte comparativo del SFN con ``codigoEntidad``
-    vacío para Balance, Resultados e Indicadores, modalidad documentada por SUGEF.
-    Así la pantalla de pares y los percentiles P15/P85 se construyen únicamente
-    con información pública oficial, sin matrices institucionales de respaldo.
+    08ME14-01. Para el universo comparativo SFN hace lo mismo con Balance y
+    Resultados, de forma que los indicadores derivados de los pares puedan usar
+    promedios de 12 meses y anualización sin recurrir a fuentes externas. Los
+    indicadores publicados se consultan con una ventana corta compatible con el
+    rezago de publicación. ``codigoEntidad`` vacío corresponde a la modalidad
+    documentada por SUGEF para todas las entidades del SFN.
     """
 
     _BALANCE_REPORT = (
@@ -64,14 +66,22 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
                 )
             )
 
-        peer_periods = self._peer_periods(cutoff_date)
+        peer_balance_periods = self._period_range(
+            cutoff_date,
+            lookback_months=self._AVERAGE_LOOKBACK_MONTHS,
+        )
+        peer_income_periods = self._result_periods(cutoff_date)
+        peer_indicator_periods = self._peer_periods(cutoff_date)
         # El manual oficial SUGEF establece que codigoEntidad="" devuelve todas
         # las entidades del SFN para estos tres reportes por entidad financiera.
+        # Balance y Resultados requieren historia suficiente para que 08ME14-01
+        # derive los indicadores de los pares con las mismas reglas que aplica a
+        # la entidad seleccionada.
         jobs.extend(
             (
-                ("", peer_periods, *self._BALANCE_REPORT),
-                ("", peer_periods, *self._INCOME_REPORT),
-                ("", peer_periods, *self._INDICATOR_REPORT),
+                ("", peer_balance_periods, *self._BALANCE_REPORT),
+                ("", peer_income_periods, *self._INCOME_REPORT),
+                ("", peer_indicator_periods, *self._INDICATOR_REPORT),
             )
         )
 
@@ -109,7 +119,7 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
             diagnostics.extend(
                 (
                     "Balance y Estado de Resultados consultados exclusivamente en la API pública oficial de SUGEF.",
-                    "Balance, Resultados e Indicadores comparativos consultados para todas las entidades del Sistema Financiero Nacional mediante la modalidad oficial codigoEntidad vacío.",
+                    "Balance y Resultados comparativos del SFN se consultan con la historia mínima requerida por 08ME14-01; los Indicadores publicados se consultan para todas las entidades mediante codigoEntidad vacío.",
                     "Último corte SUGEF utilizable en el conjunto oficial: "
                     f"{latest_date.strftime('%d/%m/%Y')}.",
                 )
