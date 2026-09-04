@@ -146,10 +146,7 @@ class _PeerIndicatorFailureStubClient(_OfficialStubClient):
     def _post_json(self, endpoint: str, payload: dict[str, object]) -> dict[str, object]:
         parameters = payload["parametrosEntidad"]
         assert isinstance(parameters, dict)
-        if (
-            str(parameters["codigoEntidad"]) == ""
-            and "IndicadoresFinancieros" in endpoint
-        ):
+        if str(parameters["codigoEntidad"]) == "" and "IndicadoresFinancieros" in endpoint:
             raise URLError("peer indicator endpoint unavailable")
         return super()._post_json(endpoint, payload)
 
