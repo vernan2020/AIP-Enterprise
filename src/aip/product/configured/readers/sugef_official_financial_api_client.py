@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from calendar import monthrange
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date
 from urllib.error import HTTPError, URLError
@@ -115,6 +116,18 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
                 for period in self._peer_income_periods(effective_cutoff)
             )
             self._execute_jobs(peer_history_jobs, lines, endpoints, diagnostics)
+
+            # Algunas ejecuciones públicas aceptan el universo masivo de
+            # indicadores pero no devuelven historia contable suficiente cuando
+            # codigoEntidad está vacío. En ese caso se recupera exclusivamente la
+            # historia faltante de las entidades ya descubiertas oficialmente en
+            # el universo de indicadores. No se incorpora ninguna fuente alterna.
+            self._recover_incomplete_peer_history(
+                effective_cutoff,
+                lines,
+                endpoints,
+                diagnostics,
+            )
 
         lines = self._deduplicate(lines)
         lines = self._clip_to_primary_statement_cutoff(lines)
@@ -240,6 +253,86 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
                     diagnostics.append(
                         f"SUGEF API {report_name} ({scope}): " f"{type(exc).__name__}: {exc}"
                     )
+
+    def _recover_incomplete_peer_history(
+        self,
+        cutoff_date: date,
+        lines: list[FinancialStatementLine],
+        endpoints: set[str],
+        diagnostics: list[str],
+    ) -> None:
+        primary_codes = set(self._config.api_entity_codes)
+        peer_codes = sorted(
+            {
+                line.entity.entity_id
+                for line in lines
+                if line.statement_date == cutoff_date
+                and line.statement_type is FinancialStatementType.INDICATORS
+                and line.entity.entity_id not in primary_codes
+            }
+        )
+        missing = tuple(
+            code
+            for code in peer_codes
+            if not self._has_methodology_history(lines, code, cutoff_date)
+        )
+        if not missing:
+            return
+
+        jobs: list[tuple[str, str, str, str, FinancialStatementType]] = []
+        balance_period = self._period_range(
+            cutoff_date,
+            lookback_months=self._AVERAGE_LOOKBACK_MONTHS,
+        )
+        income_period = self._result_periods(cutoff_date)
+        for entity_code in missing:
+            jobs.append((entity_code, balance_period, *self._BALANCE_REPORT))
+            jobs.append((entity_code, income_period, *self._INCOME_REPORT))
+
+        self._execute_jobs(jobs, lines, endpoints, diagnostics)
+        recovered = sum(
+            self._has_methodology_history(lines, code, cutoff_date) for code in missing
+        )
+        diagnostics.append(
+            "Recuperación directa de historia SUGEF para comparables 08ME14-01: "
+            f"{recovered}/{len(missing)} entidades con historia completa tras la recuperación."
+        )
+
+    @classmethod
+    def _has_methodology_history(
+        cls,
+        lines: list[FinancialStatementLine],
+        entity_code: str,
+        cutoff_date: date,
+    ) -> bool:
+        balance_dates = {
+            line.statement_date
+            for line in lines
+            if line.entity.entity_id == entity_code
+            and line.statement_type is FinancialStatementType.BALANCE_SHEET
+            and line.statement_date <= cutoff_date
+        }
+        income_dates = {
+            line.statement_date
+            for line in lines
+            if line.entity.entity_id == entity_code
+            and line.statement_type is FinancialStatementType.INCOME_STATEMENT
+            and line.statement_date <= cutoff_date
+        }
+        required_income_dates = {
+            cutoff_date,
+            cls._month_end_date(cutoff_date.year - 1, cutoff_date.month),
+            cls._month_end_date(cutoff_date.year - 1, 12),
+        }
+        return (
+            cutoff_date in balance_dates
+            and len(balance_dates) >= cls._AVERAGE_LOOKBACK_MONTHS + 1
+            and required_income_dates.issubset(income_dates)
+        )
+
+    @staticmethod
+    def _month_end_date(year: int, month: int) -> date:
+        return date(year, month, monthrange(year, month)[1])
 
     @classmethod
     def _peer_balance_periods(cls, cutoff_date: date) -> tuple[str, ...]:
