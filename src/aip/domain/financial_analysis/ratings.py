@@ -63,11 +63,7 @@ class FinancialEntityRatingService:
             "Calidad de la Cartera",
             Decimal("10"),
             RatingDirection.HIGHER_IS_BETTER,
-            (
-                "CARTERA DE CREDITO AL DIA",
-                "CARTERA AL DIA Y CON ATRASO HASTA 90 DIAS/CARTERA TOTAL",
-                "CARTERA AL DIA Y CON ATRASO DE HASTA 90 DIAS",
-            ),
+            ("CARTERA DE CREDITO AL DIA",),
         ),
         RatingIndicatorDefinition(
             "COVERAGE_ARREARS",
@@ -78,7 +74,6 @@ class FinancialEntityRatingService:
             (
                 "COBERTURA DE CARTERA EN ATRASO",
                 "ESTIMACIONES SOBRE CARTERA DE CREDITOS / CARTERA CON ATRASO MAYOR A 90 DIAS",
-                "COBERTURA DE CREDITO AL DIA",
             ),
         ),
         RatingIndicatorDefinition(
