@@ -161,6 +161,7 @@ class SUGEFFinancialApiClient:
         rows: list[Any] | None = None
         best_rows: list[Any] = []
         last_message = "SUGEF no publicó datos para el rango solicitado"
+        last_error: Exception | None = None
         for candidate_period in self._fallback_periods(period):
             payload = {
                 "parametrosEntidad": {
@@ -169,7 +170,14 @@ class SUGEFFinancialApiClient:
                     "codigoCuenta": "",
                 }
             }
-            response = self._post_json(endpoint, payload)
+            try:
+                response = self._post_json(endpoint, payload)
+            except (HTTPError, URLError, TimeoutError, ValueError, OSError) as exc:
+                last_error = exc
+                last_message = f"{type(exc).__name__}: {exc}"
+                continue
+
+            last_error = None
             candidate_rows = response.get(list_key)
             if not bool(response.get("tieneError")) and isinstance(candidate_rows, list):
                 if len(candidate_rows) > len(best_rows):
@@ -187,6 +195,8 @@ class SUGEFFinancialApiClient:
         if rows is None and best_rows:
             rows = best_rows
         if rows is None:
+            if last_error is not None:
+                raise last_error
             raise ValueError(last_message)
         result: list[FinancialStatementLine] = []
         for row_number, row in enumerate(rows, start=1):
