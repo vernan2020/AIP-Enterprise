@@ -108,6 +108,9 @@ class FinancialAnalysisPresenter:
                     indicator=item.label,
                     dimension=item.dimension,
                     value=cls._rating_value(item.value, item.direction.value),
+                    peer_count=(
+                        "N/A" if item.direction.value == "BINARY" else str(item.peer_count)
+                    ),
                     percentile_15=cls._rating_value(item.percentile_15, item.direction.value),
                     midpoint=cls._rating_value(item.midpoint, item.direction.value),
                     percentile_85=cls._rating_value(item.percentile_85, item.direction.value),
