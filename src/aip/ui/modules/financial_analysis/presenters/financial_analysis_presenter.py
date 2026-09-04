@@ -169,7 +169,7 @@ class FinancialAnalysisPresenter:
     def _statement_value(cls, value: Decimal, statement_type: str, account_code: str) -> str:
         if statement_type != "INDICATORS":
             return cls._money(value)
-        if account_code in {"PROPORTIONAL_SUPERVISION", "EQUITY_COMMITMENT"}:
+        if account_code in {"PROPORTIONAL_SUPERVISION", "STATE_GUARANTEE"}:
             return "Sí" if value == Decimal("1") else "No"
         return f"{value * Decimal('100'):,.3f}%"
 
