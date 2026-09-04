@@ -150,8 +150,7 @@ class OfficialRatingIndicatorCalculator:
                 continue
             normalized_name = cls._normalize(line.account_name)
             if any(
-                normalized_name == alias
-                or (len(alias) > 5 and normalized_name.startswith(alias))
+                normalized_name == alias or (len(alias) > 5 and normalized_name.startswith(alias))
                 for alias in normalized_aliases
             ):
                 return True
