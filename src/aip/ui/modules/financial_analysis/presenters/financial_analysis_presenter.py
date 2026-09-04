@@ -124,9 +124,14 @@ class FinancialAnalysisPresenter:
             else ()
         )
         selected = snapshot.selected_entity
+        source_cutoff = (
+            snapshot.cutoff_date.strftime("%d/%m/%Y")
+            if snapshot.cutoff_date is not None and snapshot.available_dates
+            else "No disponible"
+        )
         return FinancialAnalysisViewModel(
             status=snapshot.status,
-            cutoff_date=snapshot.cutoff_date.strftime("%d/%m/%Y") if snapshot.cutoff_date else "-",
+            cutoff_date=source_cutoff,
             selected_entity_id=selected.entity_id if selected else "",
             selected_entity_name=selected.name if selected else "Sin datos",
             entities=tuple((item.entity_id, item.name) for item in snapshot.entities),
