@@ -151,6 +151,22 @@ class _PeerIndicatorFailureStubClient(_OfficialStubClient):
         return super()._post_json(endpoint, payload)
 
 
+class _PublicationLagStubClient(_OfficialStubClient):
+    def _post_json(self, endpoint: str, payload: dict[str, object]) -> dict[str, object]:
+        parameters = payload["parametrosEntidad"]
+        assert isinstance(parameters, dict)
+        entity_code = str(parameters["codigoEntidad"])
+        period = str(parameters["periodos"])
+        if (
+            entity_code == "3004045138"
+            and "20260801" in period
+            and "BalanceSituacion" in endpoint
+        ):
+            self.requests.append((entity_code, "BALANCE", period))
+            raise URLError("August accounting cutoff not published")
+        return super()._post_json(endpoint, payload)
+
+
 def test_official_api_uses_direct_entity_and_blank_entity_for_indicators() -> None:
     client = _OfficialStubClient(
         SUGEFFinancialSourceConfig(api_retries=0, api_entity_codes=("3004045138",))
@@ -226,6 +242,43 @@ def test_direct_entity_indicator_survives_peer_indicator_failure() -> None:
         "ReporteIndicadoresFinancierosEntidad (SFN completo)" in message
         for message in result.diagnostics
     )
+
+
+def test_official_api_falls_back_to_latest_complete_accounting_cutoff() -> None:
+    client = _PublicationLagStubClient(
+        SUGEFFinancialSourceConfig(api_retries=0, api_entity_codes=("3004045138",))
+    )
+
+    result = client.read(date(2026, 8, 31))
+
+    assert result.lines
+    assert max(line.statement_date for line in result.lines) == date(2026, 7, 31)
+    assert ("3004045138", "BALANCE", "20260801") in client.requests
+    assert ("3004045138", "BALANCE", "20260701") in client.requests
+    assert ("3004045138", "INDICATORS", "20260701") in client.requests
+    assert ("3004045138", "INDICATORS", "20260801") not in client.requests
+    assert any(
+        "Corte solicitado en AIP: 31/08/2026" in message
+        and "31/07/2026" in message
+        for message in result.diagnostics
+    )
+    assert all("August accounting cutoff not published" not in message for message in result.diagnostics)
+
+
+def test_report_range_continues_with_prior_month_after_api_error() -> None:
+    client = _PublicationLagStubClient(
+        SUGEFFinancialSourceConfig(api_retries=0, api_entity_codes=("3004045138",))
+    )
+
+    lines, _ = client._read_report(
+        "3004045138",
+        "20250901-20260801",
+        *client._BALANCE_REPORT,
+    )
+
+    assert lines
+    assert ("3004045138", "BALANCE", "20250901-20260801") in client.requests
+    assert ("3004045138", "BALANCE", "20250801-20260701") in client.requests
 
 
 def test_official_reader_never_activates_bundled_reference_matrix() -> None:
