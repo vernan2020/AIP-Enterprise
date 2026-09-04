@@ -99,8 +99,7 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
                 except (HTTPError, URLError, TimeoutError, ValueError, OSError) as exc:
                     scope = entity_code or "SFN completo"
                     diagnostics.append(
-                        f"SUGEF API {report_name} ({scope}): "
-                        f"{type(exc).__name__}: {exc}"
+                        f"SUGEF API {report_name} ({scope}): " f"{type(exc).__name__}: {exc}"
                     )
 
         lines = self._deduplicate(lines)
