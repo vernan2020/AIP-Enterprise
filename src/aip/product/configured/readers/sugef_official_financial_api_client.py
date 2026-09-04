@@ -290,9 +290,7 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
             jobs.append((entity_code, income_period, *self._INCOME_REPORT))
 
         self._execute_jobs(jobs, lines, endpoints, diagnostics)
-        recovered = sum(
-            self._has_methodology_history(lines, code, cutoff_date) for code in missing
-        )
+        recovered = sum(self._has_methodology_history(lines, code, cutoff_date) for code in missing)
         diagnostics.append(
             "Recuperación directa de historia SUGEF para comparables 08ME14-01: "
             f"{recovered}/{len(missing)} entidades con historia completa tras la recuperación."
