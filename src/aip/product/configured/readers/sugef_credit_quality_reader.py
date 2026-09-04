@@ -11,8 +11,8 @@ from urllib.error import HTTPError, URLError
 from aip.domain.financial_analysis.credit_quality import (
     CreditAgingAmount,
     CreditAgingBand,
+    CreditQualityCalculation,
     CreditQualityIndicatorCalculator,
-    CreditQualityIndicatorResult,
 )
 from aip.domain.financial_analysis.models import (
     FinancialEntity,
@@ -150,10 +150,8 @@ class SUGEFCreditQualityReader:
             for row in entity_rows:
                 by_normative[row.normative].append(row)
 
-            complete: list[
-                tuple[str, CreditQualityIndicatorResult, list[_BucketRow]]
-            ] = []
-            incomplete: list[tuple[str, CreditQualityIndicatorResult]] = []
+            complete: list[tuple[str, CreditQualityCalculation, list[_BucketRow]]] = []
+            incomplete: list[tuple[str, CreditQualityCalculation]] = []
             for normative, normative_rows in sorted(by_normative.items()):
                 result = self._calculator.calculate(
                     tuple(CreditAgingAmount(row.band, row.principal) for row in normative_rows)
