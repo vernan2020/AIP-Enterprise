@@ -32,11 +32,13 @@ def test_financial_analysis_is_available_in_ribbon_and_sidebar(qt_app) -> None:
     assert "Análisis Financiero" in labels
 
 
-def test_financial_analysis_exposes_official_rating_tab(qt_app) -> None:
+def test_financial_analysis_exposes_methodology_rating_tab(qt_app) -> None:
     view = FinancialAnalysisView(presenter=_Presenter())  # type: ignore[arg-type]
 
     titles = [view._tabs.tabText(index) for index in range(view._tabs.count())]
 
     assert "Calificación" in titles
+    assert view._rating_heading.text() == "Calificación 08ME14-01 sobre datos SUGEF"
     assert view._rating_methodology.text() == "Metodología: 08ME14-01"
     assert view._rating_grade.text() == "Sin emitir"
+    assert "Calificación oficial" not in view._rating_heading.text()
