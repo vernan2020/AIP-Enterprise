@@ -67,7 +67,9 @@ class FinancialAnalysisService:
         dates = tuple(sorted({line.statement_date for line in lines}, reverse=True))
         selected = self._selected_entity(entities, selected_entity_id)
         accounting_dates = (
-            self._complete_accounting_dates(lines, selected.entity_id) if selected is not None else ()
+            self._complete_accounting_dates(lines, selected.entity_id)
+            if selected is not None
+            else ()
         )
         effective_date = self._effective_date(accounting_dates or dates, cutoff_date)
 
@@ -391,7 +393,10 @@ class FinancialAnalysisService:
                     for line in lines
                     if line.entity.entity_id == entity_id
                     and line.statement_type
-                    in {FinancialStatementType.BALANCE_SHEET, FinancialStatementType.INCOME_STATEMENT}
+                    in {
+                        FinancialStatementType.BALANCE_SHEET,
+                        FinancialStatementType.INCOME_STATEMENT,
+                    }
                 },
                 reverse=True,
             )
