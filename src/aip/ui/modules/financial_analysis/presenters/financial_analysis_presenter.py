@@ -11,6 +11,7 @@ from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model 
     FinancialAnalysisViewModel,
     FinancialMetricView,
     FinancialStatementRow,
+    IndicatorReconciliationRow,
     PeerSummaryRow,
     RatingDimensionRow,
     RatingIndicatorRow,
@@ -19,6 +20,8 @@ from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model 
 
 class FinancialAnalysisPresenter:
     """Adapta el caso de uso SUGEF sin ejecutar cálculos financieros en la UI."""
+
+    _BINARY_CODES = {"PROPORTIONAL_SUPERVISION", "STATE_GUARANTEE"}
 
     def __init__(self, application_factory: DemoApplicationFactory | None = None) -> None:
         self._factory = application_factory or DemoApplicationFactory()
@@ -126,6 +129,18 @@ class FinancialAnalysisPresenter:
             if rating is not None
             else ()
         )
+        reconciliations = tuple(
+            IndicatorReconciliationRow(
+                indicator=item.label,
+                published_value=cls._reconciliation_value(item.published_value, item.code),
+                calculated_value=cls._reconciliation_value(item.calculated_value, item.code),
+                difference=cls._reconciliation_difference(item.difference, item.code),
+                status=cls._reconciliation_status(item.status.value),
+                published_source=item.published_source or "-",
+                calculated_source=item.calculated_source or "-",
+            )
+            for item in snapshot.indicator_reconciliations
+        )
         selected = snapshot.selected_entity
         source_cutoff = (
             snapshot.cutoff_date.strftime("%d/%m/%Y")
@@ -152,6 +167,7 @@ class FinancialAnalysisPresenter:
             ),
             rating_dimensions=rating_dimensions,
             rating_indicators=rating_indicators,
+            indicator_reconciliations=reconciliations,
             rating_diagnostics=rating.diagnostics if rating is not None else (),
             diagnostics=snapshot.diagnostics,
             source_name=snapshot.source_name,
@@ -169,7 +185,8 @@ class FinancialAnalysisPresenter:
     def _statement_value(cls, value: Decimal, statement_type: str, account_code: str) -> str:
         if statement_type != "INDICATORS":
             return cls._money(value)
-        if account_code in {"PROPORTIONAL_SUPERVISION", "STATE_GUARANTEE"}:
+        normalized_code = account_code.removeprefix("CALC:")
+        if normalized_code in cls._BINARY_CODES:
             return "Sí" if value == Decimal("1") else "No"
         return f"{value * Decimal('100'):,.3f}%"
 
@@ -205,6 +222,34 @@ class FinancialAnalysisPresenter:
         if direction == "BINARY":
             return "Sí (1)" if value == Decimal("1") else "No (0)"
         return f"{value * Decimal('100'):,.3f}%"
+
+    @classmethod
+    def _reconciliation_value(cls, value: Decimal | None, code: str) -> str:
+        if value is None:
+            return "-"
+        if code in cls._BINARY_CODES:
+            return "Sí (1)" if value == Decimal("1") else "No (0)"
+        return f"{value * Decimal('100'):,.3f}%"
+
+    @classmethod
+    def _reconciliation_difference(cls, value: Decimal | None, code: str) -> str:
+        if value is None:
+            return "-"
+        if code in cls._BINARY_CODES:
+            return f"{value:,.0f}"
+        sign = "+" if value > 0 else ""
+        return f"{sign}{value * Decimal('100'):,.3f} pp"
+
+    @staticmethod
+    def _reconciliation_status(value: str) -> str:
+        return {
+            "MATCH": "Coincide",
+            "TOLERANCE": "Dentro de tolerancia",
+            "MISMATCH": "Diferencia",
+            "PUBLISHED_ONLY": "Solo SUGEF",
+            "CALCULATED_ONLY": "Solo AIP",
+            "MISSING_INPUT": "Sin insumos",
+        }.get(value, value)
 
     @staticmethod
     def _direction_label(value: str) -> str:
