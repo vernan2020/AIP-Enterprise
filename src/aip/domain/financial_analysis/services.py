@@ -9,6 +9,7 @@ from aip.domain.financial_analysis.indicator_calculator import OfficialRatingInd
 from aip.domain.financial_analysis.indicator_reconciliation import (
     FinancialIndicatorReconciliationService,
 )
+from aip.domain.financial_analysis.institutional_flags import InstitutionalEntityFlagService
 from aip.domain.financial_analysis.models import (
     EntityFinancialSummary,
     FinancialAnalysisSnapshot,
@@ -50,9 +51,11 @@ class FinancialAnalysisService:
         *,
         indicator_calculator: OfficialRatingIndicatorCalculator | None = None,
         reconciliation_service: FinancialIndicatorReconciliationService | None = None,
+        entity_flag_service: InstitutionalEntityFlagService | None = None,
     ) -> None:
         self._indicator_calculator = indicator_calculator or OfficialRatingIndicatorCalculator()
         self._reconciliation = reconciliation_service or FinancialIndicatorReconciliationService()
+        self._entity_flags = entity_flag_service or InstitutionalEntityFlagService()
 
     def build_snapshot(
         self,
@@ -84,12 +87,13 @@ class FinancialAnalysisService:
                 source_files=source_files,
             )
 
+        enriched_lines = self._entity_flags.augment(lines, cutoff_date=effective_date)
         operational_lines = self._indicator_calculator.augment(
-            lines,
+            enriched_lines,
             cutoff_date=effective_date,
         )
         reconciliation_lines = self._indicator_calculator.augment(
-            lines,
+            enriched_lines,
             cutoff_date=effective_date,
             include_shadow_calculations=True,
         )
