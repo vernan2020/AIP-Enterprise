@@ -5,6 +5,7 @@ from pathlib import Path
 from scripts.recovery.apply_windows_recovery import (
     CERTIFIED_MARKER_NAME,
     _backup_project,
+    _replace_src_transactionally,
     _restore_backup,
 )
 
@@ -75,3 +76,44 @@ def test_automatic_rollback_removes_files_absent_before_install(tmp_path: Path) 
     assert not (project / "scripts/recovery").exists()
     assert not (project / CHECKPOINT_DIR).exists()
     assert not (project / "config/runtime.local.cmd.example").exists()
+
+
+def test_certified_src_install_never_renames_live_src(tmp_path: Path, monkeypatch) -> None:
+    project = tmp_path / "AIP"
+    payload = tmp_path / "payload"
+    _write(project / "src/aip/original.py", "ORIGINAL\n")
+    _write(project / "src/aip/stale.py", "STALE\n")
+    _write(payload / "src/aip/certified.py", "CERTIFIED\n")
+
+    # Simulate a scratch directory left by an interrupted prior installer run.
+    _write(project / ".aip_src_before_certified/aip/old.py", "OLD_SNAPSHOT\n")
+
+    def _forbidden_rename(self: Path, target: Path) -> Path:
+        raise AssertionError(f"live directory rename is forbidden: {self} -> {target}")
+
+    monkeypatch.setattr(Path, "rename", _forbidden_rename)
+
+    _replace_src_transactionally(payload, project)
+
+    assert (project / "src/aip/certified.py").read_text(encoding="utf-8") == "CERTIFIED\n"
+    assert not (project / "src/aip/original.py").exists()
+    assert not (project / "src/aip/stale.py").exists()
+    assert not (project / ".aip_src_before_certified").exists()
+
+
+def test_certified_src_install_is_repeatable(tmp_path: Path) -> None:
+    project = tmp_path / "AIP"
+    payload = tmp_path / "payload"
+    _write(project / "src/aip/original.py", "ORIGINAL\n")
+    _write(payload / "src/aip/certified.py", "CERTIFIED_V1\n")
+
+    _replace_src_transactionally(payload, project)
+    assert (project / "src/aip/certified.py").read_text(encoding="utf-8") == "CERTIFIED_V1\n"
+
+    _write(payload / "src/aip/certified.py", "CERTIFIED_V2\n")
+    _write(payload / "src/aip/second.py", "SECOND\n")
+    _replace_src_transactionally(payload, project)
+
+    assert (project / "src/aip/certified.py").read_text(encoding="utf-8") == "CERTIFIED_V2\n"
+    assert (project / "src/aip/second.py").read_text(encoding="utf-8") == "SECOND\n"
+    assert not (project / ".aip_src_before_certified").exists()
