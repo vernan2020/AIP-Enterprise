@@ -101,7 +101,11 @@ def test_shadow_calculation_reproduces_published_roa_without_changing_default_pr
     balances = tuple(
         FinancialStatementLine(
             entity=_ENTITY,
-            statement_date=date(2026, month, 31 if month in {1, 3, 5, 7, 8, 10, 12} else 30 if month != 2 else 28),
+            statement_date=date(
+                2026,
+                month,
+                31 if month in {1, 3, 5, 7, 8, 10, 12} else 30 if month != 2 else 28,
+            ),
             statement_type=FinancialStatementType.BALANCE_SHEET,
             account_code="10000",
             account_name="ACTIVO TOTAL",
