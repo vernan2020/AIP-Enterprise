@@ -17,13 +17,12 @@ from aip.product.configured.readers.sugef_financial_api_client import (
 class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
     """Gateway SUGEF estricto para estados oficiales y universo comparativo SFN.
 
-    Para las entidades configuradas descarga la historia mínima requerida por
-    08ME14-01. Para el universo comparativo SFN hace lo mismo con Balance y
-    Resultados, de forma que los indicadores derivados de los pares puedan usar
-    promedios de 12 meses y anualización sin recurrir a fuentes externas. Los
-    indicadores publicados se consultan con una ventana corta compatible con el
-    rezago de publicación. ``codigoEntidad`` vacío corresponde a la modalidad
-    documentada por SUGEF para todas las entidades del SFN.
+    La entidad configurada se consulta de forma directa para Balance, Resultados
+    e Indicadores. El universo comparativo se consulta con ``codigoEntidad`` vacío,
+    pero la historia de Balance se solicita mes a mes y la de Resultados por cada
+    período requerido por 08ME14-01. Así se evita depender de una respuesta masiva
+    que puede no conservar 12 observaciones por entidad y se mantiene la entidad
+    seleccionada disponible aun si una consulta comparativa del SFN falla.
     """
 
     _BALANCE_REPORT = (
@@ -46,9 +45,15 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
         super().__init__(config)
 
     def read(self, cutoff_date: date) -> SUGEFApiReadResult:
-        jobs: list[tuple[str, str, str, str, FinancialStatementType]] = []
+        lines: list[FinancialStatementLine] = []
+        endpoints: set[str] = set()
+        diagnostics: list[str] = []
+
+        # Fase 1: estados de las entidades configuradas. Estos estados determinan
+        # el último corte contable utilizable antes de consultar indicadores y pares.
+        primary_jobs: list[tuple[str, str, str, str, FinancialStatementType]] = []
         for entity_code in self._config.api_entity_codes:
-            jobs.append(
+            primary_jobs.append(
                 (
                     entity_code,
                     self._period_range(
@@ -58,36 +63,74 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
                     *self._BALANCE_REPORT,
                 )
             )
-            jobs.append(
+            primary_jobs.append(
                 (
                     entity_code,
                     self._result_periods(cutoff_date),
                     *self._INCOME_REPORT,
                 )
             )
+        self._execute_jobs(primary_jobs, lines, endpoints, diagnostics)
 
-        peer_balance_periods = self._period_range(
-            cutoff_date,
-            lookback_months=self._AVERAGE_LOOKBACK_MONTHS,
-        )
-        peer_income_periods = self._result_periods(cutoff_date)
-        peer_indicator_periods = self._peer_periods(cutoff_date)
-        # El manual oficial SUGEF establece que codigoEntidad="" devuelve todas
-        # las entidades del SFN para estos tres reportes por entidad financiera.
-        # Balance y Resultados requieren historia suficiente para que 08ME14-01
-        # derive los indicadores de los pares con las mismas reglas que aplica a
-        # la entidad seleccionada.
-        jobs.extend(
-            (
-                ("", peer_balance_periods, *self._BALANCE_REPORT),
-                ("", peer_income_periods, *self._INCOME_REPORT),
-                ("", peer_indicator_periods, *self._INDICATOR_REPORT),
+        effective_cutoff = self._primary_statement_cutoff(lines)
+        if effective_cutoff is not None:
+            effective_period = f"{effective_cutoff:%Y%m%d}"
+
+            # Fase 2: indicadores directos de la entidad configurada. No se debe
+            # depender de la consulta masiva del SFN para los valores propios.
+            primary_indicator_jobs = [
+                (entity_code, effective_period, *self._INDICATOR_REPORT)
+                for entity_code in self._config.api_entity_codes
+            ]
+            self._execute_jobs(primary_indicator_jobs, lines, endpoints, diagnostics)
+
+            # Fase 3: universo SFN. Balance se obtiene mes a mes para garantizar
+            # 12 observaciones por entidad; Resultados se consulta únicamente para
+            # los períodos necesarios para anualización móvil; Indicadores usa el
+            # corte contable efectivo exacto.
+            peer_jobs: list[tuple[str, str, str, str, FinancialStatementType]] = []
+            peer_jobs.extend(
+                ("", period, *self._BALANCE_REPORT)
+                for period in self._peer_balance_periods(effective_cutoff)
             )
+            peer_jobs.extend(
+                ("", period, *self._INCOME_REPORT)
+                for period in self._peer_income_periods(effective_cutoff)
+            )
+            peer_jobs.append(("", effective_period, *self._INDICATOR_REPORT))
+            self._execute_jobs(peer_jobs, lines, endpoints, diagnostics)
+
+        lines = self._deduplicate(lines)
+        lines = self._clip_to_primary_statement_cutoff(lines)
+        if lines:
+            latest_date = max(line.statement_date for line in lines)
+            diagnostics.extend(
+                (
+                    "Balance y Estado de Resultados consultados exclusivamente en la API pública oficial de SUGEF.",
+                    "Indicadores de la entidad seleccionada se consultan directamente en SUGEF; el universo comparativo SFN se consulta mediante codigoEntidad vacío.",
+                    "La historia comparativa de Balance se consulta mes a mes y Resultados por los períodos requeridos por 08ME14-01 para preservar 12 observaciones por entidad.",
+                    "Último corte SUGEF utilizable en el conjunto oficial: "
+                    f"{latest_date.strftime('%d/%m/%Y')}.",
+                )
+            )
+        else:
+            diagnostics.append("La API pública de SUGEF no devolvió registros utilizables.")
+
+        return SUGEFApiReadResult(
+            lines=tuple(lines),
+            endpoints=tuple(sorted(endpoints)),
+            diagnostics=tuple(diagnostics),
         )
 
-        lines: list[FinancialStatementLine] = []
-        endpoints: set[str] = set()
-        diagnostics: list[str] = []
+    def _execute_jobs(
+        self,
+        jobs: list[tuple[str, str, str, str, FinancialStatementType]],
+        lines: list[FinancialStatementLine],
+        endpoints: set[str],
+        diagnostics: list[str],
+    ) -> None:
+        if not jobs:
+            return
         with ThreadPoolExecutor(max_workers=min(8, len(jobs))) as executor:
             futures = {
                 executor.submit(
@@ -112,26 +155,17 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
                         f"SUGEF API {report_name} ({scope}): " f"{type(exc).__name__}: {exc}"
                     )
 
-        lines = self._deduplicate(lines)
-        lines = self._clip_to_primary_statement_cutoff(lines)
-        if lines:
-            latest_date = max(line.statement_date for line in lines)
-            diagnostics.extend(
-                (
-                    "Balance y Estado de Resultados consultados exclusivamente en la API pública oficial de SUGEF.",
-                    "Balance y Resultados comparativos del SFN se consultan con la historia mínima requerida por 08ME14-01; los Indicadores publicados se consultan para todas las entidades mediante codigoEntidad vacío.",
-                    "Último corte SUGEF utilizable en el conjunto oficial: "
-                    f"{latest_date.strftime('%d/%m/%Y')}.",
-                )
-            )
-        else:
-            diagnostics.append("La API pública de SUGEF no devolvió registros utilizables.")
-
-        return SUGEFApiReadResult(
-            lines=tuple(lines),
-            endpoints=tuple(sorted(endpoints)),
-            diagnostics=tuple(diagnostics),
+    @classmethod
+    def _peer_balance_periods(cls, cutoff_date: date) -> tuple[str, ...]:
+        periods = tuple(
+            cls._shift_month(date(cutoff_date.year, cutoff_date.month, 1), -offset)
+            for offset in range(cls._AVERAGE_LOOKBACK_MONTHS + 1)
         )
+        return tuple(f"{period:%Y%m%d}" for period in sorted(periods))
+
+    @classmethod
+    def _peer_income_periods(cls, cutoff_date: date) -> tuple[str, ...]:
+        return tuple(part for part in cls._result_periods(cutoff_date).split(",") if part)
 
     @classmethod
     def _peer_periods(cls, cutoff_date: date) -> str:
@@ -155,17 +189,18 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
                 line.account_code,
                 line.account_name,
             )
-            unique[key] = line
+            # Las consultas directas de la entidad se ejecutan antes que las del
+            # universo SFN; conservar la primera observación evita que una fila
+            # masiva sustituya innecesariamente la trazabilidad directa.
+            unique.setdefault(key, line)
         return list(unique.values())
 
-    def _clip_to_primary_statement_cutoff(
+    def _primary_statement_cutoff(
         self,
         lines: list[FinancialStatementLine],
-    ) -> list[FinancialStatementLine]:
-        """Evita que un indicador más reciente desplace el corte contable válido."""
-
+    ) -> date | None:
         if not self._config.api_entity_codes:
-            return lines
+            return None
         primary = self._config.api_entity_codes[0]
         balance_dates = {
             line.statement_date
@@ -180,7 +215,15 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
             and line.statement_type is FinancialStatementType.INCOME_STATEMENT
         }
         common_dates = balance_dates & income_dates
-        if not common_dates:
+        return max(common_dates) if common_dates else None
+
+    def _clip_to_primary_statement_cutoff(
+        self,
+        lines: list[FinancialStatementLine],
+    ) -> list[FinancialStatementLine]:
+        """Evita que un indicador más reciente desplace el corte contable válido."""
+
+        effective_cutoff = self._primary_statement_cutoff(lines)
+        if effective_cutoff is None:
             return lines
-        effective_cutoff = max(common_dates)
         return [line for line in lines if line.statement_date <= effective_cutoff]
