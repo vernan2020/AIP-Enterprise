@@ -144,6 +144,7 @@ class FinancialAnalysisView(QWidget):
         summary.setObjectName("ratingSummary")
         summary_layout = QGridLayout(summary)
         summary_layout.setContentsMargins(12, 8, 12, 8)
+        self._rating_heading = QLabel("Calificación 08ME14-01 sobre datos SUGEF")
         self._rating_grade = QLabel("Sin emitir")
         self._rating_grade.setStyleSheet("font-size:22px; font-weight:700; color:#005EB8;")
         self._rating_score = QLabel("Puntaje: -")
@@ -151,7 +152,7 @@ class FinancialAnalysisView(QWidget):
         self._rating_coverage = QLabel("Cobertura: 0.00%")
         self._rating_methodology = QLabel("Metodología: 08ME14-01")
         self._rating_methodology.setStyleSheet("color:#52687A;")
-        summary_layout.addWidget(QLabel("Calificación oficial"), 0, 0)
+        summary_layout.addWidget(self._rating_heading, 0, 0)
         summary_layout.addWidget(self._rating_grade, 1, 0)
         summary_layout.addWidget(self._rating_score, 0, 1)
         summary_layout.addWidget(self._rating_coverage, 1, 1)
@@ -239,7 +240,7 @@ class FinancialAnalysisView(QWidget):
             "PARTIAL": "Cobertura parcial",
         }.get(view_model.status, "Pendiente de datos")
         self._source_status.setText(
-            f"{view_model.source_name} · {status} · {view_model.source_file_count} archivo(s) procesado(s)"
+            f"{view_model.source_name} · {status} · {view_model.source_file_count} fuente(s) procesada(s)"
         )
 
     def _bind_entities(self, view_model: FinancialAnalysisViewModel) -> None:
@@ -343,7 +344,7 @@ class FinancialAnalysisView(QWidget):
             list(view_model.rating_diagnostics)
             or [
                 "P15/P85, ponderaciones y escala aplicadas conforme a 08ME14-01 V01.",
-                "El Excel de julio 2026 se conserva como referencia histórica, no como política.",
+                "Fuente de indicadores: SUGEF; los faltantes permanecen no disponibles o se calculan desde estados financieros SUGEF cuando la metodología lo permite.",
             ]
         )
 
