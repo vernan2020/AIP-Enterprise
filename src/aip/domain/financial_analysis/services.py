@@ -14,7 +14,9 @@ from aip.domain.financial_analysis.models import (
     FinancialStatementLine,
     FinancialStatementType,
 )
-from aip.domain.financial_analysis.ratings import FinancialEntityRatingService
+from aip.domain.financial_analysis.sugef_ratings import (
+    SUGEFOnlyFinancialEntityRatingService,
+)
 
 
 class FinancialAnalysisService:
@@ -87,7 +89,7 @@ class FinancialAnalysisService:
         )
         metrics = self._metrics(current, previous)
         peers = self._peer_summaries(lines, effective_date)
-        rating = FinancialEntityRatingService().evaluate(
+        rating = SUGEFOnlyFinancialEntityRatingService().evaluate(
             lines,
             selected_entity_id=selected.entity_id,
             cutoff_date=effective_date,
@@ -187,7 +189,8 @@ class FinancialAnalysisService:
                         else cls._ratio_percent(previous_result, previous_assets)
                     ),
                     source_account=(
-                        current_values["ROA_PUBLISHED"][1] or "DERIVADO SIMPLE: resultado / activos"
+                        current_values["ROA_PUBLISHED"][1]
+                        or "DERIVADO DESDE ESTADOS FINANCIEROS SUGEF: resultado / activos"
                     ),
                 ),
                 FinancialMetric(
@@ -202,7 +205,7 @@ class FinancialAnalysisService:
                     ),
                     source_account=(
                         current_values["ROE_PUBLISHED"][1]
-                        or "DERIVADO SIMPLE: resultado / patrimonio"
+                        or "DERIVADO DESDE ESTADOS FINANCIEROS SUGEF: resultado / patrimonio"
                     ),
                 ),
             )
@@ -289,10 +292,12 @@ class FinancialAnalysisService:
 
     @staticmethod
     def _source_priority(line: FinancialStatementLine) -> int:
-        source = line.trace.source_name.upper() if line.trace is not None else ""
-        if "CALCULO 08ME14-01" in FinancialAnalysisService._normalize(source):
+        source = FinancialAnalysisService._normalize(
+            line.trace.source_name if line.trace is not None else ""
+        )
+        if "API PUBLICA" in source or ("SUGEF" in source and "CALCULO" not in source):
             return 0
-        if "API PUBLICA" in FinancialAnalysisService._normalize(source):
+        if "CALCULO 08ME14-01" in source:
             return 1
         return 2
 
