@@ -104,7 +104,16 @@ class FinancialAnalysisView(QWidget):
             ["Estado", "Cuenta", "Descripción", "Valor", "Moneda", "Trazabilidad"]
         )
         self._peer_table = self._table(
-            ["Entidad", "Categoría", "Activos", "Cartera", "Patrimonio", "Resultado", "ROA", "ROE"]
+            [
+                "Entidad",
+                "Categoría",
+                "Activos",
+                "Cartera",
+                "Patrimonio",
+                "Resultado",
+                "ROA",
+                "ROE",
+            ]
         )
         self._rating_panel = self._build_rating_panel()
         self._diagnostics = QListWidget()
@@ -164,7 +173,9 @@ class FinancialAnalysisView(QWidget):
         layout.addWidget(summary)
 
         tables = QHBoxLayout()
-        self._rating_dimension_table = self._table(["Dimensión", "Puntaje", "Peso", "Cobertura"])
+        self._rating_dimension_table = self._table(
+            ["Dimensión", "Puntaje", "Peso", "Cobertura"]
+        )
         self._rating_dimension_table.setMinimumWidth(390)
         self._rating_indicator_table = self._table(
             [
@@ -189,6 +200,23 @@ class FinancialAnalysisView(QWidget):
         tables.addWidget(self._rating_dimension_table, 2)
         tables.addWidget(self._rating_indicator_table, 5)
         layout.addLayout(tables, 1)
+
+        reconciliation_title = QLabel("Reconciliación · SUGEF publicado vs AIP calculado")
+        reconciliation_title.setStyleSheet("font-weight:700; color:#314A5E;")
+        layout.addWidget(reconciliation_title)
+        self._reconciliation_table = self._table(
+            [
+                "Indicador",
+                "SUGEF publicado",
+                "AIP calculado",
+                "Diferencia",
+                "Estado",
+                "Fuente SUGEF",
+                "Fuente cálculo",
+            ]
+        )
+        self._reconciliation_table.setMaximumHeight(190)
+        layout.addWidget(self._reconciliation_table)
 
         self._rating_notes = QListWidget()
         self._rating_notes.setMaximumHeight(76)
@@ -348,6 +376,25 @@ class FinancialAnalysisView(QWidget):
                         Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
                     )
                 self._rating_indicator_table.setItem(row_index, column, item)
+
+        self._reconciliation_table.setRowCount(len(view_model.indicator_reconciliations))
+        for row_index, row in enumerate(view_model.indicator_reconciliations):
+            reconciliation_values = (
+                row.indicator,
+                row.published_value,
+                row.calculated_value,
+                row.difference,
+                row.status,
+                row.published_source,
+                row.calculated_source,
+            )
+            for column, value in enumerate(reconciliation_values):
+                item = QTableWidgetItem(value)
+                if column in {1, 2, 3}:
+                    item.setTextAlignment(
+                        Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+                    )
+                self._reconciliation_table.setItem(row_index, column, item)
 
         self._rating_notes.clear()
         self._rating_notes.addItems(
