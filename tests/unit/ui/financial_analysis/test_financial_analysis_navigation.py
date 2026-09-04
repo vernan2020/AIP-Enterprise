@@ -42,3 +42,5 @@ def test_financial_analysis_exposes_methodology_rating_tab(qt_app) -> None:
     assert view._rating_methodology.text() == "Metodología: 08ME14-01"
     assert view._rating_grade.text() == "Sin emitir"
     assert "Calificación oficial" not in view._rating_heading.text()
+    assert view._cutoff.text().startswith("Corte SUGEF:")
+    assert "corte general de AIP" in view._cutoff.toolTip()
