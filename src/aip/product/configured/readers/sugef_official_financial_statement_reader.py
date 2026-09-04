@@ -1,0 +1,90 @@
+from __future__ import annotations
+
+from datetime import date
+
+from aip.product.configured.configuration.configured_source_config import (
+    SUGEFFinancialSourceConfig,
+)
+from aip.product.configured.readers.sugef_financial_api_client import (
+    SUGEFFinancialApiClient,
+)
+from aip.product.configured.readers.sugef_financial_statement_reader import (
+    SUGEFFinancialReadResult,
+    SUGEFFinancialStatementReader,
+)
+from aip.product.configured.readers.sugef_official_financial_api_client import (
+    SUGEFOfficialFinancialApiClient,
+)
+
+
+class SUGEFOfficialFinancialStatementReader(SUGEFFinancialStatementReader):
+    """Lector productivo que admite únicamente fuentes oficiales SUGEF.
+
+    A diferencia del lector de compatibilidad histórica, este adaptador nunca
+    incorpora la matriz CSV institucional incluida en el paquete. Puede combinar
+    la API pública con exportaciones SUGEF colocadas explícitamente en la ruta
+    configurada, conservando trazabilidad por registro.
+    """
+
+    def __init__(
+        self,
+        config: SUGEFFinancialSourceConfig,
+        *,
+        api_client: SUGEFFinancialApiClient | None = None,
+    ) -> None:
+        super().__init__(
+            config,
+            api_client=api_client or SUGEFOfficialFinancialApiClient(config),
+        )
+
+    def read(self, *, cutoff_date: date | None = None) -> SUGEFFinancialReadResult:
+        paths = self._discover_files()
+        diagnostics: list[str] = []
+        lines = []
+        api_endpoints: tuple[str, ...] = ()
+
+        if self._config.enabled and self._config.api_enabled and cutoff_date is not None:
+            api_result = self._api_client.read(cutoff_date)
+            lines.extend(api_result.lines)
+            api_endpoints = api_result.endpoints
+            diagnostics.extend(api_result.diagnostics)
+
+        for path in paths:
+            try:
+                lines.extend(self._read_file(path, diagnostics))
+            except Exception as exc:
+                diagnostics.append(
+                    f"{path.name}: no se pudo leer ({type(exc).__name__}: {exc})"
+                )
+
+        if not lines:
+            diagnostics.append(
+                "No se obtuvieron datos oficiales SUGEF desde la API ni desde exportaciones configuradas; no se utiliza información de respaldo."
+            )
+        elif api_endpoints and paths:
+            diagnostics.append(
+                "Fuente consolidada exclusivamente con API pública SUGEF y exportaciones oficiales configuradas."
+            )
+        elif api_endpoints:
+            diagnostics.append("Fuente activa: API pública oficial de SUGEF.")
+        else:
+            diagnostics.append("Fuente activa: exportaciones oficiales SUGEF configuradas.")
+
+        if not paths and self._config.root and not api_endpoints:
+            diagnostics.append(
+                "No se encontraron exportaciones SUGEF compatibles en la ruta configurada."
+            )
+        elif not paths and not self._config.root and not api_endpoints:
+            diagnostics.append(
+                "No existe una ruta SUGEF local configurada y la API no aportó datos."
+            )
+
+        return SUGEFFinancialReadResult(
+            lines=tuple(lines),
+            source_files=(*api_endpoints, *(str(path) for path in paths)),
+            diagnostics=tuple(diagnostics),
+            fingerprint=self._fingerprint(paths, cutoff_date=cutoff_date),
+        )
+
+    def fingerprint(self, *, cutoff_date: date | None = None) -> str:
+        return self._fingerprint(self._discover_files(), cutoff_date=cutoff_date)
