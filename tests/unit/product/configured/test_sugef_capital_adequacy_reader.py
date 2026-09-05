@@ -215,7 +215,9 @@ def test_reader_refuses_ambiguous_inferred_numeric_columns() -> None:
     result = reader.read(date(2026, 7, 31))
 
     assert result.lines == ()
-    assert any("no se identificaron observaciones inequívocas" in item for item in result.diagnostics)
+    assert any(
+        "no se identificaron observaciones inequívocas" in item for item in result.diagnostics
+    )
 
 
 def test_reader_does_not_use_future_quarter() -> None:
