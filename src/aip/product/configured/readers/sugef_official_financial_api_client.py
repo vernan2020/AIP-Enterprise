@@ -471,9 +471,7 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
         return all(
             cutoff_date in dates and len(dates) >= cls._AVERAGE_LOOKBACK_MONTHS + 1
             for dates in balance_by_account.values()
-        ) and all(
-            required_income_dates.issubset(dates) for dates in income_by_account.values()
-        )
+        ) and all(required_income_dates.issubset(dates) for dates in income_by_account.values())
 
     @staticmethod
     def _month_end_date(year: int, month: int) -> date:
