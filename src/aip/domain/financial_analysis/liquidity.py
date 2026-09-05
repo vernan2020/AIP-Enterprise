@@ -29,29 +29,33 @@ class LiquidityCoverageCalculator:
     """
 
     def calculate(self, data: LiquidityCoverageInput) -> LiquidityCoverageCalculation:
+        cash_and_due_from = data.cash_and_due_from
+        investments = data.investments
+        available_investments = data.available_investments
+        public_obligations = data.public_obligations
         components = {
-            "11000000": data.cash_and_due_from,
-            "12000000": data.investments,
-            "12500000": data.available_investments,
-            "21000000": data.public_obligations,
+            "11000000": cash_and_due_from,
+            "12000000": investments,
+            "12500000": available_investments,
+            "21000000": public_obligations,
         }
         missing = tuple(code for code, value in components.items() if value is None)
-        if missing:
+        if (
+            cash_and_due_from is None
+            or investments is None
+            or available_investments is None
+            or public_obligations is None
+        ):
             return LiquidityCoverageCalculation(
                 value=None,
                 complete=False,
                 missing_components=missing,
             )
-        denominator = data.public_obligations
-        if denominator == Decimal("0"):
+        if public_obligations == Decimal("0"):
             return LiquidityCoverageCalculation(value=None, complete=False)
-        numerator = (
-            (data.cash_and_due_from or Decimal("0"))
-            + (data.investments or Decimal("0"))
-            + (data.available_investments or Decimal("0"))
-        )
+        numerator = cash_and_due_from + investments + available_investments
         try:
-            value = numerator / denominator
+            value = numerator / public_obligations
         except (DivisionByZero, InvalidOperation):
             return LiquidityCoverageCalculation(value=None, complete=False)
         return LiquidityCoverageCalculation(value=value, complete=True)
