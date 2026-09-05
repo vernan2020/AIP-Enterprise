@@ -19,7 +19,9 @@ _ARCHIVE_URL = "https://codeload.github.com/vernan2020/AIP-Enterprise/zip/{commi
 def _validate_commit(value: str) -> str:
     commit = value.strip().lower()
     if not _COMMIT_PATTERN.fullmatch(commit):
-        raise argparse.ArgumentTypeError("--commit debe ser un SHA Git completo de 40 caracteres hexadecimales")
+        raise argparse.ArgumentTypeError(
+            "--commit debe ser un SHA Git completo de 40 caracteres hexadecimales"
+        )
     return commit
 
 
@@ -34,7 +36,10 @@ def _project_root(value: str | None) -> Path:
 
 def _download_archive(commit: str, destination: Path) -> None:
     url = _ARCHIVE_URL.format(commit=commit)
-    request = urllib.request.Request(url, headers={"User-Agent": "AIP-Enterprise-Runtime-Sync"})
+    request = urllib.request.Request(
+        url,
+        headers={"User-Agent": "AIP-Enterprise-Runtime-Sync"},
+    )
     with urllib.request.urlopen(request, timeout=90) as response:  # noqa: S310
         if getattr(response, "status", 200) != 200:
             raise RuntimeError(f"GitHub respondió HTTP {response.status}")
@@ -115,7 +120,12 @@ def _build_parser() -> argparse.ArgumentParser:
             "con respaldo y rollback automático."
         )
     )
-    parser.add_argument("--commit", required=True, type=_validate_commit, help="SHA completo certificado")
+    parser.add_argument(
+        "--commit",
+        required=True,
+        type=_validate_commit,
+        help="SHA completo certificado",
+    )
     parser.add_argument(
         "--project-root",
         default=None,
@@ -163,7 +173,9 @@ def main(argv: list[str] | None = None) -> int:
     print("=== AIP ENTERPRISE · SINCRONIZACIÓN CERTIFICADA ===")
     print(f"Proyecto: {project_root}")
     print(f"Commit objetivo: {commit}")
-    print("Alcance: src\\aip únicamente; .venv, datos y configuración local no se modifican.")
+    print(
+        "Alcance: src\\aip únicamente; .venv, datos y configuración local no se modifican."
+    )
 
     with tempfile.TemporaryDirectory(prefix="aip_certified_sync_") as temp_dir:
         temp = Path(temp_dir)
@@ -174,7 +186,10 @@ def main(argv: list[str] | None = None) -> int:
             _download_archive(commit, archive)
             staged_aip = _extract_aip_tree(archive, stage)
             if args.dry_run:
-                print("DRY-RUN OK: descarga y estructura del runtime válidas; no se modificó el proyecto.")
+                print(
+                    "DRY-RUN OK: descarga y estructura del runtime válidas; "
+                    "no se modificó el proyecto."
+                )
                 return 0
 
             backup = _install_runtime(project_root, staged_aip, commit)
