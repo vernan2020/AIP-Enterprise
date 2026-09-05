@@ -68,10 +68,7 @@ def test_every_controlled_proportional_supervision_entity_is_flagged(entity_name
 
 def test_extended_official_names_and_accents_are_normalized() -> None:
     assert _flag("Banco Nacional de Costa Rica", "CALC:STATE_GUARANTEE") == Decimal("1")
-    assert (
-        _flag("Mutual Cartago de Ahorro y Préstamo", "CALC:STATE_GUARANTEE")
-        == Decimal("1")
-    )
+    assert _flag("Mutual Cartago de Ahorro y Préstamo", "CALC:STATE_GUARANTEE") == Decimal("1")
 
 
 def test_unlisted_entity_receives_zero_for_both_binary_flags() -> None:
