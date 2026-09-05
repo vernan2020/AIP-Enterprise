@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import date
 from decimal import Decimal
 
@@ -39,7 +40,11 @@ def _value(direction: RatingDirection, entity_index: int) -> Decimal:
 def _complete_lines() -> tuple[FinancialStatementLine, ...]:
     lines: list[FinancialStatementLine] = []
     for definition in FinancialEntityRatingService.INDICATORS:
-        source_name = definition.aliases[0]
+        source_name = (
+            "Disponibilidades e Inversiones Disponibles / Obligaciones con el público"
+            if definition.code == "LIQUIDITY_COVERAGE"
+            else definition.aliases[0]
+        )
         for entity_index, entity in enumerate(_ENTITIES):
             lines.append(
                 FinancialStatementLine(
@@ -69,4 +74,32 @@ def test_rating_is_emitted_when_all_13_methodology_indicators_are_available() ->
     assert all(item.contribution is not None for item in rating.indicators)
     assert rating.score is not None
     assert rating.grade is not None
+    liquidity = next(item for item in rating.indicators if item.code == "LIQUIDITY_COVERAGE")
+    assert liquidity.value == Decimal("0.3")
     assert not any(message.startswith("Falta el indicador:") for message in rating.diagnostics)
+
+
+def test_rating_trace_counts_accented_calculated_source_as_calculated() -> None:
+    calculated_trace = SourceTrace(
+        source_name="Cálculo 08ME14-01 sobre estados financieros SUGEF",
+        source_url="https://www.sugef.fi.cr/",
+        file_path="api",
+        sheet_name="indicadores",
+        row_number=1,
+    )
+    lines = list(_complete_lines())
+    for index, line in enumerate(lines):
+        if line.entity.entity_id == _ENTITIES[0].entity_id and line.account_code == "ROA":
+            lines[index] = replace(line, trace=calculated_trace)
+            break
+
+    rating = SUGEFOnlyFinancialEntityRatingService().evaluate(
+        tuple(lines),
+        selected_entity_id=_ENTITIES[0].entity_id,
+        cutoff_date=_CUTOFF,
+    )
+
+    assert any(
+        "12 publicados por SUGEF, 1 calculados desde datos SUGEF" in message
+        for message in rating.diagnostics
+    )
