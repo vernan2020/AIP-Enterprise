@@ -54,7 +54,7 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
     )
     _METHODOLOGY_BALANCE_ACCOUNTS = ("10000", "25000")
     _METHODOLOGY_INCOME_ACCOUNTS = ("30000", "31000", "31300", "32000")
-    _MAX_DIRECT_PEER_RECOVERY = 12
+    _MAX_DIRECT_PEER_RECOVERY = 4
 
     def __init__(self, config: SUGEFFinancialSourceConfig) -> None:
         super().__init__(config)
@@ -113,10 +113,8 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
                 diagnostics,
             )
 
-            # Fase 4: historia comparativa optimizada. Primero se solicitan solo
-            # las seis cuentas IAESF utilizadas por 08ME14-01 para todo el universo.
-            # Si SUGEF entrega cobertura suficiente, no se ejecuta el mecanismo
-            # histórico de compatibilidad ni la recuperación individual.
+            # Fase 4: historia comparativa optimizada. Se solicitan exclusivamente
+            # las seis cuentas IAESF requeridas por 08ME14-01 para todo el universo.
             filtered_peer_jobs = self._methodology_history_jobs(("",), effective_cutoff)
             self._execute_filtered_jobs(
                 filtered_peer_jobs,
@@ -125,27 +123,10 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
                 diagnostics,
             )
 
-            missing_after_filtered = self._missing_peer_history(lines, effective_cutoff)
-            if missing_after_filtered:
-                # Compatibilidad defensiva: algunas versiones de la API no aceptan
-                # codigoEntidad vacío con codigoCuenta. Se intenta entonces la vía
-                # histórica anterior, pero solo cuando el filtro masivo no bastó.
-                peer_history_jobs: list[
-                    tuple[str, str, str, str, FinancialStatementType]
-                ] = []
-                peer_history_jobs.extend(
-                    ("", period, *self._BALANCE_REPORT)
-                    for period in self._peer_balance_periods(effective_cutoff)
-                )
-                peer_history_jobs.extend(
-                    ("", period, *self._INCOME_REPORT)
-                    for period in self._peer_income_periods(effective_cutoff)
-                )
-                self._execute_jobs(peer_history_jobs, lines, endpoints, diagnostics)
-
-            # La recuperación entidad por entidad se mantiene únicamente para un
-            # número acotado de faltantes. Nunca se lanzan decenas de descargas
-            # masivas que puedan degradar la disponibilidad de la fuente pública.
+            # No existe fallback a descargas completas del universo: si la API
+            # filtrada no entrega suficiente historia se conserva N/D. Solo se
+            # permite una recuperación directa, filtrada y acotada cuando son muy
+            # pocas las entidades faltantes.
             self._recover_incomplete_peer_history(
                 effective_cutoff,
                 lines,
@@ -172,7 +153,7 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
                 (
                     "Balance y Estado de Resultados del corte efectivo consultados exclusivamente en la API pública oficial de SUGEF.",
                     "Indicadores de la entidad seleccionada se consultan directamente en SUGEF; el universo comparativo SFN se consulta mediante codigoEntidad vacío en una llamada dedicada.",
-                    "Historia 08ME14-01 optimizada mediante codigoCuenta para las cuentas IAESF 10000, 25000, 30000, 31000, 31300 y 32000; no se descargan estados completos de cada par salvo recuperación acotada.",
+                    "Historia 08ME14-01 optimizada mediante codigoCuenta para las cuentas IAESF 10000, 25000, 30000, 31000, 31300 y 32000; no se descargan estados completos de cada par.",
                 )
             )
         else:
@@ -297,7 +278,7 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
     ) -> None:
         if not jobs:
             return
-        with ThreadPoolExecutor(max_workers=min(4, len(jobs))) as executor:
+        with ThreadPoolExecutor(max_workers=min(2, len(jobs))) as executor:
             futures = {
                 executor.submit(
                     self._read_filtered_report,
@@ -461,23 +442,23 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
         entity_code: str,
         cutoff_date: date,
     ) -> bool:
-        balance_dates = {
-            line.statement_date
-            for line in lines
-            if line.entity.entity_id == entity_code
-            and line.statement_type is FinancialStatementType.BALANCE_SHEET
-            and line.account_code.removesuffix(".0") == "10000"
-            and line.statement_date <= cutoff_date
+        balance_by_account: dict[str, set[date]] = {
+            account: set() for account in cls._METHODOLOGY_BALANCE_ACCOUNTS
         }
         income_by_account: dict[str, set[date]] = {
             account: set() for account in cls._METHODOLOGY_INCOME_ACCOUNTS
         }
         for line in lines:
+            if line.entity.entity_id != entity_code or line.statement_date > cutoff_date:
+                continue
             account = line.account_code.removesuffix(".0")
             if (
-                line.entity.entity_id == entity_code
-                and line.statement_type is FinancialStatementType.INCOME_STATEMENT
-                and line.statement_date <= cutoff_date
+                line.statement_type is FinancialStatementType.BALANCE_SHEET
+                and account in balance_by_account
+            ):
+                balance_by_account[account].add(line.statement_date)
+            elif (
+                line.statement_type is FinancialStatementType.INCOME_STATEMENT
                 and account in income_by_account
             ):
                 income_by_account[account].add(line.statement_date)
@@ -487,10 +468,11 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
             cls._month_end_date(cutoff_date.year - 1, cutoff_date.month),
             cls._month_end_date(cutoff_date.year - 1, 12),
         }
-        return (
-            cutoff_date in balance_dates
-            and len(balance_dates) >= cls._AVERAGE_LOOKBACK_MONTHS + 1
-            and all(required_income_dates.issubset(dates) for dates in income_by_account.values())
+        return all(
+            cutoff_date in dates and len(dates) >= cls._AVERAGE_LOOKBACK_MONTHS + 1
+            for dates in balance_by_account.values()
+        ) and all(
+            required_income_dates.issubset(dates) for dates in income_by_account.values()
         )
 
     @staticmethod
