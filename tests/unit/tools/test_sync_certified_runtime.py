@@ -33,6 +33,22 @@ def test_validate_commit_requires_full_sha() -> None:
         sync._validate_commit("abc123")
 
 
+def test_local_archive_requires_existing_valid_zip(tmp_path: Path) -> None:
+    archive = tmp_path / "runtime.zip"
+    _build_archive(archive)
+
+    assert sync._local_archive(str(archive)) == archive.resolve()
+    assert sync._local_archive(None) is None
+
+    with pytest.raises(ValueError, match="No se encontró"):
+        sync._local_archive(str(tmp_path / "missing.zip"))
+
+    invalid = tmp_path / "invalid.zip"
+    invalid.write_text("not a zip", encoding="utf-8")
+    with pytest.raises(ValueError, match="no es un ZIP válido"):
+        sync._local_archive(str(invalid))
+
+
 def test_extract_aip_tree_copies_only_runtime(tmp_path: Path) -> None:
     archive = tmp_path / "runtime.zip"
     _build_archive(archive)
