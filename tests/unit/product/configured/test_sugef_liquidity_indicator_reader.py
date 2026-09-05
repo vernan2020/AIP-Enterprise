@@ -3,8 +3,12 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
-from aip.product.configured.configuration.configured_source_config import SUGEFFinancialSourceConfig
-from aip.product.configured.readers.sugef_liquidity_indicator_reader import SUGEFLiquidityIndicatorReader
+from aip.product.configured.configuration.configured_source_config import (
+    SUGEFFinancialSourceConfig,
+)
+from aip.product.configured.readers.sugef_liquidity_indicator_reader import (
+    SUGEFLiquidityIndicatorReader,
+)
 from aip.product.configured.readers.sugef_trial_balance_reader import (
     SUGEFTrialBalanceLine,
     SUGEFTrialBalanceReadResult,
