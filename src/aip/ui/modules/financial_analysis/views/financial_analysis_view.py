@@ -173,9 +173,7 @@ class FinancialAnalysisView(QWidget):
         layout.addWidget(summary)
 
         tables = QHBoxLayout()
-        self._rating_dimension_table = self._table(
-            ["Dimensión", "Puntaje", "Peso", "Cobertura"]
-        )
+        self._rating_dimension_table = self._table(["Dimensión", "Puntaje", "Peso", "Cobertura"])
         self._rating_dimension_table.setMinimumWidth(390)
         self._rating_indicator_table = self._table(
             [
