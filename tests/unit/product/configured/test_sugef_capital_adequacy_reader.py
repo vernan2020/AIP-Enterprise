@@ -48,6 +48,19 @@ def _workbook_bytes() -> bytes:
     return payload.getvalue()
 
 
+def _multilevel_workbook_bytes() -> bytes:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Suficiencia Patrimonial"
+    sheet.append(("Reporte del Indicador de Suficiencia Patrimonial", None))
+    sheet.append(("Sector / Entidad supervisada", "Indicador"))
+    sheet.append((None, "Suficiencia Patrimonial (%)"))
+    sheet.append(("COOPEALIANZA R.L. - Cooperativa de Ahorro y Crédito", 20.25))
+    payload = io.BytesIO()
+    workbook.save(payload)
+    return payload.getvalue()
+
+
 def test_reader_uses_latest_quarterly_cutoff_and_carries_it_to_analysis_date() -> None:
     workbook = _workbook_bytes()
     page = b"""
@@ -79,6 +92,34 @@ def test_reader_uses_latest_quarterly_cutoff_and_carries_it_to_analysis_date() -
     assert line.trace is not None
     assert "30/06/2026" in line.trace.file_path
     assert any("último corte trimestral oficial aplicable" in item for item in result.diagnostics)
+
+
+def test_reader_supports_multilevel_header_and_unique_extended_entity_name() -> None:
+    workbook = _multilevel_workbook_bytes()
+    page = b"""
+    <html><body>
+      <a href="/reportes/sp/Suficiencia%20Patrimonial%20(Junio%202026).xlsx">Junio 2026</a>
+    </body></html>
+    """
+
+    def fetch(url: str) -> bytes:
+        if url == SUGEFCapitalAdequacyReader.SOURCE_PAGE:
+            return page
+        return workbook
+
+    reader = SUGEFCapitalAdequacyReader(
+        SUGEFFinancialSourceConfig(),
+        api_client=_EntityApi(),  # type: ignore[arg-type]
+        fetch_bytes=fetch,
+    )
+
+    result = reader.read(date(2026, 7, 31))
+
+    assert result.source_cutoff == date(2026, 6, 30)
+    assert len(result.lines) == 1
+    assert result.lines[0].entity.entity_id == "3004045138"
+    assert result.lines[0].amount == Decimal("0.2025")
+    assert any("1 entidades cargadas" in item for item in result.diagnostics)
 
 
 def test_reader_does_not_use_future_quarter() -> None:
