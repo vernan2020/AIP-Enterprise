@@ -71,9 +71,7 @@ class InstitutionalEntityFlagService:
     ) -> tuple[FinancialStatementLine, FinancialStatementLine]:
         normalized = cls._normalize_entity_name(entity.name)
         state_guarantee = Decimal("1") if normalized in cls._STATE_GUARANTEE else Decimal("0")
-        proportional = (
-            Decimal("1") if normalized in cls._PROPORTIONAL_SUPERVISION else Decimal("0")
-        )
+        proportional = Decimal("1") if normalized in cls._PROPORTIONAL_SUPERVISION else Decimal("0")
         return (
             cls._line(
                 entity,
