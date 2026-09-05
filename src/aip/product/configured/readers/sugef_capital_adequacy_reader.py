@@ -11,8 +11,10 @@ from html.parser import HTMLParser
 from typing import Any, Callable
 from urllib.parse import urljoin
 from urllib.request import Request, urlopen
+from zipfile import BadZipFile
 
 from openpyxl import load_workbook
+from openpyxl.utils.exceptions import InvalidFileException
 
 from aip.domain.financial_analysis.models import (
     FinancialEntity,
@@ -137,7 +139,14 @@ class SUGEFCapitalAdequacyReader:
                 source_files=(workbook_url,),
                 diagnostics=tuple(diagnostics),
             )
-        except (OSError, ValueError, KeyError, InvalidOperation) as exc:
+        except (
+            OSError,
+            ValueError,
+            KeyError,
+            InvalidOperation,
+            BadZipFile,
+            InvalidFileException,
+        ) as exc:
             return SUGEFCapitalAdequacyReadResult(
                 (),
                 None,
@@ -208,42 +217,45 @@ class SUGEFCapitalAdequacyReader:
         output: list[FinancialStatementLine] = []
         diagnostics: list[str] = []
         unresolved: set[str] = set()
-        for sheet in workbook.worksheets:
-            rows = list(sheet.iter_rows(values_only=True))
-            header = cls._header(rows)
-            if header is None:
-                continue
-            header_row, entity_column, value_column = header
-            for row_number, row in enumerate(rows[header_row + 1 :], start=header_row + 2):
-                if entity_column >= len(row) or value_column >= len(row):
+        try:
+            for sheet in workbook.worksheets:
+                rows = list(sheet.iter_rows(values_only=True))
+                header = cls._header(rows)
+                if header is None:
                     continue
-                entity_name = cls._text(row[entity_column])
-                value = cls._decimal(row[value_column])
-                if not entity_name or value is None:
-                    continue
-                entity = entity_index.get(cls._normalize(entity_name))
-                if entity is None:
-                    unresolved.add(entity_name)
-                    continue
-                ratio = value / Decimal("100") if abs(value) > Decimal("1") else value
-                output.append(
-                    FinancialStatementLine(
-                        entity=entity,
-                        statement_date=analysis_cutoff,
-                        statement_type=FinancialStatementType.INDICATORS,
-                        account_code="SUGEF:CAPITAL_ADEQUACY",
-                        account_name="Suficiencia Patrimonial",
-                        amount=ratio,
-                        currency="RATIO",
-                        trace=SourceTrace(
-                            source_name="SUGEF · Suficiencia Patrimonial trimestral",
-                            source_url=workbook_url,
-                            file_path=f"corte oficial {source_cutoff:%d/%m/%Y}",
-                            sheet_name=sheet.title,
-                            row_number=row_number,
-                        ),
+                header_row, entity_column, value_column = header
+                for row_number, row in enumerate(rows[header_row + 1 :], start=header_row + 2):
+                    if entity_column >= len(row) or value_column >= len(row):
+                        continue
+                    entity_name = cls._text(row[entity_column])
+                    value = cls._decimal(row[value_column])
+                    if not entity_name or value is None:
+                        continue
+                    entity = entity_index.get(cls._normalize(entity_name))
+                    if entity is None:
+                        unresolved.add(entity_name)
+                        continue
+                    ratio = value / Decimal("100") if abs(value) > Decimal("1") else value
+                    output.append(
+                        FinancialStatementLine(
+                            entity=entity,
+                            statement_date=analysis_cutoff,
+                            statement_type=FinancialStatementType.INDICATORS,
+                            account_code="SUGEF:CAPITAL_ADEQUACY",
+                            account_name="Suficiencia Patrimonial",
+                            amount=ratio,
+                            currency="RATIO",
+                            trace=SourceTrace(
+                                source_name="SUGEF · Suficiencia Patrimonial trimestral",
+                                source_url=workbook_url,
+                                file_path=f"corte oficial {source_cutoff:%d/%m/%Y}",
+                                sheet_name=sheet.title,
+                                row_number=row_number,
+                            ),
+                        )
                     )
-                )
+        finally:
+            workbook.close()
         if unresolved:
             diagnostics.append(
                 "Suficiencia Patrimonial SUGEF: entidades sin correspondencia exacta en "
