@@ -102,9 +102,7 @@ def test_reader_supports_official_horizontal_history_matrix() -> None:
 
     assert result.source_cutoff == date(2026, 6, 30)
     assert len(result.lines) == 3
-    coopealianza = next(
-        line for line in result.lines if line.entity.entity_id == "3004045138"
-    )
+    coopealianza = next(line for line in result.lines if line.entity.entity_id == "3004045138")
     assert coopealianza.amount == Decimal("0.1952")
     assert coopealianza.statement_date == date(2026, 7, 31)
     assert coopealianza.trace is not None
@@ -112,8 +110,7 @@ def test_reader_supports_official_horizontal_history_matrix() -> None:
     assert coopealianza.trace.row_number == 4
     assert "30/06/2026" in coopealianza.trace.file_path
     assert any(
-        "matriz histórica horizontal por corte" in diagnostic
-        for diagnostic in result.diagnostics
+        "matriz histórica horizontal por corte" in diagnostic for diagnostic in result.diagnostics
     )
 
 
@@ -133,8 +130,6 @@ def test_reader_does_not_take_previous_quarter_from_horizontal_matrix() -> None:
 
     result = reader.read(date(2026, 7, 31))
 
-    coopealianza = next(
-        line for line in result.lines if line.entity.entity_id == "3004045138"
-    )
+    coopealianza = next(line for line in result.lines if line.entity.entity_id == "3004045138")
     assert coopealianza.amount != Decimal("0.2008")
     assert coopealianza.amount == Decimal("0.1952")
