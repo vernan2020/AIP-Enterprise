@@ -62,13 +62,13 @@ class SUGEFOnlyFinancialEntityRatingService(FinancialEntityRatingService):
         institutional = 0
         unavailable = 0
         for item in result.indicators:
-            source = (item.source_account or "").upper()
+            source = self._normalize(item.source_account or "")
             if "CALCULO 08ME14-01" in source:
                 calculated += 1
-            elif "SUGEF" in source or "API PUBLICA" in source:
-                published += 1
             elif "REGLA INSTITUCIONAL" in source:
                 institutional += 1
+            elif "SUGEF" in source or "API PUBLICA" in source:
+                published += 1
             elif item.value is None:
                 unavailable += 1
 
