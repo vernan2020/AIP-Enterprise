@@ -19,6 +19,14 @@ _PEERS = (
     ("3004000001", "COOPERATIVA PAR 1"),
     ("3004000002", "COOPERATIVA PAR 2"),
 )
+_ACCOUNT_NAMES = {
+    "10000": "ACTIVO TOTAL",
+    "25000": "PATRIMONIO TOTAL",
+    "30000": "RESULTADO FINAL",
+    "31000": "RESULTADO OPERACIONAL BRUTO",
+    "31300": "RESULTADO INTERMEDIACION FINANCIERA",
+    "32000": "GASTOS DE ADMINISTRACION",
+}
 
 
 class _OfficialStubClient(SUGEFOfficialFinancialApiClient):
@@ -26,99 +34,87 @@ class _OfficialStubClient(SUGEFOfficialFinancialApiClient):
         super().__init__(config)
         self.indicator_entity_codes: list[str] = []
         self.requests: list[tuple[str, str, str]] = []
+        self.filtered_requests: list[tuple[str, str, str, str]] = []
 
     @staticmethod
-    def _iso_period(period: str, *, default: str = "20260701") -> str:
-        token = period if len(period) == 8 and period.isdigit() else default
-        return f"{token[:4]}-{token[4:6]}-01T00:00:00"
+    def _period_tokens(periods: str) -> tuple[str, ...]:
+        if "-" in periods:
+            start_text, end_text = periods.split("-", 1)
+            start = date(int(start_text[:4]), int(start_text[4:6]), 1)
+            end = date(int(end_text[:4]), int(end_text[4:6]), 1)
+            values: list[str] = []
+            current = start
+            while current <= end:
+                values.append(f"{current:%Y%m%d}")
+                current = SUGEFOfficialFinancialApiClient._shift_month(current, 1)
+            return tuple(values)
+        return tuple(token for token in periods.split(",") if token)
+
+    @staticmethod
+    def _entities(entity_code: str) -> tuple[tuple[str, str], ...]:
+        if entity_code == "":
+            return _PEERS
+        return tuple(item for item in _PEERS if item[0] == entity_code)
+
+    @staticmethod
+    def _account_row(
+        *,
+        entity_code: str,
+        entity_name: str,
+        period: str,
+        account_code: str,
+        amount: float,
+    ) -> dict[str, object]:
+        return {
+            "codigoSector": "6",
+            "descripcionSector": "Cooperativas",
+            "codigoEntidad": entity_code,
+            "nombreEntidad": entity_name,
+            "periodo": f"{period[:4]}-{period[4:6]}-01T00:00:00",
+            "cuentaIASEF": account_code,
+            "nombreCuenta": _ACCOUNT_NAMES[account_code],
+            "saldoIASEF": amount,
+        }
 
     def _post_json(self, endpoint: str, payload: dict[str, object]) -> dict[str, object]:
         parameters = payload["parametrosEntidad"]
         assert isinstance(parameters, dict)
         entity_code = str(parameters["codigoEntidad"])
         period = str(parameters["periodos"])
+        account_code = str(parameters["codigoCuenta"])
         report = (
             "BALANCE"
             if "BalanceSituacion" in endpoint
             else "INCOME" if "EstadoResultados" in endpoint else "INDICATORS"
         )
         self.requests.append((entity_code, report, period))
+        if account_code:
+            self.filtered_requests.append((entity_code, report, period, account_code))
 
-        if "BalanceSituacion" in endpoint:
-            if entity_code == "":
-                statement_period = self._iso_period(period)
-                rows = [
-                    {
-                        "codigoSector": "6",
-                        "descripcionSector": "Cooperativas",
-                        "codigoEntidad": code,
-                        "nombreEntidad": name,
-                        "periodo": statement_period,
-                        "cuentaIASEF": "10000",
-                        "nombreCuenta": "ACTIVO TOTAL",
-                        "saldoIASEF": 500_000_000_000 + index,
-                    }
-                    for index, (code, name) in enumerate(_PEERS)
-                ]
-            else:
-                assert entity_code == "3004045138"
-                rows = [
-                    {
-                        "codigoSector": "6",
-                        "descripcionSector": "Cooperativas",
-                        "codigoEntidad": "3004045138",
-                        "nombreEntidad": "COOPEALIANZA R.L.",
-                        "periodo": f"{year:04d}-{month:02d}-01T00:00:00",
-                        "cuentaIASEF": "10000",
-                        "nombreCuenta": "ACTIVO TOTAL",
-                        "saldoIASEF": 800_000_000_000 + index,
-                    }
-                    for index, (year, month) in enumerate(
-                        (
-                            (2025, 8),
-                            (2025, 9),
-                            (2025, 10),
-                            (2025, 11),
-                            (2025, 12),
-                            (2026, 1),
-                            (2026, 2),
-                            (2026, 3),
-                            (2026, 4),
-                            (2026, 5),
-                            (2026, 6),
-                            (2026, 7),
-                        )
-                    )
-                ]
-            return {
-                "tieneError": False,
-                "listaBalanceSituacionAnalisisFinancieroEntidad": rows,
-            }
-
-        if "EstadoResultados" in endpoint:
-            peers = _PEERS if entity_code == "" else (_PEERS[0],)
-            statement_period = (
-                self._iso_period(period) if entity_code == "" else "2026-07-01T00:00:00"
+        if report in {"BALANCE", "INCOME"}:
+            default_account = "10000" if report == "BALANCE" else "30000"
+            resolved_account = account_code or default_account
+            entities = self._entities(entity_code)
+            rows = [
+                self._account_row(
+                    entity_code=code,
+                    entity_name=name,
+                    period=period_token,
+                    account_code=resolved_account,
+                    amount=800_000_000_000 + entity_index + period_index,
+                )
+                for period_index, period_token in enumerate(self._period_tokens(period))
+                for entity_index, (code, name) in enumerate(entities)
+            ]
+            list_key = (
+                "listaBalanceSituacionAnalisisFinancieroEntidad"
+                if report == "BALANCE"
+                else "listaEstadoResultadosAnalisisFinancieroEntidad"
             )
-            return {
-                "tieneError": False,
-                "listaEstadoResultadosAnalisisFinancieroEntidad": [
-                    {
-                        "codigoSector": "6",
-                        "descripcionSector": "Cooperativas",
-                        "codigoEntidad": code,
-                        "nombreEntidad": name,
-                        "periodo": statement_period,
-                        "cuentaIASEF": "30000",
-                        "nombreCuenta": "RESULTADO FINAL",
-                        "saldoIASEF": 8_000_000_000 + index,
-                    }
-                    for index, (code, name) in enumerate(peers)
-                ],
-            }
+            return {"tieneError": False, list_key: rows}
 
         self.indicator_entity_codes.append(entity_code)
-        peers = _PEERS if entity_code == "" else (_PEERS[0],)
+        peers = self._entities(entity_code)
         values = {
             "3004045138": 1.10,
             "3004000001": 0.90,
@@ -157,7 +153,7 @@ class _PublicationLagStubClient(_OfficialStubClient):
         assert isinstance(parameters, dict)
         entity_code = str(parameters["codigoEntidad"])
         period = str(parameters["periodos"])
-        if entity_code == "3004045138" and "20260801" in period and "BalanceSituacion" in endpoint:
+        if entity_code == "3004045138" and period == "20260801" and "BalanceSituacion" in endpoint:
             self.requests.append((entity_code, "BALANCE", period))
             raise URLError("August accounting cutoff not published")
         return super()._post_json(endpoint, payload)
@@ -185,26 +181,29 @@ def test_official_api_uses_direct_entity_and_blank_entity_for_indicators() -> No
     assert any("universo comparativo SFN" in message for message in result.diagnostics)
 
 
-def test_official_api_requests_monthly_methodology_history_for_sfn_peers() -> None:
+def test_official_api_requests_filtered_methodology_history_for_sfn_peers() -> None:
     client = _OfficialStubClient(
         SUGEFFinancialSourceConfig(api_retries=0, api_entity_codes=("3004045138",))
     )
 
     result = client.read(date(2026, 7, 31))
 
-    peer_balance_requests = {
-        period
-        for entity_code, report, period in client.requests
-        if entity_code == "" and report == "BALANCE"
+    blank_filtered = {
+        (report, account_code)
+        for entity_code, report, _period, account_code in client.filtered_requests
+        if entity_code == ""
     }
-    assert peer_balance_requests == set(client._peer_balance_periods(date(2026, 7, 31)))
-
-    peer_income_requests = {
-        period
-        for entity_code, report, period in client.requests
-        if entity_code == "" and report == "INCOME"
+    assert blank_filtered == {
+        ("BALANCE", "10000"),
+        ("BALANCE", "25000"),
+        ("INCOME", "30000"),
+        ("INCOME", "31000"),
+        ("INCOME", "31300"),
+        ("INCOME", "32000"),
     }
-    assert peer_income_requests == set(client._peer_income_periods(date(2026, 7, 31)))
+    assert len(
+        [request for request in client.filtered_requests if request[0] == ""]
+    ) == 6
     assert ("", "INDICATORS", "20260701") in client.requests
     assert ("3004045138", "INDICATORS", "20260701") in client.requests
 
@@ -214,6 +213,7 @@ def test_official_api_requests_monthly_methodology_history_for_sfn_peers() -> No
             for line in result.lines
             if line.entity.entity_id == code
             and line.statement_type is FinancialStatementType.BALANCE_SHEET
+            and line.account_code == "10000"
         }
         assert len(balance_dates) == 12
         assert min(balance_dates) == date(2025, 8, 31)
