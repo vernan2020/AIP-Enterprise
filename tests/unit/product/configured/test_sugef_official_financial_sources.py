@@ -201,9 +201,7 @@ def test_official_api_requests_filtered_methodology_history_for_sfn_peers() -> N
         ("INCOME", "31300"),
         ("INCOME", "32000"),
     }
-    assert len(
-        [request for request in client.filtered_requests if request[0] == ""]
-    ) == 6
+    assert len([request for request in client.filtered_requests if request[0] == ""]) == 6
     assert ("", "INDICATORS", "20260701") in client.requests
     assert ("3004045138", "INDICATORS", "20260701") in client.requests
 
