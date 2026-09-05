@@ -173,9 +173,7 @@ def main(argv: list[str] | None = None) -> int:
     print("=== AIP ENTERPRISE · SINCRONIZACIÓN CERTIFICADA ===")
     print(f"Proyecto: {project_root}")
     print(f"Commit objetivo: {commit}")
-    print(
-        "Alcance: src\\aip únicamente; .venv, datos y configuración local no se modifican."
-    )
+    print("Alcance: src\\aip únicamente; .venv, datos y configuración local no se modifican.")
 
     with tempfile.TemporaryDirectory(prefix="aip_certified_sync_") as temp_dir:
         temp = Path(temp_dir)
