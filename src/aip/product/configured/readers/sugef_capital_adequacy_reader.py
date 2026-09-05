@@ -217,11 +217,13 @@ class SUGEFCapitalAdequacyReader:
         output: list[FinancialStatementLine] = []
         diagnostics: list[str] = []
         unresolved: set[str] = set()
+        sheets_without_header: list[str] = []
         try:
             for sheet in workbook.worksheets:
                 rows = list(sheet.iter_rows(values_only=True))
                 header = cls._header(rows)
                 if header is None:
+                    sheets_without_header.append(sheet.title)
                     continue
                 header_row, entity_column, value_column = header
                 for row_number, row in enumerate(rows[header_row + 1 :], start=header_row + 2):
@@ -231,7 +233,7 @@ class SUGEFCapitalAdequacyReader:
                     value = cls._decimal(row[value_column])
                     if not entity_name or value is None:
                         continue
-                    entity = entity_index.get(cls._normalize(entity_name))
+                    entity = cls._resolve_entity(entity_name, entity_index)
                     if entity is None:
                         unresolved.add(entity_name)
                         continue
@@ -258,10 +260,16 @@ class SUGEFCapitalAdequacyReader:
             workbook.close()
         if unresolved:
             diagnostics.append(
-                "Suficiencia Patrimonial SUGEF: entidades sin correspondencia exacta en "
+                "Suficiencia Patrimonial SUGEF: entidades sin correspondencia inequívoca en "
                 f"catálogo oficial: {', '.join(sorted(unresolved))}."
             )
         if not output:
+            if sheets_without_header:
+                diagnostics.append(
+                    "Suficiencia Patrimonial SUGEF: no se identificó una combinación de "
+                    "encabezados de entidad y suficiencia patrimonial en las hojas: "
+                    f"{', '.join(sheets_without_header)}."
+                )
             diagnostics.append(
                 "Suficiencia Patrimonial SUGEF: el XLSX no produjo indicadores utilizables."
             )
@@ -273,26 +281,71 @@ class SUGEFCapitalAdequacyReader:
 
     @classmethod
     def _header(cls, rows: list[tuple[Any, ...]]) -> tuple[int, int, int] | None:
-        for row_index, row in enumerate(rows[:30]):
-            normalized = [cls._normalize(cls._text(value)) for value in row]
-            value_candidates = [
-                index
-                for index, value in enumerate(normalized)
-                if "SUFICIENCIA PATRIMONIAL" in value
-            ]
-            entity_candidates = [
-                index
-                for index, value in enumerate(normalized)
-                if value
-                in {
-                    "ENTIDAD",
-                    "NOMBRE ENTIDAD",
-                    "NOMBRE DE LA ENTIDAD",
-                    "ALIAS ENTIDAD",
-                }
-            ]
-            if value_candidates and entity_candidates:
-                return row_index, entity_candidates[0], value_candidates[0]
+        entity_candidates: list[tuple[int, int]] = []
+        value_candidates: list[tuple[int, int]] = []
+        for row_index, row in enumerate(rows[:60]):
+            for column_index, raw_value in enumerate(row):
+                value = cls._normalize(cls._text(raw_value))
+                if not value:
+                    continue
+                if cls._is_entity_header(value):
+                    entity_candidates.append((row_index, column_index))
+                if cls._is_capital_adequacy_header(value):
+                    value_candidates.append((row_index, column_index))
+
+        compatible: list[tuple[int, int, int, int]] = []
+        for entity_row, entity_column in entity_candidates:
+            for value_row, value_column in value_candidates:
+                distance = abs(entity_row - value_row)
+                if distance <= 4 and entity_column != value_column:
+                    compatible.append(
+                        (distance, max(entity_row, value_row), entity_column, value_column)
+                    )
+        if not compatible:
+            return None
+        _, header_row, entity_column, value_column = min(compatible)
+        return header_row, entity_column, value_column
+
+    @staticmethod
+    def _is_entity_header(value: str) -> bool:
+        if value in {
+            "ENTIDAD",
+            "NOMBRE ENTIDAD",
+            "NOMBRE DE LA ENTIDAD",
+            "ALIAS ENTIDAD",
+            "INSTITUCION",
+            "NOMBRE INSTITUCION",
+            "NOMBRE DE LA INSTITUCION",
+        }:
+            return True
+        return len(value) <= 80 and ("ENTIDAD" in value or "INSTITUCION" in value)
+
+    @staticmethod
+    def _is_capital_adequacy_header(value: str) -> bool:
+        if "SUFICIENCIA" in value and "PATRIMONIAL" in value:
+            return True
+        compact = value.replace(" ", "").replace("-", "")
+        return compact in {"ISP", "ISFP", "SP"}
+
+    @classmethod
+    def _resolve_entity(
+        cls,
+        entity_name: str,
+        entity_index: dict[str, FinancialEntity],
+    ) -> FinancialEntity | None:
+        normalized = cls._normalize(entity_name)
+        exact = entity_index.get(normalized)
+        if exact is not None:
+            return exact
+
+        candidates: dict[str, FinancialEntity] = {}
+        for alias, entity in entity_index.items():
+            if len(alias) < 5:
+                continue
+            if alias in normalized or normalized in alias:
+                candidates[entity.entity_id] = entity
+        if len(candidates) == 1:
+            return next(iter(candidates.values()))
         return None
 
     @staticmethod
