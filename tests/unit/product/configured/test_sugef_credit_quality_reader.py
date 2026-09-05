@@ -21,10 +21,12 @@ class _StubPublicApiClient:
         *,
         missing_band: str | None = None,
         second_complete_normative: bool = False,
+        second_missing_band: str | None = None,
         duplicate_current_row: bool = False,
     ) -> None:
         self.missing_band = missing_band
         self.second_complete_normative = second_complete_normative
+        self.second_missing_band = second_missing_band
         self.duplicate_current_row = duplicate_current_row
         self.calls: list[tuple[str, str, str]] = []
 
@@ -81,7 +83,7 @@ class _StubPublicApiClient:
                     }
                 )
             if self.second_complete_normative:
-                rows.extend(self._rows("2"))
+                rows.extend(self._rows("2", missing_band=self.second_missing_band))
         elif entity_code == "":
             # El scope SFN incluye de nuevo a Coopealianza. Este registro no debe
             # sumarse porque la entidad ya fue consultada directamente.
@@ -160,7 +162,7 @@ def test_reader_leaves_credit_quality_unavailable_when_one_band_is_missing() -> 
     assert any("JUDICIAL_COLLECTION" in item for item in result.diagnostics)
 
 
-def test_reader_refuses_to_choose_between_multiple_complete_normatives() -> None:
+def test_reader_aggregates_multiple_complete_normatives_for_total_entity_portfolio() -> None:
     api = _StubPublicApiClient(second_complete_normative=True)
     reader = SUGEFCreditQualityReader(
         SUGEFFinancialSourceConfig(api_entity_codes=("3004045138",)),
@@ -169,9 +171,27 @@ def test_reader_refuses_to_choose_between_multiple_complete_normatives() -> None
 
     result = reader.read(date(2026, 7, 31))
 
+    assert _indicators(result) == {
+        "CALC:CURRENT_PORTFOLIO": Decimal("0.9"),
+        "CALC:DELINQUENCY_90": Decimal("0.05"),
+    }
+    assert any("normativas SUGEF completas (1, 2)" in item for item in result.diagnostics)
+    assert all(line.trace is not None for line in result.lines)
+    assert all("normativas 1, 2" in line.trace.file_path for line in result.lines if line.trace)
+
+
+def test_reader_does_not_drop_an_incomplete_reported_normative() -> None:
+    api = _StubPublicApiClient(second_complete_normative=True, second_missing_band="7")
+    reader = SUGEFCreditQualityReader(
+        SUGEFFinancialSourceConfig(api_entity_codes=("3004045138",)),
+        api_client=api,  # type: ignore[arg-type]
+    )
+
+    result = reader.read(date(2026, 7, 31))
+
     assert result.lines == ()
-    assert any("más de una normativa completa (1, 2)" in item for item in result.diagnostics)
-    assert any("no asume cuál debe prevalecer" in item for item in result.diagnostics)
+    assert any("normativa 2" in item for item in result.diagnostics)
+    assert any("JUDICIAL_COLLECTION" in item for item in result.diagnostics)
 
 
 def test_reader_does_not_apply_current_credit_family_before_2024() -> None:
