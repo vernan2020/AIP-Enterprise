@@ -9,6 +9,9 @@ from aip.domain.financial_analysis.models import (
 from aip.product.configured.configuration.configured_source_config import (
     SUGEFFinancialSourceConfig,
 )
+from aip.product.configured.readers.sugef_capital_adequacy_matrix_reader import (
+    SUGEFCapitalAdequacyMatrixReader,
+)
 from aip.product.configured.readers.sugef_capital_adequacy_reader import (
     SUGEFCapitalAdequacyReader,
 )
@@ -60,7 +63,7 @@ class SUGEFOfficialFinancialStatementReader(SUGEFFinancialStatementReader):
         )
         self._credit_quality_reader = credit_quality_reader or SUGEFCreditQualityReader(config)
         self._liquidity_reader = liquidity_reader or SUGEFLiquidityIndicatorReader(config)
-        self._capital_adequacy_reader = capital_adequacy_reader or SUGEFCapitalAdequacyReader(
+        self._capital_adequacy_reader = capital_adequacy_reader or SUGEFCapitalAdequacyMatrixReader(
             config
         )
 
