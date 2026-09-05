@@ -30,9 +30,7 @@ class _PeerRecoverySpyClient(SUGEFOfficialFinancialApiClient):
                 api_entity_codes=(PRIMARY,),
             )
         )
-        self.filtered_jobs: list[
-            tuple[str, str, str, str, FinancialStatementType, str]
-        ] = []
+        self.filtered_jobs: list[tuple[str, str, str, str, FinancialStatementType, str]] = []
 
     def _execute_filtered_jobs(
         self,
