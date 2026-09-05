@@ -28,9 +28,7 @@ _ACCOUNT_NAMES = {
 
 class _FilteredHistoryStub(SUGEFOfficialFinancialApiClient):
     def __init__(self) -> None:
-        super().__init__(
-            SUGEFFinancialSourceConfig(api_retries=0, api_entity_codes=(_PRIMARY,))
-        )
+        super().__init__(SUGEFFinancialSourceConfig(api_retries=0, api_entity_codes=(_PRIMARY,)))
         self.requests: list[tuple[str, str, str, str]] = []
 
     @staticmethod
