@@ -88,9 +88,7 @@ class FinancialAnalysisViewModel:
     rating_methodology: str = "08ME14-01"
     rating_dimensions: tuple[RatingDimensionRow, ...] = field(default_factory=tuple)
     rating_indicators: tuple[RatingIndicatorRow, ...] = field(default_factory=tuple)
-    indicator_reconciliations: tuple[IndicatorReconciliationRow, ...] = field(
-        default_factory=tuple
-    )
+    indicator_reconciliations: tuple[IndicatorReconciliationRow, ...] = field(default_factory=tuple)
     rating_diagnostics: tuple[str, ...] = field(default_factory=tuple)
     diagnostics: tuple[str, ...] = field(default_factory=tuple)
     source_name: str = "SUGEF"
