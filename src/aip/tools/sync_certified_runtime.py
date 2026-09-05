@@ -210,10 +210,7 @@ def main(argv: list[str] | None = None) -> int:
 
             staged_aip = _extract_aip_tree(archive, stage)
             if args.dry_run:
-                print(
-                    "DRY-RUN OK: estructura del runtime válida; "
-                    "no se modificó el proyecto."
-                )
+                print("DRY-RUN OK: estructura del runtime válida; " "no se modificó el proyecto.")
                 return 0
 
             backup = _install_runtime(project_root, staged_aip, commit)
