@@ -67,6 +67,7 @@ def test_install_runtime_creates_backup_and_commit_marker(
     current = project / "src" / "aip"
     current.mkdir(parents=True)
     (current / "__init__.py").write_text("VALUE = 'old'\n", encoding="utf-8")
+    (current / "stale.py").write_text("STALE = True\n", encoding="utf-8")
     (project / "pyproject.toml").write_text(
         "[project]\nname='aip-test'\n",
         encoding="utf-8",
@@ -76,6 +77,7 @@ def test_install_runtime_creates_backup_and_commit_marker(
     staged = tmp_path / "staged" / "aip"
     staged.mkdir(parents=True)
     (staged / "__init__.py").write_text("VALUE = 'new'\n", encoding="utf-8")
+    (staged / "new.py").write_text("NEW = True\n", encoding="utf-8")
     monkeypatch.setattr(sync, "_verify_runtime", lambda _root: None)
 
     backup = sync._install_runtime(project, staged, _COMMIT)
@@ -83,12 +85,15 @@ def test_install_runtime_creates_backup_and_commit_marker(
     assert (project / "src" / "aip" / "__init__.py").read_text(
         encoding="utf-8"
     ) == "VALUE = 'new'\n"
+    assert (project / "src" / "aip" / "new.py").is_file()
+    assert not (project / "src" / "aip" / "stale.py").exists()
     assert (backup / "__init__.py").read_text(encoding="utf-8") == "VALUE = 'old'\n"
+    assert (backup / "stale.py").is_file()
     assert (project / "AIP_SYNC_COMMIT.txt").read_text(encoding="utf-8") == _COMMIT + "\n"
     assert (project / "local-data.txt").read_text(encoding="utf-8") == "preserve"
 
 
-def test_install_runtime_rolls_back_when_verification_fails(
+def test_install_runtime_does_not_rename_current_directory(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     project = tmp_path / "project"
@@ -99,6 +104,31 @@ def test_install_runtime_rolls_back_when_verification_fails(
     staged = tmp_path / "staged" / "aip"
     staged.mkdir(parents=True)
     (staged / "__init__.py").write_text("VALUE = 'new'\n", encoding="utf-8")
+    monkeypatch.setattr(sync, "_verify_runtime", lambda _root: None)
+
+    def forbidden_rename(self: Path, _target: Path) -> Path:
+        raise AssertionError(f"rename no debe utilizarse para {self}")
+
+    monkeypatch.setattr(Path, "rename", forbidden_rename)
+
+    sync._install_runtime(project, staged, _COMMIT)
+
+    assert (current / "__init__.py").read_text(encoding="utf-8") == "VALUE = 'new'\n"
+
+
+def test_install_runtime_rolls_back_when_verification_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    project = tmp_path / "project"
+    current = project / "src" / "aip"
+    current.mkdir(parents=True)
+    (current / "__init__.py").write_text("VALUE = 'old'\n", encoding="utf-8")
+    (current / "old_only.py").write_text("OLD = True\n", encoding="utf-8")
+
+    staged = tmp_path / "staged" / "aip"
+    staged.mkdir(parents=True)
+    (staged / "__init__.py").write_text("VALUE = 'new'\n", encoding="utf-8")
+    (staged / "new_only.py").write_text("NEW = True\n", encoding="utf-8")
 
     def fail_verification(_root: Path) -> None:
         raise RuntimeError("verification failed")
@@ -111,4 +141,6 @@ def test_install_runtime_rolls_back_when_verification_fails(
     assert (project / "src" / "aip" / "__init__.py").read_text(
         encoding="utf-8"
     ) == "VALUE = 'old'\n"
+    assert (project / "src" / "aip" / "old_only.py").is_file()
+    assert not (project / "src" / "aip" / "new_only.py").exists()
     assert not (project / "AIP_SYNC_COMMIT.txt").exists()
