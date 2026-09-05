@@ -82,16 +82,13 @@ def test_reconciliation_distinguishes_match_tolerance_mismatch_and_source_gaps()
     assert by_code["ROE"].status is FinancialIndicatorReconciliationStatus.TOLERANCE
     assert by_code["CURRENT_PORTFOLIO"].status is FinancialIndicatorReconciliationStatus.MISMATCH
     assert (
-        by_code["CAPITAL_ADEQUACY"].status
-        is FinancialIndicatorReconciliationStatus.PUBLISHED_ONLY
+        by_code["CAPITAL_ADEQUACY"].status is FinancialIndicatorReconciliationStatus.PUBLISHED_ONLY
     )
     assert (
-        by_code["DELINQUENCY_90"].status
-        is FinancialIndicatorReconciliationStatus.CALCULATED_ONLY
+        by_code["DELINQUENCY_90"].status is FinancialIndicatorReconciliationStatus.CALCULATED_ONLY
     )
     assert (
-        by_code["COVERAGE_ARREARS"].status
-        is FinancialIndicatorReconciliationStatus.MISSING_INPUT
+        by_code["COVERAGE_ARREARS"].status is FinancialIndicatorReconciliationStatus.MISSING_INPUT
     )
     assert by_code["CURRENT_PORTFOLIO"].difference == Decimal("-0.0100")
 
