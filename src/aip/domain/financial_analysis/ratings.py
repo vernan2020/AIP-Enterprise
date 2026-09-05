@@ -243,6 +243,8 @@ class FinancialEntityRatingService:
             source_account = selected_line.account_code or selected_line.account_name
             if selected_line.trace is not None:
                 source_account = f"{source_account} · {selected_line.trace.source_name}"
+                if definition.code == "CAPITAL_ADEQUACY" and selected_line.trace.file_path:
+                    source_account = f"{source_account} · {selected_line.trace.file_path}"
         if definition.direction is RatingDirection.BINARY:
             if value not in {Decimal("0"), Decimal("1")}:
                 value = None
