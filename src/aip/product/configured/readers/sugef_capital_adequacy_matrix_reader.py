@@ -67,9 +67,7 @@ class SUGEFCapitalAdequacyMatrixReader(SUGEFCapitalAdequacyReader):
         if minimum_matches == 0:
             return ()
 
-        candidates: list[
-            tuple[int, int, int, int, tuple[_SheetObservation, ...]]
-        ] = []
+        candidates: list[tuple[int, int, int, int, tuple[_SheetObservation, ...]]] = []
 
         for header_row, row in enumerate(rows[:20]):
             cutoff_columns = [
