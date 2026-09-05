@@ -48,9 +48,7 @@ def test_capital_adequacy_rating_source_preserves_official_quarterly_cutoff() ->
         selected_entity_id="1",
         cutoff_date=_CUTOFF,
     )
-    capital_adequacy = next(
-        item for item in rating.indicators if item.code == "CAPITAL_ADEQUACY"
-    )
+    capital_adequacy = next(item for item in rating.indicators if item.code == "CAPITAL_ADEQUACY")
 
     assert capital_adequacy.value == Decimal("0.20")
     assert capital_adequacy.source_account is not None
