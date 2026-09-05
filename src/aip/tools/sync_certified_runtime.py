@@ -96,6 +96,36 @@ def _extract_aip_tree(archive_path: Path, destination: Path) -> Path:
     return extracted_root
 
 
+def _remove_path(path: Path) -> None:
+    if path.is_dir() and not path.is_symlink():
+        shutil.rmtree(path)
+    else:
+        path.unlink(missing_ok=True)
+
+
+def _mirror_tree(source: Path, destination: Path) -> None:
+    """Mirror source into destination without renaming destination itself."""
+    destination.mkdir(parents=True, exist_ok=True)
+    source_names = {entry.name for entry in source.iterdir()}
+
+    for existing in destination.iterdir():
+        if existing.name not in source_names:
+            _remove_path(existing)
+
+    for source_entry in source.iterdir():
+        target = destination / source_entry.name
+        if source_entry.is_dir() and not source_entry.is_symlink():
+            if target.exists() and (not target.is_dir() or target.is_symlink()):
+                _remove_path(target)
+            _mirror_tree(source_entry, target)
+            continue
+
+        if target.exists() and target.is_dir():
+            _remove_path(target)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source_entry, target)
+
+
 def _verify_runtime(project_root: Path) -> None:
     env = os.environ.copy()
     src_path = str(project_root / "src")
@@ -158,24 +188,40 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _restore_marker(marker: Path, previous: bytes | None) -> None:
+    if previous is None:
+        marker.unlink(missing_ok=True)
+    else:
+        marker.write_bytes(previous)
+
+
 def _install_runtime(project_root: Path, staged_aip: Path, commit: str) -> Path:
     current = project_root / "src" / "aip"
     backup_root = project_root / "_backup"
     backup_root.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     backup = backup_root / f"aip_{timestamp}_{commit[:12]}"
+    marker = project_root / "AIP_SYNC_COMMIT.txt"
+    previous_marker = marker.read_bytes() if marker.is_file() else None
 
     if backup.exists():
         raise RuntimeError(f"Ya existe el respaldo {backup}")
 
-    current.rename(backup)
+    shutil.copytree(current, backup)
     try:
-        shutil.copytree(staged_aip, current)
+        _mirror_tree(staged_aip, current)
         _verify_runtime(project_root)
-        (project_root / "AIP_SYNC_COMMIT.txt").write_text(commit + "\n", encoding="utf-8")
-    except Exception:
-        shutil.rmtree(current, ignore_errors=True)
-        backup.rename(current)
+        marker.write_text(commit + "\n", encoding="utf-8")
+    except Exception as exc:
+        try:
+            _mirror_tree(backup, current)
+            _restore_marker(marker, previous_marker)
+        except Exception as rollback_exc:
+            raise RuntimeError(
+                "Falló la sincronización y también el rollback automático: "
+                f"{type(rollback_exc).__name__}: {rollback_exc}. "
+                f"El respaldo íntegro permanece en {backup}"
+            ) from exc
         raise
     return backup
 
