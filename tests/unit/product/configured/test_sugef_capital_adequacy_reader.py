@@ -61,6 +61,41 @@ def _multilevel_workbook_bytes() -> bytes:
     return payload.getvalue()
 
 
+def _historical_ispe_workbook_bytes() -> bytes:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Histórico"
+    sheet.append(("Entidad", "Fecha de Corte", "ISPE"))
+    sheet.append(("COOPEALIANZA R.L.", date(2026, 3, 31), 19.75))
+    sheet.append(("COOPEALIANZA R.L.", date(2026, 6, 30), 20.25))
+    payload = io.BytesIO()
+    workbook.save(payload)
+    return payload.getvalue()
+
+
+def _inferred_flat_workbook_bytes(*, ambiguous: bool = False) -> bytes:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Histórico"
+    if ambiguous:
+        sheet.append(("codigo", "corte_reportado", "valor_a", "valor_b"))
+        sheet.append(("3004045138", date(2026, 6, 30), 20.25, 14.75))
+    else:
+        sheet.append(("codigo", "corte_reportado", "valor"))
+        sheet.append(("3004045138", date(2026, 6, 30), 20.25))
+    payload = io.BytesIO()
+    workbook.save(payload)
+    return payload.getvalue()
+
+
+def _page() -> bytes:
+    return b"""
+    <html><body>
+      <a href="/reportes/sp/Suficiencia%20Patrimonial%20(Junio%202026).xlsx">Junio 2026</a>
+    </body></html>
+    """
+
+
 def test_reader_uses_latest_quarterly_cutoff_and_carries_it_to_analysis_date() -> None:
     workbook = _workbook_bytes()
     page = b"""
@@ -96,15 +131,10 @@ def test_reader_uses_latest_quarterly_cutoff_and_carries_it_to_analysis_date() -
 
 def test_reader_supports_multilevel_header_and_unique_extended_entity_name() -> None:
     workbook = _multilevel_workbook_bytes()
-    page = b"""
-    <html><body>
-      <a href="/reportes/sp/Suficiencia%20Patrimonial%20(Junio%202026).xlsx">Junio 2026</a>
-    </body></html>
-    """
 
     def fetch(url: str) -> bytes:
         if url == SUGEFCapitalAdequacyReader.SOURCE_PAGE:
-            return page
+            return _page()
         return workbook
 
     reader = SUGEFCapitalAdequacyReader(
@@ -122,17 +152,78 @@ def test_reader_supports_multilevel_header_and_unique_extended_entity_name() -> 
     assert any("1 entidades cargadas" in item for item in result.diagnostics)
 
 
-def test_reader_does_not_use_future_quarter() -> None:
-    workbook = _workbook_bytes()
-    page = b"""
-    <html><body>
-      <a href="/reportes/sp/Suficiencia%20Patrimonial%20(Junio%202026).xlsx">Junio 2026</a>
-    </body></html>
-    """
+def test_reader_supports_official_ispe_header_and_filters_historical_cutoff() -> None:
+    workbook = _historical_ispe_workbook_bytes()
 
     def fetch(url: str) -> bytes:
         if url == SUGEFCapitalAdequacyReader.SOURCE_PAGE:
-            return page
+            return _page()
+        return workbook
+
+    reader = SUGEFCapitalAdequacyReader(
+        SUGEFFinancialSourceConfig(),
+        api_client=_EntityApi(),  # type: ignore[arg-type]
+        fetch_bytes=fetch,
+    )
+
+    result = reader.read(date(2026, 7, 31))
+
+    assert len(result.lines) == 1
+    line = result.lines[0]
+    assert line.amount == Decimal("0.2025")
+    assert line.trace is not None
+    assert line.trace.sheet_name == "Histórico"
+    assert line.trace.row_number == 3
+    assert any("encabezados explícitos/ISPE" in item for item in result.diagnostics)
+
+
+def test_reader_can_infer_unambiguous_flat_historical_layout() -> None:
+    workbook = _inferred_flat_workbook_bytes()
+
+    def fetch(url: str) -> bytes:
+        if url == SUGEFCapitalAdequacyReader.SOURCE_PAGE:
+            return _page()
+        return workbook
+
+    reader = SUGEFCapitalAdequacyReader(
+        SUGEFFinancialSourceConfig(),
+        api_client=_EntityApi(),  # type: ignore[arg-type]
+        fetch_bytes=fetch,
+    )
+
+    result = reader.read(date(2026, 7, 31))
+
+    assert len(result.lines) == 1
+    assert result.lines[0].amount == Decimal("0.2025")
+    assert any("inferencia estructural controlada" in item for item in result.diagnostics)
+
+
+def test_reader_refuses_ambiguous_inferred_numeric_columns() -> None:
+    workbook = _inferred_flat_workbook_bytes(ambiguous=True)
+
+    def fetch(url: str) -> bytes:
+        if url == SUGEFCapitalAdequacyReader.SOURCE_PAGE:
+            return _page()
+        return workbook
+
+    reader = SUGEFCapitalAdequacyReader(
+        SUGEFFinancialSourceConfig(),
+        api_client=_EntityApi(),  # type: ignore[arg-type]
+        fetch_bytes=fetch,
+    )
+
+    result = reader.read(date(2026, 7, 31))
+
+    assert result.lines == ()
+    assert any("no se identificaron observaciones inequívocas" in item for item in result.diagnostics)
+
+
+def test_reader_does_not_use_future_quarter() -> None:
+    workbook = _workbook_bytes()
+
+    def fetch(url: str) -> bytes:
+        if url == SUGEFCapitalAdequacyReader.SOURCE_PAGE:
+            return _page()
         return workbook
 
     reader = SUGEFCapitalAdequacyReader(
@@ -148,15 +239,9 @@ def test_reader_does_not_use_future_quarter() -> None:
 
 
 def test_reader_degrades_invalid_quarterly_workbook_to_unavailable() -> None:
-    page = b"""
-    <html><body>
-      <a href="/reportes/sp/Suficiencia%20Patrimonial%20(Junio%202026).xlsx">Junio 2026</a>
-    </body></html>
-    """
-
     def fetch(url: str) -> bytes:
         if url == SUGEFCapitalAdequacyReader.SOURCE_PAGE:
-            return page
+            return _page()
         return b"<html>not an xlsx</html>"
 
     reader = SUGEFCapitalAdequacyReader(
