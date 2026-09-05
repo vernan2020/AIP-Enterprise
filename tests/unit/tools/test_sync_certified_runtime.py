@@ -64,13 +64,11 @@ def test_install_runtime_creates_backup_and_commit_marker(
 
     backup = sync._install_runtime(project, staged, _COMMIT)
 
-    assert (
-        project / "src" / "aip" / "__init__.py"
-    ).read_text(encoding="utf-8") == "VALUE = 'new'\n"
+    assert (project / "src" / "aip" / "__init__.py").read_text(
+        encoding="utf-8"
+    ) == "VALUE = 'new'\n"
     assert (backup / "__init__.py").read_text(encoding="utf-8") == "VALUE = 'old'\n"
-    assert (
-        project / "AIP_SYNC_COMMIT.txt"
-    ).read_text(encoding="utf-8") == _COMMIT + "\n"
+    assert (project / "AIP_SYNC_COMMIT.txt").read_text(encoding="utf-8") == _COMMIT + "\n"
     assert (project / "local-data.txt").read_text(encoding="utf-8") == "preserve"
 
 
@@ -94,7 +92,7 @@ def test_install_runtime_rolls_back_when_verification_fails(
     with pytest.raises(RuntimeError, match="verification failed"):
         sync._install_runtime(project, staged, _COMMIT)
 
-    assert (
-        project / "src" / "aip" / "__init__.py"
-    ).read_text(encoding="utf-8") == "VALUE = 'old'\n"
+    assert (project / "src" / "aip" / "__init__.py").read_text(
+        encoding="utf-8"
+    ) == "VALUE = 'old'\n"
     assert not (project / "AIP_SYNC_COMMIT.txt").exists()
