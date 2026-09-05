@@ -39,6 +39,7 @@ def _value(direction: RatingDirection, entity_index: int) -> Decimal:
 def _complete_lines() -> tuple[FinancialStatementLine, ...]:
     lines: list[FinancialStatementLine] = []
     for definition in FinancialEntityRatingService.INDICATORS:
+        source_name = definition.aliases[0]
         for entity_index, entity in enumerate(_ENTITIES):
             lines.append(
                 FinancialStatementLine(
@@ -46,7 +47,7 @@ def _complete_lines() -> tuple[FinancialStatementLine, ...]:
                     statement_date=_CUTOFF,
                     statement_type=FinancialStatementType.INDICATORS,
                     account_code=definition.code,
-                    account_name=definition.label,
+                    account_name=source_name,
                     amount=_value(definition.direction, entity_index),
                     currency="RATIO",
                     trace=_TRACE,
