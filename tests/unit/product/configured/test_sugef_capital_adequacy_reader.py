@@ -104,3 +104,29 @@ def test_reader_does_not_use_future_quarter() -> None:
 
     assert result.lines == ()
     assert result.source_cutoff is None
+
+
+def test_reader_degrades_invalid_quarterly_workbook_to_unavailable() -> None:
+    page = b"""
+    <html><body>
+      <a href="/reportes/sp/Suficiencia%20Patrimonial%20(Junio%202026).xlsx">Junio 2026</a>
+    </body></html>
+    """
+
+    def fetch(url: str) -> bytes:
+        if url == SUGEFCapitalAdequacyReader.SOURCE_PAGE:
+            return page
+        return b"<html>not an xlsx</html>"
+
+    reader = SUGEFCapitalAdequacyReader(
+        SUGEFFinancialSourceConfig(),
+        api_client=_EntityApi(),  # type: ignore[arg-type]
+        fetch_bytes=fetch,
+    )
+
+    result = reader.read(date(2026, 7, 31))
+
+    assert result.lines == ()
+    assert result.source_cutoff is None
+    assert result.source_files == ()
+    assert any("BadZipFile" in item for item in result.diagnostics)
