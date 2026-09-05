@@ -50,8 +50,9 @@ class SUGEFCreditQualityReader:
     SUGEF documenta siete códigos de atraso para la información posterior a
     enero de 2024: 1 al día; 2 de 1 a 30 días; 3 de 31 a 60; 4 de 61 a 90;
     5 de 91 a 180; 6 de 181 o más; y 7 cobro judicial. El API también expone
-    el código de normativa aplicable. AIP consulta todas las normativas y nunca
-    mezcla saldos de normativas distintas en un mismo indicador.
+    la normativa aplicable a cada porción de cartera. AIP valida cada normativa
+    por separado y, cuando todas las normativas reportadas para una entidad son
+    completas, agrega sus saldos para medir la cartera total de la entidad.
     """
 
     _BAND_BY_SUGEF_CODE = {
@@ -125,8 +126,8 @@ class SUGEFCreditQualityReader:
         if lines:
             diagnostics.append(
                 "Indicadores de calidad de cartera calculados desde ReporteDiasAtraso "
-                "SUGEF, consultando todas las normativas aplicables y sin completar "
-                "bandas ausentes con cero."
+                "SUGEF, validando por separado todas las normativas aplicables, agregando "
+                "solo normativas completas y sin completar bandas ausentes con cero."
             )
         return SUGEFCreditQualityReadResult(
             lines=lines,
@@ -150,42 +151,47 @@ class SUGEFCreditQualityReader:
             for row in entity_rows:
                 by_normative[row.normative].append(row)
 
-            complete: list[tuple[str, CreditQualityCalculation, list[_BucketRow]]] = []
-            incomplete: list[tuple[str, CreditQualityCalculation]] = []
+            incomplete = False
             for normative, normative_rows in sorted(by_normative.items()):
                 result = self._calculator.calculate(
                     tuple(CreditAgingAmount(row.band, row.principal) for row in normative_rows)
                 )
                 if result.complete:
-                    complete.append((normative, result, normative_rows))
-                else:
-                    incomplete.append((normative, result))
+                    continue
+                incomplete = True
+                self._append_incomplete_diagnostic(
+                    diagnostics,
+                    entity=entity,
+                    statement_date=statement_date,
+                    normative=normative,
+                    result=result,
+                )
+            if incomplete:
+                continue
 
-            if len(complete) > 1:
-                codes = ", ".join(item[0] for item in complete)
+            combined_rows = [
+                row
+                for normative in sorted(by_normative)
+                for row in by_normative[normative]
+            ]
+            result = self._calculator.calculate(
+                tuple(CreditAgingAmount(row.band, row.principal) for row in combined_rows)
+            )
+            if not result.complete:
                 diagnostics.append(
-                    f"{entity.name} {statement_date:%d/%m/%Y}: calidad de cartera no "
-                    f"calculada; SUGEF devolvió más de una normativa completa ({codes}) "
-                    "y AIP no asume cuál debe prevalecer."
+                    f"{entity.name} {statement_date:%d/%m/%Y}: calidad de cartera N/D; "
+                    "la agregación de normativas completas no produjo un resultado válido."
                 )
                 continue
-            if not complete:
-                for normative, result in incomplete:
-                    if result.missing_bands:
-                        missing = ", ".join(band.value for band in result.missing_bands)
-                        diagnostics.append(
-                            f"{entity.name} {statement_date:%d/%m/%Y} normativa {normative}: "
-                            f"calidad de cartera no calculada; faltan bandas SUGEF ({missing})."
-                        )
-                    elif result.gross_direct_portfolio == Decimal("0"):
-                        diagnostics.append(
-                            f"{entity.name} {statement_date:%d/%m/%Y} normativa {normative}: "
-                            "cartera directa total es cero."
-                        )
-                continue
 
-            normative, result, normative_rows = complete[0]
-            trace_row = min(normative_rows, key=lambda item: item.source_row)
+            normative_labels = ", ".join(sorted(by_normative))
+            if len(by_normative) > 1:
+                diagnostics.append(
+                    f"{entity.name} {statement_date:%d/%m/%Y}: calidad de cartera agregada "
+                    f"sobre normativas SUGEF completas ({normative_labels}) para representar "
+                    "la cartera total de la entidad."
+                )
+            trace_row = min(combined_rows, key=lambda item: item.source_row)
             if result.current_portfolio is not None:
                 lines.append(
                     self._indicator_line(
@@ -195,7 +201,7 @@ class SUGEFCreditQualityReader:
                         label="Cartera de crédito al día",
                         value=result.current_portfolio,
                         trace_row=trace_row,
-                        normative=normative,
+                        normatives=normative_labels,
                         formula="banda atraso 1 / suma bandas atraso 1..7",
                     )
                 )
@@ -208,11 +214,37 @@ class SUGEFCreditQualityReader:
                         label="Morosidad >90 días y cobro judicial / Cartera directa",
                         value=result.delinquency_over_90,
                         trace_row=trace_row,
-                        normative=normative,
+                        normatives=normative_labels,
                         formula="suma bandas atraso 5,6,7 / suma bandas atraso 1..7",
                     )
                 )
         return tuple(lines), tuple(diagnostics)
+
+    @staticmethod
+    def _append_incomplete_diagnostic(
+        diagnostics: list[str],
+        *,
+        entity: FinancialEntity,
+        statement_date: date,
+        normative: str,
+        result: CreditQualityCalculation,
+    ) -> None:
+        if result.missing_bands:
+            missing = ", ".join(band.value for band in result.missing_bands)
+            diagnostics.append(
+                f"{entity.name} {statement_date:%d/%m/%Y} normativa {normative}: "
+                f"calidad de cartera no calculada; faltan bandas SUGEF ({missing})."
+            )
+        elif result.gross_direct_portfolio == Decimal("0"):
+            diagnostics.append(
+                f"{entity.name} {statement_date:%d/%m/%Y} normativa {normative}: "
+                "cartera directa total es cero."
+            )
+        else:
+            diagnostics.append(
+                f"{entity.name} {statement_date:%d/%m/%Y} normativa {normative}: "
+                "calidad de cartera no calculada por insumos no válidos."
+            )
 
     @classmethod
     def _normalize_rows(
@@ -266,7 +298,7 @@ class SUGEFCreditQualityReader:
         label: str,
         value: Decimal,
         trace_row: _BucketRow,
-        normative: str,
+        normatives: str,
         formula: str,
     ) -> FinancialStatementLine:
         return FinancialStatementLine(
@@ -280,7 +312,7 @@ class SUGEFCreditQualityReader:
             trace=SourceTrace(
                 source_name=cls._SOURCE_NAME,
                 source_url="https://www.sugef.fi.cr/Bccr.Sugef.Reportes_SitioWeb.API",
-                file_path=f"{trace_row.endpoint} · normativa {normative} · {formula}",
+                file_path=f"{trace_row.endpoint} · normativas {normatives} · {formula}",
                 sheet_name="ReporteDiasAtraso",
                 row_number=trace_row.source_row,
             ),
