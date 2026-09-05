@@ -154,10 +154,10 @@ def test_rating_is_not_emitted_when_an_official_indicator_is_missing() -> None:
     assert "13 indicadores" in rating.diagnostics[0]
 
 
-def test_live_sugef_indicator_has_priority_over_reference_alias() -> None:
+def test_non_methodological_current_portfolio_proxy_is_ignored() -> None:
     entity = FinancialEntity("0", "Entidad 0")
-    reference = _line(entity, "Cartera de crédito al día", Decimal("0.10"))
-    live = FinancialStatementLine(
+    exact = _line(entity, "Cartera de crédito al día", Decimal("0.10"))
+    proxy = FinancialStatementLine(
         entity=entity,
         statement_date=CUTOFF,
         statement_type=FinancialStatementType.INDICATORS,
@@ -176,6 +176,6 @@ def test_live_sugef_indicator_has_priority_over_reference_alias() -> None:
         item for item in FinancialEntityRatingService.INDICATORS if item.code == "CURRENT_PORTFOLIO"
     )
 
-    selected = FinancialEntityRatingService._find_indicator((reference, live), definition)
+    selected = FinancialEntityRatingService._find_indicator((exact, proxy), definition)
 
-    assert selected is live
+    assert selected is exact
