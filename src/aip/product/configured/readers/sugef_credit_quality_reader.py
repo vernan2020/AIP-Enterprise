@@ -170,9 +170,7 @@ class SUGEFCreditQualityReader:
                 continue
 
             combined_rows = [
-                row
-                for normative in sorted(by_normative)
-                for row in by_normative[normative]
+                row for normative in sorted(by_normative) for row in by_normative[normative]
             ]
             result = self._calculator.calculate(
                 tuple(CreditAgingAmount(row.band, row.principal) for row in combined_rows)
