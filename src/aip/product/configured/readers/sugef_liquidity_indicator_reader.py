@@ -73,7 +73,9 @@ class SUGEFLiquidityIndicatorReader:
             for row in entity_rows:
                 by_catalog[row.catalog_type_code].append(row)
 
-            complete_catalogs: list[tuple[str, dict[str, Decimal], list[SUGEFTrialBalanceLine]]] = []
+            complete_catalogs: list[tuple[str, dict[str, Decimal], list[SUGEFTrialBalanceLine]]] = (
+                []
+            )
             for catalog_code, catalog_rows in sorted(by_catalog.items()):
                 balances: dict[str, Decimal] = {}
                 ambiguous = False
