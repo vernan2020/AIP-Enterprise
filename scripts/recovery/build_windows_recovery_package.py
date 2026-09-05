@@ -12,10 +12,11 @@ PACKAGE_ROOT_NAME = "AIP_RC1_CERTIFIED"
 INCLUDED_FILES = [
     Path("run_aip_configured.cmd"),
     Path("config/runtime.local.cmd.example"),
-    Path("scripts/recovery/apply_windows_recovery.py"),
 ]
 INCLUDED_DIRS = [
     Path("src"),
+    Path("scripts/recovery"),
+    Path("recovery/checkpoints/rc1-final-20260829"),
 ]
 EXCLUDED_SUFFIXES = {".pyc", ".pyo"}
 EXCLUDED_NAMES = {"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"}
@@ -63,10 +64,13 @@ def _write_apply_cmd(package_dir: Path) -> None:
         "@echo off\r\n"
         "setlocal\r\n"
         "cd /d \"%~dp0\"\r\n"
+        "if exist \"..\\.venv\\Scripts\\activate.bat\" call \"..\\.venv\\Scripts\\activate.bat\"\r\n"
+        "set \"AIP_DEEP_PREFLIGHT=true\"\r\n"
         "python apply_windows_recovery.py\r\n"
         "if errorlevel 1 (\r\n"
         "  echo.\r\n"
-        "  echo Recovery failed. Review the diagnostics above.\r\n"
+        "  echo Recovery failed. The installer attempted automatic rollback.\r\n"
+        "  echo Review the diagnostics above before retrying.\r\n"
         "  exit /b 1\r\n"
         ")\r\n"
         "echo.\r\n"
@@ -104,6 +108,8 @@ def main() -> int:
             )
 
         installer_source = root / "scripts" / "recovery" / "apply_windows_recovery.py"
+        if not installer_source.is_file():
+            raise RuntimeError("Certified Windows installer is missing")
         shutil.copy2(installer_source, package_dir / "apply_windows_recovery.py")
         _write_apply_cmd(package_dir)
 
@@ -123,10 +129,16 @@ def main() -> int:
             ],
             "installation_guarantees": [
                 "payload SHA-256 is validated before installation",
-                "existing src is backed up before replacement",
+                "package contains the complete certified src runtime",
+                "package contains the complete recovery control plane and canonical checkpoint",
+                "existing recovery-owned runtime files are backed up before replacement",
                 "src replacement is transactional",
                 "local credentials are not packaged or overwritten",
-                "compileall and configured preflight run after installation",
+                "project .venv is activated automatically when present",
+                "deep configured preflight materializes portfolio, market, liquidity and macro providers",
+                "compileall and configured preflight run before the certified marker is written",
+                "failed post-install validation triggers automatic rollback to the pre-install runtime",
+                "rollback backup is preserved after both successful and failed installation",
             ],
         }
         (package_dir / "manifest.json").write_text(

@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import argparse
-import base64
 import datetime as dt
 import json
 import os
+import re
+import shutil
+import ssl
 import subprocess
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -16,84 +19,235 @@ from typing import Any
 
 REPOSITORY = "vernan2020/AIP-Enterprise"
 BRANCH = "recovery/full-runtime-rc1-20260829"
+CONTRACT_VERSION = "aip-runtime-checkpoint-v1"
 CHECKPOINT_DIR = Path("recovery/checkpoints/rc1-final-20260829")
 MANIFEST_PATH = CHECKPOINT_DIR / "MANIFEST.json"
 SUPPORT_FILES = (
+    Path("scripts/recovery/checkpoint_contract.py"),
     Path("scripts/recovery/restore_runtime_checkpoint.py"),
     Path("scripts/recovery/runtime_checkpoint_status.py"),
     Path("scripts/recovery/verify_runtime_checkpoint.py"),
     Path("scripts/recovery/certify_installed_runtime.py"),
     Path("run_aip_configured.cmd"),
 )
-USER_AGENT = "AIP-Enterprise-RC1-Recovery/1.0"
+USER_AGENT = "AIP-Enterprise-RC1-Recovery/1.2"
+_PART_NAME_RE = re.compile(r"^runtime_final\.part[0-9A-Za-z-]+\.b64$")
+_SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+_GIT_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+_REMOTE_COMMIT: str | None = None
 
 
 def _project_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
-def _api_url(path: Path) -> str:
-    encoded_path = "/".join(urllib.parse.quote(part, safe="") for part in path.parts)
-    query = urllib.parse.urlencode({"ref": BRANCH})
-    return f"https://api.github.com/repos/{REPOSITORY}/contents/{encoded_path}?{query}"
+def _is_certificate_verification_error(error: Exception | None) -> bool:
+    if error is None:
+        return False
+    reason = error.reason if isinstance(error, urllib.error.URLError) else error
+    return isinstance(reason, ssl.SSLCertVerificationError) or (
+        "CERTIFICATE_VERIFY_FAILED" in str(reason)
+    )
 
 
-def _fetch_json(path: Path) -> dict[str, Any]:
+def _request_bytes_with_windows_curl(
+    url: str,
+    *,
+    label: str,
+    accept: str,
+) -> bytes:
+    """Download with Windows curl/Schannel while preserving TLS validation."""
+    executable = shutil.which("curl.exe")
+    if executable is None:
+        raise RuntimeError(
+            "Python rejected the network certificate and curl.exe is unavailable"
+        )
+
+    command = [
+        executable,
+        "--fail",
+        "--location",
+        "--silent",
+        "--show-error",
+        "--retry",
+        "3",
+        "--connect-timeout",
+        "20",
+        "--max-time",
+        "120",
+        "--ssl-no-revoke",
+        "--header",
+        f"Accept: {accept}",
+        "--header",
+        f"User-Agent: {USER_AGENT}",
+        "--header",
+        "Cache-Control: no-cache",
+        url,
+    ]
+    try:
+        completed = subprocess.run(
+            command,
+            check=False,
+            capture_output=True,
+            timeout=150,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(f"Windows curl timed out while reading {label}") from exc
+
+    if completed.returncode != 0:
+        detail = completed.stderr.decode("utf-8", errors="replace").strip()
+        raise RuntimeError(
+            f"Windows curl failed while reading {label} "
+            f"(exit code {completed.returncode}): {detail}"
+        )
+    if not completed.stdout:
+        raise RuntimeError(f"GitHub returned empty content for {label}")
+    return completed.stdout
+
+
+def _request_bytes(url: str, *, label: str, accept: str) -> bytes:
     request = urllib.request.Request(
-        _api_url(path),
+        url,
         headers={
-            "Accept": "application/vnd.github+json",
+            "Accept": accept,
             "User-Agent": USER_AGENT,
-            "X-GitHub-Api-Version": "2022-11-28",
+            "Cache-Control": "no-cache",
         },
     )
+    last_error: Exception | None = None
+    for attempt in range(1, 4):
+        try:
+            with urllib.request.urlopen(request, timeout=60) as response:
+                data = response.read()
+            if not data:
+                raise RuntimeError(f"GitHub returned empty content for {label}")
+            return data
+        except urllib.error.HTTPError as exc:
+            last_error = exc
+            if exc.code not in {408, 429, 500, 502, 503, 504}:
+                raise RuntimeError(
+                    f"GitHub HTTP {exc.code} while reading {label}"
+                ) from exc
+        except urllib.error.URLError as exc:
+            last_error = exc
+        if attempt < 3:
+            time.sleep(float(attempt))
+
+    if os.name == "nt" and _is_certificate_verification_error(last_error):
+        print(
+            "Python TLS rejected the institutional network certificate; "
+            "retrying securely with the Windows certificate store..."
+        )
+        return _request_bytes_with_windows_curl(
+            url,
+            label=label,
+            accept=accept,
+        )
+
+    if isinstance(last_error, urllib.error.URLError):
+        raise RuntimeError(
+            f"Cannot reach GitHub while reading {label}: {last_error.reason}"
+        ) from last_error
+    raise RuntimeError(f"Unable to read GitHub content for {label}") from last_error
+
+
+def _resolve_source_commit() -> str:
+    """Resolve the mutable recovery branch exactly once per installer process."""
+    global _REMOTE_COMMIT
+    if _REMOTE_COMMIT is not None:
+        return _REMOTE_COMMIT
+
+    encoded_branch = urllib.parse.quote(BRANCH, safe="")
+    url = f"https://api.github.com/repos/{REPOSITORY}/commits/{encoded_branch}"
+    payload = _request_bytes(
+        url,
+        label=f"branch {BRANCH}",
+        accept="application/vnd.github+json",
+    )
     try:
-        with urllib.request.urlopen(request, timeout=60) as response:
-            payload = json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        raise RuntimeError(f"GitHub HTTP {exc.code} while reading {path}") from exc
-    except urllib.error.URLError as exc:
-        raise RuntimeError(f"Cannot reach GitHub while reading {path}: {exc.reason}") from exc
-    if not isinstance(payload, dict):
-        raise RuntimeError(f"Unexpected GitHub response for {path}")
-    return payload
+        data = json.loads(payload.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise RuntimeError("GitHub branch resolution returned invalid JSON") from exc
+
+    commit = data.get("sha") if isinstance(data, dict) else None
+    if not isinstance(commit, str) or not _GIT_SHA_RE.fullmatch(commit):
+        raise RuntimeError("GitHub branch resolution returned an invalid commit SHA")
+    _REMOTE_COMMIT = commit
+    return commit
 
 
-def _download_file(remote_path: Path, local_path: Path) -> None:
-    payload = _fetch_json(remote_path)
-    if payload.get("type") != "file":
-        raise RuntimeError(f"GitHub path is not a file: {remote_path}")
-    encoded = payload.get("content")
-    encoding = payload.get("encoding")
-    if encoding != "base64" or not isinstance(encoded, str):
-        raise RuntimeError(f"Unsupported GitHub content encoding for {remote_path}")
-    try:
-        data = base64.b64decode(encoded, validate=False)
-    except Exception as exc:
-        raise RuntimeError(f"Invalid GitHub base64 content for {remote_path}") from exc
+def _raw_url(path: Path, *, commit: str | None = None) -> str:
+    remote_path = urllib.parse.quote(path.as_posix(), safe="/")
+    immutable_ref = commit or _resolve_source_commit()
+    if not _GIT_SHA_RE.fullmatch(immutable_ref):
+        raise RuntimeError(f"Invalid immutable recovery ref: {immutable_ref!r}")
+    return f"https://raw.githubusercontent.com/{REPOSITORY}/{immutable_ref}/{remote_path}"
 
+
+def _remote_file_bytes(remote_path: Path, *, commit: str | None = None) -> bytes:
+    immutable_ref = commit or _resolve_source_commit()
+    return _request_bytes(
+        _raw_url(remote_path, commit=immutable_ref),
+        label=f"{remote_path} at {immutable_ref}",
+        accept="application/octet-stream",
+    )
+
+
+def _download_file(
+    remote_path: Path,
+    local_path: Path,
+    *,
+    commit: str | None = None,
+) -> None:
+    data = _remote_file_bytes(remote_path, commit=commit)
     local_path.parent.mkdir(parents=True, exist_ok=True)
     temporary = local_path.with_name(local_path.name + ".download")
     temporary.write_bytes(data)
     os.replace(temporary, local_path)
 
 
-def _read_remote_manifest() -> dict[str, Any]:
-    payload = _fetch_json(MANIFEST_PATH)
-    encoded = payload.get("content")
-    if payload.get("encoding") != "base64" or not isinstance(encoded, str):
-        raise RuntimeError("Remote checkpoint manifest has unsupported encoding")
-    manifest = json.loads(base64.b64decode(encoded).decode("utf-8"))
+def _read_remote_manifest(*, commit: str | None = None) -> dict[str, Any]:
+    immutable_ref = commit or _resolve_source_commit()
+    try:
+        manifest = json.loads(
+            _remote_file_bytes(MANIFEST_PATH, commit=immutable_ref).decode("utf-8")
+        )
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise RuntimeError("Remote checkpoint manifest is invalid JSON") from exc
     if not isinstance(manifest, dict):
         raise RuntimeError("Remote checkpoint manifest is invalid")
+    if manifest.get("contract_version") != CONTRACT_VERSION:
+        raise RuntimeError(
+            "Remote checkpoint contract mismatch: "
+            f"expected {CONTRACT_VERSION}, got {manifest.get('contract_version')!r}"
+        )
+    if manifest.get("checkpoint_directory") != CHECKPOINT_DIR.as_posix():
+        raise RuntimeError("Remote checkpoint directory is inconsistent")
+    if manifest.get("encoding") != "base64":
+        raise RuntimeError("Remote checkpoint encoding is not base64")
+    if manifest.get("archive_detection") != "tarfile r:*":
+        raise RuntimeError("Remote checkpoint archive contract is inconsistent")
+
     parts = manifest.get("parts")
     if not isinstance(parts, list) or not parts:
         raise RuntimeError("Remote checkpoint manifest has no parts")
-    if manifest.get("part_count") != len(parts):
+    names: list[str] = []
+    for item in parts:
+        if not isinstance(item, str) or not _PART_NAME_RE.fullmatch(item):
+            raise RuntimeError(f"Remote checkpoint has an invalid part name: {item!r}")
+        names.append(item)
+    if len(names) != len(set(names)):
+        raise RuntimeError("Remote checkpoint manifest contains duplicate parts")
+    if manifest.get("part_count") != len(names):
         raise RuntimeError("Remote checkpoint manifest part count is inconsistent")
+
     digest = manifest.get("payload_sha256")
-    if not isinstance(digest, str) or len(digest) != 64:
+    if not isinstance(digest, str) or not _SHA256_RE.fullmatch(digest):
         raise RuntimeError("Remote checkpoint manifest SHA-256 is invalid")
+
+    critical = manifest.get("critical_members")
+    if not isinstance(critical, list) or not critical:
+        raise RuntimeError("Remote checkpoint manifest has no critical members")
     return manifest
 
 
@@ -144,8 +298,12 @@ def install(*, skip_backup: bool = False) -> int:
     print("AIP ENTERPRISE - CERTIFIED RUNTIME INSTALLER")
     print(f"Project root: {root}")
     print(f"Source branch: {BRANCH}")
+    print("Transport: GitHub RAW pinned to immutable commit")
 
-    manifest = _read_remote_manifest()
+    source_commit = _resolve_source_commit()
+    manifest = _read_remote_manifest(commit=source_commit)
+    print(f"Source commit: {source_commit}")
+    print(f"Checkpoint contract: {manifest['contract_version']}")
     print(f"Checkpoint SHA-256: {manifest['payload_sha256']}")
     print(f"Checkpoint parts: {manifest['part_count']}")
 
@@ -157,13 +315,19 @@ def install(*, skip_backup: bool = False) -> int:
             print(f"Backup: {backup.name}")
         else:
             print("Backup: source tree not present; skipped")
+    else:
+        print("Creating source rollback backup... skipped by caller")
 
     print("Downloading recovery support files...")
     for remote in SUPPORT_FILES:
-        _download_file(remote, root / remote)
+        _download_file(remote, root / remote, commit=source_commit)
 
     print("Downloading certified checkpoint manifest...")
-    _download_file(MANIFEST_PATH, root / MANIFEST_PATH)
+    _download_file(
+        MANIFEST_PATH,
+        root / MANIFEST_PATH,
+        commit=source_commit,
+    )
 
     checkpoint_local = root / CHECKPOINT_DIR
     declared_names = {str(name) for name in manifest["parts"]}
@@ -174,13 +338,19 @@ def install(*, skip_backup: bool = False) -> int:
     for index, name in enumerate(manifest["parts"], start=1):
         remote = CHECKPOINT_DIR / str(name)
         print(f"Downloading checkpoint part {index}/{manifest['part_count']}: {name}")
-        _download_file(remote, root / remote)
+        _download_file(remote, root / remote, commit=source_commit)
 
     print("Verifying checkpoint before extraction...")
     _run(root, [sys.executable, "scripts/recovery/verify_runtime_checkpoint.py"])
 
-    print("Restoring certified runtime...")
-    _run(root, [sys.executable, "scripts/recovery/restore_runtime_checkpoint.py"])
+    print("Restoring certified runtime transactionally...")
+    restore_args = [sys.executable, "scripts/recovery/restore_runtime_checkpoint.py"]
+    if skip_backup or backup is not None:
+        restore_args.append("--skip-backup")
+    _run(root, restore_args)
+
+    print("Checking installed checkpoint marker and critical runtime...")
+    _run(root, [sys.executable, "scripts/recovery/runtime_checkpoint_status.py"])
 
     runtime_env = _runtime_env(root)
 

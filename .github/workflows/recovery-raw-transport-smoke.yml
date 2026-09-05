@@ -1,0 +1,56 @@
+name: Recovery RAW Transport Smoke
+
+on:
+  push:
+    branches:
+      - recovery/full-runtime-rc1-20260829
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  raw-transport-smoke:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout recovery branch
+        uses: actions/checkout@v4
+        with:
+          ref: recovery/full-runtime-rc1-20260829
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Fetch all checkpoint parts through GitHub RAW
+        shell: python
+        run: |
+          import base64
+          import hashlib
+          import importlib.util
+          from pathlib import Path
+
+          path = Path('scripts/recovery/install_certified_runtime.py')
+          spec = importlib.util.spec_from_file_location('aip_recovery_installer', path)
+          module = importlib.util.module_from_spec(spec)
+          assert spec.loader is not None
+          spec.loader.exec_module(module)
+
+          manifest = module._read_remote_manifest()
+          encoded = bytearray()
+          for index, name in enumerate(manifest['parts'], start=1):
+              data = module._remote_file_bytes(module.CHECKPOINT_DIR / name)
+              encoded.extend(b''.join(data.split()))
+              print(f'RAW part {index}/{manifest["part_count"]}: {name} ({len(data)} bytes)')
+
+          payload = base64.b64decode(bytes(encoded), validate=True)
+          digest = hashlib.sha256(payload).hexdigest()
+          if digest != manifest['payload_sha256']:
+              raise SystemExit(f'RAW payload SHA mismatch: {digest}')
+          print(f'RAW TRANSPORT PASS: parts={manifest["part_count"]}, sha256={digest}')

@@ -68,12 +68,40 @@ class BCCRSourceConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class SUGEFFinancialSourceConfig:
+    """Fuente SUGEF REST, con importación local y referencia de respaldo."""
+
+    enabled: bool = True
+    root: str | None = None
+    file_pattern: str = "*"
+    supported_extensions: tuple[str, ...] = (".csv", ".xls", ".xlsx")
+    recursive: bool = True
+    cache_enabled: bool = True
+    api_enabled: bool = True
+    api_base_url: str = "https://www.sugef.fi.cr/Bccr.Sugef.Reportes_SitioWeb.API"
+    api_version: str = "1.0"
+    api_entity_codes: tuple[str, ...] = ("3004045138",)
+    api_timeout_seconds: float = 90.0
+    api_retries: int = 2
+    api_backoff_seconds: float = 1.0
+    official_information_url: str = (
+        "https://www.sugef.fi.cr/reportes/Informacion_Financiera_Contable.aspx"
+    )
+    supervised_entities_url: str = (
+        "https://www.sugef.fi.cr/entidades_supervisadas/"
+        "lista_entidades_supervisadas_por_SUGEF.aspx"
+    )
+    download_endpoint: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class ConfiguredSourceConfig:
     sql_server: SQLServerSourceConfig = field(default_factory=SQLServerSourceConfig)
     folder_watch: FolderWatchSourceConfig = field(default_factory=FolderWatchSourceConfig)
     curves: CurvesSourceConfig = field(default_factory=CurvesSourceConfig)
     vector: VectorSourceConfig = field(default_factory=VectorSourceConfig)
     bccr: BCCRSourceConfig = field(default_factory=BCCRSourceConfig)
+    sugef_financial: SUGEFFinancialSourceConfig = field(default_factory=SUGEFFinancialSourceConfig)
     diagnostic_mode: bool | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -132,6 +160,24 @@ class ConfiguredSourceConfig:
                 "retries": self.bccr.retries,
                 "cache_enabled": self.bccr.cache_enabled,
             },
+            "sugef_financial": {
+                "enabled": self.sugef_financial.enabled,
+                "root": self.sugef_financial.root,
+                "file_pattern": self.sugef_financial.file_pattern,
+                "supported_extensions": list(self.sugef_financial.supported_extensions),
+                "recursive": self.sugef_financial.recursive,
+                "cache_enabled": self.sugef_financial.cache_enabled,
+                "api_enabled": self.sugef_financial.api_enabled,
+                "api_base_url": self.sugef_financial.api_base_url,
+                "api_version": self.sugef_financial.api_version,
+                "api_entity_codes": list(self.sugef_financial.api_entity_codes),
+                "api_timeout_seconds": self.sugef_financial.api_timeout_seconds,
+                "api_retries": self.sugef_financial.api_retries,
+                "api_backoff_seconds": self.sugef_financial.api_backoff_seconds,
+                "official_information_url": self.sugef_financial.official_information_url,
+                "supervised_entities_url": self.sugef_financial.supervised_entities_url,
+                "download_endpoint": self.sugef_financial.download_endpoint,
+            },
             "diagnostic_mode": self.resolve_diagnostic_mode(),
             "allow_prior_source_date": bool(self.metadata.get("allow_prior_source_date", False)),
             "icl_max_prior_days": int(self.metadata.get("icl_max_prior_days", 7)),
@@ -146,6 +192,7 @@ class ConfiguredSourceConfig:
         curves_payload = source_config_payload.get("curves") or {}
         vector_payload = source_config_payload.get("vector") or {}
         bccr_payload = source_config_payload.get("bccr") or {}
+        sugef_payload = source_config_payload.get("sugef_financial") or {}
         return cls(
             sql_server=SQLServerSourceConfig(
                 enabled=bool(sql_payload.get("enabled", False)),
@@ -205,6 +252,40 @@ class ConfiguredSourceConfig:
                 name=bccr_payload.get("name"),
                 email=bccr_payload.get("email"),
                 token=bccr_payload.get("token"),
+            ),
+            sugef_financial=SUGEFFinancialSourceConfig(
+                enabled=bool(sugef_payload.get("enabled", True)),
+                root=sugef_payload.get("root"),
+                file_pattern=sugef_payload.get("file_pattern", "*"),
+                supported_extensions=tuple(
+                    sugef_payload.get("supported_extensions", (".csv", ".xls", ".xlsx"))
+                ),
+                recursive=bool(sugef_payload.get("recursive", True)),
+                cache_enabled=bool(sugef_payload.get("cache_enabled", True)),
+                api_enabled=bool(sugef_payload.get("api_enabled", True)),
+                api_base_url=sugef_payload.get(
+                    "api_base_url",
+                    "https://www.sugef.fi.cr/Bccr.Sugef.Reportes_SitioWeb.API",
+                ),
+                api_version=str(sugef_payload.get("api_version", "1.0")),
+                api_entity_codes=tuple(
+                    str(value).strip()
+                    for value in sugef_payload.get("api_entity_codes", ("3004045138",))
+                    if str(value).strip()
+                ),
+                api_timeout_seconds=float(sugef_payload.get("api_timeout_seconds", 90.0)),
+                api_retries=int(sugef_payload.get("api_retries", 2)),
+                api_backoff_seconds=float(sugef_payload.get("api_backoff_seconds", 1.0)),
+                official_information_url=sugef_payload.get(
+                    "official_information_url",
+                    "https://www.sugef.fi.cr/reportes/Informacion_Financiera_Contable.aspx",
+                ),
+                supervised_entities_url=sugef_payload.get(
+                    "supervised_entities_url",
+                    "https://www.sugef.fi.cr/entidades_supervisadas/"
+                    "lista_entidades_supervisadas_por_SUGEF.aspx",
+                ),
+                download_endpoint=sugef_payload.get("download_endpoint"),
             ),
             diagnostic_mode=bool(source_config_payload.get("diagnostic_mode", False)),
             metadata={

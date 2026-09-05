@@ -17,7 +17,7 @@ try:
     import xlrd
 except ImportError:  # pragma: no cover - exercised when xlrd is unavailable
     xlrd = None
-    XLRDError = ValueError
+    XLRDError: type[Exception] = ValueError
 else:
     XLRDError = xlrd.biffh.XLRDError
 

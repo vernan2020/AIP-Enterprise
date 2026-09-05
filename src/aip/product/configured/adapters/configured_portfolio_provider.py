@@ -5,6 +5,7 @@ import unicodedata
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
+from threading import RLock
 from typing import Any
 
 from aip.domain.portfolio.services.portfolio_calculation_service import PortfolioCalculationService
@@ -70,6 +71,8 @@ class ConfiguredPortfolioProvider:
         self._source_config = source_config or ConfiguredSourceConfig()
         self._health_provider = health_provider
         self._valuation_date_context = valuation_date_context
+        self._portfolio_cache: dict[date, dict[str, Any]] = {}
+        self._cache_lock = RLock()
 
     def _current_cutoff_date(self) -> date:
         if self._valuation_date_context is not None:
@@ -77,6 +80,30 @@ class ConfiguredPortfolioProvider:
         return self._read_cutoff_date_override() or self._config.data_cutoff_date
 
     def get_portfolio(self) -> dict[str, Any]:
+        cutoff_date = self._current_cutoff_date()
+        with self._cache_lock:
+            cached = self._portfolio_cache.get(cutoff_date)
+            if cached is not None:
+                return cached
+
+            portfolio = self._load_portfolio()
+            if cutoff_date == self._current_cutoff_date():
+                self._portfolio_cache[cutoff_date] = portfolio
+                while len(self._portfolio_cache) > 3:
+                    oldest = min(self._portfolio_cache)
+                    self._portfolio_cache.pop(oldest, None)
+            return portfolio
+
+    def clear_cache(self, *, valuation_date: date | None = None) -> None:
+        """Invalidate cached portfolio payloads after an explicit source refresh."""
+
+        with self._cache_lock:
+            if valuation_date is None:
+                self._portfolio_cache.clear()
+                return
+            self._portfolio_cache.pop(valuation_date, None)
+
+    def _load_portfolio(self) -> dict[str, Any]:
         sql_enabled = self._source_config.sql_server.enabled
         folder_enabled = self._source_config.folder_watch.enabled
         source_status = (
@@ -129,6 +156,8 @@ class ConfiguredPortfolioProvider:
                     else None
                 )
                 position["duration_diagnostic"] = duration_result.diagnostic
+                position["duration_included"] = duration_result.included_in_portfolio_duration
+                position["duration_exclusion_reason"] = duration_result.exclusion_reason
 
                 hqla_result = PortfolioHQLAService.calculate(position)
                 position["hqla_eligible"] = hqla_result.eligible
@@ -1164,11 +1193,13 @@ class ConfiguredPortfolioProvider:
         position["market_value_crc"] = float(market_value_crc or 0.0)
         position["market_value"] = float(market_value_local or 0.0)
 
-        vector_match = (
-            position.get("vector_match") if isinstance(position.get("vector_match"), dict) else {}
+        raw_vector_match = position.get("vector_match")
+        vector_match: dict[Any, Any] = (
+            raw_vector_match if isinstance(raw_vector_match, dict) else {}
         )
-        vector_record = (
-            position.get("vector_record") if isinstance(position.get("vector_record"), dict) else {}
+        raw_vector_record = position.get("vector_record")
+        vector_record: dict[Any, Any] = (
+            raw_vector_record if isinstance(raw_vector_record, dict) else {}
         )
 
         if vector_record:
@@ -1215,6 +1246,8 @@ class ConfiguredPortfolioProvider:
         weighted_sum = Decimal("0")
         total_weight = Decimal("0")
         for position in positions:
+            if position.get("duration_included") is False:
+                continue
             raw_duration = position.get("modified_duration")
             if raw_duration in (None, ""):
                 continue

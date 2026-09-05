@@ -161,9 +161,7 @@ class InstitutionalMarketCurveService:
                 continue
 
             issuer = str(record.get("issuer") or "").strip().upper()
-            mnemonic = str(
-                record.get("instrument_type_or_mnemonic") or ""
-            ).strip().lower()
+            mnemonic = str(record.get("instrument_type_or_mnemonic") or "").strip().lower()
 
             if issuer != issuer_code or mnemonic != mnemonic_code:
                 continue
@@ -225,9 +223,7 @@ class InstitutionalMarketCurveService:
                 continue
 
             predicted = [
-                row[0] * coefficients[0]
-                + row[1] * coefficients[1]
-                + row[2] * coefficients[2]
+                row[0] * coefficients[0] + row[1] * coefficients[1] + row[2] * coefficients[2]
                 for row in design
             ]
             metrics = cls._metrics(y, predicted)
@@ -254,9 +250,7 @@ class InstitutionalMarketCurveService:
             if candidate is None:
                 continue
             predicted = [
-                row[0] * candidate[0]
-                + row[1] * candidate[1]
-                + row[2] * candidate[2]
+                row[0] * candidate[0] + row[1] * candidate[1] + row[2] * candidate[2]
                 for row in design
             ]
             if abs(float(cls._metrics(y, predicted).rmse) - selected_rmse) <= cls._EPSILON:
@@ -288,9 +282,7 @@ class InstitutionalMarketCurveService:
             return None
 
         predicted = [
-            row[0] * coefficients[0]
-            + row[1] * coefficients[1]
-            + row[2] * coefficients[2]
+            row[0] * coefficients[0] + row[1] * coefficients[1] + row[2] * coefficients[2]
             for row in design
         ]
 
@@ -349,7 +341,7 @@ class InstitutionalMarketCurveService:
                 for column in range(pivot_index, 4):
                     augmented[row_index][column] -= factor * augmented[pivot_index][column]
 
-        solution = tuple(augmented[index][3] for index in range(3))
+        solution = (augmented[0][3], augmented[1][3], augmented[2][3])
         if not all(math.isfinite(value) for value in solution):
             return None
         return solution

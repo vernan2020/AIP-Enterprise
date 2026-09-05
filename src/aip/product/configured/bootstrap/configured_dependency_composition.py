@@ -24,6 +24,9 @@ from aip.product.configured.protocols import (
     PortfolioDataProvider,
     SourceHealthProvider,
 )
+from aip.product.configured.services.configured_financial_analysis_service import (
+    ConfiguredFinancialAnalysisService,
+)
 from aip.product.configured.services.configured_macro_intelligence_service import (
     ConfiguredMacroIntelligenceService,
 )
@@ -82,6 +85,10 @@ class ConfiguredDependencyComposition:
             bccr_config=bccr_config,
         )
         valuation_date_context = ValuationDateContext(self._config.data_cutoff_date)
+        financial_analysis_service = ConfiguredFinancialAnalysisService(
+            self._source_config.sugef_financial,
+            valuation_date_context,
+        )
 
         portfolio_provider = ConfiguredPortfolioProvider(
             self._config,
@@ -113,6 +120,10 @@ class ConfiguredDependencyComposition:
         )
 
         container.register_instance(ValuationDateContext, valuation_date_context)
+        container.register_instance(
+            ConfiguredFinancialAnalysisService,
+            financial_analysis_service,
+        )
         container.register_instance(SourceHealthProvider, health_provider)
         container.register_instance(PortfolioDataProvider, portfolio_provider)
         container.register_instance(MarketDataProvider, market_provider)
@@ -185,6 +196,7 @@ class ConfiguredDependencyComposition:
             ConfiguredPortfolioDV01Service,
             ConfiguredPortfolioRateShockService,
             ConfiguredMacroIntelligenceService,
+            ConfiguredFinancialAnalysisService,
             BCCRConfig,
             BCCRConnector,
             ValuationDateContext,

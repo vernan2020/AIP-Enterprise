@@ -1,59 +1,42 @@
 from __future__ import annotations
 
 import base64
+import binascii
 import hashlib
 import io
-import json
 import lzma
 import tarfile
 from pathlib import Path
-from typing import Any
 
-CHECKPOINT_DIR = Path("recovery/checkpoints/rc1-final-20260829")
-MANIFEST_NAME = "MANIFEST.json"
-PART_GLOB = "runtime_final.part*.b64"
+from checkpoint_contract import (
+    CHECKPOINT_DIR,
+    PART_GLOB,
+    declared_part_paths,
+    load_manifest,
+    normalize_base64_text,
+)
+
 MINIMUM_PYTHON_FILES = 750
 
 
-def _load_manifest(checkpoint_dir: Path) -> dict[str, Any]:
-    manifest_path = checkpoint_dir / MANIFEST_NAME
-    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise RuntimeError("Checkpoint manifest must be a JSON object")
-    return payload
-
-
-def _parts(checkpoint_dir: Path, manifest: dict[str, Any]) -> list[Path]:
-    raw = manifest.get("parts")
-    if not isinstance(raw, list) or not raw:
-        raise RuntimeError("Checkpoint manifest does not declare parts")
-    names = [str(item).strip() for item in raw]
-    if len(names) != len(set(names)):
-        raise RuntimeError("Checkpoint manifest contains duplicate parts")
-    actual = {path.name for path in checkpoint_dir.glob(PART_GLOB)}
-    if actual != set(names):
-        raise RuntimeError("Checkpoint part set does not match the manifest")
-    return [checkpoint_dir / name for name in names]
-
-
-def _decode(parts: list[Path], manifest: dict[str, Any]) -> tuple[bytes, str]:
-    encoded = "".join(part.read_text(encoding="ascii").strip() for part in parts)
-    payload = base64.b64decode(encoded, validate=True)
+def _decode(parts: tuple[Path, ...], expected_digest: str) -> tuple[bytes, str]:
+    chunks: list[str] = []
+    for part in parts:
+        text = part.read_text(encoding="ascii")
+        normalized = normalize_base64_text(text)
+        if not normalized:
+            raise RuntimeError(f"Checkpoint part is empty: {part}")
+        chunks.append(normalized)
+    try:
+        payload = base64.b64decode("".join(chunks), validate=True)
+    except (ValueError, binascii.Error) as exc:
+        raise RuntimeError("Checkpoint base64 payload is invalid") from exc
     digest = hashlib.sha256(payload).hexdigest()
-    expected = str(manifest.get("payload_sha256", ""))
-    if digest != expected:
-        raise RuntimeError(f"Checkpoint checksum mismatch: expected {expected}, got {digest}")
+    if digest != expected_digest:
+        raise RuntimeError(
+            f"Checkpoint checksum mismatch: expected {expected_digest}, got {digest}"
+        )
     return payload, digest
-
-
-def _critical(manifest: dict[str, Any]) -> set[str]:
-    raw = manifest.get("critical_members")
-    if not isinstance(raw, list) or not raw:
-        raise RuntimeError("Checkpoint does not declare critical members")
-    result = {str(item).replace("\\", "/") for item in raw}
-    if any(not item.startswith("src/") for item in result):
-        raise RuntimeError("Invalid critical member declaration")
-    return result
 
 
 def _safe_relative(name: str) -> Path:
@@ -83,10 +66,10 @@ def _write_member(root: Path, archive: tarfile.TarFile, member: tarfile.TarInfo)
 def main() -> int:
     root = Path(__file__).resolve().parents[2]
     checkpoint_dir = root / CHECKPOINT_DIR
-    manifest = _load_manifest(checkpoint_dir)
-    parts = _parts(checkpoint_dir, manifest)
-    payload, digest = _decode(parts, manifest)
-    critical = _critical(manifest)
+    manifest = load_manifest(checkpoint_dir)
+    parts = declared_part_paths(checkpoint_dir, manifest)
+    payload, digest = _decode(parts, manifest.payload_sha256)
+    critical = set(manifest.critical_members)
 
     extracted: set[str] = set()
     python_files = 0
@@ -114,11 +97,7 @@ def main() -> int:
 
     missing_critical = sorted(item for item in critical if not (root / item).is_file())
 
-    # Emit forensic metrics before enforcing acceptance criteria.  These
-    # diagnostics are required to decide whether the damaged transport can
-    # be used as a temporary source-recovery aid; they do not weaken any
-    # acceptance criterion below.
-    print(f"Verified corrupt checkpoint payload SHA-256: {digest}")
+    print(f"Verified checkpoint payload SHA-256: {digest}")
     print(f"Extracted members before corruption/end: {len(extracted)}")
     print(f"Extracted Python files: {python_files}")
     print(f"Critical members present: {len(critical) - len(missing_critical)}/{len(critical)}")

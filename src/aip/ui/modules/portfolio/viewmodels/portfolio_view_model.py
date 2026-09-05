@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from aip.ui.modules.portfolio.models.portfolio_dashboard_point import PortfolioDashboardPoint
 from aip.ui.modules.portfolio.models.portfolio_row import PortfolioRow
 from aip.ui.modules.portfolio.models.portfolio_summary import PortfolioSummary
 
@@ -21,3 +22,14 @@ class PortfolioViewModel:
     correlation_id: str | None = None
     loading: bool = False
     error: str | None = None
+
+    health_score: str = "N/D"
+    health_status: str = "Metodología pendiente"
+    dv01_total: str = "N/D"
+    dv01_status: str = "UNAVAILABLE"
+    hhi: str = "N/D"
+    data_quality_status: str = "N/D"
+    top_issuer_points: tuple[PortfolioDashboardPoint, ...] = ()
+    currency_points: tuple[PortfolioDashboardPoint, ...] = ()
+    duration_points: tuple[PortfolioDashboardPoint, ...] = ()
+    opportunity_points: tuple[PortfolioDashboardPoint, ...] = ()

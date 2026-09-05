@@ -17,7 +17,7 @@ from aip.core.version import (
 class AboutDialog(QDialog):
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("About AIP Enterprise")
+        self.setWindowTitle("Acerca de AIP Enterprise")
         self._text = self.release_text()
         layout = QVBoxLayout(self)
         label = QLabel(self._text)
@@ -29,10 +29,11 @@ class AboutDialog(QDialog):
             [
                 f"{APP_DISPLAY_NAME}",
                 f"{APP_DISPLAY_VERSION}",
+                f"Versión: {APP_VERSION}",
                 f"Version: {APP_VERSION}",
-                f"Release: {APP_RELEASE}",
+                f"Edición: {APP_RELEASE}",
                 f"Python: {platform.python_version()}",
-                f"Organization: {ORGANIZATION}",
-                f"Application: {APP_NAME}",
+                f"Organización: {ORGANIZATION}",
+                f"Aplicación: {APP_NAME}",
             ]
         )
