@@ -34,6 +34,17 @@ def _project_root(value: str | None) -> Path:
     return root
 
 
+def _local_archive(value: str | None) -> Path | None:
+    if value is None:
+        return None
+    archive = Path(value).expanduser().resolve()
+    if not archive.is_file():
+        raise ValueError(f"No se encontró el archivo ZIP local: {archive}")
+    if not zipfile.is_zipfile(archive):
+        raise ValueError(f"El archivo local no es un ZIP válido: {archive}")
+    return archive
+
+
 def _download_archive(commit: str, destination: Path) -> None:
     url = _ARCHIVE_URL.format(commit=commit)
     request = urllib.request.Request(
@@ -127,6 +138,14 @@ def _build_parser() -> argparse.ArgumentParser:
         help="SHA completo certificado",
     )
     parser.add_argument(
+        "--archive",
+        default=None,
+        help=(
+            "ZIP local del commit certificado. Si se indica, Python no descarga desde GitHub; "
+            "es útil cuando la red corporativa usa un certificado TLS incompatible con OpenSSL."
+        ),
+    )
+    parser.add_argument(
         "--project-root",
         default=None,
         help="Raíz local del proyecto. Por defecto usa el directorio actual.",
@@ -134,7 +153,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Descarga y valida el runtime sin modificar la instalación local.",
+        help="Valida el runtime sin modificar la instalación local.",
     )
     return parser
 
@@ -165,6 +184,7 @@ def main(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
     try:
         project_root = _project_root(args.project_root)
+        local_archive = _local_archive(args.archive)
     except ValueError as exc:
         print(f"ERROR: {exc}")
         return 1
@@ -177,15 +197,21 @@ def main(argv: list[str] | None = None) -> int:
 
     with tempfile.TemporaryDirectory(prefix="aip_certified_sync_") as temp_dir:
         temp = Path(temp_dir)
-        archive = temp / "runtime.zip"
+        downloaded_archive = temp / "runtime.zip"
         stage = temp / "stage"
         try:
-            print("Descargando runtime certificado desde GitHub...")
-            _download_archive(commit, archive)
+            if local_archive is None:
+                print("Descargando runtime certificado desde GitHub...")
+                _download_archive(commit, downloaded_archive)
+                archive = downloaded_archive
+            else:
+                print(f"Usando ZIP local certificado: {local_archive}")
+                archive = local_archive
+
             staged_aip = _extract_aip_tree(archive, stage)
             if args.dry_run:
                 print(
-                    "DRY-RUN OK: descarga y estructura del runtime válidas; "
+                    "DRY-RUN OK: estructura del runtime válida; "
                     "no se modificó el proyecto."
                 )
                 return 0
