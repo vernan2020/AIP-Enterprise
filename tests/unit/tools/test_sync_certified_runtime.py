@@ -13,9 +13,18 @@ _COMMIT = "a" * 40
 
 def _build_archive(path: Path) -> None:
     with zipfile.ZipFile(path, "w") as archive:
-        archive.writestr("AIP-Enterprise-deadbeef/src/aip/__init__.py", "VALUE = 'new'\n")
-        archive.writestr("AIP-Enterprise-deadbeef/src/aip/module.py", "VALUE = 1\n")
-        archive.writestr("AIP-Enterprise-deadbeef/tests/ignored.py", "SHOULD_NOT_COPY = True\n")
+        archive.writestr(
+            "AIP-Enterprise-deadbeef/src/aip/__init__.py",
+            "VALUE = 'new'\n",
+        )
+        archive.writestr(
+            "AIP-Enterprise-deadbeef/src/aip/module.py",
+            "VALUE = 1\n",
+        )
+        archive.writestr(
+            "AIP-Enterprise-deadbeef/tests/ignored.py",
+            "SHOULD_NOT_COPY = True\n",
+        )
 
 
 def test_validate_commit_requires_full_sha() -> None:
@@ -42,7 +51,10 @@ def test_install_runtime_creates_backup_and_commit_marker(
     current = project / "src" / "aip"
     current.mkdir(parents=True)
     (current / "__init__.py").write_text("VALUE = 'old'\n", encoding="utf-8")
-    (project / "pyproject.toml").write_text("[project]\nname='aip-test'\n", encoding="utf-8")
+    (project / "pyproject.toml").write_text(
+        "[project]\nname='aip-test'\n",
+        encoding="utf-8",
+    )
     (project / "local-data.txt").write_text("preserve", encoding="utf-8")
 
     staged = tmp_path / "staged" / "aip"
@@ -52,9 +64,13 @@ def test_install_runtime_creates_backup_and_commit_marker(
 
     backup = sync._install_runtime(project, staged, _COMMIT)
 
-    assert (project / "src" / "aip" / "__init__.py").read_text(encoding="utf-8") == "VALUE = 'new'\n"
+    assert (
+        project / "src" / "aip" / "__init__.py"
+    ).read_text(encoding="utf-8") == "VALUE = 'new'\n"
     assert (backup / "__init__.py").read_text(encoding="utf-8") == "VALUE = 'old'\n"
-    assert (project / "AIP_SYNC_COMMIT.txt").read_text(encoding="utf-8") == _COMMIT + "\n"
+    assert (
+        project / "AIP_SYNC_COMMIT.txt"
+    ).read_text(encoding="utf-8") == _COMMIT + "\n"
     assert (project / "local-data.txt").read_text(encoding="utf-8") == "preserve"
 
 
@@ -78,5 +94,7 @@ def test_install_runtime_rolls_back_when_verification_fails(
     with pytest.raises(RuntimeError, match="verification failed"):
         sync._install_runtime(project, staged, _COMMIT)
 
-    assert (project / "src" / "aip" / "__init__.py").read_text(encoding="utf-8") == "VALUE = 'old'\n"
+    assert (
+        project / "src" / "aip" / "__init__.py"
+    ).read_text(encoding="utf-8") == "VALUE = 'old'\n"
     assert not (project / "AIP_SYNC_COMMIT.txt").exists()
