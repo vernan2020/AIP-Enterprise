@@ -153,10 +153,7 @@ def _print_text(snapshot: FinancialAnalysisSnapshot, requested_cutoff: date) -> 
         "Corte contable efectivo: "
         + (snapshot.cutoff_date.strftime("%d/%m/%Y") if snapshot.cutoff_date else "N/D")
     )
-    print(
-        "Entidad: "
-        + (f"{entity.name} [{entity.entity_id}]" if entity is not None else "N/D")
-    )
+    print("Entidad: " + (f"{entity.name} [{entity.entity_id}]" if entity is not None else "N/D"))
     print(f"Estado del snapshot: {snapshot.status}")
     print(f"Fuentes procesadas: {len(snapshot.source_files)}")
 
