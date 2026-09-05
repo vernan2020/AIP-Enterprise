@@ -153,7 +153,7 @@ class _PublicationLagStubClient(_OfficialStubClient):
         assert isinstance(parameters, dict)
         entity_code = str(parameters["codigoEntidad"])
         period = str(parameters["periodos"])
-        if entity_code == "3004045138" and period == "20260801" and "BalanceSituacion" in endpoint:
+        if entity_code == "3004045138" and "20260801" in period and "BalanceSituacion" in endpoint:
             self.requests.append((entity_code, "BALANCE", period))
             raise URLError("August accounting cutoff not published")
         return super()._post_json(endpoint, payload)
