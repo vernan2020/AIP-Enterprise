@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from calendar import monthrange
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
 from datetime import date
+from typing import Any
 from urllib.error import HTTPError, URLError
 
 from aip.domain.financial_analysis.models import FinancialStatementLine, FinancialStatementType
@@ -15,14 +17,24 @@ from aip.product.configured.readers.sugef_financial_api_client import (
 )
 
 
+@dataclass(frozen=True, slots=True)
+class _PrimaryProbe:
+    cutoff: date
+    balance_lines: tuple[FinancialStatementLine, ...]
+    income_lines: tuple[FinancialStatementLine, ...]
+    endpoints: tuple[str, ...]
+
+
 class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
     """Gateway SUGEF estricto para estados oficiales y universo comparativo SFN.
 
     La entidad configurada se consulta de forma directa para Balance, Resultados
     e Indicadores. Antes de descargar historia y pares se resuelve el último corte
-    contable completo disponible que no excede la fecha solicitada. El universo
-    comparativo se consulta con ``codigoEntidad`` vacío y la historia de Balance
-    se solicita mes a mes para preservar 12 observaciones por entidad.
+    contable completo disponible que no excede la fecha solicitada.
+
+    La historia necesaria para 08ME14-01 se obtiene con consultas filtradas por
+    ``codigoCuenta``. Esto evita descargar estados completos de decenas de
+    entidades y reduce sustancialmente la presión sobre la API pública de SUGEF.
     """
 
     _BALANCE_REPORT = (
@@ -40,6 +52,9 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
         "listaIndicadoresFinancierosEntidad",
         FinancialStatementType.INDICATORS,
     )
+    _METHODOLOGY_BALANCE_ACCOUNTS = ("10000", "25000")
+    _METHODOLOGY_INCOME_ACCOUNTS = ("30000", "31000", "31300", "32000")
+    _MAX_DIRECT_PEER_RECOVERY = 12
 
     def __init__(self, config: SUGEFFinancialSourceConfig) -> None:
         super().__init__(config)
@@ -50,33 +65,29 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
         diagnostics: list[str] = []
 
         # Fase 0: confirmar un corte contable completo de la entidad principal.
-        # Se sondea mes a mes para que un mes todavía no publicado por SUGEF no
-        # invalide toda la lectura solicitada por el corte general de AIP.
-        resolved_cutoff = self._resolve_primary_statement_cutoff(cutoff_date, diagnostics)
+        # Las mismas filas del sondeo se reutilizan para evitar que una segunda
+        # llamada idéntica falle después de haber confirmado exitosamente el corte.
+        primary_probe = self._resolve_primary_statement_cutoff(cutoff_date, diagnostics)
 
-        # Fase 1: una vez resuelto el corte, descargar la historia necesaria de
-        # las entidades configuradas sin incluir meses aún no utilizables.
-        if resolved_cutoff is not None:
-            primary_jobs: list[tuple[str, str, str, str, FinancialStatementType]] = []
-            for entity_code in self._config.api_entity_codes:
-                primary_jobs.append(
-                    (
-                        entity_code,
-                        self._period_range(
-                            resolved_cutoff,
-                            lookback_months=self._AVERAGE_LOOKBACK_MONTHS,
-                        ),
-                        *self._BALANCE_REPORT,
-                    )
-                )
-                primary_jobs.append(
-                    (
-                        entity_code,
-                        self._result_periods(resolved_cutoff),
-                        *self._INCOME_REPORT,
-                    )
-                )
-            self._execute_jobs(primary_jobs, lines, endpoints, diagnostics)
+        if primary_probe is not None:
+            resolved_cutoff = primary_probe.cutoff
+            lines.extend(primary_probe.balance_lines)
+            lines.extend(primary_probe.income_lines)
+            endpoints.update(primary_probe.endpoints)
+
+            # Fase 1: recuperar solo las cuentas históricas requeridas por las
+            # fórmulas 08ME14-01. El estado completo del corte ya proviene del
+            # sondeo anterior, por lo que no se repite una descarga histórica masiva.
+            primary_history_jobs = self._methodology_history_jobs(
+                self._config.api_entity_codes,
+                resolved_cutoff,
+            )
+            self._execute_filtered_jobs(
+                primary_history_jobs,
+                lines,
+                endpoints,
+                diagnostics,
+            )
 
         effective_cutoff = self._primary_statement_cutoff(lines)
         if effective_cutoff is not None:
@@ -94,8 +105,7 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
             ]
             self._execute_jobs(primary_indicator_jobs, lines, endpoints, diagnostics)
 
-            # Fase 3: indicadores comparativos SFN en una llamada dedicada. Esta
-            # consulta no compite con la descarga histórica de Balance/Resultados.
+            # Fase 3: indicadores comparativos SFN en una llamada dedicada.
             self._execute_jobs(
                 [("", effective_period, *self._INDICATOR_REPORT)],
                 lines,
@@ -103,25 +113,39 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
                 diagnostics,
             )
 
-            # Fase 4: historia del universo SFN. Balance se obtiene mes a mes para
-            # garantizar 12 observaciones por entidad y Resultados únicamente para
-            # los períodos necesarios para la anualización móvil de 08ME14-01.
-            peer_history_jobs: list[tuple[str, str, str, str, FinancialStatementType]] = []
-            peer_history_jobs.extend(
-                ("", period, *self._BALANCE_REPORT)
-                for period in self._peer_balance_periods(effective_cutoff)
+            # Fase 4: historia comparativa optimizada. Primero se solicitan solo
+            # las seis cuentas IAESF utilizadas por 08ME14-01 para todo el universo.
+            # Si SUGEF entrega cobertura suficiente, no se ejecuta el mecanismo
+            # histórico de compatibilidad ni la recuperación individual.
+            filtered_peer_jobs = self._methodology_history_jobs(("",), effective_cutoff)
+            self._execute_filtered_jobs(
+                filtered_peer_jobs,
+                lines,
+                endpoints,
+                diagnostics,
             )
-            peer_history_jobs.extend(
-                ("", period, *self._INCOME_REPORT)
-                for period in self._peer_income_periods(effective_cutoff)
-            )
-            self._execute_jobs(peer_history_jobs, lines, endpoints, diagnostics)
 
-            # Algunas ejecuciones públicas aceptan el universo masivo de
-            # indicadores pero no devuelven historia contable suficiente cuando
-            # codigoEntidad está vacío. En ese caso se recupera exclusivamente la
-            # historia faltante de las entidades ya descubiertas oficialmente en
-            # el universo de indicadores. No se incorpora ninguna fuente alterna.
+            missing_after_filtered = self._missing_peer_history(lines, effective_cutoff)
+            if missing_after_filtered:
+                # Compatibilidad defensiva: algunas versiones de la API no aceptan
+                # codigoEntidad vacío con codigoCuenta. Se intenta entonces la vía
+                # histórica anterior, pero solo cuando el filtro masivo no bastó.
+                peer_history_jobs: list[
+                    tuple[str, str, str, str, FinancialStatementType]
+                ] = []
+                peer_history_jobs.extend(
+                    ("", period, *self._BALANCE_REPORT)
+                    for period in self._peer_balance_periods(effective_cutoff)
+                )
+                peer_history_jobs.extend(
+                    ("", period, *self._INCOME_REPORT)
+                    for period in self._peer_income_periods(effective_cutoff)
+                )
+                self._execute_jobs(peer_history_jobs, lines, endpoints, diagnostics)
+
+            # La recuperación entidad por entidad se mantiene únicamente para un
+            # número acotado de faltantes. Nunca se lanzan decenas de descargas
+            # masivas que puedan degradar la disponibilidad de la fuente pública.
             self._recover_incomplete_peer_history(
                 effective_cutoff,
                 lines,
@@ -146,9 +170,9 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
                 )
             diagnostics.extend(
                 (
-                    "Balance y Estado de Resultados consultados exclusivamente en la API pública oficial de SUGEF.",
+                    "Balance y Estado de Resultados del corte efectivo consultados exclusivamente en la API pública oficial de SUGEF.",
                     "Indicadores de la entidad seleccionada se consultan directamente en SUGEF; el universo comparativo SFN se consulta mediante codigoEntidad vacío en una llamada dedicada.",
-                    "La historia comparativa de Balance se consulta mes a mes y Resultados por los períodos requeridos por 08ME14-01 para preservar 12 observaciones por entidad.",
+                    "Historia 08ME14-01 optimizada mediante codigoCuenta para las cuentas IAESF 10000, 25000, 30000, 31000, 31300 y 32000; no se descargan estados completos de cada par salvo recuperación acotada.",
                 )
             )
         else:
@@ -164,7 +188,7 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
         self,
         requested_cutoff: date,
         diagnostics: list[str],
-    ) -> date | None:
+    ) -> _PrimaryProbe | None:
         if not self._config.api_entity_codes:
             diagnostics.append("No hay códigos de entidad SUGEF configurados.")
             return None
@@ -177,12 +201,12 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
             candidate = self._shift_month(requested_month, -offset)
             period = candidate.strftime("%Y%m%d")
             try:
-                balance_lines, _ = self._read_report(
+                balance_lines, balance_endpoint = self._read_report(
                     primary,
                     period,
                     *self._BALANCE_REPORT,
                 )
-                income_lines, _ = self._read_report(
+                income_lines, income_endpoint = self._read_report(
                     primary,
                     period,
                     *self._INCOME_REPORT,
@@ -208,7 +232,17 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
             }
             common_dates = balance_dates & income_dates
             if common_dates:
-                return max(common_dates)
+                cutoff = max(common_dates)
+                return _PrimaryProbe(
+                    cutoff=cutoff,
+                    balance_lines=tuple(
+                        line for line in balance_lines if line.statement_date == cutoff
+                    ),
+                    income_lines=tuple(
+                        line for line in income_lines if line.statement_date == cutoff
+                    ),
+                    endpoints=(balance_endpoint, income_endpoint),
+                )
             probe_failures.append(
                 "Sondeo SUGEF "
                 f"{candidate.strftime('%d/%m/%Y')}: no existe un corte común de Balance y Resultados."
@@ -254,6 +288,125 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
                         f"SUGEF API {report_name} ({scope}): " f"{type(exc).__name__}: {exc}"
                     )
 
+    def _execute_filtered_jobs(
+        self,
+        jobs: list[tuple[str, str, str, str, FinancialStatementType, str]],
+        lines: list[FinancialStatementLine],
+        endpoints: set[str],
+        diagnostics: list[str],
+    ) -> None:
+        if not jobs:
+            return
+        with ThreadPoolExecutor(max_workers=min(4, len(jobs))) as executor:
+            futures = {
+                executor.submit(
+                    self._read_filtered_report,
+                    entity_code,
+                    period,
+                    report_name,
+                    list_key,
+                    statement_type,
+                    account_code,
+                ): (entity_code, report_name, account_code)
+                for entity_code, period, report_name, list_key, statement_type, account_code in jobs
+            }
+            for future in as_completed(futures):
+                entity_code, report_name, account_code = futures[future]
+                try:
+                    report_lines, endpoint = future.result()
+                    lines.extend(report_lines)
+                    endpoints.add(endpoint)
+                except (HTTPError, URLError, TimeoutError, ValueError, OSError) as exc:
+                    scope = entity_code or "SFN completo"
+                    diagnostics.append(
+                        f"SUGEF API {report_name} ({scope}, cuenta {account_code}): "
+                        f"{type(exc).__name__}: {exc}"
+                    )
+
+    def _read_filtered_report(
+        self,
+        entity_code: str,
+        period: str,
+        report_name: str,
+        list_key: str,
+        statement_type: FinancialStatementType,
+        account_code: str,
+    ) -> tuple[list[FinancialStatementLine], str]:
+        endpoint = self._endpoint(report_name)
+        rows: list[Any] | None = None
+        best_rows: list[Any] = []
+        last_message = "SUGEF no publicó datos para el rango solicitado"
+        last_error: Exception | None = None
+
+        for candidate_period in self._fallback_periods(period):
+            payload = {
+                "parametrosEntidad": {
+                    "codigoEntidad": entity_code,
+                    "periodos": candidate_period,
+                    "codigoCuenta": account_code,
+                }
+            }
+            try:
+                response = self._post_json(endpoint, payload)
+            except (HTTPError, URLError, TimeoutError, ValueError, OSError) as exc:
+                last_error = exc
+                last_message = f"{type(exc).__name__}: {exc}"
+                continue
+
+            last_error = None
+            candidate_rows = response.get(list_key)
+            if not bool(response.get("tieneError")) and isinstance(candidate_rows, list):
+                if len(candidate_rows) > len(best_rows):
+                    best_rows = candidate_rows
+                if self._has_expected_coverage(
+                    candidate_rows,
+                    statement_type,
+                    candidate_period=candidate_period,
+                ):
+                    rows = candidate_rows
+                    break
+                last_message = "No se encontraron registros para los datos consultados."
+            else:
+                last_message = str(response.get("mensaje") or "SUGEF reportó un error")
+
+        if rows is None and best_rows:
+            rows = best_rows
+        if rows is None:
+            if last_error is not None:
+                raise last_error
+            raise ValueError(last_message)
+
+        result: list[FinancialStatementLine] = []
+        for row_number, row in enumerate(rows, start=1):
+            if not isinstance(row, dict):
+                continue
+            line = self._line(row, statement_type, endpoint, list_key, row_number)
+            if line is not None:
+                result.append(line)
+        return result, endpoint
+
+    def _methodology_history_jobs(
+        self,
+        entity_codes: tuple[str, ...],
+        cutoff_date: date,
+    ) -> list[tuple[str, str, str, str, FinancialStatementType, str]]:
+        balance_period = self._period_range(
+            cutoff_date,
+            lookback_months=self._AVERAGE_LOOKBACK_MONTHS,
+        )
+        income_period = self._result_periods(cutoff_date)
+        jobs: list[tuple[str, str, str, str, FinancialStatementType, str]] = []
+        for entity_code in entity_codes:
+            jobs.extend(
+                (entity_code, balance_period, *self._BALANCE_REPORT, account_code)
+                for account_code in self._METHODOLOGY_BALANCE_ACCOUNTS
+            )
+            jobs.extend(
+                (entity_code, income_period, *self._INCOME_REPORT, account_code)
+                for account_code in self._METHODOLOGY_INCOME_ACCOUNTS
+            )
+        return jobs
+
     def _recover_incomplete_peer_history(
         self,
         cutoff_date: date,
@@ -261,6 +414,30 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
         endpoints: set[str],
         diagnostics: list[str],
     ) -> None:
+        missing = self._missing_peer_history(lines, cutoff_date)
+        if not missing:
+            return
+        if len(missing) > self._MAX_DIRECT_PEER_RECOVERY:
+            diagnostics.append(
+                "Recuperación directa de historia SUGEF para comparables omitida: "
+                f"{len(missing)} entidades faltantes exceden el máximo seguro de "
+                f"{self._MAX_DIRECT_PEER_RECOVERY}; se evita sobrecargar la API pública."
+            )
+            return
+
+        jobs = self._methodology_history_jobs(missing, cutoff_date)
+        self._execute_filtered_jobs(jobs, lines, endpoints, diagnostics)
+        recovered = sum(self._has_methodology_history(lines, code, cutoff_date) for code in missing)
+        diagnostics.append(
+            "Recuperación directa y filtrada de historia SUGEF para comparables 08ME14-01: "
+            f"{recovered}/{len(missing)} entidades con historia completa tras la recuperación."
+        )
+
+    def _missing_peer_history(
+        self,
+        lines: list[FinancialStatementLine],
+        cutoff_date: date,
+    ) -> tuple[str, ...]:
         primary_codes = set(self._config.api_entity_codes)
         peer_codes = sorted(
             {
@@ -271,29 +448,10 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
                 and line.entity.entity_id not in primary_codes
             }
         )
-        missing = tuple(
+        return tuple(
             code
             for code in peer_codes
             if not self._has_methodology_history(lines, code, cutoff_date)
-        )
-        if not missing:
-            return
-
-        jobs: list[tuple[str, str, str, str, FinancialStatementType]] = []
-        balance_period = self._period_range(
-            cutoff_date,
-            lookback_months=self._AVERAGE_LOOKBACK_MONTHS,
-        )
-        income_period = self._result_periods(cutoff_date)
-        for entity_code in missing:
-            jobs.append((entity_code, balance_period, *self._BALANCE_REPORT))
-            jobs.append((entity_code, income_period, *self._INCOME_REPORT))
-
-        self._execute_jobs(jobs, lines, endpoints, diagnostics)
-        recovered = sum(self._has_methodology_history(lines, code, cutoff_date) for code in missing)
-        diagnostics.append(
-            "Recuperación directa de historia SUGEF para comparables 08ME14-01: "
-            f"{recovered}/{len(missing)} entidades con historia completa tras la recuperación."
         )
 
     @classmethod
@@ -308,15 +466,22 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
             for line in lines
             if line.entity.entity_id == entity_code
             and line.statement_type is FinancialStatementType.BALANCE_SHEET
+            and line.account_code.removesuffix(".0") == "10000"
             and line.statement_date <= cutoff_date
         }
-        income_dates = {
-            line.statement_date
-            for line in lines
-            if line.entity.entity_id == entity_code
-            and line.statement_type is FinancialStatementType.INCOME_STATEMENT
-            and line.statement_date <= cutoff_date
+        income_by_account: dict[str, set[date]] = {
+            account: set() for account in cls._METHODOLOGY_INCOME_ACCOUNTS
         }
+        for line in lines:
+            account = line.account_code.removesuffix(".0")
+            if (
+                line.entity.entity_id == entity_code
+                and line.statement_type is FinancialStatementType.INCOME_STATEMENT
+                and line.statement_date <= cutoff_date
+                and account in income_by_account
+            ):
+                income_by_account[account].add(line.statement_date)
+
         required_income_dates = {
             cutoff_date,
             cls._month_end_date(cutoff_date.year - 1, cutoff_date.month),
@@ -325,7 +490,7 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
         return (
             cutoff_date in balance_dates
             and len(balance_dates) >= cls._AVERAGE_LOOKBACK_MONTHS + 1
-            and required_income_dates.issubset(income_dates)
+            and all(required_income_dates.issubset(dates) for dates in income_by_account.values())
         )
 
     @staticmethod
@@ -366,9 +531,6 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
                 line.account_code,
                 line.account_name,
             )
-            # Las consultas directas de la entidad se ejecutan antes que las del
-            # universo SFN; conservar la primera observación evita que una fila
-            # masiva sustituya innecesariamente la trazabilidad directa.
             unique.setdefault(key, line)
         return list(unique.values())
 
