@@ -18,7 +18,8 @@ class InstitutionalEntityFlagService:
 
     Las listas se mantienen explícitas y auditables. Una entidad no incluida en
     el catálogo aplicable recibe 0; una entidad incluida recibe 1. La comparación
-    se realiza sobre nombres normalizados, sin inferencias por sector o propiedad.
+    se realiza sobre nombres y alias normalizados, sin inferencias por sector o
+    propiedad.
     """
 
     _STATE_GUARANTEE = {
@@ -29,12 +30,17 @@ class InstitutionalEntityFlagService:
         "BANCO POPULAR Y DE DESARROLLO COMUNAL",
         "MUTUAL ALAJUELA",
         "MUTUAL ALAJUELA DE AHORRO Y PRESTAMO",
+        "GRUPO MUTUAL",
+        "GRUPO MUTUAL ALAJUELA",
+        "GRUPO MUTUAL ALAJUELA LA VIVIENDA DE AHORRO Y PRESTAMO",
         "MUTUAL CARTAGO",
         "MUTUAL CARTAGO DE AHORRO Y PRESTAMO",
+        "MUCAP",
     }
     _PROPORTIONAL_SUPERVISION = {
         "COOPAVEGRA",
         "COOPE EMPLEADOS AYA",
+        "COOPEAYA",
         "COOPE SAN MARCOS",
         "COOPEBANPO",
         "COOPECAR",
@@ -69,9 +75,14 @@ class InstitutionalEntityFlagService:
         entity: FinancialEntity,
         cutoff_date: date,
     ) -> tuple[FinancialStatementLine, FinancialStatementLine]:
-        normalized = cls._normalize_entity_name(entity.name)
-        state_guarantee = Decimal("1") if normalized in cls._STATE_GUARANTEE else Decimal("0")
-        proportional = Decimal("1") if normalized in cls._PROPORTIONAL_SUPERVISION else Decimal("0")
+        state_guarantee = (
+            Decimal("1") if cls._matches_catalog(entity.name, cls._STATE_GUARANTEE) else Decimal("0")
+        )
+        proportional = (
+            Decimal("1")
+            if cls._matches_catalog(entity.name, cls._PROPORTIONAL_SUPERVISION)
+            else Decimal("0")
+        )
         return (
             cls._line(
                 entity,
@@ -90,6 +101,30 @@ class InstitutionalEntityFlagService:
                 catalog="Catálogo institucional de entidades con garantía del Estado",
             ),
         )
+
+    @classmethod
+    def _matches_catalog(cls, value: str, catalog: set[str]) -> bool:
+        catalog_keys = {
+            key
+            for item in catalog
+            for key in (
+                cls._normalize_entity_name(item),
+                cls._normalize_entity_name(item).replace(" ", ""),
+            )
+        }
+        return any(
+            candidate in catalog_keys or candidate.replace(" ", "") in catalog_keys
+            for candidate in cls._entity_name_candidates(value)
+        )
+
+    @classmethod
+    def _entity_name_candidates(cls, value: str) -> tuple[str, ...]:
+        parts = re.split(r"\s+[–—-]\s+", value)
+        normalized = [
+            cls._normalize_entity_name(value),
+            *(cls._normalize_entity_name(part) for part in parts if part.strip()),
+        ]
+        return tuple(dict.fromkeys(item for item in normalized if item))
 
     @staticmethod
     def _line(
