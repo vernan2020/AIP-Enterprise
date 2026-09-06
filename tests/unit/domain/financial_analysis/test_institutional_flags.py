@@ -122,9 +122,7 @@ def test_bcr_runtime_name_receives_full_binary_dimension_score() -> None:
         item for item in rating.indicators if item.code == "PROPORTIONAL_SUPERVISION"
     )
     guarantee = next(item for item in rating.indicators if item.code == "STATE_GUARANTEE")
-    dimension = next(
-        item for item in rating.dimensions if item.name == "Supervisión proporcional"
-    )
+    dimension = next(item for item in rating.dimensions if item.name == "Supervisión proporcional")
 
     assert proportional.value == Decimal("0")
     assert proportional.contribution == Decimal("5")
