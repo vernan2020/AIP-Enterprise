@@ -84,7 +84,9 @@ class FinancialHistoryPanel(QWidget):
     def bind_history(self, series: tuple[FinancialMetricHistorySeriesView, ...]) -> None:
         self._clear_grid()
         if not series:
-            empty = QLabel("No hay histórico mensual disponible para la entidad y el corte seleccionados.")
+            empty = QLabel(
+                "No hay histórico mensual disponible para la entidad y el corte seleccionados."
+            )
             empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
             empty.setStyleSheet("color:#667788; padding:40px; font-size:10px;")
             self._grid.addWidget(empty, 0, 0, 1, 2)
