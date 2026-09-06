@@ -1,0 +1,152 @@
+from __future__ import annotations
+
+from calendar import monthrange
+from datetime import date
+from decimal import Decimal
+
+from aip.domain.financial_analysis.financial_metric_history import (
+    FinancialMetricHistoryService,
+)
+from aip.domain.financial_analysis.models import (
+    FinancialEntity,
+    FinancialStatementLine,
+    FinancialStatementType,
+)
+
+
+ENTITY = FinancialEntity("3004045138", "COOPEALIANZA R.L.")
+
+
+def _month_end(year: int, month: int) -> date:
+    return date(year, month, monthrange(year, month)[1])
+
+
+def _line(
+    statement_date: date,
+    statement_type: FinancialStatementType,
+    account_code: str,
+    account_name: str,
+    amount: Decimal,
+) -> FinancialStatementLine:
+    return FinancialStatementLine(
+        entity=ENTITY,
+        statement_date=statement_date,
+        statement_type=statement_type,
+        account_code=account_code,
+        account_name=account_name,
+        amount=amount,
+    )
+
+
+def _history_lines() -> tuple[FinancialStatementLine, ...]:
+    lines: list[FinancialStatementLine] = []
+    for index in range(12):
+        month_index = 2025 * 12 + 7 + index
+        year, zero_based_month = divmod(month_index, 12)
+        statement_date = _month_end(year, zero_based_month + 1)
+        if statement_date == date(2025, 12, 31):
+            continue
+        assets = Decimal("800000000000") + Decimal(index) * Decimal("1000000000")
+        lines.extend(
+            (
+                _line(
+                    statement_date,
+                    FinancialStatementType.BALANCE_SHEET,
+                    "10000",
+                    "ACTIVO TOTAL",
+                    assets,
+                ),
+                _line(
+                    statement_date,
+                    FinancialStatementType.BALANCE_SHEET,
+                    "12000",
+                    "CARTERA DE CREDITO",
+                    Decimal("410000000000") + Decimal(index) * Decimal("500000000"),
+                ),
+                _line(
+                    statement_date,
+                    FinancialStatementType.BALANCE_SHEET,
+                    "20000",
+                    "PASIVO TOTAL",
+                    Decimal("610000000000") + Decimal(index) * Decimal("700000000"),
+                ),
+                _line(
+                    statement_date,
+                    FinancialStatementType.BALANCE_SHEET,
+                    "25000",
+                    "PATRIMONIO TOTAL",
+                    Decimal("190000000000") + Decimal(index) * Decimal("300000000"),
+                ),
+                _line(
+                    statement_date,
+                    FinancialStatementType.INCOME_STATEMENT,
+                    "30000",
+                    "RESULTADO FINAL",
+                    Decimal("7000000000") + Decimal(index) * Decimal("100000000"),
+                ),
+                _line(
+                    statement_date,
+                    FinancialStatementType.INDICATORS,
+                    "81000",
+                    "ROA",
+                    Decimal("0.010") + Decimal(index) * Decimal("0.0001"),
+                ),
+                _line(
+                    statement_date,
+                    FinancialStatementType.INDICATORS,
+                    "82000",
+                    "ROE",
+                    Decimal("0.050") + Decimal(index) * Decimal("0.0002"),
+                ),
+            )
+        )
+    return tuple(lines)
+
+
+def test_history_builds_seven_kpis_for_twelve_monthly_cutoffs() -> None:
+    series = FinancialMetricHistoryService().build(
+        _history_lines(),
+        entity_id=ENTITY.entity_id,
+        cutoff_date=date(2026, 7, 31),
+    )
+
+    assert tuple(item.code for item in series) == (
+        "ASSETS",
+        "LOANS",
+        "LIABILITIES",
+        "EQUITY",
+        "NET_INCOME",
+        "ROA",
+        "ROE",
+    )
+    assert all(len(item.points) == 12 for item in series)
+    assets = next(item for item in series if item.code == "ASSETS")
+    assert assets.points[0].statement_date == date(2025, 8, 31)
+    assert assets.points[-1].statement_date == date(2026, 7, 31)
+    assert assets.points[-1].value == Decimal("811000000000")
+
+
+def test_history_preserves_missing_month_as_none_instead_of_zero() -> None:
+    series = FinancialMetricHistoryService().build(
+        _history_lines(),
+        entity_id=ENTITY.entity_id,
+        cutoff_date=date(2026, 7, 31),
+    )
+
+    assets = next(item for item in series if item.code == "ASSETS")
+    december = next(point for point in assets.points if point.statement_date == date(2025, 12, 31))
+    assert december.value is None
+    assert all(point.value != Decimal("0") for point in assets.points if point.value is not None)
+
+
+def test_history_uses_published_roa_and_roe_percentages() -> None:
+    series = FinancialMetricHistoryService().build(
+        _history_lines(),
+        entity_id=ENTITY.entity_id,
+        cutoff_date=date(2026, 7, 31),
+    )
+
+    roa = next(item for item in series if item.code == "ROA")
+    roe = next(item for item in series if item.code == "ROE")
+    assert roa.points[-1].value == Decimal("1.1100")
+    assert roe.points[-1].value == Decimal("5.2200")
