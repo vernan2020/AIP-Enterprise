@@ -17,3 +17,13 @@ class PortfolioHistoryPoint:
     dv01_mm: Decimal | None
     hhi: Decimal
     data_quality_status: str = "N/D"
+
+
+@dataclass(frozen=True, slots=True)
+class PortfolioHistorySeries:
+    """Presentation contract for one historical KPI query."""
+
+    points: tuple[PortfolioHistoryPoint, ...]
+    status: str
+    sampling: str
+    warnings: tuple[str, ...] = ()
