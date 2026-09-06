@@ -70,7 +70,7 @@ def test_service_does_not_expose_bundled_reference_data_when_sugef_is_disabled()
     assert all("referencia institucional" not in item for item in snapshot.diagnostics)
 
 
-def test_selected_entity_history_enriches_headline_kpis_missing_from_peer_dataset() -> None:
+def test_selected_entity_history_enriches_only_missing_headline_kpis() -> None:
     entity = FinancialEntity("PEER-1", "COOCIQUE")
     cutoff = date(2026, 7, 31)
 
@@ -103,6 +103,12 @@ def test_selected_entity_history_enriches_headline_kpis_missing_from_peer_datase
             "RESULTADO FINAL",
             "682520000",
         ),
+        line(
+            FinancialStatementType.INDICATORS,
+            "81000",
+            "ROA",
+            "0.0039",
+        ),
     )
     complete_selected_lines = (
         line(
@@ -116,6 +122,15 @@ def test_selected_entity_history_enriches_headline_kpis_missing_from_peer_datase
             "20000",
             "PASIVO TOTAL",
             "259864610000",
+        ),
+        # Simula una observación histórica que podría competir con el ROA ya
+        # resuelto por el snapshot principal. Debe usarse para el histórico, pero
+        # nunca desplazar el KPI publicado que ya existe en cabecera.
+        line(
+            FinancialStatementType.INDICATORS,
+            "01000",
+            "ROA",
+            "0.0022",
         ),
     )
 
@@ -155,3 +170,5 @@ def test_selected_entity_history_enriches_headline_kpis_missing_from_peer_datase
     assert metrics["LIABILITIES"].value == Decimal("259864610000")
     assert history["LOANS"].points[-1].value == metrics["LOANS"].value
     assert history["LIABILITIES"].points[-1].value == metrics["LIABILITIES"].value
+    assert metrics["ROA"].value == Decimal("0.3900")
+    assert history["ROA"].points[-1].value == Decimal("0.2200")
