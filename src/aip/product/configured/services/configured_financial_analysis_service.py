@@ -7,7 +7,12 @@ from threading import RLock
 from aip.domain.financial_analysis.financial_metric_history import (
     FinancialMetricHistoryService,
 )
-from aip.domain.financial_analysis.models import FinancialAnalysisSnapshot, FinancialMetric
+from aip.domain.financial_analysis.models import (
+    FinancialAnalysisSnapshot,
+    FinancialMetric,
+    FinancialMetricHistoryPoint,
+    FinancialMetricHistorySeries,
+)
 from aip.domain.financial_analysis.services import FinancialAnalysisService
 from aip.product.configured.configuration.configured_source_config import (
     SUGEFFinancialSourceConfig,
@@ -80,7 +85,7 @@ class ConfiguredFinancialAnalysisService:
                 force_refresh=force_refresh,
             )
             combined_lines = result.lines + history_result.lines
-            history = self._history.build(
+            raw_history = self._history.build(
                 combined_lines,
                 entity_id=entity_id,
                 cutoff_date=snapshot.cutoff_date,
@@ -96,6 +101,11 @@ class ConfiguredFinancialAnalysisService:
                 statement_date=snapshot.cutoff_date,
             )
             metrics = self._merge_headline_metrics(snapshot.metrics, enriched_metrics)
+            history = self._align_history_current_cutoff(
+                raw_history,
+                metrics,
+                cutoff_date=snapshot.cutoff_date,
+            )
         except Exception as exc:
             return replace(
                 snapshot,
@@ -155,6 +165,32 @@ class ConfiguredFinancialAnalysisService:
 
         merged.extend(metric for metric in enriched if metric.code not in seen)
         return tuple(merged)
+
+    @staticmethod
+    def _align_history_current_cutoff(
+        history: tuple[FinancialMetricHistorySeries, ...],
+        metrics: tuple[FinancialMetric, ...],
+        *,
+        cutoff_date: date,
+    ) -> tuple[FinancialMetricHistorySeries, ...]:
+        """Make the current history point equal the canonical headline KPI."""
+
+        current_by_code = {metric.code: metric for metric in metrics if metric.value is not None}
+        aligned: list[FinancialMetricHistorySeries] = []
+        for series in history:
+            metric = current_by_code.get(series.code)
+            if metric is None:
+                aligned.append(series)
+                continue
+            points = tuple(
+                FinancialMetricHistoryPoint(
+                    statement_date=point.statement_date,
+                    value=(metric.value if point.statement_date == cutoff_date else point.value),
+                )
+                for point in series.points
+            )
+            aligned.append(replace(series, points=points))
+        return tuple(aligned)
 
     def _read(self, *, cutoff_date: date, force_refresh: bool) -> SUGEFFinancialReadResult:
         with self._lock:
