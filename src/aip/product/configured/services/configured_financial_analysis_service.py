@@ -79,10 +79,21 @@ class ConfiguredFinancialAnalysisService:
                 cutoff_date=snapshot.cutoff_date,
                 force_refresh=force_refresh,
             )
+            combined_lines = result.lines + history_result.lines
             history = self._history.build(
-                result.lines + history_result.lines,
+                combined_lines,
                 entity_id=entity_id,
                 cutoff_date=snapshot.cutoff_date,
+            )
+            # El universo comparativo se descarga de forma deliberadamente acotada a
+            # las cuentas requeridas por 08ME14-01. Para una entidad seleccionada,
+            # el lector histórico sí aporta sus estados completos. Los KPI de
+            # cabecera deben usar esa misma fuente oficial para no mostrar N/D cuando
+            # el dato ya está disponible en la serie histórica.
+            metrics = self._analysis.metrics_for_period(
+                combined_lines,
+                entity_id=entity_id,
+                statement_date=snapshot.cutoff_date,
             )
         except Exception as exc:
             return replace(
@@ -96,6 +107,7 @@ class ConfiguredFinancialAnalysisService:
 
         return replace(
             snapshot,
+            metrics=metrics,
             metric_history=history,
             diagnostics=snapshot.diagnostics + history_result.diagnostics,
         )
