@@ -7,7 +7,7 @@ from threading import RLock
 from aip.domain.financial_analysis.financial_metric_history import (
     FinancialMetricHistoryService,
 )
-from aip.domain.financial_analysis.models import FinancialAnalysisSnapshot
+from aip.domain.financial_analysis.models import FinancialAnalysisSnapshot, FinancialMetric
 from aip.domain.financial_analysis.services import FinancialAnalysisService
 from aip.product.configured.configuration.configured_source_config import (
     SUGEFFinancialSourceConfig,
@@ -87,14 +87,15 @@ class ConfiguredFinancialAnalysisService:
             )
             # El universo comparativo se descarga de forma deliberadamente acotada a
             # las cuentas requeridas por 08ME14-01. Para una entidad seleccionada,
-            # el lector histórico sí aporta sus estados completos. Los KPI de
-            # cabecera deben usar esa misma fuente oficial para no mostrar N/D cuando
-            # el dato ya está disponible en la serie histórica.
-            metrics = self._analysis.metrics_for_period(
+            # el lector histórico sí aporta sus estados completos. El histórico solo
+            # debe completar KPI faltantes; nunca desplaza un valor ya resuelto por el
+            # snapshot principal (por ejemplo, ROA/ROE publicados por SUGEF).
+            enriched_metrics = self._analysis.metrics_for_period(
                 combined_lines,
                 entity_id=entity_id,
                 statement_date=snapshot.cutoff_date,
             )
+            metrics = self._merge_headline_metrics(snapshot.metrics, enriched_metrics)
         except Exception as exc:
             return replace(
                 snapshot,
@@ -111,6 +112,49 @@ class ConfiguredFinancialAnalysisService:
             metric_history=history,
             diagnostics=snapshot.diagnostics + history_result.diagnostics,
         )
+
+    @staticmethod
+    def _merge_headline_metrics(
+        primary: tuple[FinancialMetric, ...],
+        enriched: tuple[FinancialMetric, ...],
+    ) -> tuple[FinancialMetric, ...]:
+        """Fill primary N/D metrics without overriding already resolved values."""
+
+        enriched_by_code = {metric.code: metric for metric in enriched}
+        merged: list[FinancialMetric] = []
+        seen: set[str] = set()
+
+        for metric in primary:
+            candidate = enriched_by_code.get(metric.code)
+            seen.add(metric.code)
+            if candidate is None:
+                merged.append(metric)
+                continue
+            if metric.value is None and candidate.value is not None:
+                merged.append(candidate)
+                continue
+            if metric.value is not None and candidate.value == metric.value:
+                merged.append(
+                    replace(
+                        metric,
+                        previous_value=(
+                            metric.previous_value
+                            if metric.previous_value is not None
+                            else candidate.previous_value
+                        ),
+                        change_percent=(
+                            metric.change_percent
+                            if metric.change_percent is not None
+                            else candidate.change_percent
+                        ),
+                        source_account=metric.source_account or candidate.source_account,
+                    )
+                )
+                continue
+            merged.append(metric)
+
+        merged.extend(metric for metric in enriched if metric.code not in seen)
+        return tuple(merged)
 
     def _read(self, *, cutoff_date: date, force_refresh: bool) -> SUGEFFinancialReadResult:
         with self._lock:
