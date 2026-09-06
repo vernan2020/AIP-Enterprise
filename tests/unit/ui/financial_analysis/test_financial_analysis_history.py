@@ -9,9 +9,7 @@ from aip.domain.financial_analysis.models import (
     FinancialMetricHistoryPoint,
     FinancialMetricHistorySeries,
 )
-from aip.ui.modules.financial_analysis.presenters.financial_analysis_presenter import (
-    FinancialAnalysisPresenter,
-)
+from aip.ui.modules.financial_analysis.presenters.financial_analysis_presenter import FinancialAnalysisPresenter
 
 
 ENTITY = FinancialEntity("3004045138", "COOPEALIANZA R.L.")
