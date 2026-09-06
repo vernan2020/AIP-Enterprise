@@ -103,14 +103,11 @@ class FinancialAnalysisService:
             for line in operational_lines
             if line.entity.entity_id == selected.entity_id and line.statement_date == effective_date
         )
-        comparison_dates = self._financial_statement_dates(operational_lines, selected.entity_id)
-        previous_date = next((value for value in comparison_dates if value < effective_date), None)
-        previous = tuple(
-            line
-            for line in operational_lines
-            if line.entity.entity_id == selected.entity_id and line.statement_date == previous_date
+        metrics = self.metrics_for_period(
+            operational_lines,
+            entity_id=selected.entity_id,
+            statement_date=effective_date,
         )
-        metrics = self._metrics(current, previous)
         peers = self._peer_summaries(operational_lines, effective_date)
         rating = SUGEFOnlyFinancialEntityRatingService().evaluate(
             operational_lines,
@@ -156,6 +153,30 @@ class FinancialAnalysisService:
             diagnostics=tuple(coverage_diagnostics),
             source_files=source_files,
         )
+
+    @classmethod
+    def metrics_for_period(
+        cls,
+        lines: tuple[FinancialStatementLine, ...],
+        *,
+        entity_id: str,
+        statement_date: date,
+    ) -> tuple[FinancialMetric, ...]:
+        """Return the seven headline metrics for one entity and accounting cutoff."""
+
+        current = tuple(
+            line
+            for line in lines
+            if line.entity.entity_id == entity_id and line.statement_date == statement_date
+        )
+        comparison_dates = cls._financial_statement_dates(lines, entity_id)
+        previous_date = next((value for value in comparison_dates if value < statement_date), None)
+        previous = tuple(
+            line
+            for line in lines
+            if line.entity.entity_id == entity_id and line.statement_date == previous_date
+        )
+        return cls._metrics(current, previous)
 
     @classmethod
     def _metrics(
