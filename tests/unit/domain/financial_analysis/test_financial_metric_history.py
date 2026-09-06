@@ -4,12 +4,12 @@ from calendar import monthrange
 from datetime import date
 from decimal import Decimal
 
-from aip.domain.financial_analysis.financial_metric_history import FinancialMetricHistoryService
 from aip.domain.financial_analysis.models import (
     FinancialEntity,
     FinancialStatementLine,
     FinancialStatementType,
 )
+from aip.domain.financial_analysis.financial_metric_history import FinancialMetricHistoryService
 
 
 ENTITY = FinancialEntity("3004045138", "COOPEALIANZA R.L.")
