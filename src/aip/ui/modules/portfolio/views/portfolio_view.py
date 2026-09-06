@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
 from aip.ui.modules.portfolio.presenters.portfolio_presenter import PortfolioPresenter
 from aip.ui.modules.portfolio.viewmodels.portfolio_view_model import PortfolioViewModel
 from aip.ui.modules.portfolio.views.portfolio_details_view import PortfolioDetailsView
+from aip.ui.modules.portfolio.views.portfolio_history_view import PortfolioHistoryView
 from aip.ui.modules.portfolio.views.portfolio_positions_view import PortfolioPositionsView
 from aip.ui.modules.portfolio.views.portfolio_summary_view import PortfolioSummaryView
 from aip.ui.modules.portfolio.views.portfolio_toolbar import PortfolioToolbar
@@ -43,11 +44,16 @@ class PortfolioView(QWidget):
         self._details = PortfolioDetailsView(
             self._view_model.rows[0] if self._view_model.rows else None
         )
+        self._history = PortfolioHistoryView()
         self._status_bar = PortfolioStatusBadge("Portafolio listo")
         self._content_splitter: QSplitter | None = None
+        self._positions_page: QWidget | None = None
+        self._history_loaded_for: tuple[str, str] | None = None
         self._kpis: dict[str, QLabel] = {}
         self._build_ui()
         self._toolbar.actions()[0].triggered.connect(self.refresh)
+        self._history.sampling_requested.connect(self._load_history)
+        self._tabs.currentChanged.connect(self._on_tab_changed)
         self._bind_dashboard(self._view_model)
 
     @staticmethod
@@ -159,6 +165,7 @@ class PortfolioView(QWidget):
         )
         layout.addWidget(self._tabs, 1)
         self._build_dashboard_tab()
+        self._tabs.addTab(self._history, "Histórico KPIs")
         self._build_positions_tab()
 
         layout.addWidget(self._status_bar)
@@ -208,6 +215,7 @@ class PortfolioView(QWidget):
 
     def _build_positions_tab(self) -> None:
         page = QWidget()
+        self._positions_page = page
         layout = QVBoxLayout(page)
         layout.setContentsMargins(4, 8, 4, 4)
         layout.setSpacing(6)
@@ -255,16 +263,47 @@ class PortfolioView(QWidget):
             "El Indicador de Salud permanece N/D hasta certificar su metodología institucional."
         )
 
+    def _on_tab_changed(self, index: int) -> None:
+        if self._tabs.widget(index) is not self._history:
+            return
+        cutoff = self._view_model.summary.valuation_date
+        if self._history_loaded_for is None:
+            self._load_history("monthly")
+        elif self._history_loaded_for[0] != cutoff:
+            self._load_history("monthly")
+
+    def _load_history(self, sampling: str) -> None:
+        cutoff = self._view_model.summary.valuation_date
+        series = self._presenter.load_history(
+            end_date=cutoff,
+            sampling=sampling,
+        )
+        self._history.set_data(
+            series.points,
+            status=series.status,
+            sampling=series.sampling,
+            warnings=series.warnings,
+        )
+        self._history_loaded_for = (cutoff, series.sampling)
+
     def refresh(self) -> None:
         self._view_model = self._presenter.refresh()
+        self._history_loaded_for = None
         self.bind_view_model(self._view_model)
+        if self._tabs.currentWidget() is self._history:
+            self._load_history("monthly")
 
     def bind_view_model(self, view_model: PortfolioViewModel) -> None:
+        previous_cutoff = self._view_model.summary.valuation_date
         self._view_model = view_model
         self._bind_dashboard(view_model)
 
-        positions_page = self._tabs.widget(1)
-        positions_layout = positions_page.layout() if positions_page is not None else None
+        if view_model.summary.valuation_date != previous_cutoff:
+            self._history_loaded_for = None
+
+        positions_layout = (
+            self._positions_page.layout() if self._positions_page is not None else None
+        )
         if positions_layout is not None and self._content_splitter is not None:
             positions_layout.removeWidget(self._content_splitter)
             self._content_splitter.hide()
