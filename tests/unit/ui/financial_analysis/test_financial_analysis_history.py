@@ -3,13 +3,15 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
+from aip.ui.modules.financial_analysis.presenters.financial_analysis_presenter import (
+    FinancialAnalysisPresenter,
+)
 from aip.domain.financial_analysis.models import (
     FinancialAnalysisSnapshot,
     FinancialEntity,
     FinancialMetricHistoryPoint,
     FinancialMetricHistorySeries,
 )
-from aip.ui.modules.financial_analysis.presenters.financial_analysis_presenter import FinancialAnalysisPresenter
 
 
 ENTITY = FinancialEntity("3004045138", "COOPEALIANZA R.L.")
