@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import date
 
+from PySide6.QtCore import Qt
+
 from aip.domain.financial_analysis.models import FinancialAnalysisSnapshot
 from aip.ui.modules.financial_analysis.presenters.financial_analysis_presenter import (
     FinancialAnalysisPresenter,
@@ -42,11 +44,21 @@ def test_financial_analysis_exposes_methodology_rating_tab(qt_app) -> None:
     view = FinancialAnalysisView(presenter=_Presenter())  # type: ignore[arg-type]
 
     titles = [view._tabs.tabText(index) for index in range(view._tabs.count())]
+    rating_titles = [
+        view._rating_content_tabs.tabText(index)
+        for index in range(view._rating_content_tabs.count())
+    ]
 
     assert "Calificación" in titles
+    assert rating_titles == ["Indicadores y dimensiones", "Reconciliación"]
     assert view._rating_heading.text() == "Calificación 08ME14-01 sobre datos SUGEF"
     assert view._rating_methodology.text() == "Metodología: 08ME14-01"
     assert view._rating_grade.text() == "Sin emitir"
+    assert view._rating_indicator_table.isColumnHidden(10)
+    assert (
+        view._rating_dimension_table.horizontalScrollBarPolicy()
+        == Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+    )
     assert "Calificación oficial" not in view._rating_heading.text()
     assert view._cutoff.text().startswith("Corte SUGEF:")
     assert "corte general de AIP" in view._cutoff.toolTip()
