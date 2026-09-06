@@ -8,6 +8,7 @@ from aip.product.configured.configuration.configured_source_config import (
     FolderWatchSourceConfig,
 )
 from aip.product.configured.services.configured_portfolio_history_service import (
+    ConfiguredPortfolioHistoryResult,
     ConfiguredPortfolioHistoryService,
 )
 from aip.product.demo.configuration.demo_config import DemoConfig
@@ -85,3 +86,19 @@ def test_daily_sampling_preserves_every_available_cut() -> None:
     )
 
     assert sampled == list(values)
+
+
+def test_cache_clear_rejects_result_from_older_generation(tmp_path: Path) -> None:
+    service, _ = _service(tmp_path)
+    cache_key = (None, date(2026, 7, 31), "monthly", 96)
+    stale_generation = service._cache_generation  # noqa: SLF001 - concurrency contract
+    result = ConfiguredPortfolioHistoryResult(points=(), status="HEALTHY")
+
+    service.clear_cache()
+    service._cache_if_current(  # noqa: SLF001 - concurrency contract
+        cache_key,
+        result,
+        generation=stale_generation,
+    )
+
+    assert cache_key not in service._cache  # noqa: SLF001 - concurrency contract
