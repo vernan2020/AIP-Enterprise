@@ -10,7 +10,6 @@ from aip.domain.financial_analysis.models import (
     FinancialStatementType,
 )
 
-
 ENTITY = FinancialEntity("3004045138", "COOPEALIANZA R.L.")
 
 
