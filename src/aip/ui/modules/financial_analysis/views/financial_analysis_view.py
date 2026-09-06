@@ -149,6 +149,10 @@ class FinancialAnalysisView(QWidget):
             "QTabBar::tab:selected {color:#005EB8; border-bottom:2px solid #00A9E0;}"
             "QFrame#ratingSummary {background:#F3F8FB; border:1px solid #CFE0EC; "
             "border-radius:8px;}"
+            "QTabWidget#ratingContentTabs::pane {border:1px solid #D7E0E8; "
+            "border-radius:6px; background:#FFFFFF;}"
+            "QLabel#ratingNotes {background:#FFF9E8; border:1px solid #E8D79E; "
+            "border-radius:6px; color:#5D563E; padding:6px 9px;}"
         )
 
     def _build_rating_panel(self) -> QWidget:
@@ -160,26 +164,49 @@ class FinancialAnalysisView(QWidget):
         summary = QFrame()
         summary.setObjectName("ratingSummary")
         summary_layout = QGridLayout(summary)
-        summary_layout.setContentsMargins(12, 8, 12, 8)
+        summary_layout.setContentsMargins(14, 8, 14, 8)
+        summary_layout.setHorizontalSpacing(22)
         self._rating_heading = QLabel("Calificación 08ME14-01 sobre datos SUGEF")
+        self._rating_heading.setStyleSheet("font-size:11px; font-weight:600; color:#314A5E;")
         self._rating_grade = QLabel("Sin emitir")
-        self._rating_grade.setStyleSheet("font-size:22px; font-weight:700; color:#005EB8;")
+        self._rating_grade.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._rating_grade.setMinimumWidth(80)
+        self._rating_grade.setStyleSheet("font-size:30px; font-weight:700; color:#005EB8;")
         self._rating_score = QLabel("Puntaje: -")
-        self._rating_score.setStyleSheet("font-size:14px; font-weight:600;")
+        self._rating_score.setStyleSheet("font-size:15px; font-weight:700; color:#142E46;")
         self._rating_coverage = QLabel("Cobertura: 0.00%")
+        self._rating_coverage.setStyleSheet("font-size:11px; font-weight:600; color:#314A5E;")
         self._rating_methodology = QLabel("Metodología: 08ME14-01")
-        self._rating_methodology.setStyleSheet("color:#52687A;")
-        summary_layout.addWidget(self._rating_heading, 0, 0)
-        summary_layout.addWidget(self._rating_grade, 1, 0)
-        summary_layout.addWidget(self._rating_score, 0, 1)
-        summary_layout.addWidget(self._rating_coverage, 1, 1)
-        summary_layout.addWidget(self._rating_methodology, 0, 2, 2, 1)
+        self._rating_methodology.setStyleSheet("color:#52687A; font-size:10px;")
+        summary_layout.addWidget(self._rating_grade, 0, 0, 2, 1)
+        summary_layout.addWidget(self._rating_heading, 0, 1)
+        summary_layout.addWidget(self._rating_score, 1, 1)
+        summary_layout.addWidget(self._rating_coverage, 0, 2)
+        summary_layout.addWidget(self._rating_methodology, 1, 2)
+        summary_layout.setColumnStretch(1, 1)
         summary_layout.setColumnStretch(2, 1)
         layout.addWidget(summary)
 
-        tables = QHBoxLayout()
+        self._rating_content_tabs = QTabWidget()
+        self._rating_content_tabs.setObjectName("ratingContentTabs")
+        self._rating_content_tabs.setDocumentMode(True)
+
+        detail = QWidget()
+        detail_layout = QHBoxLayout(detail)
+        detail_layout.setContentsMargins(8, 8, 8, 8)
+        detail_layout.setSpacing(10)
+
         self._rating_dimension_table = self._table(["Dimensión", "Puntaje", "Peso", "Cobertura"])
         self._rating_dimension_table.setMinimumWidth(390)
+        self._rating_dimension_table.setMaximumWidth(455)
+        self._rating_dimension_table.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        dimension_header = self._rating_dimension_table.horizontalHeader()
+        dimension_header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        for column in range(1, 4):
+            dimension_header.setSectionResizeMode(column, QHeaderView.ResizeMode.ResizeToContents)
+
         self._rating_indicator_table = self._table(
             [
                 "Indicador",
@@ -195,18 +222,35 @@ class FinancialAnalysisView(QWidget):
                 "Cuenta fuente",
             ]
         )
+        self._rating_indicator_table.setColumnHidden(10, True)
+        indicator_header = self._rating_indicator_table.horizontalHeader()
+        indicator_header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        for column in range(1, 10):
+            indicator_header.setSectionResizeMode(column, QHeaderView.ResizeMode.ResizeToContents)
         peer_header = self._rating_indicator_table.horizontalHeaderItem(3)
         if peer_header is not None:
             peer_header.setToolTip(
                 "Cantidad de entidades con un valor comparable disponible para el indicador."
             )
-        tables.addWidget(self._rating_dimension_table, 2)
-        tables.addWidget(self._rating_indicator_table, 5)
-        layout.addLayout(tables, 1)
 
-        reconciliation_title = QLabel("Reconciliación · SUGEF publicado vs AIP calculado")
-        reconciliation_title.setStyleSheet("font-weight:700; color:#314A5E;")
-        layout.addWidget(reconciliation_title)
+        detail_layout.addWidget(self._rating_dimension_table, 2)
+        detail_layout.addWidget(self._rating_indicator_table, 6)
+        self._rating_content_tabs.addTab(detail, "Indicadores y dimensiones")
+
+        reconciliation = QWidget()
+        reconciliation_layout = QVBoxLayout(reconciliation)
+        reconciliation_layout.setContentsMargins(8, 8, 8, 8)
+        reconciliation_layout.setSpacing(6)
+        reconciliation_title = QLabel("SUGEF publicado vs AIP calculado")
+        reconciliation_title.setStyleSheet("font-weight:700; color:#314A5E; font-size:11px;")
+        reconciliation_help = QLabel(
+            "Contraste del valor publicado por SUGEF con el cálculo independiente de AIP. "
+            "Las fuentes completas se muestran al posicionar el cursor sobre cada celda."
+        )
+        reconciliation_help.setStyleSheet("color:#667788; font-size:9px;")
+        reconciliation_layout.addWidget(reconciliation_title)
+        reconciliation_layout.addWidget(reconciliation_help)
+
         self._reconciliation_table = self._table(
             [
                 "Indicador",
@@ -218,11 +262,21 @@ class FinancialAnalysisView(QWidget):
                 "Fuente cálculo",
             ]
         )
-        self._reconciliation_table.setMaximumHeight(190)
-        layout.addWidget(self._reconciliation_table)
+        reconciliation_header = self._reconciliation_table.horizontalHeader()
+        reconciliation_header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        for column in range(1, 5):
+            reconciliation_header.setSectionResizeMode(column, QHeaderView.ResizeMode.ResizeToContents)
+        reconciliation_header.setSectionResizeMode(5, QHeaderView.ResizeMode.Stretch)
+        reconciliation_header.setSectionResizeMode(6, QHeaderView.ResizeMode.Stretch)
+        reconciliation_layout.addWidget(self._reconciliation_table, 1)
+        self._rating_content_tabs.addTab(reconciliation, "Reconciliación")
 
-        self._rating_notes = QListWidget()
-        self._rating_notes.setMaximumHeight(76)
+        layout.addWidget(self._rating_content_tabs, 1)
+
+        self._rating_notes = QLabel()
+        self._rating_notes.setObjectName("ratingNotes")
+        self._rating_notes.setWordWrap(True)
+        self._rating_notes.setMaximumHeight(54)
         layout.addWidget(self._rating_notes)
         return panel
 
@@ -252,8 +306,15 @@ class FinancialAnalysisView(QWidget):
         table.setHorizontalHeaderLabels(headers)
         table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         table.setAlternatingRowColors(True)
+        table.setWordWrap(False)
+        table.setTextElideMode(Qt.TextElideMode.ElideRight)
+        table.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
+        table.setVerticalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
         table.verticalHeader().setVisible(False)
+        table.verticalHeader().setDefaultSectionSize(28)
+        table.horizontalHeader().setMinimumSectionSize(52)
         table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         table.horizontalHeader().setStretchLastSection(True)
         return table
@@ -342,9 +403,9 @@ class FinancialAnalysisView(QWidget):
         self._rating_coverage.setText(f"Cobertura: {view_model.rating_coverage}")
         self._rating_methodology.setText(f"Metodología: {view_model.rating_methodology}")
         self._rating_grade.setStyleSheet(
-            "font-size:22px; font-weight:700; color:#138A62;"
+            "font-size:30px; font-weight:700; color:#138A62;"
             if view_model.rating_status == "COMPLETE"
-            else "font-size:22px; font-weight:700; color:#A66A00;"
+            else "font-size:30px; font-weight:700; color:#A66A00;"
         )
 
         self._rating_dimension_table.setRowCount(len(view_model.rating_dimensions))
@@ -379,6 +440,8 @@ class FinancialAnalysisView(QWidget):
                     item.setTextAlignment(
                         Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
                     )
+                if row.source_account:
+                    item.setToolTip(f"Cuenta/fuente: {row.source_account}")
                 self._rating_indicator_table.setItem(row_index, column, item)
 
         self._reconciliation_table.setRowCount(len(view_model.indicator_reconciliations))
@@ -398,16 +461,19 @@ class FinancialAnalysisView(QWidget):
                     item.setTextAlignment(
                         Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
                     )
+                if column == 5 and row.published_source:
+                    item.setToolTip(row.published_source)
+                elif column == 6 and row.calculated_source:
+                    item.setToolTip(row.calculated_source)
                 self._reconciliation_table.setItem(row_index, column, item)
 
-        self._rating_notes.clear()
-        self._rating_notes.addItems(
-            list(view_model.rating_diagnostics)
-            or [
-                "P15/P85, ponderaciones y escala aplicadas conforme a 08ME14-01 V01.",
-                "Fuente de indicadores: SUGEF; los faltantes permanecen no disponibles o se calculan desde estados financieros SUGEF cuando la metodología lo permite.",
-            ]
-        )
+        notes = list(view_model.rating_diagnostics) or [
+            "P15/P85, ponderaciones y escala aplicadas conforme a 08ME14-01 V01.",
+            "Fuente de indicadores: SUGEF; los faltantes permanecen no disponibles o se calculan desde estados financieros SUGEF cuando la metodología lo permite.",
+        ]
+        notes_text = "  •  ".join(notes)
+        self._rating_notes.setText(notes_text)
+        self._rating_notes.setToolTip("\n".join(notes))
 
     def _entity_changed(self, _index: int) -> None:
         if self._building_entity_selector:
