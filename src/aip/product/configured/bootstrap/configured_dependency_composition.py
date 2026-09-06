@@ -33,6 +33,9 @@ from aip.product.configured.services.configured_macro_intelligence_service impor
 from aip.product.configured.services.configured_portfolio_dv01_service import (
     ConfiguredPortfolioDV01Service,
 )
+from aip.product.configured.services.configured_portfolio_history_service import (
+    ConfiguredPortfolioHistoryService,
+)
 from aip.product.configured.services.configured_portfolio_rate_shock_service import (
     ConfiguredPortfolioRateShockService,
 )
@@ -96,6 +99,11 @@ class ConfiguredDependencyComposition:
             health_provider,
             valuation_date_context=valuation_date_context,
         )
+        portfolio_history_service = ConfiguredPortfolioHistoryService(
+            self._config,
+            self._source_config,
+            health_provider,
+        )
         portfolio_var_service = ConfiguredPortfolioVaRService(
             self._config,
             self._source_config,
@@ -138,6 +146,10 @@ class ConfiguredDependencyComposition:
         container.register_instance(BCCRConfig, bccr_config)
         container.register_instance(BCCRConnector, bccr_connector)
         container.register_instance(ConfiguredPortfolioProvider, portfolio_provider)
+        container.register_instance(
+            ConfiguredPortfolioHistoryService,
+            portfolio_history_service,
+        )
         container.register_instance(ConfiguredMarketProvider, market_provider)
         container.register_instance(ConfiguredLiquidityProvider, liquidity_provider)
         container.register_instance(ConfiguredPortfolioVaRService, portfolio_var_service)
@@ -194,6 +206,7 @@ class ConfiguredDependencyComposition:
             EconomicIndicatorsProvider,
             ConfiguredPortfolioVaRService,
             ConfiguredPortfolioDV01Service,
+            ConfiguredPortfolioHistoryService,
             ConfiguredPortfolioRateShockService,
             ConfiguredMacroIntelligenceService,
             ConfiguredFinancialAnalysisService,
