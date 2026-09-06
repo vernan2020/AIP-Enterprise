@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from decimal import Decimal
+from decimal import Decimal, DivisionByZero, InvalidOperation
 
+from aip.domain.financial_analysis.models import FinancialMetricHistorySeries
 from aip.product.configured.services.configured_financial_analysis_service import (
     ConfiguredFinancialAnalysisService,
     FinancialAnalysisApplicationSnapshot,
@@ -9,6 +10,8 @@ from aip.product.configured.services.configured_financial_analysis_service impor
 from aip.product.demo.bootstrap.application_factory import DemoApplicationFactory
 from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model import (
     FinancialAnalysisViewModel,
+    FinancialMetricHistoryPointView,
+    FinancialMetricHistorySeriesView,
     FinancialMetricView,
     FinancialStatementRow,
     IndicatorReconciliationRow,
@@ -58,6 +61,7 @@ class FinancialAnalysisPresenter:
             )
             for item in snapshot.metrics
         )
+        metric_history = tuple(cls._history_series(item) for item in snapshot.metric_history)
         statements = tuple(
             FinancialStatementRow(
                 statement=cls._statement_label(item.statement_type.value),
@@ -154,6 +158,7 @@ class FinancialAnalysisPresenter:
             selected_entity_name=selected.name if selected else "Sin datos",
             entities=tuple((item.entity_id, item.name) for item in snapshot.entities),
             metrics=metrics,
+            metric_history=metric_history,
             statement_rows=statements,
             peer_rows=peers,
             rating_status=rating.status if rating is not None else "INCOMPLETE",
@@ -174,6 +179,67 @@ class FinancialAnalysisPresenter:
             source_url=snapshot.source_url,
             source_file_count=len(snapshot.source_files),
         )
+
+    @classmethod
+    def _history_series(
+        cls,
+        series: FinancialMetricHistorySeries,
+    ) -> FinancialMetricHistorySeriesView:
+        points = tuple(
+            FinancialMetricHistoryPointView(
+                iso_date=point.statement_date.isoformat(),
+                date_label=point.statement_date.strftime("%m/%Y"),
+                value=cls._chart_value(point.value, series.unit),
+                display_value=cls._metric_value(point.value, series.unit),
+            )
+            for point in series.points
+        )
+        available = tuple(point for point in series.points if point.value is not None)
+        latest = available[-1].value if available else None
+        period_change = cls._history_change(
+            available[0].value if len(available) >= 2 else None,
+            latest if len(available) >= 2 else None,
+            series.unit,
+        )
+        return FinancialMetricHistorySeriesView(
+            code=series.code,
+            label=series.label,
+            unit="%" if series.unit == "PERCENT" else "₡ MM",
+            latest_value=cls._metric_value(latest, series.unit),
+            period_change=period_change,
+            source_account=series.source_account or "Cuenta no identificada",
+            available_points=len(available),
+            total_points=len(series.points),
+            points=points,
+        )
+
+    @staticmethod
+    def _chart_value(value: Decimal | None, unit: str) -> float | None:
+        if value is None:
+            return None
+        scaled = value if unit == "PERCENT" else value / Decimal("1000000")
+        return float(scaled)
+
+    @staticmethod
+    def _history_change(
+        first: Decimal | None,
+        latest: Decimal | None,
+        unit: str,
+    ) -> str:
+        if first is None or latest is None:
+            return "Sin comparación en la ventana"
+        if unit == "PERCENT":
+            difference = latest - first
+            sign = "+" if difference > 0 else ""
+            return f"{sign}{difference:,.2f} pp en la ventana"
+        if first == Decimal("0"):
+            return "Sin comparación en la ventana"
+        try:
+            change = (latest / first - Decimal("1")) * Decimal("100")
+        except (DivisionByZero, InvalidOperation):
+            return "Sin comparación en la ventana"
+        sign = "+" if change > 0 else ""
+        return f"{sign}{change:,.2f}% en la ventana"
 
     @staticmethod
     def _money(value: Decimal | None) -> str:
