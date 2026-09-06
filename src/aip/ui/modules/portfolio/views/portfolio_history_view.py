@@ -181,15 +181,11 @@ class PortfolioHistoryView(QWidget):
         self._charts["dv01"].set_data(
             tuple((point.valuation_date, point.dv01_mm) for point in points)
         )
-        self._charts["hhi"].set_data(
-            tuple((point.valuation_date, point.hhi) for point in points)
-        )
+        self._charts["hhi"].set_data(tuple((point.valuation_date, point.hhi) for point in points))
 
         frequency = "mensual" if self._sampling == "monthly" else "cada corte"
         warning_text = (
-            f" · {len(self._warnings)} advertencia(s) de fuente"
-            if self._warnings
-            else ""
+            f" · {len(self._warnings)} advertencia(s) de fuente" if self._warnings else ""
         )
         self._status_label.setText(
             f"{len(points)} cortes visibles · frecuencia {frequency} · "
