@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QObject, Qt, QThread, Signal, Slot
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QFrame,
@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from aip.ui.modules.portfolio.models.portfolio_history_point import PortfolioHistorySeries
 from aip.ui.modules.portfolio.presenters.portfolio_presenter import PortfolioPresenter
 from aip.ui.modules.portfolio.viewmodels.portfolio_view_model import PortfolioViewModel
 from aip.ui.modules.portfolio.views.portfolio_details_view import PortfolioDetailsView
@@ -29,8 +30,27 @@ from aip.ui.modules.portfolio.widgets.portfolio_filter_panel import PortfolioFil
 from aip.ui.modules.portfolio.widgets.portfolio_status_badge import PortfolioStatusBadge
 
 
+class _PortfolioHistoryWorker(QObject):
+    result_ready = Signal(int, str, str, object)
+    failed = Signal(int, str, str, str)
+
+    def __init__(self, presenter: PortfolioPresenter) -> None:
+        super().__init__()
+        self._presenter = presenter
+
+    @Slot(int, str, str)
+    def load(self, request_id: int, cutoff: str, sampling: str) -> None:
+        try:
+            series = self._presenter.load_history(end_date=cutoff, sampling=sampling)
+            self.result_ready.emit(request_id, cutoff, sampling, series)
+        except Exception as exc:
+            self.failed.emit(request_id, cutoff, sampling, str(exc))
+
+
 class PortfolioView(QWidget):
     """Panel institucional del portafolio y explorador de posiciones."""
+
+    history_load_requested = Signal(int, str, str)
 
     def __init__(self, presenter: PortfolioPresenter | None = None) -> None:
         super().__init__()
@@ -49,6 +69,13 @@ class PortfolioView(QWidget):
         self._content_splitter: QSplitter | None = None
         self._positions_page: QWidget | None = None
         self._history_loaded_for: tuple[str, str] | None = None
+        self._history_worker_thread: QThread | None = None
+        self._history_worker: _PortfolioHistoryWorker | None = None
+        self._history_loading_request: tuple[int, str, str] | None = None
+        self._history_pending_request: tuple[int, str, str] | None = None
+        self._history_request_sequence = 0
+        self._history_requested_sampling = "monthly"
+        self._closing = False
         self._kpis: dict[str, QLabel] = {}
         self._build_ui()
         self._toolbar.actions()[0].triggered.connect(self.refresh)
@@ -263,35 +290,122 @@ class PortfolioView(QWidget):
             "El Indicador de Salud permanece N/D hasta certificar su metodología institucional."
         )
 
+    def _ensure_history_worker(self) -> None:
+        if self._history_worker_thread is not None:
+            return
+        thread = QThread(self)
+        thread.setObjectName("portfolioHistoryWorkerThread")
+        worker = _PortfolioHistoryWorker(self._presenter)
+        worker.moveToThread(thread)
+        self.history_load_requested.connect(worker.load, Qt.ConnectionType.QueuedConnection)
+        worker.result_ready.connect(
+            self._on_history_loaded,
+            Qt.ConnectionType.QueuedConnection,
+        )
+        worker.failed.connect(
+            self._on_history_failed,
+            Qt.ConnectionType.QueuedConnection,
+        )
+        thread.finished.connect(worker.deleteLater)
+        self._history_worker_thread = thread
+        self._history_worker = worker
+        thread.start()
+
     def _on_tab_changed(self, index: int) -> None:
         if self._tabs.widget(index) is not self._history:
             return
         cutoff = self._view_model.summary.valuation_date
-        if self._history_loaded_for is None:
-            self._load_history("monthly")
-        elif self._history_loaded_for[0] != cutoff:
-            self._load_history("monthly")
+        if self._history_loaded_for is None or self._history_loaded_for[0] != cutoff:
+            self._load_history(self._history_requested_sampling)
 
     def _load_history(self, sampling: str) -> None:
+        if self._closing:
+            return
         cutoff = self._view_model.summary.valuation_date
-        series = self._presenter.load_history(
-            end_date=cutoff,
-            sampling=sampling,
-        )
+        self._history_request_sequence += 1
+        self._history_requested_sampling = sampling
+        request = (self._history_request_sequence, cutoff, sampling)
+        self._history.set_loading(sampling)
+        if self._history_loading_request is not None:
+            self._history_pending_request = request
+            return
+        self._start_history_request(request)
+
+    def _start_history_request(self, request: tuple[int, str, str]) -> None:
+        if self._closing:
+            return
+        self._ensure_history_worker()
+        self._history_loading_request = request
+        request_id, cutoff, sampling = request
+        self.history_load_requested.emit(request_id, cutoff, sampling)
+
+    @Slot(int, str, str, object)
+    def _on_history_loaded(
+        self,
+        request_id: int,
+        cutoff: str,
+        sampling: str,
+        payload: object,
+    ) -> None:
+        if self._closing:
+            return
+        active = self._history_loading_request
+        if active is None or active[0] != request_id:
+            return
+        self._history_loading_request = None
+
+        pending = self._history_pending_request
+        self._history_pending_request = None
+        if pending is not None:
+            self._history.set_loading(pending[2])
+            self._start_history_request(pending)
+            return
+
+        if cutoff != self._view_model.summary.valuation_date:
+            return
+        if not isinstance(payload, PortfolioHistorySeries):
+            self._history.set_error("El proceso devolvió una serie histórica inválida")
+            return
+
         self._history.set_data(
-            series.points,
-            status=series.status,
-            sampling=series.sampling,
-            warnings=series.warnings,
+            payload.points,
+            status=payload.status,
+            sampling=payload.sampling,
+            warnings=payload.warnings,
         )
-        self._history_loaded_for = (cutoff, series.sampling)
+        self._history_loaded_for = (cutoff, sampling)
+
+    @Slot(int, str, str, str)
+    def _on_history_failed(
+        self,
+        request_id: int,
+        cutoff: str,
+        sampling: str,
+        message: str,
+    ) -> None:
+        if self._closing:
+            return
+        active = self._history_loading_request
+        if active is None or active[0] != request_id:
+            return
+        self._history_loading_request = None
+
+        pending = self._history_pending_request
+        self._history_pending_request = None
+        if pending is not None:
+            self._history.set_loading(pending[2])
+            self._start_history_request(pending)
+            return
+
+        if cutoff == self._view_model.summary.valuation_date:
+            self._history.set_error(message or f"No fue posible calcular la frecuencia {sampling}")
 
     def refresh(self) -> None:
         self._view_model = self._presenter.refresh()
         self._history_loaded_for = None
         self.bind_view_model(self._view_model)
         if self._tabs.currentWidget() is self._history:
-            self._load_history("monthly")
+            self._load_history(self._history_requested_sampling)
 
     def bind_view_model(self, view_model: PortfolioViewModel) -> None:
         previous_cutoff = self._view_model.summary.valuation_date
@@ -321,6 +435,15 @@ class PortfolioView(QWidget):
 
         self._status_bar.setText(self._translate_status(view_model.status))
         self._status_bar.setToolTip(view_model.error or "")
+
+    def closeEvent(self, event) -> None:  # noqa: N802
+        self._closing = True
+        thread = self._history_worker_thread
+        if thread is not None and thread.isRunning():
+            thread.requestInterruption()
+            thread.quit()
+            thread.wait(30000)
+        super().closeEvent(event)
 
     def view_model(self) -> PortfolioViewModel:
         return self._view_model
