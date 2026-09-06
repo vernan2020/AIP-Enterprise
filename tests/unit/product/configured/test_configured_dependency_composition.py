@@ -13,10 +13,13 @@ from aip.product.configured.services.configured_financial_analysis_service impor
 from aip.product.configured.services.configured_macro_intelligence_service import (
     ConfiguredMacroIntelligenceService,
 )
+from aip.product.configured.services.configured_portfolio_history_service import (
+    ConfiguredPortfolioHistoryService,
+)
 from aip.product.demo.configuration.demo_config import DemoConfig
 
 
-def test_configured_composition_registers_financial_and_macro_services() -> None:
+def test_configured_composition_registers_financial_macro_and_portfolio_history_services() -> None:
     container = ConfiguredDependencyComposition(
         DemoConfig(execution_mode="CONFIGURED", demo_mode_enabled=False),
         ConfiguredSourceConfig(),
@@ -29,4 +32,8 @@ def test_configured_composition_registers_financial_and_macro_services() -> None
     assert isinstance(
         container.resolve(ConfiguredMacroIntelligenceService),
         ConfiguredMacroIntelligenceService,
+    )
+    assert isinstance(
+        container.resolve(ConfiguredPortfolioHistoryService),
+        ConfiguredPortfolioHistoryService,
     )
