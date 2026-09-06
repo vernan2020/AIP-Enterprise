@@ -3,9 +3,6 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
-from aip.ui.modules.financial_analysis.presenters.financial_analysis_presenter import (
-    FinancialAnalysisPresenter,
-)
 from aip.domain.financial_analysis.models import (
     FinancialAnalysisSnapshot,
     FinancialEntity,
@@ -15,6 +12,14 @@ from aip.domain.financial_analysis.models import (
 
 
 ENTITY = FinancialEntity("3004045138", "COOPEALIANZA R.L.")
+
+
+def _present(snapshot: FinancialAnalysisSnapshot):
+    from aip.ui.modules.financial_analysis.presenters.financial_analysis_presenter import (
+        FinancialAnalysisPresenter,
+    )
+
+    return FinancialAnalysisPresenter._from_snapshot(snapshot)
 
 
 def test_presenter_maps_money_history_to_millions_and_window_change() -> None:
@@ -38,7 +43,7 @@ def test_presenter_maps_money_history_to_millions_and_window_change() -> None:
         ),
     )
 
-    view_model = FinancialAnalysisPresenter._from_snapshot(snapshot)
+    view_model = _present(snapshot)
 
     series = view_model.metric_history[0]
     assert series.unit == "₡ MM"
@@ -71,7 +76,7 @@ def test_presenter_maps_percent_history_change_in_percentage_points() -> None:
         ),
     )
 
-    view_model = FinancialAnalysisPresenter._from_snapshot(snapshot)
+    view_model = _present(snapshot)
 
     series = view_model.metric_history[0]
     assert series.unit == "%"
