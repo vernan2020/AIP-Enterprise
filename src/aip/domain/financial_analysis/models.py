@@ -77,6 +77,21 @@ class FinancialMetric:
 
 
 @dataclass(frozen=True, slots=True)
+class FinancialMetricHistoryPoint:
+    statement_date: date
+    value: Decimal | None
+
+
+@dataclass(frozen=True, slots=True)
+class FinancialMetricHistorySeries:
+    code: str
+    label: str
+    unit: str
+    points: tuple[FinancialMetricHistoryPoint, ...] = field(default_factory=tuple)
+    source_account: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class EntityFinancialSummary:
     entity: FinancialEntity
     statement_date: date
@@ -150,6 +165,7 @@ class FinancialAnalysisSnapshot:
     entities: tuple[FinancialEntity, ...] = field(default_factory=tuple)
     available_dates: tuple[date, ...] = field(default_factory=tuple)
     metrics: tuple[FinancialMetric, ...] = field(default_factory=tuple)
+    metric_history: tuple[FinancialMetricHistorySeries, ...] = field(default_factory=tuple)
     statement_lines: tuple[FinancialStatementLine, ...] = field(default_factory=tuple)
     peer_summaries: tuple[EntityFinancialSummary, ...] = field(default_factory=tuple)
     rating: EntityFinancialRating | None = None
