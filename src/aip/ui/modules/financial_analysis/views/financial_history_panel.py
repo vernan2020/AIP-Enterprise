@@ -98,6 +98,8 @@ class FinancialHistoryPanel(QWidget):
     def _clear_grid(self) -> None:
         while self._grid.count():
             child = self._grid.takeAt(0)
+            if child is None:
+                break
             widget = child.widget()
             if widget is not None:
                 widget.deleteLater()
