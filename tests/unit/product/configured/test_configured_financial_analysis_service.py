@@ -124,8 +124,8 @@ def test_selected_entity_history_enriches_only_missing_headline_kpis() -> None:
             "259864610000",
         ),
         # Simula una observación histórica que podría competir con el ROA ya
-        # resuelto por el snapshot principal. Debe usarse para el histórico, pero
-        # nunca desplazar el KPI publicado que ya existe en cabecera.
+        # resuelto por el snapshot principal. Debe servir para meses históricos,
+        # pero no desplazar el KPI canónico ni el último punto del gráfico.
         line(
             FinancialStatementType.INDICATORS,
             "01000",
@@ -171,4 +171,4 @@ def test_selected_entity_history_enriches_only_missing_headline_kpis() -> None:
     assert history["LOANS"].points[-1].value == metrics["LOANS"].value
     assert history["LIABILITIES"].points[-1].value == metrics["LIABILITIES"].value
     assert metrics["ROA"].value == Decimal("0.3900")
-    assert history["ROA"].points[-1].value == Decimal("0.2200")
+    assert history["ROA"].points[-1].value == metrics["ROA"].value
