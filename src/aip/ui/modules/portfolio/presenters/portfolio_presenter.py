@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import date
 from decimal import Decimal
 from typing import Any
 
@@ -10,9 +11,16 @@ from aip.product.configured.services.configured_portfolio_dashboard_analytics_se
 from aip.product.configured.services.configured_portfolio_dv01_service import (
     ConfiguredPortfolioDV01Service,
 )
+from aip.product.configured.services.configured_portfolio_history_service import (
+    ConfiguredPortfolioHistoryService,
+)
 from aip.product.demo.bootstrap.application_factory import DemoApplicationFactory
 from aip.product.demo.configuration.demo_config import DemoConfig
 from aip.ui.modules.portfolio.models.portfolio_dashboard_point import PortfolioDashboardPoint
+from aip.ui.modules.portfolio.models.portfolio_history_point import (
+    PortfolioHistoryPoint,
+    PortfolioHistorySeries,
+)
 from aip.ui.modules.portfolio.models.portfolio_row import PortfolioRow
 from aip.ui.modules.portfolio.models.portfolio_summary import PortfolioSummary
 from aip.ui.modules.portfolio.viewmodels.portfolio_view_model import PortfolioViewModel
@@ -50,6 +58,78 @@ class PortfolioPresenter:
         except (TypeError, ValueError):
             return "N/D"
         return f"₡{amount / Decimal('1000000'):,.2f} MM"
+
+    def load_history(
+        self,
+        *,
+        end_date: str | date,
+        sampling: str = "monthly",
+    ) -> PortfolioHistorySeries:
+        """Load certified historical KPI cuts without synthetic fallback values."""
+
+        if isinstance(end_date, date):
+            resolved_end_date = end_date
+        else:
+            try:
+                resolved_end_date = date.fromisoformat(str(end_date)[:10])
+            except ValueError:
+                return PortfolioHistorySeries(
+                    points=(),
+                    status="UNAVAILABLE",
+                    sampling=sampling,
+                    warnings=("La fecha de corte activa no es válida para consultar el histórico.",),
+                )
+
+        try:
+            history_service = self._demo_factory.container.resolve(
+                ConfiguredPortfolioHistoryService
+            )
+        except Exception as exc:
+            logger.debug("Portfolio history service unavailable: %s", exc)
+            return PortfolioHistorySeries(
+                points=(),
+                status="UNAVAILABLE",
+                sampling=sampling,
+                warnings=(
+                    "El histórico de KPIs está disponible únicamente con fuentes CONFIGURED.",
+                ),
+            )
+
+        try:
+            result = history_service.load(
+                end_date=resolved_end_date,
+                sampling="daily" if sampling == "daily" else "monthly",
+                max_points=260 if sampling == "daily" else 120,
+            )
+        except Exception as exc:
+            logger.exception("Portfolio KPI history calculation failed")
+            return PortfolioHistorySeries(
+                points=(),
+                status="UNAVAILABLE",
+                sampling=sampling,
+                warnings=(f"No fue posible calcular el histórico de KPIs: {exc}",),
+            )
+
+        million = Decimal("1000000")
+        points = tuple(
+            PortfolioHistoryPoint(
+                valuation_date=item.valuation_date,
+                market_value_mm=item.market_value_crc / million,
+                weighted_yield_percent=item.weighted_yield_percent,
+                modified_duration=item.modified_duration,
+                hqla_percent=item.hqla_percent,
+                dv01_mm=(item.dv01_crc / million if item.dv01_crc is not None else None),
+                hhi=item.hhi,
+                data_quality_status=item.data_quality_status,
+            )
+            for item in result.points
+        )
+        return PortfolioHistorySeries(
+            points=points,
+            status=result.status,
+            sampling=sampling,
+            warnings=result.warnings,
+        )
 
     def build_view_model(
         self,
