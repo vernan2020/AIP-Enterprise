@@ -9,7 +9,6 @@ from aip.domain.financial_analysis.models import (
     FinancialStatementLine,
     FinancialStatementType,
 )
-from aip.domain.financial_analysis.financial_metric_history import FinancialMetricHistoryService
 
 
 ENTITY = FinancialEntity("3004045138", "COOPEALIANZA R.L.")
@@ -101,12 +100,20 @@ def _history_lines() -> tuple[FinancialStatementLine, ...]:
     return tuple(lines)
 
 
-def test_history_builds_seven_kpis_for_twelve_monthly_cutoffs() -> None:
-    series = FinancialMetricHistoryService().build(
+def _build_history():
+    from aip.domain.financial_analysis.financial_metric_history import (
+        FinancialMetricHistoryService,
+    )
+
+    return FinancialMetricHistoryService().build(
         _history_lines(),
         entity_id=ENTITY.entity_id,
         cutoff_date=date(2026, 7, 31),
     )
+
+
+def test_history_builds_seven_kpis_for_twelve_monthly_cutoffs() -> None:
+    series = _build_history()
 
     assert tuple(item.code for item in series) == (
         "ASSETS",
@@ -125,11 +132,7 @@ def test_history_builds_seven_kpis_for_twelve_monthly_cutoffs() -> None:
 
 
 def test_history_preserves_missing_month_as_none_instead_of_zero() -> None:
-    series = FinancialMetricHistoryService().build(
-        _history_lines(),
-        entity_id=ENTITY.entity_id,
-        cutoff_date=date(2026, 7, 31),
-    )
+    series = _build_history()
 
     assets = next(item for item in series if item.code == "ASSETS")
     december = next(point for point in assets.points if point.statement_date == date(2025, 12, 31))
@@ -138,11 +141,7 @@ def test_history_preserves_missing_month_as_none_instead_of_zero() -> None:
 
 
 def test_history_uses_published_roa_and_roe_percentages() -> None:
-    series = FinancialMetricHistoryService().build(
-        _history_lines(),
-        entity_id=ENTITY.entity_id,
-        cutoff_date=date(2026, 7, 31),
-    )
+    series = _build_history()
 
     roa = next(item for item in series if item.code == "ROA")
     roe = next(item for item in series if item.code == "ROE")
