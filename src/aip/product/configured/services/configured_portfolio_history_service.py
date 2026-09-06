@@ -71,6 +71,7 @@ class ConfiguredPortfolioHistoryService:
             PortfolioKPIHistoryResult,
         ] = {}
         self._cache_lock = RLock()
+        self._cache_generation = 0
 
     @staticmethod
     def _decimal(value: object) -> Decimal:
@@ -106,6 +107,7 @@ class ConfiguredPortfolioHistoryService:
     def clear_cache(self) -> None:
         with self._cache_lock:
             self._cache.clear()
+            self._cache_generation += 1
 
     def load(
         self,
@@ -125,6 +127,7 @@ class ConfiguredPortfolioHistoryService:
         resolved_end = end_date or self._config.data_cutoff_date
         cache_key = (start_date, resolved_end, sampling, max_points)
         with self._cache_lock:
+            generation = self._cache_generation
             cached = self._cache.get(cache_key)
             if cached is not None:
                 return cached
@@ -143,8 +146,7 @@ class ConfiguredPortfolioHistoryService:
                 status="UNAVAILABLE",
                 warnings=("No se encontraron cortes históricos institucionales del portafolio.",),
             )
-            with self._cache_lock:
-                self._cache[cache_key] = result
+            self._cache_if_current(cache_key, result, generation=generation)
             return result
 
         local_context = ValuationDateContext(resolved_end)
@@ -212,9 +214,19 @@ class ConfiguredPortfolioHistoryService:
             status=status,
             warnings=tuple(warnings),
         )
-        with self._cache_lock:
-            self._cache[cache_key] = result
+        self._cache_if_current(cache_key, result, generation=generation)
         return result
+
+    def _cache_if_current(
+        self,
+        cache_key: tuple[date | None, date | None, HistorySampling, int],
+        result: PortfolioKPIHistoryResult,
+        *,
+        generation: int,
+    ) -> None:
+        with self._cache_lock:
+            if generation == self._cache_generation:
+                self._cache[cache_key] = result
 
     def _discover_available_dates(
         self,
