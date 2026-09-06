@@ -54,12 +54,8 @@ class ConfiguredPortfolioHistoryService:
 
     _SUPPORTED_EXTENSIONS = {".xls", ".xlsx", ".txt"}
     _REJECT_TOKENS = {"prueba", "revision", "revisado", "copia", "respaldo", "canje"}
-    _DATE_PATTERN = re.compile(
-        r"(?P<day>\d{1,2})[-.]?(?P<month>\d{1,2})[-.]?(?P<year>\d{4})"
-    )
-    _COMPACT_DATE_PATTERN = re.compile(
-        r"(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})"
-    )
+    _DATE_PATTERN = re.compile(r"(?P<day>\d{1,2})[-.]?(?P<month>\d{1,2})[-.]?(?P<year>\d{4})")
+    _COMPACT_DATE_PATTERN = re.compile(r"(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})")
 
     def __init__(
         self,
@@ -172,9 +168,7 @@ class ConfiguredPortfolioHistoryService:
                 )
                 continue
 
-            positions = [
-                item for item in portfolio.get("positions", ()) if isinstance(item, dict)
-            ]
+            positions = [item for item in portfolio.get("positions", ()) if isinstance(item, dict)]
             master = portfolio.get("portfolio_master")
             master_payload = master if isinstance(master, dict) else {}
             master_status = str(master_payload.get("status") or "").upper()
@@ -184,14 +178,10 @@ class ConfiguredPortfolioHistoryService:
                 )
                 continue
 
-            analytics = ConfiguredPortfolioDashboardAnalyticsService.calculate(
-                portfolio=portfolio
-            )
+            analytics = ConfiguredPortfolioDashboardAnalyticsService.calculate(portfolio=portfolio)
             dv01_value: Decimal | None
             try:
-                dv01_value = dv01_service.calculate(
-                    portfolio=portfolio
-                ).total_dv01_crc
+                dv01_value = dv01_service.calculate(portfolio=portfolio).total_dv01_crc
             except Exception:
                 dv01_value = None
 
@@ -201,18 +191,12 @@ class ConfiguredPortfolioHistoryService:
                     valuation_date=point_date,
                     market_value_crc=self._decimal(portfolio.get("market_value")),
                     weighted_yield_percent=self._decimal(portfolio.get("weighted_yield")),
-                    modified_duration=self._optional_decimal(
-                        portfolio.get("modified_duration")
-                    ),
+                    modified_duration=self._optional_decimal(portfolio.get("modified_duration")),
                     hqla_percent=self._decimal(portfolio.get("hqla_percent")),
                     dv01_crc=dv01_value,
                     hhi=analytics.hhi,
-                    data_quality_status=str(
-                        portfolio.get("data_quality_status") or "N/D"
-                    ),
-                    master_source_date=self._parse_iso_date(
-                        master_payload.get("valuation_date")
-                    ),
+                    data_quality_status=str(portfolio.get("data_quality_status") or "N/D"),
+                    master_source_date=self._parse_iso_date(master_payload.get("valuation_date")),
                 )
             )
 
