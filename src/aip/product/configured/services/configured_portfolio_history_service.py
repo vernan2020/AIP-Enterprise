@@ -24,7 +24,6 @@ from aip.product.configured.services.configured_portfolio_dv01_service import (
 )
 from aip.product.demo.configuration.demo_config import DemoConfig
 
-
 HistorySampling = Literal["monthly", "daily"]
 
 
