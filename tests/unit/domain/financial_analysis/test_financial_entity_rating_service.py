@@ -67,6 +67,8 @@ def test_official_methodology_can_reach_full_score() -> None:
     factors = {
         definition.code: Decimal("1") for definition in FinancialEntityRatingService.INDICATORS
     }
+    factors["PROPORTIONAL_SUPERVISION"] = Decimal("0")
+    factors["STATE_GUARANTEE"] = Decimal("1")
 
     rating = FinancialEntityRatingService().evaluate(
         _cohort(selected_factors=factors),
@@ -94,7 +96,7 @@ def test_reference_coopealianza_profile_is_reweighted_with_word_policy() -> None
         "EQUITY_COMMITMENT": Decimal("1"),
         "CAPITAL_ADEQUACY": Decimal("0.50"),
         "LIQUIDITY_COVERAGE": Decimal("1"),
-        "PROPORTIONAL_SUPERVISION": Decimal("1"),
+        "PROPORTIONAL_SUPERVISION": Decimal("0"),
         "STATE_GUARANTEE": Decimal("0"),
     }
 
@@ -135,6 +137,7 @@ def test_rating_is_not_emitted_when_an_official_indicator_is_missing() -> None:
     factors = {
         definition.code: Decimal("1") for definition in FinancialEntityRatingService.INDICATORS
     }
+    factors["PROPORTIONAL_SUPERVISION"] = Decimal("0")
     lines = tuple(
         line
         for line in _cohort(selected_factors=factors)
