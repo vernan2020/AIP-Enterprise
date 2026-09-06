@@ -88,7 +88,9 @@ class PortfolioPresenter:
                     points=(),
                     status="UNAVAILABLE",
                     sampling=sampling,
-                    warnings=("La fecha de corte activa no es válida para consultar el histórico.",),
+                    warnings=(
+                        "La fecha de corte activa no es válida para consultar el histórico.",
+                    ),
                 )
 
         try:
