@@ -25,6 +25,9 @@ from aip.ui.modules.financial_analysis.presenters.financial_analysis_presenter i
 from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model import (
     FinancialAnalysisViewModel,
 )
+from aip.ui.modules.financial_analysis.views.financial_history_panel import (
+    FinancialHistoryPanel,
+)
 
 
 class FinancialAnalysisView(QWidget):
@@ -115,10 +118,12 @@ class FinancialAnalysisView(QWidget):
                 "ROE",
             ]
         )
+        self._history_panel = FinancialHistoryPanel()
         self._rating_panel = self._build_rating_panel()
         self._diagnostics = QListWidget()
         self._tabs.addTab(self._statement_table, "Estados financieros")
         self._tabs.addTab(self._peer_table, "Comparativo de entidades")
+        self._tabs.addTab(self._history_panel, "KPIs históricos")
         self._tabs.addTab(self._rating_panel, "Calificación")
         self._tabs.addTab(self._diagnostics, "Calidad y trazabilidad")
         root.addWidget(self._tabs, 1)
@@ -267,6 +272,7 @@ class FinancialAnalysisView(QWidget):
             self._kpi_values[code].setToolTip(metric.source_account if metric else "")
         self._bind_statements(view_model)
         self._bind_peers(view_model)
+        self._history_panel.bind_history(view_model.metric_history)
         self._bind_rating(view_model)
         self._diagnostics.clear()
         self._diagnostics.addItems(list(view_model.diagnostics) or ["Sin incidencias de calidad."])
