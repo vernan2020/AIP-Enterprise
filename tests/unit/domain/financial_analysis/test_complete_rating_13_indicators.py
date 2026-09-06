@@ -9,6 +9,7 @@ from aip.domain.financial_analysis.models import (
     FinancialStatementLine,
     FinancialStatementType,
     RatingDirection,
+    RatingLevel,
     SourceTrace,
 )
 from aip.domain.financial_analysis.ratings import FinancialEntityRatingService
@@ -77,6 +78,53 @@ def test_rating_is_emitted_when_all_13_methodology_indicators_are_available() ->
     liquidity = next(item for item in rating.indicators if item.code == "LIQUIDITY_COVERAGE")
     assert liquidity.value == Decimal("0.3")
     assert not any(message.startswith("Falta el indicador:") for message in rating.diagnostics)
+
+
+def test_non_proportional_entity_receives_full_proportional_supervision_weight() -> None:
+    rating = SUGEFOnlyFinancialEntityRatingService().evaluate(
+        _complete_lines(),
+        selected_entity_id=_ENTITIES[0].entity_id,
+        cutoff_date=_CUTOFF,
+    )
+
+    proportional = next(
+        item for item in rating.indicators if item.code == "PROPORTIONAL_SUPERVISION"
+    )
+    state_guarantee = next(item for item in rating.indicators if item.code == "STATE_GUARANTEE")
+    supervision_dimension = next(
+        item for item in rating.dimensions if item.name == "Supervisión proporcional"
+    )
+
+    assert proportional.value == Decimal("0")
+    assert proportional.level is RatingLevel.OUTSTANDING
+    assert proportional.contribution == Decimal("5")
+    assert state_guarantee.value == Decimal("0")
+    assert state_guarantee.contribution == Decimal("0")
+    assert supervision_dimension.score == Decimal("5.000")
+
+
+def test_proportional_entity_receives_zero_proportional_supervision_weight() -> None:
+    lines = list(_complete_lines())
+    for index, line in enumerate(lines):
+        if (
+            line.entity.entity_id == _ENTITIES[0].entity_id
+            and line.account_code == "PROPORTIONAL_SUPERVISION"
+        ):
+            lines[index] = replace(line, amount=Decimal("1"))
+            break
+
+    rating = SUGEFOnlyFinancialEntityRatingService().evaluate(
+        tuple(lines),
+        selected_entity_id=_ENTITIES[0].entity_id,
+        cutoff_date=_CUTOFF,
+    )
+    proportional = next(
+        item for item in rating.indicators if item.code == "PROPORTIONAL_SUPERVISION"
+    )
+
+    assert proportional.value == Decimal("1")
+    assert proportional.level is RatingLevel.CRITICAL
+    assert proportional.contribution == Decimal("0")
 
 
 def test_rating_trace_counts_accented_calculated_source_as_calculated() -> None:
