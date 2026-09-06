@@ -59,6 +59,17 @@ class PortfolioPresenter:
             return "N/D"
         return f"₡{amount / Decimal('1000000'):,.2f} MM"
 
+    def clear_history_cache(self) -> None:
+        """Invalidate historical KPI snapshots after an explicit portfolio refresh."""
+
+        try:
+            history_service = self._demo_factory.container.resolve(
+                ConfiguredPortfolioHistoryService
+            )
+        except Exception:
+            return
+        history_service.clear_cache()
+
     def load_history(
         self,
         *,
@@ -258,6 +269,7 @@ class PortfolioPresenter:
         filters: dict[str, str] | None = None,
         selected_isin: str | None = None,
     ) -> PortfolioViewModel:
+        self.clear_history_cache()
         return self.build_view_model(theme=theme, filters=filters, selected_isin=selected_isin)
 
     def select(self, isin: str | None) -> PortfolioViewModel:
@@ -267,7 +279,7 @@ class PortfolioPresenter:
         return self.build_view_model(theme=theme)
 
     def handle_refresh(self) -> PortfolioViewModel:
-        return self.build_view_model()
+        return self.refresh()
 
     def apply_filters(self, filters: dict[str, str]) -> PortfolioViewModel:
         return self.build_view_model(filters=filters)
