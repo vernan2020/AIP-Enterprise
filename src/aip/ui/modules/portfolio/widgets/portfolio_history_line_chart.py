@@ -65,22 +65,22 @@ class PortfolioHistoryLineChart(QWidget):
         for index in range(4):
             ratio = index / 3
             y = top + plot_height * ratio
-            value = y_max - (y_max - y_min) * ratio
+            axis_value = y_max - (y_max - y_min) * ratio
             painter.setPen(grid_pen)
             painter.drawLine(QPointF(left, y), QPointF(left + plot_width, y))
             painter.setPen(QColor("#718096"))
             painter.drawText(
                 QRectF(0, y - 9, left - 7, 18),
                 Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignRight,
-                self._axis_label(Decimal(str(value))),
+                self._axis_label(Decimal(str(axis_value))),
             )
 
         coordinates: list[QPointF] = []
         count = len(valid)
-        for index, (_, value) in enumerate(valid):
-            assert value is not None
+        for index, (_, point_value) in enumerate(valid):
+            assert point_value is not None
             x_ratio = index / max(1, count - 1)
-            y_ratio = (float(value) - y_min) / (y_max - y_min)
+            y_ratio = (float(point_value) - y_min) / (y_max - y_min)
             x = left + plot_width * x_ratio
             y = top + plot_height * (1.0 - y_ratio)
             coordinates.append(QPointF(x, y))
