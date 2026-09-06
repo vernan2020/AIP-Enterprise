@@ -13,6 +13,27 @@ class FinancialMetricView:
 
 
 @dataclass(frozen=True, slots=True)
+class FinancialMetricHistoryPointView:
+    iso_date: str
+    date_label: str
+    value: float | None
+    display_value: str
+
+
+@dataclass(frozen=True, slots=True)
+class FinancialMetricHistorySeriesView:
+    code: str
+    label: str
+    unit: str
+    latest_value: str
+    period_change: str
+    source_account: str
+    available_points: int
+    total_points: int
+    points: tuple[FinancialMetricHistoryPointView, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True, slots=True)
 class FinancialStatementRow:
     statement: str
     account_code: str
@@ -79,6 +100,7 @@ class FinancialAnalysisViewModel:
     selected_entity_name: str = "Sin datos"
     entities: tuple[tuple[str, str], ...] = field(default_factory=tuple)
     metrics: tuple[FinancialMetricView, ...] = field(default_factory=tuple)
+    metric_history: tuple[FinancialMetricHistorySeriesView, ...] = field(default_factory=tuple)
     statement_rows: tuple[FinancialStatementRow, ...] = field(default_factory=tuple)
     peer_rows: tuple[PeerSummaryRow, ...] = field(default_factory=tuple)
     rating_status: str = "INCOMPLETE"
