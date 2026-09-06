@@ -76,7 +76,9 @@ class InstitutionalEntityFlagService:
         cutoff_date: date,
     ) -> tuple[FinancialStatementLine, FinancialStatementLine]:
         state_guarantee = (
-            Decimal("1") if cls._matches_catalog(entity.name, cls._STATE_GUARANTEE) else Decimal("0")
+            Decimal("1")
+            if cls._matches_catalog(entity.name, cls._STATE_GUARANTEE)
+            else Decimal("0")
         )
         proportional = (
             Decimal("1")
