@@ -136,6 +136,19 @@ class PortfolioHistoryView(QWidget):
             grid.setRowStretch(row, 1)
         root.addLayout(grid, 1)
 
+    def set_loading(self, sampling: str) -> None:
+        """Expose non-blocking loading state while historical cuts are calculated."""
+
+        frequency = "mensual" if sampling == "monthly" else "cada corte"
+        self._status_label.setStyleSheet("color:#617386; font-weight:600;")
+        self._status_label.setText(f"Calculando histórico · frecuencia {frequency}…")
+
+    def set_error(self, message: str) -> None:
+        """Expose a recoverable history-loading error without affecting the portfolio panel."""
+
+        self._status_label.setStyleSheet("color:#B42318; font-weight:700;")
+        self._status_label.setText(f"Histórico no disponible · {message}")
+
     def set_data(
         self,
         points: tuple[PortfolioHistoryPoint, ...],
@@ -148,6 +161,7 @@ class PortfolioHistoryView(QWidget):
         self._status = status
         self._warnings = warnings
         self._sampling = sampling
+        self._status_label.setStyleSheet("")
 
         index = self._frequency.findData(sampling)
         if index >= 0 and index != self._frequency.currentIndex():
