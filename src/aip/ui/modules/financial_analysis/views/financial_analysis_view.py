@@ -265,7 +265,9 @@ class FinancialAnalysisView(QWidget):
         reconciliation_header = self._reconciliation_table.horizontalHeader()
         reconciliation_header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         for column in range(1, 5):
-            reconciliation_header.setSectionResizeMode(column, QHeaderView.ResizeMode.ResizeToContents)
+            reconciliation_header.setSectionResizeMode(
+                column, QHeaderView.ResizeMode.ResizeToContents
+            )
         reconciliation_header.setSectionResizeMode(5, QHeaderView.ResizeMode.Stretch)
         reconciliation_header.setSectionResizeMode(6, QHeaderView.ResizeMode.Stretch)
         reconciliation_layout.addWidget(self._reconciliation_table, 1)
