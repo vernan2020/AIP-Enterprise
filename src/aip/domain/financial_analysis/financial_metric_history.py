@@ -80,9 +80,7 @@ class FinancialMetricHistoryService:
     @classmethod
     def _monthly_cutoffs(cls, cutoff_date: date, months: int) -> tuple[date, ...]:
         month_start = date(cutoff_date.year, cutoff_date.month, 1)
-        starts = tuple(
-            cls._shift_month(month_start, -offset) for offset in reversed(range(months))
-        )
+        starts = tuple(cls._shift_month(month_start, -offset) for offset in reversed(range(months)))
         return tuple(
             date(value.year, value.month, monthrange(value.year, value.month)[1])
             for value in starts
