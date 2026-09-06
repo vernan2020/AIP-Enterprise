@@ -8,8 +8,8 @@ from aip.product.configured.configuration.configured_source_config import (
     FolderWatchSourceConfig,
 )
 from aip.product.configured.services.configured_portfolio_history_service import (
-    ConfiguredPortfolioHistoryResult,
     ConfiguredPortfolioHistoryService,
+    PortfolioKPIHistoryResult,
 )
 from aip.product.demo.configuration.demo_config import DemoConfig
 
@@ -92,7 +92,7 @@ def test_cache_clear_rejects_result_from_older_generation(tmp_path: Path) -> Non
     service, _ = _service(tmp_path)
     cache_key = (None, date(2026, 7, 31), "monthly", 96)
     stale_generation = service._cache_generation  # noqa: SLF001 - concurrency contract
-    result = ConfiguredPortfolioHistoryResult(points=(), status="HEALTHY")
+    result = PortfolioKPIHistoryResult(points=(), status="HEALTHY")
 
     service.clear_cache()
     service._cache_if_current(  # noqa: SLF001 - concurrency contract
