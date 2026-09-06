@@ -7,13 +7,17 @@ from datetime import date
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from threading import RLock
-from typing import Any, Literal
+from typing import Literal
 
 from aip.product.configured.adapters.configured_portfolio_provider import (
     ConfiguredPortfolioProvider,
 )
-from aip.product.configured.configuration.configured_source_config import ConfiguredSourceConfig
-from aip.product.configured.configuration.institutional_paths import resolve_institutional_path
+from aip.product.configured.configuration.configured_source_config import (
+    ConfiguredSourceConfig,
+)
+from aip.product.configured.configuration.institutional_paths import (
+    resolve_institutional_path,
+)
 from aip.product.configured.context.valuation_date_context import ValuationDateContext
 from aip.product.configured.protocols import SourceHealthProvider
 from aip.product.configured.services.configured_portfolio_dashboard_analytics_service import (
