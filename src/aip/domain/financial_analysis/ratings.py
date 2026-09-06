@@ -24,6 +24,7 @@ class RatingIndicatorDefinition:
     weight_percent: Decimal
     direction: RatingDirection
     aliases: tuple[str, ...]
+    binary_favorable_value: Decimal = Decimal("1")
 
 
 class FinancialEntityRatingService:
@@ -140,6 +141,7 @@ class FinancialEntityRatingService:
             Decimal("5"),
             RatingDirection.BINARY,
             ("APLICA SUPERVISION PROPORCIONAL",),
+            binary_favorable_value=Decimal("0"),
         ),
         RatingIndicatorDefinition(
             "STATE_GUARANTEE",
@@ -148,6 +150,7 @@ class FinancialEntityRatingService:
             Decimal("5"),
             RatingDirection.BINARY,
             ("GARANTIA DEL ESTADO", "APLICA GARANTIA DEL ESTADO"),
+            binary_favorable_value=Decimal("1"),
         ),
     )
     DIMENSION_WEIGHTS = (
@@ -249,15 +252,16 @@ class FinancialEntityRatingService:
         if definition.direction is RatingDirection.BINARY:
             if value not in {Decimal("0"), Decimal("1")}:
                 value = None
+            favorable = definition.binary_favorable_value
             level = (
                 RatingLevel.OUTSTANDING
-                if value == Decimal("1")
-                else RatingLevel.CRITICAL if value == Decimal("0") else RatingLevel.UNAVAILABLE
+                if value == favorable
+                else RatingLevel.CRITICAL if value is not None else RatingLevel.UNAVAILABLE
             )
             contribution = (
                 definition.weight_percent
-                if value == Decimal("1")
-                else (Decimal("0") if value == Decimal("0") else None)
+                if value == favorable
+                else (Decimal("0") if value is not None else None)
             )
             return RatingIndicatorAssessment(
                 code=definition.code,
