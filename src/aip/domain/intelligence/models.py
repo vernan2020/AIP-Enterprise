@@ -104,6 +104,5 @@ class FinancialIntelligenceReport:
     @property
     def opportunity_count(self) -> int:
         return sum(
-            finding.severity is IntelligenceSeverity.OPPORTUNITY
-            for finding in self.findings
+            finding.severity is IntelligenceSeverity.OPPORTUNITY for finding in self.findings
         )
