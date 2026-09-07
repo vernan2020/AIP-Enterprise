@@ -43,5 +43,5 @@ class FinancialIntelligenceService:
         if context is None:
             raise RuntimeError("El contexto de inteligencia no está disponible")
         if self._llm_gateway.available:
-            return self._llm_gateway.answer(context, question)
+            return self._llm_gateway.answer(context, report, question)
         return self._engine.answer(report, question)
