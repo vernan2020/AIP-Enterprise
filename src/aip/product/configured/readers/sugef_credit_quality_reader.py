@@ -56,7 +56,8 @@ class SUGEFCreditQualityReader:
     ausencia como cero de forma automática: primero reconsulta directamente la
     entidad y la normativa incompleta. Solo cuando esa consulta oficial exacta
     responde con información válida y continúa omitiendo una banda, la ausencia
-    se registra como saldo cero para esa banda, con trazabilidad explícita.
+    se registra como saldo cero para esa banda, con trazabilidad explícita. Una
+    fila presente con saldo nulo o inválido siempre permanece no disponible.
     """
 
     _BAND_BY_SUGEF_CODE = {
@@ -138,7 +139,8 @@ class SUGEFCreditQualityReader:
                 "Indicadores de calidad de cartera calculados desde ReporteDiasAtraso "
                 "SUGEF, validando por separado todas las normativas aplicables. Las bandas "
                 "omitidas solo se consideran saldo cero después de una consulta directa y "
-                "exitosa para la entidad y normativa correspondientes."
+                "exitosa para la entidad y normativa correspondientes; los saldos nulos "
+                "permanecen N/D."
             )
         return SUGEFCreditQualityReadResult(
             lines=lines,
@@ -206,11 +208,24 @@ class SUGEFCreditQualityReader:
                 continue
 
             present_bands = {row.band for row in direct_rows}
+            reported_bands = self._raw_reported_bands(
+                response.rows,
+                entity_id=entity_id,
+                statement_date=statement_date,
+                normative=normative,
+            )
             missing_after_direct = tuple(
                 band for band in CreditAgingBand if band not in present_bands
             )
+            invalid_reported = tuple(
+                band for band in missing_after_direct if band in reported_bands
+            )
+            confirmed_absent = tuple(
+                band for band in missing_after_direct if band not in reported_bands
+            )
+
             recovered = list(direct_rows)
-            for band in missing_after_direct:
+            for band in confirmed_absent:
                 recovered.append(
                     _BucketRow(
                         entity=direct_rows[0].entity,
@@ -224,14 +239,21 @@ class SUGEFCreditQualityReader:
                 )
             replacements[key] = tuple(recovered)
 
-            if missing_after_direct:
-                confirmed = ", ".join(band.value for band in missing_after_direct)
+            if confirmed_absent:
+                confirmed = ", ".join(band.value for band in confirmed_absent)
                 diagnostics.append(
                     f"{entity.name} {statement_date:%d/%m/%Y} normativa {normative}: "
                     "consulta directa SUGEF confirmó ausencia de filas para las bandas "
                     f"{confirmed}; se registran con saldo cero exclusivamente para el cálculo."
                 )
-            else:
+            if invalid_reported:
+                invalid = ", ".join(band.value for band in invalid_reported)
+                diagnostics.append(
+                    f"{entity.name} {statement_date:%d/%m/%Y} normativa {normative}: "
+                    "SUGEF sí reportó filas para las bandas "
+                    f"{invalid}, pero el saldo principal es nulo o inválido; se conserva N/D."
+                )
+            if not confirmed_absent and not invalid_reported:
                 diagnostics.append(
                     f"{entity.name} {statement_date:%d/%m/%Y} normativa {normative}: "
                     "consulta directa SUGEF recuperó todas las bandas de atraso faltantes."
@@ -303,7 +325,8 @@ class SUGEFCreditQualityReader:
                     f"sobre normativas SUGEF completas ({normative_labels}) para representar "
                     "la cartera total de la entidad."
                 )
-            trace_row = min(combined_rows, key=lambda item: item.source_row)
+            source_rows = tuple(row for row in combined_rows if row.source_row > 0)
+            trace_row = min(source_rows or tuple(combined_rows), key=lambda item: item.source_row)
             if result.current_portfolio is not None:
                 lines.append(
                     self._indicator_line(
@@ -399,6 +422,30 @@ class SUGEFCreditQualityReader:
                 )
             )
         return tuple(result)
+
+    @classmethod
+    def _raw_reported_bands(
+        cls,
+        rows: tuple[Mapping[str, Any], ...],
+        *,
+        entity_id: str,
+        statement_date: date,
+        normative: str,
+    ) -> set[CreditAgingBand]:
+        """Return bands explicitly present in the raw API response, including null balances."""
+
+        reported: set[CreditAgingBand] = set()
+        for row in rows:
+            if cls._text(row.get("codigoEntidad")) != entity_id:
+                continue
+            if cls._month_end(row.get("periodo")) != statement_date:
+                continue
+            if cls._identifier(row.get("normativa")) != normative:
+                continue
+            band = cls._BAND_BY_SUGEF_CODE.get(cls._identifier(row.get("maximoAtraso")))
+            if band is not None:
+                reported.add(band)
+        return reported
 
     @classmethod
     def _indicator_line(
