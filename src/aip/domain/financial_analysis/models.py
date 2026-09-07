@@ -145,6 +145,18 @@ class EntityFinancialRating:
 
 
 @dataclass(frozen=True, slots=True)
+class EntityRatingSummary:
+    entity: FinancialEntity
+    statement_date: date
+    status: str
+    score: Decimal | None
+    grade: str | None
+    coverage_percent: Decimal
+    available_indicators: int
+    total_indicators: int
+
+
+@dataclass(frozen=True, slots=True)
 class FinancialIndicatorReconciliation:
     code: str
     label: str
@@ -168,6 +180,7 @@ class FinancialAnalysisSnapshot:
     metric_history: tuple[FinancialMetricHistorySeries, ...] = field(default_factory=tuple)
     statement_lines: tuple[FinancialStatementLine, ...] = field(default_factory=tuple)
     peer_summaries: tuple[EntityFinancialSummary, ...] = field(default_factory=tuple)
+    peer_ratings: tuple[EntityRatingSummary, ...] = field(default_factory=tuple)
     rating: EntityFinancialRating | None = None
     indicator_reconciliations: tuple[FinancialIndicatorReconciliation, ...] = field(
         default_factory=tuple
