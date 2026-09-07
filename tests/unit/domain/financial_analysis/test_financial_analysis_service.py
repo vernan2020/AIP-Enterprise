@@ -60,6 +60,10 @@ def test_snapshot_selects_coopealianza_and_builds_peer_comparison() -> None:
     assert snapshot.status == "AVAILABLE"
     assert snapshot.selected_entity == coopealianza
     assert len(snapshot.peer_summaries) == 2
+    assert len(snapshot.peer_ratings) == 2
+    assert {item.entity.entity_id for item in snapshot.peer_ratings} == {"7", "8"}
+    assert all(item.total_indicators == 13 for item in snapshot.peer_ratings)
+    assert all(item.status == "INCOMPLETE" for item in snapshot.peer_ratings)
     by_code = {metric.code: metric for metric in snapshot.metrics}
     assert by_code["ASSETS"].value == Decimal("810000000000")
     assert by_code["ASSETS"].change_percent == Decimal("1.2500")
