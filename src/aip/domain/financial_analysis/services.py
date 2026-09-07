@@ -366,9 +366,11 @@ class FinancialAnalysisService:
                 summaries,
                 key=lambda item: (
                     0 if item.status == "COMPLETE" and item.score is not None else 1,
-                    -(item.score or Decimal("0"))
-                    if item.status == "COMPLETE" and item.score is not None
-                    else -item.coverage_percent,
+                    (
+                        -(item.score or Decimal("0"))
+                        if item.status == "COMPLETE" and item.score is not None
+                        else -item.coverage_percent
+                    ),
                     item.entity.name.casefold(),
                 ),
             )
