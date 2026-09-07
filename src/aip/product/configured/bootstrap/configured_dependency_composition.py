@@ -48,6 +48,9 @@ from aip.product.configured.services.configured_portfolio_var_service import (
 from aip.product.configured.services.configured_portfolio_var_simulation_service import (
     ConfiguredPortfolioVaRSimulationService,
 )
+from aip.product.configured.services.configured_vector_portfolio_var_simulation_service import (
+    ConfiguredVectorPortfolioVaRSimulationService,
+)
 from aip.product.demo.configuration.demo_config import DemoConfig
 from aip.product.demo.workflows.executive_refresh_workflow import ExecutiveRefreshWorkflow
 from aip.product.demo.workflows.initial_load_workflow import InitialLoadWorkflow
@@ -119,13 +122,15 @@ class ConfiguredDependencyComposition:
         )
         # A dedicated VeR calculator prevents a hypothetical portfolio from
         # contaminating the canonical same-date VeR cache used by the dashboard.
+        # The vector-complete subclass changes only the simulator catalog: BUY
+        # sees every resolvable PiPCA title while SELL remains portfolio-only.
         portfolio_var_simulation_calculator = ConfiguredPortfolioVaRService(
             self._config,
             self._source_config,
             portfolio_provider,
             valuation_date_context=valuation_date_context,
         )
-        portfolio_var_simulation_service = ConfiguredPortfolioVaRSimulationService(
+        portfolio_var_simulation_service = ConfiguredVectorPortfolioVaRSimulationService(
             portfolio_provider,
             portfolio_var_simulation_calculator,
         )
@@ -174,6 +179,10 @@ class ConfiguredDependencyComposition:
         container.register_instance(ConfiguredPortfolioVaRService, portfolio_var_service)
         container.register_instance(
             ConfiguredPortfolioVaRSimulationService,
+            portfolio_var_simulation_service,
+        )
+        container.register_instance(
+            ConfiguredVectorPortfolioVaRSimulationService,
             portfolio_var_simulation_service,
         )
         container.register_instance(ConfiguredPortfolioDV01Service, portfolio_dv01_service)
@@ -233,6 +242,7 @@ class ConfiguredDependencyComposition:
             EconomicIndicatorsProvider,
             ConfiguredPortfolioVaRService,
             ConfiguredPortfolioVaRSimulationService,
+            ConfiguredVectorPortfolioVaRSimulationService,
             ConfiguredPortfolioDV01Service,
             ConfiguredPortfolioHistoryService,
             ConfiguredPortfolioRateShockService,
