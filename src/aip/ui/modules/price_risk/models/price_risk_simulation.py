@@ -24,6 +24,15 @@ class PriceRiskSimulationSecurityOption:
 
 
 @dataclass(frozen=True, slots=True)
+class PriceRiskSimulationRequestTrade:
+    """User-entered what-if transaction; contains no pricing or risk logic."""
+
+    action: str
+    security_key: str
+    market_value_crc: Decimal
+
+
+@dataclass(frozen=True, slots=True)
 class PriceRiskSimulationAppliedTradeRow:
     """One applied hypothetical transaction shown in simulation results."""
 
