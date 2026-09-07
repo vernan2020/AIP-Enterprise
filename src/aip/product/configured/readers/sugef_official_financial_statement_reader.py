@@ -64,8 +64,8 @@ class SUGEFOfficialFinancialStatementReader(SUGEFFinancialStatementReader):
             config,
             api_client=api_client or SUGEFCompletePeerFinancialApiClient(config),
         )
-        self._credit_quality_reader = (
-            credit_quality_reader or SUGEFResilientCreditQualityReader(config)
+        self._credit_quality_reader = credit_quality_reader or SUGEFResilientCreditQualityReader(
+            config
         )
         self._liquidity_reader = liquidity_reader or SUGEFLiquidityIndicatorReader(config)
         self._capital_adequacy_reader = capital_adequacy_reader or SUGEFCapitalAdequacyMatrixReader(
