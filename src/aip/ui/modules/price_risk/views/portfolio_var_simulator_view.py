@@ -213,9 +213,7 @@ class PortfolioVaRSimulatorView(QWidget):
         comparison_layout.addWidget(self._comparison_chart)
         result_layout.addWidget(comparison)
 
-        self._result_detail = QLabel(
-            "Construya un escenario y presione “Calcular VeR simulado”."
-        )
+        self._result_detail = QLabel("Construya un escenario y presione “Calcular VeR simulado”.")
         self._result_detail.setWordWrap(True)
         self._result_detail.setStyleSheet("color:#566D7C; padding:5px;")
         result_layout.addWidget(self._result_detail)
@@ -298,7 +296,9 @@ class PortfolioVaRSimulatorView(QWidget):
     def _show_selected_security(self, _index: int = -1) -> None:
         option = self._selected_option()
         if option is None:
-            self._security_detail.setText("No hay títulos disponibles para la operación seleccionada.")
+            self._security_detail.setText(
+                "No hay títulos disponibles para la operación seleccionada."
+            )
             return
         self._security_detail.setText(
             f"{option.series} · {option.issuer} · {option.currency} · {option.source} · "
@@ -386,13 +386,9 @@ class PortfolioVaRSimulatorView(QWidget):
     def _clear_result(self) -> None:
         for label in self._result_labels.values():
             label.setText("-")
-            label.setStyleSheet(
-                "color:#00345F; font-weight:700; font-size:11px; border:none;"
-            )
+            label.setStyleSheet("color:#00345F; font-weight:700; font-size:11px; border:none;")
         self._comparison_chart.set_data(())
-        self._result_detail.setText(
-            "Construya un escenario y presione “Calcular VeR simulado”."
-        )
+        self._result_detail.setText("Construya un escenario y presione “Calcular VeR simulado”.")
 
     @Slot(bool)
     def _calculate(self, _checked: bool = False) -> None:
@@ -463,7 +459,9 @@ class PortfolioVaRSimulatorView(QWidget):
             self._status.setText("VeR simulado calculado con la metodología institucional.")
             self._status.setStyleSheet("color:#167A68; font-weight:700;")
         elif result.status == "CALCULATED_WITH_WARNINGS":
-            self._status.setText("VeR simulado calculado con advertencias de cobertura o elegibilidad.")
+            self._status.setText(
+                "VeR simulado calculado con advertencias de cobertura o elegibilidad."
+            )
             self._status.setStyleSheet("color:#A95B00; font-weight:700;")
         else:
             self._status.setText("El VeR simulado no pudo quedar disponible para este escenario.")
