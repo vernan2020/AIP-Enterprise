@@ -110,9 +110,7 @@ class SUGEFLiquidityIndicatorReader:
                 diagnostics.extend(direct.diagnostics)
                 direct_grouped = self._group_component_rows(direct.lines)
                 entity_keys = [
-                    key
-                    for key in direct_grouped
-                    if key[0] == entity_code and key[1] == cutoff_date
+                    key for key in direct_grouped if key[0] == entity_code and key[1] == cutoff_date
                 ]
                 if not entity_keys:
                     diagnostics.append(
@@ -136,8 +134,7 @@ class SUGEFLiquidityIndicatorReader:
                     resolved_entities.add(entity_code)
 
         deduplicated = {
-            (line.entity.entity_id, line.statement_date, line.account_code): line
-            for line in output
+            (line.entity.entity_id, line.statement_date, line.account_code): line for line in output
         }
         final_output = tuple(
             sorted(
@@ -178,7 +175,9 @@ class SUGEFLiquidityIndicatorReader:
         with ThreadPoolExecutor(
             max_workers=min(self._MAX_DIRECT_WORKERS, len(entity_codes))
         ) as executor:
-            futures = {executor.submit(load, entity_code): entity_code for entity_code in entity_codes}
+            futures = {
+                executor.submit(load, entity_code): entity_code for entity_code in entity_codes
+            }
             for future in as_completed(futures):
                 entity_code = futures[future]
                 try:
