@@ -139,16 +139,12 @@ class ConfiguredDependencyComposition:
             portfolio_provider,
             valuation_date_context=valuation_date_context,
         )
-        portfolio_var_simulation_service = (
-            CachedConfiguredVectorPortfolioVaRSimulationService(
-                portfolio_provider,
-                portfolio_var_simulation_calculator,
-            )
+        portfolio_var_simulation_service = CachedConfiguredVectorPortfolioVaRSimulationService(
+            portfolio_provider,
+            portfolio_var_simulation_calculator,
         )
         portfolio_dv01_service = CachedConfiguredPortfolioDV01Service(portfolio_provider)
-        portfolio_rate_shock_service = CachedConfiguredPortfolioRateShockService(
-            portfolio_provider
-        )
+        portfolio_rate_shock_service = CachedConfiguredPortfolioRateShockService(portfolio_provider)
 
         configured_market_provider = ConfiguredMarketProvider(
             self._config,

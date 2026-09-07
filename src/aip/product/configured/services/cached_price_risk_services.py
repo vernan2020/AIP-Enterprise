@@ -76,7 +76,9 @@ class CachedConfiguredPortfolioDV01Service(ConfiguredPortfolioDV01Service):
     def calculate(
         self, *, portfolio: dict[str, Any] | None = None
     ) -> ConfiguredPortfolioDV01Result:
-        source = portfolio if portfolio is not None else self._cached_portfolio_provider.get_portfolio()
+        source = (
+            portfolio if portfolio is not None else self._cached_portfolio_provider.get_portfolio()
+        )
         cached = self._snapshot_cache.get(source)
         if cached is not None:
             return cached
@@ -104,7 +106,9 @@ class CachedConfiguredPortfolioRateShockService(ConfiguredPortfolioRateShockServ
     def calculate(
         self, *, portfolio: dict[str, Any] | None = None
     ) -> ConfiguredPortfolioRateShockResult:
-        source = portfolio if portfolio is not None else self._cached_portfolio_provider.get_portfolio()
+        source = (
+            portfolio if portfolio is not None else self._cached_portfolio_provider.get_portfolio()
+        )
         cached = self._snapshot_cache.get(source)
         if cached is not None:
             return cached
@@ -130,9 +134,9 @@ class CachedConfiguredVectorPortfolioVaRSimulationService(
     ) -> None:
         super().__init__(portfolio_provider, simulation_var_service)
         self._cached_portfolio_provider = portfolio_provider
-        self._snapshot_cache: _PortfolioSnapshotCache[
-            tuple[PortfolioSimulationSecurity, ...]
-        ] = _PortfolioSnapshotCache()
+        self._snapshot_cache: _PortfolioSnapshotCache[tuple[PortfolioSimulationSecurity, ...]] = (
+            _PortfolioSnapshotCache()
+        )
         self._calculation_lock = RLock()
 
     def list_securities(
@@ -140,7 +144,9 @@ class CachedConfiguredVectorPortfolioVaRSimulationService(
         *,
         portfolio: dict[str, Any] | None = None,
     ) -> tuple[PortfolioSimulationSecurity, ...]:
-        source = portfolio if portfolio is not None else self._cached_portfolio_provider.get_portfolio()
+        source = (
+            portfolio if portfolio is not None else self._cached_portfolio_provider.get_portfolio()
+        )
         cached = self._snapshot_cache.get(source)
         if cached is not None:
             return cached
