@@ -19,11 +19,22 @@ from aip.product.configured.services.configured_portfolio_rate_shock_service imp
 from aip.product.configured.services.configured_portfolio_var_service import (
     ConfiguredPortfolioVaRService,
 )
+from aip.product.configured.services.configured_portfolio_var_simulation_service import (
+    ConfiguredPortfolioVaRSimulationService,
+    PortfolioSimulationAction,
+    PortfolioSimulationTrade,
+)
 from aip.product.demo.bootstrap.application_factory import DemoApplicationFactory
 from aip.ui.modules.price_risk.models.price_risk_row import (
     PriceRiskRow,
     RateShockViewRow,
     RiskChartPoint,
+)
+from aip.ui.modules.price_risk.models.price_risk_simulation import (
+    PriceRiskSimulationAppliedTradeRow,
+    PriceRiskSimulationRequestTrade,
+    PriceRiskSimulationSecurityOption,
+    PriceRiskSimulationViewModel,
 )
 from aip.ui.modules.price_risk.viewmodels.price_risk_view_model import PriceRiskViewModel
 
@@ -61,8 +72,37 @@ class PriceRiskPresenter:
         return f"₡{cls._decimal(value) / Decimal('1000000'):,.2f} MM"
 
     @classmethod
+    def _format_signed_crc_mm(cls, value: object | None) -> str:
+        if value is None:
+            return "-"
+        amount = cls._decimal(value) / Decimal("1000000")
+        if amount > 0:
+            return f"+₡{amount:,.2f} MM"
+        if amount < 0:
+            return f"-₡{abs(amount):,.2f} MM"
+        return "₡0.00 MM"
+
+    @classmethod
     def _format_percent(cls, value: object, *, decimals: int = 2) -> str:
         return f"{cls._decimal(value):.{decimals}f}%"
+
+    @classmethod
+    def _format_optional_percent(cls, value: object | None, *, decimals: int = 4) -> str:
+        if value is None:
+            return "-"
+        return cls._format_percent(value, decimals=decimals)
+
+    @classmethod
+    def _format_signed_percent(cls, value: object | None, *, decimals: int = 2) -> str:
+        if value is None:
+            return "-"
+        return f"{cls._decimal(value):+.{decimals}f}%"
+
+    @classmethod
+    def _format_signed_pp(cls, value: object | None, *, decimals: int = 4) -> str:
+        if value is None:
+            return "-"
+        return f"{cls._decimal(value):+.{decimals}f} p.p."
 
     @classmethod
     def _format_duration(cls, value: object) -> str:
@@ -252,6 +292,45 @@ class PriceRiskPresenter:
             )
         return tuple(rows)
 
+    def _simulation_security_options(
+        self,
+        portfolio: dict[str, object],
+    ) -> tuple[PriceRiskSimulationSecurityOption, ...]:
+        service = self._application_factory.container.resolve(
+            ConfiguredPortfolioVaRSimulationService
+        )
+        securities = service.list_securities(portfolio=portfolio)
+        options: list[PriceRiskSimulationSecurityOption] = []
+        for item in securities:
+            source_label = "Portafolio" if item.in_portfolio else "Mercado PiPCA"
+            current_value = (
+                self._format_crc_mm(item.current_market_value_crc)
+                if item.in_portfolio
+                else "Fuera de portafolio"
+            )
+            market_price = f"{item.market_price:,.4f}" if item.market_price is not None else "-"
+            market_yield = (
+                f"{item.market_yield:.4f}%" if item.market_yield is not None else "-"
+            )
+            options.append(
+                PriceRiskSimulationSecurityOption(
+                    security_key=item.security_key,
+                    series=item.series,
+                    issuer=item.issuer,
+                    currency=item.currency,
+                    source=source_label,
+                    in_portfolio=item.in_portfolio,
+                    current_market_value_crc=item.current_market_value_crc,
+                    current_market_value=current_value,
+                    market_price=market_price,
+                    market_yield=market_yield,
+                    display_text=(
+                        f"{item.series} · {item.issuer} · {item.currency} · {source_label}"
+                    ),
+                )
+            )
+        return tuple(options)
+
     def build_view_model(self, *, force_refresh: bool = False) -> PriceRiskViewModel:
         try:
             portfolio_provider = self._application_factory.container.resolve(
@@ -265,6 +344,13 @@ class PriceRiskPresenter:
             )
         except Exception as exc:
             return PriceRiskViewModel(status="ERROR", diagnostic=str(exc))
+
+        simulation_securities: tuple[PriceRiskSimulationSecurityOption, ...] = ()
+        simulation_diagnostic: str | None = None
+        try:
+            simulation_securities = self._simulation_security_options(portfolio)
+        except Exception as exc:
+            simulation_diagnostic = str(exc)
 
         dv01_result = None
         dv01_diagnostic: str | None = None
@@ -382,6 +468,7 @@ class PriceRiskPresenter:
             item
             for item in (
                 var_result.diagnostic,
+                f"Simulador: {simulation_diagnostic}" if simulation_diagnostic else None,
                 f"DV01: {dv01_diagnostic}" if dv01_diagnostic else None,
                 (f"Sensibilidad: {rate_shock_diagnostic}" if rate_shock_diagnostic else None),
             )
@@ -408,6 +495,7 @@ class PriceRiskPresenter:
                 required_prices=int(var_result.required_prices),
                 horizon_observations=int(var_result.horizon_observations),
                 scenario_count=int(var_result.scenario_count),
+                simulation_securities=simulation_securities,
                 dv01_total=str(dv01_values["dv01_total"]),
                 dv01_crc=str(dv01_values["dv01_crc"]),
                 dv01_usd=str(dv01_values["dv01_usd"]),
@@ -465,6 +553,7 @@ class PriceRiskPresenter:
             scenario_number=int(portfolio_var.var_scenario_number),
             scenario_start_date=self._format_date(portfolio_var.var_scenario_lagged_date),
             scenario_end_date=self._format_date(portfolio_var.var_scenario_date),
+            simulation_securities=simulation_securities,
             dv01_total=str(dv01_values["dv01_total"]),
             dv01_crc=str(dv01_values["dv01_crc"]),
             dv01_usd=str(dv01_values["dv01_usd"]),
@@ -501,6 +590,87 @@ class PriceRiskPresenter:
             status=str(var_result.status),
             diagnostic=diagnostic,
             rows=rows,
+        )
+
+    def simulate(
+        self,
+        requests: tuple[PriceRiskSimulationRequestTrade, ...],
+    ) -> PriceRiskSimulationViewModel:
+        """Run an isolated portfolio what-if and adapt it for the UI."""
+
+        if not requests:
+            raise ValueError("Agregue al menos una operación al escenario")
+        trades = tuple(
+            PortfolioSimulationTrade(
+                action=PortfolioSimulationAction(request.action.strip().upper()),
+                security_key=request.security_key,
+                market_value_crc=request.market_value_crc,
+            )
+            for request in requests
+        )
+        service = self._application_factory.container.resolve(
+            ConfiguredPortfolioVaRSimulationService
+        )
+        result = service.simulate(trades)
+
+        comparison_points: tuple[RiskChartPoint, ...] = ()
+        if result.base_var_crc is not None and result.simulated_var_crc is not None:
+            comparison_points = (
+                RiskChartPoint("VeR actual", result.base_var_crc),
+                RiskChartPoint("VeR simulado", result.simulated_var_crc),
+            )
+
+        applied_rows = tuple(
+            PriceRiskSimulationAppliedTradeRow(
+                action="Compra" if item.action is PortfolioSimulationAction.BUY else "Venta",
+                series=item.series,
+                issuer=item.issuer,
+                currency=item.currency,
+                market_value=self._format_crc_mm(item.market_value_crc),
+                source="Portafolio" if item.source == "PORTFOLIO" else "Mercado PiPCA",
+            )
+            for item in result.trades
+        )
+
+        return PriceRiskSimulationViewModel(
+            status=result.status,
+            valuation_date=self._format_date(result.valuation_date),
+            base_var=(
+                self._format_crc_mm(result.base_var_crc)
+                if result.base_var_crc is not None
+                else "-"
+            ),
+            simulated_var=(
+                self._format_crc_mm(result.simulated_var_crc)
+                if result.simulated_var_crc is not None
+                else "-"
+            ),
+            delta_var=self._format_signed_crc_mm(result.delta_var_crc),
+            relative_var_change=self._format_signed_percent(
+                result.relative_var_change_percent,
+                decimals=2,
+            ),
+            base_var_percent=self._format_optional_percent(result.base_var_percent),
+            simulated_var_percent=self._format_optional_percent(result.simulated_var_percent),
+            delta_var_percent_points=self._format_signed_pp(
+                result.delta_var_percent_points,
+                decimals=4,
+            ),
+            base_market_value=self._format_crc_mm(result.base_market_value_crc),
+            simulated_market_value=self._format_crc_mm(result.simulated_market_value_crc),
+            delta_market_value=self._format_signed_crc_mm(result.delta_market_value_crc),
+            base_scenario=(
+                f"#{result.base_scenario_number}" if result.base_scenario_number is not None else "-"
+            ),
+            simulated_scenario=(
+                f"#{result.simulated_scenario_number}"
+                if result.simulated_scenario_number is not None
+                else "-"
+            ),
+            comparison_points=comparison_points,
+            trades=applied_rows,
+            warnings=result.warnings,
+            notes=result.notes,
         )
 
     def refresh(self) -> PriceRiskViewModel:
