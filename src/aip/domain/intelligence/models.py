@@ -38,6 +38,93 @@ class MarketOpportunity:
 
 
 @dataclass(frozen=True, slots=True)
+class FinancialMetricContext:
+    code: str
+    label: str
+    value: Decimal | None
+    unit: str
+    previous_value: Decimal | None = None
+    change_percent: Decimal | None = None
+    source_account: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class FinancialPeerContext:
+    entity_name: str
+    category: str
+    assets: Decimal | None = None
+    loans: Decimal | None = None
+    equity: Decimal | None = None
+    net_income: Decimal | None = None
+    roa_percent: Decimal | None = None
+    roe_percent: Decimal | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class FinancialRatingIndicatorContext:
+    code: str
+    label: str
+    dimension: str
+    direction: str
+    level: str
+    value: Decimal | None
+    peer_count: int
+    percentile_15: Decimal | None = None
+    midpoint: Decimal | None = None
+    percentile_85: Decimal | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class FinancialReconciliationContext:
+    code: str
+    label: str
+    status: str
+    difference: Decimal | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class FinancialAnalysisContext:
+    status: str
+    cutoff_date: date | None
+    entity_id: str
+    entity_name: str
+    entity_category: str
+    metrics: tuple[FinancialMetricContext, ...] = ()
+    peers: tuple[FinancialPeerContext, ...] = ()
+    rating_status: str = "UNAVAILABLE"
+    rating_score: Decimal | None = None
+    rating_grade: str = ""
+    rating_coverage_percent: Decimal | None = None
+    rating_methodology: str = ""
+    rating_indicators: tuple[FinancialRatingIndicatorContext, ...] = ()
+    reconciliation_issues: tuple[FinancialReconciliationContext, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class MacroProjectionPointContext:
+    period: date
+    fx_sell: Decimal | None
+    tpm: Decimal | None
+    tbp: Decimal | None
+    tri_crc_12m: Decimal | None
+    tri_usd_12m: Decimal | None
+    inflation: Decimal | None
+    imae: Decimal | None
+
+
+@dataclass(frozen=True, slots=True)
+class MacroIntelligenceContext:
+    status: str
+    scenario_id: str
+    version: int
+    scenario_type: str
+    scenario_status: str
+    dataset_as_of_date: date | None
+    horizon: int
+    rows: tuple[MacroProjectionPointContext, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class FinancialIntelligenceContext:
     cutoff_date: date
     execution_mode: str
@@ -63,6 +150,8 @@ class FinancialIntelligenceContext:
     liquidity_stress_result: str
 
     opportunities: tuple[MarketOpportunity, ...]
+    financial_analysis: FinancialAnalysisContext | None = None
+    macro_intelligence: MacroIntelligenceContext | None = None
 
 
 @dataclass(frozen=True, slots=True)
