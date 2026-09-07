@@ -1,18 +1,24 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from datetime import date, datetime
 from decimal import Decimal
 
 import pytest
 
 from aip.domain.intelligence.models import (
+    FinancialAnalysisContext,
     FinancialIntelligenceContext,
     FinancialIntelligenceReport,
+    FinancialMetricContext,
+    FinancialPeerContext,
     IntelligenceEvidence,
     IntelligenceFinding,
     IntelligenceKind,
     IntelligenceSeverity,
+    MacroIntelligenceContext,
+    MacroProjectionPointContext,
 )
 from aip.product.intelligence.llm_gateway_factory import build_llm_gateway
 from aip.product.intelligence.openai_responses_gateway import OpenAIResponsesGateway
@@ -89,6 +95,87 @@ def test_openai_payload_is_grounded_minimal_and_not_stored() -> None:
     assert evidence_payload["deterministic_report"]["findings"][0]["severity"] == "HIGH"
     assert "secret-key" not in serialized
     assert "local-sensitive-warning-not-for-llm" not in serialized
+
+
+def test_openai_payload_includes_financial_and_macro_context() -> None:
+    financial = FinancialAnalysisContext(
+        status="AVAILABLE",
+        cutoff_date=date(2026, 7, 31),
+        entity_id="3004045138",
+        entity_name="COOPEALIANZA R.L.",
+        entity_category="COOPERATIVAS",
+        metrics=(
+            FinancialMetricContext(
+                code="ROA",
+                label="ROA",
+                value=Decimal("1.02"),
+                unit="PERCENT",
+                change_percent=Decimal("-0.08"),
+                source_account="SUGEF",
+            ),
+        ),
+        peers=(
+            FinancialPeerContext(
+                entity_name="COOPERATIVA PAR",
+                category="COOPERATIVAS",
+                assets=Decimal("500000000000"),
+                roa_percent=Decimal("0.80"),
+            ),
+        ),
+        rating_status="COMPLETE",
+        rating_score=Decimal("8.2"),
+        rating_grade="Satisfactorio",
+        rating_coverage_percent=Decimal("100"),
+        rating_methodology="08ME14-01 · V01",
+    )
+    macro = MacroIntelligenceContext(
+        status="AVAILABLE",
+        scenario_id="BASE-MACRO-INSTITUTIONAL",
+        version=4,
+        scenario_type="BASE",
+        scenario_status="APPROVED",
+        dataset_as_of_date=date(2026, 8, 31),
+        horizon=12,
+        rows=(
+            MacroProjectionPointContext(
+                period=date(2026, 9, 30),
+                fx_sell=Decimal("500"),
+                tpm=Decimal("3.00"),
+                tbp=Decimal("3.50"),
+                tri_crc_12m=Decimal("4.40"),
+                tri_usd_12m=Decimal("3.60"),
+                inflation=Decimal("1.20"),
+                imae=Decimal("3.80"),
+            ),
+        ),
+    )
+    context = replace(
+        _context(),
+        financial_analysis=financial,
+        macro_intelligence=macro,
+    )
+    report = replace(
+        _report(),
+        coverage=(
+            "Portafolio",
+            "Mercado",
+            "Liquidez",
+            "Análisis Financiero",
+            "Inteligencia Macroeconómica",
+        ),
+    )
+    gateway = OpenAIResponsesGateway(api_key="secret-key", model="test-model")
+
+    payload = gateway._build_payload(context, report, "Relaciona macroeconomía y desempeño financiero")
+    evidence_payload = json.loads(payload["input"][0]["content"][0]["text"])
+
+    assert evidence_payload["financial_analysis_sugef"]["entity"]["name"] == "COOPEALIANZA R.L."
+    assert evidence_payload["financial_analysis_sugef"]["headline_metrics"][0]["code"] == "ROA"
+    assert evidence_payload["financial_analysis_sugef"]["peer_comparison"][0]["roa_percent"] == "0.80"
+    assert evidence_payload["macro_intelligence"]["scenario_status"] == "APPROVED"
+    assert evidence_payload["macro_intelligence"]["projection"][0]["tpm"] == "3.00"
+    assert "Análisis Financiero" in evidence_payload["deterministic_report"]["coverage"]
+    assert "Inteligencia Macroeconómica" in evidence_payload["deterministic_report"]["coverage"]
 
 
 def test_openai_answer_extracts_rest_output_without_network(
