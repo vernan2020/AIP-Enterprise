@@ -15,6 +15,10 @@ from aip.product.configured.adapters.configured_market_provider import Configure
 from aip.product.configured.adapters.configured_portfolio_provider import (
     ConfiguredPortfolioProvider,
 )
+from aip.product.configured.adapters.cutoff_cached_analytics_provider import (
+    CutoffCachedLiquidityProvider,
+    CutoffCachedMarketProvider,
+)
 from aip.product.configured.configuration.configured_source_config import ConfiguredSourceConfig
 from aip.product.configured.context.valuation_date_context import ValuationDateContext
 from aip.product.configured.protocols import (
@@ -136,19 +140,31 @@ class ConfiguredDependencyComposition:
         )
         portfolio_dv01_service = ConfiguredPortfolioDV01Service(portfolio_provider)
         portfolio_rate_shock_service = ConfiguredPortfolioRateShockService(portfolio_provider)
-        market_provider = ConfiguredMarketProvider(
+
+        configured_market_provider = ConfiguredMarketProvider(
             self._config,
             self._source_config,
             health_provider,
             portfolio_provider=portfolio_provider,
             valuation_date_context=valuation_date_context,
         )
-        liquidity_provider = ConfiguredLiquidityProvider(
+        market_provider = CutoffCachedMarketProvider(
+            configured_market_provider,
+            portfolio_provider,
+            valuation_date_context,
+        )
+
+        configured_liquidity_provider = ConfiguredLiquidityProvider(
             self._config,
             self._source_config,
             health_provider,
             portfolio_provider=portfolio_provider,
             valuation_date_context=valuation_date_context,
+        )
+        liquidity_provider = CutoffCachedLiquidityProvider(
+            configured_liquidity_provider,
+            portfolio_provider,
+            valuation_date_context,
         )
 
         container.register_instance(ValuationDateContext, valuation_date_context)
@@ -174,8 +190,10 @@ class ConfiguredDependencyComposition:
             ConfiguredPortfolioHistoryService,
             portfolio_history_service,
         )
-        container.register_instance(ConfiguredMarketProvider, market_provider)
-        container.register_instance(ConfiguredLiquidityProvider, liquidity_provider)
+        container.register_instance(ConfiguredMarketProvider, configured_market_provider)
+        container.register_instance(ConfiguredLiquidityProvider, configured_liquidity_provider)
+        container.register_instance(CutoffCachedMarketProvider, market_provider)
+        container.register_instance(CutoffCachedLiquidityProvider, liquidity_provider)
         container.register_instance(ConfiguredPortfolioVaRService, portfolio_var_service)
         container.register_instance(
             ConfiguredPortfolioVaRSimulationService,
@@ -249,6 +267,8 @@ class ConfiguredDependencyComposition:
             ConfiguredMacroIntelligenceService,
             ConfiguredAdvancedMacroForecastingService,
             ConfiguredFinancialAnalysisService,
+            CutoffCachedMarketProvider,
+            CutoffCachedLiquidityProvider,
             BCCRConfig,
             BCCRConnector,
             ValuationDateContext,
