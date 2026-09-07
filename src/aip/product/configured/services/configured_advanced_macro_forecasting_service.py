@@ -25,7 +25,9 @@ class ConfiguredAdvancedMacroForecastingService:
         self._forecasting_service = forecasting_service or AdvancedMacroForecastingService()
         self._cached_dataset: EconometricMonthlyDataset | None = None
         self._cached_signature: tuple[tuple[str, date | None], ...] | None = None
-        self._result_cache: dict[tuple[tuple[tuple[str, date | None], ...], str, int], AdvancedIndicatorForecastResult] = {}
+        self._result_cache: dict[
+            tuple[tuple[tuple[str, date | None], ...], str, int], AdvancedIndicatorForecastResult
+        ] = {}
 
     def evaluate_indicator(
         self,
