@@ -44,7 +44,7 @@ class PortfolioSimulationSecurity:
 
 @dataclass(frozen=True, slots=True)
 class PortfolioSimulationTrade:
-    """One hypothetical transaction expressed as CRC-equivalent market value."""
+    """One hypothetical trade expressed as CRC-equivalent market value."""
 
     action: PortfolioSimulationAction
     security_key: str
@@ -59,7 +59,7 @@ class PortfolioSimulationTrade:
 
 @dataclass(frozen=True, slots=True)
 class AppliedPortfolioSimulationTrade:
-    """Auditable transaction after security resolution and validation."""
+    """Auditable trade after security resolution and validation."""
 
     action: PortfolioSimulationAction
     security_key: str
@@ -72,7 +72,7 @@ class AppliedPortfolioSimulationTrade:
 
 @dataclass(frozen=True, slots=True)
 class ConfiguredPortfolioVaRSimulationResult:
-    """Base-versus-hypothetical VeR comparison for one portfolio scenario."""
+    """Base-versus-hypothetical VeR comparison for one scenario."""
 
     valuation_date: date
     base_result: ConfiguredPortfolioVaRResult
@@ -82,7 +82,6 @@ class ConfiguredPortfolioVaRSimulationResult:
     base_var_crc: Decimal | None
     simulated_var_crc: Decimal | None
     delta_var_crc: Decimal | None
-
     base_var_percent: Decimal | None
     simulated_var_percent: Decimal | None
     delta_var_percent_points: Decimal | None
@@ -91,27 +90,27 @@ class ConfiguredPortfolioVaRSimulationResult:
     base_market_value_crc: Decimal
     simulated_market_value_crc: Decimal
     delta_market_value_crc: Decimal
-
     base_scenario_number: int | None
     simulated_scenario_number: int | None
 
     status: str
     warnings: tuple[str, ...] = ()
+    notes: tuple[str, ...] = ()
 
 
 class ConfiguredPortfolioVaRSimulationService:
     """What-if engine for purchases, sales and mixed portfolio changes.
 
-    The service never mutates the institutional portfolio or the canonical VeR
-    cache. It creates an isolated portfolio copy, applies the hypothetical
-    transactions and asks ``ConfiguredPortfolioVaRService`` for an uncached
-    hypothetical calculation using the exact same 521-price / 500-scenario
-    institutional methodology as the official base VeR.
+    The injected VeR service MUST be a dedicated simulation instance, separate
+    from the canonical ``ConfiguredPortfolioVaRService`` registered for the
+    production dashboard. This service therefore may force-refresh the same
+    valuation date without contaminating the official base VeR cache.
 
-    Transaction amounts are expressed as CRC-equivalent market value because
-    that is the exposure basis used by the consolidated VeR engine. This lets a
-    user simulate CRC and USD securities without introducing a second FX
-    conversion methodology inside the simulator.
+    Every transaction amount is entered as CRC-equivalent market value, the
+    same exposure basis consumed by the consolidated historical VeR engine.
+    The institutional methodology itself is not reimplemented here: both the
+    base and hypothetical portfolios are recalculated by the existing 521-price,
+    21-observation, 500-scenario VeR service.
     """
 
     _SIMULATED_CLASSIFICATION = "SIMULATED_MARKET_VALUE"
@@ -119,10 +118,10 @@ class ConfiguredPortfolioVaRSimulationService:
     def __init__(
         self,
         portfolio_provider: ConfiguredPortfolioProvider,
-        var_service: ConfiguredPortfolioVaRService,
+        simulation_var_service: ConfiguredPortfolioVaRService,
     ) -> None:
         self._portfolio_provider = portfolio_provider
-        self._var_service = var_service
+        self._simulation_var_service = simulation_var_service
 
     def list_securities(
         self,
@@ -133,7 +132,6 @@ class ConfiguredPortfolioVaRSimulationService:
 
         source_portfolio = portfolio or self._portfolio_provider.get_portfolio()
         positions = self._positions(source_portfolio)
-
         by_key: dict[str, PortfolioSimulationSecurity] = {}
         by_fallback: dict[str, str] = {}
 
@@ -141,29 +139,29 @@ class ConfiguredPortfolioVaRSimulationService:
             security = self._security_from_position(position)
             if security is None:
                 continue
-            existing_key = by_fallback.get(security.fallback_key)
-            if existing_key is not None:
-                existing = by_key[existing_key]
-                by_key[existing_key] = PortfolioSimulationSecurity(
-                    security_key=existing.security_key,
-                    fallback_key=existing.fallback_key,
-                    isin=existing.isin or security.isin,
-                    series=existing.series or security.series,
-                    issuer=existing.issuer or security.issuer,
-                    currency=existing.currency or security.currency,
-                    product_code=existing.product_code or security.product_code,
-                    maturity_date=existing.maturity_date or security.maturity_date,
-                    current_market_value_crc=(
-                        existing.current_market_value_crc + security.current_market_value_crc
-                    ),
-                    market_price=existing.market_price or security.market_price,
-                    market_yield=existing.market_yield or security.market_yield,
-                    source="PORTFOLIO",
-                    in_portfolio=True,
-                )
+            matched_key = by_fallback.get(security.fallback_key)
+            if matched_key is None:
+                by_key[security.security_key] = security
+                by_fallback[security.fallback_key] = security.security_key
                 continue
-            by_key[security.security_key] = security
-            by_fallback[security.fallback_key] = security.security_key
+            existing = by_key[matched_key]
+            by_key[matched_key] = PortfolioSimulationSecurity(
+                security_key=existing.security_key,
+                fallback_key=existing.fallback_key,
+                isin=existing.isin or security.isin,
+                series=existing.series or security.series,
+                issuer=existing.issuer or security.issuer,
+                currency=existing.currency or security.currency,
+                product_code=existing.product_code or security.product_code,
+                maturity_date=existing.maturity_date or security.maturity_date,
+                current_market_value_crc=(
+                    existing.current_market_value_crc + security.current_market_value_crc
+                ),
+                market_price=existing.market_price or security.market_price,
+                market_yield=existing.market_yield or security.market_yield,
+                source="PORTFOLIO",
+                in_portfolio=True,
+            )
 
         vector_payload = source_portfolio.get("price_vector") or {}
         vector_records = (
@@ -175,31 +173,15 @@ class ConfiguredPortfolioVaRSimulationService:
             candidate = self._security_from_vector(record)
             if candidate is None:
                 continue
-
-            existing_key = by_key.get(candidate.security_key)
-            if existing_key is not None:
+            if candidate.security_key in by_key:
+                existing = by_key[candidate.security_key]
+                by_key[candidate.security_key] = self._with_market_fields(existing, candidate)
                 continue
-
             matched_key = by_fallback.get(candidate.fallback_key)
             if matched_key is not None:
                 existing = by_key[matched_key]
-                by_key[matched_key] = PortfolioSimulationSecurity(
-                    security_key=existing.security_key,
-                    fallback_key=existing.fallback_key,
-                    isin=existing.isin or candidate.isin,
-                    series=existing.series or candidate.series,
-                    issuer=existing.issuer or candidate.issuer,
-                    currency=existing.currency or candidate.currency,
-                    product_code=existing.product_code or candidate.product_code,
-                    maturity_date=existing.maturity_date or candidate.maturity_date,
-                    current_market_value_crc=existing.current_market_value_crc,
-                    market_price=candidate.market_price or existing.market_price,
-                    market_yield=candidate.market_yield or existing.market_yield,
-                    source="PORTFOLIO",
-                    in_portfolio=True,
-                )
+                by_key[matched_key] = self._with_market_fields(existing, candidate)
                 continue
-
             by_key[candidate.security_key] = candidate
             by_fallback[candidate.fallback_key] = candidate.security_key
 
@@ -245,9 +227,8 @@ class ConfiguredPortfolioVaRSimulationService:
                 self._apply_buy(hypothetical_positions, security, trade.market_value_crc)
             elif trade.action is PortfolioSimulationAction.SELL:
                 self._apply_sell(hypothetical_positions, security, trade.market_value_crc)
-            else:  # pragma: no cover - StrEnum validation protects this branch.
+            else:  # pragma: no cover
                 raise ValueError(f"Unsupported simulation action: {trade.action}")
-
             applied.append(
                 AppliedPortfolioSimulationTrade(
                     action=trade.action,
@@ -266,22 +247,26 @@ class ConfiguredPortfolioVaRSimulationService:
             if self._market_value(position) > Decimal("0")
         ]
 
-        base_result = self._var_service.calculate(
+        # This service owns a simulation-only VeR calculator, so forced refreshes
+        # cannot overwrite the official cache used by the production dashboard.
+        base_result = self._simulation_var_service.calculate(
             valuation_date=valuation_date,
             portfolio=source_portfolio,
+            force_refresh=True,
         )
-        simulated_result = self._var_service.calculate_hypothetical(
+        simulated_result = self._simulation_var_service.calculate(
             valuation_date=valuation_date,
             portfolio=hypothetical,
+            force_refresh=True,
         )
 
         base_var_crc, base_var_percent, base_scenario = self._var_values(base_result)
         simulated_var_crc, simulated_var_percent, simulated_scenario = self._var_values(
             simulated_result
         )
-
         delta_var_crc = self._difference(simulated_var_crc, base_var_crc)
         delta_var_percent_points = self._difference(simulated_var_percent, base_var_percent)
+
         relative_var_change_percent = None
         if (
             base_var_crc is not None
@@ -293,9 +278,10 @@ class ConfiguredPortfolioVaRSimulationService:
             )
 
         warnings = self._warnings(
+            base_result=base_result,
             simulated_result=simulated_result,
-            applied_trades=tuple(applied),
         )
+        notes = self._notes(tuple(applied))
         if base_var_crc is None or simulated_var_crc is None:
             status = "UNAVAILABLE"
         elif warnings:
@@ -325,6 +311,7 @@ class ConfiguredPortfolioVaRSimulationService:
             simulated_scenario_number=simulated_scenario,
             status=status,
             warnings=warnings,
+            notes=notes,
         )
 
     def _apply_buy(
@@ -335,10 +322,8 @@ class ConfiguredPortfolioVaRSimulationService:
     ) -> None:
         matches = self._matching_positions(positions, security)
         if matches:
-            position = matches[0]
-            position["market_value_crc"] = float(self._market_value(position) + amount)
+            self._set_market_value(matches[0], self._market_value(matches[0]) + amount)
             return
-
         positions.append(
             {
                 "isin": security.isin,
@@ -385,7 +370,7 @@ class ConfiguredPortfolioVaRSimulationService:
                 break
             current_value = self._market_value(position)
             reduction = min(current_value, remaining)
-            position["market_value_crc"] = float(current_value - reduction)
+            self._set_market_value(position, current_value - reduction)
             remaining -= reduction
 
     def _matching_positions(
@@ -399,10 +384,7 @@ class ConfiguredPortfolioVaRSimulationService:
             if identity is None:
                 continue
             security_key, fallback_key = identity
-            if (
-                security_key == security.security_key
-                or fallback_key == security.fallback_key
-            ):
+            if security_key == security.security_key or fallback_key == security.fallback_key:
                 matches.append(position)
         return matches
 
@@ -481,6 +463,27 @@ class ConfiguredPortfolioVaRSimulationService:
             in_portfolio=False,
         )
 
+    @staticmethod
+    def _with_market_fields(
+        existing: PortfolioSimulationSecurity,
+        market: PortfolioSimulationSecurity,
+    ) -> PortfolioSimulationSecurity:
+        return PortfolioSimulationSecurity(
+            security_key=existing.security_key,
+            fallback_key=existing.fallback_key,
+            isin=existing.isin or market.isin,
+            series=existing.series or market.series,
+            issuer=existing.issuer or market.issuer,
+            currency=existing.currency or market.currency,
+            product_code=existing.product_code or market.product_code,
+            maturity_date=existing.maturity_date or market.maturity_date,
+            current_market_value_crc=existing.current_market_value_crc,
+            market_price=market.market_price or existing.market_price,
+            market_yield=market.market_yield or existing.market_yield,
+            source="PORTFOLIO" if existing.in_portfolio else market.source,
+            in_portfolio=existing.in_portfolio,
+        )
+
     def _identity_from_position(
         self,
         position: dict[str, Any],
@@ -552,7 +555,16 @@ class ConfiguredPortfolioVaRSimulationService:
 
     @classmethod
     def _market_value(cls, position: dict[str, Any]) -> Decimal:
-        return cls._decimal(position.get("market_value_crc") or position.get("market_value"))
+        if "market_value_crc" in position and position.get("market_value_crc") not in (None, ""):
+            return cls._decimal(position.get("market_value_crc"))
+        return cls._decimal(position.get("market_value"))
+
+    @staticmethod
+    def _set_market_value(position: dict[str, Any], value: Decimal) -> None:
+        numeric = float(value)
+        position["market_value_crc"] = numeric
+        position["market_value"] = numeric
+        position["market_value_local"] = numeric
 
     @staticmethod
     def _decimal(value: object) -> Decimal:
@@ -565,12 +577,14 @@ class ConfiguredPortfolioVaRSimulationService:
         except (InvalidOperation, TypeError, ValueError):
             return Decimal("0")
 
-    @classmethod
-    def _optional_decimal(cls, value: object) -> Decimal | None:
+    @staticmethod
+    def _optional_decimal(value: object) -> Decimal | None:
         if value in (None, ""):
             return None
-        result = cls._decimal(value)
-        return result
+        try:
+            return Decimal(str(value))
+        except (InvalidOperation, TypeError, ValueError):
+            return None
 
     @staticmethod
     def _as_date(value: object) -> date | None:
@@ -594,10 +608,7 @@ class ConfiguredPortfolioVaRSimulationService:
         return resolved
 
     @staticmethod
-    def _difference(
-        left: Decimal | None,
-        right: Decimal | None,
-    ) -> Decimal | None:
+    def _difference(left: Decimal | None, right: Decimal | None) -> Decimal | None:
         if left is None or right is None:
             return None
         return left - right
@@ -617,31 +628,47 @@ class ConfiguredPortfolioVaRSimulationService:
     @staticmethod
     def _warnings(
         *,
+        base_result: ConfiguredPortfolioVaRResult,
         simulated_result: ConfiguredPortfolioVaRResult,
-        applied_trades: tuple[AppliedPortfolioSimulationTrade, ...],
     ) -> tuple[str, ...]:
         warnings: list[str] = []
-        if simulated_result.coverage_percent < Decimal("99.5"):
+        if simulated_result.excluded_title_count > base_result.excluded_title_count:
+            difference = simulated_result.excluded_title_count - base_result.excluded_title_count
             warnings.append(
-                "La cobertura histórica del portafolio simulado es "
+                f"{difference} título(s) adicional(es) del escenario no pudieron incorporarse "
+                "al VeR por ausencia o error de historia."
+            )
+        if (
+            simulated_result.policy_excluded_position_count
+            > base_result.policy_excluded_position_count
+        ):
+            difference = (
+                simulated_result.policy_excluded_position_count
+                - base_result.policy_excluded_position_count
+            )
+            warnings.append(
+                f"{difference} posición(es) adicional(es) quedaron fuera del universo VeR "
+                "por política metodológica."
+            )
+        if simulated_result.coverage_percent + Decimal("0.01") < base_result.coverage_percent:
+            warnings.append(
+                "La cobertura histórica bajó de "
+                f"{base_result.coverage_percent:.2f}% a "
                 f"{simulated_result.coverage_percent:.2f}%."
             )
-        if simulated_result.excluded_titles:
-            warnings.append(
-                f"{len(simulated_result.excluded_titles)} título(s) del escenario simulado "
-                "no pudieron incorporarse al VeR por ausencia o error de historia."
-            )
-        if simulated_result.policy_exclusions:
-            warnings.append(
-                f"{len(simulated_result.policy_exclusions)} posición(es) permanecen fuera del "
-                "universo VeR por política metodológica."
-            )
+        return tuple(warnings)
+
+    @staticmethod
+    def _notes(
+        applied_trades: tuple[AppliedPortfolioSimulationTrade, ...],
+    ) -> tuple[str, ...]:
+        notes: list[str] = []
         if any(
             item.action is PortfolioSimulationAction.BUY and item.source == "PIPCA"
             for item in applied_trades
         ):
-            warnings.append(
-                "Las compras de títulos que no están en el portafolio utilizan la serie histórica "
-                "PiPCA disponible y el monto de exposición CRC ingresado por el usuario."
+            notes.append(
+                "Las compras de títulos fuera del portafolio usan su historia PiPCA y el monto "
+                "de exposición CRC ingresado; no se modifica el portafolio real."
             )
-        return tuple(warnings)
+        return tuple(notes)
