@@ -22,7 +22,9 @@ from aip.product.configured.services.configured_portfolio_var_simulation_service
 from aip.product.demo.configuration.demo_config import DemoConfig
 
 
-def test_configured_composition_registers_financial_macro_portfolio_and_simulator_services() -> None:
+def test_configured_composition_registers_financial_macro_portfolio_and_simulator_services() -> (
+    None
+):
     container = ConfiguredDependencyComposition(
         DemoConfig(execution_mode="CONFIGURED", demo_mode_enabled=False),
         ConfiguredSourceConfig(),
