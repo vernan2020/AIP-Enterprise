@@ -154,6 +154,7 @@ class EntityRatingSummary:
     coverage_percent: Decimal
     available_indicators: int
     total_indicators: int
+    unresolved_indicators: tuple[str, ...] = field(default_factory=tuple)
 
 
 @dataclass(frozen=True, slots=True)
