@@ -2,6 +2,7 @@
 
 from aip.domain.financial_analysis.models import (
     EntityFinancialRating,
+    EntityRatingSummary,
     FinancialAnalysisSnapshot,
     FinancialEntity,
     FinancialMetric,
@@ -21,6 +22,7 @@ __all__ = [
     "FinancialAnalysisSnapshot",
     "FinancialEntityRatingService",
     "EntityFinancialRating",
+    "EntityRatingSummary",
     "FinancialEntity",
     "FinancialMetric",
     "FinancialStatementLine",
