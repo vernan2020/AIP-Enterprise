@@ -166,12 +166,17 @@ def test_openai_payload_includes_financial_and_macro_context() -> None:
     )
     gateway = OpenAIResponsesGateway(api_key="secret-key", model="test-model")
 
-    payload = gateway._build_payload(context, report, "Relaciona macroeconomía y desempeño financiero")
+    payload = gateway._build_payload(
+        context, report, "Relaciona macroeconomía y desempeño financiero"
+    )
     evidence_payload = json.loads(payload["input"][0]["content"][0]["text"])
 
     assert evidence_payload["financial_analysis_sugef"]["entity"]["name"] == "COOPEALIANZA R.L."
     assert evidence_payload["financial_analysis_sugef"]["headline_metrics"][0]["code"] == "ROA"
-    assert evidence_payload["financial_analysis_sugef"]["peer_comparison"][0]["roa_percent"] == "0.80"
+    assert (
+        evidence_payload["financial_analysis_sugef"]["peer_comparison"][0]["roa_percent"]
+        == "0.80"
+    )
     assert evidence_payload["macro_intelligence"]["scenario_status"] == "APPROVED"
     assert evidence_payload["macro_intelligence"]["projection"][0]["tpm"] == "3.00"
     assert "Análisis Financiero" in evidence_payload["deterministic_report"]["coverage"]
