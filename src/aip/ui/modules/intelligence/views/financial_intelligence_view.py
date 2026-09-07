@@ -41,9 +41,7 @@ class _AnalysisWorker(QObject):
     @Slot()
     def run(self) -> None:
         try:
-            self.completed.emit(
-                self._presenter.build_view_model(force_refresh=self._force_refresh)
-            )
+            self.completed.emit(self._presenter.build_view_model(force_refresh=self._force_refresh))
         except Exception as exc:
             self.failed.emit(str(exc))
         finally:
@@ -134,7 +132,9 @@ class FinancialIntelligenceView(QWidget):
         analysis_layout = QVBoxLayout(analysis_box)
         self._analysis_text = QTextEdit()
         self._analysis_text.setReadOnly(True)
-        self._analysis_text.setPlaceholderText("Abra esta pestaña para calcular el análisis financiero.")
+        self._analysis_text.setPlaceholderText(
+            "Abra esta pestaña para calcular el análisis financiero."
+        )
         analysis_layout.addWidget(self._analysis_text, 1)
 
         question_row = QHBoxLayout()
@@ -333,7 +333,7 @@ class FinancialIntelligenceView(QWidget):
             "QPushButton {background:#005EB8; color:#FFFFFF; border:none; border-radius:5px; "
             "padding:7px 12px; font-weight:700;}"
             "QPushButton:hover {background:#00477F;}"
-            "QPushButton[secondary=\"true\"] {background:#EEF6FB; color:#005EB8; "
+            'QPushButton[secondary="true"] {background:#EEF6FB; color:#005EB8; '
             "border:1px solid #B7D9EE;}"
             "QLineEdit {padding:7px; border:1px solid #C8D5DE; border-radius:5px;}"
             "QTextEdit, QTableWidget {background:#FFFFFF; border:1px solid #D5DEE3; "
