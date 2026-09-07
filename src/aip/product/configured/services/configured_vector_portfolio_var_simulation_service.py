@@ -16,9 +16,7 @@ from aip.product.configured.services.configured_portfolio_var_simulation_service
 )
 
 
-class ConfiguredVectorPortfolioVaRSimulationService(
-    ConfiguredPortfolioVaRSimulationService
-):
+class ConfiguredVectorPortfolioVaRSimulationService(ConfiguredPortfolioVaRSimulationService):
     """VeR what-if service with an exhaustive current-vector security catalog.
 
     The simulator accepts a CRC-equivalent market-value amount, so catalog
@@ -53,9 +51,7 @@ class ConfiguredVectorPortfolioVaRSimulationService(
         """
 
         source_portfolio = (
-            portfolio
-            if portfolio is not None
-            else self._catalog_portfolio_provider.get_portfolio()
+            portfolio if portfolio is not None else self._catalog_portfolio_provider.get_portfolio()
         )
         by_key: dict[str, PortfolioSimulationSecurity] = {}
         by_fallback: dict[str, str] = {}
@@ -92,8 +88,7 @@ class ConfiguredVectorPortfolioVaRSimulationService(
                 product_code=existing.product_code or security.product_code,
                 maturity_date=existing.maturity_date or security.maturity_date,
                 current_market_value_crc=(
-                    existing.current_market_value_crc
-                    + security.current_market_value_crc
+                    existing.current_market_value_crc + security.current_market_value_crc
                 ),
                 market_price=existing.market_price or security.market_price,
                 market_yield=existing.market_yield or security.market_yield,
@@ -177,24 +172,13 @@ class ConfiguredVectorPortfolioVaRSimulationService(
         if not series:
             return None
 
-        issuer = str(
-            record.get("issuer")
-            or record.get("normalized_issuer_key")
-            or "N/D"
-        ).strip()
-        isin = str(
-            record.get("isin_if_present")
-            or record.get("isin")
-            or ""
-        ).strip()
+        issuer = str(record.get("issuer") or record.get("normalized_issuer_key") or "N/D").strip()
+        isin = str(record.get("isin_if_present") or record.get("isin") or "").strip()
         product_code = str(
-            record.get("instrument_type_or_mnemonic")
-            or record.get("mnemonic")
-            or ""
+            record.get("instrument_type_or_mnemonic") or record.get("mnemonic") or ""
         ).strip()
         maturity = self._as_date(
-            record.get("maturity_date_if_present")
-            or record.get("maturity_date")
+            record.get("maturity_date_if_present") or record.get("maturity_date")
         )
         security_key = self._security_key(
             isin=isin,
@@ -229,9 +213,7 @@ class ConfiguredVectorPortfolioVaRSimulationService(
         security: PortfolioSimulationSecurity,
     ) -> str:
         maturity = (
-            security.maturity_date.isoformat()
-            if isinstance(security.maturity_date, date)
-            else ""
+            security.maturity_date.isoformat() if isinstance(security.maturity_date, date) else ""
         )
         return f"{security.series.strip().casefold()}|{maturity}"
 
