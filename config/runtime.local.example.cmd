@@ -8,7 +8,7 @@ REM Obtain the API key from the institutional OpenAI API project; do not paste i
 REM set "AIP_LLM_ENABLED=true"
 REM set "AIP_LLM_PROVIDER=openai"
 REM set "OPENAI_API_KEY=YOUR_OPENAI_API_KEY"
-REM set "AIP_LLM_MODEL=gpt-5.2"
+REM set "AIP_LLM_MODEL=gpt-5.6"
 REM Optional operational limits:
 REM set "AIP_LLM_TIMEOUT_SECONDS=45"
 REM set "AIP_LLM_MAX_OUTPUT_TOKENS=1400"
