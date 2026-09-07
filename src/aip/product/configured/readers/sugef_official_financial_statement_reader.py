@@ -15,6 +15,9 @@ from aip.product.configured.readers.sugef_capital_adequacy_matrix_reader import 
 from aip.product.configured.readers.sugef_capital_adequacy_reader import (
     SUGEFCapitalAdequacyReader,
 )
+from aip.product.configured.readers.sugef_complete_peer_financial_api_client import (
+    SUGEFCompletePeerFinancialApiClient,
+)
 from aip.product.configured.readers.sugef_credit_quality_reader import (
     SUGEFCreditQualityReader,
 )
@@ -27,9 +30,6 @@ from aip.product.configured.readers.sugef_financial_statement_reader import (
 )
 from aip.product.configured.readers.sugef_liquidity_indicator_reader import (
     SUGEFLiquidityIndicatorReader,
-)
-from aip.product.configured.readers.sugef_official_financial_api_client import (
-    SUGEFOfficialFinancialApiClient,
 )
 
 
@@ -59,7 +59,7 @@ class SUGEFOfficialFinancialStatementReader(SUGEFFinancialStatementReader):
     ) -> None:
         super().__init__(
             config,
-            api_client=api_client or SUGEFOfficialFinancialApiClient(config),
+            api_client=api_client or SUGEFCompletePeerFinancialApiClient(config),
         )
         self._credit_quality_reader = credit_quality_reader or SUGEFCreditQualityReader(config)
         self._liquidity_reader = liquidity_reader or SUGEFLiquidityIndicatorReader(config)
