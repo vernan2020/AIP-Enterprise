@@ -50,11 +50,17 @@ def test_financial_analysis_exposes_methodology_rating_tab(qt_app) -> None:
     ]
 
     assert "Calificación" in titles
-    assert rating_titles == ["Indicadores y dimensiones", "Reconciliación"]
+    assert rating_titles == [
+        "Ranking de entidades",
+        "Indicadores y dimensiones",
+        "Reconciliación",
+    ]
     assert view._rating_heading.text() == "Calificación 08ME14-01 sobre datos SUGEF"
     assert view._rating_methodology.text() == "Metodología: 08ME14-01"
     assert view._rating_grade.text() == "Sin emitir"
     assert view._rating_indicator_table.isColumnHidden(10)
+    assert view._peer_rating_table.columnCount() == 8
+    assert view._peer_rating_table.horizontalHeaderItem(1).text() == "Entidad"
     assert (
         view._rating_dimension_table.horizontalScrollBarPolicy()
         == Qt.ScrollBarPolicy.ScrollBarAlwaysOff
