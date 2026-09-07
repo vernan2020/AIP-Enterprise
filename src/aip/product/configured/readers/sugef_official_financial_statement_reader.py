@@ -31,6 +31,9 @@ from aip.product.configured.readers.sugef_financial_statement_reader import (
 from aip.product.configured.readers.sugef_liquidity_indicator_reader import (
     SUGEFLiquidityIndicatorReader,
 )
+from aip.product.configured.readers.sugef_resilient_credit_quality_reader import (
+    SUGEFResilientCreditQualityReader,
+)
 
 
 class SUGEFOfficialFinancialStatementReader(SUGEFFinancialStatementReader):
@@ -61,7 +64,9 @@ class SUGEFOfficialFinancialStatementReader(SUGEFFinancialStatementReader):
             config,
             api_client=api_client or SUGEFCompletePeerFinancialApiClient(config),
         )
-        self._credit_quality_reader = credit_quality_reader or SUGEFCreditQualityReader(config)
+        self._credit_quality_reader = (
+            credit_quality_reader or SUGEFResilientCreditQualityReader(config)
+        )
         self._liquidity_reader = liquidity_reader or SUGEFLiquidityIndicatorReader(config)
         self._capital_adequacy_reader = capital_adequacy_reader or SUGEFCapitalAdequacyMatrixReader(
             config
