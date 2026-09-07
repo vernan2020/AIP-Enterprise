@@ -12,6 +12,7 @@ from aip.domain.financial_analysis.indicator_reconciliation import (
 from aip.domain.financial_analysis.institutional_flags import InstitutionalEntityFlagService
 from aip.domain.financial_analysis.models import (
     EntityFinancialSummary,
+    EntityRatingSummary,
     FinancialAnalysisSnapshot,
     FinancialEntity,
     FinancialMetric,
@@ -109,10 +110,16 @@ class FinancialAnalysisService:
             statement_date=effective_date,
         )
         peers = self._peer_summaries(operational_lines, effective_date)
-        rating = SUGEFOnlyFinancialEntityRatingService().evaluate(
+        rating_service = SUGEFOnlyFinancialEntityRatingService()
+        rating = rating_service.evaluate(
             operational_lines,
             selected_entity_id=selected.entity_id,
             cutoff_date=effective_date,
+        )
+        peer_ratings = self._peer_ratings(
+            operational_lines,
+            effective_date,
+            rating_service=rating_service,
         )
         reconciliations = self._reconciliation.reconcile(
             reconciliation_lines,
@@ -148,6 +155,7 @@ class FinancialAnalysisService:
             metrics=metrics,
             statement_lines=tuple(sorted(current, key=self._line_sort_key)),
             peer_summaries=peers,
+            peer_ratings=peer_ratings,
             rating=rating,
             indicator_reconciliations=reconciliations,
             diagnostics=tuple(coverage_diagnostics),
@@ -316,6 +324,53 @@ class FinancialAnalysisService:
                 summaries,
                 key=lambda item: (item.assets is not None, item.assets or Decimal("0")),
                 reverse=True,
+            )
+        )
+
+    @staticmethod
+    def _peer_ratings(
+        lines: tuple[FinancialStatementLine, ...],
+        cutoff_date: date,
+        *,
+        rating_service: SUGEFOnlyFinancialEntityRatingService,
+    ) -> tuple[EntityRatingSummary, ...]:
+        entities = {
+            line.entity.entity_id: line.entity
+            for line in lines
+            if line.statement_date == cutoff_date
+        }
+        summaries: list[EntityRatingSummary] = []
+        total_indicators = len(rating_service.INDICATORS)
+        for entity in entities.values():
+            rating = rating_service.evaluate(
+                lines,
+                selected_entity_id=entity.entity_id,
+                cutoff_date=cutoff_date,
+            )
+            summaries.append(
+                EntityRatingSummary(
+                    entity=entity,
+                    statement_date=cutoff_date,
+                    status=rating.status,
+                    score=rating.score,
+                    grade=rating.grade,
+                    coverage_percent=rating.coverage_percent,
+                    available_indicators=sum(
+                        item.contribution is not None for item in rating.indicators
+                    ),
+                    total_indicators=total_indicators,
+                )
+            )
+        return tuple(
+            sorted(
+                summaries,
+                key=lambda item: (
+                    0 if item.status == "COMPLETE" and item.score is not None else 1,
+                    -(item.score or Decimal("0"))
+                    if item.status == "COMPLETE" and item.score is not None
+                    else -item.coverage_percent,
+                    item.entity.name.casefold(),
+                ),
             )
         )
 
