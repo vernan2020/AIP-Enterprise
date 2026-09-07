@@ -19,9 +19,7 @@ from aip.product.configured.readers.sugef_complete_peer_financial_api_client imp
 class _RecoveringClient(SUGEFCompletePeerFinancialApiClient):
     def __init__(self) -> None:
         super().__init__(SUGEFFinancialSourceConfig(api_entity_codes=("PRIMARY",)))
-        self.executed_jobs: list[
-            tuple[str, str, str, str, FinancialStatementType, str]
-        ] = []
+        self.executed_jobs: list[tuple[str, str, str, str, FinancialStatementType, str]] = []
 
     def _execute_filtered_jobs(
         self,
@@ -102,8 +100,7 @@ def test_recovery_is_not_limited_to_four_incomplete_peers() -> None:
     assert recovered_entities == set(peer_codes)
     assert len(recovered_entities) == 6
     assert all(
-        client._has_methodology_history(lines, code, date(2026, 7, 31))
-        for code in peer_codes
+        client._has_methodology_history(lines, code, date(2026, 7, 31)) for code in peer_codes
     )
     assert any("6/6 entidades" in message for message in diagnostics)
 
