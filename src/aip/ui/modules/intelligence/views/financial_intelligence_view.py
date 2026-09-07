@@ -25,7 +25,6 @@ from aip.ui.modules.intelligence.presenters.financial_intelligence_presenter imp
 )
 from aip.ui.modules.intelligence.viewmodels.financial_intelligence_view_model import (
     FinancialIntelligenceViewModel,
-    IntelligenceFindingRow,
 )
 
 
@@ -61,9 +60,9 @@ class FinancialIntelligenceView(QWidget):
         self._worker: _AnalysisWorker | None = None
         self._model: FinancialIntelligenceViewModel | None = None
         self._loaded = False
+        self._load_requested = False
         self._build_ui()
         self._apply_style()
-        self._start_analysis(force_refresh=False)
 
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
@@ -91,7 +90,7 @@ class FinancialIntelligenceView(QWidget):
         metrics.setHorizontalSpacing(8)
         metrics.setVerticalSpacing(8)
         self._cutoff_card = self._metric_card("Corte", "–")
-        self._mode_card = self._metric_card("Modo", "Analizando…")
+        self._mode_card = self._metric_card("Modo", "Pendiente")
         self._alerts_card = self._metric_card("Alertas", "–")
         self._opportunities_card = self._metric_card("Oportunidades", "–")
         self._coverage_card = self._metric_card("Cobertura", "–")
@@ -119,8 +118,12 @@ class FinancialIntelligenceView(QWidget):
         self._table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self._table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self._table.verticalHeader().setVisible(False)
-        self._table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
-        self._table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+        self._table.horizontalHeader().setSectionResizeMode(
+            0, QHeaderView.ResizeMode.ResizeToContents
+        )
+        self._table.horizontalHeader().setSectionResizeMode(
+            1, QHeaderView.ResizeMode.ResizeToContents
+        )
         self._table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
         self._table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)
         self._table.itemSelectionChanged.connect(self._show_selected_finding)
@@ -131,7 +134,7 @@ class FinancialIntelligenceView(QWidget):
         analysis_layout = QVBoxLayout(analysis_box)
         self._analysis_text = QTextEdit()
         self._analysis_text.setReadOnly(True)
-        self._analysis_text.setPlaceholderText("Calculando análisis financiero…")
+        self._analysis_text.setPlaceholderText("Abra esta pestaña para calcular el análisis financiero.")
         analysis_layout.addWidget(self._analysis_text, 1)
 
         question_row = QHBoxLayout()
@@ -141,6 +144,7 @@ class FinancialIntelligenceView(QWidget):
         )
         self._question.returnPressed.connect(self._ask)
         self._ask_button = QPushButton("Preguntar")
+        self._ask_button.setEnabled(False)
         self._ask_button.clicked.connect(self._ask)
         question_row.addWidget(self._question, 1)
         question_row.addWidget(self._ask_button)
@@ -191,6 +195,17 @@ class FinancialIntelligenceView(QWidget):
         if widget is not None:
             widget.setText(value)
 
+    def showEvent(self, event) -> None:  # noqa: N802
+        super().showEvent(event)
+        if not self._load_requested:
+            self._load_requested = True
+            self._start_analysis(force_refresh=False)
+
+    def refresh(self) -> None:
+        """Refresh the intelligence snapshot after global AIP source refreshes."""
+
+        self._start_analysis(force_refresh=True)
+
     def _start_analysis(self, *, force_refresh: bool) -> None:
         if self._thread is not None and self._thread.isRunning():
             return
@@ -220,7 +235,10 @@ class FinancialIntelligenceView(QWidget):
         self._model = payload
         self._loaded = True
         self._set_card_value(self._cutoff_card, payload.cutoff_date)
-        self._set_card_value(self._mode_card, "Determinístico" if not payload.llm_available else "IA + reglas")
+        self._set_card_value(
+            self._mode_card,
+            "Determinístico" if not payload.llm_available else "IA + reglas",
+        )
         self._set_card_value(self._alerts_card, str(payload.alert_count))
         self._set_card_value(self._opportunities_card, str(payload.opportunity_count))
         self._set_card_value(self._coverage_card, payload.coverage)
@@ -231,9 +249,7 @@ class FinancialIntelligenceView(QWidget):
             for column, value in enumerate(
                 (finding.severity, finding.domain, finding.title, finding.evidence)
             ):
-                item = QTableWidgetItem(value)
-                item.setData(256, row_index)
-                self._table.setItem(row_index, column, item)
+                self._table.setItem(row_index, column, QTableWidgetItem(value))
 
         warning_text = ""
         if payload.warnings:
@@ -263,7 +279,8 @@ class FinancialIntelligenceView(QWidget):
 
     def _show_selected_finding(self) -> None:
         model = self._model
-        selected = self._table.selectionModel().selectedRows() if self._table.selectionModel() else []
+        selection_model = self._table.selectionModel()
+        selected = selection_model.selectedRows() if selection_model is not None else []
         if model is None or not selected:
             return
         index = selected[0].row()

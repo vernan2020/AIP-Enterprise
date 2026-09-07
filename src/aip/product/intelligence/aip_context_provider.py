@@ -55,7 +55,9 @@ class AIPFinancialIntelligenceContextProvider:
             ),
             source_states=source_states,
             warnings=warnings,
-            market_value_crc=self._decimal(portfolio.get("market_value_crc") or portfolio.get("market_value")),
+            market_value_crc=self._decimal(
+                portfolio.get("market_value_crc") or portfolio.get("market_value")
+            ),
             weighted_yield_percent=self._optional_decimal(portfolio.get("weighted_yield")),
             modified_duration=self._optional_decimal(portfolio.get("modified_duration")),
             hqla_percent=self._optional_decimal(portfolio.get("hqla_percent")),
@@ -115,8 +117,8 @@ class AIPFinancialIntelligenceContextProvider:
             return None
         return sovereign / total * Decimal("100")
 
-    @staticmethod
     def _resolve_cutoff(
+        self,
         portfolio: dict[str, Any],
         liquidity: dict[str, Any],
     ) -> date:
@@ -132,7 +134,10 @@ class AIPFinancialIntelligenceContextProvider:
                 return date.fromisoformat(text[:10])
             except ValueError:
                 continue
-        return date.today()
+        configured_cutoff = self._factory.config.data_cutoff_date
+        if isinstance(configured_cutoff, date):
+            return configured_cutoff
+        raise RuntimeError("AIP no dispone de una fecha de corte válida para el agente")
 
     @staticmethod
     def _mapping(value: object) -> dict[str, Any]:
