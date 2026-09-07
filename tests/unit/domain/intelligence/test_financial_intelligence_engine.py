@@ -90,5 +90,5 @@ def test_local_answer_is_grounded_in_selected_domain() -> None:
 
     answer = engine.answer(report, "¿Qué debo vigilar en liquidez y HQLA?")
 
-    assert "Posiciones HQLA restringidas" in answer
+    assert "Existen posiciones restringidas para HQLA" in answer
     assert "Duración modificada" not in answer
