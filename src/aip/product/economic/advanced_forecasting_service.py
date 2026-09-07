@@ -180,9 +180,7 @@ class AdvancedMacroForecastingService:
             raw_results[specification.name] = metrics
             diagnostics[specification.name] = diagnostic
 
-        naive_by_horizon = {
-            item.horizon: item for item in raw_results.get("NAIVE", ())
-        }
+        naive_by_horizon = {item.horizon: item for item in raw_results.get("NAIVE", ())}
         horizon_weight_map = dict(self._horizon_weights)
         model_results: list[MacroModelBacktestResult] = []
 
@@ -340,9 +338,7 @@ class AdvancedMacroForecastingService:
         results: list[_BacktestMetric] = []
         for horizon, _weight in self._horizon_weights:
             try:
-                results.append(
-                    self._backtest_horizon(frame, target, specification, horizon)
-                )
+                results.append(self._backtest_horizon(frame, target, specification, horizon))
             except ImportError:
                 return (), "OPTIONAL_DEPENDENCY_UNAVAILABLE"
         return tuple(results), None
@@ -738,9 +734,7 @@ class AdvancedMacroForecastingService:
         results: tuple[MacroModelBacktestResult, ...],
     ) -> MacroModelBacktestResult | None:
         available = tuple(
-            item
-            for item in results
-            if item.available and item.weighted_relative_score is not None
+            item for item in results if item.available and item.weighted_relative_score is not None
         )
         if not available:
             return None
@@ -787,10 +781,7 @@ class AdvancedMacroForecastingService:
         eligible = eligible[: self._maximum_ensemble_models]
 
         raw = np.asarray(
-            [
-                1.0 / max(float(item.weighted_relative_score or 1.0), 0.05) ** 2
-                for item in eligible
-            ],
+            [1.0 / max(float(item.weighted_relative_score or 1.0), 0.05) ** 2 for item in eligible],
             dtype=float,
         )
         if not len(raw) or not np.isfinite(raw).all() or raw.sum() <= 0.0:
@@ -909,11 +900,7 @@ class AdvancedMacroForecastingService:
         horizon: int,
     ) -> float | None:
         available = sorted(
-            (
-                (item.horizon_months, item.rmse)
-                for item in result.metrics
-                if item.rmse is not None
-            ),
+            ((item.horizon_months, item.rmse) for item in result.metrics if item.rmse is not None),
             key=lambda item: item[0],
         )
         if not available:
@@ -958,10 +945,7 @@ class AdvancedMacroForecastingService:
             interval_scores.append(1.0 / (1.0 + width / scale))
         stability = sum(interval_scores) / len(interval_scores) if interval_scores else 0.0
         value = 100.0 * (
-            0.25 * history_score
-            + 0.30 * improvement
-            + 0.25 * model_score
-            + 0.20 * stability
+            0.25 * history_score + 0.30 * improvement + 0.25 * model_score + 0.20 * stability
         )
         return round(max(0.0, min(100.0, value)), 1)
 
