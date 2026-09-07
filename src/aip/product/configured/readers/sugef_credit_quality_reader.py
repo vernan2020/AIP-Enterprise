@@ -191,7 +191,9 @@ class SUGEFCreditQualityReader:
             )
 
         output = list(buckets)
-        with ThreadPoolExecutor(max_workers=min(self._MAX_DIRECT_WORKERS, len(missing))) as executor:
+        with ThreadPoolExecutor(
+            max_workers=min(self._MAX_DIRECT_WORKERS, len(missing))
+        ) as executor:
             futures = {executor.submit(load, entity_code): entity_code for entity_code in missing}
             for future in as_completed(futures):
                 entity_code = futures[future]
