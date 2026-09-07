@@ -10,6 +10,7 @@ from pathlib import Path
 PACKAGE_NAME = "AIP-Enterprise-RC1-Certified-Windows.zip"
 PACKAGE_ROOT_NAME = "AIP_RC1_CERTIFIED"
 INCLUDED_FILES = [
+    Path("pyproject.toml"),
     Path("run_aip_configured.cmd"),
     Path("config/runtime.local.cmd.example"),
 ]
@@ -154,9 +155,10 @@ def main() -> int:
             ],
             "installation_guarantees": [
                 "payload SHA-256 is validated before installation",
-                "package contains the complete certified src runtime",
+                "package contains the complete certified src runtime and project dependency manifest",
                 "package contains the complete recovery control plane and canonical checkpoint",
                 "existing recovery-owned runtime files are backed up before replacement",
+                "src and pyproject.toml replacement are rollback protected",
                 "src replacement is transactional",
                 "local credentials are not packaged or overwritten",
                 "project .venv is activated automatically when present",
