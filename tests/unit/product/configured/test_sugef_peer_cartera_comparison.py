@@ -27,12 +27,8 @@ class _DynamicLoanAccountClient(SUGEFOfficialFinancialApiClient):
     """Stub proving that peer cartera is discovered, never hardcoded."""
 
     def __init__(self) -> None:
-        super().__init__(
-            SUGEFFinancialSourceConfig(api_retries=0, api_entity_codes=(_PRIMARY,))
-        )
-        self.filtered_jobs: list[
-            tuple[str, str, str, str, FinancialStatementType, str]
-        ] = []
+        super().__init__(SUGEFFinancialSourceConfig(api_retries=0, api_entity_codes=(_PRIMARY,)))
+        self.filtered_jobs: list[tuple[str, str, str, str, FinancialStatementType, str]] = []
 
     def _statement_line(
         self,
