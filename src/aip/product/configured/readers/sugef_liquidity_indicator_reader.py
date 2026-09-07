@@ -21,6 +21,7 @@ from aip.product.configured.configuration.configured_source_config import (
 )
 from aip.product.configured.readers.sugef_trial_balance_reader import (
     SUGEFTrialBalanceLine,
+    SUGEFTrialBalanceReadResult,
     SUGEFTrialBalanceReader,
 )
 
@@ -160,20 +161,20 @@ class SUGEFLiquidityIndicatorReader:
         *,
         cutoff_date: date,
         entity_codes: tuple[str, ...],
-    ) -> tuple[tuple[str, object], ...]:
+    ) -> tuple[tuple[str, SUGEFTrialBalanceReadResult], ...]:
         """Consulta directamente solo pares aún no resueltos, con concurrencia acotada."""
 
         if not entity_codes:
             return ()
 
-        def load(entity_code: str):
+        def load(entity_code: str) -> SUGEFTrialBalanceReadResult:
             return self._trial_balance.read(
                 cutoff_date,
                 entity_codes=(entity_code,),
                 include_all_entities=False,
             )
 
-        results: list[tuple[str, object]] = []
+        results: list[tuple[str, SUGEFTrialBalanceReadResult]] = []
         with ThreadPoolExecutor(
             max_workers=min(self._MAX_DIRECT_WORKERS, len(entity_codes))
         ) as executor:
@@ -181,11 +182,17 @@ class SUGEFLiquidityIndicatorReader:
             for future in as_completed(futures):
                 entity_code = futures[future]
                 try:
-                    results.append((entity_code, future.result()))
+                    result = future.result()
                 except Exception as exc:
-                    # El lector normalmente encapsula errores de transporte; esta
-                    # protección preserva N/D si un adaptador inyectado falla.
-                    results.append((entity_code, _FailedTrialBalanceReadResult(str(exc))))
+                    result = SUGEFTrialBalanceReadResult(
+                        lines=(),
+                        endpoints=(),
+                        diagnostics=(
+                            f"Consulta directa de Balanza SUGEF ({entity_code}) falló: "
+                            f"{type(exc).__name__}: {exc}",
+                        ),
+                    )
+                results.append((entity_code, result))
         return tuple(sorted(results, key=lambda item: item[0]))
 
     @classmethod
@@ -317,16 +324,3 @@ class SUGEFLiquidityIndicatorReader:
     def _has_valid_denominator(cls, rows: list[SUGEFTrialBalanceLine]) -> bool:
         matches = [row for row in rows if row.account_code == cls._DENOMINATOR]
         return len(matches) == 1 and matches[0].ending_balance is not None
-
-
-@dataclass(frozen=True, slots=True)
-class _FailedTrialBalanceReadResult:
-    """Conserva un fallo inesperado de un adaptador inyectado como diagnóstico N/D."""
-
-    error: str
-    lines: tuple[SUGEFTrialBalanceLine, ...] = ()
-    endpoints: tuple[str, ...] = ()
-
-    @property
-    def diagnostics(self) -> tuple[str, ...]:
-        return (f"Consulta directa de Balanza SUGEF falló: {self.error}",)
