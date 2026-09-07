@@ -8,5 +8,4 @@ from aip.domain.intelligence.models import FinancialIntelligenceContext
 class FinancialIntelligenceContextProvider(Protocol):
     """Read-only port that exposes certified AIP data to the intelligence use case."""
 
-    def load(self) -> FinancialIntelligenceContext:
-        ...
+    def load(self) -> FinancialIntelligenceContext: ...
