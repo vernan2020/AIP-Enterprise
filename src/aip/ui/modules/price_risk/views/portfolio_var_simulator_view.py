@@ -3,7 +3,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 from PySide6.QtCore import QObject, Qt, QThread, Signal, Slot
-from PySide6.QtGui import QColor, QFont
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QComboBox,
@@ -273,8 +273,8 @@ class PortfolioVaRSimulatorView(QWidget):
         self.clear_scenario(reset_result=True)
         self._rebuild_security_combo()
 
-    @Slot()
-    def _rebuild_security_combo(self) -> None:
+    @Slot(int)
+    def _rebuild_security_combo(self, _index: int = -1) -> None:
         selected_key = self._security.currentData() if self._security.count() else None
         action = str(self._action.currentData() or "BUY")
         options = (
@@ -294,8 +294,8 @@ class PortfolioVaRSimulatorView(QWidget):
         self._show_selected_security()
         self._update_controls()
 
-    @Slot()
-    def _show_selected_security(self) -> None:
+    @Slot(int)
+    def _show_selected_security(self, _index: int = -1) -> None:
         option = self._selected_option()
         if option is None:
             self._security_detail.setText("No hay títulos disponibles para la operación seleccionada.")
@@ -312,8 +312,8 @@ class PortfolioVaRSimulatorView(QWidget):
             return None
         return next((item for item in self._securities if item.security_key == key), None)
 
-    @Slot()
-    def _add_trade(self) -> None:
+    @Slot(bool)
+    def _add_trade(self, _checked: bool = False) -> None:
         option = self._selected_option()
         if option is None:
             QMessageBox.warning(self, "Simulador VeR", "Seleccione un título válido.")
@@ -356,8 +356,8 @@ class PortfolioVaRSimulatorView(QWidget):
                 item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             self._scenario_table.setItem(row, column, item)
 
-    @Slot()
-    def _remove_selected_trade(self) -> None:
+    @Slot(bool)
+    def _remove_selected_trade(self, _checked: bool = False) -> None:
         row = self._scenario_table.currentRow()
         if row < 0 or row >= len(self._scenario):
             return
@@ -369,7 +369,13 @@ class PortfolioVaRSimulatorView(QWidget):
         )
         self._update_controls()
 
-    def clear_scenario(self, *, reset_result: bool = True) -> None:
+    @Slot(bool)
+    def clear_scenario(
+        self,
+        _checked: bool = False,
+        *,
+        reset_result: bool = True,
+    ) -> None:
         self._scenario.clear()
         self._scenario_table.setRowCount(0)
         if reset_result:
@@ -388,8 +394,8 @@ class PortfolioVaRSimulatorView(QWidget):
             "Construya un escenario y presione “Calcular VeR simulado”."
         )
 
-    @Slot()
-    def _calculate(self) -> None:
+    @Slot(bool)
+    def _calculate(self, _checked: bool = False) -> None:
         if self._busy or not self._scenario:
             return
         self._busy = True
