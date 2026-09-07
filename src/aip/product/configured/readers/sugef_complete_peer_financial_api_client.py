@@ -162,7 +162,7 @@ class SUGEFCompletePeerFinancialApiClient(SUGEFOfficialFinancialApiClient):
         account_codes: tuple[str, ...],
         cutoff_date: date,
     ) -> dict[str, set[date]]:
-        dates_by_account = {account: set() for account in account_codes}
+        dates_by_account: dict[str, set[date]] = {account: set() for account in account_codes}
         for line in lines:
             if (
                 line.entity.entity_id != entity_code
