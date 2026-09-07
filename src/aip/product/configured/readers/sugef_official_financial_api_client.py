@@ -77,9 +77,7 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
             lines.extend(primary_probe.balance_lines)
             lines.extend(primary_probe.income_lines)
             endpoints.update(primary_probe.endpoints)
-            comparative_loan_account = self._resolve_loan_account_code(
-                primary_probe.balance_lines
-            )
+            comparative_loan_account = self._resolve_loan_account_code(primary_probe.balance_lines)
 
             # Fase 1: recuperar solo las cuentas históricas requeridas por las
             # fórmulas 08ME14-01. El estado completo del corte ya proviene del
