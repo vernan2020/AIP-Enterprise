@@ -80,8 +80,15 @@ class SUGEFOfficialFinancialStatementReader(SUGEFFinancialStatementReader):
             diagnostics.extend(api_result.diagnostics)
 
             accounting_cutoff = self._primary_accounting_cutoff(tuple(lines)) or cutoff_date
+            expected_entity_codes = self._expected_entity_codes(
+                tuple(lines),
+                cutoff_date=accounting_cutoff,
+            )
 
-            credit_result = self._credit_quality_reader.read(accounting_cutoff)
+            credit_result = self._credit_quality_reader.read(
+                accounting_cutoff,
+                expected_entity_codes=expected_entity_codes,
+            )
             lines.extend(credit_result.lines)
             api_endpoints.update(credit_result.endpoints)
             diagnostics.extend(credit_result.diagnostics)
@@ -89,6 +96,7 @@ class SUGEFOfficialFinancialStatementReader(SUGEFFinancialStatementReader):
             liquidity_result = self._liquidity_reader.read(
                 accounting_cutoff,
                 include_all_entities=True,
+                expected_entity_codes=expected_entity_codes,
             )
             lines.extend(liquidity_result.lines)
             api_endpoints.update(liquidity_result.source_files)
@@ -99,6 +107,11 @@ class SUGEFOfficialFinancialStatementReader(SUGEFFinancialStatementReader):
             api_endpoints.update(capital_result.source_files)
             diagnostics.extend(capital_result.diagnostics)
 
+            if expected_entity_codes:
+                diagnostics.append(
+                    "Universo comparativo SUGEF para indicadores derivados: "
+                    f"{len(expected_entity_codes)} entidades activas en el corte contable."
+                )
             if accounting_cutoff != cutoff_date:
                 diagnostics.append(
                     "Indicadores SUGEF derivados alineados al último corte contable completo: "
@@ -167,3 +180,21 @@ class SUGEFOfficialFinancialStatementReader(SUGEFFinancialStatementReader):
         }
         common = balance_dates & income_dates
         return max(common) if common else None
+
+    @staticmethod
+    def _expected_entity_codes(
+        lines: tuple[FinancialStatementLine, ...],
+        *,
+        cutoff_date: date,
+    ) -> tuple[str, ...]:
+        """Devuelve el universo financiero activo que debe recibir indicadores derivados."""
+
+        return tuple(
+            sorted(
+                {
+                    line.entity.entity_id
+                    for line in lines
+                    if line.statement_date == cutoff_date and line.entity.entity_id
+                }
+            )
+        )
