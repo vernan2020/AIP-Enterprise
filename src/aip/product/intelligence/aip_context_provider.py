@@ -34,9 +34,7 @@ class AIPFinancialIntelligenceContextProvider:
             market=market,
         )
 
-        duration_buckets = {
-            item.label: item.share_percent for item in analytics.duration_buckets
-        }
+        duration_buckets = {item.label: item.share_percent for item in analytics.duration_buckets}
         cutoff = self._resolve_cutoff(portfolio, liquidity)
         warnings = tuple(str(item) for item in workflow.get("warnings", ()) or ())
         source_states = tuple(
@@ -49,9 +47,7 @@ class AIPFinancialIntelligenceContextProvider:
             cutoff_date=cutoff,
             execution_mode=str(self._factory.config.execution_mode),
             data_quality_status=str(
-                portfolio.get("data_quality_status")
-                or workflow.get("data_quality_status")
-                or "N/D"
+                portfolio.get("data_quality_status") or workflow.get("data_quality_status") or "N/D"
             ),
             source_states=source_states,
             warnings=warnings,
@@ -98,9 +94,7 @@ class AIPFinancialIntelligenceContextProvider:
         total = Decimal("0")
         sovereign = Decimal("0")
         for position in positions:
-            value = cls._decimal(
-                position.get("market_value_crc") or position.get("market_value")
-            )
+            value = cls._decimal(position.get("market_value_crc") or position.get("market_value"))
             total += value
             issuer = cls._normalize_text(position.get("issuer"))
             if any(
