@@ -975,7 +975,7 @@ class AdvancedMacroForecastingService:
         if value is None:
             return float("nan")
         try:
-            return float(value)
+            return float(str(value))
         except (TypeError, ValueError):
             return float("nan")
 
