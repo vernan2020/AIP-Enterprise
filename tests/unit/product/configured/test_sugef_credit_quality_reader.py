@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 from decimal import Decimal
+from urllib.error import URLError
 
 from aip.domain.financial_analysis.models import FinancialStatementType
 from aip.product.configured.configuration.configured_source_config import (
@@ -23,11 +24,13 @@ class _StubPublicApiClient:
         second_complete_normative: bool = False,
         second_missing_band: str | None = None,
         duplicate_current_row: bool = False,
+        recovery_failure_normative: str | None = None,
     ) -> None:
         self.missing_band = missing_band
         self.second_complete_normative = second_complete_normative
         self.second_missing_band = second_missing_band
         self.duplicate_current_row = duplicate_current_row
+        self.recovery_failure_normative = recovery_failure_normative
         self.calls: list[tuple[str, str, str]] = []
 
     @staticmethod
@@ -66,7 +69,11 @@ class _StubPublicApiClient:
         days_arrears: str | None = None,
         historical: bool = False,
     ) -> SUGEFPublicApiResponse:
+        del report_name, sector_code, days_arrears, historical
         self.calls.append((entity_code, periods, regulation))
+        if entity_code and regulation == self.recovery_failure_normative:
+            raise URLError("exact normative recovery unavailable")
+
         rows: list[dict[str, str]] = []
         if entity_code == "3004045138":
             rows.extend(self._rows("1", missing_band=self.missing_band))
@@ -132,7 +139,7 @@ def test_reader_calculates_current_and_over_90_indicators_from_all_sugef_bands()
     assert ("3004045138", "20260701", "") in api.calls
     assert ("", "20260701", "") in api.calls
     assert any("todas las normativas aplicables" in item for item in result.diagnostics)
-    assert any("sin completar bandas ausentes con cero" in item for item in result.diagnostics)
+    assert any("consulta directa y exitosa" in item for item in result.diagnostics)
 
 
 def test_reader_preserves_legitimate_multiple_rows_within_same_normative() -> None:
@@ -149,7 +156,7 @@ def test_reader_preserves_legitimate_multiple_rows_within_same_normative() -> No
     assert indicators["CALC:DELINQUENCY_90"] == Decimal("50") / Decimal("1100")
 
 
-def test_reader_leaves_credit_quality_unavailable_when_one_band_is_missing() -> None:
+def test_reader_confirms_omitted_band_as_zero_with_exact_normative_query() -> None:
     api = _StubPublicApiClient(missing_band="7")
     reader = SUGEFCreditQualityReader(
         SUGEFFinancialSourceConfig(api_entity_codes=("3004045138",)),
@@ -157,9 +164,17 @@ def test_reader_leaves_credit_quality_unavailable_when_one_band_is_missing() -> 
     )
 
     result = reader.read(date(2026, 7, 31))
+    indicators = _indicators(result)
 
-    assert result.lines == ()
-    assert any("JUDICIAL_COLLECTION" in item for item in result.diagnostics)
+    assert indicators["CALC:CURRENT_PORTFOLIO"] == Decimal("900") / Decimal("990")
+    assert indicators["CALC:DELINQUENCY_90"] == Decimal("40") / Decimal("990")
+    assert ("3004045138", "20260701", "1") in api.calls
+    assert any(
+        "normativa 1" in item
+        and "JUDICIAL_COLLECTION" in item
+        and "saldo cero" in item
+        for item in result.diagnostics
+    )
 
 
 def test_reader_aggregates_multiple_complete_normatives_for_total_entity_portfolio() -> None:
@@ -180,8 +195,28 @@ def test_reader_aggregates_multiple_complete_normatives_for_total_entity_portfol
     assert all("normativas 1, 2" in line.trace.file_path for line in result.lines if line.trace)
 
 
-def test_reader_does_not_drop_an_incomplete_reported_normative() -> None:
+def test_reader_recovers_omitted_band_in_second_reported_normative() -> None:
     api = _StubPublicApiClient(second_complete_normative=True, second_missing_band="7")
+    reader = SUGEFCreditQualityReader(
+        SUGEFFinancialSourceConfig(api_entity_codes=("3004045138",)),
+        api_client=api,  # type: ignore[arg-type]
+    )
+
+    result = reader.read(date(2026, 7, 31))
+    indicators = _indicators(result)
+
+    assert indicators["CALC:CURRENT_PORTFOLIO"] == Decimal("1800") / Decimal("1990")
+    assert indicators["CALC:DELINQUENCY_90"] == Decimal("90") / Decimal("1990")
+    assert ("3004045138", "20260701", "2") in api.calls
+    assert any("normativa 2" in item and "saldo cero" in item for item in result.diagnostics)
+
+
+def test_reader_keeps_entity_unavailable_when_exact_normative_recovery_fails() -> None:
+    api = _StubPublicApiClient(
+        second_complete_normative=True,
+        second_missing_band="7",
+        recovery_failure_normative="2",
+    )
     reader = SUGEFCreditQualityReader(
         SUGEFFinancialSourceConfig(api_entity_codes=("3004045138",)),
         api_client=api,  # type: ignore[arg-type]
@@ -190,7 +225,7 @@ def test_reader_does_not_drop_an_incomplete_reported_normative() -> None:
     result = reader.read(date(2026, 7, 31))
 
     assert result.lines == ()
-    assert any("normativa 2" in item for item in result.diagnostics)
+    assert any("normativa 2" in item and "se conserva N/D" in item for item in result.diagnostics)
     assert any("JUDICIAL_COLLECTION" in item for item in result.diagnostics)
 
 
