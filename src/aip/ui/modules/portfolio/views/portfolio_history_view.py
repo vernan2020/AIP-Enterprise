@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
+from decimal import Decimal
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
@@ -63,7 +64,7 @@ class PortfolioHistoryView(QWidget):
 
         subtitle = QLabel(
             "Cada punto se recalcula desde el maestro institucional del corte; "
-            "no se interpolan datos faltantes."
+            "no se interpolan datos faltantes. Comparativos contra mes anterior y cierre 2025."
         )
         subtitle.setProperty("role", "subtle")
         subtitle.setWordWrap(True)
@@ -84,40 +85,59 @@ class PortfolioHistoryView(QWidget):
                 "Valor de mercado",
                 "Evolución del valor total del portafolio en millones de colones.",
                 lambda value: f"₡{value:,.0f} MM",
+                None,
+                None,
             ),
             (
                 "weighted_yield",
                 "TIR ponderada",
                 "Rendimiento efectivo ponderado del portafolio.",
                 lambda value: f"{value:,.2f}%",
+                None,
+                None,
             ),
             (
                 "duration",
                 "Duración modificada",
                 "Sensibilidad agregada del portafolio a movimientos de tasas.",
                 lambda value: f"{value:,.2f}",
+                Decimal("3.00"),
+                "Objetivo institucional ≤ 3,00",
             ),
             (
                 "hqla",
                 "HQLA",
                 "Proporción del valor de mercado elegible como activo líquido de alta calidad.",
                 lambda value: f"{value:,.1f}%",
+                None,
+                None,
             ),
             (
                 "dv01",
                 "DV01",
                 "Variación estimada de valor ante un movimiento de 1 pb, en millones de colones.",
                 lambda value: f"₡{value:,.2f} MM",
+                None,
+                None,
             ),
             (
                 "hhi",
                 "HHI por emisor",
                 "Índice Herfindahl-Hirschman de concentración del portafolio por emisor.",
                 lambda value: f"{value:,.0f}",
+                None,
+                None,
             ),
         )
 
-        for index, (key, heading, detail, formatter) in enumerate(definitions):
+        for index, (
+            key,
+            heading,
+            detail,
+            formatter,
+            reference_value,
+            reference_label,
+        ) in enumerate(definitions):
             group = QGroupBox(heading)
             group.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
             box = QVBoxLayout(group)
@@ -125,7 +145,11 @@ class PortfolioHistoryView(QWidget):
             description.setProperty("role", "subtle")
             description.setWordWrap(True)
             box.addWidget(description)
-            chart = PortfolioHistoryLineChart(value_formatter=formatter)
+            chart = PortfolioHistoryLineChart(
+                value_formatter=formatter,
+                reference_value=reference_value,
+                reference_label=reference_label,
+            )
             box.addWidget(chart, 1)
             self._charts[key] = chart
             grid.addWidget(group, index // 2, index % 2)
@@ -180,22 +204,49 @@ class PortfolioHistoryView(QWidget):
 
     def _refresh_charts(self) -> None:
         points = self._filtered_points()
+        previous_month = self._previous_month_point(self._points)
+        year_end = self._year_end_point(self._points, 2025)
+
         self._charts["market_value"].set_data(
-            tuple((point.valuation_date, point.market_value_mm) for point in points)
+            tuple((point.valuation_date, point.market_value_mm) for point in points),
+            previous_month_value=(
+                previous_month.market_value_mm if previous_month is not None else None
+            ),
+            year_end_value=year_end.market_value_mm if year_end is not None else None,
         )
         self._charts["weighted_yield"].set_data(
-            tuple((point.valuation_date, point.weighted_yield_percent) for point in points)
+            tuple((point.valuation_date, point.weighted_yield_percent) for point in points),
+            previous_month_value=(
+                previous_month.weighted_yield_percent if previous_month is not None else None
+            ),
+            year_end_value=(
+                year_end.weighted_yield_percent if year_end is not None else None
+            ),
         )
         self._charts["duration"].set_data(
-            tuple((point.valuation_date, point.modified_duration) for point in points)
+            tuple((point.valuation_date, point.modified_duration) for point in points),
+            previous_month_value=(
+                previous_month.modified_duration if previous_month is not None else None
+            ),
+            year_end_value=year_end.modified_duration if year_end is not None else None,
         )
         self._charts["hqla"].set_data(
-            tuple((point.valuation_date, point.hqla_percent) for point in points)
+            tuple((point.valuation_date, point.hqla_percent) for point in points),
+            previous_month_value=(
+                previous_month.hqla_percent if previous_month is not None else None
+            ),
+            year_end_value=year_end.hqla_percent if year_end is not None else None,
         )
         self._charts["dv01"].set_data(
-            tuple((point.valuation_date, point.dv01_mm) for point in points)
+            tuple((point.valuation_date, point.dv01_mm) for point in points),
+            previous_month_value=previous_month.dv01_mm if previous_month is not None else None,
+            year_end_value=year_end.dv01_mm if year_end is not None else None,
         )
-        self._charts["hhi"].set_data(tuple((point.valuation_date, point.hhi) for point in points))
+        self._charts["hhi"].set_data(
+            tuple((point.valuation_date, point.hhi) for point in points),
+            previous_month_value=previous_month.hhi if previous_month is not None else None,
+            year_end_value=year_end.hhi if year_end is not None else None,
+        )
 
         frequency = "mensual" if self._sampling == "monthly" else "cada corte"
         warning_text = (
@@ -220,6 +271,40 @@ class PortfolioHistoryView(QWidget):
             months = {"3M": 3, "6M": 6, "12M": 12}.get(horizon, 12)
             threshold = self._subtract_months(latest, months)
         return tuple(point for point in self._points if point.valuation_date >= threshold)
+
+    @staticmethod
+    def _previous_month_point(
+        points: tuple[PortfolioHistoryPoint, ...],
+    ) -> PortfolioHistoryPoint | None:
+        if not points:
+            return None
+        latest = max(points, key=lambda point: point.valuation_date).valuation_date
+        month_index = latest.year * 12 + latest.month - 2
+        previous_year, previous_month_zero = divmod(month_index, 12)
+        previous_month = previous_month_zero + 1
+        candidates = tuple(
+            point
+            for point in points
+            if point.valuation_date.year == previous_year
+            and point.valuation_date.month == previous_month
+        )
+        if not candidates:
+            return None
+        return max(candidates, key=lambda point: point.valuation_date)
+
+    @staticmethod
+    def _year_end_point(
+        points: tuple[PortfolioHistoryPoint, ...],
+        year: int,
+    ) -> PortfolioHistoryPoint | None:
+        candidates = tuple(
+            point
+            for point in points
+            if point.valuation_date.year == year and point.valuation_date.month == 12
+        )
+        if not candidates:
+            return None
+        return max(candidates, key=lambda point: point.valuation_date)
 
     @staticmethod
     def _subtract_months(value: date, months: int) -> date:
