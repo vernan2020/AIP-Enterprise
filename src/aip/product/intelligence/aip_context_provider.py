@@ -159,9 +159,11 @@ class AIPFinancialIntelligenceContextProvider:
 
     @staticmethod
     def _integer(value: object) -> int:
+        if value is None or isinstance(value, bool):
+            return 0
         try:
-            return int(value or 0)
-        except (TypeError, ValueError):
+            return int(Decimal(str(value)))
+        except (InvalidOperation, TypeError, ValueError):
             return 0
 
     @staticmethod
