@@ -7,6 +7,9 @@ from aip.ui.modules.price_risk.models.price_risk_row import (
     RateShockViewRow,
     RiskChartPoint,
 )
+from aip.ui.modules.price_risk.models.price_risk_simulation import (
+    PriceRiskSimulationSecurityOption,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -35,6 +38,11 @@ class PriceRiskViewModel:
     scenario_number: int = 0
     scenario_start_date: str = "-"
     scenario_end_date: str = "-"
+
+    # Simulador VeR
+    simulation_securities: tuple[PriceRiskSimulationSecurityOption, ...] = field(
+        default_factory=tuple
+    )
 
     # DV01
     dv01_total: str = "-"
