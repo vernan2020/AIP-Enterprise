@@ -127,7 +127,9 @@ def test_multimodel_engine_produces_governed_12_month_ensemble() -> None:
     assert 0.0 <= result.confidence_score <= 100.0
     assert result.point_at_horizon(1) is not None
     assert result.point_at_horizon(12) is not None
-    assert all(point.lower_95 <= point.point_forecast <= point.upper_95 for point in result.forecast_points)
+    assert all(
+        point.lower_95 <= point.point_forecast <= point.upper_95 for point in result.forecast_points
+    )
 
 
 def test_direct_model_forecast_does_not_use_rows_after_forecast_origin() -> None:
