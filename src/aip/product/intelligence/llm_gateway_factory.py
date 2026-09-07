@@ -29,7 +29,7 @@ def build_llm_gateway() -> LLMGateway:
             reason="AIP_LLM_ENABLED está activo pero OPENAI_API_KEY no está configurada",
         )
 
-    model = os.getenv("AIP_LLM_MODEL", "gpt-5.2").strip() or "gpt-5.2"
+    model = os.getenv("AIP_LLM_MODEL", "gpt-5.6").strip() or "gpt-5.6"
     timeout_seconds = _bounded_float(
         "AIP_LLM_TIMEOUT_SECONDS",
         default=45.0,
