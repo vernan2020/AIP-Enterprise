@@ -23,6 +23,9 @@ from PySide6.QtWidgets import (
 
 from aip.ui.modules.price_risk.presenters.price_risk_presenter import PriceRiskPresenter
 from aip.ui.modules.price_risk.viewmodels.price_risk_view_model import PriceRiskViewModel
+from aip.ui.modules.price_risk.views.portfolio_var_simulator_view import (
+    PortfolioVaRSimulatorView,
+)
 from aip.ui.modules.price_risk.widgets.risk_charts import ParetoChartWidget, RiskBarChartWidget
 
 
@@ -43,7 +46,7 @@ class _PriceRiskWorker(QObject):
 
 
 class PriceRiskView(QWidget):
-    """Espacio institucional de VeR histórico, DV01 y sensibilidad de tasas."""
+    """Espacio institucional de VeR, simulación what-if, DV01 y sensibilidad."""
 
     _STATUS_TRANSLATIONS = {
         "LOADING": "CARGANDO",
@@ -141,8 +144,10 @@ class PriceRiskView(QWidget):
         root.addWidget(self._tabs, 1)
 
         self._price_page = QWidget()
+        self._simulator_page = PortfolioVaRSimulatorView(self._presenter)
         self._rate_page = QWidget()
         self._tabs.addTab(self._price_page, "Riesgo de Precio · VeR")
+        self._tabs.addTab(self._simulator_page, "Simulador · VeR")
         self._tabs.addTab(self._rate_page, "Riesgo de Tasa · DV01")
         self._build_price_page()
         self._build_rate_page()
@@ -563,6 +568,7 @@ class PriceRiskView(QWidget):
         self._bucket_chart.set_data(vm.dv01_bucket_points)
         self._currency_chart.set_data(vm.dv01_currency_points)
         self._shock_chart.set_data(vm.rate_shock_points)
+        self._simulator_page.bind_securities(vm.simulation_securities)
 
         self._populate_var_table(vm)
         self._populate_shock_table(vm)
@@ -634,10 +640,12 @@ class PriceRiskView(QWidget):
             self._table.setRowHidden(row, bool(needle) and needle not in haystack)
 
     def refresh(self) -> None:
+        self._simulator_page.clear_scenario(reset_result=True)
         self._request_load(force_refresh=True)
 
     def closeEvent(self, event) -> None:  # noqa: N802
         self._closing = True
+        self._simulator_page.shutdown()
         thread = getattr(self, "_worker_thread", None)
         if thread is not None and thread.isRunning():
             thread.requestInterruption()
