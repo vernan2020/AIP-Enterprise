@@ -309,9 +309,7 @@ class PriceRiskPresenter:
                 else "Fuera de portafolio"
             )
             market_price = f"{item.market_price:,.4f}" if item.market_price is not None else "-"
-            market_yield = (
-                f"{item.market_yield:.4f}%" if item.market_yield is not None else "-"
-            )
+            market_yield = f"{item.market_yield:.4f}%" if item.market_yield is not None else "-"
             options.append(
                 PriceRiskSimulationSecurityOption(
                     security_key=item.security_key,
@@ -636,9 +634,7 @@ class PriceRiskPresenter:
             status=result.status,
             valuation_date=self._format_date(result.valuation_date),
             base_var=(
-                self._format_crc_mm(result.base_var_crc)
-                if result.base_var_crc is not None
-                else "-"
+                self._format_crc_mm(result.base_var_crc) if result.base_var_crc is not None else "-"
             ),
             simulated_var=(
                 self._format_crc_mm(result.simulated_var_crc)
@@ -660,7 +656,9 @@ class PriceRiskPresenter:
             simulated_market_value=self._format_crc_mm(result.simulated_market_value_crc),
             delta_market_value=self._format_signed_crc_mm(result.delta_market_value_crc),
             base_scenario=(
-                f"#{result.base_scenario_number}" if result.base_scenario_number is not None else "-"
+                f"#{result.base_scenario_number}"
+                if result.base_scenario_number is not None
+                else "-"
             ),
             simulated_scenario=(
                 f"#{result.simulated_scenario_number}"
