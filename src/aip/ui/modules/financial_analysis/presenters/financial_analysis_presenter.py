@@ -15,6 +15,7 @@ from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model 
     FinancialMetricView,
     FinancialStatementRow,
     IndicatorReconciliationRow,
+    PeerRatingRow,
     PeerSummaryRow,
     RatingDimensionRow,
     RatingIndicatorRow,
@@ -95,6 +96,28 @@ class FinancialAnalysisPresenter:
             )
             for item in snapshot.peer_summaries
         )
+        selected = snapshot.selected_entity
+        selected_id = selected.entity_id if selected is not None else ""
+        peer_rating_rows: list[PeerRatingRow] = []
+        emitted_position = 0
+        for item in snapshot.peer_ratings:
+            complete = item.status == "COMPLETE" and item.score is not None
+            if complete:
+                emitted_position += 1
+            peer_rating_rows.append(
+                PeerRatingRow(
+                    position=str(emitted_position) if complete else "N/D",
+                    entity_id=item.entity.entity_id,
+                    entity_name=item.entity.name,
+                    category=item.entity.category,
+                    score=f"{item.score:,.3f}" if item.score is not None else "-",
+                    grade=item.grade or "Sin emitir",
+                    coverage=f"{item.coverage_percent:,.2f}%",
+                    indicators=f"{item.available_indicators}/{item.total_indicators}",
+                    status="Emitida" if complete else "Incompleta",
+                    selected=item.entity.entity_id == selected_id,
+                )
+            )
         rating = snapshot.rating
         rating_dimensions = (
             tuple(
@@ -145,7 +168,6 @@ class FinancialAnalysisPresenter:
             )
             for item in snapshot.indicator_reconciliations
         )
-        selected = snapshot.selected_entity
         source_cutoff = (
             snapshot.cutoff_date.strftime("%d/%m/%Y")
             if snapshot.cutoff_date is not None and snapshot.available_dates
@@ -154,13 +176,14 @@ class FinancialAnalysisPresenter:
         return FinancialAnalysisViewModel(
             status=snapshot.status,
             cutoff_date=source_cutoff,
-            selected_entity_id=selected.entity_id if selected else "",
+            selected_entity_id=selected_id,
             selected_entity_name=selected.name if selected else "Sin datos",
             entities=tuple((item.entity_id, item.name) for item in snapshot.entities),
             metrics=metrics,
             metric_history=metric_history,
             statement_rows=statements,
             peer_rows=peers,
+            peer_rating_rows=tuple(peer_rating_rows),
             rating_status=rating.status if rating is not None else "INCOMPLETE",
             rating_score=(f"{rating.score:,.3f}" if rating and rating.score is not None else "-"),
             rating_grade=rating.grade if rating and rating.grade else "Sin emitir",
