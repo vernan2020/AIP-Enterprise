@@ -7,6 +7,9 @@ from aip.product.configured.bootstrap.configured_dependency_composition import (
 from aip.product.configured.configuration.configured_source_config import (
     ConfiguredSourceConfig,
 )
+from aip.product.configured.services.configured_advanced_macro_forecasting_service import (
+    ConfiguredAdvancedMacroForecastingService,
+)
 from aip.product.configured.services.configured_financial_analysis_service import (
     ConfiguredFinancialAnalysisService,
 )
@@ -37,6 +40,10 @@ def test_configured_composition_registers_financial_macro_portfolio_and_simulato
     assert isinstance(
         container.resolve(ConfiguredMacroIntelligenceService),
         ConfiguredMacroIntelligenceService,
+    )
+    assert isinstance(
+        container.resolve(ConfiguredAdvancedMacroForecastingService),
+        ConfiguredAdvancedMacroForecastingService,
     )
     assert isinstance(
         container.resolve(ConfiguredPortfolioHistoryService),
