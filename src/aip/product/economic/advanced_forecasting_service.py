@@ -706,10 +706,10 @@ class AdvancedMacroForecastingService:
                 residual = y_scaled - prediction + x_scaled[:, column] * beta[column]
                 rho = float(np.dot(x_scaled[:, column], residual) / n)
                 denominator = float(column_norm[column] + l2_penalty)
-                updated = self._soft_threshold(rho, l1_penalty) / max(
-                    denominator,
-                    1e-12,
-                )
+                updated = AdvancedMacroForecastingService._soft_threshold(
+                    rho,
+                    l1_penalty,
+                ) / max(denominator, 1e-12)
                 prediction += x_scaled[:, column] * (updated - beta[column])
                 beta[column] = updated
             if float(np.max(np.abs(beta - previous))) <= tolerance:
