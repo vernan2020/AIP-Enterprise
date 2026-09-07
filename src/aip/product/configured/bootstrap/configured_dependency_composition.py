@@ -24,6 +24,9 @@ from aip.product.configured.protocols import (
     PortfolioDataProvider,
     SourceHealthProvider,
 )
+from aip.product.configured.services.configured_advanced_macro_forecasting_service import (
+    ConfiguredAdvancedMacroForecastingService,
+)
 from aip.product.configured.services.configured_financial_analysis_service import (
     ConfiguredFinancialAnalysisService,
 )
@@ -68,6 +71,7 @@ class ConfiguredDependencyComposition:
 
         health_provider = ConfiguredHealthProvider(self._source_config)
         macro_intelligence_service = ConfiguredMacroIntelligenceService()
+        advanced_macro_forecasting_service = ConfiguredAdvancedMacroForecastingService()
 
         bccr_config = BCCRConfig(
             base_url=self._source_config.bccr.base_url or "https://apim.bccr.fi.cr",
@@ -181,6 +185,10 @@ class ConfiguredDependencyComposition:
             ConfiguredMacroIntelligenceService,
             macro_intelligence_service,
         )
+        container.register_instance(
+            ConfiguredAdvancedMacroForecastingService,
+            advanced_macro_forecasting_service,
+        )
 
         container.register_factory(
             InitialLoadWorkflow,
@@ -229,6 +237,7 @@ class ConfiguredDependencyComposition:
             ConfiguredPortfolioHistoryService,
             ConfiguredPortfolioRateShockService,
             ConfiguredMacroIntelligenceService,
+            ConfiguredAdvancedMacroForecastingService,
             ConfiguredFinancialAnalysisService,
             BCCRConfig,
             BCCRConnector,
