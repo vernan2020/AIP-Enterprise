@@ -396,11 +396,15 @@ class ConfiguredPortfolioVaRSimulationService:
         if identity is None:
             return None
         security_key, fallback_key = identity
-        series = str(position.get("series") or position.get("series_or_security_code") or "").strip()
+        series = str(
+            position.get("series") or position.get("series_or_security_code") or ""
+        ).strip()
         issuer = str(position.get("issuer") or "").strip()
         isin = str(position.get("isin") or position.get("isin_if_present") or "").strip()
         product_code = str(position.get("product_code") or "").strip()
-        currency = str(position.get("currency") or self._infer_currency(product_code, series)).upper()
+        currency = str(
+            position.get("currency") or self._infer_currency(product_code, series)
+        ).upper()
         maturity = self._as_date(
             position.get("maturity_date") or position.get("maturity_date_if_present")
         )
@@ -488,7 +492,9 @@ class ConfiguredPortfolioVaRSimulationService:
         self,
         position: dict[str, Any],
     ) -> tuple[str, str] | None:
-        series = str(position.get("series") or position.get("series_or_security_code") or "").strip()
+        series = str(
+            position.get("series") or position.get("series_or_security_code") or ""
+        ).strip()
         issuer = str(position.get("issuer") or "").strip()
         isin = str(position.get("isin") or position.get("isin_if_present") or "").strip()
         maturity = self._as_date(
