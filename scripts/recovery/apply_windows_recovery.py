@@ -18,6 +18,7 @@ CERTIFIED_MARKER_NAME = ".aip_certified_runtime.json"
 
 ROLLBACK_TARGETS = (
     Path("src"),
+    Path("pyproject.toml"),
     Path("run_aip_configured.cmd"),
     Path("scripts/recovery"),
     Path("recovery/checkpoints/rc1-final-20260829"),
