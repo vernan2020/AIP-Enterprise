@@ -3,10 +3,12 @@ from __future__ import annotations
 from aip.application.intelligence.financial_intelligence_service import (
     FinancialIntelligenceService,
 )
+from aip.application.intelligence.llm_gateway import LLMGateway
 from aip.product.demo.bootstrap.application_factory import DemoApplicationFactory
 from aip.product.intelligence.aip_context_provider import (
     AIPFinancialIntelligenceContextProvider,
 )
+from aip.product.intelligence.llm_gateway_factory import build_llm_gateway
 from aip.ui.modules.intelligence.viewmodels.financial_intelligence_view_model import (
     FinancialIntelligenceViewModel,
     IntelligenceFindingRow,
@@ -16,9 +18,15 @@ from aip.ui.modules.intelligence.viewmodels.financial_intelligence_view_model im
 class FinancialIntelligencePresenter:
     """Adapt the intelligence application service into a passive UI model."""
 
-    def __init__(self, application_factory: DemoApplicationFactory) -> None:
+    def __init__(
+        self,
+        application_factory: DemoApplicationFactory,
+        *,
+        llm_gateway: LLMGateway | None = None,
+    ) -> None:
         self._service = FinancialIntelligenceService(
-            AIPFinancialIntelligenceContextProvider(application_factory)
+            AIPFinancialIntelligenceContextProvider(application_factory),
+            llm_gateway=llm_gateway or build_llm_gateway(),
         )
 
     def build_view_model(self, *, force_refresh: bool = False) -> FinancialIntelligenceViewModel:
