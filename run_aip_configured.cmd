@@ -29,12 +29,8 @@ if errorlevel 1 (
     )
 )
 
-python -m aip.tools.preflight_runtime
-if errorlevel 1 (
-    echo.
-    echo AIP preflight failed. Review the diagnostics above.
-    exit /b 1
-)
-
+REM The fast configured preflight now runs inside the same Python process that
+REM launches AIP. This preserves the startup gate while avoiding a redundant
+REM interpreter launch on Windows.
 python -m aip
 endlocal
