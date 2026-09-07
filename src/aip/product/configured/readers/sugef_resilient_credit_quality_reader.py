@@ -65,11 +65,7 @@ class SUGEFResilientCreditQualityReader(SUGEFCreditQualityReader):
         )
         observed = {row.entity.entity_id for row in recovered}
         remaining = tuple(
-            sorted(
-                code
-                for code in set(expected_entity_codes)
-                if code and code not in observed
-            )
+            sorted(code for code in set(expected_entity_codes) if code and code not in observed)
         )
         if not remaining:
             return recovered
@@ -174,9 +170,7 @@ class SUGEFResilientCreditQualityReader(SUGEFCreditQualityReader):
             for band in {row.band for row in direct_rows}:
                 rows_by_band[band] = [row for row in direct_rows if row.band is band]
 
-            unresolved = tuple(
-                band for band in CreditAgingBand if not rows_by_band.get(band)
-            )
+            unresolved = tuple(band for band in CreditAgingBand if not rows_by_band.get(band))
             confirmed_zero: list[CreditAgingBand] = []
             invalid_reported: list[CreditAgingBand] = []
             failed_bands: list[CreditAgingBand] = []
