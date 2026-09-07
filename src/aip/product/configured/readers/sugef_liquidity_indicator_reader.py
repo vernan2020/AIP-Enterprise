@@ -273,7 +273,7 @@ class SUGEFLiquidityIndicatorReader:
             )
             return None
 
-        catalog_code, balances, catalog_rows, confirmed_zero = complete_catalogs[0]
+        catalog_code, balances, catalog_rows, confirmed_zero_accounts = complete_catalogs[0]
         result = self._calculator.calculate(
             LiquidityCoverageInput(
                 cash_and_due_from=balances["11000000"],
@@ -290,11 +290,11 @@ class SUGEFLiquidityIndicatorReader:
             return None
 
         trace = min(catalog_rows, key=lambda item: item.source_row)
-        if confirmed_zero:
+        if confirmed_zero_accounts:
             diagnostics.append(
                 f"{entity.name} {statement_date:%d/%m/%Y}: consulta directa SUGEF "
                 "confirmó que las cuentas "
-                f"{', '.join(confirmed_zero)} no tienen saldo reportado; se usan como cero "
+                f"{', '.join(confirmed_zero_accounts)} no tienen saldo reportado; se usan como cero "
                 "exclusivamente en el cálculo de liquidez."
             )
         return FinancialStatementLine(
