@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
+from decimal import Decimal
 from typing import Any
 
 from aip.product.configured.services.configured_vector_portfolio_var_simulation_service import (
@@ -121,9 +122,9 @@ def test_portfolio_vector_overlap_is_deduplicated_and_enriched_from_vector() -> 
     security = matching[0]
     assert security.in_portfolio is True
     assert security.source == "PORTFOLIO"
-    assert security.current_market_value_crc == 100_000_000
-    assert security.market_price == 101.25
-    assert security.market_yield == 5.10
+    assert security.current_market_value_crc == Decimal("100000000")
+    assert security.market_price == Decimal("101.25")
+    assert security.market_yield == Decimal("5.1")
 
 
 def test_sell_candidates_remain_restricted_to_actual_holdings() -> None:
