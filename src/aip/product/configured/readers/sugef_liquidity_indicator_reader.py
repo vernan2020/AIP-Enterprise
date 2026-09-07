@@ -21,8 +21,8 @@ from aip.product.configured.configuration.configured_source_config import (
 )
 from aip.product.configured.readers.sugef_trial_balance_reader import (
     SUGEFTrialBalanceLine,
-    SUGEFTrialBalanceReadResult,
     SUGEFTrialBalanceReader,
+    SUGEFTrialBalanceReadResult,
 )
 
 
