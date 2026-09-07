@@ -44,10 +44,10 @@ class ConfiguredVectorPortfolioVaRSimulationService(ConfiguredPortfolioVaRSimula
     ) -> tuple[PortfolioSimulationSecurity, ...]:
         """Return holdings plus every resolvable title in the current vector.
 
-        Deduplication is performed first with the canonical security key, then
-        with the inherited fallback key, and finally with series+maturity. The
-        final key is required because institutional master and vector issuer
-        labels may differ while referring to the same traded series.
+        Canonical and issuer-aware fallback keys deduplicate identical titles.
+        Series+maturity is used only to reconcile vector rows against current
+        holdings whose issuer label differs from PiPCA. It is intentionally not
+        used to collapse vector-only rows from different issuers.
         """
 
         source_portfolio = (
@@ -243,4 +243,5 @@ class ConfiguredVectorPortfolioVaRSimulationService(ConfiguredPortfolioVaRSimula
         by_series_maturity: dict[str, str],
     ) -> None:
         by_fallback[security.fallback_key] = stored_key
-        by_series_maturity[cls._series_maturity_key(security)] = stored_key
+        if security.in_portfolio:
+            by_series_maturity[cls._series_maturity_key(security)] = stored_key
