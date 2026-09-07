@@ -42,6 +42,9 @@ from aip.product.configured.services.configured_portfolio_rate_shock_service imp
 from aip.product.configured.services.configured_portfolio_var_service import (
     ConfiguredPortfolioVaRService,
 )
+from aip.product.configured.services.configured_portfolio_var_simulation_service import (
+    ConfiguredPortfolioVaRSimulationService,
+)
 from aip.product.demo.configuration.demo_config import DemoConfig
 from aip.product.demo.workflows.executive_refresh_workflow import ExecutiveRefreshWorkflow
 from aip.product.demo.workflows.initial_load_workflow import InitialLoadWorkflow
@@ -110,6 +113,18 @@ class ConfiguredDependencyComposition:
             portfolio_provider,
             valuation_date_context=valuation_date_context,
         )
+        # A dedicated VeR calculator prevents a hypothetical portfolio from
+        # contaminating the canonical same-date VeR cache used by the dashboard.
+        portfolio_var_simulation_calculator = ConfiguredPortfolioVaRService(
+            self._config,
+            self._source_config,
+            portfolio_provider,
+            valuation_date_context=valuation_date_context,
+        )
+        portfolio_var_simulation_service = ConfiguredPortfolioVaRSimulationService(
+            portfolio_provider,
+            portfolio_var_simulation_calculator,
+        )
         portfolio_dv01_service = ConfiguredPortfolioDV01Service(portfolio_provider)
         portfolio_rate_shock_service = ConfiguredPortfolioRateShockService(portfolio_provider)
         market_provider = ConfiguredMarketProvider(
@@ -153,6 +168,10 @@ class ConfiguredDependencyComposition:
         container.register_instance(ConfiguredMarketProvider, market_provider)
         container.register_instance(ConfiguredLiquidityProvider, liquidity_provider)
         container.register_instance(ConfiguredPortfolioVaRService, portfolio_var_service)
+        container.register_instance(
+            ConfiguredPortfolioVaRSimulationService,
+            portfolio_var_simulation_service,
+        )
         container.register_instance(ConfiguredPortfolioDV01Service, portfolio_dv01_service)
         container.register_instance(
             ConfiguredPortfolioRateShockService,
@@ -205,6 +224,7 @@ class ConfiguredDependencyComposition:
             LiquidityDataProvider,
             EconomicIndicatorsProvider,
             ConfiguredPortfolioVaRService,
+            ConfiguredPortfolioVaRSimulationService,
             ConfiguredPortfolioDV01Service,
             ConfiguredPortfolioHistoryService,
             ConfiguredPortfolioRateShockService,
