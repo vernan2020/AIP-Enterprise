@@ -57,6 +57,20 @@ class PeerSummaryRow:
 
 
 @dataclass(frozen=True, slots=True)
+class PeerRatingRow:
+    position: str
+    entity_id: str
+    entity_name: str
+    category: str
+    score: str
+    grade: str
+    coverage: str
+    indicators: str
+    status: str
+    selected: bool = False
+
+
+@dataclass(frozen=True, slots=True)
 class RatingDimensionRow:
     name: str
     score: str
@@ -103,6 +117,7 @@ class FinancialAnalysisViewModel:
     metric_history: tuple[FinancialMetricHistorySeriesView, ...] = field(default_factory=tuple)
     statement_rows: tuple[FinancialStatementRow, ...] = field(default_factory=tuple)
     peer_rows: tuple[PeerSummaryRow, ...] = field(default_factory=tuple)
+    peer_rating_rows: tuple[PeerRatingRow, ...] = field(default_factory=tuple)
     rating_status: str = "INCOMPLETE"
     rating_score: str = "-"
     rating_grade: str = "Sin emitir"
