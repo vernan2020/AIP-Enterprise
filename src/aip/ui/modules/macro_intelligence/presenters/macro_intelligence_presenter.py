@@ -203,9 +203,7 @@ class MacroIntelligencePresenter:
             champion_model=result.champion_model_name or "-",
             champion_family=result.champion_model_family or "-",
             confidence_score=(
-                f"{result.confidence_score:,.1f}%"
-                if result.confidence_score is not None
-                else "-"
+                f"{result.confidence_score:,.1f}%" if result.confidence_score is not None else "-"
             ),
             projection_1m=self._forecast_value(code, result.point_at_horizon(1)),
             projection_3m=self._forecast_value(code, result.point_at_horizon(3)),
