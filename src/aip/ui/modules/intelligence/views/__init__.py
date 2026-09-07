@@ -1,0 +1,1 @@
+"""Financial intelligence UI module."""
