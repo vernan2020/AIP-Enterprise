@@ -210,9 +210,7 @@ class PortfolioHistoryLineChart(QWidget):
             self._hover_points,
             key=lambda item: (item[0].x() - cursor.x()) ** 2 + (item[0].y() - cursor.y()) ** 2,
         )
-        distance_squared = (nearest[0].x() - cursor.x()) ** 2 + (
-            nearest[0].y() - cursor.y()
-        ) ** 2
+        distance_squared = (nearest[0].x() - cursor.x()) ** 2 + (nearest[0].y() - cursor.y()) ** 2
         if distance_squared <= 144.0:
             QToolTip.showText(
                 event.globalPosition().toPoint(),
