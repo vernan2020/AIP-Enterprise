@@ -154,3 +154,37 @@ def test_vector_positions_alias_is_supported_when_records_key_is_absent() -> Non
         "BCCR3101",
         "PRIV2801",
     }
+
+
+def test_vector_only_rows_with_same_series_and_maturity_keep_distinct_issuers() -> None:
+    portfolio = {
+        "valuation_date": date(2026, 8, 31),
+        "positions": [],
+        "price_vector": {
+            "records": [
+                {
+                    "series_or_security_code": "SERIE-COMUN",
+                    "issuer": "EMISOR A",
+                    "instrument_type_or_mnemonic": "BONO",
+                    "maturity_date_if_present": date(2030, 6, 30),
+                    "market_price": 100.0,
+                },
+                {
+                    "series_or_security_code": "SERIE-COMUN",
+                    "issuer": "EMISOR B",
+                    "instrument_type_or_mnemonic": "BONO",
+                    "maturity_date_if_present": date(2030, 6, 30),
+                    "market_price": 99.0,
+                },
+            ]
+        },
+    }
+    service = ConfiguredVectorPortfolioVaRSimulationService(
+        _PortfolioProvider(portfolio),  # type: ignore[arg-type]
+        _UnusedVaRService(),  # type: ignore[arg-type]
+    )
+
+    matches = [item for item in service.list_securities() if item.series == "SERIE-COMUN"]
+
+    assert len(matches) == 2
+    assert {item.issuer for item in matches} == {"EMISOR A", "EMISOR B"}
