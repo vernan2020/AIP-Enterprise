@@ -25,6 +25,34 @@ class SUGEFCompletePeerFinancialApiClient(SUGEFOfficialFinancialApiClient):
     def __init__(self, config: SUGEFFinancialSourceConfig) -> None:
         super().__init__(config)
 
+    def _missing_peer_history(
+        self,
+        lines: list[FinancialStatementLine],
+        cutoff_date: date,
+    ) -> tuple[str, ...]:
+        """Detect incomplete peers from every financial report, not indicators only."""
+
+        primary_codes = set(self._config.api_entity_codes)
+        peer_codes = sorted(
+            {
+                line.entity.entity_id
+                for line in lines
+                if line.statement_date == cutoff_date
+                and line.statement_type
+                in {
+                    FinancialStatementType.BALANCE_SHEET,
+                    FinancialStatementType.INCOME_STATEMENT,
+                    FinancialStatementType.INDICATORS,
+                }
+                and line.entity.entity_id not in primary_codes
+            }
+        )
+        return tuple(
+            code
+            for code in peer_codes
+            if not self._has_methodology_history(lines, code, cutoff_date)
+        )
+
     def _recover_incomplete_peer_history(
         self,
         cutoff_date: date,
@@ -51,7 +79,8 @@ class SUGEFCompletePeerFinancialApiClient(SUGEFOfficialFinancialApiClient):
         recovered = tuple(
             code for code in missing if self._has_methodology_history(lines, code, cutoff_date)
         )
-        remaining = tuple(code for code in missing if code not in set(recovered))
+        recovered_set = set(recovered)
+        remaining = tuple(code for code in missing if code not in recovered_set)
         diagnostics.append(
             "Recuperación directa y filtrada de historia SUGEF para comparables 08ME14-01: "
             f"{len(recovered)}/{len(missing)} entidades con historia completa tras la recuperación."
