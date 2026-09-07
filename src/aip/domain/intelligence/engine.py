@@ -111,9 +111,7 @@ class FinancialIntelligenceEngine:
                     f"La duración modificada es {duration:.2f} años, por encima del máximo de 3.00.",
                     "Reducir sensibilidad mediante vencimientos más cortos, ventas selectivas o cobertura, "
                     "validando previamente impacto en TIR, HQLA y resultado.",
-                    (
-                        self._evidence("Duración modificada", f"{duration:.2f}", "Portafolio"),
-                    ),
+                    (self._evidence("Duración modificada", f"{duration:.2f}", "Portafolio"),),
                     "Objetivo institucional de duración modificada ≤ 3 años",
                 )
             )
@@ -354,9 +352,7 @@ class FinancialIntelligenceEngine:
             }
             for item in findings
         )
-        opportunities = sum(
-            item.severity is IntelligenceSeverity.OPPORTUNITY for item in findings
-        )
+        opportunities = sum(item.severity is IntelligenceSeverity.OPPORTUNITY for item in findings)
         if not findings:
             return (
                 f"Corte {context.cutoff_date:%d/%m/%Y}: no se identificaron alertas ni oportunidades "
