@@ -55,8 +55,14 @@ class _Api:
 
 
 class _Credit:
-    def read(self, cutoff_date: date) -> SUGEFCreditQualityReadResult:
+    def read(
+        self,
+        cutoff_date: date,
+        *,
+        expected_entity_codes: tuple[str, ...] = (),
+    ) -> SUGEFCreditQualityReadResult:
         assert cutoff_date == _CUTOFF
+        assert expected_entity_codes == (_ENTITY.entity_id,)
         return SUGEFCreditQualityReadResult(
             lines=(
                 _line(
@@ -77,9 +83,11 @@ class _Liquidity:
         cutoff_date: date,
         *,
         include_all_entities: bool = True,
+        expected_entity_codes: tuple[str, ...] = (),
     ) -> SUGEFLiquidityIndicatorReadResult:
         assert cutoff_date == _CUTOFF
         assert include_all_entities is True
+        assert expected_entity_codes == (_ENTITY.entity_id,)
         return SUGEFLiquidityIndicatorReadResult(
             lines=(
                 _line(
@@ -138,3 +146,4 @@ def test_official_reader_composes_all_sugef_rating_sources() -> None:
         "https://sugef.example/sp.xlsx",
     }
     assert {"base", "credit", "liquidity", "capital"} <= set(result.diagnostics)
+    assert any("1 entidades activas" in item for item in result.diagnostics)
