@@ -82,6 +82,17 @@ def _indicator_line(entity_code: str) -> FinancialStatementLine:
     )
 
 
+def _balance_line(entity_code: str) -> FinancialStatementLine:
+    return FinancialStatementLine(
+        entity=FinancialEntity(entity_code, f"Entidad {entity_code}"),
+        statement_date=date(2026, 7, 31),
+        statement_type=FinancialStatementType.BALANCE_SHEET,
+        account_code="10000",
+        account_name="TOTAL ACTIVO",
+        amount=Decimal("1"),
+    )
+
+
 def test_recovery_is_not_limited_to_four_incomplete_peers() -> None:
     client = _RecoveringClient()
     peer_codes = tuple(f"PEER-{index}" for index in range(1, 7))
@@ -103,6 +114,23 @@ def test_recovery_is_not_limited_to_four_incomplete_peers() -> None:
         client._has_methodology_history(lines, code, date(2026, 7, 31)) for code in peer_codes
     )
     assert any("6/6 entidades" in message for message in diagnostics)
+
+
+def test_peer_seen_in_balance_is_recovered_even_when_indicator_bulk_omits_it() -> None:
+    client = _RecoveringClient()
+    lines = [_balance_line("BALANCE-ONLY")]
+    endpoints: set[str] = set()
+    diagnostics: list[str] = []
+
+    client._recover_incomplete_peer_history(
+        date(2026, 7, 31),
+        lines,
+        endpoints,
+        diagnostics,
+    )
+
+    assert {job[0] for job in client.executed_jobs} == {"BALANCE-ONLY"}
+    assert client._has_methodology_history(lines, "BALANCE-ONLY", date(2026, 7, 31))
 
 
 def test_recovery_queries_only_accounts_with_missing_history() -> None:
