@@ -191,6 +191,50 @@ class FinancialAnalysisView(QWidget):
         self._rating_content_tabs.setObjectName("ratingContentTabs")
         self._rating_content_tabs.setDocumentMode(True)
 
+        ranking = QWidget()
+        ranking_layout = QVBoxLayout(ranking)
+        ranking_layout.setContentsMargins(8, 8, 8, 8)
+        ranking_layout.setSpacing(6)
+        ranking_header = QHBoxLayout()
+        ranking_title_box = QVBoxLayout()
+        ranking_title = QLabel("Calificación comparativa de entidades SUGEF")
+        ranking_title.setStyleSheet("font-weight:700; color:#314A5E; font-size:11px;")
+        ranking_help = QLabel(
+            "Mismo corte, universo y metodología 08ME14-01. La nota solo se emite con los "
+            "13 indicadores disponibles; doble clic abre el detalle de la entidad."
+        )
+        ranking_help.setStyleSheet("color:#667788; font-size:9px;")
+        ranking_title_box.addWidget(ranking_title)
+        ranking_title_box.addWidget(ranking_help)
+        ranking_header.addLayout(ranking_title_box)
+        ranking_header.addStretch(1)
+        self._peer_rating_summary = QLabel("Sin calificaciones comparativas")
+        self._peer_rating_summary.setStyleSheet("font-weight:600; color:#52687A; font-size:9px;")
+        ranking_header.addWidget(self._peer_rating_summary)
+        ranking_layout.addLayout(ranking_header)
+
+        self._peer_rating_table = self._table(
+            [
+                "Pos.",
+                "Entidad",
+                "Categoría",
+                "Puntaje",
+                "Nota",
+                "Cobertura",
+                "Indicadores",
+                "Estado",
+            ]
+        )
+        peer_rating_header = self._peer_rating_table.horizontalHeader()
+        peer_rating_header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        peer_rating_header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        peer_rating_header.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
+        for column in range(3, 8):
+            peer_rating_header.setSectionResizeMode(column, QHeaderView.ResizeMode.ResizeToContents)
+        self._peer_rating_table.cellDoubleClicked.connect(self._rating_entity_activated)
+        ranking_layout.addWidget(self._peer_rating_table, 1)
+        self._rating_content_tabs.addTab(ranking, "Ranking de entidades")
+
         detail = QWidget()
         detail_layout = QHBoxLayout(detail)
         detail_layout.setContentsMargins(8, 8, 8, 8)
@@ -400,6 +444,7 @@ class FinancialAnalysisView(QWidget):
                 self._peer_table.setItem(row_index, column, item)
 
     def _bind_rating(self, view_model: FinancialAnalysisViewModel) -> None:
+        self._bind_peer_ratings(view_model)
         self._rating_grade.setText(view_model.rating_grade)
         self._rating_score.setText(f"Puntaje: {view_model.rating_score}")
         self._rating_coverage.setText(f"Cobertura: {view_model.rating_coverage}")
@@ -476,6 +521,55 @@ class FinancialAnalysisView(QWidget):
         notes_text = "  •  ".join(notes)
         self._rating_notes.setText(notes_text)
         self._rating_notes.setToolTip("\n".join(notes))
+
+    def _bind_peer_ratings(self, view_model: FinancialAnalysisViewModel) -> None:
+        rows = view_model.peer_rating_rows
+        complete_count = sum(row.status == "Emitida" for row in rows)
+        self._peer_rating_summary.setText(
+            f"{complete_count} emitidas · {len(rows)} entidades"
+            if rows
+            else "Sin calificaciones comparativas"
+        )
+        self._peer_rating_table.setRowCount(len(rows))
+        for row_index, row in enumerate(rows):
+            values = (
+                row.position,
+                row.entity_name,
+                row.category,
+                row.score,
+                row.grade,
+                row.coverage,
+                row.indicators,
+                row.status,
+            )
+            for column, value in enumerate(values):
+                item = QTableWidgetItem(value)
+                item.setData(Qt.ItemDataRole.UserRole, row.entity_id)
+                if column in {0, 3, 5, 6}:
+                    item.setTextAlignment(
+                        Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+                    )
+                elif column in {4, 7}:
+                    item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                if row.selected:
+                    font = item.font()
+                    font.setBold(True)
+                    item.setFont(font)
+                    item.setToolTip("Entidad seleccionada · doble clic para abrir el detalle")
+                else:
+                    item.setToolTip("Doble clic para abrir el detalle de la entidad")
+                self._peer_rating_table.setItem(row_index, column, item)
+
+    def _rating_entity_activated(self, row: int, _column: int) -> None:
+        item = self._peer_rating_table.item(row, 0)
+        if item is None:
+            return
+        entity_id = item.data(Qt.ItemDataRole.UserRole)
+        if not entity_id:
+            return
+        selected = self._entity_selector.findData(str(entity_id))
+        if selected >= 0:
+            self._entity_selector.setCurrentIndex(selected)
 
     def _entity_changed(self, _index: int) -> None:
         if self._building_entity_selector:
