@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+from aip.application.intelligence.context_provider import FinancialIntelligenceContextProvider
 from aip.application.intelligence.llm_gateway import DisabledLLMGateway, LLMGateway
 from aip.domain.intelligence.engine import FinancialIntelligenceEngine
 from aip.domain.intelligence.models import FinancialIntelligenceContext, FinancialIntelligenceReport
-from aip.product.intelligence.aip_context_provider import AIPFinancialIntelligenceContextProvider
 
 
 class FinancialIntelligenceService:
@@ -11,7 +11,7 @@ class FinancialIntelligenceService:
 
     def __init__(
         self,
-        context_provider: AIPFinancialIntelligenceContextProvider,
+        context_provider: FinancialIntelligenceContextProvider,
         *,
         engine: FinancialIntelligenceEngine | None = None,
         llm_gateway: LLMGateway | None = None,

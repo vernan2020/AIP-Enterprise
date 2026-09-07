@@ -22,6 +22,7 @@ class Ribbon(QToolBar):
         "Liquidez",
         "Tesorería",
         "Análisis Financiero",
+        "Agente IA",
         "Actualizar Todo",
         "Reportes",
         "Administración",
@@ -42,7 +43,7 @@ class Ribbon(QToolBar):
         self.addSeparator()
 
         for index, label in enumerate(self._LABELS):
-            if index in {4, 9, 10}:
+            if index in {4, 10, 11}:
                 self.addSeparator()
             action = QAction(label, self)
             self.addAction(action)

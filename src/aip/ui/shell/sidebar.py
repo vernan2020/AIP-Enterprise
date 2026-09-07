@@ -23,6 +23,7 @@ class Sidebar(QWidget):
         ("Liquidez", "liquidity"),
         ("Tesorería", "treasury"),
         ("Análisis Financiero", "financial_analysis"),
+        ("Agente IA", "financial_intelligence"),
         ("Reportes", "reports"),
     )
 
