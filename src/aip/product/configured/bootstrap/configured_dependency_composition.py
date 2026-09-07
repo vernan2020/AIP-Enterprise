@@ -28,6 +28,11 @@ from aip.product.configured.protocols import (
     PortfolioDataProvider,
     SourceHealthProvider,
 )
+from aip.product.configured.services.cached_price_risk_services import (
+    CachedConfiguredPortfolioDV01Service,
+    CachedConfiguredPortfolioRateShockService,
+    CachedConfiguredVectorPortfolioVaRSimulationService,
+)
 from aip.product.configured.services.configured_advanced_macro_forecasting_service import (
     ConfiguredAdvancedMacroForecastingService,
 )
@@ -134,12 +139,16 @@ class ConfiguredDependencyComposition:
             portfolio_provider,
             valuation_date_context=valuation_date_context,
         )
-        portfolio_var_simulation_service = ConfiguredVectorPortfolioVaRSimulationService(
-            portfolio_provider,
-            portfolio_var_simulation_calculator,
+        portfolio_var_simulation_service = (
+            CachedConfiguredVectorPortfolioVaRSimulationService(
+                portfolio_provider,
+                portfolio_var_simulation_calculator,
+            )
         )
-        portfolio_dv01_service = ConfiguredPortfolioDV01Service(portfolio_provider)
-        portfolio_rate_shock_service = ConfiguredPortfolioRateShockService(portfolio_provider)
+        portfolio_dv01_service = CachedConfiguredPortfolioDV01Service(portfolio_provider)
+        portfolio_rate_shock_service = CachedConfiguredPortfolioRateShockService(
+            portfolio_provider
+        )
 
         configured_market_provider = ConfiguredMarketProvider(
             self._config,
@@ -203,9 +212,21 @@ class ConfiguredDependencyComposition:
             ConfiguredVectorPortfolioVaRSimulationService,
             portfolio_var_simulation_service,
         )
+        container.register_instance(
+            CachedConfiguredVectorPortfolioVaRSimulationService,
+            portfolio_var_simulation_service,
+        )
         container.register_instance(ConfiguredPortfolioDV01Service, portfolio_dv01_service)
         container.register_instance(
+            CachedConfiguredPortfolioDV01Service,
+            portfolio_dv01_service,
+        )
+        container.register_instance(
             ConfiguredPortfolioRateShockService,
+            portfolio_rate_shock_service,
+        )
+        container.register_instance(
+            CachedConfiguredPortfolioRateShockService,
             portfolio_rate_shock_service,
         )
         container.register_instance(
@@ -261,9 +282,12 @@ class ConfiguredDependencyComposition:
             ConfiguredPortfolioVaRService,
             ConfiguredPortfolioVaRSimulationService,
             ConfiguredVectorPortfolioVaRSimulationService,
+            CachedConfiguredVectorPortfolioVaRSimulationService,
             ConfiguredPortfolioDV01Service,
+            CachedConfiguredPortfolioDV01Service,
             ConfiguredPortfolioHistoryService,
             ConfiguredPortfolioRateShockService,
+            CachedConfiguredPortfolioRateShockService,
             ConfiguredMacroIntelligenceService,
             ConfiguredAdvancedMacroForecastingService,
             ConfiguredFinancialAnalysisService,
