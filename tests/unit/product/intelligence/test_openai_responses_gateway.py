@@ -174,8 +174,7 @@ def test_openai_payload_includes_financial_and_macro_context() -> None:
     assert evidence_payload["financial_analysis_sugef"]["entity"]["name"] == "COOPEALIANZA R.L."
     assert evidence_payload["financial_analysis_sugef"]["headline_metrics"][0]["code"] == "ROA"
     assert (
-        evidence_payload["financial_analysis_sugef"]["peer_comparison"][0]["roa_percent"]
-        == "0.80"
+        evidence_payload["financial_analysis_sugef"]["peer_comparison"][0]["roa_percent"] == "0.80"
     )
     assert evidence_payload["macro_intelligence"]["scenario_status"] == "APPROVED"
     assert evidence_payload["macro_intelligence"]["projection"][0]["tpm"] == "3.00"
