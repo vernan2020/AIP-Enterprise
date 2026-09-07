@@ -30,6 +30,32 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _resolve_source_commit() -> str:
+    """Resolve the exact branch-head commit packaged by CI.
+
+    ``GITHUB_SHA`` points to the synthetic merge commit for pull-request runs,
+    even when Actions checks out the recovery branch explicitly. Prefer the
+    pull request head SHA from the event payload so the manifest identifies the
+    exact source revision whose files were packaged.
+    """
+
+    event_path = os.getenv("GITHUB_EVENT_PATH")
+    if event_path:
+        try:
+            event = json.loads(Path(event_path).read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            event = {}
+        pull_request = event.get("pull_request") if isinstance(event, dict) else None
+        if isinstance(pull_request, dict):
+            head = pull_request.get("head")
+            if isinstance(head, dict):
+                head_sha = head.get("sha")
+                if isinstance(head_sha, str) and head_sha.strip():
+                    return head_sha.strip()
+
+    return os.getenv("GITHUB_SHA", "local-build")
+
+
 def _should_include(path: Path) -> bool:
     if any(part in EXCLUDED_NAMES for part in path.parts):
         return False
@@ -113,12 +139,11 @@ def main() -> int:
         shutil.copy2(installer_source, package_dir / "apply_windows_recovery.py")
         _write_apply_cmd(package_dir)
 
-        source_commit = os.getenv("GITHUB_SHA", "local-build")
         manifest = {
             "package_name": PACKAGE_NAME,
             "package_version": "RC1-CERTIFIED-20260829",
             "source_branch": "recovery/full-runtime-rc1-20260829",
-            "source_commit": source_commit,
+            "source_commit": _resolve_source_commit(),
             "file_count": len(manifest_entries),
             "files": manifest_entries,
             "preserved_local_assets": [
