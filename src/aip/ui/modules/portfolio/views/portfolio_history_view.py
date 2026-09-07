@@ -219,9 +219,7 @@ class PortfolioHistoryView(QWidget):
             previous_month_value=(
                 previous_month.weighted_yield_percent if previous_month is not None else None
             ),
-            year_end_value=(
-                year_end.weighted_yield_percent if year_end is not None else None
-            ),
+            year_end_value=(year_end.weighted_yield_percent if year_end is not None else None),
         )
         self._charts["duration"].set_data(
             tuple((point.valuation_date, point.modified_duration) for point in points),
