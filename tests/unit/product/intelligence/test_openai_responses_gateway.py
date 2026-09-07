@@ -91,7 +91,9 @@ def test_openai_payload_is_grounded_minimal_and_not_stored() -> None:
     assert "local-sensitive-warning-not-for-llm" not in serialized
 
 
-def test_openai_answer_extracts_rest_output_without_network(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_openai_answer_extracts_rest_output_without_network(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     gateway = OpenAIResponsesGateway(api_key="secret-key", model="test-model")
     monkeypatch.setattr(
         gateway,
