@@ -50,9 +50,13 @@ class SUGEFCreditQualityReader:
     SUGEF documenta siete códigos de atraso para la información posterior a
     enero de 2024: 1 al día; 2 de 1 a 30 días; 3 de 31 a 60; 4 de 61 a 90;
     5 de 91 a 180; 6 de 181 o más; y 7 cobro judicial. El API también expone
-    la normativa aplicable a cada porción de cartera. AIP valida cada normativa
-    por separado y, cuando todas las normativas reportadas para una entidad son
-    completas, agrega sus saldos para medir la cartera total de la entidad.
+    la normativa aplicable a cada porción de cartera.
+
+    El barrido SFN puede omitir filas de bandas sin saldo. AIP no interpreta esa
+    ausencia como cero de forma automática: primero reconsulta directamente la
+    entidad y la normativa incompleta. Solo cuando esa consulta oficial exacta
+    responde con información válida y continúa omitiendo una banda, la ausencia
+    se registra como saldo cero para esa banda, con trazabilidad explícita.
     """
 
     _BAND_BY_SUGEF_CODE = {
@@ -121,19 +125,129 @@ class SUGEFCreditQualityReader:
                     f"SUGEF API ReporteDiasAtraso ({scope}): {type(exc).__name__}: {exc}"
                 )
 
-        lines, calc_diagnostics = self._calculate(tuple(buckets))
+        recovered_buckets = self._recover_incomplete_normatives(
+            period=period,
+            buckets=tuple(buckets),
+            endpoints=endpoints,
+            diagnostics=diagnostics,
+        )
+        lines, calc_diagnostics = self._calculate(recovered_buckets)
         diagnostics.extend(calc_diagnostics)
         if lines:
             diagnostics.append(
                 "Indicadores de calidad de cartera calculados desde ReporteDiasAtraso "
-                "SUGEF, validando por separado todas las normativas aplicables, agregando "
-                "solo normativas completas y sin completar bandas ausentes con cero."
+                "SUGEF, validando por separado todas las normativas aplicables. Las bandas "
+                "omitidas solo se consideran saldo cero después de una consulta directa y "
+                "exitosa para la entidad y normativa correspondientes."
             )
         return SUGEFCreditQualityReadResult(
             lines=lines,
             endpoints=tuple(sorted(endpoints)),
             diagnostics=tuple(diagnostics),
         )
+
+    def _recover_incomplete_normatives(
+        self,
+        *,
+        period: str,
+        buckets: tuple[_BucketRow, ...],
+        endpoints: set[str],
+        diagnostics: list[str],
+    ) -> tuple[_BucketRow, ...]:
+        """Reconsulta normativas incompletas antes de interpretar bandas ausentes como cero."""
+
+        grouped: dict[tuple[str, date, str], list[_BucketRow]] = defaultdict(list)
+        for row in buckets:
+            grouped[(row.entity.entity_id, row.statement_date, row.normative)].append(row)
+
+        replacements: dict[tuple[str, date, str], tuple[_BucketRow, ...]] = {}
+        for key, normative_rows in sorted(grouped.items()):
+            entity_id, statement_date, normative = key
+            initial = self._calculator.calculate(
+                tuple(CreditAgingAmount(row.band, row.principal) for row in normative_rows)
+            )
+            if initial.complete or not initial.missing_bands:
+                continue
+
+            entity = normative_rows[0].entity
+            try:
+                response = self._api.read_credit_report(
+                    "ReporteDiasAtraso",
+                    entity_code=entity_id,
+                    sector_code="",
+                    periods=period,
+                    regulation=normative,
+                    days_arrears="",
+                )
+                endpoints.add(response.endpoint)
+            except (HTTPError, URLError, TimeoutError, ValueError, OSError) as exc:
+                missing = ", ".join(band.value for band in initial.missing_bands)
+                diagnostics.append(
+                    f"{entity.name} {statement_date:%d/%m/%Y} normativa {normative}: "
+                    "no fue posible confirmar las bandas ausentes mediante consulta directa "
+                    f"SUGEF ({missing}); se conserva N/D. {type(exc).__name__}: {exc}"
+                )
+                continue
+
+            direct_rows = tuple(
+                row
+                for row in self._normalize_rows(response.rows, response.endpoint)
+                if row.entity.entity_id == entity_id
+                and row.statement_date == statement_date
+                and row.normative == normative
+            )
+            if not direct_rows:
+                missing = ", ".join(band.value for band in initial.missing_bands)
+                diagnostics.append(
+                    f"{entity.name} {statement_date:%d/%m/%Y} normativa {normative}: "
+                    "la consulta directa SUGEF no devolvió filas válidas para confirmar "
+                    f"las bandas ausentes ({missing}); se conserva N/D."
+                )
+                continue
+
+            present_bands = {row.band for row in direct_rows}
+            missing_after_direct = tuple(
+                band for band in CreditAgingBand if band not in present_bands
+            )
+            recovered = list(direct_rows)
+            for band in missing_after_direct:
+                recovered.append(
+                    _BucketRow(
+                        entity=direct_rows[0].entity,
+                        statement_date=statement_date,
+                        normative=normative,
+                        band=band,
+                        principal=Decimal("0"),
+                        source_row=0,
+                        endpoint=response.endpoint,
+                    )
+                )
+            replacements[key] = tuple(recovered)
+
+            if missing_after_direct:
+                confirmed = ", ".join(band.value for band in missing_after_direct)
+                diagnostics.append(
+                    f"{entity.name} {statement_date:%d/%m/%Y} normativa {normative}: "
+                    "consulta directa SUGEF confirmó ausencia de filas para las bandas "
+                    f"{confirmed}; se registran con saldo cero exclusivamente para el cálculo."
+                )
+            else:
+                diagnostics.append(
+                    f"{entity.name} {statement_date:%d/%m/%Y} normativa {normative}: "
+                    "consulta directa SUGEF recuperó todas las bandas de atraso faltantes."
+                )
+
+        if not replacements:
+            return buckets
+
+        output = [
+            row
+            for row in buckets
+            if (row.entity.entity_id, row.statement_date, row.normative) not in replacements
+        ]
+        for key in sorted(replacements):
+            output.extend(replacements[key])
+        return tuple(output)
 
     def _calculate(
         self,
