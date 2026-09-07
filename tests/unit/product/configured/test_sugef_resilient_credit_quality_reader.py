@@ -114,9 +114,7 @@ def test_targeted_day_query_recovers_valid_current_portfolio_after_null_bulk_row
     assert bct["CALC:DELINQUENCY_90"] == Decimal("0.03")
     assert (_BCT, "1", "1") in api.calls
     assert any(
-        "BANCO BCT" in message
-        and "CURRENT" in message
-        and "consulta oficial dirigida" in message
+        "BANCO BCT" in message and "CURRENT" in message and "consulta oficial dirigida" in message
         for message in result.diagnostics
     )
 
