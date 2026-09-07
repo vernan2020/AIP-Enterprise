@@ -449,6 +449,10 @@ class MacroForecastLabPanel(QWidget):
         self._model_table.setRowCount(len(view_model.models))
         for row, model in enumerate(view_model.models):
             metrics = {item.horizon: item for item in model.metrics}
+            metric_1m = metrics.get("1M")
+            metric_3m = metrics.get("3M")
+            metric_6m = metrics.get("6M")
+            metric_12m = metrics.get("12M")
             values = (
                 model.rank,
                 model.model_name,
@@ -456,11 +460,11 @@ class MacroForecastLabPanel(QWidget):
                 model.status,
                 model.weighted_score,
                 model.improvement_vs_naive,
-                metrics.get("1M").rmse if metrics.get("1M") else "-",
-                metrics.get("3M").rmse if metrics.get("3M") else "-",
-                metrics.get("6M").rmse if metrics.get("6M") else "-",
-                metrics.get("12M").rmse if metrics.get("12M") else "-",
-                metrics.get("12M").directional_accuracy if metrics.get("12M") else "-",
+                metric_1m.rmse if metric_1m is not None else "-",
+                metric_3m.rmse if metric_3m is not None else "-",
+                metric_6m.rmse if metric_6m is not None else "-",
+                metric_12m.rmse if metric_12m is not None else "-",
+                metric_12m.directional_accuracy if metric_12m is not None else "-",
             )
             for column, value in enumerate(values):
                 item = QTableWidgetItem(value)
