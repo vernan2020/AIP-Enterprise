@@ -19,7 +19,9 @@ from aip.product.intelligence.aip_context_provider import (
 
 
 class _FinancialService:
-    def __init__(self, selected: FinancialEntity, peers: tuple[EntityFinancialSummary, ...]) -> None:
+    def __init__(
+        self, selected: FinancialEntity, peers: tuple[EntityFinancialSummary, ...]
+    ) -> None:
         self._selected = selected
         self._peers = peers
         self.calls: list[date] = []
