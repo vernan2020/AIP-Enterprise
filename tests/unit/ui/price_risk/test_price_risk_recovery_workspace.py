@@ -94,15 +94,16 @@ def _view_model() -> PriceRiskViewModel:
     )
 
 
-def test_price_risk_workspace_restores_price_and_rate_tabs(qt_app) -> None:
-    view = PriceRiskView(_StubPresenter())
+def test_price_risk_workspace_restores_price_simulator_and_rate_tabs(qt_app) -> None:
+    view = PriceRiskView(_StubPresenter())  # type: ignore[arg-type]
     try:
         view._bind_view_model(_view_model())
         tabs = view.findChild(QTabWidget)
         assert tabs is not None
-        assert tabs.count() == 2
+        assert tabs.count() == 3
         assert tabs.tabText(0) == "Riesgo de Precio · VeR"
-        assert tabs.tabText(1) == "Riesgo de Tasa · DV01"
+        assert tabs.tabText(1) == "Simulador · VeR"
+        assert tabs.tabText(2) == "Riesgo de Tasa · DV01"
         assert view.view_model.status == "CALCULATED"
         assert view.view_model.required_prices == 521
         assert view.view_model.contribution_reconciliation_percent == "100.0000%"
@@ -112,7 +113,7 @@ def test_price_risk_workspace_restores_price_and_rate_tabs(qt_app) -> None:
 
 
 def test_price_risk_workspace_shows_rate_sensitivity_without_fabricating_nii(qt_app) -> None:
-    view = PriceRiskView(_StubPresenter())
+    view = PriceRiskView(_StubPresenter())  # type: ignore[arg-type]
     try:
         view._bind_view_model(_view_model())
         assert view.view_model.dv01_total == "₡42.00 MM"
