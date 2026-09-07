@@ -170,9 +170,7 @@ def test_reader_confirms_omitted_band_as_zero_with_exact_normative_query() -> No
     assert indicators["CALC:DELINQUENCY_90"] == Decimal("40") / Decimal("990")
     assert ("3004045138", "20260701", "1") in api.calls
     assert any(
-        "normativa 1" in item
-        and "JUDICIAL_COLLECTION" in item
-        and "saldo cero" in item
+        "normativa 1" in item and "JUDICIAL_COLLECTION" in item and "saldo cero" in item
         for item in result.diagnostics
     )
 
