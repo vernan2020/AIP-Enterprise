@@ -153,9 +153,11 @@ class AIPFinancialIntelligenceContextProvider:
                     logger.info(
                         "Financial Copilot aligned SUGEF financial context requested={} effective={}",
                         cutoff.isoformat(),
-                        candidate_snapshot.cutoff_date.isoformat()
-                        if candidate_snapshot.cutoff_date is not None
-                        else candidate.isoformat(),
+                        (
+                            candidate_snapshot.cutoff_date.isoformat()
+                            if candidate_snapshot.cutoff_date is not None
+                            else candidate.isoformat()
+                        ),
                     )
                 break
 
