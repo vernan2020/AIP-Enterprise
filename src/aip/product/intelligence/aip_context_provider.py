@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import unicodedata
+from calendar import monthrange
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
+from loguru import logger
+
 from aip.domain.financial_analysis.models import (
     EntityFinancialSummary,
+    FinancialAnalysisSnapshot,
     FinancialEntity,
 )
 from aip.domain.intelligence.models import (
@@ -38,7 +42,7 @@ from aip.product.demo.bootstrap.application_factory import DemoApplicationFactor
 class AIPFinancialIntelligenceContextProvider:
     """Build a read-only intelligence context from certified AIP application services."""
 
-    _MAX_FINANCIAL_PEERS = 12
+    _FINANCIAL_LOOKBACK_MONTHS = 3
 
     def __init__(self, application_factory: DemoApplicationFactory) -> None:
         self._factory = application_factory
@@ -69,6 +73,11 @@ class AIPFinancialIntelligenceContextProvider:
                 f"macro_intelligence={macro_intelligence.status}",
             )
         )
+        if financial_analysis.cutoff_date is not None:
+            source_states.append(
+                f"financial_analysis_cutoff={financial_analysis.cutoff_date.isoformat()}"
+            )
+            source_states.append(f"financial_peer_count={len(financial_analysis.peers)}")
 
         return FinancialIntelligenceContext(
             cutoff_date=cutoff,
@@ -111,18 +120,47 @@ class AIPFinancialIntelligenceContextProvider:
     def _resolve_financial_analysis(self, cutoff: date) -> FinancialAnalysisContext:
         try:
             service = self._factory.container.resolve(ConfiguredFinancialAnalysisService)
-            snapshot = service.load(
-                selected_entity_id=self._configured_financial_entity_id(),
-                cutoff_date=cutoff,
+        except Exception as exc:
+            logger.warning(
+                "Financial Copilot could not resolve SUGEF financial service: {}: {}",
+                type(exc).__name__,
+                exc,
             )
-        except Exception:
-            return FinancialAnalysisContext(
-                status="UNAVAILABLE",
-                cutoff_date=None,
-                entity_id="",
-                entity_name="",
-                entity_category="",
-            )
+            return self._unavailable_financial_analysis()
+
+        snapshot: FinancialAnalysisSnapshot | None = None
+        selected_entity_id = self._configured_financial_entity_id()
+        for candidate in self._financial_cutoff_candidates(cutoff):
+            try:
+                candidate_snapshot = service.load(
+                    selected_entity_id=selected_entity_id,
+                    cutoff_date=candidate,
+                )
+            except Exception as exc:
+                logger.warning(
+                    "Financial Copilot SUGEF snapshot failed cutoff={} error={}: {}",
+                    candidate.isoformat(),
+                    type(exc).__name__,
+                    exc,
+                )
+                continue
+
+            if snapshot is None:
+                snapshot = candidate_snapshot
+            if self._financial_snapshot_usable(candidate_snapshot):
+                snapshot = candidate_snapshot
+                if candidate != cutoff:
+                    logger.info(
+                        "Financial Copilot aligned SUGEF financial context requested={} effective={}",
+                        cutoff.isoformat(),
+                        candidate_snapshot.cutoff_date.isoformat()
+                        if candidate_snapshot.cutoff_date is not None
+                        else candidate.isoformat(),
+                    )
+                break
+
+        if snapshot is None:
+            return self._unavailable_financial_analysis()
 
         selected = snapshot.selected_entity
         rating = snapshot.rating
@@ -197,6 +235,38 @@ class AIPFinancialIntelligenceContextProvider:
             ),
             reconciliation_issues=reconciliation_issues,
         )
+
+    @staticmethod
+    def _unavailable_financial_analysis() -> FinancialAnalysisContext:
+        return FinancialAnalysisContext(
+            status="UNAVAILABLE",
+            cutoff_date=None,
+            entity_id="",
+            entity_name="",
+            entity_category="",
+        )
+
+    @staticmethod
+    def _financial_snapshot_usable(snapshot: FinancialAnalysisSnapshot) -> bool:
+        return (
+            snapshot.status.upper() in {"AVAILABLE", "PARTIAL"}
+            and snapshot.cutoff_date is not None
+            and snapshot.selected_entity is not None
+            and bool(snapshot.metrics or snapshot.peer_summaries or snapshot.statement_lines)
+        )
+
+    @classmethod
+    def _financial_cutoff_candidates(cls, cutoff: date) -> tuple[date, ...]:
+        candidates = [cutoff]
+        year = cutoff.year
+        month = cutoff.month
+        for _ in range(cls._FINANCIAL_LOOKBACK_MONTHS):
+            month -= 1
+            if month == 0:
+                month = 12
+                year -= 1
+            candidates.append(date(year, month, monthrange(year, month)[1]))
+        return tuple(candidates)
 
     def _resolve_macro_intelligence(self) -> MacroIntelligenceContext:
         try:
@@ -279,8 +349,6 @@ class AIPFinancialIntelligenceContextProvider:
                 continue
             result.append(item)
             seen.add(item.entity.entity_id)
-            if len(result) >= cls._MAX_FINANCIAL_PEERS:
-                break
         return tuple(result)
 
     @staticmethod
