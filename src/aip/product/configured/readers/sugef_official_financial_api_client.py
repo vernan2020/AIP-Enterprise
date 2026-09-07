@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import unicodedata
 from calendar import monthrange
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -54,6 +55,7 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
     )
     _METHODOLOGY_BALANCE_ACCOUNTS = ("10000", "25000")
     _METHODOLOGY_INCOME_ACCOUNTS = ("30000", "31000", "31300", "32000")
+    _LOAN_ACCOUNT_TERMS = ("CARTERA DE CREDITO", "CREDITOS VIGENTES", "TOTAL CARTERA")
     _MAX_DIRECT_PEER_RECOVERY = 4
 
     def __init__(self, config: SUGEFFinancialSourceConfig) -> None:
@@ -63,6 +65,7 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
         lines: list[FinancialStatementLine] = []
         endpoints: set[str] = set()
         diagnostics: list[str] = []
+        comparative_loan_account: str | None = None
 
         # Fase 0: confirmar un corte contable completo de la entidad principal.
         # Las mismas filas del sondeo se reutilizan para evitar que una segunda
@@ -74,6 +77,9 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
             lines.extend(primary_probe.balance_lines)
             lines.extend(primary_probe.income_lines)
             endpoints.update(primary_probe.endpoints)
+            comparative_loan_account = self._resolve_loan_account_code(
+                primary_probe.balance_lines
+            )
 
             # Fase 1: recuperar solo las cuentas históricas requeridas por las
             # fórmulas 08ME14-01. El estado completo del corte ya proviene del
@@ -113,7 +119,36 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
                 diagnostics,
             )
 
-            # Fase 4: historia comparativa optimizada. Se solicitan exclusivamente
+            # Fase 4: completar Cartera para el universo comparativo usando la
+            # MISMA cuenta IASEF que el estado completo de la entidad principal.
+            # El código se descubre por descripción en el Balance oficial; no se
+            # hardcodea para resistir cambios futuros del estructurador de SUGEF.
+            if comparative_loan_account:
+                self._execute_filtered_jobs(
+                    [
+                        (
+                            "",
+                            effective_period,
+                            *self._BALANCE_REPORT,
+                            comparative_loan_account,
+                        )
+                    ],
+                    lines,
+                    endpoints,
+                    diagnostics,
+                )
+                diagnostics.append(
+                    "Cartera comparativa SFN consultada con la misma cuenta IASEF "
+                    f"detectada en el Balance oficial de la entidad principal: "
+                    f"{comparative_loan_account}."
+                )
+            else:
+                diagnostics.append(
+                    "No fue posible resolver en el Balance oficial la cuenta IASEF de Cartera; "
+                    "la comparativa conserva N/D sin fabricar valores."
+                )
+
+            # Fase 5: historia comparativa optimizada. Se solicitan exclusivamente
             # las seis cuentas IAESF requeridas por 08ME14-01 para todo el universo.
             filtered_peer_jobs = self._methodology_history_jobs(("",), effective_cutoff)
             self._execute_filtered_jobs(
@@ -163,6 +198,38 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
             lines=tuple(lines),
             endpoints=tuple(sorted(endpoints)),
             diagnostics=tuple(diagnostics),
+        )
+
+    @classmethod
+    def _resolve_loan_account_code(
+        cls,
+        balance_lines: tuple[FinancialStatementLine, ...],
+    ) -> str | None:
+        """Resolve the IASEF loan account from the authoritative full balance."""
+
+        candidates: list[tuple[int, int, str, FinancialStatementLine]] = []
+        for line in balance_lines:
+            if line.statement_type is not FinancialStatementType.BALANCE_SHEET:
+                continue
+            normalized = cls._normalize_account_name(line.account_name)
+            for term in cls._LOAN_ACCOUNT_TERMS:
+                if normalized == term:
+                    candidates.append((0, len(normalized), line.account_code, line))
+                elif term in normalized:
+                    candidates.append((1, len(normalized), line.account_code, line))
+        if not candidates:
+            return None
+        selected = min(candidates, key=lambda item: (item[0], item[1], item[2]))[3]
+        account_code = selected.account_code.strip().removesuffix(".0")
+        return account_code or None
+
+    @staticmethod
+    def _normalize_account_name(value: str) -> str:
+        decomposed = unicodedata.normalize("NFKD", value)
+        return " ".join(
+            "".join(character for character in decomposed if not unicodedata.combining(character))
+            .upper()
+            .split()
         )
 
     def _resolve_primary_statement_cutoff(
