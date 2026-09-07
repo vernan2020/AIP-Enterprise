@@ -414,7 +414,9 @@ class MacroForecastLabPanel(QWidget):
         self._kpi_values["p3"].setText(view_model.projection_3m)
         self._kpi_values["p6"].setText(view_model.projection_6m)
         self._kpi_values["p12"].setText(view_model.projection_12m)
-        origin = view_model.forecast_origin.strftime("%d/%m/%Y") if view_model.forecast_origin else "-"
+        origin = (
+            view_model.forecast_origin.strftime("%d/%m/%Y") if view_model.forecast_origin else "-"
+        )
         self._status.setText(
             f"Estado {view_model.status} · origen {origin} · "
             f"{view_model.historical_observations} observaciones · "
