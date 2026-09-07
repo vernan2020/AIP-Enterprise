@@ -14,14 +14,21 @@ from aip.product.configured.readers.sugef_public_api_client import SUGEFPublicAp
 
 _PRIMARY = "3004045138"
 _PEER = "3004001021"
+_ABSENT_PEER = "BCT"
 
 
 class _PeerRecoveryApi:
-    def __init__(self) -> None:
+    def __init__(self, *, recover_absent_peer: bool = True) -> None:
+        self.recover_absent_peer = recover_absent_peer
         self.calls: list[tuple[str, str]] = []
 
     @staticmethod
-    def _rows(entity_code: str, entity_name: str, *, missing_band: str | None = None):
+    def _rows(
+        entity_code: str,
+        entity_name: str,
+        *,
+        missing_band: str | None = None,
+    ) -> list[dict[str, str]]:
         balances = {
             "1": "950",
             "2": "15",
@@ -67,9 +74,9 @@ class _PeerRecoveryApi:
                 *self._rows(_PEER, "COOPERATIVA PAR R.L.", missing_band="7"),
             ]
         elif entity_code == _PEER:
-            # La consulta directa de la normativa confirma que la banda 7 no
-            # tiene fila publicada. El lector debe interpretarla como saldo cero.
             rows = self._rows(_PEER, "COOPERATIVA PAR R.L.", missing_band="7")
+        elif entity_code == _ABSENT_PEER and self.recover_absent_peer:
+            rows = self._rows(_ABSENT_PEER, "BANCO BCT")
         else:
             rows = []
 
@@ -106,4 +113,50 @@ def test_peer_with_omitted_zero_band_gets_current_portfolio_indicator() -> None:
         and "JUDICIAL_COLLECTION" in message
         and "saldo cero" in message
         for message in result.diagnostics
+    )
+
+
+def test_peer_absent_from_sfn_bulk_is_recovered_from_direct_official_query() -> None:
+    api = _PeerRecoveryApi()
+    reader = SUGEFCreditQualityReader(
+        SUGEFFinancialSourceConfig(api_entity_codes=(_PRIMARY,)),
+        api_client=api,  # type: ignore[arg-type]
+    )
+
+    result = reader.read(
+        date(2026, 7, 31),
+        expected_entity_codes=(_PRIMARY, _PEER, _ABSENT_PEER),
+    )
+
+    bct = {
+        line.account_code: line.amount
+        for line in result.lines
+        if line.entity.entity_id == _ABSENT_PEER
+    }
+    assert bct == {
+        "CALC:CURRENT_PORTFOLIO": Decimal("0.95"),
+        "CALC:DELINQUENCY_90": Decimal("0.02"),
+    }
+    assert (_ABSENT_PEER, "") in api.calls
+    assert any(
+        _ABSENT_PEER in message and "barrido SFN" in message for message in result.diagnostics
+    )
+
+
+def test_peer_absent_from_bulk_and_direct_query_remains_unavailable() -> None:
+    api = _PeerRecoveryApi(recover_absent_peer=False)
+    reader = SUGEFCreditQualityReader(
+        SUGEFFinancialSourceConfig(api_entity_codes=(_PRIMARY,)),
+        api_client=api,  # type: ignore[arg-type]
+    )
+
+    result = reader.read(
+        date(2026, 7, 31),
+        expected_entity_codes=(_PRIMARY, _ABSENT_PEER),
+    )
+
+    assert all(line.entity.entity_id != _ABSENT_PEER for line in result.lines)
+    assert (_ABSENT_PEER, "") in api.calls
+    assert any(
+        _ABSENT_PEER in message and "permanece N/D" in message for message in result.diagnostics
     )
