@@ -84,9 +84,7 @@ def test_engine_surfaces_relative_value_as_opportunity_not_order() -> None:
 
 def test_local_answer_is_grounded_in_selected_domain() -> None:
     engine = FinancialIntelligenceEngine()
-    report = engine.analyze(
-        _context(hqla_restricted_count=2, modified_duration=Decimal("3.10"))
-    )
+    report = engine.analyze(_context(hqla_restricted_count=2, modified_duration=Decimal("3.10")))
 
     answer = engine.answer(report, "¿Qué debo vigilar en liquidez y HQLA?")
 
