@@ -48,6 +48,27 @@ class _AnalysisWorker(QObject):
             self.finished.emit()
 
 
+class _QuestionWorker(QObject):
+    completed = Signal(str, str)
+    failed = Signal(str)
+    finished = Signal()
+
+    def __init__(self, presenter: FinancialIntelligencePresenter, *, question: str) -> None:
+        super().__init__()
+        self._presenter = presenter
+        self._question = question
+
+    @Slot()
+    def run(self) -> None:
+        try:
+            answer = self._presenter.ask(self._question)
+            self.completed.emit(self._question, answer)
+        except Exception as exc:
+            self.failed.emit(str(exc))
+        finally:
+            self.finished.emit()
+
+
 class FinancialIntelligenceView(QWidget):
     """Financial Copilot workspace with deterministic evidence-grounded analysis."""
 
@@ -56,6 +77,9 @@ class FinancialIntelligenceView(QWidget):
         self._presenter = presenter
         self._thread: QThread | None = None
         self._worker: _AnalysisWorker | None = None
+        self._question_thread: QThread | None = None
+        self._question_worker: _QuestionWorker | None = None
+        self._quick_buttons: list[QPushButton] = []
         self._model: FinancialIntelligenceViewModel | None = None
         self._loaded = False
         self._load_requested = False
@@ -159,7 +183,9 @@ class FinancialIntelligenceView(QWidget):
         ):
             button = QPushButton(label)
             button.setProperty("secondary", True)
+            button.setEnabled(False)
             button.clicked.connect(lambda _checked=False, q=question: self._ask_text(q))
+            self._quick_buttons.append(button)
             quick_row.addWidget(button)
         analysis_layout.addLayout(quick_row)
         splitter.addWidget(analysis_box)
@@ -210,7 +236,7 @@ class FinancialIntelligenceView(QWidget):
         if self._thread is not None and self._thread.isRunning():
             return
         self._refresh_button.setEnabled(False)
-        self._ask_button.setEnabled(False)
+        self._set_question_controls_enabled(False)
         self._status.setText("Analizando evidencia de Portafolio · Mercado · Liquidez…")
 
         thread = QThread(self)
@@ -265,7 +291,7 @@ class FinancialIntelligenceView(QWidget):
         self._thread = None
         self._worker = None
         self._refresh_button.setEnabled(True)
-        self._ask_button.setEnabled(self._loaded)
+        self._set_question_controls_enabled(self._loaded and not self._question_running())
         if self._loaded:
             self._status.setText(
                 "Análisis actualizado. Human-in-the-loop activo: las recomendaciones no ejecutan operaciones."
@@ -308,16 +334,63 @@ class FinancialIntelligenceView(QWidget):
         self._ask_text(self._question.text())
 
     def _ask_text(self, question: str) -> None:
-        question = question.strip()
-        if not question or not self._loaded:
+        clean_question = question.strip()
+        if not clean_question or not self._loaded or self._question_running():
             return
-        try:
-            answer = self._presenter.ask(question)
-        except Exception as exc:
-            QMessageBox.warning(self, "Agente IA", f"No fue posible responder:\n{exc}")
-            return
-        self._question.setText(question)
+
+        self._question.setText(clean_question)
+        self._analysis_text.setPlainText(
+            f"Pregunta:\n{clean_question}\n\nConsultando Financial Copilot…"
+        )
+        self._set_question_controls_enabled(False)
+        self._refresh_button.setEnabled(False)
+        self._status.setText("Consultando el modelo con evidencia AIP del corte activo…")
+
+        thread = QThread(self)
+        worker = _QuestionWorker(self._presenter, question=clean_question)
+        worker.moveToThread(thread)
+        thread.started.connect(worker.run)
+        worker.completed.connect(self._question_completed)
+        worker.failed.connect(self._question_failed)
+        worker.finished.connect(thread.quit)
+        worker.finished.connect(worker.deleteLater)
+        thread.finished.connect(thread.deleteLater)
+        thread.finished.connect(self._question_finished)
+        self._question_thread = thread
+        self._question_worker = worker
+        thread.start()
+
+    @Slot(str, str)
+    def _question_completed(self, question: str, answer: str) -> None:
         self._analysis_text.setPlainText(f"Pregunta:\n{question}\n\n{answer}")
+
+    @Slot(str)
+    def _question_failed(self, message: str) -> None:
+        self._analysis_text.setPlainText(
+            "No fue posible obtener una respuesta generativa. "
+            "Las alertas determinísticas de AIP permanecen disponibles."
+        )
+        QMessageBox.warning(self, "Agente IA", f"No fue posible responder:\n{message}")
+
+    @Slot()
+    def _question_finished(self) -> None:
+        self._question_thread = None
+        self._question_worker = None
+        self._refresh_button.setEnabled(True)
+        self._set_question_controls_enabled(self._loaded)
+        if self._loaded:
+            self._status.setText(
+                "Consulta finalizada. Human-in-the-loop activo: la respuesta es apoyo a decisión."
+            )
+
+    def _question_running(self) -> bool:
+        return self._question_thread is not None and self._question_thread.isRunning()
+
+    def _set_question_controls_enabled(self, enabled: bool) -> None:
+        self._ask_button.setEnabled(enabled)
+        self._question.setEnabled(enabled)
+        for button in self._quick_buttons:
+            button.setEnabled(enabled)
 
     def _apply_style(self) -> None:
         self.setStyleSheet(
