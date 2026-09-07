@@ -3,6 +3,14 @@ REM AIP Enterprise local runtime overrides.
 REM Copy this file to config\runtime.local.cmd and set only values required
 REM by the workstation. runtime.local.cmd is intentionally excluded from Git.
 
+REM Financial Copilot / OpenAI Responses API. Disabled unless explicitly enabled.
+REM set "AIP_LLM_ENABLED=true"
+REM set "AIP_LLM_PROVIDER=openai"
+REM set "OPENAI_API_KEY=YOUR_OPENAI_API_KEY"
+REM set "AIP_LLM_MODEL=gpt-5.2"
+REM set "AIP_LLM_TIMEOUT_SECONDS=45"
+REM set "AIP_LLM_MAX_OUTPUT_TOKENS=1400"
+
 REM BCCR live API credentials. Leave unset to use the persisted local-history
 REM fallback when available.
 REM set "AIP_BCCR_NAME=YOUR_REGISTERED_NAME"
