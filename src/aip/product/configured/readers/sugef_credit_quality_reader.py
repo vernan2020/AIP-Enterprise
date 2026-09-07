@@ -152,9 +152,9 @@ class SUGEFCreditQualityReader:
         if lines:
             diagnostics.append(
                 "Indicadores de calidad de cartera calculados desde ReporteDiasAtraso "
-                "SUGEF, validando por separado todas las entidades y normativas aplicables. "
-                "Las bandas omitidas solo se consideran saldo cero después de una consulta "
-                "directa y exitosa; los saldos nulos permanecen N/D."
+                "SUGEF, validando por separado todas las normativas aplicables para cada "
+                "entidad. Las bandas omitidas solo se consideran saldo cero después de una "
+                "consulta directa y exitosa; los saldos nulos permanecen N/D."
             )
         return SUGEFCreditQualityReadResult(
             lines=lines,
