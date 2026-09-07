@@ -150,7 +150,9 @@ class OpenAIResponsesGateway(LLMGateway):
                         "No fue posible conectar con OpenAI. Revise conectividad, proxy o firewall."
                     ) from exc
             except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-                raise RuntimeError("OpenAI devolvió una respuesta que no pudo interpretarse") from exc
+                raise RuntimeError(
+                    "OpenAI devolvió una respuesta que no pudo interpretarse"
+                ) from exc
 
             time.sleep(float(2 ** (attempt - 1)))
 
