@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from calendar import monthrange
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
@@ -23,7 +24,10 @@ from aip.domain.financial_analysis.models import (
 from aip.product.configured.configuration.configured_source_config import (
     SUGEFFinancialSourceConfig,
 )
-from aip.product.configured.readers.sugef_public_api_client import SUGEFPublicApiClient
+from aip.product.configured.readers.sugef_public_api_client import (
+    SUGEFPublicApiClient,
+    SUGEFPublicApiResponse,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,12 +56,12 @@ class SUGEFCreditQualityReader:
     5 de 91 a 180; 6 de 181 o más; y 7 cobro judicial. El API también expone
     la normativa aplicable a cada porción de cartera.
 
-    El barrido SFN puede omitir filas de bandas sin saldo. AIP no interpreta esa
-    ausencia como cero de forma automática: primero reconsulta directamente la
-    entidad y la normativa incompleta. Solo cuando esa consulta oficial exacta
-    responde con información válida y continúa omitiendo una banda, la ausencia
-    se registra como saldo cero para esa banda, con trazabilidad explícita. Una
-    fila presente con saldo nulo o inválido siempre permanece no disponible.
+    El barrido SFN puede omitir tanto bandas sin saldo como entidades completas.
+    AIP no interpreta esas ausencias como cero de forma automática. Las entidades
+    del universo financiero que no aparezcan en el barrido se reconsultan de
+    forma directa; después, cada normativa incompleta se vuelve a consultar antes
+    de considerar una banda omitida como saldo cero. Una fila publicada con saldo
+    nulo o inválido siempre permanece no disponible.
     """
 
     _BAND_BY_SUGEF_CODE = {
@@ -70,6 +74,7 @@ class SUGEFCreditQualityReader:
         "7": CreditAgingBand.JUDICIAL_COLLECTION,
     }
     _SOURCE_NAME = "Cálculo 08ME14-01 sobre cartera crediticia SUGEF"
+    _MAX_DIRECT_WORKERS = 2
 
     def __init__(
         self,
@@ -82,7 +87,12 @@ class SUGEFCreditQualityReader:
         self._api = api_client or SUGEFPublicApiClient(config)
         self._calculator = calculator or CreditQualityIndicatorCalculator()
 
-    def read(self, cutoff_date: date) -> SUGEFCreditQualityReadResult:
+    def read(
+        self,
+        cutoff_date: date,
+        *,
+        expected_entity_codes: tuple[str, ...] = (),
+    ) -> SUGEFCreditQualityReadResult:
         if cutoff_date < date(2024, 1, 1):
             return SUGEFCreditQualityReadResult(
                 (),
@@ -112,10 +122,6 @@ class SUGEFCreditQualityReader:
                 endpoints.add(response.endpoint)
                 normalized = self._normalize_rows(response.rows, response.endpoint)
                 if entity_code == "":
-                    # El universo SFN vuelve a incluir las entidades consultadas
-                    # directamente. Se excluyen solo esas entidades del scope SFN
-                    # para evitar doble conteo; las filas legítimas de los pares se
-                    # conservan íntegramente.
                     normalized = tuple(
                         row for row in normalized if row.entity.entity_id not in direct_entity_codes
                     )
@@ -126,6 +132,15 @@ class SUGEFCreditQualityReader:
                     f"SUGEF API ReporteDiasAtraso ({scope}): {type(exc).__name__}: {exc}"
                 )
 
+        buckets = list(
+            self._recover_missing_entities(
+                period=period,
+                buckets=tuple(buckets),
+                expected_entity_codes=expected_entity_codes,
+                endpoints=endpoints,
+                diagnostics=diagnostics,
+            )
+        )
         recovered_buckets = self._recover_incomplete_normatives(
             period=period,
             buckets=tuple(buckets),
@@ -137,16 +152,76 @@ class SUGEFCreditQualityReader:
         if lines:
             diagnostics.append(
                 "Indicadores de calidad de cartera calculados desde ReporteDiasAtraso "
-                "SUGEF, validando por separado todas las normativas aplicables. Las bandas "
-                "omitidas solo se consideran saldo cero después de una consulta directa y "
-                "exitosa para la entidad y normativa correspondientes; los saldos nulos "
-                "permanecen N/D."
+                "SUGEF, validando por separado todas las entidades y normativas aplicables. "
+                "Las bandas omitidas solo se consideran saldo cero después de una consulta "
+                "directa y exitosa; los saldos nulos permanecen N/D."
             )
         return SUGEFCreditQualityReadResult(
             lines=lines,
             endpoints=tuple(sorted(endpoints)),
             diagnostics=tuple(diagnostics),
         )
+
+    def _recover_missing_entities(
+        self,
+        *,
+        period: str,
+        buckets: tuple[_BucketRow, ...],
+        expected_entity_codes: tuple[str, ...],
+        endpoints: set[str],
+        diagnostics: list[str],
+    ) -> tuple[_BucketRow, ...]:
+        """Reconsulta pares financieros ausentes por completo del barrido SFN."""
+
+        observed = {row.entity.entity_id for row in buckets}
+        missing = tuple(
+            sorted(code for code in set(expected_entity_codes) if code and code not in observed)
+        )
+        if not missing:
+            return buckets
+
+        def load(entity_code: str) -> SUGEFPublicApiResponse:
+            return self._api.read_credit_report(
+                "ReporteDiasAtraso",
+                entity_code=entity_code,
+                sector_code="",
+                periods=period,
+                regulation="",
+                days_arrears="",
+            )
+
+        output = list(buckets)
+        with ThreadPoolExecutor(max_workers=min(self._MAX_DIRECT_WORKERS, len(missing))) as executor:
+            futures = {executor.submit(load, entity_code): entity_code for entity_code in missing}
+            for future in as_completed(futures):
+                entity_code = futures[future]
+                try:
+                    response = future.result()
+                except (HTTPError, URLError, TimeoutError, ValueError, OSError) as exc:
+                    diagnostics.append(
+                        f"Entidad SUGEF {entity_code}: no fue posible recuperar directamente "
+                        f"ReporteDiasAtraso; se conserva N/D. {type(exc).__name__}: {exc}"
+                    )
+                    continue
+                endpoints.add(response.endpoint)
+                normalized = tuple(
+                    row
+                    for row in self._normalize_rows(response.rows, response.endpoint)
+                    if row.entity.entity_id == entity_code
+                )
+                if not normalized:
+                    diagnostics.append(
+                        f"Entidad SUGEF {entity_code}: la consulta directa de "
+                        "ReporteDiasAtraso no devolvió saldos principales válidos; "
+                        "calidad de cartera permanece N/D."
+                    )
+                    continue
+                output.extend(normalized)
+                diagnostics.append(
+                    f"Entidad SUGEF {entity_code}: calidad de cartera recuperada mediante "
+                    "consulta directa porque el barrido SFN no contenía filas utilizables."
+                )
+        return tuple(output)
 
     def _recover_incomplete_normatives(
         self,
@@ -404,7 +479,6 @@ class SUGEFCreditQualityReader:
             ):
                 continue
             if principal is None:
-                # Null significa no disponible; nunca se convierte a cero.
                 continue
             result.append(
                 _BucketRow(
