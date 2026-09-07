@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import replace
+
 from aip.application.intelligence.context_provider import FinancialIntelligenceContextProvider
 from aip.application.intelligence.llm_gateway import DisabledLLMGateway, LLMGateway
 from aip.domain.intelligence.engine import FinancialIntelligenceEngine
@@ -34,7 +36,8 @@ class FinancialIntelligenceService:
         if self._report is not None and not force_refresh:
             return self._report
         self._context = self._context_provider.load()
-        self._report = self._engine.analyze(self._context)
+        report = self._engine.analyze(self._context)
+        self._report = replace(report, coverage=self._coverage(self._context))
         return self._report
 
     def ask(self, question: str) -> str:
@@ -45,3 +48,14 @@ class FinancialIntelligenceService:
         if self._llm_gateway.available:
             return self._llm_gateway.answer(context, report, question)
         return self._engine.answer(report, question)
+
+    @staticmethod
+    def _coverage(context: FinancialIntelligenceContext) -> tuple[str, ...]:
+        coverage = ["Portafolio", "Mercado", "Liquidez"]
+        financial = context.financial_analysis
+        if financial is not None and financial.status.upper() in {"AVAILABLE", "PARTIAL"}:
+            coverage.append("Análisis Financiero")
+        macro = context.macro_intelligence
+        if macro is not None and macro.status.upper() == "AVAILABLE":
+            coverage.append("Inteligencia Macroeconómica")
+        return tuple(coverage)
