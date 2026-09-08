@@ -33,6 +33,16 @@ def _month_end(year: int, month: int) -> date:
     return date(year, month, monthrange(year, month)[1])
 
 
+def _income(entity: FinancialEntity, cutoff: date, amount: str) -> FinancialStatementLine:
+    return _line(
+        entity,
+        cutoff,
+        "RESULTADO FINAL",
+        amount,
+        FinancialStatementType.INCOME_STATEMENT,
+    )
+
+
 def test_roa_uses_annualized_final_income_over_average_assets_last_12_months() -> None:
     entity = FinancialEntity("7", "Coopealianza R.L.")
     cutoff = date(2026, 8, 31)
@@ -63,13 +73,11 @@ def test_roa_uses_annualized_final_income_over_average_assets_last_12_months() -
         )
         for (year, month), value in zip(starts, asset_values, strict=True)
     ]
-    lines.append(
-        _line(
-            entity,
-            cutoff,
-            "RESULTADO DEL PERIODO",
-            "8",
-            FinancialStatementType.INCOME_STATEMENT,
+    lines.extend(
+        (
+            _income(entity, date(2025, 8, 31), "4"),
+            _income(entity, date(2025, 12, 31), "7"),
+            _income(entity, cutoff, "8"),
         )
     )
 
@@ -80,7 +88,7 @@ def test_roa_uses_annualized_final_income_over_average_assets_last_12_months() -
     )
 
     expected_average = sum(asset_values, Decimal("0")) / Decimal("12")
-    expected_annualized_income = Decimal("8") * Decimal("12") / Decimal("8")
+    expected_annualized_income = Decimal("8") + Decimal("7") - Decimal("4")
     expected_roa = expected_annualized_income / expected_average * Decimal("100")
 
     assert result.status == "CALCULATED"
@@ -103,13 +111,9 @@ def test_roa_is_unavailable_when_any_monthly_asset_balance_is_missing() -> None:
         )
         for month in range(1, 9)
     ) + (
-        _line(
-            entity,
-            cutoff,
-            "RESULTADO DEL PERIODO",
-            "8",
-            FinancialStatementType.INCOME_STATEMENT,
-        ),
+        _income(entity, date(2025, 8, 31), "4"),
+        _income(entity, date(2025, 12, 31), "7"),
+        _income(entity, cutoff, "8"),
     )
 
     result = ReturnOnAssetsService.calculate(
@@ -121,6 +125,34 @@ def test_roa_is_unavailable_when_any_monthly_asset_balance_is_missing() -> None:
     assert result.status == "INSUFFICIENT_HISTORY"
     assert result.value_percent is None
     assert result.asset_observations == 8
+
+
+def test_roa_is_unavailable_when_trailing_income_history_is_missing() -> None:
+    entity = FinancialEntity("7", "Coopealianza R.L.")
+    cutoff = date(2026, 8, 31)
+    starts = [(2025, month) for month in range(9, 13)] + [
+        (2026, month) for month in range(1, 9)
+    ]
+    lines = tuple(
+        _line(
+            entity,
+            _month_end(year, month),
+            "TOTAL ACTIVO",
+            "800",
+            FinancialStatementType.BALANCE_SHEET,
+        )
+        for year, month in starts
+    ) + (_income(entity, cutoff, "8"),)
+
+    result = ReturnOnAssetsService.calculate(
+        lines,
+        entity_id=entity.entity_id,
+        cutoff_date=cutoff,
+    )
+
+    assert result.status == "INSUFFICIENT_HISTORY"
+    assert result.asset_observations == 12
+    assert result.value_percent is None
 
 
 def test_december_income_is_not_reannualized() -> None:
@@ -135,15 +167,7 @@ def test_december_income_is_not_reannualized() -> None:
             FinancialStatementType.BALANCE_SHEET,
         )
         for month in range(1, 13)
-    ) + (
-        _line(
-            entity,
-            cutoff,
-            "RESULTADO FINAL",
-            "10",
-            FinancialStatementType.INCOME_STATEMENT,
-        ),
-    )
+    ) + (_income(entity, cutoff, "10"),)
 
     result = ReturnOnAssetsService.calculate(
         lines,
