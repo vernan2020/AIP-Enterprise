@@ -39,8 +39,8 @@ def _history_lines(
     missing_month: date | None = None,
 ) -> tuple[FinancialStatementLine, ...]:
     lines: list[FinancialStatementLine] = []
-    start_index = 2024 * 12 + 8  # September 2024, zero-based month index.
-    for index in range(23):
+    start_index = 2024 * 12 + 7  # August 2024, zero-based month index.
+    for index in range(24):
         year, zero_based_month = divmod(start_index + index, 12)
         statement_date = _month_end(year, zero_based_month + 1)
         if statement_date == missing_month:
@@ -130,7 +130,7 @@ def test_history_builds_seven_kpis_for_twelve_monthly_cutoffs() -> None:
     assets = next(item for item in series if item.code == "ASSETS")
     assert assets.points[0].statement_date == date(2025, 8, 31)
     assert assets.points[-1].statement_date == date(2026, 7, 31)
-    assert assets.points[-1].value == Decimal("822000000000")
+    assert assets.points[-1].value == Decimal("823000000000")
 
 
 def test_history_preserves_missing_month_as_none_instead_of_zero() -> None:
@@ -148,13 +148,19 @@ def test_history_calculates_roa_from_annualized_income_and_12_month_average_asse
     roa = next(item for item in series if item.code == "ROA")
     roe = next(item for item in series if item.code == "ROE")
 
-    current_assets = [Decimal("811000000000") + Decimal(index) * Decimal("1000000000") for index in range(12)]
+    current_assets = [
+        Decimal("812000000000") + Decimal(index) * Decimal("1000000000")
+        for index in range(12)
+    ]
     average_assets = sum(current_assets, Decimal("0")) / Decimal("12")
-    annualized_income = Decimal("9200000000") * Decimal("12") / Decimal("7")
+    current_income = Decimal("9300000000")
+    prior_december_income = Decimal("8600000000")
+    prior_same_month_income = Decimal("8100000000")
+    annualized_income = current_income + prior_december_income - prior_same_month_income
     expected_roa = annualized_income / average_assets * Decimal("100")
 
     assert roa.points[-1].value == expected_roa
     assert roa.source_account is not None
     assert "promedio últimos 12 meses" in roa.source_account
-    assert roa.points[-1].value != Decimal("1.2200")
-    assert roe.points[-1].value == Decimal("5.4400")
+    assert roa.points[-1].value != Decimal("1.2300")
+    assert roe.points[-1].value == Decimal("5.4600")
