@@ -8,6 +8,7 @@ from aip.domain.financial_analysis.models import (
     FinancialMetricHistorySeries,
     FinancialStatementLine,
 )
+from aip.domain.financial_analysis.return_on_assets import ReturnOnAssetsService
 from aip.domain.financial_analysis.services import FinancialAnalysisService
 
 
@@ -25,8 +26,13 @@ class FinancialMetricHistoryService:
         ("ROE", "ROE", "PERCENT"),
     )
 
-    def __init__(self, analysis_service: FinancialAnalysisService | None = None) -> None:
+    def __init__(
+        self,
+        analysis_service: FinancialAnalysisService | None = None,
+        roa_service: ReturnOnAssetsService | None = None,
+    ) -> None:
         self._analysis = analysis_service or FinancialAnalysisService()
+        self._roa = roa_service or ReturnOnAssetsService()
 
     def build(
         self,
@@ -44,6 +50,7 @@ class FinancialMetricHistoryService:
             code: [] for code, _label, _unit in self._DEFINITIONS
         }
         sources: dict[str, str | None] = {code: None for code in values}
+        sources["ROA"] = ReturnOnAssetsService.SOURCE_ACCOUNT
 
         for statement_date in dates:
             metrics = {
@@ -54,17 +61,27 @@ class FinancialMetricHistoryService:
                     statement_date=statement_date,
                 )
             }
+            roa = self._roa.calculate(
+                lines,
+                entity_id=entity_id,
+                cutoff_date=statement_date,
+            )
             for code in values:
-                metric = metrics.get(code)
-                value = metric.value if metric is not None else None
+                if code == "ROA":
+                    value = roa.value_percent
+                    source_account = roa.source_account
+                else:
+                    metric = metrics.get(code)
+                    value = metric.value if metric is not None else None
+                    source_account = metric.source_account if metric is not None else None
                 values[code].append(
                     FinancialMetricHistoryPoint(
                         statement_date=statement_date,
                         value=value,
                     )
                 )
-                if metric is not None and value is not None and metric.source_account:
-                    sources[code] = metric.source_account
+                if source_account and (value is not None or code == "ROA"):
+                    sources[code] = source_account
 
         return tuple(
             FinancialMetricHistorySeries(
