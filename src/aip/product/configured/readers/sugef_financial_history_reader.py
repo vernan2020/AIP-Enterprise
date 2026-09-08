@@ -14,14 +14,16 @@ from aip.product.configured.readers.sugef_financial_api_client import (
 
 
 class SUGEFFinancialHistoryReader(SUGEFFinancialApiClient):
-    """Read a bounded monthly financial history for one SUGEF entity.
+    """Read bounded monthly financial history for one SUGEF entity.
 
-    History is intentionally entity-scoped: it never downloads complete historical
-    statements for the peer universe. Missing months remain missing and are never
-    converted to zero.
+    The UI exposes 12 monthly KPI observations. ROA requires a 12-month rolling
+    average of total assets for every displayed point, so the reader retrieves
+    23 months of support history (12 displayed months + 11 prior asset balances).
+    History remains entity-scoped; missing months are never converted to zero.
     """
 
-    HISTORY_MONTHS = 12
+    DISPLAY_HISTORY_MONTHS = 12
+    SUPPORT_HISTORY_MONTHS = DISPLAY_HISTORY_MONTHS + 11
     _HISTORY_REPORTS = (
         (
             "ReporteBalanceSituacionAnalisisFinancieroEntidad",
@@ -59,7 +61,7 @@ class SUGEFFinancialHistoryReader(SUGEFFinancialApiClient):
 
         period = self._period_range(
             cutoff_date,
-            lookback_months=self.HISTORY_MONTHS - 1,
+            lookback_months=self.SUPPORT_HISTORY_MONTHS - 1,
         )
         lines: list[FinancialStatementLine] = []
         endpoints: set[str] = set()
@@ -91,8 +93,9 @@ class SUGEFFinancialHistoryReader(SUGEFFinancialApiClient):
             periods = {line.statement_date for line in bounded}
             diagnostics.append(
                 "Histórico KPI SUGEF: consulta acotada a una entidad, "
-                f"{len(periods)} cortes mensuales recibidos para una ventana objetivo de "
-                f"{self.HISTORY_MONTHS} meses."
+                f"{len(periods)} cortes mensuales recibidos para una ventana de soporte de "
+                f"{self.SUPPORT_HISTORY_MONTHS} meses; la vista mantiene "
+                f"{self.DISPLAY_HISTORY_MONTHS} meses."
             )
         else:
             diagnostics.append(
