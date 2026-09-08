@@ -22,3 +22,7 @@ class LiquidityRow:
     factor: float = 0.0
     maturity_date: str = ""
     days_to_maturity: int | None = None
+    flow_type: str = ""
+    amount_local: float = 0.0
+    amount_crc: float | None = None
+    conversion_source: str = ""
