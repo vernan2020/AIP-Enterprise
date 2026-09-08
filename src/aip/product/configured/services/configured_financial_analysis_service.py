@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 from datetime import date
+from decimal import Decimal
 from threading import RLock
 
 from aip.domain.financial_analysis.financial_metric_history import (
@@ -90,15 +91,19 @@ class ConfiguredFinancialAnalysisService:
                 entity_id=entity_id,
                 cutoff_date=snapshot.cutoff_date,
             )
-            # El universo comparativo se descarga de forma deliberadamente acotada a
-            # las cuentas requeridas por 08ME14-01. Para una entidad seleccionada,
-            # el lector histórico sí aporta sus estados completos. El histórico solo
-            # debe completar KPI faltantes; nunca desplaza un valor ya resuelto por el
-            # snapshot principal (por ejemplo, ROA/ROE publicados por SUGEF).
+            # El histórico de la entidad seleccionada completa KPI faltantes y
+            # aporta la metodología institucional de ROA. El ROA calculado desde
+            # utilidad final anualizada y activos promedio de 12 meses es canónico
+            # y reemplaza cualquier ROA publicado o derivado con otra metodología.
             enriched_metrics = self._analysis.metrics_for_period(
                 combined_lines,
                 entity_id=entity_id,
                 statement_date=snapshot.cutoff_date,
+            )
+            enriched_metrics = self._apply_institutional_roa(
+                enriched_metrics,
+                raw_history,
+                cutoff_date=snapshot.cutoff_date,
             )
             metrics = self._merge_headline_metrics(snapshot.metrics, enriched_metrics)
             history = self._align_history_current_cutoff(
@@ -124,11 +129,58 @@ class ConfiguredFinancialAnalysisService:
         )
 
     @staticmethod
+    def _apply_institutional_roa(
+        metrics: tuple[FinancialMetric, ...],
+        history: tuple[FinancialMetricHistorySeries, ...],
+        *,
+        cutoff_date: date,
+    ) -> tuple[FinancialMetric, ...]:
+        """Replace ROA with the canonical rolling-12-month institutional result."""
+
+        series = next((item for item in history if item.code == "ROA"), None)
+        if series is None:
+            return metrics
+
+        current_point = next(
+            (point for point in series.points if point.statement_date == cutoff_date),
+            None,
+        )
+        previous_point = next(
+            (
+                point
+                for point in sorted(
+                    (point for point in series.points if point.statement_date < cutoff_date),
+                    key=lambda item: item.statement_date,
+                    reverse=True,
+                )
+            ),
+            None,
+        )
+        current_value = current_point.value if current_point is not None else None
+        previous_value = previous_point.value if previous_point is not None else None
+        change_percent = None
+        if current_value is not None and previous_value not in {None, Decimal("0")}:
+            change_percent = (current_value / previous_value - Decimal("1")) * Decimal("100")
+
+        return tuple(
+            replace(
+                metric,
+                value=current_value,
+                previous_value=previous_value,
+                change_percent=change_percent,
+                source_account=series.source_account,
+            )
+            if metric.code == "ROA"
+            else metric
+            for metric in metrics
+        )
+
+    @staticmethod
     def _merge_headline_metrics(
         primary: tuple[FinancialMetric, ...],
         enriched: tuple[FinancialMetric, ...],
     ) -> tuple[FinancialMetric, ...]:
-        """Fill primary N/D metrics without overriding already resolved values."""
+        """Merge headline metrics while enforcing canonical institutional ROA."""
 
         enriched_by_code = {metric.code: metric for metric in enriched}
         merged: list[FinancialMetric] = []
@@ -139,6 +191,9 @@ class ConfiguredFinancialAnalysisService:
             seen.add(metric.code)
             if candidate is None:
                 merged.append(metric)
+                continue
+            if metric.code == "ROA":
+                merged.append(candidate)
                 continue
             if metric.value is None and candidate.value is not None:
                 merged.append(candidate)
