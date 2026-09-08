@@ -44,9 +44,7 @@ class ConfiguredContractualLiquidityProvider(ConfiguredLiquidityProvider):
             for flow in flows:
                 days = (flow.payment_date - valuation_date).days
                 amount_crc = (
-                    flow.amount_local * conversion_factor
-                    if conversion_factor is not None
-                    else None
+                    flow.amount_local * conversion_factor if conversion_factor is not None else None
                 )
 
                 row = self._cashflow_row(
