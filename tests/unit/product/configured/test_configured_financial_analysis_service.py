@@ -141,6 +141,20 @@ def test_selected_entity_history_enriches_missing_kpis_and_recalculates_roa() ->
 
     complete_selected_lines = tuple(support_assets) + (
         line(
+            date(2025, 7, 31),
+            FinancialStatementType.INCOME_STATEMENT,
+            "30000",
+            "RESULTADO FINAL",
+            "600000000",
+        ),
+        line(
+            date(2025, 12, 31),
+            FinancialStatementType.INCOME_STATEMENT,
+            "30000",
+            "RESULTADO FINAL",
+            "1000000000",
+        ),
+        line(
             cutoff,
             FinancialStatementType.BALANCE_SHEET,
             "11101",
@@ -198,7 +212,7 @@ def test_selected_entity_history_enriches_missing_kpis_and_recalculates_roa() ->
     average_assets = (
         Decimal("300000000000") * Decimal("11") + Decimal("305281200000")
     ) / Decimal("12")
-    annualized_income = Decimal("682520000") * Decimal("12") / Decimal("7")
+    annualized_income = Decimal("682520000") + Decimal("1000000000") - Decimal("600000000")
     expected_roa = annualized_income / average_assets * Decimal("100")
 
     assert metrics["LOANS"].value == Decimal("219905750000")
