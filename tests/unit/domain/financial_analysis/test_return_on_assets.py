@@ -130,9 +130,7 @@ def test_roa_is_unavailable_when_any_monthly_asset_balance_is_missing() -> None:
 def test_roa_is_unavailable_when_trailing_income_history_is_missing() -> None:
     entity = FinancialEntity("7", "Coopealianza R.L.")
     cutoff = date(2026, 8, 31)
-    starts = [(2025, month) for month in range(9, 13)] + [
-        (2026, month) for month in range(1, 9)
-    ]
+    starts = [(2025, month) for month in range(9, 13)] + [(2026, month) for month in range(1, 9)]
     lines = tuple(
         _line(
             entity,
