@@ -14,6 +14,7 @@ from aip.domain.financial_analysis.models import (
     FinancialMetricHistoryPoint,
     FinancialMetricHistorySeries,
 )
+from aip.domain.financial_analysis.return_on_assets import ReturnOnAssetsService
 from aip.domain.financial_analysis.services import FinancialAnalysisService
 from aip.product.configured.configuration.configured_source_config import (
     SUGEFFinancialSourceConfig,
@@ -114,10 +115,12 @@ class ConfiguredFinancialAnalysisService:
         except Exception as exc:
             return replace(
                 snapshot,
+                metrics=self._invalidate_roa(snapshot.metrics),
                 diagnostics=snapshot.diagnostics
                 + (
-                    "Histórico KPI SUGEF no disponible; el análisis del corte permanece válido: "
-                    f"{type(exc).__name__}: {exc}",
+                    "Histórico KPI SUGEF no disponible; ROA permanece N/D porque "
+                    "no puede validarse la utilidad anualizada ni el promedio de "
+                    f"12 meses de activos: {type(exc).__name__}: {exc}",
                 ),
             )
 
@@ -126,6 +129,23 @@ class ConfiguredFinancialAnalysisService:
             metrics=metrics,
             metric_history=history,
             diagnostics=snapshot.diagnostics + history_result.diagnostics,
+        )
+
+    @staticmethod
+    def _invalidate_roa(metrics: tuple[FinancialMetric, ...]) -> tuple[FinancialMetric, ...]:
+        """Prevent published or point-in-time ROA from surviving history failure."""
+
+        return tuple(
+            replace(
+                metric,
+                value=None,
+                previous_value=None,
+                change_percent=None,
+                source_account=ReturnOnAssetsService.SOURCE_ACCOUNT,
+            )
+            if metric.code == "ROA"
+            else metric
+            for metric in metrics
         )
 
     @staticmethod
@@ -139,7 +159,7 @@ class ConfiguredFinancialAnalysisService:
 
         series = next((item for item in history if item.code == "ROA"), None)
         if series is None:
-            return metrics
+            return ConfiguredFinancialAnalysisService._invalidate_roa(metrics)
 
         current_point = next(
             (point for point in series.points if point.statement_date == cutoff_date),
@@ -168,7 +188,7 @@ class ConfiguredFinancialAnalysisService:
                 value=current_value,
                 previous_value=previous_value,
                 change_percent=change_percent,
-                source_account=series.source_account,
+                source_account=series.source_account or ReturnOnAssetsService.SOURCE_ACCOUNT,
             )
             if metric.code == "ROA"
             else metric
@@ -190,7 +210,17 @@ class ConfiguredFinancialAnalysisService:
             candidate = enriched_by_code.get(metric.code)
             seen.add(metric.code)
             if candidate is None:
-                merged.append(metric)
+                merged.append(
+                    replace(
+                        metric,
+                        value=None,
+                        previous_value=None,
+                        change_percent=None,
+                        source_account=ReturnOnAssetsService.SOURCE_ACCOUNT,
+                    )
+                    if metric.code == "ROA"
+                    else metric
+                )
                 continue
             if metric.code == "ROA":
                 merged.append(candidate)
