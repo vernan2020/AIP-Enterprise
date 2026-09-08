@@ -209,9 +209,9 @@ def test_selected_entity_history_enriches_missing_kpis_and_recalculates_roa() ->
     metrics = {metric.code: metric for metric in snapshot.metrics}
     history = {series.code: series for series in snapshot.metric_history}
 
-    average_assets = (
-        Decimal("300000000000") * Decimal("11") + Decimal("305281200000")
-    ) / Decimal("12")
+    average_assets = (Decimal("300000000000") * Decimal("11") + Decimal("305281200000")) / Decimal(
+        "12"
+    )
     annualized_income = Decimal("682520000") + Decimal("1000000000") - Decimal("600000000")
     expected_roa = annualized_income / average_assets * Decimal("100")
 
