@@ -1,14 +1,19 @@
 from __future__ import annotations
 
 from datetime import date
+from typing import TYPE_CHECKING
 
 from aip.product.configured.repositories.economic_historical_repository import (
     EconomicHistoricalRepository,
 )
 from aip.product.economic.advanced_forecasting import AdvancedIndicatorForecastResult
-from aip.product.economic.advanced_forecasting_service import AdvancedMacroForecastingService
 from aip.product.economic.econometric_dataset import EconometricMonthlyDataset
 from aip.product.economic.econometric_dataset_builder import EconometricDatasetBuilder
+
+if TYPE_CHECKING:
+    from aip.product.economic.advanced_forecasting_service import (
+        AdvancedMacroForecastingService,
+    )
 
 
 class ConfiguredAdvancedMacroForecastingService:
@@ -22,7 +27,7 @@ class ConfiguredAdvancedMacroForecastingService:
     ) -> None:
         self._repository = repository or EconomicHistoricalRepository()
         self._dataset_builder = EconometricDatasetBuilder(self._repository)
-        self._forecasting_service = forecasting_service or AdvancedMacroForecastingService()
+        self._forecasting_service = forecasting_service
         self._cached_dataset: EconometricMonthlyDataset | None = None
         self._cached_signature: tuple[tuple[str, date | None], ...] | None = None
         self._result_cache: dict[
@@ -46,13 +51,22 @@ class ConfiguredAdvancedMacroForecastingService:
         if not force_refresh and cache_key in self._result_cache:
             return self._result_cache[cache_key]
         dataset = self._dataset()
-        result = self._forecasting_service.evaluate(
+        result = self._forecasting_engine().evaluate(
             dataset,
             code,
             forecast_horizon=forecast_horizon,
         )
         self._result_cache[cache_key] = result
         return result
+
+    def _forecasting_engine(self) -> AdvancedMacroForecastingService:
+        if self._forecasting_service is None:
+            from aip.product.economic.advanced_forecasting_service import (
+                AdvancedMacroForecastingService,
+            )
+
+            self._forecasting_service = AdvancedMacroForecastingService()
+        return self._forecasting_service
 
     def dataset(self) -> EconometricMonthlyDataset:
         """Expose the immutable normalized dataset for diagnostics/audit."""
