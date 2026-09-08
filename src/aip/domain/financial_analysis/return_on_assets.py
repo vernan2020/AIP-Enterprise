@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import unicodedata
+from calendar import monthrange
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal, DivisionByZero, InvalidOperation
@@ -24,15 +25,18 @@ class ReturnOnAssetsResult:
 
 
 class ReturnOnAssetsService:
-    """Calculate ROA from annualized final income and 12-month average assets.
+    """Calculate institutional ROA from official SUGEF statement history.
 
-    Institutional methodology:
+    Methodology:
         ROA = annualized final income / average total assets of the last 12 months.
 
-    Income statement figures are treated as year-to-date cumulative amounts. The
-    annualization factor is therefore 12 / cutoff_month. The asset denominator
-    requires one valid month-end total-assets balance for each of the 12 calendar
-    months ending at the requested cutoff; missing months are never imputed.
+    Income statement balances are year-to-date cumulative. Except in December,
+    annualized final income is the trailing-12-month amount:
+        current YTD + prior December - prior-year same-month YTD.
+
+    The denominator requires one valid total-assets balance for each of the 12
+    calendar months ending at the requested cutoff. Missing months are never
+    imputed and a published ROA never substitutes this calculation.
     """
 
     LOOKBACK_MONTHS = 12
@@ -57,19 +61,6 @@ class ReturnOnAssetsService:
         entity_id: str,
         cutoff_date: date,
     ) -> ReturnOnAssetsResult:
-        current = tuple(
-            line
-            for line in lines
-            if line.entity.entity_id == entity_id and line.statement_date == cutoff_date
-        )
-        net_income = cls._find_value(
-            current,
-            cls._NET_INCOME_TERMS,
-            statement_type=FinancialStatementType.INCOME_STATEMENT,
-        )
-        if net_income is None:
-            return cls._unavailable("DATA_UNAVAILABLE", 0)
-
         expected_months = cls._expected_months(cutoff_date, cls.LOOKBACK_MONTHS)
         assets: list[Decimal] = []
         for year, month in expected_months:
@@ -97,7 +88,14 @@ class ReturnOnAssetsService:
         if average_assets == 0:
             return cls._unavailable("DATA_UNAVAILABLE", len(assets))
 
-        annualized_income = net_income * Decimal("12") / Decimal(cutoff_date.month)
+        annualized_income = cls._annualized_final_income(
+            lines,
+            entity_id=entity_id,
+            cutoff_date=cutoff_date,
+        )
+        if annualized_income is None:
+            return cls._unavailable("INSUFFICIENT_HISTORY", len(assets))
+
         try:
             roa = annualized_income / average_assets * Decimal("100")
         except (DivisionByZero, InvalidOperation):
@@ -110,6 +108,59 @@ class ReturnOnAssetsService:
             asset_observations=len(assets),
             status="CALCULATED",
             source_account=cls.SOURCE_ACCOUNT,
+        )
+
+    @classmethod
+    def _annualized_final_income(
+        cls,
+        lines: tuple[FinancialStatementLine, ...],
+        *,
+        entity_id: str,
+        cutoff_date: date,
+    ) -> Decimal | None:
+        current = cls._income_at_date(lines, entity_id=entity_id, statement_date=cutoff_date)
+        if current is None:
+            return None
+        if cutoff_date.month == 12:
+            return current
+
+        prior_same_month_date = date(
+            cutoff_date.year - 1,
+            cutoff_date.month,
+            monthrange(cutoff_date.year - 1, cutoff_date.month)[1],
+        )
+        prior_december_date = date(cutoff_date.year - 1, 12, 31)
+        prior_same_month = cls._income_at_date(
+            lines,
+            entity_id=entity_id,
+            statement_date=prior_same_month_date,
+        )
+        prior_december = cls._income_at_date(
+            lines,
+            entity_id=entity_id,
+            statement_date=prior_december_date,
+        )
+        if prior_same_month is None or prior_december is None:
+            return None
+        return current + prior_december - prior_same_month
+
+    @classmethod
+    def _income_at_date(
+        cls,
+        lines: tuple[FinancialStatementLine, ...],
+        *,
+        entity_id: str,
+        statement_date: date,
+    ) -> Decimal | None:
+        current = tuple(
+            line
+            for line in lines
+            if line.entity.entity_id == entity_id and line.statement_date == statement_date
+        )
+        return cls._find_value(
+            current,
+            cls._NET_INCOME_TERMS,
+            statement_type=FinancialStatementType.INCOME_STATEMENT,
         )
 
     @classmethod
