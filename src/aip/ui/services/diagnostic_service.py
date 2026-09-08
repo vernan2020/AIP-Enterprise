@@ -14,6 +14,7 @@ from aip.product.demo.bootstrap.application_factory import DemoApplicationFactor
 @dataclass(slots=True)
 class DiagnosticMetricsStore:
     startup_time_ms: float = 0.0
+    startup_stages_ms: dict[str, float] = field(default_factory=dict)
     initial_load_time_ms: float = 0.0
     refresh_all_duration_ms: float = 0.0
     workspace_switch_time_ms: float = 0.0
@@ -22,6 +23,25 @@ class DiagnosticMetricsStore:
     last_refresh_duration_ms: float = 0.0
     diagnostic_mode: bool = False
 
+    def record_startup_metrics(self, payload: dict[str, object]) -> None:
+        total = payload.get("total_ms", 0.0)
+        try:
+            self.startup_time_ms = float(total)
+        except (TypeError, ValueError):
+            self.startup_time_ms = 0.0
+
+        stages = payload.get("stages_ms")
+        if not isinstance(stages, dict):
+            self.startup_stages_ms = {}
+            return
+        normalized: dict[str, float] = {}
+        for key, value in stages.items():
+            try:
+                normalized[str(key)] = float(value)
+            except (TypeError, ValueError):
+                continue
+        self.startup_stages_ms = normalized
+
     def record_refresh_all_duration(self, duration_ms: float) -> None:
         self.refresh_all_duration_ms = duration_ms
         self.last_refresh_duration_ms = duration_ms
@@ -29,6 +49,7 @@ class DiagnosticMetricsStore:
     def snapshot(self) -> dict[str, Any]:
         return {
             "startup_time_ms": self.startup_time_ms,
+            "startup_stages_ms": dict(self.startup_stages_ms),
             "initial_load_time_ms": self.initial_load_time_ms,
             "refresh_all_duration_ms": self.refresh_all_duration_ms,
             "workspace_switch_time_ms": self.workspace_switch_time_ms,
