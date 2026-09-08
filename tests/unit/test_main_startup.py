@@ -4,6 +4,7 @@ import sys
 import types
 
 import aip.main
+from aip.core.startup_timing import StartupTimer
 
 
 def test_configured_preflight_failure_stops_before_ui_import(monkeypatch) -> None:
@@ -25,8 +26,17 @@ def test_configured_preflight_success_launches_ui_in_same_process(monkeypatch) -
 
     monkeypatch.setattr(preflight_runtime, "main", lambda _argv=None: 0)
 
+    captured: dict[str, object] = {}
     fake_ui_main = types.ModuleType("aip.ui.application.main")
-    fake_ui_main.main = lambda argv=None: 23  # type: ignore[attr-defined]
+
+    def _fake_main(argv=None, *, startup_timer=None) -> int:
+        captured["argv"] = argv
+        captured["startup_timer"] = startup_timer
+        return 23
+
+    fake_ui_main.main = _fake_main  # type: ignore[attr-defined]
     monkeypatch.setitem(sys.modules, "aip.ui.application.main", fake_ui_main)
 
     assert aip.main.main(["--example"]) == 23
+    assert captured["argv"] == ["--example"]
+    assert isinstance(captured["startup_timer"], StartupTimer)
