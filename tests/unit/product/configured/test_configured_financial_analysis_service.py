@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from calendar import monthrange
 from datetime import date
 from decimal import Decimal
 
@@ -70,11 +71,12 @@ def test_service_does_not_expose_bundled_reference_data_when_sugef_is_disabled()
     assert all("referencia institucional" not in item for item in snapshot.diagnostics)
 
 
-def test_selected_entity_history_enriches_only_missing_headline_kpis() -> None:
+def test_selected_entity_history_enriches_missing_kpis_and_recalculates_roa() -> None:
     entity = FinancialEntity("PEER-1", "COOCIQUE")
     cutoff = date(2026, 7, 31)
 
     def line(
+        statement_date: date,
         statement_type: FinancialStatementType,
         account_code: str,
         account_name: str,
@@ -82,7 +84,7 @@ def test_selected_entity_history_enriches_only_missing_headline_kpis() -> None:
     ) -> FinancialStatementLine:
         return FinancialStatementLine(
             entity=entity,
-            statement_date=cutoff,
+            statement_date=statement_date,
             statement_type=statement_type,
             account_code=account_code,
             account_name=account_name,
@@ -90,43 +92,70 @@ def test_selected_entity_history_enriches_only_missing_headline_kpis() -> None:
         )
 
     reduced_peer_lines = (
-        line(FinancialStatementType.BALANCE_SHEET, "10000", "ACTIVO TOTAL", "305281200000"),
         line(
+            cutoff,
+            FinancialStatementType.BALANCE_SHEET,
+            "10000",
+            "ACTIVO TOTAL",
+            "305281200000",
+        ),
+        line(
+            cutoff,
             FinancialStatementType.BALANCE_SHEET,
             "25000",
             "PATRIMONIO TOTAL",
             "45416590000",
         ),
         line(
+            cutoff,
             FinancialStatementType.INCOME_STATEMENT,
             "30000",
             "RESULTADO FINAL",
             "682520000",
         ),
+        # Valor publicado deliberadamente distinto: el KPI final no debe usarlo.
         line(
+            cutoff,
             FinancialStatementType.INDICATORS,
             "81000",
             "ROA",
-            "0.0039",
+            "0.0099",
         ),
     )
-    complete_selected_lines = (
+
+    support_assets: list[FinancialStatementLine] = []
+    start_index = 2025 * 12 + 7  # August 2025, zero-based month index.
+    for offset in range(11):
+        year, zero_based_month = divmod(start_index + offset, 12)
+        month = zero_based_month + 1
+        statement_date = date(year, month, monthrange(year, month)[1])
+        support_assets.append(
+            line(
+                statement_date,
+                FinancialStatementType.BALANCE_SHEET,
+                "10000",
+                "ACTIVO TOTAL",
+                "300000000000",
+            )
+        )
+
+    complete_selected_lines = tuple(support_assets) + (
         line(
+            cutoff,
             FinancialStatementType.BALANCE_SHEET,
             "11101",
             "CARTERA DE CREDITO",
             "219905750000",
         ),
         line(
+            cutoff,
             FinancialStatementType.BALANCE_SHEET,
             "20000",
             "PASIVO TOTAL",
             "259864610000",
         ),
-        # Simula una observación histórica que podría competir con el ROA ya
-        # resuelto por el snapshot principal. Debe servir para meses históricos,
-        # pero no desplazar el KPI canónico ni el último punto del gráfico.
         line(
+            cutoff,
             FinancialStatementType.INDICATORS,
             "01000",
             "ROA",
@@ -166,9 +195,18 @@ def test_selected_entity_history_enriches_only_missing_headline_kpis() -> None:
     metrics = {metric.code: metric for metric in snapshot.metrics}
     history = {series.code: series for series in snapshot.metric_history}
 
+    average_assets = (
+        Decimal("300000000000") * Decimal("11") + Decimal("305281200000")
+    ) / Decimal("12")
+    annualized_income = Decimal("682520000") * Decimal("12") / Decimal("7")
+    expected_roa = annualized_income / average_assets * Decimal("100")
+
     assert metrics["LOANS"].value == Decimal("219905750000")
     assert metrics["LIABILITIES"].value == Decimal("259864610000")
     assert history["LOANS"].points[-1].value == metrics["LOANS"].value
     assert history["LIABILITIES"].points[-1].value == metrics["LIABILITIES"].value
-    assert metrics["ROA"].value == Decimal("0.3900")
+    assert metrics["ROA"].value == expected_roa
+    assert metrics["ROA"].value != Decimal("0.9900")
+    assert metrics["ROA"].source_account is not None
+    assert "promedio últimos 12 meses" in metrics["ROA"].source_account
     assert history["ROA"].points[-1].value == metrics["ROA"].value
