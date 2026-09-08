@@ -4,12 +4,6 @@ import time
 
 from PySide6.QtWidgets import QWidget
 
-from aip.ui.modules.intelligence.presenters.financial_intelligence_presenter import (
-    FinancialIntelligencePresenter,
-)
-from aip.ui.modules.intelligence.views.financial_intelligence_view import (
-    FinancialIntelligenceView,
-)
 from aip.ui.navigation.routes import Route
 from aip.ui.shell.main_window import MainWindow
 
@@ -63,6 +57,13 @@ class FinancialIntelligenceMainWindow(MainWindow):
 
     def _build_workspace_widget(self, route_id: str) -> tuple[QWidget, str]:
         if route_id == "financial_intelligence":
+            from aip.ui.modules.intelligence.presenters.financial_intelligence_presenter import (
+                FinancialIntelligencePresenter,
+            )
+            from aip.ui.modules.intelligence.views.financial_intelligence_view import (
+                FinancialIntelligenceView,
+            )
+
             return (
                 FinancialIntelligenceView(
                     presenter=FinancialIntelligencePresenter(self._demo_factory)
