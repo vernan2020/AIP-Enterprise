@@ -9,7 +9,6 @@ from aip.domain.portfolio.services.portfolio_duration_service import (
     PortfolioDurationService,
 )
 
-
 FlowType = Literal["COUPON", "PRINCIPAL"]
 AmountStatus = Literal["CONTRACTUAL", "PROJECTED_CURRENT_RATE"]
 
