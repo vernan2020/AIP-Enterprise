@@ -149,8 +149,7 @@ def test_history_calculates_roa_from_annualized_income_and_12_month_average_asse
     roe = next(item for item in series if item.code == "ROE")
 
     current_assets = [
-        Decimal("812000000000") + Decimal(index) * Decimal("1000000000")
-        for index in range(12)
+        Decimal("812000000000") + Decimal(index) * Decimal("1000000000") for index in range(12)
     ]
     average_assets = sum(current_assets, Decimal("0")) / Decimal("12")
     current_income = Decimal("9300000000")
