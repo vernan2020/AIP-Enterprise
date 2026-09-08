@@ -136,15 +136,17 @@ class ConfiguredFinancialAnalysisService:
         """Prevent published or point-in-time ROA from surviving history failure."""
 
         return tuple(
-            replace(
-                metric,
-                value=None,
-                previous_value=None,
-                change_percent=None,
-                source_account=ReturnOnAssetsService.SOURCE_ACCOUNT,
+            (
+                replace(
+                    metric,
+                    value=None,
+                    previous_value=None,
+                    change_percent=None,
+                    source_account=ReturnOnAssetsService.SOURCE_ACCOUNT,
+                )
+                if metric.code == "ROA"
+                else metric
             )
-            if metric.code == "ROA"
-            else metric
             for metric in metrics
         )
 
@@ -183,15 +185,17 @@ class ConfiguredFinancialAnalysisService:
             change_percent = (current_value / previous_value - Decimal("1")) * Decimal("100")
 
         return tuple(
-            replace(
-                metric,
-                value=current_value,
-                previous_value=previous_value,
-                change_percent=change_percent,
-                source_account=series.source_account or ReturnOnAssetsService.SOURCE_ACCOUNT,
+            (
+                replace(
+                    metric,
+                    value=current_value,
+                    previous_value=previous_value,
+                    change_percent=change_percent,
+                    source_account=series.source_account or ReturnOnAssetsService.SOURCE_ACCOUNT,
+                )
+                if metric.code == "ROA"
+                else metric
             )
-            if metric.code == "ROA"
-            else metric
             for metric in metrics
         )
 
