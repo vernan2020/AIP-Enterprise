@@ -26,18 +26,7 @@ from PySide6.QtWidgets import (
 from aip.core.version import APP_DISPLAY_VERSION
 from aip.product.demo.bootstrap.application_factory import DemoApplicationFactory
 from aip.product.demo.configuration.environment_loader import EnvironmentLoader
-from aip.ui.dialogs.about_dialog import AboutDialog
-from aip.ui.modules.executive.presenters.executive_presenter import ExecutivePresenter
-from aip.ui.modules.executive.views.executive_workspace import ExecutiveWorkspace
 from aip.ui.modules.home.home_workspace import HomeWorkspace
-from aip.ui.modules.liquidity.presenters.liquidity_presenter import LiquidityPresenter
-from aip.ui.modules.liquidity.views.liquidity_view import LiquidityView
-from aip.ui.modules.market.presenters.market_presenter import MarketPresenter
-from aip.ui.modules.market.views.market_view import MarketView
-from aip.ui.modules.portfolio.presenters.portfolio_presenter import PortfolioPresenter
-from aip.ui.modules.portfolio.views.portfolio_view import PortfolioView
-from aip.ui.modules.treasury.presenters.treasury_presenter import TreasuryPresenter
-from aip.ui.modules.treasury.views.treasury_view import TreasuryView
 from aip.ui.navigation.navigation_manager import NavigationManager
 from aip.ui.navigation.routes import Route
 from aip.ui.services.diagnostic_service import (
@@ -56,9 +45,6 @@ from aip.ui.shell.ribbon import Ribbon
 from aip.ui.shell.sidebar import Sidebar
 from aip.ui.shell.status_bar import StatusBar
 from aip.ui.shell.workspace import Workspace
-from aip.ui.widgets.health_center import HealthCenterWidget
-from aip.ui.widgets.log_viewer import LogViewerDialog
-from aip.ui.widgets.settings_center import SettingsCenterDialog
 
 
 class MainWindow(QMainWindow):
@@ -337,16 +323,31 @@ class MainWindow(QMainWindow):
         if route_id == "home":
             return (self._create_home_workspace(), "Inicio")
         if route_id == "executive":
+            from aip.ui.modules.executive.presenters.executive_presenter import (
+                ExecutivePresenter,
+            )
+            from aip.ui.modules.executive.views.executive_workspace import (
+                ExecutiveWorkspace,
+            )
+
             return (
                 ExecutiveWorkspace(presenter=ExecutivePresenter(self._demo_factory)),
                 "Ejecutivo",
             )
         if route_id == "portfolio":
+            from aip.ui.modules.portfolio.presenters.portfolio_presenter import (
+                PortfolioPresenter,
+            )
+            from aip.ui.modules.portfolio.views.portfolio_view import PortfolioView
+
             return (
                 PortfolioView(presenter=PortfolioPresenter(self._demo_factory)),
                 "Portafolio",
             )
         if route_id == "market":
+            from aip.ui.modules.market.presenters.market_presenter import MarketPresenter
+            from aip.ui.modules.market.views.market_view import MarketView
+
             return (MarketView(presenter=MarketPresenter(self._demo_factory)), "Mercado")
         if route_id == "price_risk":
             from aip.ui.modules.price_risk.presenters.price_risk_presenter import (
@@ -368,11 +369,21 @@ class MainWindow(QMainWindow):
                 "Inteligencia Macroeconómica",
             )
         if route_id == "liquidity":
+            from aip.ui.modules.liquidity.presenters.liquidity_presenter import (
+                LiquidityPresenter,
+            )
+            from aip.ui.modules.liquidity.views.liquidity_view import LiquidityView
+
             return (
                 LiquidityView(presenter=LiquidityPresenter(self._demo_factory)),
                 "Liquidez",
             )
         if route_id == "treasury":
+            from aip.ui.modules.treasury.presenters.treasury_presenter import (
+                TreasuryPresenter,
+            )
+            from aip.ui.modules.treasury.views.treasury_view import TreasuryView
+
             return (
                 TreasuryView(presenter=TreasuryPresenter(self._demo_factory)),
                 "Tesorería",
@@ -558,6 +569,8 @@ class MainWindow(QMainWindow):
         help_menu.addAction("Acerca de AIP Enterprise", self._show_about)
 
     def _show_health_center(self) -> None:
+        from aip.ui.widgets.health_center import HealthCenterWidget
+
         dialog = QDialog(self)
         dialog.setWindowTitle("Centro de Estado")
         layout = QVBoxLayout(dialog)
@@ -566,12 +579,18 @@ class MainWindow(QMainWindow):
         dialog.exec()
 
     def _show_settings_center(self) -> None:
+        from aip.ui.widgets.settings_center import SettingsCenterDialog
+
         SettingsCenterDialog(self).exec()
 
     def _show_log_viewer(self) -> None:
+        from aip.ui.widgets.log_viewer import LogViewerDialog
+
         LogViewerDialog(self).exec()
 
     def _show_about(self) -> None:
+        from aip.ui.dialogs.about_dialog import AboutDialog
+
         AboutDialog(self).exec()
 
     def export_current_workspace_table(
