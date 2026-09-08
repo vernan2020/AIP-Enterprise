@@ -76,7 +76,7 @@ class _LiquidityBarChart(QWidget):
 
 
 class LiquidityView(QWidget):
-    """Panel institucional de liquidez para ICL, HQLA, MIL y vencimientos."""
+    """Panel institucional de liquidez para ICL, HQLA, MIL y flujos contractuales."""
 
     _DISPLAY_TRANSLATIONS = {
         "READY": "LISTO",
@@ -90,6 +90,11 @@ class LiquidityView(QWidget):
         "FAIL": "NO CUMPLE",
         "NOT CONFIGURED": "NO CONFIGURADO",
         "NOT_CONFIGURED": "NO CONFIGURADO",
+        "COUPON": "CUPÓN",
+        "PRINCIPAL": "PRINCIPAL",
+        "CONTRACTUAL": "CONTRACTUAL",
+        "PROJECTED_CURRENT_RATE": "PROYECTADO TASA VIGENTE",
+        "FX_UNAVAILABLE": "TC NO DISPONIBLE",
     }
 
     def __init__(self, presenter: LiquidityPresenter | None = None) -> None:
@@ -109,6 +114,10 @@ class LiquidityView(QWidget):
     @staticmethod
     def _format_crc_mm(value: float) -> str:
         return f"₡{value / 1_000_000:,.2f} MM"
+
+    @staticmethod
+    def _format_local(value: float, currency: str) -> str:
+        return f"{currency} {value:,.2f}"
 
     @staticmethod
     def _group_style() -> str:
@@ -157,7 +166,9 @@ class LiquidityView(QWidget):
         font.setPointSize(15)
         font.setBold(True)
         title.setFont(font)
-        subtitle = QLabel("ICL · HQLA · MIL · vencimientos del portafolio · capacidad de respuesta")
+        subtitle = QLabel(
+            "ICL · HQLA · MIL · cupones y principal del portafolio · capacidad de respuesta"
+        )
         subtitle.setStyleSheet("color:#667788; font-size:10px;")
         title_box.addWidget(title)
         title_box.addWidget(subtitle)
@@ -180,8 +191,8 @@ class LiquidityView(QWidget):
             ("liquid_fund", "Fondo líquido", "Activos líquidos ICL"),
             ("hqla", "HQLA", "Capacidad ajustada elegible"),
             ("mil", "MIL", "Capacidad de garantía elegible"),
-            ("maturity30", "Vence ≤30 días", "Valor de mercado contractual"),
-            ("net_outflow", "Salida neta 30 días", "Dato fuente ICL"),
+            ("maturity30", "Principal ≤30 días", "Flujo contractual de inversiones"),
+            ("coupon30", "Cupones ≤30 días", "Ingreso contractual/proyectado"),
         )
         for index, definition in enumerate(definitions):
             kpis.addWidget(self._metric_card(*definition), index // 4, index % 4)
@@ -195,6 +206,7 @@ class LiquidityView(QWidget):
         )
         root.addWidget(self._tabs, 1)
         self._build_summary_tab()
+        self._cashflow_table = self._build_cashflow_tab()
         self._maturity_table = self._build_maturity_tab()
         self._hqla_table = self._build_eligibility_tab("HQLA")
         self._mil_table = self._build_eligibility_tab("MIL")
@@ -218,7 +230,7 @@ class LiquidityView(QWidget):
         flow_layout.addWidget(self._flow_chart)
         layout.addWidget(flow_group, 1)
 
-        maturity_group = QGroupBox("Vencimientos acumulados del portafolio")
+        maturity_group = QGroupBox("Flujos contractuales acumulados del portafolio")
         maturity_group.setStyleSheet(self._group_style())
         maturity_layout = QVBoxLayout(maturity_group)
         self._maturity_chart = _LiquidityBarChart()
@@ -241,6 +253,29 @@ class LiquidityView(QWidget):
         header.setStretchLastSection(True)
         return table
 
+    def _build_cashflow_tab(self) -> QTableWidget:
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(4, 8, 4, 4)
+        table = self._new_table(
+            (
+                "Tipo",
+                "Serie",
+                "Emisor",
+                "Moneda",
+                "Fecha flujo",
+                "Días",
+                "Tramo",
+                "Monto local",
+                "Monto CRC",
+                "Estado",
+                "Fuente",
+            )
+        )
+        layout.addWidget(table)
+        self._tabs.addTab(page, "Flujos Portafolio")
+        return table
+
     def _build_maturity_tab(self) -> QTableWidget:
         page = QWidget()
         layout = QVBoxLayout(page)
@@ -254,7 +289,7 @@ class LiquidityView(QWidget):
                 "Vencimiento",
                 "Días",
                 "Tramo",
-                "Valor de Mercado",
+                "Principal contractual CRC",
             )
         )
         layout.addWidget(table)
@@ -317,6 +352,33 @@ class LiquidityView(QWidget):
             item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         table.setItem(row, column, item)
 
+    def _populate_cashflows(self, rows: tuple[LiquidityRow, ...]) -> None:
+        table = self._cashflow_table
+        table.setSortingEnabled(False)
+        table.setRowCount(len(rows))
+        for row_index, row in enumerate(rows):
+            crc_text = (
+                self._format_crc_mm(row.amount_crc)
+                if row.amount_crc is not None
+                else "TC no disponible"
+            )
+            values = (
+                self._translate(row.flow_type),
+                row.label,
+                row.issuer,
+                row.currency,
+                row.maturity_date,
+                str(row.days_to_maturity if row.days_to_maturity is not None else "-"),
+                self._translate(row.bucket),
+                self._format_local(row.amount_local, row.currency),
+                crc_text,
+                self._translate(row.status),
+                row.policy_reference,
+            )
+            for column, value in enumerate(values):
+                self._set_item(table, row_index, column, value)
+        table.setSortingEnabled(True)
+
     def _populate_maturities(self, rows: tuple[LiquidityRow, ...]) -> None:
         table = self._maturity_table
         table.setSortingEnabled(False)
@@ -330,7 +392,7 @@ class LiquidityView(QWidget):
                 row.maturity_date,
                 str(row.days_to_maturity if row.days_to_maturity is not None else "-"),
                 self._translate(row.bucket),
-                self._format_crc_mm(row.market_value_crc),
+                self._format_crc_mm(float(row.value)),
             )
             for column, value in enumerate(values):
                 self._set_item(table, row_index, column, value)
@@ -373,8 +435,8 @@ class LiquidityView(QWidget):
             "liquid_fund": self._format_crc_mm(getattr(summary, "liquid_asset_fund_total", 0.0)),
             "hqla": self._format_crc_mm(getattr(summary, "hqla_capacity_value", 0.0)),
             "mil": self._format_crc_mm(getattr(summary, "mil_capacity_value", 0.0)),
-            "maturity30": self._format_crc_mm(getattr(summary, "maturity_30d_crc", 0.0)),
-            "net_outflow": self._format_crc_mm(getattr(summary, "net_cash_outflow_30d", 0.0)),
+            "maturity30": self._format_crc_mm(getattr(summary, "principal_inflows_30d_crc", 0.0)),
+            "coupon30": self._format_crc_mm(getattr(summary, "coupon_inflows_30d_crc", 0.0)),
         }
         for key, value in values.items():
             self._kpis[key].setText(value)
@@ -389,12 +451,13 @@ class LiquidityView(QWidget):
         )
         self._maturity_chart.set_data(
             (
-                ("≤30 días", getattr(summary, "maturity_30d_crc", 0.0)),
-                ("≤90 días", getattr(summary, "maturity_90d_crc", 0.0)),
-                ("≤180 días", getattr(summary, "maturity_180d_crc", 0.0)),
-                ("≤270 días", getattr(summary, "maturity_270d_crc", 0.0)),
+                ("Principal ≤30d", getattr(summary, "principal_inflows_30d_crc", 0.0)),
+                ("Cupones ≤30d", getattr(summary, "coupon_inflows_30d_crc", 0.0)),
+                ("Principal ≤90d", getattr(summary, "principal_inflows_90d_crc", 0.0)),
+                ("Cupones ≤90d", getattr(summary, "coupon_inflows_90d_crc", 0.0)),
             )
         )
+        self._populate_cashflows(view_model.cashflow_rows)
         self._populate_maturities(view_model.maturity_rows)
         self._populate_eligibility(self._hqla_table, view_model.hqla_rows)
         self._populate_eligibility(self._mil_table, view_model.mil_rows)
