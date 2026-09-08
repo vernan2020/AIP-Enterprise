@@ -59,9 +59,7 @@ class PortfolioContractualCashFlowService:
                 months=months,
                 last_payment=cls._as_date(position.get("last_interest_payment_date")),
             )
-            amount_status: AmountStatus = (
-                "PROJECTED_CURRENT_RATE" if is_variable else "CONTRACTUAL"
-            )
+            amount_status: AmountStatus = "PROJECTED_CURRENT_RATE" if is_variable else "CONTRACTUAL"
             source = (
                 "CURRENT_RATE_PROJECTION_VARIABLE_SECURITY"
                 if is_variable
