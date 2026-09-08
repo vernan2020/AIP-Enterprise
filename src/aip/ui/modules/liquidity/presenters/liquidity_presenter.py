@@ -31,6 +31,8 @@ class LiquidityPresenter:
     def _row(cls, payload: dict[str, Any], *, default_status: str) -> LiquidityRow:
         value = cls._float(payload.get("value"))
         days = payload.get("days_to_maturity")
+        raw_amount_crc = payload.get("amount_crc")
+        amount_crc = None if raw_amount_crc is None else cls._float(raw_amount_crc)
         return LiquidityRow(
             section=str(payload.get("section") or ""),
             label=str(payload.get("label") or ""),
@@ -43,8 +45,12 @@ class LiquidityPresenter:
             classification=str(payload.get("classification") or ""),
             market_value_crc=cls._float(payload.get("market_value_crc")),
             factor=cls._float(payload.get("factor")),
-            maturity_date=str(payload.get("maturity_date") or ""),
+            maturity_date=str(payload.get("maturity_date") or payload.get("payment_date") or ""),
             days_to_maturity=int(days) if isinstance(days, (int, float)) else None,
+            flow_type=str(payload.get("flow_type") or ""),
+            amount_local=cls._float(payload.get("amount_local")),
+            amount_crc=amount_crc,
+            conversion_source=str(payload.get("conversion_source") or ""),
         )
 
     def build_view_model(
@@ -91,6 +97,18 @@ class LiquidityPresenter:
             maturity_90d_crc=self._float(liquidity.get("maturity_90d_crc")),
             maturity_180d_crc=self._float(liquidity.get("maturity_180d_crc")),
             maturity_270d_crc=self._float(liquidity.get("maturity_270d_crc")),
+            coupon_inflows_30d_crc=self._float(liquidity.get("coupon_inflows_30d_crc")),
+            coupon_inflows_90d_crc=self._float(liquidity.get("coupon_inflows_90d_crc")),
+            coupon_inflows_180d_crc=self._float(liquidity.get("coupon_inflows_180d_crc")),
+            coupon_inflows_270d_crc=self._float(liquidity.get("coupon_inflows_270d_crc")),
+            principal_inflows_30d_crc=self._float(liquidity.get("principal_inflows_30d_crc")),
+            principal_inflows_90d_crc=self._float(liquidity.get("principal_inflows_90d_crc")),
+            principal_inflows_180d_crc=self._float(liquidity.get("principal_inflows_180d_crc")),
+            principal_inflows_270d_crc=self._float(liquidity.get("principal_inflows_270d_crc")),
+            investment_inflows_30d_crc=self._float(liquidity.get("investment_inflows_30d_crc")),
+            investment_inflows_90d_crc=self._float(liquidity.get("investment_inflows_90d_crc")),
+            investment_inflows_180d_crc=self._float(liquidity.get("investment_inflows_180d_crc")),
+            investment_inflows_270d_crc=self._float(liquidity.get("investment_inflows_270d_crc")),
             configuration_message=str(liquidity.get("configuration_message") or ""),
             icl_source_file=str(liquidity.get("icl_source_file") or ""),
             icl_source_date=str(liquidity.get("icl_source_date") or ""),
