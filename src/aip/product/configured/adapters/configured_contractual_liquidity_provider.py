@@ -17,6 +17,7 @@ class ConfiguredContractualLiquidityProvider(ConfiguredLiquidityProvider):
     """Liquidity provider enriched with contractual portfolio cash flows."""
 
     _HORIZONS = (30, 90, 180, 270)
+    _DISPLAY_HORIZON_DAYS = 270
 
     def _populate_portfolio_liquidity(
         self,
@@ -47,8 +48,6 @@ class ConfiguredContractualLiquidityProvider(ConfiguredLiquidityProvider):
                     if conversion_factor is not None
                     else None
                 )
-                if amount_crc is None:
-                    unresolved_conversion_count += 1
 
                 row = self._cashflow_row(
                     position=position,
@@ -57,7 +56,10 @@ class ConfiguredContractualLiquidityProvider(ConfiguredLiquidityProvider):
                     amount_crc=amount_crc,
                     conversion_source=conversion_source,
                 )
-                cashflow_rows.append(row)
+                if days <= self._DISPLAY_HORIZON_DAYS:
+                    cashflow_rows.append(row)
+                    if amount_crc is None:
+                        unresolved_conversion_count += 1
 
                 if flow.flow_type == "PRINCIPAL":
                     maturity_rows.append(
@@ -93,6 +95,7 @@ class ConfiguredContractualLiquidityProvider(ConfiguredLiquidityProvider):
 
         payload: dict[str, Any] = {
             "cashflows": cashflow_rows,
+            "cashflow_display_horizon_days": self._DISPLAY_HORIZON_DAYS,
             "maturity_rows": maturity_rows,
             "cashflow_conversion_unavailable_count": unresolved_conversion_count,
         }
