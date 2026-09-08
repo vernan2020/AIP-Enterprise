@@ -29,7 +29,8 @@ class PortfolioContractualCashFlowService:
     Principal is based on outstanding nominal/principal rather than market value.
     Fixed-rate coupons are contractual. Variable-rate coupon amounts beyond the
     current reset are projected at the current nominal rate and explicitly
-    labelled as such; payment dates remain contractual.
+    labelled as such; payment dates remain contractual. Source positions are
+    read-only inputs and are never mutated by this service.
     """
 
     @classmethod
