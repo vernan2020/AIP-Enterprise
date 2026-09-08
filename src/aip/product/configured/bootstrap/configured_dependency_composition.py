@@ -4,6 +4,9 @@ from aip.core.container import Container
 from aip.integration.bccr.configuration.bccr_config import BCCRConfig
 from aip.integration.bccr.connector.bccr_connector import BCCRConnector
 from aip.integration.bccr.providers.urllib_http_provider import UrllibHTTPProvider
+from aip.product.configured.adapters.configured_contractual_liquidity_provider import (
+    ConfiguredContractualLiquidityProvider,
+)
 from aip.product.configured.adapters.configured_economic_indicators_provider import (
     ConfiguredEconomicIndicatorsProvider,
 )
@@ -159,7 +162,7 @@ class ConfiguredDependencyComposition:
             valuation_date_context,
         )
 
-        configured_liquidity_provider = ConfiguredLiquidityProvider(
+        configured_liquidity_provider = ConfiguredContractualLiquidityProvider(
             self._config,
             self._source_config,
             health_provider,
@@ -197,6 +200,10 @@ class ConfiguredDependencyComposition:
         )
         container.register_instance(ConfiguredMarketProvider, configured_market_provider)
         container.register_instance(ConfiguredLiquidityProvider, configured_liquidity_provider)
+        container.register_instance(
+            ConfiguredContractualLiquidityProvider,
+            configured_liquidity_provider,
+        )
         container.register_instance(CutoffCachedMarketProvider, market_provider)
         container.register_instance(CutoffCachedLiquidityProvider, liquidity_provider)
         container.register_instance(ConfiguredPortfolioVaRService, portfolio_var_service)
@@ -287,6 +294,7 @@ class ConfiguredDependencyComposition:
             ConfiguredMacroIntelligenceService,
             ConfiguredAdvancedMacroForecastingService,
             ConfiguredFinancialAnalysisService,
+            ConfiguredContractualLiquidityProvider,
             CutoffCachedMarketProvider,
             CutoffCachedLiquidityProvider,
             BCCRConfig,
