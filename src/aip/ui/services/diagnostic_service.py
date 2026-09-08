@@ -25,9 +25,12 @@ class DiagnosticMetricsStore:
 
     def record_startup_metrics(self, payload: dict[str, object]) -> None:
         total = payload.get("total_ms", 0.0)
-        try:
-            self.startup_time_ms = float(total)
-        except (TypeError, ValueError):
+        if isinstance(total, (int, float, str)):
+            try:
+                self.startup_time_ms = float(total)
+            except ValueError:
+                self.startup_time_ms = 0.0
+        else:
             self.startup_time_ms = 0.0
 
         stages = payload.get("stages_ms")
