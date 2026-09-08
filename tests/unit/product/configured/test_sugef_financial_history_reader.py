@@ -52,7 +52,7 @@ def test_history_reader_requests_three_reports_for_selected_entity_only() -> Non
 
     assert len(reader.calls) == 3
     assert {call[0] for call in reader.calls} == {"3004045138"}
-    assert {call[1] for call in reader.calls} == {"20250801-20260701"}
+    assert {call[1] for call in reader.calls} == {"20240901-20260701"}
     assert {call[3] for call in reader.calls} == {
         FinancialStatementType.BALANCE_SHEET,
         FinancialStatementType.INCOME_STATEMENT,
@@ -61,6 +61,7 @@ def test_history_reader_requests_three_reports_for_selected_entity_only() -> Non
     assert len(result.lines) == 3
     assert all(line.entity.entity_id == "3004045138" for line in result.lines)
     assert any("consulta acotada a una entidad" in message for message in result.diagnostics)
+    assert any("23 meses" in message for message in result.diagnostics)
 
 
 def test_history_reader_does_not_call_api_when_disabled() -> None:
