@@ -16,14 +16,16 @@ from aip.product.configured.readers.sugef_financial_api_client import (
 class SUGEFFinancialHistoryReader(SUGEFFinancialApiClient):
     """Read bounded monthly financial history for one SUGEF entity.
 
-    The UI exposes 12 monthly KPI observations. ROA requires a 12-month rolling
-    average of total assets for every displayed point, so the reader retrieves
-    23 months of support history (12 displayed months + 11 prior asset balances).
-    History remains entity-scoped; missing months are never converted to zero.
+    The UI exposes 12 monthly KPI observations. ROA requires both a 12-month
+    rolling average of total assets and trailing-12-month annualized final income
+    for every displayed point. The earliest displayed point therefore needs the
+    same month of the prior year, so the reader retrieves 24 months of support
+    history. History remains entity-scoped; missing months are never converted
+    to zero.
     """
 
     DISPLAY_HISTORY_MONTHS = 12
-    SUPPORT_HISTORY_MONTHS = DISPLAY_HISTORY_MONTHS + 11
+    SUPPORT_HISTORY_MONTHS = DISPLAY_HISTORY_MONTHS + 12
     _HISTORY_REPORTS = (
         (
             "ReporteBalanceSituacionAnalisisFinancieroEntidad",
