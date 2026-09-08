@@ -5,7 +5,9 @@ from datetime import date
 from decimal import Decimal
 from typing import Any, Literal
 
-from aip.domain.portfolio.services.portfolio_duration_service import PortfolioDurationService
+from aip.domain.portfolio.services.portfolio_duration_service import (
+    PortfolioDurationService,
+)
 
 
 FlowType = Literal["COUPON", "PRINCIPAL"]
