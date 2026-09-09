@@ -1,8 +1,8 @@
 """Interest-rate risk in the banking book (IRRBB) domain.
 
 The package contains source-agnostic models and services for the economic-value
-perspective of IRRBB. Physical data sources and UI concerns belong outside this
-package.
+and repricing-gap perspectives of IRRBB. Physical data sources and UI concerns
+belong outside this package.
 """
 
 from aip.domain.irrbb.data_quality import (
@@ -40,6 +40,13 @@ from aip.domain.irrbb.models import (
 )
 from aip.domain.irrbb.services.capital_buffer_service import CapitalBufferService
 from aip.domain.irrbb.services.data_quality_service import IRRBBPositionDataQualityService
+from aip.domain.irrbb.services.sugef_standard_gap_service import SugefStandardGapService
+from aip.domain.irrbb.sugef_standard_gap import (
+    SugefGapBucketTotal,
+    SugefGapExposure,
+    SugefGapExposureType,
+    SugefGapScheduleRecord,
+)
 
 __all__ = [
     "BankingBookPosition",
@@ -72,5 +79,10 @@ __all__ = [
     "RateType",
     "ScenarioAssessment",
     "ScenarioShockCalibration",
+    "SugefGapBucketTotal",
+    "SugefGapExposure",
+    "SugefGapExposureType",
+    "SugefGapScheduleRecord",
+    "SugefStandardGapService",
     "TimeBucketAssignment",
 ]
