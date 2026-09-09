@@ -11,6 +11,7 @@ from aip.domain.irrbb.models import (
     IRRBBScenario,
     ScenarioShockCalibration,
 )
+from aip.domain.irrbb.scenario_repricing import FloatingRateCouponBasis
 from aip.shared.money import Currency, Money
 
 
@@ -70,6 +71,32 @@ class ScenarioCashFlowProjector(Protocol):
     ) -> tuple[IRRBBCashFlow, ...]: ...
 
 
+class FloatingRateCouponBasisProvider(Protocol):
+    """Provide the approved reset/accrual basis for one projected floating coupon."""
+
+    def basis_for(
+        self,
+        *,
+        position: BankingBookPosition,
+        cashflow: IRRBBCashFlow,
+        valuation_date: date,
+    ) -> FloatingRateCouponBasis | None: ...
+
+
+class ScenarioReferenceRateProvider(Protocol):
+    """Provide a scenario-consistent reference index rate at a contractual reset date."""
+
+    def reference_rate(
+        self,
+        *,
+        reference_rate_code: str,
+        currency: Currency,
+        scenario: IRRBBScenario,
+        reset_date: date,
+        valuation_date: date,
+    ) -> Decimal: ...
+
+
 class BehavioralCashFlowModel(Protocol):
     """Apply approved optionality assumptions without embedding them in UI code."""
 
@@ -121,6 +148,19 @@ class ScenarioCurveShocker(Protocol):
         base_rate: Decimal,
         tenor_years: Decimal,
         scenario: IRRBBScenario,
+        calibration: ScenarioShockCalibration,
+    ) -> Decimal: ...
+
+
+class ScenarioTenorShockProvider(Protocol):
+    """Provide the signed tenor shock in basis points for a methodology/scenario."""
+
+    def shock_basis_points(
+        self,
+        *,
+        currency: Currency,
+        scenario: IRRBBScenario,
+        tenor_years: Decimal,
         calibration: ScenarioShockCalibration,
     ) -> Decimal: ...
 
