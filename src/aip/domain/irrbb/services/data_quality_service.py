@@ -281,7 +281,10 @@ class IRRBBPositionDataQualityService:
             )
             return
 
-        if position.optionality is not OptionalityType.NONE and not context.behavioral_model_available:
+        if (
+            position.optionality is not OptionalityType.NONE
+            and not context.behavioral_model_available
+        ):
             issues.append(
                 cls._error(
                     IRRBBDataIssueCode.OPTIONALITY_MODEL_REQUIRED,
