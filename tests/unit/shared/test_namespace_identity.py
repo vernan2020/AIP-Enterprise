@@ -25,3 +25,10 @@ def test_money_legacy_alias_resolves_to_canonical_module() -> None:
     legacy = importlib.import_module("src.aip.shared.money")
 
     assert legacy is canonical
+
+
+def test_dates_legacy_alias_resolves_to_canonical_module() -> None:
+    canonical = importlib.import_module("aip.shared.dates")
+    legacy = importlib.import_module("src.aip.shared.dates")
+
+    assert legacy is canonical
