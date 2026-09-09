@@ -110,4 +110,6 @@ class IRRBBSourceLoadResult:
     @property
     def ready_positions(self) -> tuple[BankingBookPosition, ...]:
         ready = set(self.ready_position_ids)
-        return tuple(position for position in self.snapshot.positions if position.position_id in ready)
+        return tuple(
+            position for position in self.snapshot.positions if position.position_id in ready
+        )
