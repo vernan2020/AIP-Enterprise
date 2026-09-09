@@ -3,8 +3,8 @@
 from dataclasses import dataclass
 from decimal import Decimal
 
-from src.aip.domain.portfolio.exceptions import InvalidPositionError
 from aip.shared.money import Currency, Money
+from src.aip.domain.portfolio.exceptions import InvalidPositionError
 
 
 @dataclass(frozen=True, slots=True)
