@@ -4,13 +4,13 @@ from decimal import Decimal
 
 import pytest
 
-from aip.domain.irrbb.models import (
+from aip.domain.irrbb import (
     CapitalBufferSchedule,
     CapitalBufferTier,
     IRRBBMethodologyProfile,
     IRRBBMethodologyStatus,
 )
-from aip.domain.irrbb.services.capital_buffer_service import CapitalBufferService
+from aip.domain.irrbb.services import CapitalBufferService
 
 
 _PROFILE = IRRBBMethodologyProfile(
