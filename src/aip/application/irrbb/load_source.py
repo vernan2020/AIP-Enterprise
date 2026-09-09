@@ -25,9 +25,7 @@ class LoadIRRBBSourceSnapshot:
     def execute(self, request: IRRBBSourceLoadRequest) -> IRRBBSourceLoadResult:
         snapshot = self._gateway.load_snapshot(cutoff_date=request.cutoff_date)
         if snapshot.cutoff_date != request.cutoff_date:
-            raise ValueError(
-                "IRRBB data gateway returned a snapshot for a different cutoff date"
-            )
+            raise ValueError("IRRBB data gateway returned a snapshot for a different cutoff date")
 
         assessments = tuple(
             IRRBBPositionDataQualityService.assess(
