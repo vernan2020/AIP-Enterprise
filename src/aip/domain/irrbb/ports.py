@@ -54,6 +54,12 @@ class RepricingCashFlowBuilder(Protocol):
     ) -> tuple[IRRBBCashFlow, ...]: ...
 
 
+class RepricingCashFlowBuilderResolver(Protocol):
+    """Resolve the contractual cash-flow strategy for one canonical instrument."""
+
+    def resolve(self, *, position: BankingBookPosition) -> RepricingCashFlowBuilder: ...
+
+
 class ScenarioCashFlowProjector(Protocol):
     """Transform base contractual flows when scenario-sensitive amounts reprice.
 
@@ -67,6 +73,23 @@ class ScenarioCashFlowProjector(Protocol):
         *,
         position: BankingBookPosition,
         base_cashflows: tuple[IRRBBCashFlow, ...],
+        scenario: IRRBBScenario,
+        valuation_date: date,
+    ) -> tuple[IRRBBCashFlow, ...]: ...
+
+
+class ScenarioPositionCashFlowProvider(Protocol):
+    """Provide final position cash flows for one BASE or stressed EVE scenario.
+
+    The provider owns instrument-specific sequencing of contractual schedules,
+    repricing and behavioral transformation. This keeps the EVE orchestrator from
+    assuming that every optional instrument can use the same transformation order.
+    """
+
+    def cashflows_for(
+        self,
+        *,
+        position: BankingBookPosition,
         scenario: IRRBBScenario,
         valuation_date: date,
     ) -> tuple[IRRBBCashFlow, ...]: ...
