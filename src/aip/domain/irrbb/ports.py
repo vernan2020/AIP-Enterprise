@@ -4,6 +4,7 @@ from datetime import date
 from decimal import Decimal
 from typing import Protocol
 
+from aip.domain.irrbb.behavioral import NonMaturityDepositProfile
 from aip.domain.irrbb.models import (
     BankingBookPosition,
     ContractualCashFlowRecord,
@@ -108,6 +109,18 @@ class BehavioralCashFlowModel(Protocol):
         scenario: IRRBBScenario,
         valuation_date: date,
     ) -> tuple[IRRBBCashFlow, ...]: ...
+
+
+class NonMaturityDepositProfileProvider(Protocol):
+    """Provide a versioned behavioral maturity profile for one NMD/scenario."""
+
+    def profile_for(
+        self,
+        *,
+        position: BankingBookPosition,
+        scenario: IRRBBScenario,
+        valuation_date: date,
+    ) -> NonMaturityDepositProfile: ...
 
 
 class DiscountFactorProvider(Protocol):
