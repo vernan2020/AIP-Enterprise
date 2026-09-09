@@ -66,7 +66,9 @@ class FloatingRateScenarioCashFlowProjector:
             if basis.position_id != flow.position_id:
                 raise ValueError("floating-rate coupon basis position_id does not match cash flow")
             if basis.cashflow_date != flow.cashflow_date:
-                raise ValueError("floating-rate coupon basis cashflow_date does not match cash flow")
+                raise ValueError(
+                    "floating-rate coupon basis cashflow_date does not match cash flow"
+                )
             if basis.notional.currency is not flow.amount.currency:
                 raise ValueError("floating-rate coupon basis currency does not match cash flow")
             if basis.reset_date < valuation_date:
