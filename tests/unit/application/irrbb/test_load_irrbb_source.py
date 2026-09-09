@@ -100,9 +100,7 @@ def test_load_use_case_reports_partial_readiness_without_calculating_risk() -> N
 def test_empty_snapshot_is_explicitly_empty() -> None:
     snapshot = IRRBBSourceSnapshot(cutoff_date=CUTOFF, position_records=())
 
-    result = LoadIRRBBSourceSnapshot(_Gateway(snapshot)).execute(
-        IRRBBSourceLoadRequest(CUTOFF)
-    )
+    result = LoadIRRBBSourceSnapshot(_Gateway(snapshot)).execute(IRRBBSourceLoadRequest(CUTOFF))
 
     assert result.status is IRRBBSourceLoadStatus.EMPTY
     assert result.assessments == ()
