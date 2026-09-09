@@ -5,6 +5,7 @@ from decimal import Decimal
 
 from aip.domain.irrbb.models import (
     BankingBookSide,
+    CashFlowAmountStatus,
     CashFlowDirection,
     DiscountedCashFlow,
     EconomicValueResult,
@@ -19,7 +20,9 @@ class EconomicValueService:
     """Calculate scenario EVE from auditable future cash flows.
 
     Discounting and FX conversion are ports so neither market-data sourcing nor
-    curve construction is embedded in the domain calculation.
+    curve construction is embedded in the domain calculation. Current-rate
+    projections are accepted for the base case but must be scenario-projected
+    before they can enter a stressed EVE calculation.
     """
 
     @classmethod
@@ -41,6 +44,14 @@ class EconomicValueService:
         for flow in cashflows:
             if flow.cashflow_date < valuation_date:
                 raise ValueError(f"cash flow {flow.position_id} occurs before valuation_date")
+            if (
+                scenario is not IRRBBScenario.BASE
+                and flow.amount_status is CashFlowAmountStatus.PROJECTED_CURRENT_RATE
+            ):
+                raise ValueError(
+                    "stressed EVE cannot use a PROJECTED_CURRENT_RATE cash flow; "
+                    "apply an approved scenario repricing projector first"
+                )
 
             factor = discount_factors.discount_factor(
                 currency=flow.amount.currency,
