@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from aip.shared.money import Currency, Money
+
 from ..exceptions import InvalidPositionError
 
 
