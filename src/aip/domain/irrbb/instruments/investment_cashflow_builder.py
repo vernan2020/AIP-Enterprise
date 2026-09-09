@@ -102,7 +102,9 @@ class InvestmentContractualCashFlowBuilder:
         if position.maturity_date is None:
             raise ValueError("investment position requires maturity_date")
         if position.contractual_rate is None:
-            raise ValueError("investment position requires explicit contractual_rate, including zero")
+            raise ValueError(
+                "investment position requires explicit contractual_rate, including zero"
+            )
         if position.contractual_rate != Decimal("0"):
             if position.payment_frequency_months is None:
                 raise ValueError("interest-bearing investment requires payment_frequency_months")
