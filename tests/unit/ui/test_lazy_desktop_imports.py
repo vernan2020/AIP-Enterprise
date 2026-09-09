@@ -29,6 +29,8 @@ def test_main_window_does_not_import_heavy_workspaces_eagerly() -> None:
         "aip.ui.modules.executive.views.executive_workspace",
         "aip.ui.modules.portfolio.views.portfolio_view",
         "aip.ui.modules.market.views.market_view",
+        "aip.ui.modules.price_risk.views.price_risk_view",
+        "aip.ui.modules.rate_risk.views.rate_risk_view",
         "aip.ui.modules.liquidity.views.liquidity_view",
         "aip.ui.modules.treasury.views.treasury_view",
     )
