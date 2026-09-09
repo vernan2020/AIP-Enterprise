@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from datetime import date
 
 from aip.application.irrbb.analysis_contracts import (
     IRRBBAnalysisRequest,
@@ -133,13 +134,12 @@ class RunIRRBBAnalysis:
             for record in source_load.snapshot.position_records
         )
 
-    @classmethod
+    @staticmethod
     def _calculate_gap(
-        cls,
         *,
         ready_records: tuple[IRRBBPositionSourceRecord, ...],
         classifications: tuple[SugefGapRowClassification, ...],
-        valuation_date,
+        valuation_date: date,
     ) -> tuple[tuple[IRRBBGapCurrencyResult, ...], tuple[IRRBBGapCoverageIssue, ...]]:
         classification_by_id = {item.position_id: item for item in classifications}
         exposures_by_currency: dict[Currency, list[SugefGapExposure]] = defaultdict(list)
