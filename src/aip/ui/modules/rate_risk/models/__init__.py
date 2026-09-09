@@ -11,8 +11,8 @@ from aip.ui.modules.rate_risk.models.rate_risk_read_model import (
     RateRiskMappingRow,
     RateRiskMethodologyMetadata,
     RateRiskPositionQualityRow,
-    RateRiskReadModel,
     RateRiskReadinessSummary,
+    RateRiskReadModel,
     RateRiskScenarioRow,
     RateRiskValuationFlowRow,
 )
