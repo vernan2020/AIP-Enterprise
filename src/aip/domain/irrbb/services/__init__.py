@@ -4,6 +4,19 @@ from aip.domain.irrbb.services.capital_buffer_service import CapitalBufferServic
 from aip.domain.irrbb.services.data_quality_service import IRRBBPositionDataQualityService
 from aip.domain.irrbb.services.delta_eve_service import DeltaEVEExposureService
 from aip.domain.irrbb.services.economic_value_service import EconomicValueService
+from aip.domain.irrbb.services.floating_rate_scenario_cashflow_projector import (
+    FloatingRateScenarioCashFlowProjector,
+)
+from aip.domain.irrbb.services.non_maturity_deposit_behavioral_model import (
+    NonMaturityDepositBehavioralModel,
+)
+from aip.domain.irrbb.services.parameterized_scenario_curve_shocker import (
+    ParallelOnlyScenarioTenorShockProvider,
+    ParameterizedScenarioCurveShocker,
+)
+from aip.domain.irrbb.services.sugef_gap_row_classifier_service import (
+    SugefGapRowClassifierService,
+)
 from aip.domain.irrbb.services.sugef_standard_gap_service import SugefStandardGapService
 from aip.domain.irrbb.services.time_bucket_service import IRRBBTimeBucketService
 
@@ -11,7 +24,12 @@ __all__ = [
     "CapitalBufferService",
     "DeltaEVEExposureService",
     "EconomicValueService",
+    "FloatingRateScenarioCashFlowProjector",
     "IRRBBPositionDataQualityService",
     "IRRBBTimeBucketService",
+    "NonMaturityDepositBehavioralModel",
+    "ParallelOnlyScenarioTenorShockProvider",
+    "ParameterizedScenarioCurveShocker",
+    "SugefGapRowClassifierService",
     "SugefStandardGapService",
 ]
