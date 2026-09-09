@@ -16,11 +16,43 @@ class BankingBookSide(str, Enum):
     OFF_BALANCE = "OFF_BALANCE"
 
 
+class IRRBBInstrumentClass(str, Enum):
+    """Canonical instrument family used to select an IRRBB strategy."""
+
+    INVESTMENT = "INVESTMENT"
+    CREDIT = "CREDIT"
+    TERM_DEPOSIT = "TERM_DEPOSIT"
+    BORROWING = "BORROWING"
+    NON_MATURITY_DEPOSIT = "NON_MATURITY_DEPOSIT"
+    OFF_BALANCE = "OFF_BALANCE"
+    OTHER = "OTHER"
+
+
+class PaymentStructure(str, Enum):
+    """Canonical repayment structure without source-specific product codes."""
+
+    BULLET = "BULLET"
+    AMORTIZING = "AMORTIZING"
+    EXPLICIT_SCHEDULE = "EXPLICIT_SCHEDULE"
+    NON_MATURITY = "NON_MATURITY"
+    OTHER = "OTHER"
+
+
 class CashFlowDirection(str, Enum):
     """Economic direction of a future cash flow."""
 
     RECEIVABLE = "RECEIVABLE"
     PAYABLE = "PAYABLE"
+
+
+class CashFlowAmountStatus(str, Enum):
+    """Audit status describing how a future cash-flow amount was obtained."""
+
+    CONTRACTUAL = "CONTRACTUAL"
+    SOURCE_PROVIDED = "SOURCE_PROVIDED"
+    PROJECTED_CURRENT_RATE = "PROJECTED_CURRENT_RATE"
+    SCENARIO_PROJECTED = "SCENARIO_PROJECTED"
+    BEHAVIORAL = "BEHAVIORAL"
 
 
 class RateType(str, Enum):
@@ -164,6 +196,12 @@ class BankingBookPosition:
     repricing_frequency_months: int | None = None
     payment_frequency_months: int | None = None
     optionality: OptionalityType = OptionalityType.NONE
+    instrument_class: IRRBBInstrumentClass = IRRBBInstrumentClass.OTHER
+    payment_structure: PaymentStructure = PaymentStructure.OTHER
+    last_interest_payment_date: date | None = None
+    next_payment_date: date | None = None
+    rate_floor: Decimal | None = None
+    rate_cap: Decimal | None = None
 
     def __post_init__(self) -> None:
         if not self.position_id.strip():
@@ -182,15 +220,39 @@ class BankingBookPosition:
             raise ValueError("repricing_frequency_months must be positive")
         if self.payment_frequency_months is not None and self.payment_frequency_months <= 0:
             raise ValueError("payment_frequency_months must be positive")
+        if self.rate_floor is not None and self.rate_cap is not None and self.rate_floor > self.rate_cap:
+            raise ValueError("rate_floor cannot exceed rate_cap")
+
+
+@dataclass(frozen=True, slots=True)
+class ContractualCashFlowRecord:
+    """Source-normalized contractual schedule record used by IRRBB builders."""
+
+    payment_date: date
+    amount: Money
+    direction: CashFlowDirection
+    flow_type: str
+    source_reference: str
+    amount_status: CashFlowAmountStatus = CashFlowAmountStatus.SOURCE_PROVIDED
+    risk_date: date | None = None
+    projection_basis: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.amount.amount < 0:
+            raise ValueError("contractual cash-flow amount must be non-negative")
+        if not self.flow_type.strip():
+            raise ValueError("contractual cash-flow type is required")
+        if not self.source_reference.strip():
+            raise ValueError("contractual cash-flow source_reference is required")
 
 
 @dataclass(frozen=True, slots=True)
 class IRRBBCashFlow:
     """Canonical future cash flow after contractual/behavioral transformation.
 
-    ``cashflow_date`` is the payment date. ``risk_date`` is the date used by the
-    repricing/bucketing strategy; it may differ from payment date for positions
-    that reprice before contractual maturity.
+    ``cashflow_date`` is the payment date. ``risk_date`` is the date selected by the
+    repricing strategy for risk traceability. It must not be interpreted as a
+    stand-alone repricing-GAP notional without the corresponding instrument strategy.
     """
 
     position_id: str
@@ -201,6 +263,8 @@ class IRRBBCashFlow:
     risk_date: date
     flow_type: str
     source_reference: str
+    amount_status: CashFlowAmountStatus = CashFlowAmountStatus.CONTRACTUAL
+    projection_basis: str | None = None
 
     def __post_init__(self) -> None:
         if not self.position_id.strip():
