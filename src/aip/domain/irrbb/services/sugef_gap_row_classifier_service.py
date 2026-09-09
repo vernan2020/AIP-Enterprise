@@ -151,9 +151,7 @@ class SugefGapRowClassifierService:
                     position.position_id,
                     "Sight obligations require with/without financial-cost classification.",
                 )
-            line = cls._SIGHT_LINES.get(
-                (routing.counterparty_family, routing.has_financial_cost)
-            )
+            line = cls._SIGHT_LINES.get((routing.counterparty_family, routing.has_financial_cost))
             if line is None:
                 return cls._pending(
                     position.position_id,
