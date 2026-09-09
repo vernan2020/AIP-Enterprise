@@ -1,6 +1,6 @@
 """Portfolio domain services."""
 
-from src.aip.domain.portfolio.services.portfolio_calculation_service import (
+from .portfolio_calculation_service import (
     PortfolioCalculationService,
 )
 
