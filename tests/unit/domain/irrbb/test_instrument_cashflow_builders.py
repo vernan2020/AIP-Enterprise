@@ -91,7 +91,9 @@ def test_variable_investment_marks_current_rate_coupon_projection_explicitly() -
         flow.amount_status is CashFlowAmountStatus.PROJECTED_CURRENT_RATE for flow in coupons
     )
     assert all(flow.risk_date == date(2026, 4, 1) for flow in coupons)
-    assert all(flow.projection_basis == "CURRENT_RATE_PROJECTION_VARIABLE_SECURITY" for flow in coupons)
+    assert all(
+        flow.projection_basis == "CURRENT_RATE_PROJECTION_VARIABLE_SECURITY" for flow in coupons
+    )
 
 
 def test_explicit_schedule_builder_preserves_source_amount_and_direction() -> None:
