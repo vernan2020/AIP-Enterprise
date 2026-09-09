@@ -99,9 +99,7 @@ def _evaluation() -> IRRBBScenarioEvaluationResult:
         (IRRBBScenario.SHORT_UP, "900"),
         (IRRBBScenario.SHORT_DOWN, "1040"),
     )
-    stressed = tuple(
-        _economic_value(scenario, value) for scenario, value in scenario_values
-    )
+    stressed = tuple(_economic_value(scenario, value) for scenario, value in scenario_values)
     assessments = tuple(
         ScenarioAssessment(
             scenario=result.scenario,
@@ -241,12 +239,8 @@ def test_presenter_preserves_gap_quality_mapping_and_curve_inputs() -> None:
     assert read_model.readiness.mapping_pending_count == 1
 
     assert read_model.gap_bucket_rows[0].amount == Decimal("500")
-    assert read_model.gap_matrix_cells[0].report_line == (
-        SugefGapReportLine.INVESTMENT_FIXED.value
-    )
-    assert read_model.data_issue_rows[0].code == (
-        IRRBBDataIssueCode.NEXT_REPRICING_MISSING.value
-    )
+    assert read_model.gap_matrix_cells[0].report_line == (SugefGapReportLine.INVESTMENT_FIXED.value)
+    assert read_model.data_issue_rows[0].code == (IRRBBDataIssueCode.NEXT_REPRICING_MISSING.value)
     assert read_model.mapping_rows[1].status == (
         SugefGapRowClassificationStatus.MAPPING_PENDING.value
     )
