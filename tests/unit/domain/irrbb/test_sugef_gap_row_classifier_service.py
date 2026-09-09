@@ -38,7 +38,11 @@ def _position(
         currency=Currency.CRC,
         principal=Money(Decimal("1000"), Currency.CRC),
         rate_type=rate_type,
-        maturity_date=(None if instrument_class is IRRBBInstrumentClass.NON_MATURITY_DEPOSIT else date(2027, 1, 1)),
+        maturity_date=(
+            None
+            if instrument_class is IRRBBInstrumentClass.NON_MATURITY_DEPOSIT
+            else date(2027, 1, 1)
+        ),
         source_reference=f"TEST:{position_id}",
         instrument_class=instrument_class,
     )
