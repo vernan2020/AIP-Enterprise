@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-from aip.domain.irrbb.models import BankingBookPosition, BankingBookSide, IRRBBInstrumentClass, RateType
+from aip.domain.irrbb.models import (
+    BankingBookPosition,
+    BankingBookSide,
+    IRRBBInstrumentClass,
+    RateType,
+)
 from aip.domain.irrbb.sugef_standard_gap import (
     SugefGapCounterpartyFamily,
     SugefGapFundingTermType,
