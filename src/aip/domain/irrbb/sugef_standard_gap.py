@@ -54,9 +54,7 @@ class SugefGapReportLine(str, Enum):
     FINANCIAL_ENTITY_SIGHT_WITH_COST = "FINANCIAL_ENTITY_SIGHT_WITH_COST"
     FINANCIAL_ENTITY_SIGHT_WITHOUT_COST = "FINANCIAL_ENTITY_SIGHT_WITHOUT_COST"
     FINANCIAL_ENTITY_TERM_FIXED = "FINANCIAL_ENTITY_TERM_FIXED"
-    FINANCIAL_ENTITY_TERM_VARIABLE_SEMIVARIABLE = (
-        "FINANCIAL_ENTITY_TERM_VARIABLE_SEMIVARIABLE"
-    )
+    FINANCIAL_ENTITY_TERM_VARIABLE_SEMIVARIABLE = "FINANCIAL_ENTITY_TERM_VARIABLE_SEMIVARIABLE"
 
 
 class SugefGapRowClassificationStatus(str, Enum):
@@ -101,7 +99,10 @@ class SugefGapRowClassification:
             raise ValueError("classification reason is required")
         if self.status is SugefGapRowClassificationStatus.MAPPED and self.report_line is None:
             raise ValueError("mapped classification requires report_line")
-        if self.status is not SugefGapRowClassificationStatus.MAPPED and self.report_line is not None:
+        if (
+            self.status is not SugefGapRowClassificationStatus.MAPPED
+            and self.report_line is not None
+        ):
             raise ValueError("non-mapped classification cannot contain report_line")
 
 
