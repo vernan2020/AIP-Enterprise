@@ -6,6 +6,7 @@ from typing import Protocol
 
 from aip.domain.irrbb.models import (
     BankingBookPosition,
+    ContractualCashFlowRecord,
     IRRBBCashFlow,
     IRRBBScenario,
     ScenarioShockCalibration,
@@ -17,6 +18,22 @@ class BankingBookPositionRepository(Protocol):
     """Source-agnostic port for canonical banking-book positions."""
 
     def get_positions(self, *, cutoff_date: date) -> tuple[BankingBookPosition, ...]: ...
+
+
+class ContractualCashFlowScheduleProvider(Protocol):
+    """Provide an explicit normalized schedule when terms alone are insufficient.
+
+    Typical uses include amortizing credit, complex deposits, borrowings and
+    off-balance contracts. Implementations may read an approved source schedule
+    or derive one from sufficiently complete contractual terms outside this port.
+    """
+
+    def get_schedule(
+        self,
+        *,
+        position: BankingBookPosition,
+        valuation_date: date,
+    ) -> tuple[ContractualCashFlowRecord, ...]: ...
 
 
 class RepricingCashFlowBuilder(Protocol):
@@ -31,6 +48,24 @@ class RepricingCashFlowBuilder(Protocol):
         self,
         *,
         position: BankingBookPosition,
+        valuation_date: date,
+    ) -> tuple[IRRBBCashFlow, ...]: ...
+
+
+class ScenarioCashFlowProjector(Protocol):
+    """Transform base contractual flows when scenario-sensitive amounts reprice.
+
+    Floating-rate coupons and other scenario-dependent cash flows must pass
+    through such a projector before stressed EVE is calculated. The economic-value
+    service must not treat a current-rate projection as a stressed contractual flow.
+    """
+
+    def project(
+        self,
+        *,
+        position: BankingBookPosition,
+        base_cashflows: tuple[IRRBBCashFlow, ...],
+        scenario: IRRBBScenario,
         valuation_date: date,
     ) -> tuple[IRRBBCashFlow, ...]: ...
 
