@@ -5,7 +5,7 @@ from decimal import Decimal
 from typing import Sequence
 
 from src.aip.domain.portfolio.exceptions import PortfolioError
-from src.aip.shared.money import Currency, Money
+from aip.shared.money import Currency, Money
 
 
 class PortfolioCalculationService:
