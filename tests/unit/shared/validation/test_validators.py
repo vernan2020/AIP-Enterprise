@@ -7,7 +7,7 @@ from decimal import Decimal
 
 import pytest
 
-from src.aip.shared.validation import (
+from aip.shared.validation import (
     Guard,
     InvalidFormatError,
     NotEmptyError,
@@ -205,9 +205,9 @@ class TestValidators:
 
     def test_is_valid_iso_currency_code_invalid(self) -> None:
         """Test is_valid_iso_currency_code returns False for invalid codes."""
-        assert Validators.is_valid_iso_currency_code("US") is False  # Too short
-        assert Validators.is_valid_iso_currency_code("USDA") is False  # Too long
-        assert Validators.is_valid_iso_currency_code("usd") is False  # Lowercase
+        assert Validators.is_valid_iso_currency_code("US") is False
+        assert Validators.is_valid_iso_currency_code("USDA") is False
+        assert Validators.is_valid_iso_currency_code("usd") is False
 
     def test_is_valid_ticker_valid(self) -> None:
         """Test is_valid_ticker returns True for valid tickers."""
@@ -217,10 +217,10 @@ class TestValidators:
 
     def test_is_valid_ticker_invalid(self) -> None:
         """Test is_valid_ticker returns False for invalid tickers."""
-        assert Validators.is_valid_ticker("") is False  # Empty
-        assert Validators.is_valid_ticker("TOOLONG") is False  # Too long
-        assert Validators.is_valid_ticker("aapl") is False  # Lowercase
-        assert Validators.is_valid_ticker("A1") is False  # Contains number
+        assert Validators.is_valid_ticker("") is False
+        assert Validators.is_valid_ticker("TOOLONG") is False
+        assert Validators.is_valid_ticker("aapl") is False
+        assert Validators.is_valid_ticker("A1") is False
 
 
 class TestValidationExceptions:
