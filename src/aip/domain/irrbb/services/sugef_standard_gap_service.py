@@ -7,6 +7,7 @@ from aip.domain.irrbb.models import (
     BankingBookPosition,
     BankingBookSide,
     CashFlowDirection,
+    IRRBBTimeBucket,
     PaymentStructure,
     RateType,
 )
@@ -92,8 +93,8 @@ class SugefStandardGapService:
             return ()
 
         currency = exposures[0].amount.currency
-        totals: dict[object, Decimal] = {}
-        metadata: dict[object, tuple[int, str]] = {}
+        totals: dict[IRRBBTimeBucket, Decimal] = {}
+        metadata: dict[IRRBBTimeBucket, tuple[int, str]] = {}
 
         for exposure in exposures:
             if exposure.amount.currency is not currency:
@@ -160,17 +161,13 @@ class SugefStandardGapService:
         included_records: tuple[SugefGapScheduleRecord, ...],
     ) -> Money:
         if included_records:
-            latest_direct_balance = next(
-                (
-                    record.outstanding_principal_after
-                    for record in reversed(included_records)
-                    if record.outstanding_principal_after is not None
-                ),
-                None,
-            )
-            if latest_direct_balance is not None:
-                cls._validate_residual(position=position, residual=latest_direct_balance)
-                return latest_direct_balance
+            latest_record = included_records[-1]
+            if latest_record.outstanding_principal_after is not None:
+                cls._validate_residual(
+                    position=position,
+                    residual=latest_record.outstanding_principal_after,
+                )
+                return latest_record.outstanding_principal_after
 
         if position.payment_structure is PaymentStructure.BULLET:
             principal_paid = sum(
