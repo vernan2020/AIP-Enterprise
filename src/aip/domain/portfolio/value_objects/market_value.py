@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from src.aip.domain.portfolio.exceptions import InvalidPositionError
-from src.aip.shared.money import Currency, Money
+from aip.shared.money import Currency, Money
 
 
 @dataclass(frozen=True, slots=True)
