@@ -7,6 +7,7 @@ import pytest
 
 from aip.domain.irrbb.models import (
     BankingBookSide,
+    CashFlowAmountStatus,
     CashFlowDirection,
     IRRBBCashFlow,
     IRRBBScenario,
@@ -47,6 +48,7 @@ def _flow(
     direction: CashFlowDirection,
     amount: Decimal,
     currency: Currency = Currency.CRC,
+    amount_status: CashFlowAmountStatus = CashFlowAmountStatus.CONTRACTUAL,
 ) -> IRRBBCashFlow:
     return IRRBBCashFlow(
         position_id=position_id,
@@ -57,6 +59,7 @@ def _flow(
         risk_date=date(2027, 8, 31),
         flow_type="PRINCIPAL",
         source_reference="TEST",
+        amount_status=amount_status,
     )
 
 
@@ -137,3 +140,42 @@ def test_calculate_converts_foreign_currency_with_explicit_provider() -> None:
     )
 
     assert result.eve.amount == Decimal("900.00")
+
+
+def test_base_eve_accepts_explicit_current_rate_projection() -> None:
+    result = EconomicValueService.calculate(
+        cashflows=(
+            _flow(
+                position_id="FLOAT-1",
+                side=BankingBookSide.ASSET,
+                direction=CashFlowDirection.RECEIVABLE,
+                amount=Decimal("10"),
+                amount_status=CashFlowAmountStatus.PROJECTED_CURRENT_RATE,
+            ),
+        ),
+        valuation_date=date(2026, 8, 31),
+        scenario=IRRBBScenario.BASE,
+        reporting_currency=Currency.CRC,
+        discount_factors=_DiscountFactors(),
+    )
+
+    assert result.eve.amount == Decimal("9.00")
+
+
+def test_stressed_eve_rejects_untransformed_current_rate_projection() -> None:
+    flow = _flow(
+        position_id="FLOAT-1",
+        side=BankingBookSide.ASSET,
+        direction=CashFlowDirection.RECEIVABLE,
+        amount=Decimal("10"),
+        amount_status=CashFlowAmountStatus.PROJECTED_CURRENT_RATE,
+    )
+
+    with pytest.raises(ValueError, match="scenario repricing projector"):
+        EconomicValueService.calculate(
+            cashflows=(flow,),
+            valuation_date=date(2026, 8, 31),
+            scenario=IRRBBScenario.PARALLEL_UP,
+            reporting_currency=Currency.CRC,
+            discount_factors=_DiscountFactors(),
+        )
