@@ -4,8 +4,8 @@ import re
 from decimal import Decimal
 from typing import Sequence
 
-from src.aip.domain.portfolio.exceptions import PortfolioError
 from aip.shared.money import Currency, Money
+from src.aip.domain.portfolio.exceptions import PortfolioError
 
 
 class PortfolioCalculationService:
