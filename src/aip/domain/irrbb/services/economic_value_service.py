@@ -58,11 +58,7 @@ class EconomicValueService:
                 exchange_rates,
             )
             pv = flow.amount.amount * factor * fx
-            sign = (
-                Decimal("1")
-                if flow.direction is CashFlowDirection.RECEIVABLE
-                else Decimal("-1")
-            )
+            sign = Decimal("1") if flow.direction is CashFlowDirection.RECEIVABLE else Decimal("-1")
             signed_eve = pv * sign
 
             if flow.side is BankingBookSide.ASSET:
