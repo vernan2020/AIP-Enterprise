@@ -40,7 +40,6 @@ from aip.ui.modules.rate_risk.models import (
 )
 from aip.ui.modules.rate_risk.presenters import RateRiskPresenter
 
-
 VALUATION_DATE = date(2026, 8, 31)
 REPORTING_CURRENCY = Currency.CRC
 
