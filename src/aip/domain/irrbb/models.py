@@ -220,7 +220,11 @@ class BankingBookPosition:
             raise ValueError("repricing_frequency_months must be positive")
         if self.payment_frequency_months is not None and self.payment_frequency_months <= 0:
             raise ValueError("payment_frequency_months must be positive")
-        if self.rate_floor is not None and self.rate_cap is not None and self.rate_floor > self.rate_cap:
+        if (
+            self.rate_floor is not None
+            and self.rate_cap is not None
+            and self.rate_floor > self.rate_cap
+        ):
             raise ValueError("rate_floor cannot exceed rate_cap")
 
 
