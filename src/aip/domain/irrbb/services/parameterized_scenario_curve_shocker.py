@@ -4,6 +4,7 @@ from decimal import Decimal
 
 from aip.domain.irrbb.models import IRRBBScenario, ScenarioShockCalibration
 from aip.domain.irrbb.ports import ScenarioTenorShockProvider
+from aip.shared.money import Currency
 
 _BASIS_POINTS_PER_UNIT = Decimal("10000")
 
@@ -53,7 +54,7 @@ class ParallelOnlyScenarioTenorShockProvider:
     def shock_basis_points(
         self,
         *,
-        currency: object,
+        currency: Currency,
         scenario: IRRBBScenario,
         tenor_years: Decimal,
         calibration: ScenarioShockCalibration,
