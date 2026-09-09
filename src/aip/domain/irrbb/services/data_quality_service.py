@@ -21,13 +21,21 @@ from aip.domain.irrbb.models import (
 
 
 class IRRBBPositionDataQualityService:
-    """Assess whether one position is ready for the IRRBB EVE workflow.
+    """Assess whether one position is ready for the current IRRBB EVE workflow.
 
-    The service separates missing source data from missing approved calculation
-    capabilities. It never imputes dates, rates, schedules or behavioral assumptions.
+    Missing source data and missing approved calculation capabilities are reported
+    explicitly. No maturity, rate, schedule, repricing date or behavior is imputed.
     """
 
     _SUPPORTED_INVESTMENT_PAYMENT_MONTHS = frozenset({1, 2, 3, 4, 6, 12})
+    _SCHEDULE_DRIVEN_CLASSES = frozenset(
+        {
+            IRRBBInstrumentClass.CREDIT,
+            IRRBBInstrumentClass.TERM_DEPOSIT,
+            IRRBBInstrumentClass.BORROWING,
+            IRRBBInstrumentClass.OFF_BALANCE,
+        }
+    )
 
     @classmethod
     def assess(
@@ -60,28 +68,7 @@ class IRRBBPositionDataQualityService:
             )
 
         issues: list[IRRBBDataQualityIssue] = []
-
-        if position.origination_date is not None and position.origination_date > valuation_date:
-            issues.append(
-                cls._error(
-                    IRRBBDataIssueCode.ORIGINATION_AFTER_VALUATION,
-                    "origination_date",
-                    "Origination date is after the valuation date.",
-                )
-            )
-
-        if (
-            position.instrument_class is not IRRBBInstrumentClass.NON_MATURITY_DEPOSIT
-            and position.maturity_date is None
-        ):
-            issues.append(
-                cls._error(
-                    IRRBBDataIssueCode.MATURITY_MISSING,
-                    "maturity_date",
-                    "Contractual maturity is required for this instrument class.",
-                )
-            )
-
+        cls._assess_dates(position, valuation_date, issues)
         cls._assess_schedule_requirements(position, context, issues)
         cls._assess_rate_requirements(position, context, valuation_date, issues)
         cls._assess_behavioral_requirements(position, context, issues)
@@ -97,6 +84,33 @@ class IRRBBPositionDataQualityService:
             status=status,
             issues=tuple(issues),
         )
+
+    @classmethod
+    def _assess_dates(
+        cls,
+        position: BankingBookPosition,
+        valuation_date: date,
+        issues: list[IRRBBDataQualityIssue],
+    ) -> None:
+        if position.origination_date is not None and position.origination_date > valuation_date:
+            issues.append(
+                cls._error(
+                    IRRBBDataIssueCode.ORIGINATION_AFTER_VALUATION,
+                    "origination_date",
+                    "Origination date is after the valuation date.",
+                )
+            )
+        if (
+            position.instrument_class is not IRRBBInstrumentClass.NON_MATURITY_DEPOSIT
+            and position.maturity_date is None
+        ):
+            issues.append(
+                cls._error(
+                    IRRBBDataIssueCode.MATURITY_MISSING,
+                    "maturity_date",
+                    "Contractual maturity is required for this instrument class.",
+                )
+            )
 
     @classmethod
     def _assess_schedule_requirements(
@@ -122,9 +136,9 @@ class IRRBBPositionDataQualityService:
             )
 
         requires_explicit_schedule = (
-            position.payment_structure
+            position.instrument_class in cls._SCHEDULE_DRIVEN_CLASSES
+            or position.payment_structure
             in {PaymentStructure.AMORTIZING, PaymentStructure.EXPLICIT_SCHEDULE}
-            or position.instrument_class is IRRBBInstrumentClass.OFF_BALANCE
         )
         if requires_explicit_schedule and not context.explicit_schedule_available:
             issues.append(
@@ -147,28 +161,46 @@ class IRRBBPositionDataQualityService:
             return
 
         if position.rate_type is RateType.FIXED:
-            if not context.explicit_schedule_available and position.contractual_rate is None:
-                issues.append(
-                    cls._error(
-                        IRRBBDataIssueCode.CONTRACTUAL_RATE_MISSING,
-                        "contractual_rate",
-                        "Fixed-rate position requires an explicit contractual rate or schedule.",
-                    )
-                )
-            if (
-                not context.explicit_schedule_available
-                and position.contractual_rate not in (None, Decimal("0"))
-                and position.payment_frequency_months is None
-            ):
-                issues.append(
-                    cls._error(
-                        IRRBBDataIssueCode.PAYMENT_FREQUENCY_MISSING,
-                        "payment_frequency_months",
-                        "Interest-bearing fixed position requires payment frequency or schedule.",
-                    )
-                )
+            cls._assess_fixed_rate(position, context, issues)
             return
 
+        cls._assess_floating_rate(position, context, valuation_date, issues)
+
+    @classmethod
+    def _assess_fixed_rate(
+        cls,
+        position: BankingBookPosition,
+        context: IRRBBValidationContext,
+        issues: list[IRRBBDataQualityIssue],
+    ) -> None:
+        if context.explicit_schedule_available:
+            return
+        if position.contractual_rate is None:
+            issues.append(
+                cls._error(
+                    IRRBBDataIssueCode.CONTRACTUAL_RATE_MISSING,
+                    "contractual_rate",
+                    "Fixed-rate position requires an explicit contractual rate or schedule.",
+                )
+            )
+            return
+        if position.contractual_rate != Decimal("0") and position.payment_frequency_months is None:
+            issues.append(
+                cls._error(
+                    IRRBBDataIssueCode.PAYMENT_FREQUENCY_MISSING,
+                    "payment_frequency_months",
+                    "Interest-bearing fixed position requires payment frequency or schedule.",
+                )
+            )
+
+    @classmethod
+    def _assess_floating_rate(
+        cls,
+        position: BankingBookPosition,
+        context: IRRBBValidationContext,
+        valuation_date: date,
+        issues: list[IRRBBDataQualityIssue],
+    ) -> None:
         if position.next_repricing_date is None:
             issues.append(
                 cls._error(
@@ -269,10 +301,8 @@ class IRRBBPositionDataQualityService:
             position.instrument_class is not IRRBBInstrumentClass.INVESTMENT
             or context.explicit_schedule_available
             or position.contractual_rate in (None, Decimal("0"))
+            or position.payment_frequency_months is None
         ):
-            return
-
-        if position.payment_frequency_months is None:
             return
         if position.payment_frequency_months not in cls._SUPPORTED_INVESTMENT_PAYMENT_MONTHS:
             issues.append(
