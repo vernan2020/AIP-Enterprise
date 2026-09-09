@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from calendar import monthrange
 from dataclasses import replace
 from datetime import date
 from decimal import Decimal
@@ -38,6 +39,10 @@ def _value(direction: RatingDirection, entity_index: int) -> Decimal:
     return (Decimal("1") + Decimal(entity_index)) / Decimal("10")
 
 
+def _month_end(year: int, month: int) -> date:
+    return date(year, month, monthrange(year, month)[1])
+
+
 def _complete_lines() -> tuple[FinancialStatementLine, ...]:
     lines: list[FinancialStatementLine] = []
     for definition in FinancialEntityRatingService.INDICATORS:
@@ -59,6 +64,59 @@ def _complete_lines() -> tuple[FinancialStatementLine, ...]:
                     trace=_TRACE,
                 )
             )
+
+    asset_months = [(2025, month) for month in range(8, 13)] + [
+        (2026, month) for month in range(1, 8)
+    ]
+    current_income = (Decimal("30"), Decimal("20"), Decimal("10"))
+    for entity_index, entity in enumerate(_ENTITIES):
+        for year, month in asset_months:
+            lines.append(
+                FinancialStatementLine(
+                    entity=entity,
+                    statement_date=_month_end(year, month),
+                    statement_type=FinancialStatementType.BALANCE_SHEET,
+                    account_code="10000",
+                    account_name="ACTIVO TOTAL",
+                    amount=Decimal("1000"),
+                    currency="CRC",
+                    trace=_TRACE,
+                )
+            )
+        lines.extend(
+            (
+                FinancialStatementLine(
+                    entity=entity,
+                    statement_date=date(2025, 7, 31),
+                    statement_type=FinancialStatementType.INCOME_STATEMENT,
+                    account_code="30000",
+                    account_name="RESULTADO FINAL",
+                    amount=Decimal("0"),
+                    currency="CRC",
+                    trace=_TRACE,
+                ),
+                FinancialStatementLine(
+                    entity=entity,
+                    statement_date=date(2025, 12, 31),
+                    statement_type=FinancialStatementType.INCOME_STATEMENT,
+                    account_code="30000",
+                    account_name="RESULTADO FINAL",
+                    amount=Decimal("0"),
+                    currency="CRC",
+                    trace=_TRACE,
+                ),
+                FinancialStatementLine(
+                    entity=entity,
+                    statement_date=_CUTOFF,
+                    statement_type=FinancialStatementType.INCOME_STATEMENT,
+                    account_code="30000",
+                    account_name="RESULTADO FINAL",
+                    amount=current_income[entity_index],
+                    currency="CRC",
+                    trace=_TRACE,
+                ),
+            )
+        )
     return tuple(lines)
 
 
