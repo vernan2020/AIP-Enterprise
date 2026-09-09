@@ -5,6 +5,7 @@ from decimal import Decimal
 from typing import Sequence
 
 from aip.shared.money import Currency, Money
+
 from ..exceptions import PortfolioError
 
 
