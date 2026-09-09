@@ -73,7 +73,9 @@ class IRRBBTimeBucketService:
         valuation_date: date,
         risk_dates: tuple[date, ...],
     ) -> tuple[TimeBucketAssignment, ...]:
-        return tuple(cls.assign(valuation_date=valuation_date, risk_date=value) for value in risk_dates)
+        return tuple(
+            cls.assign(valuation_date=valuation_date, risk_date=value) for value in risk_dates
+        )
 
     @staticmethod
     def _add_months(value: date, months: int) -> date:
