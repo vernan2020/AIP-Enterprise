@@ -11,8 +11,6 @@ from aip.domain.irrbb import (
     IRRBBMethodologyProfile,
     IRRBBMethodologyStatus,
 )
-
-
 _PROFILE = IRRBBMethodologyProfile(
     code="TEST_IRRBB",
     version="1",
