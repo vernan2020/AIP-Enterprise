@@ -15,6 +15,96 @@ class SugefGapExposureType(str, Enum):
     REPRICING_PRINCIPAL = "REPRICING_PRINCIPAL"
 
 
+class SugefGapCounterpartyFamily(str, Enum):
+    """Supervisory liability counterparty taxonomy visible in the SUGEF workbook."""
+
+    PUBLIC = "PUBLIC"
+    BCCR = "BCCR"
+    FINANCIAL_ENTITY = "FINANCIAL_ENTITY"
+    NON_FINANCIAL_ENTITY = "NON_FINANCIAL_ENTITY"
+    OTHER = "OTHER"
+
+
+class SugefGapFundingTermType(str, Enum):
+    """Sight/term discriminator required by the SUGEF liability rows."""
+
+    SIGHT = "SIGHT"
+    TERM = "TERM"
+    UNKNOWN = "UNKNOWN"
+
+
+class SugefGapReportLine(str, Enum):
+    """Exact logical row families in the visible MN/ME supervisory templates."""
+
+    INVESTMENT_FIXED = "INVESTMENT_FIXED"
+    INVESTMENT_VARIABLE_SEMIVARIABLE = "INVESTMENT_VARIABLE_SEMIVARIABLE"
+    CREDIT_FIXED = "CREDIT_FIXED"
+    CREDIT_VARIABLE_SEMIVARIABLE = "CREDIT_VARIABLE_SEMIVARIABLE"
+
+    PUBLIC_SIGHT_WITH_COST = "PUBLIC_SIGHT_WITH_COST"
+    PUBLIC_SIGHT_WITHOUT_COST = "PUBLIC_SIGHT_WITHOUT_COST"
+    PUBLIC_TERM_FIXED = "PUBLIC_TERM_FIXED"
+    PUBLIC_TERM_VARIABLE_SEMIVARIABLE = "PUBLIC_TERM_VARIABLE_SEMIVARIABLE"
+
+    BCCR_SIGHT_WITH_COST = "BCCR_SIGHT_WITH_COST"
+    BCCR_SIGHT_WITHOUT_COST = "BCCR_SIGHT_WITHOUT_COST"
+    BCCR_TERM_FIXED = "BCCR_TERM_FIXED"
+    BCCR_TERM_VARIABLE_SEMIVARIABLE = "BCCR_TERM_VARIABLE_SEMIVARIABLE"
+
+    FINANCIAL_ENTITY_SIGHT_WITH_COST = "FINANCIAL_ENTITY_SIGHT_WITH_COST"
+    FINANCIAL_ENTITY_SIGHT_WITHOUT_COST = "FINANCIAL_ENTITY_SIGHT_WITHOUT_COST"
+    FINANCIAL_ENTITY_TERM_FIXED = "FINANCIAL_ENTITY_TERM_FIXED"
+    FINANCIAL_ENTITY_TERM_VARIABLE_SEMIVARIABLE = (
+        "FINANCIAL_ENTITY_TERM_VARIABLE_SEMIVARIABLE"
+    )
+
+
+class SugefGapRowClassificationStatus(str, Enum):
+    """Outcome of mapping one normalized position into a supervisory report row."""
+
+    MAPPED = "MAPPED"
+    INCOMPLETE = "INCOMPLETE"
+    MAPPING_PENDING = "MAPPING_PENDING"
+    NOT_APPLICABLE = "NOT_APPLICABLE"
+
+
+@dataclass(frozen=True, slots=True)
+class SugefGapRoutingMetadata:
+    """SUGEF-specific row-routing metadata kept outside the core banking-book model."""
+
+    position_id: str
+    counterparty_family: SugefGapCounterpartyFamily = SugefGapCounterpartyFamily.OTHER
+    funding_term_type: SugefGapFundingTermType = SugefGapFundingTermType.UNKNOWN
+    has_financial_cost: bool | None = None
+    accounting_account_code: str | None = None
+
+    def __post_init__(self) -> None:
+        if not self.position_id.strip():
+            raise ValueError("routing position_id is required")
+        if self.accounting_account_code is not None and not self.accounting_account_code.strip():
+            raise ValueError("accounting_account_code cannot be blank")
+
+
+@dataclass(frozen=True, slots=True)
+class SugefGapRowClassification:
+    """Auditable result of assigning a position to a visible SUGEF report row."""
+
+    position_id: str
+    status: SugefGapRowClassificationStatus
+    report_line: SugefGapReportLine | None
+    reason: str
+
+    def __post_init__(self) -> None:
+        if not self.position_id.strip():
+            raise ValueError("classification position_id is required")
+        if not self.reason.strip():
+            raise ValueError("classification reason is required")
+        if self.status is SugefGapRowClassificationStatus.MAPPED and self.report_line is None:
+            raise ValueError("mapped classification requires report_line")
+        if self.status is not SugefGapRowClassificationStatus.MAPPED and self.report_line is not None:
+            raise ValueError("non-mapped classification cannot contain report_line")
+
+
 @dataclass(frozen=True, slots=True)
 class SugefGapScheduleRecord:
     """Normalized contractual schedule record for the SUGEF gap methodology.
