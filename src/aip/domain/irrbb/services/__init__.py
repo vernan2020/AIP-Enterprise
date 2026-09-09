@@ -14,6 +14,12 @@ from aip.domain.irrbb.services.parameterized_scenario_curve_shocker import (
     ParallelOnlyScenarioTenorShockProvider,
     ParameterizedScenarioCurveShocker,
 )
+from aip.domain.irrbb.services.scenario_evaluation_service import (
+    IRRBBScenarioEvaluationService,
+)
+from aip.domain.irrbb.services.standard_scenario_position_cashflow_provider import (
+    StandardScenarioPositionCashFlowProvider,
+)
 from aip.domain.irrbb.services.sugef_gap_row_classifier_service import (
     SugefGapRowClassifierService,
 )
@@ -26,10 +32,12 @@ __all__ = [
     "EconomicValueService",
     "FloatingRateScenarioCashFlowProjector",
     "IRRBBPositionDataQualityService",
+    "IRRBBScenarioEvaluationService",
     "IRRBBTimeBucketService",
     "NonMaturityDepositBehavioralModel",
     "ParallelOnlyScenarioTenorShockProvider",
     "ParameterizedScenarioCurveShocker",
+    "StandardScenarioPositionCashFlowProvider",
     "SugefGapRowClassifierService",
     "SugefStandardGapService",
 ]
