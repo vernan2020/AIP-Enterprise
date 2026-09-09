@@ -426,7 +426,12 @@ class RateRiskView(QWidget):
             self._set_row(
                 self._gap_bucket_table,
                 row_index,
-                (str(row.ordinal), row.label, self._format_money(row.amount, row.currency), row.currency),
+                (
+                    str(row.ordinal),
+                    row.label,
+                    self._format_money(row.amount, row.currency),
+                    row.currency,
+                ),
             )
 
         self._gap_matrix_table.setRowCount(len(read_model.gap_matrix_cells))
