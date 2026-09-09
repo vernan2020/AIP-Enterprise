@@ -42,6 +42,7 @@ from aip.domain.irrbb.models import (
     ScenarioShockCalibration,
     TimeBucketAssignment,
 )
+from aip.domain.irrbb.scenario_evaluation import IRRBBScenarioEvaluationResult
 from aip.domain.irrbb.scenario_repricing import FloatingRateCouponBasis
 from aip.domain.irrbb.services.capital_buffer_service import CapitalBufferService
 from aip.domain.irrbb.services.data_quality_service import IRRBBPositionDataQualityService
@@ -54,6 +55,12 @@ from aip.domain.irrbb.services.non_maturity_deposit_behavioral_model import (
 from aip.domain.irrbb.services.parameterized_scenario_curve_shocker import (
     ParallelOnlyScenarioTenorShockProvider,
     ParameterizedScenarioCurveShocker,
+)
+from aip.domain.irrbb.services.scenario_evaluation_service import (
+    IRRBBScenarioEvaluationService,
+)
+from aip.domain.irrbb.services.standard_scenario_position_cashflow_provider import (
+    StandardScenarioPositionCashFlowProvider,
 )
 from aip.domain.irrbb.services.sugef_gap_row_classifier_service import (
     SugefGapRowClassifierService,
@@ -98,6 +105,8 @@ __all__ = [
     "IRRBBPositionAssessment",
     "IRRBBPositionDataQualityService",
     "IRRBBScenario",
+    "IRRBBScenarioEvaluationResult",
+    "IRRBBScenarioEvaluationService",
     "IRRBBTimeBucket",
     "IRRBBValidationContext",
     "NonMaturityDepositAllocation",
@@ -110,6 +119,7 @@ __all__ = [
     "RateType",
     "ScenarioAssessment",
     "ScenarioShockCalibration",
+    "StandardScenarioPositionCashFlowProvider",
     "SugefGapBucketTotal",
     "SugefGapCounterpartyFamily",
     "SugefGapExposure",
