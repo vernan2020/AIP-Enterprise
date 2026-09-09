@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from decimal import Decimal
 
-from src.aip.shared.math import Percentage
+from aip.shared.math import Percentage
 
 from ..exceptions import InvalidPositionError
 
