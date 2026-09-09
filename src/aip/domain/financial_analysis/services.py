@@ -19,6 +19,7 @@ from aip.domain.financial_analysis.models import (
     FinancialStatementLine,
     FinancialStatementType,
 )
+from aip.domain.financial_analysis.return_on_assets import ReturnOnAssetsService
 from aip.domain.financial_analysis.sugef_ratings import (
     SUGEFOnlyFinancialEntityRatingService,
 )
@@ -288,6 +289,7 @@ class FinancialAnalysisService:
         summaries: list[EntityFinancialSummary] = []
         for entity_lines in grouped.values():
             data = tuple(entity_lines)
+            entity = data[0].entity
             values = {
                 code: cls._find_value(
                     data,
@@ -296,22 +298,22 @@ class FinancialAnalysisService:
                 )[0]
                 for code, terms in cls._ACCOUNT_TERMS.items()
             }
-            values["ROA_PUBLISHED"] = cls._published_percent(values["ROA_PUBLISHED"])
             values["ROE_PUBLISHED"] = cls._published_percent(values["ROE_PUBLISHED"])
+            roa = ReturnOnAssetsService.calculate(
+                lines,
+                entity_id=entity.entity_id,
+                cutoff_date=cutoff_date,
+            )
             summaries.append(
                 EntityFinancialSummary(
-                    entity=data[0].entity,
+                    entity=entity,
                     statement_date=cutoff_date,
                     assets=values["ASSETS"],
                     loans=values["LOANS"],
                     liabilities=values["LIABILITIES"],
                     equity=values["EQUITY"],
                     net_income=values["NET_INCOME"],
-                    roa_percent=(
-                        values["ROA_PUBLISHED"]
-                        if values["ROA_PUBLISHED"] is not None
-                        else cls._ratio_percent(values["NET_INCOME"], values["ASSETS"])
-                    ),
+                    roa_percent=roa.value_percent,
                     roe_percent=(
                         values["ROE_PUBLISHED"]
                         if values["ROE_PUBLISHED"] is not None
