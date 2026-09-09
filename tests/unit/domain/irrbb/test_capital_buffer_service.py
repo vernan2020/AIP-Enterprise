@@ -4,8 +4,8 @@ from decimal import Decimal
 
 import pytest
 
-from aip.domain.irrbb import models
 from aip.domain.irrbb.services.capital_buffer_service import CapitalBufferService
+from aip.domain.irrbb import models
 
 
 _PROFILE = models.IRRBBMethodologyProfile(
