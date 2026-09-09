@@ -330,7 +330,7 @@ class BusinessDayCalculator:
 
         Args:
             start_date: Starting date.
-            num_days: Number of days to add.
+            num_days: Number of business days to add.
             calendar: Business calendar.
 
         Returns:
