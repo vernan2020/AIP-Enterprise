@@ -4,7 +4,7 @@
 
 This document defines the source-independent domain core for **Interest Rate Risk in the Banking Book (IRRBB / RTILB)** in AIP Enterprise.
 
-The first implementation intentionally covers the **economic value perspective (VEP / EVE)** only. Data connectors, database technology and PySide6 views are outside this boundary. A later NII/margin engine will share the same canonical position, repricing and behavioral assumptions without mixing its calculation rules with EVE.
+The current implementation covers the **economic value perspective (VEP / EVE)** domain core plus instrument/schedule readiness. Data connectors, database technology and PySide6 views remain outside this boundary. A later NII/margin engine will share the same canonical position, repricing and behavioral assumptions without mixing its calculation rules with EVE.
 
 ## 2. Methodological governance
 
@@ -31,20 +31,24 @@ OneDrive / SQL / XML / Excel / PostgreSQL / API
                        v
               BankingBookPosition
                        |
-                       v
-          RepricingCashFlowBuilder
-                       |
-              +--------+--------+
-              |                 |
-              v                 v
-     Contractual schedules   Behavioral model
-              |                 |
-              +--------+--------+
+          +------------+-------------+
+          |                          |
+          v                          v
+Investment strategy       Normalized contractual schedule
+(reuses portfolio engine)  (credit/deposit/borrowing/OFB)
+          |                          |
+          +------------+-------------+
                        v
                  IRRBBCashFlow
                        |
+       +---------------+----------------+
+       |                                |
+       v                                v
+Scenario repricing projector       Behavioral model
+       |                                |
+       +---------------+----------------+
                        v
-              19 time buckets
+              19 time-bucket trace
                        |
                        v
        Base / shocked curve providers
@@ -76,6 +80,8 @@ The domain layer never opens files, queries SQL, reads OneDrive or knows about w
 
 - stable position identifier;
 - product type and balance-sheet side;
+- canonical instrument class;
+- payment structure;
 - currency;
 - principal and optional carrying amount;
 - fixed/floating classification;
@@ -83,23 +89,33 @@ The domain layer never opens files, queries SQL, reads OneDrive or knows about w
 - maturity;
 - next repricing date and repricing frequency;
 - payment frequency;
+- last/next payment dates when available;
+- cap/floor when available;
 - optionality classification;
 - source trace/reference.
 
 Missing mandatory information is not silently imputed.
 
+The canonical instrument classes currently distinguish investments, credit, term deposits, borrowings, non-maturity deposits, off-balance positions and other/unclassified records. Source product codes remain outside the IRRBB strategy selection logic.
+
 ## 5. Cash-flow ownership
 
 Instrument-specific cash-flow builders own contractual schedule generation. The generic IRRBB engine consumes canonical `IRRBBCashFlow` objects and does not recreate instrument calendars.
 
-For investments, the adapter **must reuse/adapt `PortfolioContractualCashFlowService`**, which is already the canonical AIP portfolio coupon/principal schedule. A second investment coupon calendar is prohibited.
+For investments, `InvestmentContractualCashFlowBuilder` **reuses `PortfolioContractualCashFlowService`**, which is already the canonical AIP portfolio coupon/principal schedule. A second investment coupon calendar is prohibited.
+
+For credit, term deposits, borrowings and off-balance positions, the safe current strategy is `ExplicitScheduleCashFlowBuilder`. It consumes a `ContractualCashFlowScheduleProvider` containing normalized, auditable payment records. AIP does not invent an amortization table or day-count convention merely because a balance, rate and final maturity are present.
+
+A future source adapter may either supply a native contractual schedule or derive one from sufficiently complete contractual terms. In both cases the result crossing into IRRBB is the same typed `ContractualCashFlowRecord` contract.
 
 `IRRBBCashFlow` distinguishes:
 
 - `cashflow_date`: contractual/behavioral payment date;
-- `risk_date`: date selected by the repricing strategy for interest-rate-risk mapping.
+- `risk_date`: date selected by the repricing strategy for risk traceability;
+- `amount_status`: contractual, source-provided, current-rate projection, scenario projection or behavioral;
+- `projection_basis`: optional trace of the projection source/strategy.
 
-This distinction prevents a floating-rate instrument with long contractual maturity from being treated as if its entire repricing exposure remained at final maturity.
+`risk_date` is not, by itself, a repricing-GAP notional. A later GAP engine must apply the corresponding instrument strategy rather than summing future payment amounts indiscriminately at the reset date.
 
 ## 6. Nineteen temporal buckets
 
@@ -164,6 +180,12 @@ EVE = PV(Assets) - PV(Liabilities) + PV(Off-Balance net)
 
 The engine retains a `DiscountedCashFlow` trace containing the original flow, discount factor, FX rate, present value and signed EVE contribution.
 
+### Floating-rate safeguard
+
+The existing portfolio engine labels future variable coupons projected at the current rate as `PROJECTED_CURRENT_RATE`. Such flows may be used for a transparent base-case projection, but `EconomicValueService` rejects them in stressed scenarios.
+
+Before stressed EVE is calculated, an approved `ScenarioCashFlowProjector` must transform scenario-sensitive floating coupons into scenario-consistent flows. This prevents AIP from shocking only the discount curve while incorrectly holding future reset coupons at today's rate.
+
 ## 9. Delta EVE and worst exposure
 
 For every stress scenario `s`:
@@ -199,31 +221,64 @@ The domain declares a `BehavioralCashFlowModel` port for:
 
 No behavioral percentage is embedded in this blueprint. Future assumptions must be parameterized, versioned, approved and traceable.
 
-## 12. Data quality rules
+A non-maturity deposit is not treated as an overnight contractual maturity merely because it can be withdrawn on demand. It is `INCOMPLETE` for EVE until an approved behavioral strategy is available.
 
-The future application layer must classify each input position/cash flow as ready, incomplete or excluded. Required information must never be silently estimated merely to produce a number.
+## 12. Data quality and calculation readiness
 
-At minimum, diagnostics must identify missing:
+`IRRBBPositionDataQualityService` classifies each canonical position as:
+
+- `READY`: required source data and approved strategy capabilities are available;
+- `INCOMPLETE`: one or more required data/strategy elements are missing;
+- `EXCLUDED`: the position has no current exposure under an explicit rule, for example zero principal or contractual maturity at/before the cutoff.
+
+Findings use stable machine-readable codes and preserve the field/reason. The validator distinguishes source completeness from runtime capabilities through `IRRBBValidationContext`.
+
+At minimum, diagnostics cover missing or inconsistent:
 
 - maturity;
-- next repricing for floating positions;
-- payment/repricing frequency where required;
-- contractual rate/reference/spread where required;
-- currency;
-- source trace;
-- curve/discount factor;
-- FX conversion;
-- Tier 1 capital.
+- payment structure;
+- contractual schedule when required;
+- contractual rate/payment frequency for investment schedule generation;
+- next repricing and repricing frequency for floating positions;
+- current/reference-rate basis;
+- scenario-aware floating-rate projection capability;
+- behavioral model for non-maturity deposits and material optionality;
+- unsupported investment payment frequency;
+- origination/repricing dates relative to cutoff and maturity.
 
-## 13. Future phases
+This is a calculation gate, not a data-cleaning shortcut. Missing fields remain missing until a legitimate source or approved derivation supplies them.
 
-### Phase 2 — Instrument strategies
+## 13. Implemented phases
 
-Adapters/builders for investments, credit, deposits, borrowings and off-balance positions.
+### Phase 1 — EVE domain core
 
-### Phase 3 — Behavioral IRRBB
+Implemented and CI-certified:
 
-Versioned prepayment, early-withdrawal and non-maturity-deposit models.
+- canonical banking-book position and cash-flow models;
+- methodology/version objects;
+- 19 time buckets;
+- base/scenario EVE valuation;
+- Delta EVE / worst loss / Tier 1 exposure;
+- versioned capital-buffer lookup;
+- ports for curves, FX, behavioral models and source repositories.
+
+### Phase 2 — Instrument strategies and readiness
+
+Implemented in the feature branch:
+
+- canonical instrument class and payment structure;
+- explicit normalized schedule contract/provider;
+- investment adapter over `PortfolioContractualCashFlowService`;
+- explicit-schedule builder for credit/deposits/borrowings/off-balance;
+- current-rate/scenario-projected cash-flow audit status;
+- stressed-EVE protection for stale floating-rate projections;
+- data-quality/readiness gateway for missing source fields and missing approved strategies.
+
+## 14. Future phases
+
+### Phase 3 — Scenario repricing and behavioral IRRBB
+
+Versioned floating-rate coupon projection, prepayment, early-withdrawal and non-maturity-deposit models. Exact scenario transformations remain methodology-driven and auditable.
 
 ### Phase 4 — Application/UI
 
@@ -231,7 +286,7 @@ Dashboard with EVE base, worst Delta EVE, Delta EVE/Tier 1, scenarios, 19-band h
 
 ### Phase 5 — Source adapters
 
-OneDrive, SQL Server, regulatory XML, Excel, PostgreSQL or any combination selected by the institution.
+OneDrive, SQL Server, regulatory XML, Excel, PostgreSQL or any combination selected by the institution. Source adapters must populate the canonical model and produce a field-sufficiency matrix; domain formulas never parse raw XML directly.
 
 ### Phase 6 — NII / earnings perspective
 
