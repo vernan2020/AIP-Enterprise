@@ -4,24 +4,29 @@ from decimal import Decimal
 
 import pytest
 
-from aip.domain.irrbb import models
-from aip.domain.irrbb.services.capital_buffer_service import CapitalBufferService
+from aip.domain.irrbb import (
+    CapitalBufferSchedule,
+    CapitalBufferService,
+    CapitalBufferTier,
+    IRRBBMethodologyProfile,
+    IRRBBMethodologyStatus,
+)
 
 
-_PROFILE = models.IRRBBMethodologyProfile(
+_PROFILE = IRRBBMethodologyProfile(
     code="TEST_IRRBB",
     version="1",
-    status=models.IRRBBMethodologyStatus.PROPOSED,
+    status=IRRBBMethodologyStatus.PROPOSED,
     source_reference="TEST",
 )
 
-_SCHEDULE = models.CapitalBufferSchedule(
+_SCHEDULE = CapitalBufferSchedule(
     methodology=_PROFILE,
     tiers=(
-        models.CapitalBufferTier("LOW", Decimal("0.15"), Decimal("0.00")),
-        models.CapitalBufferTier("MODERATE", Decimal("0.30"), Decimal("0.005")),
-        models.CapitalBufferTier("HIGH", Decimal("0.60"), Decimal("0.015")),
-        models.CapitalBufferTier("VERY_HIGH", None, Decimal("0.025")),
+        CapitalBufferTier("LOW", Decimal("0.15"), Decimal("0.00")),
+        CapitalBufferTier("MODERATE", Decimal("0.30"), Decimal("0.005")),
+        CapitalBufferTier("HIGH", Decimal("0.60"), Decimal("0.015")),
+        CapitalBufferTier("VERY_HIGH", None, Decimal("0.025")),
     ),
 )
 
@@ -49,9 +54,9 @@ def test_calculate_uses_injected_versioned_tiers(exposure: Decimal, expected: De
 
 
 def test_schedule_requires_open_ended_final_tier() -> None:
-    schedule = models.CapitalBufferSchedule(
+    schedule = CapitalBufferSchedule(
         methodology=_PROFILE,
-        tiers=(models.CapitalBufferTier("ONLY", Decimal("0.15"), Decimal("0")),),
+        tiers=(CapitalBufferTier("ONLY", Decimal("0.15"), Decimal("0")),),
     )
 
     with pytest.raises(ValueError, match="open-ended"):
@@ -62,12 +67,12 @@ def test_schedule_requires_open_ended_final_tier() -> None:
 
 
 def test_schedule_rejects_non_increasing_upper_bounds() -> None:
-    schedule = models.CapitalBufferSchedule(
+    schedule = CapitalBufferSchedule(
         methodology=_PROFILE,
         tiers=(
-            models.CapitalBufferTier("A", Decimal("0.30"), Decimal("0")),
-            models.CapitalBufferTier("B", Decimal("0.20"), Decimal("0.01")),
-            models.CapitalBufferTier("C", None, Decimal("0.02")),
+            CapitalBufferTier("A", Decimal("0.30"), Decimal("0")),
+            CapitalBufferTier("B", Decimal("0.20"), Decimal("0.01")),
+            CapitalBufferTier("C", None, Decimal("0.02")),
         ),
     )
 
