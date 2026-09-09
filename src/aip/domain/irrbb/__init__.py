@@ -26,12 +26,14 @@ from aip.domain.irrbb.models import (
     ScenarioShockCalibration,
     TimeBucketAssignment,
 )
+from aip.domain.irrbb.services.capital_buffer_service import CapitalBufferService
 
 __all__ = [
     "BankingBookPosition",
     "BankingBookSide",
     "CapitalBufferResult",
     "CapitalBufferSchedule",
+    "CapitalBufferService",
     "CapitalBufferTier",
     "CashFlowDirection",
     "DeltaEVEResult",
