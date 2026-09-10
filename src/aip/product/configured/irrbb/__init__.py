@@ -47,6 +47,9 @@ from aip.product.configured.irrbb.semantic_model_inspection_evidence import (
     SemanticModelInspectionEvidenceBundle,
     SemanticModelInspectionEvidenceValidator,
 )
+from aip.product.configured.irrbb.semantic_model_inspection_renderer import (
+    SemanticModelInspectionEvidenceRenderer,
+)
 from aip.product.configured.irrbb.source_acl import (
     IRRBBCanonicalPositionMapper,
     IRRBBSourceRecordEnvelope,
@@ -81,6 +84,7 @@ __all__ = [
     "InvestmentMasterSourcePayload",
     "InvestmentMasterSourceRules",
     "SemanticModelInspectionEvidenceBundle",
+    "SemanticModelInspectionEvidenceRenderer",
     "SemanticModelInspectionEvidenceValidator",
     "TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE",
     "ValidatedBorrowingDiscoveryEvidence",
