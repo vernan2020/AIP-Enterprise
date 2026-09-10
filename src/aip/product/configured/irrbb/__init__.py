@@ -1,3 +1,11 @@
+from aip.product.configured.irrbb.borrowing_inspection_evidence import (
+    BorrowingInspectionEvidenceBundle,
+    BorrowingInspectionEvidenceValidator,
+    ValidatedBorrowingDiscoveryEvidence,
+    ValidatedBorrowingHeaderCellEvidence,
+    ValidatedBorrowingHeaderEvidence,
+    ValidatedBorrowingSheetEvidence,
+)
 from aip.product.configured.irrbb.borrowing_workbook_inspector import (
     BorrowingWorkbookDiscovery,
     BorrowingWorkbookHeaderCellEvidence,
@@ -44,6 +52,8 @@ from aip.product.configured.irrbb.source_acl import (
 __all__ = [
     "BORROWING_WORKBOOK_SOURCE",
     "CREDIT_SEMANTIC_MODEL_SOURCE",
+    "BorrowingInspectionEvidenceBundle",
+    "BorrowingInspectionEvidenceValidator",
     "BorrowingWorkbookDiscovery",
     "BorrowingWorkbookHeaderCellEvidence",
     "BorrowingWorkbookHeaderInspection",
@@ -67,5 +77,9 @@ __all__ = [
     "InvestmentMasterSourcePayload",
     "InvestmentMasterSourceRules",
     "TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE",
+    "ValidatedBorrowingDiscoveryEvidence",
+    "ValidatedBorrowingHeaderCellEvidence",
+    "ValidatedBorrowingHeaderEvidence",
+    "ValidatedBorrowingSheetEvidence",
     "institutional_irrbb_physical_source_registry",
 ]
