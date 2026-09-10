@@ -125,13 +125,9 @@ class IRRBBSourceSnapshotAssembler(Generic[SourceRecordT]):
     ) -> str:
         details: list[str] = []
         if certification.blocking_requirement_ids:
-            details.append(
-                "blocking=" + ",".join(certification.blocking_requirement_ids)
-            )
+            details.append("blocking=" + ",".join(certification.blocking_requirement_ids))
         if certification.not_assessed_requirement_ids:
-            details.append(
-                "not_assessed=" + ",".join(certification.not_assessed_requirement_ids)
-            )
+            details.append("not_assessed=" + ",".join(certification.not_assessed_requirement_ids))
         unresolved = "; ".join(details) or "source requirements remain unresolved"
         return (
             "Canonical mapping rejected: source certification "
