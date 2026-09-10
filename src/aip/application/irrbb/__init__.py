@@ -16,11 +16,12 @@ from aip.application.irrbb.contracts import (
     IRRBBSourceSnapshot,
 )
 from aip.application.irrbb.load_source import LoadIRRBBSourceSnapshot
-from aip.application.irrbb.ports import IRRBBDataGateway
+from aip.application.irrbb.ports import IRRBBAnalysisRequestProvider, IRRBBDataGateway
 from aip.application.irrbb.run_analysis import RunIRRBBAnalysis
 
 __all__ = [
     "IRRBBAnalysisRequest",
+    "IRRBBAnalysisRequestProvider",
     "IRRBBAnalysisResult",
     "IRRBBAnalysisStatus",
     "IRRBBCurveSourcePoint",
