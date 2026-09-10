@@ -56,6 +56,37 @@ class FinancialIntelligenceMainWindow(MainWindow):
                 metrics.workspace_switch_time_ms = (time.perf_counter() - started) * 1000.0
 
     def _build_workspace_widget(self, route_id: str) -> tuple[QWidget, str]:
+        if route_id == "rate_risk":
+            from aip.application.irrbb import (
+                IRRBBAnalysisRequestProvider,
+                RunIRRBBAnalysis,
+            )
+            from aip.core.container import ServiceNotRegisteredError
+            from aip.ui.modules.rate_risk.controllers import RateRiskWorkspaceController
+            from aip.ui.modules.rate_risk.views import RateRiskWorkspace
+
+            controller: RateRiskWorkspaceController | None = None
+            try:
+                analysis = self._demo_factory.container.resolve(RunIRRBBAnalysis)
+                request_provider = self._demo_factory.container.resolve(
+                    IRRBBAnalysisRequestProvider
+                )
+            except ServiceNotRegisteredError:
+                pass
+            else:
+                controller = RateRiskWorkspaceController(
+                    analysis=analysis,
+                    request_provider=request_provider,
+                )
+
+            return (
+                RateRiskWorkspace(
+                    controller=controller,
+                    valuation_date_provider=lambda: self._valuation_context.valuation_date,
+                ),
+                "Riesgo de Tasas · RTILB",
+            )
+
         if route_id == "financial_intelligence":
             from aip.ui.modules.intelligence.presenters.financial_intelligence_presenter import (
                 FinancialIntelligencePresenter,
