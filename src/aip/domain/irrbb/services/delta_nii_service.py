@@ -3,7 +3,11 @@ from __future__ import annotations
 from decimal import Decimal
 
 from aip.domain.irrbb.models import IRRBBScenario
-from aip.domain.irrbb.nii import DeltaNIIResult, NIIScenarioAssessment, NetInterestIncomeResult
+from aip.domain.irrbb.nii import (
+    DeltaNIIResult,
+    NIIScenarioAssessment,
+    NetInterestIncomeResult,
+)
 from aip.shared.money import Money
 
 
