@@ -107,9 +107,7 @@ def test_fixed_rate_snapshot_preserves_evidence_without_claiming_full_readiness(
     assert by_id["INV-CURRENCY"].status is IRRBBSourceAvailabilityStatus.NATIVE_AVAILABLE
     assert by_id["INV-PRINCIPAL"].status is IRRBBSourceAvailabilityStatus.NATIVE_AVAILABLE
     assert by_id["INV-MATURITY-DATE"].status is IRRBBSourceAvailabilityStatus.NATIVE_AVAILABLE
-    assert by_id["INV-CONTRACTUAL-RATE"].status is (
-        IRRBBSourceAvailabilityStatus.NATIVE_AVAILABLE
-    )
+    assert by_id["INV-CONTRACTUAL-RATE"].status is (IRRBBSourceAvailabilityStatus.NATIVE_AVAILABLE)
     assert by_id["INV-RATE-TYPE"].status is (
         IRRBBSourceAvailabilityStatus.DERIVABLE_WITH_DOCUMENTED_RULE
     )
@@ -119,12 +117,8 @@ def test_fixed_rate_snapshot_preserves_evidence_without_claiming_full_readiness(
     assert by_id["INV-CONTRACTUAL-SCHEDULE"].status is (
         IRRBBSourceAvailabilityStatus.DERIVABLE_WITH_DOCUMENTED_RULE
     )
-    assert by_id["INV-NEXT-REPRICING-DATE"].status is (
-        IRRBBSourceAvailabilityStatus.NOT_APPLICABLE
-    )
-    assert by_id["INV-REPRICING-FREQUENCY"].status is (
-        IRRBBSourceAvailabilityStatus.NOT_APPLICABLE
-    )
+    assert by_id["INV-NEXT-REPRICING-DATE"].status is (IRRBBSourceAvailabilityStatus.NOT_APPLICABLE)
+    assert by_id["INV-REPRICING-FREQUENCY"].status is (IRRBBSourceAvailabilityStatus.NOT_APPLICABLE)
 
     assert "INV-CUTOFF-DATE" in report.not_assessed_requirement_ids
     assert "INV-INSTRUMENT-CLASS" in report.not_assessed_requirement_ids
