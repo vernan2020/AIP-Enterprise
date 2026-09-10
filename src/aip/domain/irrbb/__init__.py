@@ -45,6 +45,7 @@ from aip.domain.irrbb.models import (
 from aip.domain.irrbb.nii import (
     ConvertedNIIAccrual,
     DeltaNIIResult,
+    NetInterestIncomeResult,
     NIIAccrualAmountStatus,
     NIIAccrualType,
     NIIBalanceSheetAssumption,
@@ -53,7 +54,6 @@ from aip.domain.irrbb.nii import (
     NIIRepricingTrace,
     NIIScenarioAssessment,
     NIIShockTiming,
-    NetInterestIncomeResult,
 )
 from aip.domain.irrbb.scenario_evaluation import IRRBBScenarioEvaluationResult
 from aip.domain.irrbb.scenario_repricing import FloatingRateCouponBasis
