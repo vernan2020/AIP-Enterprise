@@ -114,12 +114,14 @@ class NIIInterestAccrual:
             raise ValueError("NII accrual source_reference is required")
         if self.projection_basis is not None and not self.projection_basis.strip():
             raise ValueError("NII projection_basis cannot be blank")
-        if self.repricing_trace is not None:
-            if self.repricing_trace.repricing_date > self.accrual_start_date:
-                raise ValueError(
-                    "NII repricing_date cannot occur after accrual_start_date; "
-                    "split the accrual at the repricing boundary"
-                )
+        if (
+            self.repricing_trace is not None
+            and self.repricing_trace.repricing_date > self.accrual_start_date
+        ):
+            raise ValueError(
+                "NII repricing_date cannot occur after accrual_start_date; "
+                "split the accrual at the repricing boundary"
+            )
         if self.amount_status is NIIAccrualAmountStatus.RATE_PROJECTED:
             if self.repricing_trace is None:
                 raise ValueError("rate-projected NII accrual requires repricing_trace")
@@ -187,7 +189,11 @@ class NIIScenarioAssessment:
     def __post_init__(self) -> None:
         if self.scenario is IRRBBScenario.BASE:
             raise ValueError("NII stress assessment cannot use BASE")
-        currencies = {self.nii.currency, self.delta_nii.currency, self.fall_from_base.currency}
+        currencies = {
+            self.nii.currency,
+            self.delta_nii.currency,
+            self.fall_from_base.currency,
+        }
         if len(currencies) != 1:
             raise ValueError("NII assessment currencies must match")
         if self.fall_from_base.amount < 0:
@@ -214,7 +220,9 @@ class DeltaNIIResult:
             raise ValueError("Delta NII worst_loss cannot be negative")
         if not self.assessments:
             raise ValueError("Delta NII requires at least one stress assessment")
-        if self.worst_scenario not in {assessment.scenario for assessment in self.assessments}:
+        if self.worst_scenario not in {
+            assessment.scenario for assessment in self.assessments
+        }:
             raise ValueError("Delta NII worst_scenario must be present in assessments")
         for assessment in self.assessments:
             if assessment.nii.currency is not self.reporting_currency:
