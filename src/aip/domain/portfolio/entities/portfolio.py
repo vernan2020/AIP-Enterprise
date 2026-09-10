@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from decimal import Decimal
 
-from src.aip.shared.money import Currency, Money
+from aip.shared.money import Currency, Money
 
 from ..enums.portfolio_status import PortfolioStatus
 from ..events import (
