@@ -1,6 +1,6 @@
 from datetime import date
 
-from aip.application.irrbb.source_certification import (
+from .source_certification import (
     IRRBBSourcePerimeter,
     IRRBBSourceRequirement,
     IRRBBSourceRequirementProfile,
