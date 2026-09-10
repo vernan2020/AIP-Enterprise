@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from decimal import Decimal
 
-from src.aip.shared.money import Currency, Money
+from aip.shared.money import Currency, Money
 
 from ..enums.transaction_type import TransactionType
 from ..exceptions import InvalidTransactionError
