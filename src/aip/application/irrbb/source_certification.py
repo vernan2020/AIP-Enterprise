@@ -69,6 +69,8 @@ class IRRBBSourceRequirementProfile:
             raise ValueError("source requirement profile version is required")
         if not self.source_reference.strip():
             raise ValueError("source requirement profile source_reference is required")
+        if not self.requirements:
+            raise ValueError("source requirement profile must contain at least one requirement")
         identifiers = tuple(item.requirement_id for item in self.requirements)
         if len(set(identifiers)) != len(identifiers):
             raise ValueError("source requirement profile ids must be unique")
@@ -98,26 +100,44 @@ class IRRBBSourceRequirementAssessment:
         self._validate_optional_text("evidence_reference", self.evidence_reference)
         self._validate_optional_text("notes", self.notes)
 
-        if (
-            self.status is IRRBBSourceAvailabilityStatus.NATIVE_AVAILABLE
-            and self.source_reference is None
-        ):
-            raise ValueError("native source availability requires source_reference")
-        if self.status is IRRBBSourceAvailabilityStatus.DERIVABLE_WITH_DOCUMENTED_RULE:
-            if self.source_reference is None:
-                raise ValueError("derivable source availability requires source_reference")
-            if self.derivation_rule_reference is None:
-                raise ValueError("derivable source availability requires derivation_rule_reference")
-        if self.status is IRRBBSourceAvailabilityStatus.AVAILABLE_FROM_SUPPLEMENTARY_SOURCE:
-            if self.supplementary_source_reference is None:
-                raise ValueError(
-                    "supplementary source availability requires supplementary_source_reference"
-                )
+        if self.status is IRRBBSourceAvailabilityStatus.NATIVE_AVAILABLE:
+            self._require("native source availability", "source_reference", self.source_reference)
+            self._require("native source availability", "evidence_reference", self.evidence_reference)
+        elif self.status is IRRBBSourceAvailabilityStatus.DERIVABLE_WITH_DOCUMENTED_RULE:
+            self._require("derivable source availability", "source_reference", self.source_reference)
+            self._require(
+                "derivable source availability",
+                "derivation_rule_reference",
+                self.derivation_rule_reference,
+            )
+            self._require(
+                "derivable source availability",
+                "evidence_reference",
+                self.evidence_reference,
+            )
+        elif self.status is IRRBBSourceAvailabilityStatus.AVAILABLE_FROM_SUPPLEMENTARY_SOURCE:
+            self._require(
+                "supplementary source availability",
+                "supplementary_source_reference",
+                self.supplementary_source_reference,
+            )
+            self._require(
+                "supplementary source availability",
+                "evidence_reference",
+                self.evidence_reference,
+            )
+        elif self.status is IRRBBSourceAvailabilityStatus.NOT_APPLICABLE:
+            self._require("not-applicable source assessment", "notes", self.notes)
 
     @staticmethod
     def _validate_optional_text(field_name: str, value: str | None) -> None:
         if value is not None and not value.strip():
             raise ValueError(f"{field_name} cannot be blank")
+
+    @staticmethod
+    def _require(context: str, field_name: str, value: str | None) -> None:
+        if value is None:
+            raise ValueError(f"{context} requires {field_name}")
 
 
 @dataclass(frozen=True, slots=True)
