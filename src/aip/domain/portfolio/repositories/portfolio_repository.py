@@ -2,8 +2,8 @@
 
 from abc import ABC, abstractmethod
 
-from src.aip.domain.portfolio.entities.portfolio import Portfolio
-from src.aip.domain.portfolio.value_objects.portfolio_id import PortfolioId
+from ..entities.portfolio import Portfolio
+from ..value_objects.portfolio_id import PortfolioId
 
 
 class PortfolioRepository(ABC):
