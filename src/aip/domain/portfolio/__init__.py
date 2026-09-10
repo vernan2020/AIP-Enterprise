@@ -14,14 +14,6 @@ from src.aip.domain.portfolio.events import (
     PositionRemoved,
     TransactionRegistered,
 )
-from .exceptions import (
-    DuplicatePositionError,
-    InvalidPositionError,
-    InvalidTransactionError,
-    PortfolioClosedError,
-    PortfolioError,
-    PositionNotFoundError,
-)
 from src.aip.domain.portfolio.repositories import PortfolioRepository
 from src.aip.domain.portfolio.services import PortfolioCalculationService
 from src.aip.domain.portfolio.value_objects import (
@@ -39,6 +31,15 @@ from src.aip.domain.portfolio.value_objects import (
     SettlementDate,
     TransactionId,
     YieldRate,
+)
+
+from .exceptions import (
+    DuplicatePositionError,
+    InvalidPositionError,
+    InvalidTransactionError,
+    PortfolioClosedError,
+    PortfolioError,
+    PositionNotFoundError,
 )
 
 __all__ = [
