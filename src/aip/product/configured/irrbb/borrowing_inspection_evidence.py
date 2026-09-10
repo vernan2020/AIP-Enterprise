@@ -7,7 +7,7 @@ from typing import Any
 
 from openpyxl.utils import get_column_letter
 
-from aip.product.configured.irrbb.borrowing_workbook_inspection_cli import (
+from aip.product.configured.irrbb.borrowing_inspection_report_contract import (
     BORROWING_INSPECTION_REPORT_VERSION,
     DISCOVERY_REPORT_TYPE,
     HEADER_REPORT_TYPE,
