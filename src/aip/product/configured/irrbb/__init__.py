@@ -43,6 +43,10 @@ from aip.product.configured.irrbb.physical_source_registry import (
 from aip.product.configured.irrbb.runtime_dependencies import (
     ConfiguredIRRBBRuntimeDependencies,
 )
+from aip.product.configured.irrbb.semantic_model_inspection_coordinator import (
+    GovernedSemanticModelInspectionCoordinator,
+    GovernedSemanticModelInspectionResult,
+)
 from aip.product.configured.irrbb.semantic_model_inspection_evidence import (
     SemanticModelInspectionEvidenceBundle,
     SemanticModelInspectionEvidenceValidator,
@@ -68,6 +72,8 @@ __all__ = [
     "BorrowingWorkbookSheetTopology",
     "ConfiguredIRRBBComposition",
     "ConfiguredIRRBBRuntimeDependencies",
+    "GovernedSemanticModelInspectionCoordinator",
+    "GovernedSemanticModelInspectionResult",
     "INSTITUTIONAL_IRRBB_PHYSICAL_SOURCES",
     "INVESTMENT_PORTFOLIO_SOURCE",
     "IRRBBCanonicalPositionMapper",
