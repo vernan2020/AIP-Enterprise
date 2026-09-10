@@ -11,14 +11,15 @@ from aip.domain.irrbb.models import (
     IRRBBScenario,
 )
 from aip.domain.irrbb.nii import (
+    NetInterestIncomeResult,
     NIIAccrualAmountStatus,
     NIIAccrualType,
     NIIBalanceSheetAssumption,
     NIIInterestAccrual,
     NIIProjectionBasis,
     NIIRepricingTrace,
+    NIIScenarioAssessment,
     NIIShockTiming,
-    NetInterestIncomeResult,
 )
 from aip.domain.irrbb.services.delta_nii_service import DeltaNIIService
 from aip.domain.irrbb.services.net_interest_income_service import NetInterestIncomeService
