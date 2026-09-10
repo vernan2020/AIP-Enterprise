@@ -1,4 +1,11 @@
 from aip.product.configured.irrbb.composition import ConfiguredIRRBBComposition
+from aip.product.configured.irrbb.investment_master_mapper import (
+    InstitutionalInvestmentMasterCanonicalMapper,
+    InvestmentMasterCanonicalMappingPolicy,
+    InvestmentMasterMappingRule,
+    InvestmentMasterPrincipalField,
+    InvestmentMasterSourcePayload,
+)
 from aip.product.configured.irrbb.investment_source_evidence import (
     InvestmentMasterSourceEvidenceAssessor,
 )
@@ -20,6 +27,11 @@ __all__ = [
     "IRRBBCanonicalPositionMapper",
     "IRRBBSourceRecordEnvelope",
     "IRRBBSourceSnapshotAssembler",
+    "InstitutionalInvestmentMasterCanonicalMapper",
+    "InvestmentMasterCanonicalMappingPolicy",
+    "InvestmentMasterMappingRule",
+    "InvestmentMasterPrincipalField",
     "InvestmentMasterSourceEvidenceAssessor",
+    "InvestmentMasterSourcePayload",
     "InvestmentMasterSourceRules",
 ]
