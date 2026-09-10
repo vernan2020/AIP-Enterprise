@@ -5,10 +5,10 @@ from decimal import Decimal
 from aip.domain.irrbb.models import IRRBBScenario
 from aip.domain.irrbb.nii import (
     ConvertedNIIAccrual,
+    NetInterestIncomeResult,
     NIIAccrualType,
     NIIInterestAccrual,
     NIIProjectionBasis,
-    NetInterestIncomeResult,
 )
 from aip.domain.irrbb.ports import NIIExchangeRateProvider
 from aip.shared.money import Currency, Money
