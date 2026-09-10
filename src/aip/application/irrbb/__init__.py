@@ -13,6 +13,8 @@ from aip.application.irrbb.contracts import (
     IRRBBSourceLoadRequest,
     IRRBBSourceLoadResult,
     IRRBBSourceLoadStatus,
+    IRRBBSourceMappingFailure,
+    IRRBBSourceMappingFailureCode,
     IRRBBSourceSnapshot,
 )
 from aip.application.irrbb.load_source import LoadIRRBBSourceSnapshot
@@ -34,6 +36,8 @@ __all__ = [
     "IRRBBSourceLoadRequest",
     "IRRBBSourceLoadResult",
     "IRRBBSourceLoadStatus",
+    "IRRBBSourceMappingFailure",
+    "IRRBBSourceMappingFailureCode",
     "IRRBBSourceSnapshot",
     "LoadIRRBBSourceSnapshot",
     "RunIRRBBAnalysis",
