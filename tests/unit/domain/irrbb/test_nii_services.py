@@ -267,8 +267,7 @@ def test_net_interest_income_preserves_negative_interest_amounts() -> None:
     assert result.net_interest_income.amount == Decimal("-150")
 
 
-def test_net_interest_income_rejects_missing_fx_duplicate_and_horizon_leakage(
-) -> None:
+def test_net_interest_income_rejects_missing_fx_duplicate_and_horizon_leakage() -> None:
     basis = _basis()
     usd = _accrual(
         accrual_id="usd",
