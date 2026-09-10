@@ -15,6 +15,7 @@ from aip.ui.modules.rate_risk.models.rate_risk_read_model import (
     RateRiskReadinessSummary,
     RateRiskReadModel,
     RateRiskScenarioRow,
+    RateRiskSourceMappingFailureRow,
     RateRiskValuationFlowRow,
 )
 
@@ -33,5 +34,6 @@ __all__ = [
     "RateRiskReadModel",
     "RateRiskReadinessSummary",
     "RateRiskScenarioRow",
+    "RateRiskSourceMappingFailureRow",
     "RateRiskValuationFlowRow",
 ]
