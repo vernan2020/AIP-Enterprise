@@ -17,6 +17,14 @@ from aip.product.configured.irrbb.investment_source_evidence import (
 from aip.product.configured.irrbb.investment_source_rules import (
     InvestmentMasterSourceRules,
 )
+from aip.product.configured.irrbb.physical_source_registry import (
+    BORROWING_WORKBOOK_SOURCE,
+    CREDIT_SEMANTIC_MODEL_SOURCE,
+    INSTITUTIONAL_IRRBB_PHYSICAL_SOURCES,
+    INVESTMENT_PORTFOLIO_SOURCE,
+    TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE,
+    institutional_irrbb_physical_source_registry,
+)
 from aip.product.configured.irrbb.runtime_dependencies import (
     ConfiguredIRRBBRuntimeDependencies,
 )
@@ -27,8 +35,12 @@ from aip.product.configured.irrbb.source_acl import (
 )
 
 __all__ = [
+    "BORROWING_WORKBOOK_SOURCE",
+    "CREDIT_SEMANTIC_MODEL_SOURCE",
     "ConfiguredIRRBBComposition",
     "ConfiguredIRRBBRuntimeDependencies",
+    "INSTITUTIONAL_IRRBB_PHYSICAL_SOURCES",
+    "INVESTMENT_PORTFOLIO_SOURCE",
     "IRRBBCanonicalPositionMapper",
     "IRRBBSourceRecordEnvelope",
     "IRRBBSourceSnapshotAssembler",
@@ -42,4 +54,6 @@ __all__ = [
     "InvestmentMasterSourceEvidenceAssessor",
     "InvestmentMasterSourcePayload",
     "InvestmentMasterSourceRules",
+    "TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE",
+    "institutional_irrbb_physical_source_registry",
 ]

@@ -24,6 +24,12 @@ from aip.application.irrbb.investment_source_requirements import (
     investment_source_requirement_profile,
 )
 from aip.application.irrbb.load_source import LoadIRRBBSourceSnapshot
+from aip.application.irrbb.physical_source_registry import (
+    IRRBBPhysicalSourceDescriptor,
+    IRRBBPhysicalSourceKind,
+    IRRBBPhysicalSourceRegistry,
+    IRRBBPhysicalSourceSegment,
+)
 from aip.application.irrbb.ports import IRRBBAnalysisRequestProvider, IRRBBDataGateway
 from aip.application.irrbb.run_analysis import RunIRRBBAnalysis
 from aip.application.irrbb.source_certification import (
@@ -51,6 +57,10 @@ __all__ = [
     "IRRBBGapCoverageIssueCode",
     "IRRBBGapCurrencyResult",
     "IRRBBGapMatrixCell",
+    "IRRBBPhysicalSourceDescriptor",
+    "IRRBBPhysicalSourceKind",
+    "IRRBBPhysicalSourceRegistry",
+    "IRRBBPhysicalSourceSegment",
     "IRRBBPositionSourceRecord",
     "IRRBBSourceAvailabilityStatus",
     "IRRBBSourceCertificationReport",
