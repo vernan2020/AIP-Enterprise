@@ -99,15 +99,18 @@ def _result(
     amount: str,
     currency: Currency = Currency.CRC,
 ) -> NetInterestIncomeResult:
-    money = Money(Decimal(amount), currency)
-    return NetInterestIncomeResult(
+    return NetInterestIncomeService.calculate(
+        accruals=(
+            _accrual(
+                accrual_id=f"result:{scenario.value}",
+                scenario=scenario,
+                accrual_type=NIIAccrualType.INTEREST_INCOME,
+                amount=Money(Decimal(amount), currency),
+            ),
+        ),
         basis=basis,
         scenario=scenario,
         reporting_currency=currency,
-        interest_income=money,
-        interest_expense=Money(Decimal("0"), currency),
-        net_interest_income=money,
-        accruals=(),
     )
 
 
@@ -264,7 +267,8 @@ def test_net_interest_income_preserves_negative_interest_amounts() -> None:
     assert result.net_interest_income.amount == Decimal("-150")
 
 
-def test_net_interest_income_rejects_missing_fx_duplicate_and_horizon_leakage() -> None:
+def test_net_interest_income_rejects_missing_fx_duplicate_and_horizon_leakage(
+) -> None:
     basis = _basis()
     usd = _accrual(
         accrual_id="usd",
@@ -311,7 +315,10 @@ def test_net_interest_income_rejects_missing_fx_duplicate_and_horizon_leakage() 
         )
 
 
-@pytest.mark.parametrize("fx_rate", [Decimal("0"), Decimal("NaN"), Decimal("Infinity")])
+@pytest.mark.parametrize(
+    "fx_rate",
+    [Decimal("0"), Decimal("NaN"), Decimal("Infinity")],
+)
 def test_net_interest_income_rejects_invalid_fx(fx_rate: Decimal) -> None:
     usd = _accrual(
         accrual_id="usd",
@@ -340,6 +347,25 @@ def test_net_interest_income_result_rejects_currency_mismatch() -> None:
             interest_expense=Money(Decimal("0"), Currency.CRC),
             net_interest_income=Money(Decimal("1"), Currency.CRC),
             accruals=(),
+        )
+
+
+def test_net_interest_income_result_rejects_unreconciled_total() -> None:
+    valid = _result(
+        basis=_basis(),
+        scenario=IRRBBScenario.BASE,
+        amount="100",
+    )
+
+    with pytest.raises(ValueError, match="net_interest_income"):
+        NetInterestIncomeResult(
+            basis=valid.basis,
+            scenario=valid.scenario,
+            reporting_currency=valid.reporting_currency,
+            interest_income=valid.interest_income,
+            interest_expense=valid.interest_expense,
+            net_interest_income=Money(Decimal("99"), Currency.CRC),
+            accruals=valid.accruals,
         )
 
 
