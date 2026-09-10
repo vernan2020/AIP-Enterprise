@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import date
-from pathlib import Path
 
 import pytest
 
@@ -120,8 +119,9 @@ def test_envelope_factory_preserves_file_sheet_row_lineage_without_path_leakage(
     assert len(records) == 1
     record = records[0]
     assert record.source_record_id.endswith(":sheet:Maestro:row:7")
-    assert record.source_reference.endswith("|sheet=Maestro|row=7")
-    assert Path(result.source_file).name in record.source_reference
+    assert record.source_reference == (
+        "INSTITUTIONAL_PORTFOLIO_MASTER:maestro_31-07-2026.xlsx|sheet=Maestro|row=7"
+    )
     assert "C:\\Institutional" not in record.source_reference
     assert record.payload.normalized_position["contract_number"] == "C-100"
     assert record.payload.detected_column_mapping["currency"] == "Moneda"
