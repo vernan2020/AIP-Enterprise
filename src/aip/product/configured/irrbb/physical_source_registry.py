@@ -7,7 +7,6 @@ from aip.application.irrbb.physical_source_registry import (
     IRRBBPhysicalSourceSegment,
 )
 
-
 CREDIT_SEMANTIC_MODEL_SOURCE = IRRBBPhysicalSourceDescriptor(
     source_id="coopealianza.credit.powerbi.credito",
     segment=IRRBBPhysicalSourceSegment.CREDIT,
