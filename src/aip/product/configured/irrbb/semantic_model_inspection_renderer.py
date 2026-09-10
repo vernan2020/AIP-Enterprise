@@ -57,8 +57,7 @@ class SemanticModelInspectionEvidenceRenderer:
             "expressions_included": snapshot.expressions_included,
             "tables": [self._render_table(table) for table in snapshot.tables],
             "relationships": [
-                self._render_relationship(relationship)
-                for relationship in snapshot.relationships
+                self._render_relationship(relationship) for relationship in snapshot.relationships
             ],
         }
         self._validator.validate_report(payload)
