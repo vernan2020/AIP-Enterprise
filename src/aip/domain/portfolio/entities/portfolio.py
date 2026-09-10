@@ -4,26 +4,25 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from decimal import Decimal
 
-from src.aip.domain.portfolio.entities.position import Position
-from src.aip.domain.portfolio.entities.transaction import Transaction
-from src.aip.domain.portfolio.enums.portfolio_status import PortfolioStatus
-from src.aip.domain.portfolio.events import (
+from src.aip.shared.money import Currency, Money
+
+from ..enums.portfolio_status import PortfolioStatus
+from ..events import (
     DomainEvent,
     PortfolioCreated,
     PositionAdded,
     PositionRemoved,
     TransactionRegistered,
 )
-from src.aip.domain.portfolio.exceptions import (
+from ..exceptions import (
     DuplicatePositionError,
     PortfolioClosedError,
     PositionNotFoundError,
 )
-from src.aip.domain.portfolio.services.portfolio_calculation_service import (
-    PortfolioCalculationService,
-)
-from src.aip.domain.portfolio.value_objects.portfolio_id import PortfolioId
-from src.aip.shared.money import Currency, Money
+from ..services.portfolio_calculation_service import PortfolioCalculationService
+from ..value_objects.portfolio_id import PortfolioId
+from .position import Position
+from .transaction import Transaction
 
 
 @dataclass(slots=True)
