@@ -8,8 +8,10 @@ from aip.application.irrbb.contracts import (
     IRRBBCurveSourcePoint,
     IRRBBPositionSourceRecord,
     IRRBBSourceMappingFailure,
+    IRRBBSourceMappingFailureCode,
     IRRBBSourceSnapshot,
 )
+from aip.application.irrbb.source_certification import IRRBBSourceCertificationReport
 
 SourceRecordT = TypeVar("SourceRecordT")
 
@@ -48,11 +50,13 @@ class IRRBBCanonicalPositionMapper(Protocol[SourceRecordT]):
 
 
 class IRRBBSourceSnapshotAssembler(Generic[SourceRecordT]):
-    """Assemble a traceable canonical snapshot without selecting a physical source.
+    """Assemble a traceable canonical snapshot behind a certification gate.
 
     Mappers may return either a canonical position record or an explicit mapping
     failure. Failures are retained in the snapshot and are never converted into
-    zero-valued positions or silently discarded.
+    zero-valued positions or silently discarded. A source certification report is
+    mandatory for every assembly call because source sufficiency can vary by cutoff
+    and snapshot. The mapper is never invoked unless that report is ``READY``.
     """
 
     def __init__(self, mapper: IRRBBCanonicalPositionMapper[SourceRecordT]) -> None:
@@ -63,19 +67,29 @@ class IRRBBSourceSnapshotAssembler(Generic[SourceRecordT]):
         *,
         cutoff_date: date,
         source_records: tuple[IRRBBSourceRecordEnvelope[SourceRecordT], ...],
+        source_certification: IRRBBSourceCertificationReport,
         curve_points: tuple[IRRBBCurveSourcePoint, ...] = (),
         source_references: tuple[str, ...] = (),
     ) -> IRRBBSourceSnapshot:
         position_records: list[IRRBBPositionSourceRecord] = []
         mapping_failures: list[IRRBBSourceMappingFailure] = []
 
-        for source_record in source_records:
-            mapped = self._mapper.map_record(source_record)
-            self._validate_lineage(source_record=source_record, mapped=mapped)
-            if isinstance(mapped, IRRBBSourceMappingFailure):
-                mapping_failures.append(mapped)
-            else:
-                position_records.append(mapped)
+        if source_certification.is_ready:
+            for source_record in source_records:
+                mapped = self._mapper.map_record(source_record)
+                self._validate_lineage(source_record=source_record, mapped=mapped)
+                if isinstance(mapped, IRRBBSourceMappingFailure):
+                    mapping_failures.append(mapped)
+                else:
+                    position_records.append(mapped)
+        else:
+            mapping_failures.extend(
+                self._certification_rejection(
+                    source_record=source_record,
+                    certification=source_certification,
+                )
+                for source_record in source_records
+            )
 
         lineage = self._unique_references(
             source_references
@@ -88,6 +102,41 @@ class IRRBBSourceSnapshotAssembler(Generic[SourceRecordT]):
             curve_points=curve_points,
             source_references=lineage,
             mapping_failures=tuple(mapping_failures),
+        )
+
+    @classmethod
+    def _certification_rejection(
+        cls,
+        *,
+        source_record: IRRBBSourceRecordEnvelope[SourceRecordT],
+        certification: IRRBBSourceCertificationReport,
+    ) -> IRRBBSourceMappingFailure:
+        return IRRBBSourceMappingFailure(
+            source_record_id=source_record.source_record_id,
+            source_reference=source_record.source_reference,
+            code=IRRBBSourceMappingFailureCode.SOURCE_RECORD_REJECTED,
+            canonical_field=None,
+            message=cls._certification_rejection_message(certification),
+        )
+
+    @staticmethod
+    def _certification_rejection_message(
+        certification: IRRBBSourceCertificationReport,
+    ) -> str:
+        details: list[str] = []
+        if certification.blocking_requirement_ids:
+            details.append(
+                "blocking=" + ",".join(certification.blocking_requirement_ids)
+            )
+        if certification.not_assessed_requirement_ids:
+            details.append(
+                "not_assessed=" + ",".join(certification.not_assessed_requirement_ids)
+            )
+        unresolved = "; ".join(details) or "source requirements remain unresolved"
+        return (
+            "Canonical mapping rejected: source certification "
+            f"{certification.profile.code}@{certification.profile.version} is "
+            f"{certification.status.value}; {unresolved}."
         )
 
     @staticmethod
