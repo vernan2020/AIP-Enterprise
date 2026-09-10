@@ -125,6 +125,15 @@ class RateRiskGapMatrixCellRow:
 
 
 @dataclass(frozen=True, slots=True)
+class RateRiskGapCoverageIssueRow:
+    """Application-level reason why a ready position is absent from SUGEF GAP."""
+
+    position_id: str
+    code: str
+    message: str
+
+
+@dataclass(frozen=True, slots=True)
 class RateRiskValuationFlowRow:
     scenario: str
     position_id: str
@@ -187,7 +196,11 @@ class RateRiskCurvePointRow:
 
 @dataclass(frozen=True, slots=True)
 class RateRiskReadModel:
-    """Complete passive read model for the future IRRBB workspace."""
+    """Complete passive read model for the IRRBB workspace.
+
+    ``analysis_status`` carries the application outcome verbatim. Empty KPI and
+    scenario collections therefore mean unavailable/not calculated, never zero.
+    """
 
     methodology: RateRiskMethodologyMetadata
     readiness: RateRiskReadinessSummary
@@ -201,3 +214,5 @@ class RateRiskReadModel:
     mapping_rows: tuple[RateRiskMappingRow, ...]
     curve_rows: tuple[RateRiskCurvePointRow, ...]
     warnings: tuple[str, ...] = ()
+    analysis_status: str = "CALCULATED"
+    gap_coverage_issue_rows: tuple[RateRiskGapCoverageIssueRow, ...] = ()
