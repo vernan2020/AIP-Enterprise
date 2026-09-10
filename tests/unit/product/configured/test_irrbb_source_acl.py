@@ -101,7 +101,9 @@ class _NeverCalledMapper:
         self,
         record: IRRBBSourceRecordEnvelope[_RawPosition],
     ) -> IRRBBPositionSourceRecord | IRRBBSourceMappingFailure:
-        raise AssertionError(f"mapper must not run for uncertified record {record.source_record_id}")
+        raise AssertionError(
+            f"mapper must not run for uncertified record {record.source_record_id}"
+        )
 
 
 def _profile() -> IRRBBSourceRequirementProfile:
@@ -235,8 +237,7 @@ def test_incomplete_certification_rejects_every_record_without_invoking_mapper()
         for failure in snapshot.mapping_failures
     )
     assert all(
-        "not_assessed=REQ-POSITION-ID" in failure.message
-        for failure in snapshot.mapping_failures
+        "not_assessed=REQ-POSITION-ID" in failure.message for failure in snapshot.mapping_failures
     )
     assert snapshot.source_references == (
         "SOURCE:BATCH",
