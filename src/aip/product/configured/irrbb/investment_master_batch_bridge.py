@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
-from pathlib import Path
 
 from aip.application.irrbb.contracts import IRRBBSourceSnapshot
 from aip.application.irrbb.source_certification import IRRBBSourceCertificationReport
@@ -58,7 +57,7 @@ class InstitutionalInvestmentMasterEnvelopeFactory:
         if not result.normalized_positions:
             return ()
 
-        file_name = Path(result.source_file).name if result.source_file else ""
+        file_name = cls._file_name(result.source_file)
         sheet_name = result.sheet_selected.strip()
         if not file_name:
             raise ValueError("investment master source_file is required when positions exist")
@@ -100,15 +99,20 @@ class InstitutionalInvestmentMasterEnvelopeFactory:
         cls,
         result: InstitutionalPortfolioMasterReadResult,
     ) -> str | None:
-        if not result.source_file:
-            return None
-        file_name = Path(result.source_file).name
+        file_name = cls._file_name(result.source_file)
         if not file_name:
             return None
         sheet_name = result.sheet_selected.strip()
         if sheet_name:
             return f"{cls.SOURCE_KIND}:{file_name}|sheet={sheet_name}"
         return f"{cls.SOURCE_KIND}:{file_name}"
+
+    @staticmethod
+    def _file_name(value: str) -> str:
+        normalized = str(value or "").strip().replace("\\", "/")
+        if not normalized:
+            return ""
+        return normalized.rsplit("/", 1)[-1].strip()
 
     @staticmethod
     def _source_row(value: object) -> int:
