@@ -346,9 +346,7 @@ class RateRiskView(QWidget):
         gap_coverage_layout = QVBoxLayout(gap_coverage_box)
         self._gap_coverage_table = self._table()
         self._gap_coverage_table.setColumnCount(3)
-        self._gap_coverage_table.setHorizontalHeaderLabels(
-            ["Posición", "Código", "Detalle"]
-        )
+        self._gap_coverage_table.setHorizontalHeaderLabels(["Posición", "Código", "Detalle"])
         gap_coverage_layout.addWidget(self._gap_coverage_table)
         layout.addWidget(gap_coverage_box)
 
@@ -589,9 +587,7 @@ class RateRiskView(QWidget):
         for column, value in enumerate(values):
             item = QTableWidgetItem(value)
             if column > 0:
-                item.setTextAlignment(
-                    Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft
-                )
+                item.setTextAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
             table.setItem(row, column, item)
 
     @classmethod
