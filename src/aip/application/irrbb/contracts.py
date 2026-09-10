@@ -23,6 +23,15 @@ class IRRBBSourceLoadStatus(str, Enum):
     BLOCKED = "BLOCKED"
 
 
+class IRRBBSourceMappingFailureCode(str, Enum):
+    """Source-agnostic reasons why a record could not cross the canonical boundary."""
+
+    MISSING_REQUIRED_CANONICAL_FIELD = "MISSING_REQUIRED_CANONICAL_FIELD"
+    INVALID_CANONICAL_VALUE = "INVALID_CANONICAL_VALUE"
+    UNSUPPORTED_SOURCE_VALUE = "UNSUPPORTED_SOURCE_VALUE"
+    SOURCE_RECORD_REJECTED = "SOURCE_RECORD_REJECTED"
+
+
 @dataclass(frozen=True, slots=True)
 class IRRBBSourceLoadRequest:
     """Source-agnostic request to load one banking-book valuation cutoff."""
@@ -75,6 +84,27 @@ class IRRBBCurveSourcePoint:
 
 
 @dataclass(frozen=True, slots=True)
+class IRRBBSourceMappingFailure:
+    """Auditable source record that could not be mapped into a canonical position."""
+
+    source_record_id: str
+    source_reference: str
+    code: IRRBBSourceMappingFailureCode
+    canonical_field: str | None
+    message: str
+
+    def __post_init__(self) -> None:
+        if not self.source_record_id.strip():
+            raise ValueError("mapping failure source_record_id is required")
+        if not self.source_reference.strip():
+            raise ValueError("mapping failure source_reference is required")
+        if self.canonical_field is not None and not self.canonical_field.strip():
+            raise ValueError("mapping failure canonical_field cannot be blank")
+        if not self.message.strip():
+            raise ValueError("mapping failure message is required")
+
+
+@dataclass(frozen=True, slots=True)
 class IRRBBSourceSnapshot:
     """Normalized source snapshot independent of the physical ingestion technology."""
 
@@ -82,11 +112,15 @@ class IRRBBSourceSnapshot:
     position_records: tuple[IRRBBPositionSourceRecord, ...]
     curve_points: tuple[IRRBBCurveSourcePoint, ...] = ()
     source_references: tuple[str, ...] = ()
+    mapping_failures: tuple[IRRBBSourceMappingFailure, ...] = ()
 
     def __post_init__(self) -> None:
         identifiers = tuple(record.position.position_id for record in self.position_records)
         if len(set(identifiers)) != len(identifiers):
             raise ValueError("IRRBB source snapshot position_id values must be unique")
+        failure_ids = tuple(failure.source_record_id for failure in self.mapping_failures)
+        if len(set(failure_ids)) != len(failure_ids):
+            raise ValueError("IRRBB source snapshot mapping failure ids must be unique")
         for source_reference in self.source_references:
             if not source_reference.strip():
                 raise ValueError("source_references cannot contain blank values")
