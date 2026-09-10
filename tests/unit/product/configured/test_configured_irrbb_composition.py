@@ -27,7 +27,6 @@ from aip.product.configured.irrbb import (
 )
 from aip.shared.money import Currency, Money
 
-
 _CUTOFF = date(2026, 8, 31)
 _METHODOLOGY = IRRBBMethodologyProfile(
     code="SUGEF-RTILB",
