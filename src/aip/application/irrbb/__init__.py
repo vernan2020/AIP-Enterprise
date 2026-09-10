@@ -32,6 +32,15 @@ from aip.application.irrbb.physical_source_registry import (
 )
 from aip.application.irrbb.ports import IRRBBAnalysisRequestProvider, IRRBBDataGateway
 from aip.application.irrbb.run_analysis import RunIRRBBAnalysis
+from aip.application.irrbb.semantic_model_inspection import (
+    IRRBBSemanticModelColumnMetadata,
+    IRRBBSemanticModelInspectionSnapshot,
+    IRRBBSemanticModelMeasureMetadata,
+    IRRBBSemanticModelMetadataInspector,
+    IRRBBSemanticModelRelationshipMetadata,
+    IRRBBSemanticModelSchemaFreshness,
+    IRRBBSemanticModelTableMetadata,
+)
 from aip.application.irrbb.source_certification import (
     IRRBBSourceAvailabilityStatus,
     IRRBBSourceCertificationReport,
@@ -62,6 +71,13 @@ __all__ = [
     "IRRBBPhysicalSourceRegistry",
     "IRRBBPhysicalSourceSegment",
     "IRRBBPositionSourceRecord",
+    "IRRBBSemanticModelColumnMetadata",
+    "IRRBBSemanticModelInspectionSnapshot",
+    "IRRBBSemanticModelMeasureMetadata",
+    "IRRBBSemanticModelMetadataInspector",
+    "IRRBBSemanticModelRelationshipMetadata",
+    "IRRBBSemanticModelSchemaFreshness",
+    "IRRBBSemanticModelTableMetadata",
     "IRRBBSourceAvailabilityStatus",
     "IRRBBSourceCertificationReport",
     "IRRBBSourceCertificationService",
