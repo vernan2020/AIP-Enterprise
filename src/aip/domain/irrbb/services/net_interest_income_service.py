@@ -119,6 +119,6 @@ class NetInterestIncomeService:
             valuation_date=basis.valuation_date,
             accrual_end_date=accrual.accrual_end_date,
         )
-        if rate <= 0:
-            raise ValueError("NII exchange rate must be positive")
+        if not rate.is_finite() or rate <= 0:
+            raise ValueError("NII exchange rate must be finite and positive")
         return rate
