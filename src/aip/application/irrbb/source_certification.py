@@ -102,9 +102,13 @@ class IRRBBSourceRequirementAssessment:
 
         if self.status is IRRBBSourceAvailabilityStatus.NATIVE_AVAILABLE:
             self._require("native source availability", "source_reference", self.source_reference)
-            self._require("native source availability", "evidence_reference", self.evidence_reference)
+            self._require(
+                "native source availability", "evidence_reference", self.evidence_reference
+            )
         elif self.status is IRRBBSourceAvailabilityStatus.DERIVABLE_WITH_DOCUMENTED_RULE:
-            self._require("derivable source availability", "source_reference", self.source_reference)
+            self._require(
+                "derivable source availability", "source_reference", self.source_reference
+            )
             self._require(
                 "derivable source availability",
                 "derivation_rule_reference",
