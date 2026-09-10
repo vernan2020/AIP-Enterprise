@@ -35,9 +35,7 @@ class IRRBBSourceRecordEnvelope(Generic[SourceRecordT]):
             raise ValueError("source_reference is required")
 
 
-IRRBBCanonicalPositionMapResult: TypeAlias = (
-    IRRBBPositionSourceRecord | IRRBBSourceMappingFailure
-)
+IRRBBCanonicalPositionMapResult: TypeAlias = IRRBBPositionSourceRecord | IRRBBSourceMappingFailure
 
 
 class IRRBBCanonicalPositionMapper(Protocol[SourceRecordT]):
