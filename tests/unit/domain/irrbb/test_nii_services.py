@@ -116,6 +116,27 @@ def test_projection_basis_rejects_non_forward_horizon() -> None:
         _basis(horizon_end=date(2026, 9, 10))
 
 
+def test_repricing_trace_rejects_non_finite_applied_rate() -> None:
+    with pytest.raises(ValueError, match="applied_rate must be finite"):
+        NIIRepricingTrace(
+            rate_reference="TRI-CRC",
+            repricing_date=date(2026, 10, 10),
+            pricing_tenor_months=12,
+            applied_rate=Decimal("NaN"),
+            source_reference="curve:tri-crc",
+        )
+
+
+def test_accrual_rejects_non_finite_amount() -> None:
+    with pytest.raises(ValueError, match="accrual amount must be finite"):
+        _accrual(
+            accrual_id="non-finite",
+            scenario=IRRBBScenario.BASE,
+            accrual_type=NIIAccrualType.INTEREST_INCOME,
+            amount=Money(Decimal("Infinity"), Currency.CRC),
+        )
+
+
 def test_rate_projected_accrual_requires_trace_and_projection_basis() -> None:
     with pytest.raises(ValueError, match="repricing_trace"):
         NIIInterestAccrual(
@@ -287,6 +308,38 @@ def test_net_interest_income_rejects_missing_fx_duplicate_and_horizon_leakage() 
             basis=basis,
             scenario=IRRBBScenario.BASE,
             reporting_currency=Currency.CRC,
+        )
+
+
+@pytest.mark.parametrize("fx_rate", [Decimal("0"), Decimal("NaN"), Decimal("Infinity")])
+def test_net_interest_income_rejects_invalid_fx(fx_rate: Decimal) -> None:
+    usd = _accrual(
+        accrual_id="usd",
+        scenario=IRRBBScenario.BASE,
+        accrual_type=NIIAccrualType.INTEREST_INCOME,
+        amount=Money(Decimal("1"), Currency.USD),
+    )
+
+    with pytest.raises(ValueError, match="finite and positive"):
+        NetInterestIncomeService.calculate(
+            accruals=(usd,),
+            basis=_basis(),
+            scenario=IRRBBScenario.BASE,
+            reporting_currency=Currency.CRC,
+            exchange_rates=_ScenarioFXProvider(fx_rate),
+        )
+
+
+def test_net_interest_income_result_rejects_currency_mismatch() -> None:
+    with pytest.raises(ValueError, match="reporting_currency"):
+        NetInterestIncomeResult(
+            basis=_basis(),
+            scenario=IRRBBScenario.BASE,
+            reporting_currency=Currency.CRC,
+            interest_income=Money(Decimal("1"), Currency.USD),
+            interest_expense=Money(Decimal("0"), Currency.CRC),
+            net_interest_income=Money(Decimal("1"), Currency.CRC),
+            accruals=(),
         )
 
 
