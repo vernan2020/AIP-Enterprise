@@ -6,15 +6,16 @@ import sys
 from collections.abc import Sequence
 from typing import NoReturn, TextIO
 
+from aip.product.configured.irrbb.borrowing_inspection_report_contract import (
+    BORROWING_INSPECTION_REPORT_VERSION,
+    DISCOVERY_REPORT_TYPE,
+    HEADER_REPORT_TYPE,
+)
 from aip.product.configured.irrbb.borrowing_workbook_inspector import (
     BorrowingWorkbookDiscovery,
     BorrowingWorkbookHeaderInspection,
     BorrowingWorkbookSchemaInspector,
 )
-
-BORROWING_INSPECTION_REPORT_VERSION = "2026.09.10"
-DISCOVERY_REPORT_TYPE = "IRRBB_BORROWING_WORKBOOK_DISCOVERY"
-HEADER_REPORT_TYPE = "IRRBB_BORROWING_WORKBOOK_HEADER"
 
 
 class _CLIUsageError(ValueError):
