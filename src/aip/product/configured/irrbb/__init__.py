@@ -40,6 +40,11 @@ from aip.product.configured.irrbb.physical_source_registry import (
     TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE,
     institutional_irrbb_physical_source_registry,
 )
+from aip.product.configured.irrbb.power_bi_semantic_route import (
+    InstitutionalPowerBISemanticRouteBinding,
+    PowerBISemanticModelRoute,
+    PowerBISemanticQueryTransport,
+)
 from aip.product.configured.irrbb.runtime_dependencies import (
     ConfiguredIRRBBRuntimeDependencies,
 )
@@ -69,6 +74,7 @@ __all__ = [
     "InstitutionalInvestmentMasterBatchBridge",
     "InstitutionalInvestmentMasterCanonicalMapper",
     "InstitutionalInvestmentMasterEnvelopeFactory",
+    "InstitutionalPowerBISemanticRouteBinding",
     "InvestmentMasterBatchBridgeResult",
     "InvestmentMasterCanonicalMappingPolicy",
     "InvestmentMasterMappingRule",
@@ -76,6 +82,8 @@ __all__ = [
     "InvestmentMasterSourceEvidenceAssessor",
     "InvestmentMasterSourcePayload",
     "InvestmentMasterSourceRules",
+    "PowerBISemanticModelRoute",
+    "PowerBISemanticQueryTransport",
     "TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE",
     "ValidatedBorrowingDiscoveryEvidence",
     "ValidatedBorrowingHeaderCellEvidence",
