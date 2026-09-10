@@ -161,7 +161,7 @@ def test_declared_header_rejects_formula_values_as_dynamic_schema(tmp_path: Path
     workbook = openpyxl.Workbook()
     sheet = workbook.active
     sheet.title = "Obligaciones"
-    sheet.append(["Operacion", "=CONCAT(\"Ta\",\"sa\")", "Saldo"])
+    sheet.append(["Operacion", '=CONCAT("Ta","sa")', "Saldo"])
     sheet.append(["OP-001", "Dato", 100.0])
     workbook.save(path)
     workbook.close()
