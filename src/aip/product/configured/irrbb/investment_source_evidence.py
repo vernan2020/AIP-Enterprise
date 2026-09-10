@@ -149,7 +149,9 @@ class InvestmentMasterSourceEvidenceAssessor:
             )
             for position in result.normalized_positions
         )
-        if any(identity is None for identity in identities) or len(set(identities)) != len(identities):
+        if any(identity is None for identity in identities) or len(set(identities)) != len(
+            identities
+        ):
             return cls._blocking(
                 "INV-POSITION-ID",
                 "At least one accepted source row cannot produce a unique stable position identifier without using row position.",
@@ -162,11 +164,7 @@ class InvestmentMasterSourceEvidenceAssessor:
             derivation_rule_reference=InvestmentMasterSourceRules.POSITION_ID_RULE_REFERENCE,
             evidence_reference=cls._column_evidence(
                 result,
-                tuple(
-                    name
-                    for name in ("contract_number", "isin", "series")
-                    if name in mapping
-                ),
+                tuple(name for name in ("contract_number", "isin", "series") if name in mapping),
             ),
             notes="Stable ID requires contract number plus ISIN, or contract number plus series; row number is never used.",
         )
@@ -373,8 +371,10 @@ class InvestmentMasterSourceEvidenceAssessor:
                 evidence_reference=f"EVIDENCE:PORTFOLIO-MASTER:COLUMN:{header}",
             )
         message = missing_message or f"No detected source column supports {canonical_column}."
-        return cls._blocking(requirement_id, message) if blocking else cls._not_assessed(
-            requirement_id, message
+        return (
+            cls._blocking(requirement_id, message)
+            if blocking
+            else cls._not_assessed(requirement_id, message)
         )
 
     @classmethod
