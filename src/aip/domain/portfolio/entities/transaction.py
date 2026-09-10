@@ -5,13 +5,14 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 
 from src.aip.domain.portfolio.enums.transaction_type import TransactionType
-from src.aip.domain.portfolio.exceptions import InvalidTransactionError
 from src.aip.domain.portfolio.value_objects.portfolio_id import PortfolioId
 from src.aip.domain.portfolio.value_objects.position_id import PositionId
 from src.aip.domain.portfolio.value_objects.quantity import Quantity
 from src.aip.domain.portfolio.value_objects.settlement_date import SettlementDate
 from src.aip.domain.portfolio.value_objects.transaction_id import TransactionId
 from src.aip.shared.money import Currency, Money
+
+from ..exceptions import InvalidTransactionError
 
 
 @dataclass(frozen=True, slots=True)
