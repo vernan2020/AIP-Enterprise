@@ -3,8 +3,6 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
-import pytest
-
 from aip.application.irrbb.analysis_contracts import (
     IRRBBAnalysisRequest,
     IRRBBAnalysisStatus,
@@ -102,8 +100,12 @@ def test_configured_irrbb_composition_is_optional() -> None:
     container = Container()
 
     assert ConfiguredIRRBBComposition().compose(container) is False
-    with pytest.raises(ServiceNotRegisteredError):
+    try:
         container.resolve(RunIRRBBAnalysis)
+    except ServiceNotRegisteredError:
+        pass
+    else:
+        raise AssertionError("RunIRRBBAnalysis must remain unregistered without RTILB runtime")
 
 
 def test_configured_irrbb_composition_registers_source_agnostic_runtime() -> None:
