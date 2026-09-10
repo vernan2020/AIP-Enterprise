@@ -190,7 +190,9 @@ class BorrowingInspectionEvidenceValidator:
             raise ValueError("borrowing header evidence must contain at least one cell")
 
         cells = tuple(
-            self._validate_cell(self._require_dict(item, f"cells[{index}]"), expected_index=index + 1)
+            self._validate_cell(
+                self._require_dict(item, f"cells[{index}]"), expected_index=index + 1
+            )
             for index, item in enumerate(raw_cells)
         )
         if all(cell.label is None for cell in cells):
@@ -214,7 +216,9 @@ class BorrowingInspectionEvidenceValidator:
         )
         expected_duplicate_labels = self._duplicate_labels(cells)
         if duplicate_labels != expected_duplicate_labels:
-            raise ValueError("borrowing header duplicate-label diagnostics do not match cell evidence")
+            raise ValueError(
+                "borrowing header duplicate-label diagnostics do not match cell evidence"
+            )
 
         return ValidatedBorrowingHeaderEvidence(
             report_version=identity[0],
@@ -262,7 +266,9 @@ class BorrowingInspectionEvidenceValidator:
         if header.header_row > topology.observed_last_non_empty_row:
             raise ValueError("borrowing header row exceeds discovered worksheet topology")
         if len(header.cells) != topology.observed_last_non_empty_column:
-            raise ValueError("borrowing header cell span does not match discovered worksheet topology")
+            raise ValueError(
+                "borrowing header cell span does not match discovered worksheet topology"
+            )
 
         return BorrowingInspectionEvidenceBundle(discovery=discovery, header=header)
 
@@ -294,20 +300,26 @@ class BorrowingInspectionEvidenceValidator:
             payload["source_file_name"], "source_file_name"
         )
         if source_file_name != BORROWING_WORKBOOK_SOURCE.logical_name:
-            raise ValueError("borrowing inspection source filename is not the governed physical source")
+            raise ValueError(
+                "borrowing inspection source filename is not the governed physical source"
+            )
 
         file_sha256 = BorrowingInspectionEvidenceValidator._require_string(
             payload["file_sha256"], "file_sha256"
         )
         if _SHA256_PATTERN.fullmatch(file_sha256) is None:
-            raise ValueError("borrowing inspection file_sha256 must be 64 lowercase hexadecimal chars")
+            raise ValueError(
+                "borrowing inspection file_sha256 must be 64 lowercase hexadecimal chars"
+            )
 
         source_reference = BorrowingInspectionEvidenceValidator._require_string(
             payload["source_reference"], "source_reference"
         )
         expected_reference = f"{source_id}:{source_file_name}#sha256={file_sha256}"
         if source_reference != expected_reference:
-            raise ValueError("borrowing inspection source_reference is inconsistent with source identity")
+            raise ValueError(
+                "borrowing inspection source_reference is inconsistent with source identity"
+            )
 
         return report_version, source_id, source_reference, source_file_name, file_sha256
 
