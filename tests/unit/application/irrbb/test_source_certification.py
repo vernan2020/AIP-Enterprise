@@ -53,21 +53,24 @@ def test_requirement_profile_rejects_empty_requirement_set() -> None:
         )
 
 
-@pytest.mark.parametrize(
-    ("assessment", "message"),
-    (
-        (
-            IRRBBSourceRequirementAssessment,
-            "native source availability requires source_reference",
-        ),
-    ),
-)
-def test_native_availability_requires_source_reference(
-    assessment: type[IRRBBSourceRequirementAssessment],
-    message: str,
-) -> None:
-    with pytest.raises(ValueError, match=message):
-        assessment(
+def test_requirement_profile_rejects_duplicate_requirement_ids() -> None:
+    duplicated = _requirement("REQ-CURRENCY", "currency")
+    with pytest.raises(ValueError, match="profile ids must be unique"):
+        IRRBBSourceRequirementProfile(
+            code="RTILB-SOURCE-REQ",
+            version="2026.1",
+            effective_from=date(2026, 1, 1),
+            source_reference="DOC:IRRBB-SOURCE-MATRIX",
+            requirements=(duplicated, duplicated),
+        )
+
+
+def test_native_availability_requires_source_reference() -> None:
+    with pytest.raises(
+        ValueError,
+        match="native source availability requires source_reference",
+    ):
+        IRRBBSourceRequirementAssessment(
             requirement_id="REQ-CURRENCY",
             status=IRRBBSourceAvailabilityStatus.NATIVE_AVAILABLE,
             evidence_reference="TEST:SOURCE-SCHEMA:CURRENCY",
@@ -75,7 +78,10 @@ def test_native_availability_requires_source_reference(
 
 
 def test_native_availability_requires_evidence_reference() -> None:
-    with pytest.raises(ValueError, match="native source availability requires evidence_reference"):
+    with pytest.raises(
+        ValueError,
+        match="native source availability requires evidence_reference",
+    ):
         IRRBBSourceRequirementAssessment(
             requirement_id="REQ-CURRENCY",
             status=IRRBBSourceAvailabilityStatus.NATIVE_AVAILABLE,
@@ -130,7 +136,10 @@ def test_supplementary_availability_requires_source_and_evidence() -> None:
 
 
 def test_not_applicable_requires_explicit_rationale() -> None:
-    with pytest.raises(ValueError, match="not-applicable source assessment requires notes"):
+    with pytest.raises(
+        ValueError,
+        match="not-applicable source assessment requires notes",
+    ):
         IRRBBSourceRequirementAssessment(
             requirement_id="REQ-OPTIONALITY",
             status=IRRBBSourceAvailabilityStatus.NOT_APPLICABLE,
