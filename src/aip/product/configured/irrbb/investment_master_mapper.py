@@ -178,7 +178,9 @@ class InstitutionalInvestmentMasterCanonicalMapper:
                     f"{self._policy.reference}."
                 ),
             )
-        if rule.classification is not None and not self._has_native_value(payload, "classification"):
+        if rule.classification is not None and not self._has_native_value(
+            payload, "classification"
+        ):
             return self._failure(
                 record,
                 code=IRRBBSourceMappingFailureCode.MISSING_REQUIRED_CANONICAL_FIELD,
