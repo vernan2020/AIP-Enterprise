@@ -5,13 +5,13 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 
 from src.aip.domain.portfolio.value_objects.quantity import Quantity
-from src.aip.domain.portfolio.value_objects.settlement_date import SettlementDate
 from src.aip.shared.money import Currency, Money
 
 from ..enums.transaction_type import TransactionType
 from ..exceptions import InvalidTransactionError
 from ..value_objects.portfolio_id import PortfolioId
 from ..value_objects.position_id import PositionId
+from ..value_objects.settlement_date import SettlementDate
 from ..value_objects.transaction_id import TransactionId
 
 
