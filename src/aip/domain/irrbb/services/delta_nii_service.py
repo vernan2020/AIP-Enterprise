@@ -5,8 +5,8 @@ from decimal import Decimal
 from aip.domain.irrbb.models import IRRBBScenario
 from aip.domain.irrbb.nii import (
     DeltaNIIResult,
-    NIIScenarioAssessment,
     NetInterestIncomeResult,
+    NIIScenarioAssessment,
 )
 from aip.shared.money import Money
 
