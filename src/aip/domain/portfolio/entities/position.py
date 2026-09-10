@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-from src.aip.shared.money import Currency
+from aip.shared.money import Currency
 
 from ..enums.position_status import PositionStatus
 from ..enums.valuation_source import ValuationSource
