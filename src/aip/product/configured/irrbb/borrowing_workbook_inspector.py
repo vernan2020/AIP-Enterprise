@@ -250,26 +250,27 @@ class BorrowingWorkbookSchemaInspector:
             )
         )
         evidence: list[BorrowingWorkbookHeaderCellEvidence] = []
-        for cell in row:
-            value = cell.value
-            if cell.data_type == "f":
+        for column_index, cell in enumerate(row, start=1):
+            value = getattr(cell, "value", None)
+            coordinate = f"{get_column_letter(column_index)}{header_row}"
+            if getattr(cell, "data_type", None) == "f":
                 raise ValueError(
                     "borrowing workbook declared header cells cannot be formulas; "
-                    f"formula observed at {cell.coordinate}"
+                    f"formula observed at {coordinate}"
                 )
             if value is None or (isinstance(value, str) and not value.strip()):
                 label = None
             elif not isinstance(value, str):
                 raise ValueError(
                     "borrowing workbook declared header cells must contain text or be blank; "
-                    f"non-text value observed at {cell.coordinate}"
+                    f"non-text value observed at {coordinate}"
                 )
             else:
                 label = value
             evidence.append(
                 BorrowingWorkbookHeaderCellEvidence(
-                    column_index=cell.column,
-                    column_letter=get_column_letter(cell.column),
+                    column_index=column_index,
+                    column_letter=get_column_letter(column_index),
                     label=label,
                 )
             )
