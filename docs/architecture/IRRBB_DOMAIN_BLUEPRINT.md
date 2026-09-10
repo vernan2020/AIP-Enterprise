@@ -4,7 +4,7 @@
 
 This document defines the source-independent domain core for **Interest Rate Risk in the Banking Book (IRRBB / RTILB)** in AIP Enterprise.
 
-The current implementation covers the **economic value perspective (VEP / EVE)** domain core plus instrument/schedule readiness. Data connectors, database technology and PySide6 views remain outside this boundary. A later NII/margin engine will share the same canonical position, repricing and behavioral assumptions without mixing its calculation rules with EVE.
+The current architecture includes the **economic value perspective (VEP / EVE)** domain core, instrument/schedule readiness, scenario and application orchestration, source-certification boundaries, and passive evidence paths for the governed institutional candidates described below. Physical-source activation, provider-specific Power BI connectivity, production runtime composition and a separate NII/margin engine remain gated independently; the NII engine will share the same canonical position, repricing and behavioral assumptions without mixing its calculation rules with EVE.
 
 ## 2. Methodological governance
 
@@ -115,7 +115,7 @@ A future source adapter may either supply a native contractual schedule or deriv
 - `amount_status`: contractual, source-provided, current-rate projection, scenario projection or behavioral;
 - `projection_basis`: optional trace of the projection source/strategy.
 
-`risk_date` is not, by itself, a repricing-GAP notional. A later GAP engine must apply the corresponding instrument strategy rather than summing future payment amounts indiscriminately at the reset date.
+`risk_date` is not, by itself, a repricing-GAP notional. A later GAP engine must apply the corresponding instrument strategy rather than summing future payment amounts indiscriminadamente at the reset date.
 
 ## 6. Nineteen temporal buckets
 
