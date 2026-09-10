@@ -1,4 +1,9 @@
 from aip.product.configured.irrbb.composition import ConfiguredIRRBBComposition
+from aip.product.configured.irrbb.investment_master_batch_bridge import (
+    InstitutionalInvestmentMasterBatchBridge,
+    InstitutionalInvestmentMasterEnvelopeFactory,
+    InvestmentMasterBatchBridgeResult,
+)
 from aip.product.configured.irrbb.investment_master_mapper import (
     InstitutionalInvestmentMasterCanonicalMapper,
     InvestmentMasterCanonicalMappingPolicy,
@@ -27,7 +32,10 @@ __all__ = [
     "IRRBBCanonicalPositionMapper",
     "IRRBBSourceRecordEnvelope",
     "IRRBBSourceSnapshotAssembler",
+    "InstitutionalInvestmentMasterBatchBridge",
     "InstitutionalInvestmentMasterCanonicalMapper",
+    "InstitutionalInvestmentMasterEnvelopeFactory",
+    "InvestmentMasterBatchBridgeResult",
     "InvestmentMasterCanonicalMappingPolicy",
     "InvestmentMasterMappingRule",
     "InvestmentMasterPrincipalField",
