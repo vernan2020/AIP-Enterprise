@@ -5,13 +5,13 @@ from decimal import Decimal
 
 import pytest
 
-from aip.application.irrbb import (
+from aip.application.irrbb.analysis_contracts import (
     IRRBBAnalysisRequest,
-    IRRBBAnalysisRequestProvider,
     IRRBBAnalysisStatus,
-    IRRBBSourceSnapshot,
-    RunIRRBBAnalysis,
 )
+from aip.application.irrbb.contracts import IRRBBSourceSnapshot
+from aip.application.irrbb.ports import IRRBBAnalysisRequestProvider
+from aip.application.irrbb.run_analysis import RunIRRBBAnalysis
 from aip.core.container import Container, ServiceNotRegisteredError
 from aip.domain.irrbb.models import (
     BankingBookPosition,
