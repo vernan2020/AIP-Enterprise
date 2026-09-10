@@ -115,7 +115,7 @@ A future source adapter may either supply a native contractual schedule or deriv
 - `amount_status`: contractual, source-provided, current-rate projection, scenario projection or behavioral;
 - `projection_basis`: optional trace of the projection source/strategy.
 
-`risk_date` is not, by itself, a repricing-GAP notional. A later GAP engine must apply the corresponding instrument strategy rather than summing future payment amounts indiscriminadamente at the reset date.
+`risk_date` is not, by itself, a repricing-GAP notional. The GAP path must apply the corresponding instrument strategy rather than summing future payment amounts indiscriminately at the reset date.
 
 ## 6. Nineteen temporal buckets
 
