@@ -108,7 +108,10 @@ class IRRBBSemanticModelInspectionSnapshot:
     def __post_init__(self) -> None:
         _require_text("semantic-model source_id", self.source_id)
         _require_text("semantic-model logical_name", self.logical_name)
-        _require_text("semantic-model provider_workspace_reference", self.provider_workspace_reference)
+        _require_text(
+            "semantic-model provider_workspace_reference",
+            self.provider_workspace_reference,
+        )
         _require_text("semantic-model provider_model_reference", self.provider_model_reference)
         _require_text("semantic-model provider_model_name", self.provider_model_name)
         _require_text("semantic-model inspection_method", self.inspection_method)
@@ -148,7 +151,9 @@ class IRRBBSemanticModelInspectionSnapshot:
                 relationship.to_column.casefold(),
             )
             if key in seen_relationships:
-                raise ValueError("semantic-model inspection evidence contains duplicate relationships")
+                raise ValueError(
+                    "semantic-model inspection evidence contains duplicate relationships"
+                )
             seen_relationships.add(key)
 
 
