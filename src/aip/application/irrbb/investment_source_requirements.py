@@ -1,11 +1,10 @@
 from datetime import date
 
-from .source_certification import (
+from aip.application.irrbb.source_certification import (
     IRRBBSourcePerimeter,
     IRRBBSourceRequirement,
     IRRBBSourceRequirementProfile,
 )
-
 
 INVESTMENT_SOURCE_REQUIREMENT_PROFILE_CODE = "RTILB-INVESTMENT-SOURCE"
 INVESTMENT_SOURCE_REQUIREMENT_PROFILE_VERSION = "2026.09.10"
