@@ -59,6 +59,7 @@ class LoadIRRBBSourceSnapshot:
                 position_count=len(snapshot.position_records),
                 ready_count=len(ready),
                 incomplete_count=len(incomplete),
+                mapping_failure_count=len(snapshot.mapping_failures),
             ),
             ready_position_ids=ready,
             incomplete_position_ids=incomplete,
@@ -71,13 +72,14 @@ class LoadIRRBBSourceSnapshot:
         position_count: int,
         ready_count: int,
         incomplete_count: int,
+        mapping_failure_count: int,
     ) -> IRRBBSourceLoadStatus:
-        if position_count == 0:
+        if position_count == 0 and mapping_failure_count == 0:
             return IRRBBSourceLoadStatus.EMPTY
-        if ready_count == position_count:
+        if mapping_failure_count == 0 and ready_count == position_count:
             return IRRBBSourceLoadStatus.READY
         if ready_count > 0:
             return IRRBBSourceLoadStatus.PARTIAL
-        if incomplete_count > 0:
+        if incomplete_count > 0 or mapping_failure_count > 0:
             return IRRBBSourceLoadStatus.BLOCKED
         return IRRBBSourceLoadStatus.BLOCKED
