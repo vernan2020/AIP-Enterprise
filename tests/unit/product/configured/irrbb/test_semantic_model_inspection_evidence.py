@@ -49,9 +49,7 @@ def _payload(
             {
                 "name": "Customers",
                 "is_hidden": False,
-                "columns": [
-                    {"name": "CustomerId", "data_type": "String", "is_hidden": False}
-                ],
+                "columns": [{"name": "CustomerId", "data_type": "String", "is_hidden": False}],
                 "measures": [],
             },
         ],
@@ -95,9 +93,7 @@ def test_validator_binds_term_deposit_metadata_to_governed_source() -> None:
 
 
 def test_parse_json_document_validates_complete_transferred_report() -> None:
-    bundle = SemanticModelInspectionEvidenceValidator().parse_json_document(
-        json.dumps(_payload())
-    )
+    bundle = SemanticModelInspectionEvidenceValidator().parse_json_document(json.dumps(_payload()))
 
     assert bundle.snapshot.row_data_included is False
     assert bundle.snapshot.expressions_included is False
