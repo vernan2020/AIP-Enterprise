@@ -20,6 +20,16 @@ from aip.application.irrbb.contracts import (
 from aip.application.irrbb.load_source import LoadIRRBBSourceSnapshot
 from aip.application.irrbb.ports import IRRBBAnalysisRequestProvider, IRRBBDataGateway
 from aip.application.irrbb.run_analysis import RunIRRBBAnalysis
+from aip.application.irrbb.source_certification import (
+    IRRBBSourceAvailabilityStatus,
+    IRRBBSourceCertificationReport,
+    IRRBBSourceCertificationService,
+    IRRBBSourceCertificationStatus,
+    IRRBBSourcePerimeter,
+    IRRBBSourceRequirement,
+    IRRBBSourceRequirementAssessment,
+    IRRBBSourceRequirementProfile,
+)
 
 __all__ = [
     "IRRBBAnalysisRequest",
@@ -33,11 +43,19 @@ __all__ = [
     "IRRBBGapCurrencyResult",
     "IRRBBGapMatrixCell",
     "IRRBBPositionSourceRecord",
+    "IRRBBSourceAvailabilityStatus",
+    "IRRBBSourceCertificationReport",
+    "IRRBBSourceCertificationService",
+    "IRRBBSourceCertificationStatus",
     "IRRBBSourceLoadRequest",
     "IRRBBSourceLoadResult",
     "IRRBBSourceLoadStatus",
     "IRRBBSourceMappingFailure",
     "IRRBBSourceMappingFailureCode",
+    "IRRBBSourcePerimeter",
+    "IRRBBSourceRequirement",
+    "IRRBBSourceRequirementAssessment",
+    "IRRBBSourceRequirementProfile",
     "IRRBBSourceSnapshot",
     "LoadIRRBBSourceSnapshot",
     "RunIRRBBAnalysis",
