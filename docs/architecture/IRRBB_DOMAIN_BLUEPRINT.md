@@ -248,11 +248,13 @@ At minimum, diagnostics cover missing or inconsistent:
 
 This is a calculation gate, not a data-cleaning shortcut. Missing fields remain missing until a legitimate source or approved derivation supplies them.
 
-## 13. Implemented phases
+## 13. Implemented architecture phases
+
+The detailed phase documents in `docs/architecture` are authoritative for the scope and exclusions of each slice. The blueprint summarizes the current architecture state; it does not promote any physical source merely because its integration contracts exist.
 
 ### Phase 1 — EVE domain core
 
-Implemented and CI-certified:
+Implemented:
 
 - canonical banking-book position and cash-flow models;
 - methodology/version objects;
@@ -264,7 +266,7 @@ Implemented and CI-certified:
 
 ### Phase 2 — Instrument strategies and readiness
 
-Implemented in the feature branch:
+Implemented:
 
 - canonical instrument class and payment structure;
 - explicit normalized schedule contract/provider;
@@ -274,20 +276,146 @@ Implemented in the feature branch:
 - stressed-EVE protection for stale floating-rate projections;
 - data-quality/readiness gateway for missing source fields and missing approved strategies.
 
-## 14. Future phases
+### Phase 3 — Scenario repricing and behavioral core
 
-### Phase 3 — Scenario repricing and behavioral IRRBB
+Implemented as a source-agnostic calculation boundary:
 
-Versioned floating-rate coupon projection, prepayment, early-withdrawal and non-maturity-deposit models. Exact scenario transformations remain methodology-driven and auditable.
+- explicit floating-rate coupon projection basis;
+- scenario-aware coupon projection contracts;
+- parameterized scenario-curve shock boundary;
+- restrictive parallel-only shock provider where methodology is sufficiently specified;
+- versioned non-maturity-deposit profiles and behavioral cash flows.
 
-### Phase 4 — Application/UI
+Non-parallel supervisory shock formulas, prepayment, early-withdrawal and NMD parameter values remain pending approved methodology/configuration; they are not silently approximated.
 
-Dashboard with EVE base, worst Delta EVE, Delta EVE/Tier 1, scenarios, 19-band heatmap, curve visualization, drill-down and data-quality panel.
+### Phase 4A / 4B — Calculation orchestration and passive read model
 
-### Phase 5 — Source adapters
+Implemented:
 
-OneDrive, SQL Server, regulatory XML, Excel, PostgreSQL or any combination selected by the institution. Source adapters must populate the canonical model and produce a field-sufficiency matrix; domain formulas never parse raw XML directly.
+- BASE plus stress-scenario EVE orchestration;
+- defensive scenario cash-flow validation;
+- separation of EVE from SUGEF GAP;
+- passive `RateRiskReadModel` / presenter boundary;
+- scenario, GAP, quality, curve and discounted-flow drill-down structures without financial calculations in the presentation layer.
 
-### Phase 6 — NII / earnings perspective
+### Phase 5 / 6 — Data gateway and analysis orchestration
 
-A separate Delta NII engine sharing the canonical positions, repricing dates, curves and behavioral assumptions, while preserving calculation separation from EVE.
+Implemented:
+
+- source-agnostic `IRRBBDataGateway` and normalized snapshot loading;
+- exact-cutoff validation and snapshot readiness classification;
+- orchestration of calculation-ready positions into scenario EVE;
+- independent SUGEF GAP classification/aggregation;
+- explicit `NO_DATA`, `BLOCKED`, `CALCULATED` and `CALCULATED_WITH_DATA_GAPS` application states.
+
+### Phase 9 / 11 — Source anti-corruption and certification gates
+
+Implemented:
+
+- source-record envelopes and canonical mapping boundary;
+- versioned canonical source-requirement profiles;
+- evidence-backed source assessments;
+- deterministic `READY`, `INCOMPLETE` and `BLOCKED` certification;
+- no implicit promotion of omitted requirements or undocumented derivations.
+
+### Phase 12–15 — Institutional investment-master evidence path
+
+Implemented as a passive, fail-closed path:
+
+- investment-master evidence assessment;
+- strict source derivation rules;
+- canonical mapper contract/policy boundary;
+- batch bridge preserving source lineage and enforcing source certification before mapping.
+
+This path is **not** wired into production RTILB runtime composition.
+
+### Phase 16–18A — Physical-source registry and borrowing-workbook evidence path
+
+Implemented:
+
+- governed institutional physical-source registry;
+- borrowing-workbook schema inspector;
+- local metadata-only inspection CLI;
+- strict discovery/header evidence validation.
+
+The borrowing source remains unassessed for contractual RTILB mapping until real institutional discovery/header evidence is supplied.
+
+### Phase 20–20C — Power BI semantic-model metadata boundary
+
+Implemented for governed `Credito` and `Certificados` semantic models:
+
+- source-neutral semantic-model inspection contracts and port;
+- strict metadata-only transfer contract and evidence validator;
+- deterministic evidence renderer;
+- governed inspection coordinator that binds the requested segment to the exact registered source and rejects source substitution.
+
+No Power BI/Fabric provider adapter, authentication flow, tenant/workspace/model identifier, contractual row extraction or RTILB field mapping is implemented by these phases.
+
+## 14. Current physical-source integration status
+
+| Segment | Governed candidate | Implemented boundary | Current activation status | Blocking gate |
+|---|---|---|---|---|
+| Investments | Institutional investment master | Evidence assessor, source rules, mapper policy boundary, passive batch bridge | **INCOMPLETE / NOT ACTIVE** | Approved cutoff provenance, mapping policy, principal/payment/optionality semantics, floating reset evidence, rejected-row completeness and benchmark parity |
+| Borrowings / obligations | Governed obligations workbook | Registry, schema inspector, safe CLI, strict evidence validator | **BLOCKED / NOT ACTIVE** | Real discovery JSON followed by explicit worksheet/header JSON; Phase 19 must be grounded in that evidence |
+| Credit | Power BI semantic model `Credito` | Metadata contracts, validator, renderer and governed coordinator | **BLOCKED / NOT ACTIVE** | Institutional authorization of metadata scanning plus runtime workspace/model identity and real metadata evidence |
+| Term deposits | Power BI semantic model `Certificados` | Metadata contracts, validator, renderer and governed coordinator | **BLOCKED / NOT ACTIVE** | Institutional authorization of metadata scanning plus runtime workspace/model identity and real metadata evidence |
+| Non-maturity deposits / behavioral assumptions | Versioned behavioral profile contract | Behavioral domain ports/models | **BLOCKED FOR EVE** | Approved methodology, effective-dated parameters and governance evidence |
+| Market / Tier 1 supplementary inputs | Injected market/capital ports | Domain/application contracts | **NOT CERTIFIED BY SOURCE-INTEGRATION PHASES** | Approved source profiles for curves, FX/reference rates and Tier 1 capital |
+
+No row in this table should be interpreted as production approval. `READY` at source-certification level, when eventually obtained, remains distinct from record-level data quality, calculation readiness, parity validation and runtime activation.
+
+## 15. Evidence required before the next source-specific slices
+
+### 15.1 Borrowings — unlock Phase 19
+
+Run the existing metadata-only CLI on the institutional workstation against the governed obligations workbook:
+
+```text
+python -m aip.product.configured.irrbb.borrowing_workbook_inspection_cli --path "<configured-obligations-workbook>" > borrowing-discovery.json
+```
+
+After reviewing the exact worksheet names and identifying the institutional header row explicitly:
+
+```text
+python -m aip.product.configured.irrbb.borrowing_workbook_inspection_cli --path "<configured-obligations-workbook>" --sheet "<exact-sheet-name>" --header-row <N> > borrowing-header.json
+```
+
+Only those real reports may ground a LIABILITY requirement profile, field evidence assessment or canonical mapping rule. A missing field must remain missing.
+
+### 15.2 Credit and term deposits — unlock the Power BI provider adapter
+
+Before provider-specific implementation, institutional evidence must confirm:
+
+- the authorized metadata-inspection mechanism for Power BI/Fabric;
+- that detailed semantic-model metadata scanning is enabled when the selected mechanism requires it;
+- the authorized authentication mode, without embedding secrets in source code;
+- runtime workspace identity/reference for `Credito`;
+- runtime semantic-model/dataset identity/reference for `Credito`;
+- runtime workspace identity/reference for `Certificados`;
+- runtime semantic-model/dataset identity/reference for `Certificados`;
+- real metadata-only inspection evidence sufficient to validate the provider parser.
+
+Tokens, passwords, client secrets and similar credentials must remain in the institutional deployment/secret store and must not be committed to the repository or serialized into inspection evidence.
+
+### 15.3 Investments — unlock production activation
+
+The passive investment bridge must remain outside runtime composition until the institution provides or approves, at minimum:
+
+1. workbook-native cutoff/source-selection provenance;
+2. an effective-dated product/classification mapping policy;
+3. instrument class, balance-sheet side, payment structure, optionality and principal semantics;
+4. contractual reset date/frequency evidence for floating-rate positions;
+5. an explicit completeness policy for reader-rejected rows;
+6. policy applicability to the requested cutoff;
+7. parity tests against an approved institutional benchmark.
+
+## 16. Next implementation sequence
+
+The safe next source-specific work is evidence-driven rather than sequence-driven:
+
+1. **Borrowings:** create Phase 19 only after the real Phase 18 discovery/header reports exist.
+2. **Power BI:** create the provider-specific semantic-model adapter only after institutional authorization and runtime model identities exist; raw provider metadata must be reduced to the Phase 20 application snapshot and pass the Phase 20C coordinator before acceptance.
+3. **Investments:** activate the existing passive bridge only after its remaining governance and parity gates are satisfied.
+4. **Runtime composition:** wire physical sources into the IRRBB application only after source certification, record-level readiness, reconciliation/parity and CI/security gates all pass.
+
+Separate methodology work remains pending for approved non-parallel shock transformations, loan prepayment, term-deposit early withdrawal and NMD assumptions. A separate Delta NII / earnings-perspective engine remains a later calculation phase sharing the canonical position and repricing contracts without mixing its formulas with EVE.
