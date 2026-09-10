@@ -316,9 +316,7 @@ def test_calculated_with_gaps_keeps_crc_usd_separate_and_surfaces_gap_issues() -
 
     read_model = RateRiskPresenter.build_from_analysis(request=_request(), result=result)
 
-    assert read_model.analysis_status == (
-        IRRBBAnalysisStatus.CALCULATED_WITH_DATA_GAPS.value
-    )
+    assert read_model.analysis_status == (IRRBBAnalysisStatus.CALCULATED_WITH_DATA_GAPS.value)
     assert {row.currency for row in read_model.gap_bucket_rows} == {"CRC", "USD"}
     assert {row.amount for row in read_model.gap_bucket_rows} == {
         Decimal("500"),
