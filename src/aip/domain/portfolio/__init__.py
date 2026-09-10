@@ -1,6 +1,5 @@
 """Portfolio bounded context public API."""
 
-from src.aip.domain.portfolio.entities import Portfolio, Position, Transaction
 from src.aip.domain.portfolio.enums import (
     PortfolioStatus,
     PositionStatus,
@@ -33,6 +32,7 @@ from src.aip.domain.portfolio.value_objects import (
     YieldRate,
 )
 
+from .entities import Portfolio, Position, Transaction
 from .exceptions import (
     DuplicatePositionError,
     InvalidPositionError,
