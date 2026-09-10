@@ -89,6 +89,26 @@ def _runtime_dependencies() -> ConfiguredIRRBBRuntimeDependencies:
     )
 
 
+def test_configured_shell_without_irrbb_runtime_remains_explicitly_unconfigured() -> None:
+    app = QApplication.instance() or QApplication([])
+    factory = DemoApplicationFactory(
+        DemoConfig(execution_mode="CONFIGURED", demo_mode_enabled=False),
+        source_config=ConfiguredSourceConfig(),
+    )
+    window = FinancialIntelligenceMainWindow(demo_factory=factory)
+
+    window.open_workspace("rate_risk")
+    workspace = window.workspace.currentWidget()
+
+    assert isinstance(workspace, RateRiskWorkspace)
+    assert workspace.is_configured is False
+    assert workspace.view._analysis_status_label.text() == "Estado: Sin cálculo"
+    assert all(label.text() == "N/D" for label in workspace.view._kpi_values.values())
+
+    window.close()
+    app.processEvents()
+
+
 def test_configured_shell_connects_irrbb_runtime_and_refreshes_active_cutoff() -> None:
     app = QApplication.instance() or QApplication([])
     factory = DemoApplicationFactory(
