@@ -72,6 +72,25 @@ def test_discovery_reports_visible_and_hidden_sheet_topology_from_observed_value
     assert parameters.observed_non_empty_cell_count == 2
 
 
+def test_discovery_rejects_file_change_while_evidence_is_being_captured(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    path = _governed_path(tmp_path)
+    _save_workbook(path)
+    actual_digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    digests = iter((actual_digest, "0" * 64))
+
+    monkeypatch.setattr(
+        BorrowingWorkbookSchemaInspector,
+        "_sha256",
+        classmethod(lambda cls, file_path: next(digests)),
+    )
+
+    with pytest.raises(ValueError, match="changed while inspection evidence was being captured"):
+        BorrowingWorkbookSchemaInspector().discover(path)
+
+
 def test_declared_header_preserves_exact_labels_and_reports_blanks_and_duplicates(
     tmp_path: Path,
 ) -> None:
@@ -130,6 +149,24 @@ def test_declared_header_rejects_non_text_values_instead_of_coercing_them(tmp_pa
     workbook.close()
 
     with pytest.raises(ValueError, match="non-text value observed at B1"):
+        BorrowingWorkbookSchemaInspector().inspect_declared_header(
+            path,
+            sheet_name="Obligaciones",
+            header_row=1,
+        )
+
+
+def test_declared_header_rejects_formula_values_as_dynamic_schema(tmp_path: Path) -> None:
+    path = _governed_path(tmp_path)
+    workbook = openpyxl.Workbook()
+    sheet = workbook.active
+    sheet.title = "Obligaciones"
+    sheet.append(["Operacion", "=CONCAT(\"Ta\",\"sa\")", "Saldo"])
+    sheet.append(["OP-001", "Dato", 100.0])
+    workbook.save(path)
+    workbook.close()
+
+    with pytest.raises(ValueError, match="header cells cannot be formulas"):
         BorrowingWorkbookSchemaInspector().inspect_declared_header(
             path,
             sheet_name="Obligaciones",
