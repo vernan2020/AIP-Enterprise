@@ -45,13 +45,15 @@ class IRRBBPositionSourceRecord:
 
     The record intentionally carries no SQL/XML/Excel fields. Physical adapters are
     responsible for normalizing their source into the domain contract before this
-    boundary is crossed.
+    boundary is crossed. ``mapping_rule_reference`` optionally preserves the exact
+    versioned adapter policy that interpreted source-specific semantics.
     """
 
     position: BankingBookPosition
     validation_context: IRRBBValidationContext = IRRBBValidationContext()
     gap_schedule: tuple[SugefGapScheduleRecord, ...] = ()
     gap_routing_metadata: SugefGapRoutingMetadata | None = None
+    mapping_rule_reference: str | None = None
 
     def __post_init__(self) -> None:
         metadata = self.gap_routing_metadata
@@ -60,6 +62,8 @@ class IRRBBPositionSourceRecord:
         for record in self.gap_schedule:
             if record.amount.currency is not self.position.currency:
                 raise ValueError("gap schedule currency must match the position currency")
+        if self.mapping_rule_reference is not None and not self.mapping_rule_reference.strip():
+            raise ValueError("mapping_rule_reference cannot be blank")
 
 
 @dataclass(frozen=True, slots=True)
