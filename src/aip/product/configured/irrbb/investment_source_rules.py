@@ -18,9 +18,7 @@ class InvestmentMasterSourceRules:
     POSITION_ID_RULE_REFERENCE = "RULE:INVESTMENT-POSITION-ID:2026.09.10"
     RATE_TYPE_RULE_REFERENCE = "RULE:INVESTMENT-RATE-TYPE:2026.09.10"
     PAYMENT_FREQUENCY_RULE_REFERENCE = "RULE:INVESTMENT-PAYMENT-FREQUENCY:2026.09.10"
-    CASHFLOW_RULE_REFERENCE = (
-        "aip.domain.portfolio.services.PortfolioContractualCashFlowService"
-    )
+    CASHFLOW_RULE_REFERENCE = "aip.domain.portfolio.services.PortfolioContractualCashFlowService"
 
     _FLOATING_FLAGS = frozenset({"s", "si", "sí", "yes", "y", "true", "1"})
     _FIXED_FLAGS = frozenset({"n", "no", "false", "0"})
