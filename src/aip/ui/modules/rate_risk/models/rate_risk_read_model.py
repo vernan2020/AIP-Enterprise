@@ -77,6 +77,7 @@ class RateRiskReadinessSummary:
     data_issue_count: int
     mapping_pending_count: int
     incomplete_mapping_count: int
+    source_mapping_failure_count: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -175,6 +176,17 @@ class RateRiskDataIssueRow:
 
 
 @dataclass(frozen=True, slots=True)
+class RateRiskSourceMappingFailureRow:
+    """Auditable source record that failed before canonical position validation."""
+
+    source_record_id: str
+    source_reference: str
+    code: str
+    canonical_field: str | None
+    message: str
+
+
+@dataclass(frozen=True, slots=True)
 class RateRiskMappingRow:
     position_id: str
     status: str
@@ -216,3 +228,4 @@ class RateRiskReadModel:
     warnings: tuple[str, ...] = ()
     analysis_status: str = "CALCULATED"
     gap_coverage_issue_rows: tuple[RateRiskGapCoverageIssueRow, ...] = ()
+    source_mapping_failure_rows: tuple[RateRiskSourceMappingFailureRow, ...] = ()
