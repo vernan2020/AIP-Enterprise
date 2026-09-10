@@ -92,9 +92,7 @@ class RunIRRBBAnalysis:
             valuation_date=request.cutoff_date,
         )
 
-        has_data_gaps = (
-            source_load.status is not IRRBBSourceLoadStatus.READY or bool(gap_issues)
-        )
+        has_data_gaps = source_load.status is not IRRBBSourceLoadStatus.READY or bool(gap_issues)
         status = (
             IRRBBAnalysisStatus.CALCULATED_WITH_DATA_GAPS
             if has_data_gaps
@@ -143,9 +141,9 @@ class RunIRRBBAnalysis:
     ) -> tuple[tuple[IRRBBGapCurrencyResult, ...], tuple[IRRBBGapCoverageIssue, ...]]:
         classification_by_id = {item.position_id: item for item in classifications}
         exposures_by_currency: dict[Currency, list[SugefGapExposure]] = defaultdict(list)
-        exposures_by_line: dict[
-            tuple[Currency, SugefGapReportLine], list[SugefGapExposure]
-        ] = defaultdict(list)
+        exposures_by_line: dict[tuple[Currency, SugefGapReportLine], list[SugefGapExposure]] = (
+            defaultdict(list)
+        )
         positions_by_currency: dict[Currency, set[str]] = defaultdict(set)
         issues: list[IRRBBGapCoverageIssue] = []
 
@@ -206,11 +204,7 @@ class RunIRRBBAnalysis:
             )
             matrix_cells: list[IRRBBGapMatrixCell] = []
             lines = sorted(
-                (
-                    line
-                    for line_currency, line in exposures_by_line
-                    if line_currency is currency
-                ),
+                (line for line_currency, line in exposures_by_line if line_currency is currency),
                 key=lambda item: item.value,
             )
             for report_line in lines:
