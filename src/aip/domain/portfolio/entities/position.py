@@ -11,7 +11,6 @@ from src.aip.domain.portfolio.value_objects.instrument_name import InstrumentNam
 from src.aip.domain.portfolio.value_objects.isin import ISIN
 from src.aip.domain.portfolio.value_objects.market_value import MarketValue
 from src.aip.domain.portfolio.value_objects.nominal_value import NominalValue
-from src.aip.domain.portfolio.value_objects.position_id import PositionId
 from src.aip.domain.portfolio.value_objects.quantity import Quantity
 from src.aip.domain.portfolio.value_objects.settlement_date import SettlementDate
 from src.aip.domain.portfolio.value_objects.yield_rate import YieldRate
@@ -20,6 +19,7 @@ from src.aip.shared.money import Currency
 from ..enums.position_status import PositionStatus
 from ..enums.valuation_source import ValuationSource
 from ..exceptions import InvalidPositionError
+from ..value_objects.position_id import PositionId
 
 
 @dataclass(slots=True)
