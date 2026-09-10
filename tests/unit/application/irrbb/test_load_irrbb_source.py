@@ -9,6 +9,8 @@ from aip.application.irrbb import (
     IRRBBPositionSourceRecord,
     IRRBBSourceLoadRequest,
     IRRBBSourceLoadStatus,
+    IRRBBSourceMappingFailure,
+    IRRBBSourceMappingFailureCode,
     IRRBBSourceSnapshot,
     LoadIRRBBSourceSnapshot,
 )
@@ -105,6 +107,28 @@ def test_empty_snapshot_is_explicitly_empty() -> None:
     assert result.status is IRRBBSourceLoadStatus.EMPTY
     assert result.assessments == ()
     assert result.ready_positions == ()
+
+
+def test_unmappable_source_records_block_an_otherwise_empty_snapshot() -> None:
+    snapshot = IRRBBSourceSnapshot(
+        cutoff_date=CUTOFF,
+        position_records=(),
+        mapping_failures=(
+            IRRBBSourceMappingFailure(
+                source_record_id="ROW-1",
+                source_reference="SOURCE:ROW-1",
+                code=IRRBBSourceMappingFailureCode.MISSING_REQUIRED_CANONICAL_FIELD,
+                canonical_field="currency",
+                message="Canonical currency is unavailable in the source record.",
+            ),
+        ),
+    )
+
+    result = LoadIRRBBSourceSnapshot(_Gateway(snapshot)).execute(IRRBBSourceLoadRequest(CUTOFF))
+
+    assert result.status is IRRBBSourceLoadStatus.BLOCKED
+    assert result.assessments == ()
+    assert result.snapshot.mapping_failures[0].source_record_id == "ROW-1"
 
 
 def test_gateway_cannot_silently_return_a_different_cutoff() -> None:
