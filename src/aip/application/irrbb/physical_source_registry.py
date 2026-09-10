@@ -107,4 +107,6 @@ class IRRBBPhysicalSourceRegistry:
         try:
             return self._sources_by_segment[segment]
         except KeyError as exc:
-            raise KeyError(f"no physical IRRBB source registered for segment {segment.value}") from exc
+            raise KeyError(
+                f"no physical IRRBB source registered for segment {segment.value}"
+            ) from exc
