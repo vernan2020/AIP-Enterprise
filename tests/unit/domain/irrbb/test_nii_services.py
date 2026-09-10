@@ -18,7 +18,6 @@ from aip.domain.irrbb.nii import (
     NIIInterestAccrual,
     NIIProjectionBasis,
     NIIRepricingTrace,
-    NIIScenarioAssessment,
     NIIShockTiming,
 )
 from aip.domain.irrbb.services.delta_nii_service import DeltaNIIService
