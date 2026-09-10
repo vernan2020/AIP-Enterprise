@@ -1,8 +1,14 @@
 from __future__ import annotations
 
 from collections import Counter
+from dataclasses import replace
 from decimal import Decimal
 
+from aip.application.irrbb import (
+    IRRBBAnalysisRequest,
+    IRRBBAnalysisResult,
+    IRRBBAnalysisStatus,
+)
 from aip.domain.irrbb.data_quality import (
     IRRBBDataQualitySeverity,
     IRRBBDataQualityStatus,
@@ -21,6 +27,7 @@ from aip.ui.modules.rate_risk.models.rate_risk_read_model import (
     RateRiskCurvePointRow,
     RateRiskDataIssueRow,
     RateRiskGapBucketRow,
+    RateRiskGapCoverageIssueRow,
     RateRiskGapMatrixCellInput,
     RateRiskGapMatrixCellRow,
     RateRiskKpi,
@@ -39,7 +46,7 @@ class RateRiskPresenter:
 
     No discounting, repricing, GAP aggregation, curve construction or behavioral
     modeling is performed here. This class only validates consistency, labels
-    already-computed results and arranges them for a future PySide6 view.
+    already-computed results and arranges them for a PySide6 view.
     """
 
     _SCENARIO_LABELS = {
@@ -58,7 +65,9 @@ class RateRiskPresenter:
             "Inversiones · tasa variable/semivariable"
         ),
         SugefGapReportLine.CREDIT_FIXED: "Crédito · tasa fija",
-        SugefGapReportLine.CREDIT_VARIABLE_SEMIVARIABLE: ("Crédito · tasa variable/semivariable"),
+        SugefGapReportLine.CREDIT_VARIABLE_SEMIVARIABLE: (
+            "Crédito · tasa variable/semivariable"
+        ),
         SugefGapReportLine.PUBLIC_SIGHT_WITH_COST: "Público · vista con costo",
         SugefGapReportLine.PUBLIC_SIGHT_WITHOUT_COST: "Público · vista sin costo",
         SugefGapReportLine.PUBLIC_TERM_FIXED: "Público · plazo fijo",
@@ -68,18 +77,122 @@ class RateRiskPresenter:
         SugefGapReportLine.BCCR_SIGHT_WITH_COST: "BCCR · vista con costo",
         SugefGapReportLine.BCCR_SIGHT_WITHOUT_COST: "BCCR · vista sin costo",
         SugefGapReportLine.BCCR_TERM_FIXED: "BCCR · plazo fijo",
-        SugefGapReportLine.BCCR_TERM_VARIABLE_SEMIVARIABLE: ("BCCR · plazo variable/semivariable"),
+        SugefGapReportLine.BCCR_TERM_VARIABLE_SEMIVARIABLE: (
+            "BCCR · plazo variable/semivariable"
+        ),
         SugefGapReportLine.FINANCIAL_ENTITY_SIGHT_WITH_COST: (
             "Entidad financiera · vista con costo"
         ),
         SugefGapReportLine.FINANCIAL_ENTITY_SIGHT_WITHOUT_COST: (
             "Entidad financiera · vista sin costo"
         ),
-        SugefGapReportLine.FINANCIAL_ENTITY_TERM_FIXED: ("Entidad financiera · plazo fijo"),
+        SugefGapReportLine.FINANCIAL_ENTITY_TERM_FIXED: (
+            "Entidad financiera · plazo fijo"
+        ),
         SugefGapReportLine.FINANCIAL_ENTITY_TERM_VARIABLE_SEMIVARIABLE: (
             "Entidad financiera · plazo variable/semivariable"
         ),
     }
+
+    @classmethod
+    def build_from_analysis(
+        cls,
+        *,
+        request: IRRBBAnalysisRequest,
+        result: IRRBBAnalysisResult,
+    ) -> RateRiskReadModel:
+        """Present one complete application result without manufacturing values.
+
+        ``NO_DATA`` and ``BLOCKED`` produce an explicit read model with empty KPI,
+        scenario, GAP and valuation-flow collections. The view can therefore show
+        N/D while still exposing cutoff, methodology, source quality and mappings.
+        """
+
+        cls._validate_analysis_context(request=request, result=result)
+        curve_points = tuple(
+            RateRiskCurvePointInput(
+                curve_id=item.curve_id,
+                as_of_date=item.as_of_date,
+                currency=item.currency,
+                scenario=item.scenario,
+                tenor_years=item.tenor_years,
+                rate=item.rate,
+                source_reference=item.source_reference,
+            )
+            for item in result.curve_points
+        )
+        gap_issue_rows = tuple(
+            RateRiskGapCoverageIssueRow(
+                position_id=item.position_id,
+                code=item.code.value,
+                message=item.message,
+            )
+            for item in result.gap_issues
+        )
+
+        if result.evaluation is None:
+            if result.status not in {
+                IRRBBAnalysisStatus.NO_DATA,
+                IRRBBAnalysisStatus.BLOCKED,
+            }:
+                raise ValueError(
+                    "calculated IRRBB application status requires an evaluation result"
+                )
+            return cls._build_uncalculated(
+                request=request,
+                result=result,
+                curve_points=curve_points,
+                gap_issue_rows=gap_issue_rows,
+            )
+
+        if result.status not in {
+            IRRBBAnalysisStatus.CALCULATED,
+            IRRBBAnalysisStatus.CALCULATED_WITH_DATA_GAPS,
+        }:
+            raise ValueError("uncalculated IRRBB application status cannot contain evaluation")
+
+        gap_bucket_totals = tuple(
+            total
+            for currency_result in result.gap_results
+            for total in currency_result.bucket_totals
+        )
+        gap_matrix_cells = tuple(
+            RateRiskGapMatrixCellInput(
+                report_line=cell.report_line,
+                bucket=cell.bucket,
+                ordinal=cell.ordinal,
+                bucket_label=cell.bucket_label,
+                amount=cell.amount,
+            )
+            for currency_result in result.gap_results
+            for cell in currency_result.matrix_cells
+        )
+        read_model = cls.build(
+            evaluation=result.evaluation,
+            gap_bucket_totals=gap_bucket_totals,
+            gap_matrix_cells=gap_matrix_cells,
+            quality_assessments=result.source_load.assessments,
+            gap_classifications=result.gap_classifications,
+            curve_points=curve_points,
+        )
+
+        warnings = list(read_model.warnings)
+        if result.status is IRRBBAnalysisStatus.CALCULATED_WITH_DATA_GAPS:
+            warnings.insert(
+                0,
+                "Cálculo RTILB completado con brechas de datos. Revise Calidad de Datos y GAP SUGEF.",
+            )
+        if gap_issue_rows:
+            warnings.append(
+                f"{len(gap_issue_rows)} posición(es) listas para VEP no tienen cobertura GAP SUGEF completa."
+            )
+
+        return replace(
+            read_model,
+            analysis_status=result.status.value,
+            gap_coverage_issue_rows=gap_issue_rows,
+            warnings=cls._deduplicate(warnings),
+        )
 
     @classmethod
     def build(
@@ -93,15 +206,18 @@ class RateRiskPresenter:
         curve_points: tuple[RateRiskCurvePointInput, ...] = (),
     ) -> RateRiskReadModel:
         assessment_by_scenario = {
-            assessment.scenario: assessment for assessment in evaluation.exposure.assessments
+            assessment.scenario: assessment
+            for assessment in evaluation.exposure.assessments
         }
-        stressed_by_scenario = {result.scenario: result for result in evaluation.stressed}
+        stressed_by_scenario = {
+            result.scenario: result for result in evaluation.stressed
+        }
 
         if len(assessment_by_scenario) != len(evaluation.exposure.assessments):
             raise ValueError("duplicate scenario assessments cannot be presented")
         if set(stressed_by_scenario) != set(assessment_by_scenario):
             raise ValueError(
-                "stressed EVE scenarios and Delta EVE assessments must have " "identical coverage"
+                "stressed EVE scenarios and Delta EVE assessments must have identical coverage"
             )
 
         methodology = RateRiskMethodologyMetadata(
@@ -188,32 +304,12 @@ class RateRiskPresenter:
 
         position_quality_rows = cls._position_quality_rows(quality_assessments)
         data_issue_rows = cls._data_issue_rows(quality_assessments)
-        mapping_rows = tuple(
-            RateRiskMappingRow(
-                position_id=item.position_id,
-                status=item.status.value,
-                report_line=(item.report_line.value if item.report_line is not None else None),
-                report_line_label=(
-                    cls._report_line_label(item.report_line)
-                    if item.report_line is not None
-                    else None
-                ),
-                reason=item.reason,
-            )
-            for item in gap_classifications
-        )
-
-        quality_counts = Counter(item.status for item in quality_assessments)
-        mapping_counts = Counter(item.status for item in gap_classifications)
-        readiness = RateRiskReadinessSummary(
+        mapping_rows = cls._mapping_rows(gap_classifications)
+        readiness = cls._readiness_summary(
             calculated_position_count=evaluation.position_count,
-            assessed_position_count=len(quality_assessments),
-            ready_position_count=quality_counts[IRRBBDataQualityStatus.READY],
-            incomplete_position_count=quality_counts[IRRBBDataQualityStatus.INCOMPLETE],
-            excluded_position_count=quality_counts[IRRBBDataQualityStatus.EXCLUDED],
+            quality_assessments=quality_assessments,
+            gap_classifications=gap_classifications,
             data_issue_count=len(data_issue_rows),
-            mapping_pending_count=mapping_counts[SugefGapRowClassificationStatus.MAPPING_PENDING],
-            incomplete_mapping_count=mapping_counts[SugefGapRowClassificationStatus.INCOMPLETE],
         )
 
         gap_bucket_rows = tuple(
@@ -224,7 +320,10 @@ class RateRiskPresenter:
                 amount=item.amount.amount,
                 currency=item.amount.currency.value,
             )
-            for item in sorted(gap_bucket_totals, key=lambda value: value.ordinal)
+            for item in sorted(
+                gap_bucket_totals,
+                key=lambda value: (value.amount.currency.value, value.ordinal),
+            )
         )
         gap_matrix_rows = tuple(
             RateRiskGapMatrixCellRow(
@@ -238,31 +337,16 @@ class RateRiskPresenter:
             )
             for item in sorted(
                 gap_matrix_cells,
-                key=lambda value: (value.report_line.value, value.ordinal),
+                key=lambda value: (
+                    value.amount.currency.value,
+                    value.report_line.value,
+                    value.ordinal,
+                ),
             )
         )
 
         valuation_flow_rows = tuple(cls._valuation_flow_rows(evaluation))
-        curve_rows = tuple(
-            RateRiskCurvePointRow(
-                curve_id=item.curve_id,
-                as_of_date=item.as_of_date,
-                currency=item.currency.value,
-                scenario=item.scenario.value,
-                tenor_years=item.tenor_years,
-                rate=item.rate,
-                source_reference=item.source_reference,
-            )
-            for item in sorted(
-                curve_points,
-                key=lambda value: (
-                    value.currency.value,
-                    value.scenario.value,
-                    value.curve_id,
-                    value.tenor_years,
-                ),
-            )
-        )
+        curve_rows = cls._curve_rows(curve_points)
 
         warnings: list[str] = []
         if not quality_assessments:
@@ -288,6 +372,86 @@ class RateRiskPresenter:
         )
 
     @classmethod
+    def _build_uncalculated(
+        cls,
+        *,
+        request: IRRBBAnalysisRequest,
+        result: IRRBBAnalysisResult,
+        curve_points: tuple[RateRiskCurvePointInput, ...],
+        gap_issue_rows: tuple[RateRiskGapCoverageIssueRow, ...],
+    ) -> RateRiskReadModel:
+        methodology = RateRiskMethodologyMetadata(
+            code=request.methodology.code,
+            version=request.methodology.version,
+            status=request.methodology.status.value,
+            source_reference=request.methodology.source_reference,
+            effective_from=request.methodology.effective_from,
+            valuation_date=request.cutoff_date,
+            reporting_currency=request.reporting_currency.value,
+            calculated_position_count=0,
+        )
+        quality_assessments = result.source_load.assessments
+        data_issue_rows = cls._data_issue_rows(quality_assessments)
+        readiness = cls._readiness_summary(
+            calculated_position_count=0,
+            quality_assessments=quality_assessments,
+            gap_classifications=result.gap_classifications,
+            data_issue_count=len(data_issue_rows),
+        )
+        warning = (
+            "No hay posiciones RTILB disponibles para el corte solicitado."
+            if result.status is IRRBBAnalysisStatus.NO_DATA
+            else (
+                "Cálculo RTILB bloqueado: ninguna posición está lista para VEP/ΔVEP. "
+                "Revise Calidad de Datos."
+            )
+        )
+        warnings = [warning]
+        if gap_issue_rows:
+            warnings.append(
+                f"Se registraron {len(gap_issue_rows)} incidencia(s) de cobertura GAP SUGEF."
+            )
+
+        return RateRiskReadModel(
+            methodology=methodology,
+            readiness=readiness,
+            kpis=(),
+            scenario_rows=(),
+            gap_bucket_rows=(),
+            gap_matrix_cells=(),
+            valuation_flow_rows=(),
+            position_quality_rows=cls._position_quality_rows(quality_assessments),
+            data_issue_rows=data_issue_rows,
+            mapping_rows=cls._mapping_rows(result.gap_classifications),
+            curve_rows=cls._curve_rows(curve_points),
+            warnings=tuple(warnings),
+            analysis_status=result.status.value,
+            gap_coverage_issue_rows=gap_issue_rows,
+        )
+
+    @staticmethod
+    def _validate_analysis_context(
+        *,
+        request: IRRBBAnalysisRequest,
+        result: IRRBBAnalysisResult,
+    ) -> None:
+        if result.source_load.snapshot.cutoff_date != request.cutoff_date:
+            raise ValueError("IRRBB analysis result cutoff does not match presentation request")
+        evaluation = result.evaluation
+        if evaluation is None:
+            return
+        if evaluation.valuation_date != request.cutoff_date:
+            raise ValueError("IRRBB evaluation cutoff does not match presentation request")
+        if evaluation.reporting_currency is not request.reporting_currency:
+            raise ValueError(
+                "IRRBB evaluation reporting currency does not match presentation request"
+            )
+        if evaluation.methodology != request.methodology:
+            raise ValueError("IRRBB evaluation methodology does not match presentation request")
+        if result.tier_one_capital != evaluation.exposure.tier_one_capital:
+            raise ValueError("IRRBB Tier 1 capital result is inconsistent with Delta EVE")
+
+    @classmethod
     def _valuation_flow_rows(
         cls,
         evaluation: IRRBBScenarioEvaluationResult,
@@ -311,8 +475,8 @@ class RateRiskPresenter:
                         amount_currency=flow.amount.currency.value,
                         discount_factor=discounted.discount_factor,
                         exchange_rate=discounted.exchange_rate,
-                        present_value_reporting=(discounted.present_value_reporting.amount),
-                        signed_eve_contribution=(discounted.signed_eve_contribution.amount),
+                        present_value_reporting=discounted.present_value_reporting.amount,
+                        signed_eve_contribution=discounted.signed_eve_contribution.amount,
                         reporting_currency=result.reporting_currency.value,
                         source_reference=flow.source_reference,
                         projection_basis=flow.projection_basis,
@@ -366,6 +530,82 @@ class RateRiskPresenter:
                 ),
             )
         )
+
+    @classmethod
+    def _mapping_rows(
+        cls,
+        classifications: tuple[SugefGapRowClassification, ...],
+    ) -> tuple[RateRiskMappingRow, ...]:
+        return tuple(
+            RateRiskMappingRow(
+                position_id=item.position_id,
+                status=item.status.value,
+                report_line=(
+                    item.report_line.value if item.report_line is not None else None
+                ),
+                report_line_label=(
+                    cls._report_line_label(item.report_line)
+                    if item.report_line is not None
+                    else None
+                ),
+                reason=item.reason,
+            )
+            for item in classifications
+        )
+
+    @staticmethod
+    def _readiness_summary(
+        *,
+        calculated_position_count: int,
+        quality_assessments: tuple[IRRBBPositionAssessment, ...],
+        gap_classifications: tuple[SugefGapRowClassification, ...],
+        data_issue_count: int,
+    ) -> RateRiskReadinessSummary:
+        quality_counts = Counter(item.status for item in quality_assessments)
+        mapping_counts = Counter(item.status for item in gap_classifications)
+        return RateRiskReadinessSummary(
+            calculated_position_count=calculated_position_count,
+            assessed_position_count=len(quality_assessments),
+            ready_position_count=quality_counts[IRRBBDataQualityStatus.READY],
+            incomplete_position_count=quality_counts[IRRBBDataQualityStatus.INCOMPLETE],
+            excluded_position_count=quality_counts[IRRBBDataQualityStatus.EXCLUDED],
+            data_issue_count=data_issue_count,
+            mapping_pending_count=mapping_counts[
+                SugefGapRowClassificationStatus.MAPPING_PENDING
+            ],
+            incomplete_mapping_count=mapping_counts[
+                SugefGapRowClassificationStatus.INCOMPLETE
+            ],
+        )
+
+    @staticmethod
+    def _curve_rows(
+        curve_points: tuple[RateRiskCurvePointInput, ...],
+    ) -> tuple[RateRiskCurvePointRow, ...]:
+        return tuple(
+            RateRiskCurvePointRow(
+                curve_id=item.curve_id,
+                as_of_date=item.as_of_date,
+                currency=item.currency.value,
+                scenario=item.scenario.value,
+                tenor_years=item.tenor_years,
+                rate=item.rate,
+                source_reference=item.source_reference,
+            )
+            for item in sorted(
+                curve_points,
+                key=lambda value: (
+                    value.currency.value,
+                    value.scenario.value,
+                    value.curve_id,
+                    value.tenor_years,
+                ),
+            )
+        )
+
+    @staticmethod
+    def _deduplicate(values: list[str]) -> tuple[str, ...]:
+        return tuple(dict.fromkeys(values))
 
     @classmethod
     def _scenario_label(cls, scenario: IRRBBScenario) -> str:
