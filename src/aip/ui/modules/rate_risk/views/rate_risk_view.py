@@ -33,6 +33,18 @@ class RateRiskView(QWidget):
     """
 
     _MONEY_SCALE = Decimal("1000000")
+    _ANALYSIS_STATUS_PRESENTATION = {
+        "CALCULATED": ("Estado: Calculado", "#EAF7EE", "#1F6D3D", "#9DD5AD"),
+        "CALCULATED_WITH_DATA_GAPS": (
+            "Estado: Calculado · brechas",
+            "#FFF8E6",
+            "#775A00",
+            "#E6C85C",
+        ),
+        "BLOCKED": ("Estado: Bloqueado", "#FDEEEE", "#9B2C2C", "#E7A9A9"),
+        "NO_DATA": ("Estado: Sin datos", "#F2F4F5", "#566D7C", "#C9D2D7"),
+        "UNCONFIGURED": ("Estado: Sin cálculo", "#F2F4F5", "#566D7C", "#C9D2D7"),
+    }
 
     def __init__(self, read_model: RateRiskReadModel | None = None) -> None:
         super().__init__()
@@ -98,6 +110,10 @@ class RateRiskView(QWidget):
         title_box.addWidget(subtitle)
         header.addLayout(title_box)
         header.addStretch(1)
+
+        self._analysis_status_label = QLabel("Estado: Sin cálculo")
+        self._analysis_status_label.setObjectName("rateRiskAnalysisStatus")
+        header.addWidget(self._analysis_status_label)
 
         self._cutoff_label = QLabel("Corte: pendiente")
         self._cutoff_label.setObjectName("rateRiskCutoff")
@@ -314,7 +330,7 @@ class RateRiskView(QWidget):
         quality_layout.addWidget(self._quality_table)
         layout.addWidget(quality_box)
 
-        issues_box = QGroupBox("Incidencias")
+        issues_box = QGroupBox("Incidencias de calidad")
         issues_box.setStyleSheet(self._group_style())
         issues_layout = QVBoxLayout(issues_box)
         self._issues_table = self._table()
@@ -324,6 +340,17 @@ class RateRiskView(QWidget):
         )
         issues_layout.addWidget(self._issues_table)
         layout.addWidget(issues_box)
+
+        gap_coverage_box = QGroupBox("Cobertura GAP SUGEF")
+        gap_coverage_box.setStyleSheet(self._group_style())
+        gap_coverage_layout = QVBoxLayout(gap_coverage_box)
+        self._gap_coverage_table = self._table()
+        self._gap_coverage_table.setColumnCount(3)
+        self._gap_coverage_table.setHorizontalHeaderLabels(
+            ["Posición", "Código", "Detalle"]
+        )
+        gap_coverage_layout.addWidget(self._gap_coverage_table)
+        layout.addWidget(gap_coverage_box)
 
         mapping_box = QGroupBox("Mapeo SUGEF")
         mapping_box.setStyleSheet(self._group_style())
@@ -346,6 +373,7 @@ class RateRiskView(QWidget):
 
         metadata = read_model.methodology
         self._cutoff_label.setText(f"Corte: {metadata.valuation_date:%d/%m/%Y}")
+        self._set_analysis_status(read_model.analysis_status)
         effective = (
             metadata.effective_from.strftime("%d/%m/%Y")
             if metadata.effective_from is not None
@@ -378,6 +406,7 @@ class RateRiskView(QWidget):
 
     def _set_unconfigured_state(self) -> None:
         self._cutoff_label.setText("Corte: pendiente")
+        self._set_analysis_status("UNCONFIGURED")
         self._methodology_label.setText(
             "Módulo estructurado y sin fuente física configurada. Los datos podrán provenir de "
             "SQL, XML, OneDrive/Excel, PostgreSQL u otro adaptador aprobado."
@@ -392,6 +421,20 @@ class RateRiskView(QWidget):
         for label in self._readiness_labels.values():
             label.setText("-")
 
+    def _set_analysis_status(self, status: str) -> None:
+        presentation = self._ANALYSIS_STATUS_PRESENTATION.get(
+            status,
+            (f"Estado: {status}", "#F2F4F5", "#566D7C", "#C9D2D7"),
+        )
+        text, background, foreground, border = presentation
+        self._analysis_status_label.setText(text)
+        self._analysis_status_label.setStyleSheet(
+            "QLabel#rateRiskAnalysisStatus {"
+            f"padding:7px 11px; background:{background}; color:{foreground}; "
+            f"border:1px solid {border}; border-radius:6px; font-weight:700;"
+            "}"
+        )
+
     def _clear_tables(self) -> None:
         for table in (
             self._scenario_table,
@@ -401,6 +444,7 @@ class RateRiskView(QWidget):
             self._flow_table,
             self._quality_table,
             self._issues_table,
+            self._gap_coverage_table,
             self._mapping_table,
         ):
             table.setRowCount(0)
@@ -519,6 +563,14 @@ class RateRiskView(QWidget):
                 ),
             )
 
+        self._gap_coverage_table.setRowCount(len(read_model.gap_coverage_issue_rows))
+        for row_index, row in enumerate(read_model.gap_coverage_issue_rows):
+            self._set_row(
+                self._gap_coverage_table,
+                row_index,
+                (row.position_id, row.code, row.message),
+            )
+
         self._mapping_table.setRowCount(len(read_model.mapping_rows))
         for row_index, row in enumerate(read_model.mapping_rows):
             self._set_row(
@@ -537,7 +589,9 @@ class RateRiskView(QWidget):
         for column, value in enumerate(values):
             item = QTableWidgetItem(value)
             if column > 0:
-                item.setTextAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
+                item.setTextAlignment(
+                    Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft
+                )
             table.setItem(row, column, item)
 
     @classmethod
