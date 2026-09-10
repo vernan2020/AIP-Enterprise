@@ -14,7 +14,7 @@ from src.aip.domain.portfolio.events import (
     PositionRemoved,
     TransactionRegistered,
 )
-from src.aip.domain.portfolio.exceptions import (
+from .exceptions import (
     DuplicatePositionError,
     InvalidPositionError,
     InvalidTransactionError,
