@@ -26,11 +26,15 @@ file validation + SHA-256 fingerprint
         ↓
 worksheet names / visibility / observed topology
         ↓
+re-check SHA-256: source must be unchanged
+        ↓
 explicit sheet_name + explicit header_row
         ↓
 BorrowingWorkbookSchemaInspector.inspect_declared_header(...)
         ↓
 exact header evidence + blank/duplicate diagnostics
+        ↓
+re-check SHA-256: evidence must belong to the discovered file version
         ↓
 future field-level evidence assessment and certification
 ```
@@ -44,11 +48,13 @@ The inspector enforces the following controls:
 - the basename must exactly match the Phase 16 governed source identity;
 - unreadable/corrupt workbooks raise an explicit error;
 - an empty workbook is rejected;
+- SHA-256 is verified after topology inspection and before/after declared-header inspection, so a file changed during evidence capture is rejected;
 - worksheet selection is exact and caller-supplied; there is no fuzzy or heuristic selection;
 - header-row selection is a positive, caller-supplied row number;
 - the declared header row cannot exceed the last observed non-empty row;
 - blank header cells remain blank evidence and are not assigned synthetic names;
 - non-text header values are rejected rather than silently coerced;
+- formula-based header cells are rejected as dynamic schema;
 - duplicate header labels are reported using a diagnostic normalization only; labels stored as evidence remain unchanged;
 - source references expose source ID, basename and SHA-256 fingerprint, not a personal filesystem path.
 
