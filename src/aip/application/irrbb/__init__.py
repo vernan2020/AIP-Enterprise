@@ -17,6 +17,12 @@ from aip.application.irrbb.contracts import (
     IRRBBSourceMappingFailureCode,
     IRRBBSourceSnapshot,
 )
+from aip.application.irrbb.investment_source_requirements import (
+    INVESTMENT_SOURCE_REQUIREMENT_PROFILE_CODE,
+    INVESTMENT_SOURCE_REQUIREMENT_PROFILE_REFERENCE,
+    INVESTMENT_SOURCE_REQUIREMENT_PROFILE_VERSION,
+    investment_source_requirement_profile,
+)
 from aip.application.irrbb.load_source import LoadIRRBBSourceSnapshot
 from aip.application.irrbb.ports import IRRBBAnalysisRequestProvider, IRRBBDataGateway
 from aip.application.irrbb.run_analysis import RunIRRBBAnalysis
@@ -32,6 +38,9 @@ from aip.application.irrbb.source_certification import (
 )
 
 __all__ = [
+    "INVESTMENT_SOURCE_REQUIREMENT_PROFILE_CODE",
+    "INVESTMENT_SOURCE_REQUIREMENT_PROFILE_REFERENCE",
+    "INVESTMENT_SOURCE_REQUIREMENT_PROFILE_VERSION",
     "IRRBBAnalysisRequest",
     "IRRBBAnalysisRequestProvider",
     "IRRBBAnalysisResult",
@@ -59,4 +68,5 @@ __all__ = [
     "IRRBBSourceSnapshot",
     "LoadIRRBBSourceSnapshot",
     "RunIRRBBAnalysis",
+    "investment_source_requirement_profile",
 ]
