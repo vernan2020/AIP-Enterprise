@@ -188,7 +188,7 @@ def test_validator_rejects_nested_unknown_fields() -> None:
     assert isinstance(columns, list)
     column = columns[0]
     assert isinstance(column, dict)
-    column["rtlib_alias"] = "principal"
+    column["rtilb_alias"] = "principal"
 
-    with pytest.raises(ValueError, match="unknown=.*rtlib_alias"):
+    with pytest.raises(ValueError, match="unknown=.*rtilb_alias"):
         SemanticModelInspectionEvidenceValidator().validate_report(payload)
