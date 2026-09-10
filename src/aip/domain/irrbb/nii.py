@@ -79,6 +79,8 @@ class NIIRepricingTrace:
             raise ValueError("NII repricing rate_reference is required")
         if self.pricing_tenor_months <= 0:
             raise ValueError("NII pricing_tenor_months must be positive")
+        if not self.applied_rate.is_finite():
+            raise ValueError("NII applied_rate must be finite")
         if not self.source_reference.strip():
             raise ValueError("NII repricing source_reference is required")
 
@@ -104,6 +106,8 @@ class NIIInterestAccrual:
             raise ValueError("NII accrual_id is required")
         if not self.position_id.strip():
             raise ValueError("NII position_id is required")
+        if not self.amount.amount.is_finite():
+            raise ValueError("NII accrual amount must be finite")
         if self.accrual_end_date <= self.accrual_start_date:
             raise ValueError("NII accrual_end_date must be after accrual_start_date")
         if not self.source_reference.strip():
@@ -132,6 +136,12 @@ class ConvertedNIIAccrual:
     amount_reporting: Money
     signed_nii_contribution: Money
 
+    def __post_init__(self) -> None:
+        if not self.exchange_rate.is_finite() or self.exchange_rate <= 0:
+            raise ValueError("NII exchange_rate must be finite and positive")
+        if self.amount_reporting.currency is not self.signed_nii_contribution.currency:
+            raise ValueError("converted NII accrual currencies must match")
+
 
 @dataclass(frozen=True, slots=True)
 class NetInterestIncomeResult:
@@ -145,6 +155,25 @@ class NetInterestIncomeResult:
     net_interest_income: Money
     accruals: tuple[ConvertedNIIAccrual, ...]
 
+    def __post_init__(self) -> None:
+        for value in (
+            self.interest_income,
+            self.interest_expense,
+            self.net_interest_income,
+        ):
+            if value.currency is not self.reporting_currency:
+                raise ValueError("NII result money must use reporting_currency")
+            if not value.amount.is_finite():
+                raise ValueError("NII result amounts must be finite")
+
+        for converted in self.accruals:
+            if converted.accrual.scenario is not self.scenario:
+                raise ValueError("NII result accrual scenario must match result scenario")
+            if converted.amount_reporting.currency is not self.reporting_currency:
+                raise ValueError("converted NII accrual must use reporting_currency")
+            if converted.signed_nii_contribution.currency is not self.reporting_currency:
+                raise ValueError("signed NII contribution must use reporting_currency")
+
 
 @dataclass(frozen=True, slots=True)
 class NIIScenarioAssessment:
@@ -154,6 +183,15 @@ class NIIScenarioAssessment:
     nii: Money
     delta_nii: Money
     fall_from_base: Money
+
+    def __post_init__(self) -> None:
+        if self.scenario is IRRBBScenario.BASE:
+            raise ValueError("NII stress assessment cannot use BASE")
+        currencies = {self.nii.currency, self.delta_nii.currency, self.fall_from_base.currency}
+        if len(currencies) != 1:
+            raise ValueError("NII assessment currencies must match")
+        if self.fall_from_base.amount < 0:
+            raise ValueError("NII fall_from_base cannot be negative")
 
 
 @dataclass(frozen=True, slots=True)
@@ -166,3 +204,18 @@ class DeltaNIIResult:
     worst_scenario: IRRBBScenario
     worst_loss: Money
     assessments: tuple[NIIScenarioAssessment, ...]
+
+    def __post_init__(self) -> None:
+        if self.base_nii.currency is not self.reporting_currency:
+            raise ValueError("Delta NII base currency must match reporting_currency")
+        if self.worst_loss.currency is not self.reporting_currency:
+            raise ValueError("Delta NII worst-loss currency must match reporting_currency")
+        if self.worst_loss.amount < 0:
+            raise ValueError("Delta NII worst_loss cannot be negative")
+        if not self.assessments:
+            raise ValueError("Delta NII requires at least one stress assessment")
+        if self.worst_scenario not in {assessment.scenario for assessment in self.assessments}:
+            raise ValueError("Delta NII worst_scenario must be present in assessments")
+        for assessment in self.assessments:
+            if assessment.nii.currency is not self.reporting_currency:
+                raise ValueError("Delta NII assessment currency must match reporting_currency")
