@@ -32,7 +32,9 @@ class SemanticModelInspectionEvidenceRenderer:
         *,
         validator: SemanticModelInspectionEvidenceValidator | None = None,
     ) -> None:
-        self._validator = validator or SemanticModelInspectionEvidenceValidator()
+        if validator is None:
+            validator = SemanticModelInspectionEvidenceValidator()
+        self._validator = validator
 
     def render_payload(
         self,
