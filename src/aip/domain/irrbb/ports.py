@@ -171,6 +171,25 @@ class ExchangeRateProvider(Protocol):
     ) -> Decimal: ...
 
 
+class NIIExchangeRateProvider(Protocol):
+    """Provide scenario-aware FX used to translate projected NII accruals.
+
+    Future earnings must not silently reuse the EVE spot-FX convention. The provider
+    receives the scenario and accrual end date so the approved NII methodology owns
+    the conversion assumption explicitly.
+    """
+
+    def rate(
+        self,
+        *,
+        from_currency: Currency,
+        to_currency: Currency,
+        scenario: IRRBBScenario,
+        valuation_date: date,
+        accrual_end_date: date,
+    ) -> Decimal: ...
+
+
 class ScenarioCurveShocker(Protocol):
     """Versionable curve-shock policy.
 
