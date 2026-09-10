@@ -79,6 +79,7 @@ class BorrowingWorkbookSchemaInspector:
             sheets = tuple(self._inspect_sheet_topology(sheet) for sheet in workbook.worksheets)
         finally:
             workbook.close()
+        self._require_unchanged_file(file_path, expected_digest=digest)
 
         if not sheets:
             raise ValueError("borrowing workbook must contain at least one worksheet")
@@ -114,6 +115,7 @@ class BorrowingWorkbookSchemaInspector:
             )
 
         file_path = self._validate_source_path(path)
+        self._require_unchanged_file(file_path, expected_digest=discovery.file_sha256)
         workbook = self._load_workbook(file_path)
         try:
             sheet = workbook[sheet_name]
@@ -124,6 +126,7 @@ class BorrowingWorkbookSchemaInspector:
             )
         finally:
             workbook.close()
+        self._require_unchanged_file(file_path, expected_digest=discovery.file_sha256)
 
         blank_column_indexes = tuple(cell.column_index for cell in cells if cell.label is None)
         duplicate_labels = self._duplicate_labels(cells)
@@ -168,6 +171,11 @@ class BorrowingWorkbookSchemaInspector:
             while chunk := stream.read(cls._HASH_CHUNK_SIZE):
                 digest.update(chunk)
         return digest.hexdigest()
+
+    @classmethod
+    def _require_unchanged_file(cls, path: Path, *, expected_digest: str) -> None:
+        if cls._sha256(path) != expected_digest:
+            raise ValueError("borrowing workbook changed while inspection evidence was being captured")
 
     @staticmethod
     def _source_reference(file_name: str, digest: str) -> str:
@@ -242,6 +250,11 @@ class BorrowingWorkbookSchemaInspector:
         evidence: list[BorrowingWorkbookHeaderCellEvidence] = []
         for cell in row:
             value = cell.value
+            if cell.data_type == "f":
+                raise ValueError(
+                    "borrowing workbook declared header cells cannot be formulas; "
+                    f"formula observed at {cell.coordinate}"
+                )
             if value is None or (isinstance(value, str) and not value.strip()):
                 label = None
             elif not isinstance(value, str):
