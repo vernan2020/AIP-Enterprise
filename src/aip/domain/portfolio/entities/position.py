@@ -3,7 +3,6 @@
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-from src.aip.domain.portfolio.enums.position_status import PositionStatus
 from src.aip.domain.portfolio.enums.valuation_source import ValuationSource
 from src.aip.domain.portfolio.value_objects.acquisition_cost import AcquisitionCost
 from src.aip.domain.portfolio.value_objects.book_value import BookValue
@@ -19,6 +18,7 @@ from src.aip.domain.portfolio.value_objects.settlement_date import SettlementDat
 from src.aip.domain.portfolio.value_objects.yield_rate import YieldRate
 from src.aip.shared.money import Currency
 
+from ..enums.position_status import PositionStatus
 from ..exceptions import InvalidPositionError
 
 
