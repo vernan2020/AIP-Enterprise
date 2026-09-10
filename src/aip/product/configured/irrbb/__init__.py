@@ -1,3 +1,10 @@
+from aip.product.configured.irrbb.borrowing_workbook_inspector import (
+    BorrowingWorkbookDiscovery,
+    BorrowingWorkbookHeaderCellEvidence,
+    BorrowingWorkbookHeaderInspection,
+    BorrowingWorkbookSchemaInspector,
+    BorrowingWorkbookSheetTopology,
+)
 from aip.product.configured.irrbb.composition import ConfiguredIRRBBComposition
 from aip.product.configured.irrbb.investment_master_batch_bridge import (
     InstitutionalInvestmentMasterBatchBridge,
@@ -37,6 +44,11 @@ from aip.product.configured.irrbb.source_acl import (
 __all__ = [
     "BORROWING_WORKBOOK_SOURCE",
     "CREDIT_SEMANTIC_MODEL_SOURCE",
+    "BorrowingWorkbookDiscovery",
+    "BorrowingWorkbookHeaderCellEvidence",
+    "BorrowingWorkbookHeaderInspection",
+    "BorrowingWorkbookSchemaInspector",
+    "BorrowingWorkbookSheetTopology",
     "ConfiguredIRRBBComposition",
     "ConfiguredIRRBBRuntimeDependencies",
     "INSTITUTIONAL_IRRBB_PHYSICAL_SOURCES",
