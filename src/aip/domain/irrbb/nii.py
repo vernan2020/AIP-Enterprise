@@ -150,7 +150,9 @@ class ConvertedNIIAccrual:
 
         expected_amount = self.accrual.amount.amount * self.exchange_rate
         if self.amount_reporting.amount != expected_amount:
-            raise ValueError("converted NII amount must reconcile to source amount and FX")
+            raise ValueError(
+                "converted NII amount must reconcile to source amount and FX"
+            )
 
         expected_contribution = expected_amount
         if self.accrual.accrual_type is NIIAccrualType.INTEREST_EXPENSE:
@@ -195,7 +197,9 @@ class NetInterestIncomeResult:
                 )
             seen_ids.add(converted.accrual.accrual_id)
             if converted.accrual.scenario is not self.scenario:
-                raise ValueError("NII result accrual scenario must match result scenario")
+                raise ValueError(
+                    "NII result accrual scenario must match result scenario"
+                )
             if converted.amount_reporting.currency is not self.reporting_currency:
                 raise ValueError("converted NII accrual must use reporting_currency")
             if converted.signed_nii_contribution.currency is not self.reporting_currency:
@@ -211,7 +215,9 @@ class NetInterestIncomeResult:
         if self.interest_expense.amount != expected_expense:
             raise ValueError("NII interest_expense must reconcile to accrual detail")
         if self.net_interest_income.amount != expected_income - expected_expense:
-            raise ValueError("net_interest_income must equal interest income minus expense")
+            raise ValueError(
+                "net_interest_income must equal interest income minus expense"
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -255,8 +261,13 @@ class DeltaNIIResult:
         if self.base_nii.currency is not self.reporting_currency:
             raise ValueError("Delta NII base currency must match reporting_currency")
         if self.worst_loss.currency is not self.reporting_currency:
-            raise ValueError("Delta NII worst-loss currency must match reporting_currency")
-        if not self.base_nii.amount.is_finite() or not self.worst_loss.amount.is_finite():
+            raise ValueError(
+                "Delta NII worst-loss currency must match reporting_currency"
+            )
+        if (
+            not self.base_nii.amount.is_finite()
+            or not self.worst_loss.amount.is_finite()
+        ):
             raise ValueError("Delta NII base and worst-loss amounts must be finite")
         if self.worst_loss.amount < 0:
             raise ValueError("Delta NII worst_loss cannot be negative")
@@ -271,7 +282,9 @@ class DeltaNIIResult:
                 )
             seen_scenarios.add(assessment.scenario)
             if assessment.nii.currency is not self.reporting_currency:
-                raise ValueError("Delta NII assessment currency must match reporting_currency")
+                raise ValueError(
+                    "Delta NII assessment currency must match reporting_currency"
+                )
 
             expected_delta = assessment.nii.amount - self.base_nii.amount
             expected_fall = max(-expected_delta, Decimal("0"))
@@ -297,4 +310,6 @@ class DeltaNIIResult:
         if self.worst_loss.amount != maximum_loss:
             raise ValueError("Delta NII worst_loss must equal maximum assessment fall")
         if matching_worst.fall_from_base.amount != self.worst_loss.amount:
-            raise ValueError("Delta NII worst_scenario must identify a maximum-loss scenario")
+            raise ValueError(
+                "Delta NII worst_scenario must identify a maximum-loss scenario"
+            )
