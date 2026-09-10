@@ -46,14 +46,10 @@ class GovernedSemanticModelInspectionCoordinator:
     ) -> None:
         self._inspector = inspector
         self._renderer = (
-            renderer
-            if renderer is not None
-            else SemanticModelInspectionEvidenceRenderer()
+            renderer if renderer is not None else SemanticModelInspectionEvidenceRenderer()
         )
         self._registry = (
-            registry
-            if registry is not None
-            else institutional_irrbb_physical_source_registry()
+            registry if registry is not None else institutional_irrbb_physical_source_registry()
         )
 
     def inspect(
@@ -65,9 +61,7 @@ class GovernedSemanticModelInspectionCoordinator:
 
         source = self._registry.require(segment)
         if source.kind is not IRRBBPhysicalSourceKind.POWER_BI_SEMANTIC_MODEL:
-            raise ValueError(
-                f"physical source for segment {segment.value} is not a semantic model"
-            )
+            raise ValueError(f"physical source for segment {segment.value} is not a semantic model")
 
         snapshot = self._inspector.inspect(source=source)
         self._require_requested_source(source=source, snapshot=snapshot)
@@ -85,9 +79,7 @@ class GovernedSemanticModelInspectionCoordinator:
         snapshot: IRRBBSemanticModelInspectionSnapshot,
     ) -> None:
         if snapshot.source_id != source.source_id:
-            raise ValueError(
-                "semantic-model inspector returned evidence for a different source_id"
-            )
+            raise ValueError("semantic-model inspector returned evidence for a different source_id")
         if snapshot.logical_name != source.logical_name:
             raise ValueError(
                 "semantic-model inspector returned evidence for a different logical_name"
