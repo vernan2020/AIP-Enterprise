@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
-from typing import Generic, Protocol, TypeVar
+from typing import Generic, Protocol, TypeAlias, TypeVar
 
 from aip.application.irrbb.contracts import (
     IRRBBCurveSourcePoint,
@@ -35,7 +35,9 @@ class IRRBBSourceRecordEnvelope(Generic[SourceRecordT]):
             raise ValueError("source_reference is required")
 
 
-IRRBBCanonicalPositionMapResult = IRRBBPositionSourceRecord | IRRBBSourceMappingFailure
+IRRBBCanonicalPositionMapResult: TypeAlias = (
+    IRRBBPositionSourceRecord | IRRBBSourceMappingFailure
+)
 
 
 class IRRBBCanonicalPositionMapper(Protocol[SourceRecordT]):
