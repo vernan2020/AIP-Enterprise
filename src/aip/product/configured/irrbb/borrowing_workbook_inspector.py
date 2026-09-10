@@ -175,7 +175,9 @@ class BorrowingWorkbookSchemaInspector:
     @classmethod
     def _require_unchanged_file(cls, path: Path, *, expected_digest: str) -> None:
         if cls._sha256(path) != expected_digest:
-            raise ValueError("borrowing workbook changed while inspection evidence was being captured")
+            raise ValueError(
+                "borrowing workbook changed while inspection evidence was being captured"
+            )
 
     @staticmethod
     def _source_reference(file_name: str, digest: str) -> str:
