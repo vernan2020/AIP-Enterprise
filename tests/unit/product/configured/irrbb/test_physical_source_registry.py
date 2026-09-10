@@ -52,8 +52,7 @@ def test_power_bi_semantic_model_identities_are_governed_without_schema_assumpti
     assert TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE.owner == "TIPowerBI"
     assert TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE.location == "MS Área de Ahorros"
     assert (
-        TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE.kind
-        is IRRBBPhysicalSourceKind.POWER_BI_SEMANTIC_MODEL
+        TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE.kind is IRRBBPhysicalSourceKind.POWER_BI_SEMANTIC_MODEL
     )
 
 
@@ -81,7 +80,9 @@ def test_investments_continue_to_use_portfolio_master_source_identity() -> None:
     assert INVESTMENT_PORTFOLIO_SOURCE.segment is IRRBBPhysicalSourceSegment.INVESTMENT
 
 
-def test_registry_does_not_register_aggregate_icl_or_unproven_sql_view_as_contractual_source() -> None:
+def test_registry_does_not_register_aggregate_icl_or_unproven_sql_view_as_contractual_source() -> (
+    None
+):
     serialized = "|".join(
         f"{item.source_id}|{item.logical_name}|{item.configuration_key}"
         for item in INSTITUTIONAL_IRRBB_PHYSICAL_SOURCES
@@ -160,7 +161,9 @@ def test_descriptor_rejects_blank_required_and_optional_metadata() -> None:
 def test_registry_missing_segment_fails_instead_of_falling_back() -> None:
     registry = IRRBBPhysicalSourceRegistry((_source(),))
 
-    with pytest.raises(KeyError, match="no physical IRRBB source registered for segment INVESTMENT"):
+    with pytest.raises(
+        KeyError, match="no physical IRRBB source registered for segment INVESTMENT"
+    ):
         registry.require(IRRBBPhysicalSourceSegment.INVESTMENT)
 
 
@@ -168,6 +171,9 @@ def test_registry_lookup_returns_exact_registered_descriptor() -> None:
     registry = institutional_irrbb_physical_source_registry()
 
     assert registry.require(IRRBBPhysicalSourceSegment.CREDIT) is CREDIT_SEMANTIC_MODEL_SOURCE
-    assert registry.require(IRRBBPhysicalSourceSegment.TERM_DEPOSIT) is TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE
+    assert (
+        registry.require(IRRBBPhysicalSourceSegment.TERM_DEPOSIT)
+        is TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE
+    )
     assert registry.require(IRRBBPhysicalSourceSegment.BORROWING) is BORROWING_WORKBOOK_SOURCE
     assert registry.require(IRRBBPhysicalSourceSegment.INVESTMENT) is INVESTMENT_PORTFOLIO_SOURCE
