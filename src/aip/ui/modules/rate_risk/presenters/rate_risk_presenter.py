@@ -65,9 +65,7 @@ class RateRiskPresenter:
             "Inversiones · tasa variable/semivariable"
         ),
         SugefGapReportLine.CREDIT_FIXED: "Crédito · tasa fija",
-        SugefGapReportLine.CREDIT_VARIABLE_SEMIVARIABLE: (
-            "Crédito · tasa variable/semivariable"
-        ),
+        SugefGapReportLine.CREDIT_VARIABLE_SEMIVARIABLE: ("Crédito · tasa variable/semivariable"),
         SugefGapReportLine.PUBLIC_SIGHT_WITH_COST: "Público · vista con costo",
         SugefGapReportLine.PUBLIC_SIGHT_WITHOUT_COST: "Público · vista sin costo",
         SugefGapReportLine.PUBLIC_TERM_FIXED: "Público · plazo fijo",
@@ -77,18 +75,14 @@ class RateRiskPresenter:
         SugefGapReportLine.BCCR_SIGHT_WITH_COST: "BCCR · vista con costo",
         SugefGapReportLine.BCCR_SIGHT_WITHOUT_COST: "BCCR · vista sin costo",
         SugefGapReportLine.BCCR_TERM_FIXED: "BCCR · plazo fijo",
-        SugefGapReportLine.BCCR_TERM_VARIABLE_SEMIVARIABLE: (
-            "BCCR · plazo variable/semivariable"
-        ),
+        SugefGapReportLine.BCCR_TERM_VARIABLE_SEMIVARIABLE: ("BCCR · plazo variable/semivariable"),
         SugefGapReportLine.FINANCIAL_ENTITY_SIGHT_WITH_COST: (
             "Entidad financiera · vista con costo"
         ),
         SugefGapReportLine.FINANCIAL_ENTITY_SIGHT_WITHOUT_COST: (
             "Entidad financiera · vista sin costo"
         ),
-        SugefGapReportLine.FINANCIAL_ENTITY_TERM_FIXED: (
-            "Entidad financiera · plazo fijo"
-        ),
+        SugefGapReportLine.FINANCIAL_ENTITY_TERM_FIXED: ("Entidad financiera · plazo fijo"),
         SugefGapReportLine.FINANCIAL_ENTITY_TERM_VARIABLE_SEMIVARIABLE: (
             "Entidad financiera · plazo variable/semivariable"
         ),
@@ -206,12 +200,9 @@ class RateRiskPresenter:
         curve_points: tuple[RateRiskCurvePointInput, ...] = (),
     ) -> RateRiskReadModel:
         assessment_by_scenario = {
-            assessment.scenario: assessment
-            for assessment in evaluation.exposure.assessments
+            assessment.scenario: assessment for assessment in evaluation.exposure.assessments
         }
-        stressed_by_scenario = {
-            result.scenario: result for result in evaluation.stressed
-        }
+        stressed_by_scenario = {result.scenario: result for result in evaluation.stressed}
 
         if len(assessment_by_scenario) != len(evaluation.exposure.assessments):
             raise ValueError("duplicate scenario assessments cannot be presented")
@@ -540,9 +531,7 @@ class RateRiskPresenter:
             RateRiskMappingRow(
                 position_id=item.position_id,
                 status=item.status.value,
-                report_line=(
-                    item.report_line.value if item.report_line is not None else None
-                ),
+                report_line=(item.report_line.value if item.report_line is not None else None),
                 report_line_label=(
                     cls._report_line_label(item.report_line)
                     if item.report_line is not None
@@ -570,12 +559,8 @@ class RateRiskPresenter:
             incomplete_position_count=quality_counts[IRRBBDataQualityStatus.INCOMPLETE],
             excluded_position_count=quality_counts[IRRBBDataQualityStatus.EXCLUDED],
             data_issue_count=data_issue_count,
-            mapping_pending_count=mapping_counts[
-                SugefGapRowClassificationStatus.MAPPING_PENDING
-            ],
-            incomplete_mapping_count=mapping_counts[
-                SugefGapRowClassificationStatus.INCOMPLETE
-            ],
+            mapping_pending_count=mapping_counts[SugefGapRowClassificationStatus.MAPPING_PENDING],
+            incomplete_mapping_count=mapping_counts[SugefGapRowClassificationStatus.INCOMPLETE],
         )
 
     @staticmethod
