@@ -1,0 +1,25 @@
+name: Diagnose IRRBB Ruff Imports
+
+on:
+  push:
+    branches:
+      - feature/irrbb-phase8-runtime-composition-20260909
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install exact Ruff version
+        run: python -m pip install ruff==0.16.6
+      - name: Print Ruff autofix diff
+        run: |
+          ruff check --fix --diff tests/unit/product/configured/test_configured_irrbb_composition.py || true
