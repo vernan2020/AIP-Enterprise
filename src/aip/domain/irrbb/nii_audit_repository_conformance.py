@@ -7,13 +7,10 @@ from typing import Protocol
 
 from aip.domain.irrbb.nii_run_audit import (
     NIIRunAuditRecord,
+    NIIRunAuditRepositoryIntegrityError,
     NIIRunAuditRepositoryPutResult,
 )
 from aip.domain.irrbb.nii_run_audit_ports import NIIRunAuditRepository
-
-
-class NIIAuditRepositoryIntegrityError(RuntimeError):
-    """Raised when persisted NII audit data fails an integrity check."""
 
 
 class NIIAuditRepositoryConformanceCheck(str, Enum):
@@ -221,13 +218,14 @@ class NIIAuditRepositoryConformanceSuite:
         fixture: NIIAuditRepositoryConformanceFixture,
     ) -> tuple[NIIAuditRepositoryConformanceCheck, str | None]:
         check = NIIAuditRepositoryConformanceCheck.ATOMIC_CONCURRENT_PUT_IF_ABSENT
-        repository = cls._fresh_repository(harness=harness)
+        harness.reset()
         barrier = Barrier(2)
         results: list[NIIRunAuditRepositoryPutResult] = []
         errors: list[BaseException] = []
 
         def write(record: NIIRunAuditRecord) -> None:
             try:
+                repository = harness.repository()
                 barrier.wait()
                 results.append(repository.put_if_absent(record=record))
             except BaseException as exc:  # pragma: no cover - adapter failures are reported below
@@ -246,7 +244,9 @@ class NIIAuditRepositoryConformanceSuite:
             return check, f"Concurrent put_if_absent raised {type(errors[0]).__name__}: {errors[0]}"
         if len(results) != 2 or sum(result.created for result in results) != 1:
             return check, "Exactly one concurrent writer must create the run_reference"
-        persisted = repository.get_by_run_reference(run_reference=fixture.primary.run_reference)
+        persisted = harness.reopen_repository().get_by_run_reference(
+            run_reference=fixture.primary.run_reference
+        )
         if persisted is None or any(result.record != persisted for result in results):
             return check, "Concurrent writers must converge on the single persisted record"
         return check, None
@@ -281,11 +281,11 @@ class NIIAuditRepositoryConformanceSuite:
         reopened = harness.reopen_repository()
         try:
             reopened.get_by_run_reference(run_reference=fixture.primary.run_reference)
-        except NIIAuditRepositoryIntegrityError:
+        except NIIRunAuditRepositoryIntegrityError:
             return check, None
         except BaseException as exc:
             return check, (
-                "Corruption must raise NIIAuditRepositoryIntegrityError, got "
+                "Corruption must raise NIIRunAuditRepositoryIntegrityError, got "
                 f"{type(exc).__name__}: {exc}"
             )
         return check, "Corrupted persisted audit data must not be returned as a valid record"
