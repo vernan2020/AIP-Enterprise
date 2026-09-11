@@ -38,18 +38,13 @@ class NIIPositionProjection:
 
         if self.status is NIIPositionProjectionStatus.PROJECTED and not self.accruals:
             raise ValueError("PROJECTED NII position projection requires accruals")
-        if (
-            self.status is NIIPositionProjectionStatus.NO_ACCRUAL_IN_HORIZON
-            and self.accruals
-        ):
+        if self.status is NIIPositionProjectionStatus.NO_ACCRUAL_IN_HORIZON and self.accruals:
             raise ValueError("NO_ACCRUAL_IN_HORIZON projection cannot contain accruals")
 
         seen_accrual_ids: set[str] = set()
         for accrual in self.accruals:
             if accrual.accrual_id in seen_accrual_ids:
-                raise ValueError(
-                    f"duplicate position-level NII accrual_id: {accrual.accrual_id}"
-                )
+                raise ValueError(f"duplicate position-level NII accrual_id: {accrual.accrual_id}")
             seen_accrual_ids.add(accrual.accrual_id)
             if accrual.position_id != self.position_id:
                 raise ValueError("NII projection accrual position_id must match position")
@@ -77,9 +72,7 @@ class NIIProjectionBatch:
         seen_accrual_ids: set[str] = set()
         for projection in self.projections:
             if projection.position_id in seen_position_ids:
-                raise ValueError(
-                    f"duplicate NII projection position_id: {projection.position_id}"
-                )
+                raise ValueError(f"duplicate NII projection position_id: {projection.position_id}")
             seen_position_ids.add(projection.position_id)
             if projection.scenario is not self.scenario:
                 raise ValueError("position projection scenario must match batch scenario")
@@ -95,8 +88,4 @@ class NIIProjectionBatch:
     def accruals(self) -> tuple[NIIInterestAccrual, ...]:
         """Flatten explicit accruals without manufacturing zero-value records."""
 
-        return tuple(
-            accrual
-            for projection in self.projections
-            for accrual in projection.accruals
-        )
+        return tuple(accrual for projection in self.projections for accrual in projection.accruals)
