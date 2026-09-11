@@ -8,13 +8,13 @@ from decimal import Decimal
 
 import pytest
 
-from src.aip.shared.calendars import (
+from aip.shared.calendars import (
     CostaRicaCalendar,
     CostaRicaHolidayProvider,
     CostaRicaStatutoryHolidayProvider,
     InstitutionalHolidayProvider,
 )
-from src.aip.shared.conventions import (
+from aip.shared.conventions import (
     BusinessDayConvention,
     CouponConvention,
     DayCountConvention,
