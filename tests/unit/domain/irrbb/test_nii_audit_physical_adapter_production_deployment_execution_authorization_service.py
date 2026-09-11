@@ -190,9 +190,7 @@ def _evidence(requirement):
 
 def test_complete_last_mile_evidence_authorizes_exact_deployment_plan() -> None:
     plan = _deployment_plan()
-    requirements = tuple(
-        NIIRunAuditPhysicalAdapterProductionDeploymentExecutionRequirement
-    )
+    requirements = tuple(NIIRunAuditPhysicalAdapterProductionDeploymentExecutionRequirement)
 
     authorization = (
         NIIRunAuditPhysicalAdapterProductionDeploymentExecutionAuthorizationService.authorize(
