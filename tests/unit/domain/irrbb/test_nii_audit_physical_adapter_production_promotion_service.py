@@ -165,9 +165,7 @@ def test_complete_governance_evidence_yields_authorization() -> None:
     readiness = _ready_assessment()
     evidence = tuple(
         _promotion_evidence(requirement)
-        for requirement in reversed(
-            tuple(NIIRunAuditPhysicalAdapterProductionPromotionRequirement)
-        )
+        for requirement in reversed(tuple(NIIRunAuditPhysicalAdapterProductionPromotionRequirement))
     )
 
     authorization = NIIRunAuditPhysicalAdapterProductionPromotionService.authorize(
@@ -207,9 +205,7 @@ def test_blocked_production_readiness_is_rejected() -> None:
 
 
 def test_missing_governance_evidence_is_rejected() -> None:
-    omitted = (
-        NIIRunAuditPhysicalAdapterProductionPromotionRequirement.ROLLBACK_AUTHORITY_CONFIRMED
-    )
+    omitted = NIIRunAuditPhysicalAdapterProductionPromotionRequirement.ROLLBACK_AUTHORITY_CONFIRMED
     evidence = tuple(
         _promotion_evidence(requirement)
         for requirement in NIIRunAuditPhysicalAdapterProductionPromotionRequirement
