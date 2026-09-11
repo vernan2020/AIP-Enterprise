@@ -14,9 +14,7 @@ class NIIRunAuditPhysicalAdapterProductionRuntimeActivationAcceptanceError(Value
     """Raised when runtime activation acceptance cannot be issued safely."""
 
 
-class NIIRunAuditPhysicalAdapterProductionRuntimeActivationAcceptanceRequirement(
-    str, Enum
-):
+class NIIRunAuditPhysicalAdapterProductionRuntimeActivationAcceptanceRequirement(str, Enum):
     """Evidence required before an activated production runtime may be accepted."""
 
     ACTIVATION_RECEIPT_VERIFIED = "ACTIVATION_RECEIPT_VERIFIED"
@@ -52,9 +50,7 @@ class NIIRunAuditPhysicalAdapterProductionRuntimeActivationAcceptance:
 
     activation_receipt: NIIRunAuditPhysicalAdapterProductionRuntimeActivationReceipt
     acceptance_reference: str
-    evidence: tuple[
-        NIIRunAuditPhysicalAdapterProductionRuntimeActivationAcceptanceEvidence, ...
-    ]
+    evidence: tuple[NIIRunAuditPhysicalAdapterProductionRuntimeActivationAcceptanceEvidence, ...]
 
     def __post_init__(self) -> None:
         if (
