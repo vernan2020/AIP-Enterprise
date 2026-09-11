@@ -39,7 +39,7 @@ Phase 30 requirements that still require adapter-specific evidence include, amon
 7. `RECOVERY_REOPEN`
    - reopening the repository against the same backing store must recover the persisted record without rebuilding it from in-memory domain objects.
 8. `INTEGRITY_DETECTION`
-   - controlled corruption outside the repository API must not be returned as valid data; reads must fail with `NIIAuditRepositoryIntegrityError`.
+   - controlled corruption outside the repository API must not be returned as valid data; reads must fail with `NIIRunAuditRepositoryIntegrityError`.
 
 ## Conformance harness
 
@@ -73,6 +73,8 @@ For two competing records sharing one `run_reference`:
 - exactly one response may report `created=True`;
 - the persisted record must be one of the submitted records;
 - both repository responses must return that exact persisted record.
+
+Each concurrent writer obtains its own repository instance against the same backing store. This allows database adapters to use separate sessions/connections while exercising the real atomicity boundary.
 
 This is the executable form of the atomic insert-if-absent invariant required by the audited-run orchestration.
 
