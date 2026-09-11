@@ -56,7 +56,9 @@ def _basis(*, source_reference: str = "basis:approved:v1") -> NIIProjectionBasis
     )
 
 
-def _specification(*, basis_source_reference: str = "basis:approved:v1") -> NIIMethodologyRunSpecification:
+def _specification(
+    *, basis_source_reference: str = "basis:approved:v1"
+) -> NIIMethodologyRunSpecification:
     return NIIMethodologyRunSpecification(
         run_reference="nii-run:2026-09-11:phase29",
         basis=_basis(source_reference=basis_source_reference),
