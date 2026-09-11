@@ -8,9 +8,7 @@ from aip.domain.irrbb.nii_audit_physical_adapter_production_deployment_plan impo
 )
 
 
-class NIIRunAuditPhysicalAdapterProductionDeploymentExecutionAuthorizationError(
-    ValueError
-):
+class NIIRunAuditPhysicalAdapterProductionDeploymentExecutionAuthorizationError(ValueError):
     """Raised when deployment execution authorization cannot be issued safely."""
 
 
@@ -24,8 +22,8 @@ class NIIRunAuditPhysicalAdapterProductionDeploymentExecutionRequirement(str, En
     PRE_DEPLOYMENT_CHECKPOINT_CONFIRMED = "PRE_DEPLOYMENT_CHECKPOINT_CONFIRMED"
 
 
-REQUIRED_NII_AUDIT_PHYSICAL_ADAPTER_PRODUCTION_DEPLOYMENT_EXECUTION_REQUIREMENTS = (
-    frozenset(NIIRunAuditPhysicalAdapterProductionDeploymentExecutionRequirement)
+REQUIRED_NII_AUDIT_PHYSICAL_ADAPTER_PRODUCTION_DEPLOYMENT_EXECUTION_REQUIREMENTS = frozenset(
+    NIIRunAuditPhysicalAdapterProductionDeploymentExecutionRequirement
 )
 
 
@@ -49,9 +47,7 @@ class NIIRunAuditPhysicalAdapterProductionDeploymentExecutionAuthorization:
 
     deployment_plan: NIIRunAuditPhysicalAdapterProductionDeploymentPlan
     execution_authorization_reference: str
-    evidence: tuple[
-        NIIRunAuditPhysicalAdapterProductionDeploymentExecutionEvidence, ...
-    ]
+    evidence: tuple[NIIRunAuditPhysicalAdapterProductionDeploymentExecutionEvidence, ...]
 
     def __post_init__(self) -> None:
         if not self.execution_authorization_reference.strip():
