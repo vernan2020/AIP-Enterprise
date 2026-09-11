@@ -1,6 +1,5 @@
 """Portfolio bounded context public API."""
 
-from src.aip.domain.portfolio.services import PortfolioCalculationService
 from src.aip.domain.portfolio.value_objects import (
     ISIN,
     AcquisitionCost,
@@ -41,6 +40,7 @@ from .exceptions import (
     PositionNotFoundError,
 )
 from .repositories import PortfolioRepository
+from .services import PortfolioCalculationService
 
 __all__ = [
     "Portfolio",
