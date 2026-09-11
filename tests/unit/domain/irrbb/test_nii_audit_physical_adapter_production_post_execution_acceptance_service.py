@@ -294,7 +294,10 @@ def test_acceptance_preserves_exact_receipt_and_derives_identity() -> None:
     assert acceptance.artifact_reference == "artifact:nii-audit-adapter-v1"
     assert acceptance.planned_rollback_reference == "runbook:nii-audit-rollback-v1"
     assert tuple(item.requirement.value for item in acceptance.evidence) == tuple(
-        sorted(requirement.value for requirement in NIIRunAuditPhysicalAdapterProductionPostExecutionAcceptanceRequirement)
+        sorted(
+            requirement.value
+            for requirement in NIIRunAuditPhysicalAdapterProductionPostExecutionAcceptanceRequirement
+        )
     )
 
 
