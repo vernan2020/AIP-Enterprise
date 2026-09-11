@@ -9,6 +9,9 @@ from aip.domain.irrbb.services.floating_rate_scenario_cashflow_projector import 
     FloatingRateScenarioCashFlowProjector,
 )
 from aip.domain.irrbb.services.net_interest_income_service import NetInterestIncomeService
+from aip.domain.irrbb.services.nii_projection_certification_service import (
+    NIIProjectionCertificationService,
+)
 from aip.domain.irrbb.services.nii_projection_readiness_service import (
     NIIProjectionReadinessService,
 )
@@ -42,6 +45,7 @@ __all__ = [
     "IRRBBScenarioEvaluationService",
     "IRRBBTimeBucketService",
     "NetInterestIncomeService",
+    "NIIProjectionCertificationService",
     "NIIProjectionReadinessService",
     "NIIProjectionService",
     "NonMaturityDepositBehavioralModel",
