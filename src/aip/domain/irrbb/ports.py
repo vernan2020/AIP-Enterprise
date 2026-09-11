@@ -12,6 +12,8 @@ from aip.domain.irrbb.models import (
     IRRBBScenario,
     ScenarioShockCalibration,
 )
+from aip.domain.irrbb.nii import NIIProjectionBasis
+from aip.domain.irrbb.nii_projection import NIIPositionProjection
 from aip.domain.irrbb.scenario_repricing import FloatingRateCouponBasis
 from aip.shared.money import Currency, Money
 
@@ -188,6 +190,29 @@ class NIIExchangeRateProvider(Protocol):
         valuation_date: date,
         accrual_end_date: date,
     ) -> Decimal: ...
+
+
+class NIIProjectionStrategy(Protocol):
+    """Project one certified position into explicit auditable NII accruals.
+
+    Implementations own instrument-specific scheduling, repricing, behavioral and
+    replacement assumptions. Missing contractual terms must fail closed inside the
+    strategy; callers must never infer them merely to obtain a result.
+    """
+
+    def project(
+        self,
+        *,
+        position: BankingBookPosition,
+        basis: NIIProjectionBasis,
+        scenario: IRRBBScenario,
+    ) -> NIIPositionProjection: ...
+
+
+class NIIProjectionStrategyResolver(Protocol):
+    """Resolve the approved NII projection strategy for one canonical position."""
+
+    def resolve(self, *, position: BankingBookPosition) -> NIIProjectionStrategy: ...
 
 
 class ScenarioCurveShocker(Protocol):
