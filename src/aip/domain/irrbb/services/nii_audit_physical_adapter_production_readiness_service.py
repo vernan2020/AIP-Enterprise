@@ -45,9 +45,7 @@ class NIIRunAuditPhysicalAdapterProductionReadinessService:
             evidence_by_requirement[item.requirement] = item
 
         certified = frozenset(evidence_by_requirement)
-        missing = (
-            REQUIRED_NII_AUDIT_PHYSICAL_ADAPTER_PRODUCTION_REQUIREMENTS - certified
-        )
+        missing = REQUIRED_NII_AUDIT_PHYSICAL_ADAPTER_PRODUCTION_REQUIREMENTS - certified
         status = (
             NIIRunAuditPhysicalAdapterProductionReadinessStatus.READY
             if not missing
