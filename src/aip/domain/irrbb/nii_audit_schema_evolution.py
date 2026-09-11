@@ -51,10 +51,7 @@ class NIIAuditSchemaEvolutionContract:
         if self.current_version not in self.readable_versions:
             raise ValueError("Current NII audit schema version must be readable")
         schema_reference = self.current_version.schema_reference
-        if any(
-            version.schema_reference != schema_reference
-            for version in self.readable_versions
-        ):
+        if any(version.schema_reference != schema_reference for version in self.readable_versions):
             raise ValueError("Readable NII audit versions must belong to one schema")
 
         seen_edges: set[tuple[NIIAuditSchemaVersion, NIIAuditSchemaVersion]] = set()
