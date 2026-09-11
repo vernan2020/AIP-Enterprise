@@ -55,6 +55,11 @@ from aip.domain.irrbb.nii import (
     NIIScenarioAssessment,
     NIIShockTiming,
 )
+from aip.domain.irrbb.nii_projection import (
+    NIIPositionProjection,
+    NIIPositionProjectionStatus,
+    NIIProjectionBatch,
+)
 from aip.domain.irrbb.scenario_evaluation import IRRBBScenarioEvaluationResult
 from aip.domain.irrbb.scenario_repricing import FloatingRateCouponBasis
 from aip.domain.irrbb.services.capital_buffer_service import CapitalBufferService
@@ -64,6 +69,7 @@ from aip.domain.irrbb.services.floating_rate_scenario_cashflow_projector import 
     FloatingRateScenarioCashFlowProjector,
 )
 from aip.domain.irrbb.services.net_interest_income_service import NetInterestIncomeService
+from aip.domain.irrbb.services.nii_projection_service import NIIProjectionService
 from aip.domain.irrbb.services.non_maturity_deposit_behavioral_model import (
     NonMaturityDepositBehavioralModel,
 )
@@ -131,7 +137,11 @@ __all__ = [
     "NIIAccrualType",
     "NIIBalanceSheetAssumption",
     "NIIInterestAccrual",
+    "NIIPositionProjection",
+    "NIIPositionProjectionStatus",
     "NIIProjectionBasis",
+    "NIIProjectionBatch",
+    "NIIProjectionService",
     "NIIRepricingTrace",
     "NIIScenarioAssessment",
     "NIIShockTiming",
