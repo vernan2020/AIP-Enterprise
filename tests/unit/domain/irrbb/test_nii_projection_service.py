@@ -205,7 +205,20 @@ def test_position_projection_rejects_position_substitution_inside_accrual() -> N
 
 def test_projection_service_rejects_strategy_position_substitution() -> None:
     def substituted(position, basis, scenario):  # type: ignore[no-untyped-def]
-        return replace(_projected(position, basis, scenario), position_id="other")
+        return NIIPositionProjection(
+            position_id="other",
+            scenario=scenario,
+            basis=basis,
+            strategy_reference="strategy:substituted-position",
+            status=NIIPositionProjectionStatus.PROJECTED,
+            accruals=(
+                _accrual(
+                    position_id="other",
+                    scenario=scenario,
+                    accrual_id="other:1",
+                ),
+            ),
+        )
 
     with pytest.raises(ValueError, match="substituted position_id"):
         NIIProjectionService.project(
