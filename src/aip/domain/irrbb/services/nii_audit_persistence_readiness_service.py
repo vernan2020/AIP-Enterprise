@@ -5,6 +5,7 @@ from aip.domain.irrbb.nii_audit_persistence_readiness import (
     NIIAuditPersistenceEvidence,
     NIIAuditPersistenceReadinessAssessment,
     NIIAuditPersistenceReadinessStatus,
+    NIIAuditPersistenceRequirement,
 )
 
 
@@ -21,7 +22,10 @@ class NIIAuditPersistenceReadinessService:
         if not adapter_reference.strip():
             raise ValueError("NII audit persistence adapter_reference is required")
 
-        evidence_by_requirement: dict[object, NIIAuditPersistenceEvidence] = {}
+        evidence_by_requirement: dict[
+            NIIAuditPersistenceRequirement,
+            NIIAuditPersistenceEvidence,
+        ] = {}
         for item in evidence:
             if item.requirement in evidence_by_requirement:
                 raise ValueError(
