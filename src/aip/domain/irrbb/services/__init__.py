@@ -16,6 +16,9 @@ from aip.domain.irrbb.services.nii_projection_readiness_service import (
     NIIProjectionReadinessService,
 )
 from aip.domain.irrbb.services.nii_projection_service import NIIProjectionService
+from aip.domain.irrbb.services.nii_scenario_set_evaluation_service import (
+    NIIScenarioSetEvaluationService,
+)
 from aip.domain.irrbb.services.non_maturity_deposit_behavioral_model import (
     NonMaturityDepositBehavioralModel,
 )
@@ -48,6 +51,7 @@ __all__ = [
     "NIIProjectionCertificationService",
     "NIIProjectionReadinessService",
     "NIIProjectionService",
+    "NIIScenarioSetEvaluationService",
     "NonMaturityDepositBehavioralModel",
     "ParallelOnlyScenarioTenorShockProvider",
     "ParameterizedScenarioCurveShocker",
