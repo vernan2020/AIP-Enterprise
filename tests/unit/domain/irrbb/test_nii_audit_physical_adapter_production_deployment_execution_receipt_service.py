@@ -224,12 +224,8 @@ def test_successful_execution_receipt_preserves_exact_authorization() -> None:
         receipt_reference="receipt:deployment-2026-09-11",
         execution_reference="executor-run:001",
         step_results=(
-            _step_result(
-                2, NIIRunAuditPhysicalAdapterProductionDeploymentStepStatus.SUCCEEDED
-            ),
-            _step_result(
-                1, NIIRunAuditPhysicalAdapterProductionDeploymentStepStatus.SUCCEEDED
-            ),
+            _step_result(2, NIIRunAuditPhysicalAdapterProductionDeploymentStepStatus.SUCCEEDED),
+            _step_result(1, NIIRunAuditPhysicalAdapterProductionDeploymentStepStatus.SUCCEEDED),
         ),
         rollback_status=NIIRunAuditPhysicalAdapterProductionDeploymentRollbackStatus.NOT_REQUIRED,
         rollback_evidence_reference="executor:rollback-not-required",
@@ -252,19 +248,18 @@ def test_failed_execution_derives_failed_status_and_records_rollback() -> None:
         receipt_reference="receipt:deployment-2026-09-11-failed",
         execution_reference="executor-run:002",
         step_results=(
-            _step_result(
-                1, NIIRunAuditPhysicalAdapterProductionDeploymentStepStatus.FAILED
-            ),
-            _step_result(
-                2, NIIRunAuditPhysicalAdapterProductionDeploymentStepStatus.NOT_EXECUTED
-            ),
+            _step_result(1, NIIRunAuditPhysicalAdapterProductionDeploymentStepStatus.FAILED),
+            _step_result(2, NIIRunAuditPhysicalAdapterProductionDeploymentStepStatus.NOT_EXECUTED),
         ),
         rollback_status=NIIRunAuditPhysicalAdapterProductionDeploymentRollbackStatus.SUCCEEDED,
         rollback_evidence_reference="executor:rollback:002",
     )
 
     assert receipt.status is NIIRunAuditPhysicalAdapterProductionDeploymentExecutionStatus.FAILED
-    assert receipt.rollback_status is NIIRunAuditPhysicalAdapterProductionDeploymentRollbackStatus.SUCCEEDED
+    assert (
+        receipt.rollback_status
+        is NIIRunAuditPhysicalAdapterProductionDeploymentRollbackStatus.SUCCEEDED
+    )
     assert tuple(result.status for result in receipt.step_results) == (
         NIIRunAuditPhysicalAdapterProductionDeploymentStepStatus.FAILED,
         NIIRunAuditPhysicalAdapterProductionDeploymentStepStatus.NOT_EXECUTED,
