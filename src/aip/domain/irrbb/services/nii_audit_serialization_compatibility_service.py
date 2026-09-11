@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from aip.domain.irrbb.nii_audit_schema_evolution import NIIAuditSchemaEvolutionContract
 from aip.domain.irrbb.nii_audit_serialization import (
     NIIRunAuditPayloadIntegrity,
     NIIRunAuditRecordCodec,
@@ -14,7 +15,6 @@ from aip.domain.irrbb.nii_audit_serialization_compatibility import (
 from aip.domain.irrbb.nii_audit_serialization_migration import (
     NIIRunAuditPayloadMigrationTransformerResolver,
 )
-from aip.domain.irrbb.nii_audit_schema_evolution import NIIAuditSchemaEvolutionContract
 from aip.domain.irrbb.services.nii_audit_schema_evolution_service import (
     NIIAuditSchemaEvolutionService,
 )
@@ -39,38 +39,46 @@ class NIIRunAuditSerializationCompatibilityService:
             integrity=integrity,
         )
 
-        entries: list[NIIAuditReadableSchemaCompatibility] = []
-        for source_version in sorted(schema_contract.readable_versions):
-            path = NIIAuditSchemaEvolutionService.migration_path(
+        paths = {
+            source_version: NIIAuditSchemaEvolutionService.migration_path(
                 contract=schema_contract,
                 source_version=source_version,
             )
-            transformer_references: list[str] = []
-            for step in path:
-                transformer = transformer_resolver.resolve(step=step)
-                if transformer.step != step:
-                    raise NIIRunAuditSerializationCompatibilityError(
-                        "NII audit compatibility resolver substituted schema migration step"
-                    )
-                if not transformer.reference.strip():
-                    raise NIIRunAuditSerializationCompatibilityError(
-                        "NII audit compatibility transformer reference is required"
-                    )
-                transformer_references.append(transformer.reference)
+            for source_version in sorted(schema_contract.readable_versions)
+        }
+        used_steps = {step for path in paths.values() for step in path}
+        required_steps = tuple(
+            step for step in schema_contract.migration_steps if step in used_steps
+        )
 
-            entries.append(
-                NIIAuditReadableSchemaCompatibility(
-                    source_version=source_version,
-                    migration_steps=path,
-                    transformer_references=tuple(transformer_references),
+        transformer_references = {}
+        for step in required_steps:
+            transformer = transformer_resolver.resolve(step=step)
+            if transformer.step != step:
+                raise NIIRunAuditSerializationCompatibilityError(
+                    "NII audit compatibility resolver substituted schema migration step"
                 )
-            )
+            if not transformer.reference.strip():
+                raise NIIRunAuditSerializationCompatibilityError(
+                    "NII audit compatibility transformer reference is required"
+                )
+            transformer_references[step] = transformer.reference
 
+        entries = tuple(
+            NIIAuditReadableSchemaCompatibility(
+                source_version=source_version,
+                migration_steps=path,
+                transformer_references=tuple(
+                    transformer_references[step] for step in path
+                ),
+            )
+            for source_version, path in paths.items()
+        )
         return NIIRunAuditSerializationCompatibilityCertificate(
             schema_contract=schema_contract,
             codec_reference=codec.reference,
             integrity_reference=integrity.reference,
-            readable_schema_compatibility=tuple(entries),
+            readable_schema_compatibility=entries,
         )
 
     @staticmethod
