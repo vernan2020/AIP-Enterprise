@@ -7,6 +7,7 @@ from aip.domain.irrbb.nii_certification import (
     NIIProjectionCertificationStatus,
 )
 from aip.domain.irrbb.nii_readiness import (
+    NIIProjectionReadinessAssessment,
     NIIProjectionReadinessStatus,
     NIIProjectionScopeStatus,
 )
@@ -42,8 +43,8 @@ class NIIProjectionCertificationService:
         if len(set(position_ids)) != len(position_ids):
             raise ValueError("duplicate NII projection certification position_id")
 
-        assessments = []
-        ready_positions = []
+        assessments: list[NIIProjectionReadinessAssessment] = []
+        ready_positions: list[BankingBookPosition] = []
         for position in positions:
             profile = profile_provider.profile_for(position=position)
             capabilities = ()
