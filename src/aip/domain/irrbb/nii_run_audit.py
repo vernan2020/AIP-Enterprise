@@ -21,6 +21,10 @@ class NIIRunAuditConflictError(ValueError):
     """Raised when an existing run reference conflicts with a submitted audit record."""
 
 
+class NIIRunAuditRepositoryIntegrityError(RuntimeError):
+    """Raised when persisted NII audit data fails repository integrity verification."""
+
+
 @dataclass(frozen=True, slots=True)
 class NIIRunAuditRecord:
     """Immutable auditable bundle for one completed NII methodology run."""
