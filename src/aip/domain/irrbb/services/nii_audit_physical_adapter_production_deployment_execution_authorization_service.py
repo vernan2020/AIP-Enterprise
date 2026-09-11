@@ -23,9 +23,7 @@ class NIIRunAuditPhysicalAdapterProductionDeploymentExecutionAuthorizationServic
         *,
         deployment_plan: NIIRunAuditPhysicalAdapterProductionDeploymentPlan,
         execution_authorization_reference: str,
-        evidence: Iterable[
-            NIIRunAuditPhysicalAdapterProductionDeploymentExecutionEvidence
-        ],
+        evidence: Iterable[NIIRunAuditPhysicalAdapterProductionDeploymentExecutionEvidence],
     ) -> NIIRunAuditPhysicalAdapterProductionDeploymentExecutionAuthorization:
         if not execution_authorization_reference.strip():
             raise NIIRunAuditPhysicalAdapterProductionDeploymentExecutionAuthorizationError(
