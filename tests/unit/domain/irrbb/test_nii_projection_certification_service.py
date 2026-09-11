@@ -55,7 +55,9 @@ def _basis() -> NIIProjectionBasis:
     )
 
 
-def _position(position_id: str, *, contractual_rate: Decimal | None = Decimal("0.05")) -> BankingBookPosition:
+def _position(
+    position_id: str, *, contractual_rate: Decimal | None = Decimal("0.05")
+) -> BankingBookPosition:
     return BankingBookPosition(
         position_id=position_id,
         product_type="TEST",
@@ -177,7 +179,9 @@ class _Resolver:
 def test_certifies_every_position_before_projecting_ready_scope() -> None:
     positions = (_position("p1"), _position("p2"), _position("excluded"))
     profiles = {
-        "p1": _included_profile("strategy:p1", _requirement(NIIProjectionEvidenceKey.CONTRACTUAL_RATE)),
+        "p1": _included_profile(
+            "strategy:p1", _requirement(NIIProjectionEvidenceKey.CONTRACTUAL_RATE)
+        ),
         "p2": _included_profile(
             "strategy:p2",
             _requirement(NIIProjectionEvidenceKey.FORWARD_REFERENCE_RATE_CURVE),
@@ -256,7 +260,10 @@ def test_one_blocked_position_prevents_every_strategy_from_running() -> None:
 def test_excluded_only_portfolio_does_not_request_capabilities_or_strategies() -> None:
     positions = (_position("p1"), _position("p2"))
     profile_provider = _ProfileProvider(
-        {position.position_id: _excluded_profile(f"strategy:{position.position_id}") for position in positions}
+        {
+            position.position_id: _excluded_profile(f"strategy:{position.position_id}")
+            for position in positions
+        }
     )
     capability_provider = _CapabilityProvider()
     resolver = _Resolver({})
@@ -278,9 +285,7 @@ def test_excluded_only_portfolio_does_not_request_capabilities_or_strategies() -
 
 def test_projection_strategy_reference_must_match_approved_profile() -> None:
     position = _position("p1")
-    profile_provider = _ProfileProvider(
-        {"p1": _included_profile("strategy:approved")}
-    )
+    profile_provider = _ProfileProvider({"p1": _included_profile("strategy:approved")})
     resolver = _Resolver({"p1": _Strategy("strategy:substituted")})
 
     with pytest.raises(ValueError, match="strategy_reference does not match profile"):
