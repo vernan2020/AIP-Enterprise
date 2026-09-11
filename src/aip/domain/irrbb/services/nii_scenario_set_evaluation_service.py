@@ -57,10 +57,7 @@ class NIIScenarioSetEvaluationService:
             for scenario in scenarios
         )
 
-        if any(
-            item.status is NIIProjectionCertificationStatus.BLOCKED
-            for item in certifications
-        ):
+        if any(item.status is NIIProjectionCertificationStatus.BLOCKED for item in certifications):
             return NIIScenarioSetEvaluationResult(
                 basis=basis,
                 reporting_currency=reporting_currency,
