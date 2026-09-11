@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from hashlib import sha256
+from dataclasses import dataclass
 
 
 NII_REPRODUCIBILITY_SCHEMA_VERSION = "aip.irrbb.nii-run-reproducibility.v1"
