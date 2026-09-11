@@ -42,7 +42,9 @@ class NIIProjectionReadinessService:
         capability_keys: set[NIIProjectionEvidenceKey] = set()
         for evidence in capabilities:
             if evidence.key in capability_keys:
-                raise ValueError(f"duplicate NII projection capability evidence: {evidence.key.value}")
+                raise ValueError(
+                    f"duplicate NII projection capability evidence: {evidence.key.value}"
+                )
             capability_keys.add(evidence.key)
         available.update(capability_keys)
 
