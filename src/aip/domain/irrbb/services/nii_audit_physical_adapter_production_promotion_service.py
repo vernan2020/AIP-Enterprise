@@ -47,9 +47,8 @@ class NIIRunAuditPhysicalAdapterProductionPromotionService:
                 )
             evidence_by_requirement[item.requirement] = item
 
-        missing = (
-            REQUIRED_NII_AUDIT_PHYSICAL_ADAPTER_PRODUCTION_PROMOTION_REQUIREMENTS
-            - frozenset(evidence_by_requirement)
+        missing = REQUIRED_NII_AUDIT_PHYSICAL_ADAPTER_PRODUCTION_PROMOTION_REQUIREMENTS - frozenset(
+            evidence_by_requirement
         )
         if missing:
             missing_references = ", ".join(sorted(item.value for item in missing))
