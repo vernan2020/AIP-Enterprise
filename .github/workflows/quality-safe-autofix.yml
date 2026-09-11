@@ -1,6 +1,7 @@
 name: Apply Safe Runtime Quality Fixes
 
 # Re-run after freezing the materialized runtime source.
+# Trigger safe Ruff normalization for the contractual liquidity update.
 on:
   push:
     branches:

@@ -25,7 +25,7 @@ def test_main_window_opens_market_workspace_from_shell(qt_app) -> None:
     window.open_workspace("market")
 
     tab_titles = [window.workspace.tabText(index) for index in range(window.workspace.count())]
-    assert "Market" in tab_titles
+    assert "Mercado" in tab_titles
 
 
 def test_workspace_can_open_market_tab(qt_app) -> None:

@@ -696,7 +696,7 @@ class ConfiguredLiquidityProvider:
             return 0.0
 
         try:
-            return float(value)
+            return float(str(value))
         except (
             TypeError,
             ValueError,

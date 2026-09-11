@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from src.aip.shared.dates import BusinessDate
+from aip.shared.dates import BusinessDate
 
 
 @dataclass(frozen=True, slots=True)

@@ -3,12 +3,36 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
+from typing import Any
 
 from aip.domain.portfolio.services.portfolio_dv01_aggregation_service import (
     DV01AggregateRow,
     PortfolioDV01AggregationService,
 )
+from aip.domain.portfolio.services.portfolio_dv01_bucket_service import (
+    PortfolioDV01BucketService,
+)
+from aip.domain.portfolio.services.portfolio_dv01_service import PortfolioDV01Service
+from aip.domain.portfolio.services.portfolio_security_identity_service import (
+    PortfolioSecurityIdentityService,
+)
 from aip.product.configured.protocols import PortfolioDataProvider
+
+
+@dataclass(frozen=True, slots=True)
+class ConfiguredPortfolioDV01TitleDetail:
+    """Detalle DV01 agregado a la misma identidad de título usada por el VeR."""
+
+    security_key: str
+    series: str
+    issuer: str
+    currency: str
+    market_value_crc: Decimal
+    modified_duration: Decimal | None
+    dv01_crc: Decimal | None
+    bucket: str
+    position_count: int
+    status: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -30,16 +54,19 @@ class ConfiguredPortfolioDV01Result:
     by_product: tuple[DV01AggregateRow, ...]
     by_bucket: tuple[DV01AggregateRow, ...]
     status: str
+    title_details: tuple[ConfiguredPortfolioDV01TitleDetail, ...] = ()
 
 
 class ConfiguredPortfolioDV01Service:
-    """Application service for institutional portfolio DV01."""
+    """Servicio de aplicación para DV01 institucional del portafolio."""
 
     def __init__(self, portfolio_provider: PortfolioDataProvider) -> None:
         self._portfolio_provider = portfolio_provider
 
-    def calculate(self) -> ConfiguredPortfolioDV01Result:
-        portfolio = self._portfolio_provider.get_portfolio()
+    def calculate(
+        self, *, portfolio: dict[str, Any] | None = None
+    ) -> ConfiguredPortfolioDV01Result:
+        portfolio = portfolio or self._portfolio_provider.get_portfolio()
         positions = [
             position for position in portfolio.get("positions", []) if isinstance(position, dict)
         ]
@@ -87,4 +114,112 @@ class ConfiguredPortfolioDV01Service:
             by_product=aggregate.by_product,
             by_bucket=aggregate.by_bucket,
             status=status,
+            title_details=self._build_title_details(
+                positions,
+                valuation_date=valuation_date,
+            ),
         )
+
+    @classmethod
+    def _build_title_details(
+        cls,
+        positions: list[dict[str, Any]],
+        *,
+        valuation_date: date,
+    ) -> tuple[ConfiguredPortfolioDV01TitleDetail, ...]:
+        grouped: dict[str, dict[str, Any]] = {}
+
+        for position in positions:
+            security_key = PortfolioSecurityIdentityService.from_position(position)
+            result = PortfolioDV01Service.calculate(position)
+            market_value = result.market_value_crc
+            duration = result.modified_duration
+            bucket = (
+                PortfolioDV01BucketService.bucket_key(
+                    position,
+                    valuation_date=valuation_date,
+                )
+                if result.status == "CALCULATED"
+                else None
+            )
+
+            item = grouped.setdefault(
+                security_key,
+                {
+                    "series": str(position.get("series") or "").strip(),
+                    "issuer": str(position.get("issuer") or "").strip(),
+                    "currency": str(position.get("currency") or "").strip(),
+                    "market_value_crc": Decimal("0"),
+                    "duration_weighted_sum": Decimal("0"),
+                    "duration_weight": Decimal("0"),
+                    "dv01_crc": Decimal("0"),
+                    "calculated_count": 0,
+                    "policy_excluded_count": 0,
+                    "data_unavailable_count": 0,
+                    "position_count": 0,
+                    "buckets": set(),
+                },
+            )
+            item["market_value_crc"] += market_value
+            item["position_count"] += 1
+
+            if duration is not None and market_value > 0:
+                item["duration_weighted_sum"] += duration * market_value
+                item["duration_weight"] += market_value
+
+            if result.status == "CALCULATED":
+                item["calculated_count"] += 1
+                item["dv01_crc"] += result.dv01_crc or Decimal("0")
+                if bucket:
+                    item["buckets"].add(bucket)
+            elif result.status == "POLICY_EXCLUDED":
+                item["policy_excluded_count"] += 1
+            else:
+                item["data_unavailable_count"] += 1
+
+        details: list[ConfiguredPortfolioDV01TitleDetail] = []
+        for security_key, item in grouped.items():
+            duration_weight = item["duration_weight"]
+            modified_duration = (
+                item["duration_weighted_sum"] / duration_weight if duration_weight > 0 else None
+            )
+            calculated_count = int(item["calculated_count"])
+            policy_excluded_count = int(item["policy_excluded_count"])
+            data_unavailable_count = int(item["data_unavailable_count"])
+            if calculated_count and not data_unavailable_count and not policy_excluded_count:
+                detail_status = "CALCULATED"
+            elif calculated_count:
+                detail_status = "CALCULATED_WITH_DATA_GAPS"
+            elif policy_excluded_count and not data_unavailable_count:
+                detail_status = "POLICY_EXCLUDED"
+            else:
+                detail_status = "DATA_UNAVAILABLE"
+
+            buckets = tuple(sorted(item["buckets"]))
+            if len(buckets) == 1:
+                bucket_label = buckets[0]
+            elif len(buckets) > 1:
+                bucket_label = "MIXTO"
+            else:
+                bucket_label = "N/A"
+
+            details.append(
+                ConfiguredPortfolioDV01TitleDetail(
+                    security_key=security_key,
+                    series=item["series"],
+                    issuer=item["issuer"],
+                    currency=item["currency"],
+                    market_value_crc=item["market_value_crc"],
+                    modified_duration=modified_duration,
+                    dv01_crc=(item["dv01_crc"] if calculated_count else None),
+                    bucket=bucket_label,
+                    position_count=int(item["position_count"]),
+                    status=detail_status,
+                )
+            )
+
+        details.sort(
+            key=lambda item: abs(item.dv01_crc or Decimal("0")),
+            reverse=True,
+        )
+        return tuple(details)

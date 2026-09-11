@@ -39,27 +39,16 @@ class EconomicHistoricalStore:
         self,
         *,
         project_root: Path | None = None,
-        database_settings: (
-            DatabaseSettings | None
-        ) = None,
+        database_settings: DatabaseSettings | None = None,
     ) -> None:
         if project_root is None:
-            project_root = (
-                Path(__file__)
-                .resolve()
-                .parents[5]
-            )
+            project_root = Path(__file__).resolve().parents[5]
 
-        self._project_root = (
-            project_root
-        )
+        self._project_root = project_root
 
-        self._database = (
-            DatabaseManager(
-                database_settings
-                or DatabaseSettings(),
-                project_root,
-            )
+        self._database = DatabaseManager(
+            database_settings or DatabaseSettings(),
+            project_root,
         )
 
         self._initialized = False
@@ -106,12 +95,9 @@ class EconomicHistoricalStore:
     def _create_schema(
         self,
     ) -> None:
-        connection = (
-            self._database.connection
-        )
+        connection = self._database.connection
 
-        connection.execute(
-            """
+        connection.execute("""
             CREATE TABLE IF NOT EXISTS
             economic_history_observations (
                 indicator_code VARCHAR NOT NULL,
@@ -129,35 +115,28 @@ class EconomicHistoricalStore:
                     observation_date
                 )
             )
-            """
-        )
+            """)
 
-        connection.execute(
-            """
+        connection.execute("""
             CREATE INDEX IF NOT EXISTS
             idx_economic_history_code_date
             ON economic_history_observations (
                 indicator_code,
                 observation_date
             )
-            """
-        )
+            """)
 
-        connection.execute(
-            """
+        connection.execute("""
             CREATE INDEX IF NOT EXISTS
             idx_economic_history_date
             ON economic_history_observations (
                 observation_date
             )
-            """
-        )
+            """)
 
     def upsert_observations(
         self,
-        observations: Iterable[
-            EconomicHistoricalObservation
-        ],
+        observations: Iterable[EconomicHistoricalObservation],
     ) -> int:
         """
         Inserta o actualiza observaciones.
@@ -168,9 +147,7 @@ class EconomicHistoricalStore:
 
         self.initialize()
 
-        materialized = tuple(
-            observations
-        )
+        materialized = tuple(observations)
 
         if not materialized:
             return 0
@@ -188,14 +165,10 @@ class EconomicHistoricalStore:
             for item in materialized
         ]
 
-        connection = (
-            self._database.connection
-        )
+        connection = self._database.connection
 
         try:
-            connection.execute(
-                "BEGIN TRANSACTION"
-            )
+            connection.execute("BEGIN TRANSACTION")
 
             connection.executemany(
                 """
@@ -232,19 +205,13 @@ class EconomicHistoricalStore:
                 payload,
             )
 
-            connection.execute(
-                "COMMIT"
-            )
+            connection.execute("COMMIT")
 
         except Exception:
-            connection.execute(
-                "ROLLBACK"
-            )
+            connection.execute("ROLLBACK")
             raise
 
-        return len(
-            materialized
-        )
+        return len(materialized)
 
     def observations_for_series(
         self,
@@ -258,52 +225,27 @@ class EconomicHistoricalStore:
     ]:
         self.initialize()
 
-        normalized_code = (
-            indicator_code
-            .strip()
-            .upper()
-        )
+        normalized_code = indicator_code.strip().upper()
 
         if not normalized_code:
             return ()
 
-        clauses = [
-            "indicator_code = ?"
-        ]
+        clauses = ["indicator_code = ?"]
 
-        parameters: list[
-            object
-        ] = [
-            normalized_code
-        ]
+        parameters: list[object] = [normalized_code]
 
         if from_date is not None:
-            clauses.append(
-                "observation_date >= ?"
-            )
-            parameters.append(
-                from_date
-            )
+            clauses.append("observation_date >= ?")
+            parameters.append(from_date)
 
         if to_date is not None:
-            clauses.append(
-                "observation_date <= ?"
-            )
-            parameters.append(
-                to_date
-            )
+            clauses.append("observation_date <= ?")
+            parameters.append(to_date)
 
-        where_clause = (
-            " AND ".join(
-                clauses
-            )
-        )
+        where_clause = " AND ".join(clauses)
 
-        rows = (
-            self._database
-            .connection
-            .execute(
-                f"""
+        rows = self._database.connection.execute(
+            f"""
                 SELECT
                     indicator_code,
                     observation_date,
@@ -322,38 +264,18 @@ class EconomicHistoricalStore:
                 ORDER BY
                     observation_date
                 """,
-                parameters,
-            )
-            .fetchall()
-        )
+            parameters,
+        ).fetchall()
 
         return tuple(
             EconomicHistoricalObservation(
-                indicator_code=str(
-                    row[0]
-                ),
+                indicator_code=str(row[0]),
                 observation_date=row[1],
-                value=Decimal(
-                    str(
-                        row[2]
-                    )
-                ),
-                source=str(
-                    row[3]
-                ),
-                source_series_code=(
-                    None
-                    if row[4] is None
-                    else str(
-                        row[4]
-                    )
-                ),
-                unit=str(
-                    row[5]
-                ),
-                frequency=str(
-                    row[6]
-                ),
+                value=Decimal(str(row[2])),
+                source=str(row[3]),
+                source_series_code=(None if row[4] is None else str(row[4])),
+                unit=str(row[5]),
+                frequency=str(row[6]),
             )
             for row in rows
         )
@@ -362,17 +284,8 @@ class EconomicHistoricalStore:
         self,
         *,
         indicator_code: str,
-    ) -> (
-        EconomicHistoricalObservation
-        | None
-    ):
-        observations = (
-            self.observations_for_series(
-                indicator_code=(
-                    indicator_code
-                )
-            )
-        )
+    ) -> EconomicHistoricalObservation | None:
+        observations = self.observations_for_series(indicator_code=(indicator_code))
 
         if not observations:
             return None
@@ -389,20 +302,13 @@ class EconomicHistoricalStore:
     ]:
         self.initialize()
 
-        normalized_code = (
-            indicator_code
-            .strip()
-            .upper()
-        )
+        normalized_code = indicator_code.strip().upper()
 
         if not normalized_code:
             return ()
 
-        rows = (
-            self._database
-            .connection
-            .execute(
-                """
+        rows = self._database.connection.execute(
+            """
                 SELECT
                     observation_date
 
@@ -415,17 +321,10 @@ class EconomicHistoricalStore:
                 ORDER BY
                     observation_date
                 """,
-                [
-                    normalized_code
-                ],
-            )
-            .fetchall()
-        )
+            [normalized_code],
+        ).fetchall()
 
-        return tuple(
-            row[0]
-            for row in rows
-        )
+        return tuple(row[0] for row in rows)
 
     def series_codes(
         self,
@@ -435,11 +334,7 @@ class EconomicHistoricalStore:
     ]:
         self.initialize()
 
-        rows = (
-            self._database
-            .connection
-            .execute(
-                """
+        rows = self._database.connection.execute("""
                 SELECT DISTINCT
                     indicator_code
 
@@ -448,17 +343,9 @@ class EconomicHistoricalStore:
 
                 ORDER BY
                     indicator_code
-                """
-            )
-            .fetchall()
-        )
+                """).fetchall()
 
-        return tuple(
-            str(
-                row[0]
-            )
-            for row in rows
-        )
+        return tuple(str(row[0]) for row in rows)
 
     def statistics(
         self,
@@ -468,52 +355,29 @@ class EconomicHistoricalStore:
     ]:
         self.initialize()
 
-        connection = (
-            self._database.connection
-        )
+        connection = self._database.connection
 
-        observations = (
-            connection.execute(
-                """
+        observations = connection.execute("""
                 SELECT COUNT(*)
                 FROM economic_history_observations
-                """
-            )
-            .fetchone()[0]
-        )
+                """).fetchone()[0]
 
-        series = (
-            connection.execute(
-                """
+        series = connection.execute("""
                 SELECT COUNT(
                     DISTINCT indicator_code
                 )
                 FROM economic_history_observations
-                """
-            )
-            .fetchone()[0]
-        )
+                """).fetchone()[0]
 
-        dates = (
-            connection.execute(
-                """
+        dates = connection.execute("""
                 SELECT COUNT(
                     DISTINCT observation_date
                 )
                 FROM economic_history_observations
-                """
-            )
-            .fetchone()[0]
-        )
+                """).fetchone()[0]
 
         return {
-            "observations": int(
-                observations
-            ),
-            "series": int(
-                series
-            ),
-            "dates": int(
-                dates
-            ),
+            "observations": int(observations),
+            "series": int(series),
+            "dates": int(dates),
         }

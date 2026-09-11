@@ -3,8 +3,9 @@
 from dataclasses import dataclass
 from decimal import Decimal
 
-from src.aip.domain.portfolio.exceptions import InvalidPositionError
-from src.aip.shared.math import Percentage
+from aip.shared.math import Percentage
+
+from ..exceptions import InvalidPositionError
 
 
 @dataclass(frozen=True, slots=True)

@@ -7,7 +7,7 @@ from aip.ui.modules.liquidity.models.liquidity_row import LiquidityRow
 
 @dataclass(frozen=True, slots=True)
 class LiquidityViewModel:
-    """Immutable presentation model for the liquidity workspace."""
+    """Immutable presentation model for the institutional liquidity workspace."""
 
     summary: object
     cashflow_rows: tuple[LiquidityRow, ...]
@@ -24,6 +24,7 @@ class LiquidityViewModel:
     correlation_id: str | None = None
     loading: bool = False
     error: str | None = None
+    maturity_rows: tuple[LiquidityRow, ...] = ()
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -33,6 +34,7 @@ class LiquidityViewModel:
             "hqla_rows": [asdict(row) for row in self.hqla_rows],
             "mil_rows": [asdict(row) for row in self.mil_rows],
             "stress_rows": [asdict(row) for row in self.stress_rows],
+            "maturity_rows": [asdict(row) for row in self.maturity_rows],
             "filters": dict(self.filters),
             "selected_section": self.selected_section,
             "theme": self.theme,

@@ -30,7 +30,5 @@ class IndicatorSourceMapper:
     def mappings_for_source(self, source: str) -> tuple[IndicatorSourceMapping, ...]:
         normalized_source = source.strip().upper()
         return tuple(
-            mapping
-            for mapping in self._mappings
-            if mapping.source.upper() == normalized_source
+            mapping for mapping in self._mappings if mapping.source.upper() == normalized_source
         )

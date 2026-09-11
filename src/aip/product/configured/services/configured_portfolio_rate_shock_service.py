@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from decimal import Decimal
+from typing import Any
 
 from aip.domain.portfolio.services.portfolio_rate_shock_aggregation_service import (
     PortfolioRateShockAggregationService,
@@ -35,8 +36,10 @@ class ConfiguredPortfolioRateShockService:
     def __init__(self, portfolio_provider: PortfolioDataProvider) -> None:
         self._portfolio_provider = portfolio_provider
 
-    def calculate(self) -> ConfiguredPortfolioRateShockResult:
-        portfolio = self._portfolio_provider.get_portfolio()
+    def calculate(
+        self, *, portfolio: dict[str, Any] | None = None
+    ) -> ConfiguredPortfolioRateShockResult:
+        portfolio = portfolio or self._portfolio_provider.get_portfolio()
         positions = [
             position for position in portfolio.get("positions", []) if isinstance(position, dict)
         ]

@@ -965,7 +965,7 @@ class ForecastGovernanceService:
                 ).split("_")
 
                 if len(parts) == 3:
-                    arima_order = tuple(int(item) for item in parts)
+                    arima_order = (int(parts[0]), int(parts[1]), int(parts[2]))
 
         return _Specification(
             name=name,

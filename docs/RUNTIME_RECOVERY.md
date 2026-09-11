@@ -9,7 +9,7 @@ AIP Enterprise debe iniciar en modo `CONFIGURED` usando las fuentes instituciona
 - Repositorio: `vernan2020/AIP-Enterprise`
 - Rama: `recovery/full-runtime-rc1-20260829`
 - Checkpoint: `recovery/checkpoints/rc1-final-20260829`
-- SHA-256 del payload: `5c245fb32d1d0977e637bca5263c25fe519c6dc6bd109ae98823c5c31b2120ae`
+- SHA-256 del payload: `8adfbebb527a13b43f3cf56cf0250866e7be3dbe6134829097fd191f3039779c`
 - Partes declaradas: 33
 
 `recovery/checkpoints` contiene únicamente este checkpoint final.
@@ -46,6 +46,46 @@ El `EnvironmentLoader` prioriza variables explícitas y, cuando no se suministra
 - Vector PiPCA;
 - ICL bajo `Liquidez e Inversiones - Documentos/General/Análisis Financiero`;
 - último corte Maestro disponible cuando no existe `AIP_DATA_CUTOFF_DATE` explícito.
+
+## Análisis Financiero SUGEF
+
+El módulo **Análisis Financiero** consume exportaciones oficiales mensuales de la sección
+Información Financiera Contable de SUGEF. La ingesta reconoce archivos `.csv`, `.xls` y `.xlsx`,
+normaliza entidad, fecha, estado financiero, cuenta, saldo y moneda, y conserva trazabilidad a
+archivo, hoja y fila.
+
+Configuración local:
+
+- `AIP_SUGEF_FINANCIAL_ENABLED=true`;
+- `AIP_SUGEF_FINANCIAL_ROOT=<carpeta con exportaciones oficiales>`;
+- `AIP_SUGEF_FINANCIAL_FILE_PATTERN=*` (opcional).
+
+La fuente oficial documentada es
+`https://www.sugef.fi.cr/reportes/Informacion_Financiera_Contable.aspx`. El endpoint interno de
+descarga del portal dinámico no se configura por defecto y permanece pendiente de validación en
+el entorno institucional. El módulo nunca sustituye una descarga fallida con datos de demostración.
+
+Los KPIs publicados por SUGEF, como ROA y ROE, tienen prioridad. Solo cuando no existen se muestra
+una razón simple derivada de resultado/activo o resultado/patrimonio, sin etiquetarla como indicador
+regulatorio. La capa de dominio realiza todos los cálculos; Qt únicamente presenta el contrato.
+
+### Calificación institucional
+
+La pestaña **Calificación** ejecuta la metodología oficial `08ME14-01`, versión 01, vigente desde
+el 27/06/2025. Usa percentiles P15 y P85 del grupo comparable, el punto medio entre ambos límites,
+la dirección económica de cada indicador y la escala cualitativa `AA`, `A`, `BB`, `B`, `CC`.
+
+La distribución oficial es: Rentabilidad 20% (3 indicadores), Calidad de la Cartera 25%
+(10% cartera al día, 5% cobertura y 10% morosidad), Desempeño Operativo 15% (2), Solvencia 20%
+(2), Liquidez 10% (1) y Supervisión proporcional 10% (supervisión y garantía estatal, 5% cada
+una). La calificación se bloquea si no están disponibles los 13 indicadores; no se extrapolan ni
+se sustituyen valores faltantes.
+
+Los nombres admitidos incluyen los rótulos completos de la metodología y las abreviaturas usadas
+en las exportaciones institucionales. Los dos indicadores binarios deben venir explícitamente como
+`0` o `1`. El libro `MATRIZ EVALUACION INDICADORES ENTIDADES JULIO 2026.xlsx` se usa únicamente
+como referencia de linaje: conserva el esquema anterior de 15 indicadores, IQR/media acotada y
+ponderaciones 20/20/20/20/10/10, por lo que no gobierna el cálculo oficial.
 
 ## BCCR y Macro Intelligence
 

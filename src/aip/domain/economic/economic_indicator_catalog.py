@@ -50,10 +50,7 @@ def _build_tri_definitions(
     return tuple(
         EconomicIndicatorDefinition(
             code=f"TRI_{currency}_{tenor_code}",
-            name=(
-                "Tasa de Referencia Interbancaria "
-                f"{currency} - {tenor_name}"
-            ),
+            name=("Tasa de Referencia Interbancaria " f"{currency} - {tenor_name}"),
             category=EconomicIndicatorCategory.INTEREST_RATES,
             frequency=EconomicIndicatorFrequency.DAILY,
             unit="%",

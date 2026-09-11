@@ -36,4 +36,4 @@ def test_production_entry_point_uses_rc1_shell(monkeypatch) -> None:
     assert isinstance(window, RC1MainWindow)
     assert not isinstance(window, LegacyMainWindow)
     assert "AIP Enterprise 1.0.0 RC1" in window.windowTitle()
-    assert any("DEMO MODE" in label.text().upper() for label in window.findChildren(QLabel))
+    assert any("MODO DEMO" in label.text().upper() for label in window.findChildren(QLabel))

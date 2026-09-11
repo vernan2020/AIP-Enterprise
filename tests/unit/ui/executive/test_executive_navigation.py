@@ -25,7 +25,7 @@ def test_main_window_opens_executive_workspace_from_shell(qt_app) -> None:
     window = MainWindow()
     window.open_workspace("executive")
     tab_titles = [window.workspace.tabText(index) for index in range(window.workspace.count())]
-    assert "Executive" in tab_titles
+    assert "Ejecutivo" in tab_titles
 
 
 def test_workspace_can_open_executive_tab(qt_app) -> None:

@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from src.aip.domain.portfolio.events.domain_event import DomainEvent
+from .domain_event import DomainEvent
 
 
 @dataclass(frozen=True, slots=True)

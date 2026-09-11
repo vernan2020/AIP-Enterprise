@@ -1,0 +1,494 @@
+﻿NOMBRE ENTIDAD,TIPO ENTIDAD,FECHA CORTE,ESTADO FINANCIERO,CODIGO CUENTA,DESCRIPCION,SALDO,MONEDA
+BAC SAN JOSE,Bancos Privados,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.05915056178441021,CRC
+BAC SAN JOSE,Bancos Privados,2026-07-30,Indicadores financieros,ROA,ROA,0.013496930748769504,CRC
+BAC SAN JOSE,Bancos Privados,2026-07-30,Indicadores financieros,ROE,ROE,0.1220331354110349,CRC
+BAC SAN JOSE,Bancos Privados,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.9563237595093181,CRC
+BAC SAN JOSE,Bancos Privados,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,0.8593599511909339,CRC
+BAC SAN JOSE,Bancos Privados,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0.012102266094354674,CRC
+BAC SAN JOSE,Bancos Privados,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.5127195017183176,CRC
+BAC SAN JOSE,Bancos Privados,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.0371180822065119,CRC
+BAC SAN JOSE,Bancos Privados,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.1055,CRC
+BAC SAN JOSE,Bancos Privados,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.1406,CRC
+BAC SAN JOSE,Bancos Privados,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.38104453027100244,CRC
+BAC SAN JOSE,Bancos Privados,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,1,CRC
+BAC SAN JOSE,Bancos Privados,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,1,CRC
+BANCO BCT,Bancos Privados,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.03108492022353341,CRC
+BANCO BCT,Bancos Privados,2026-07-30,Indicadores financieros,ROA,ROA,-0.0032985808968409923,CRC
+BANCO BCT,Bancos Privados,2026-07-30,Indicadores financieros,ROE,ROE,-0.02775261404035377,CRC
+BANCO BCT,Bancos Privados,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.9522083946015121,CRC
+BANCO BCT,Bancos Privados,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,0.4822650382227297,CRC
+BANCO BCT,Bancos Privados,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0.02189738289909935,CRC
+BANCO BCT,Bancos Privados,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,1.05099622790433,CRC
+BANCO BCT,Bancos Privados,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.03429674789758512,CRC
+BANCO BCT,Bancos Privados,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.0521,CRC
+BANCO BCT,Bancos Privados,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.1495,CRC
+BANCO BCT,Bancos Privados,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.3132172103325717,CRC
+BANCO BCT,Bancos Privados,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,1,CRC
+BANCO BCT,Bancos Privados,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,1,CRC
+BANCO CMB,Bancos Privados,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.030996327116628735,CRC
+BANCO CMB,Bancos Privados,2026-07-30,Indicadores financieros,ROA,ROA,0.03089659603112033,CRC
+BANCO CMB,Bancos Privados,2026-07-30,Indicadores financieros,ROE,ROE,0.33966339866804435,CRC
+BANCO CMB,Bancos Privados,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,1.0007747172366839,CRC
+BANCO CMB,Bancos Privados,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,45.29345946764064,CRC
+BANCO CMB,Bancos Privados,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,3.8035148930999434e-05,CRC
+BANCO CMB,Bancos Privados,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.1974551289044097,CRC
+BANCO CMB,Bancos Privados,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.010706861574785401,CRC
+BANCO CMB,Bancos Privados,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.0218,CRC
+BANCO CMB,Bancos Privados,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.2994,CRC
+BANCO CMB,Bancos Privados,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,1.0508584892880888,CRC
+BANCO CMB,Bancos Privados,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,1,CRC
+BANCO CMB,Bancos Privados,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,1,CRC
+BANCO DE COSTA RICA,Bancos Estatales,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.03689913655866936,CRC
+BANCO DE COSTA RICA,Bancos Estatales,2026-07-30,Indicadores financieros,ROA,ROA,0.00542250892125566,CRC
+BANCO DE COSTA RICA,Bancos Estatales,2026-07-30,Indicadores financieros,ROE,ROE,0.04667647609791384,CRC
+BANCO DE COSTA RICA,Bancos Estatales,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.92700431011599,CRC
+BANCO DE COSTA RICA,Bancos Estatales,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,0.5447924708192804,CRC
+BANCO DE COSTA RICA,Bancos Estatales,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0.030059531308937147,CRC
+BANCO DE COSTA RICA,Bancos Estatales,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.6640793967283075,CRC
+BANCO DE COSTA RICA,Bancos Estatales,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.030415022663472593,CRC
+BANCO DE COSTA RICA,Bancos Estatales,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.1421,CRC
+BANCO DE COSTA RICA,Bancos Estatales,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.1337,CRC
+BANCO DE COSTA RICA,Bancos Estatales,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.3958857124112056,CRC
+BANCO DE COSTA RICA,Bancos Estatales,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,1,CRC
+BANCO DE COSTA RICA,Bancos Estatales,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,1,CRC
+BANCO GENERAL,Bancos Privados,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.03237681569167336,CRC
+BANCO GENERAL,Bancos Privados,2026-07-30,Indicadores financieros,ROA,ROA,0.005609050842781864,CRC
+BANCO GENERAL,Bancos Privados,2026-07-30,Indicadores financieros,ROE,ROE,0.024748076167320512,CRC
+BANCO GENERAL,Bancos Privados,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.9451278388136298,CRC
+BANCO GENERAL,Bancos Privados,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,0.6967076784200358,CRC
+BANCO GENERAL,Bancos Privados,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0.012732841339944434,CRC
+BANCO GENERAL,Bancos Privados,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.7900813673546219,CRC
+BANCO GENERAL,Bancos Privados,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.026947539037414283,CRC
+BANCO GENERAL,Bancos Privados,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.0987,CRC
+BANCO GENERAL,Bancos Privados,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.3213,CRC
+BANCO GENERAL,Bancos Privados,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.3929855366495453,CRC
+BANCO GENERAL,Bancos Privados,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,1,CRC
+BANCO GENERAL,Bancos Privados,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,1,CRC
+BANCO NACIONAL,Bancos Estatales,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.040241031825106306,CRC
+BANCO NACIONAL,Bancos Estatales,2026-07-30,Indicadores financieros,ROA,ROA,0.011107671913716671,CRC
+BANCO NACIONAL,Bancos Estatales,2026-07-30,Indicadores financieros,ROE,ROE,0.10450983985666966,CRC
+BANCO NACIONAL,Bancos Estatales,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.9532106159388052,CRC
+BANCO NACIONAL,Bancos Estatales,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,0.6512934966621221,CRC
+BANCO NACIONAL,Bancos Estatales,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0.024591786905941878,CRC
+BANCO NACIONAL,Bancos Estatales,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.639395631309007,CRC
+BANCO NACIONAL,Bancos Estatales,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.0293954432693128,CRC
+BANCO NACIONAL,Bancos Estatales,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.0683,CRC
+BANCO NACIONAL,Bancos Estatales,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.1511,CRC
+BANCO NACIONAL,Bancos Estatales,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.40388516924647844,CRC
+BANCO NACIONAL,Bancos Estatales,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,1,CRC
+BANCO NACIONAL,Bancos Estatales,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,1,CRC
+BANCO POPULAR,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.05274592109450728,CRC
+BANCO POPULAR,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,ROA,ROA,0.005537879401108018,CRC
+BANCO POPULAR,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,ROE,ROE,0.023556445944683563,CRC
+BANCO POPULAR,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.8790784570241659,CRC
+BANCO POPULAR,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,0.37046459768107115,CRC
+BANCO POPULAR,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0.03009559329498306,CRC
+BANCO POPULAR,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.6384250723833722,CRC
+BANCO POPULAR,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.03920980782581371,CRC
+BANCO POPULAR,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.0654,CRC
+BANCO POPULAR,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.2194,CRC
+BANCO POPULAR,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.30070724718544894,CRC
+BANCO POPULAR,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,1,CRC
+BANCO POPULAR,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,1,CRC
+BANHVI,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.034534015299313735,CRC
+BANHVI,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,ROA,ROA,0.03887208329603006,CRC
+BANHVI,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,ROE,ROE,0.06072388805505681,CRC
+BANHVI,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,1.007505660178357,CRC
+BANHVI,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0,CRC
+BANHVI,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.3803525635187198,CRC
+BANHVI,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.023766223808104697,CRC
+BANHVI,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.0217,CRC
+BANHVI,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.5874,CRC
+BANHVI,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,1,CRC
+BANHVI,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,1,CRC
+BANHVI,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,1,CRC
+CAJA de ANDE,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.05701939500384342,CRC
+CAJA de ANDE,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,ROA,ROA,0.026173014049421444,CRC
+CAJA de ANDE,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,ROE,ROE,0.04168205758214992,CRC
+CAJA de ANDE,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.9707640314998883,CRC
+CAJA de ANDE,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,1.63754049758579,CRC
+CAJA de ANDE,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0.005196610492369328,CRC
+CAJA de ANDE,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.5360478683863958,CRC
+CAJA de ANDE,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.029546244993725664,CRC
+CAJA de ANDE,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.0556,CRC
+CAJA de ANDE,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.4608,CRC
+CAJA de ANDE,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,1.1090798445003114,CRC
+CAJA de ANDE,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,1,CRC
+CAJA de ANDE,Bancos creados por Ley Especial,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,1,CRC
+CATHAY,Bancos Privados,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.029504447981535294,CRC
+CATHAY,Bancos Privados,2026-07-30,Indicadores financieros,ROA,ROA,0.0021970966423888213,CRC
+CATHAY,Bancos Privados,2026-07-30,Indicadores financieros,ROE,ROE,0.022621482674907586,CRC
+CATHAY,Bancos Privados,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.9117415825902165,CRC
+CATHAY,Bancos Privados,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,0.5182823027505233,CRC
+CATHAY,Bancos Privados,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0.0383067676702375,CRC
+CATHAY,Bancos Privados,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.8190660435707974,CRC
+CATHAY,Bancos Privados,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.02929286878648725,CRC
+CATHAY,Bancos Privados,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.0158,CRC
+CATHAY,Bancos Privados,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.1456,CRC
+CATHAY,Bancos Privados,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.4736838502422141,CRC
+CATHAY,Bancos Privados,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,1,CRC
+CATHAY,Bancos Privados,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,1,CRC
+COOCIQUE R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.045771704361623124,CRC
+COOCIQUE R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,ROA,ROA,0.0038949136418237463,CRC
+COOCIQUE R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,ROE,ROE,0.02675097221484308,CRC
+COOCIQUE R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.7430214404323554,CRC
+COOCIQUE R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,0.11811397050066393,CRC
+COOCIQUE R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0.031186402967683047,CRC
+COOCIQUE R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.7684773459006972,CRC
+COOCIQUE R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.03470048243310709,CRC
+COOCIQUE R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.0677,CRC
+COOCIQUE R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.1579,CRC
+COOCIQUE R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.42279149447447917,CRC
+COOCIQUE R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,1,CRC
+COOCIQUE R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,1,CRC
+COOPAVEGRA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.036965323626433476,CRC
+COOPAVEGRA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,ROA,ROA,-0.00468660267548599,CRC
+COOPAVEGRA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,ROE,ROE,-0.022035374494001052,CRC
+COOPAVEGRA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.8435655655338661,CRC
+COOPAVEGRA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,0.16435793758781223,CRC
+COOPAVEGRA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0.034830859583442654,CRC
+COOPAVEGRA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.8189356666203285,CRC
+COOPAVEGRA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.031226637882783084,CRC
+COOPAVEGRA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.0194,CRC
+COOPAVEGRA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.2705,CRC
+COOPAVEGRA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.398817610028759,CRC
+COOPAVEGRA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,0,CRC
+COOPAVEGRA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,0,CRC
+COOPE EMPLEADOS AYA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.03810686457647659,CRC
+COOPE EMPLEADOS AYA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,ROA,ROA,0.016318712925403277,CRC
+COOPE EMPLEADOS AYA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,ROE,ROE,0.07072214034954727,CRC
+COOPE EMPLEADOS AYA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.9356379129363205,CRC
+COOPE EMPLEADOS AYA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,0.8177805128414836,CRC
+COOPE EMPLEADOS AYA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0.03872850387486656,CRC
+COOPE EMPLEADOS AYA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.48800473143563133,CRC
+COOPE EMPLEADOS AYA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.02049898545017174,CRC
+COOPE EMPLEADOS AYA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.0842,CRC
+COOPE EMPLEADOS AYA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.2188,CRC
+COOPE EMPLEADOS AYA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.516478562406168,CRC
+COOPE EMPLEADOS AYA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,0,CRC
+COOPE EMPLEADOS AYA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,0,CRC
+COOPE SAN MARCOS R.L.,Sin clasificar,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.050613483568656886,CRC
+COOPE SAN MARCOS R.L.,Sin clasificar,2026-07-30,Indicadores financieros,ROA,ROA,0.010047378090716154,CRC
+COOPE SAN MARCOS R.L.,Sin clasificar,2026-07-30,Indicadores financieros,ROE,ROE,0.05938994308438981,CRC
+COOPE SAN MARCOS R.L.,Sin clasificar,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.9604806666742995,CRC
+COOPE SAN MARCOS R.L.,Sin clasificar,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,0.42711000193199283,CRC
+COOPE SAN MARCOS R.L.,Sin clasificar,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,1,CRC
+COOPE SAN MARCOS R.L.,Sin clasificar,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.7707314502858716,CRC
+COOPE SAN MARCOS R.L.,Sin clasificar,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.039661008462211524,CRC
+COOPE SAN MARCOS R.L.,Sin clasificar,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.0347,CRC
+COOPE SAN MARCOS R.L.,Sin clasificar,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.2294,CRC
+COOPE SAN MARCOS R.L.,Sin clasificar,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.6960466378425026,CRC
+COOPE SAN MARCOS R.L.,Sin clasificar,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,0,CRC
+COOPE SAN MARCOS R.L.,Sin clasificar,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,0,CRC
+COOPEALIANZA R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.06340641086640933,CRC
+COOPEALIANZA R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,ROA,ROA,0.010381910861837056,CRC
+COOPEALIANZA R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,ROE,ROE,0.05735283647447684,CRC
+COOPEALIANZA R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.8856612168810589,CRC
+COOPEALIANZA R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,1.248058366154479,CRC
+COOPEALIANZA R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0.028580739638587503,CRC
+COOPEALIANZA R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.462210343721011,CRC
+COOPEALIANZA R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.028853625424387158,CRC
+COOPEALIANZA R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.4351,CRC
+COOPEALIANZA R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.1952,CRC
+COOPEALIANZA R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.6018266204336462,CRC
+COOPEALIANZA R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,1,CRC
+COOPEALIANZA R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,1,CRC
+COOPEANDE No.1 R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.04936754689066823,CRC
+COOPEANDE No.1 R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,ROA,ROA,0.0028647030319509056,CRC
+COOPEANDE No.1 R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,ROE,ROE,0.014796920849896365,CRC
+COOPEANDE No.1 R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.9244452608586818,CRC
+COOPEANDE No.1 R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,0.44474785177625414,CRC
+COOPEANDE No.1 R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0.033562806479015335,CRC
+COOPEANDE No.1 R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.5749143584897984,CRC
+COOPEANDE No.1 R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.027070513803090737,CRC
+COOPEANDE No.1 R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.0126,CRC
+COOPEANDE No.1 R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.191,CRC
+COOPEANDE No.1 R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.34849949468759817,CRC
+COOPEANDE No.1 R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,1,CRC
+COOPEANDE No.1 R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,1,CRC
+COOPEBANPO R.L.,Sin clasificar,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.045902881236251414,CRC
+COOPEBANPO R.L.,Sin clasificar,2026-07-30,Indicadores financieros,ROA,ROA,0.0034384511944850252,CRC
+COOPEBANPO R.L.,Sin clasificar,2026-07-30,Indicadores financieros,ROE,ROE,0.016057587829709168,CRC
+COOPEBANPO R.L.,Sin clasificar,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.9226347989162413,CRC
+COOPEBANPO R.L.,Sin clasificar,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,0.5986944803728275,CRC
+COOPEBANPO R.L.,Sin clasificar,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0.041855895682632024,CRC
+COOPEBANPO R.L.,Sin clasificar,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.5520729591650573,CRC
+COOPEBANPO R.L.,Sin clasificar,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.02441640879941997,CRC
+COOPEBANPO R.L.,Sin clasificar,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.0443,CRC
+COOPEBANPO R.L.,Sin clasificar,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.1905,CRC
+COOPEBANPO R.L.,Sin clasificar,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.40680026528277585,CRC
+COOPEBANPO R.L.,Sin clasificar,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,0,CRC
+COOPEBANPO R.L.,Sin clasificar,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,0,CRC
+COOPECAJA R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.0744920931309252,CRC
+COOPECAJA R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,ROA,ROA,0.01293810406407598,CRC
+COOPECAJA R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,ROE,ROE,0.04734133040644633,CRC
+COOPECAJA R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.8815723897688473,CRC
+COOPECAJA R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,0.5465063716117948,CRC
+COOPECAJA R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0.02512917315022035,CRC
+COOPECAJA R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.7297543647648153,CRC
+COOPECAJA R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.05735683911508699,CRC
+COOPECAJA R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.0961,CRC
+COOPECAJA R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.2235,CRC
+COOPECAJA R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.5308227307620718,CRC
+COOPECAJA R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,1,CRC
+COOPECAJA R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,1,CRC
+COOPECAR R.L.,Sin clasificar,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.059652455609995374,CRC
+COOPECAR R.L.,Sin clasificar,2026-07-30,Indicadores financieros,ROA,ROA,0.01375452897664645,CRC
+COOPECAR R.L.,Sin clasificar,2026-07-30,Indicadores financieros,ROE,ROE,0.060433558113995145,CRC
+COOPECAR R.L.,Sin clasificar,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.7272024254589097,CRC
+COOPECAR R.L.,Sin clasificar,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,0.10086255920184803,CRC
+COOPECAR R.L.,Sin clasificar,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0.015980844546960932,CRC
+COOPECAR R.L.,Sin clasificar,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.7674632014019633,CRC
+COOPECAR R.L.,Sin clasificar,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.04779542913708567,CRC
+COOPECAR R.L.,Sin clasificar,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.0526,CRC
+COOPECAR R.L.,Sin clasificar,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.2076,CRC
+COOPECAR R.L.,Sin clasificar,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.3313237086732481,CRC
+COOPECAR R.L.,Sin clasificar,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,0,CRC
+COOPECAR R.L.,Sin clasificar,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,0,CRC
+COOPEFYL R.L.,Sin clasificar,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.055702453060183225,CRC
+COOPEFYL R.L.,Sin clasificar,2026-07-30,Indicadores financieros,ROA,ROA,0.017196170207313826,CRC
+COOPEFYL R.L.,Sin clasificar,2026-07-30,Indicadores financieros,ROE,ROE,0.06982093221068078,CRC
+COOPEFYL R.L.,Sin clasificar,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.9765004238459544,CRC
+COOPEFYL R.L.,Sin clasificar,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,0.7529234636142379,CRC
+COOPEFYL R.L.,Sin clasificar,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0.009783452152948449,CRC
+COOPEFYL R.L.,Sin clasificar,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.566167598244491,CRC
+COOPEFYL R.L.,Sin clasificar,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.02995781892707577,CRC
+COOPEFYL R.L.,Sin clasificar,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.017,CRC
+COOPEFYL R.L.,Sin clasificar,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.2005,CRC
+COOPEFYL R.L.,Sin clasificar,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.5931264462520198,CRC
+COOPEFYL R.L.,Sin clasificar,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,0,CRC
+COOPEFYL R.L.,Sin clasificar,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,0,CRC
+COOPEGRECIA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.030541770988080467,CRC
+COOPEGRECIA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,ROA,ROA,0.007834810193952223,CRC
+COOPEGRECIA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,ROE,ROE,0.04748704108457569,CRC
+COOPEGRECIA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.6752641244274599,CRC
+COOPEGRECIA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,0.05884799675607386,CRC
+COOPEGRECIA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0.058852220686803645,CRC
+COOPEGRECIA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.6539666448732356,CRC
+COOPEGRECIA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.02056932808450104,CRC
+COOPEGRECIA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,0,CRC
+COOPEGRECIA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.1463,CRC
+COOPEGRECIA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.33942909729492543,CRC
+COOPEGRECIA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,0,CRC
+COOPEGRECIA R.L.,Sin clasificar,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,0,CRC
+COOPEJUDICIALES R.L.,Sin clasificar,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.09194928813852116,CRC
+COOPEJUDICIALES R.L.,Sin clasificar,2026-07-30,Indicadores financieros,ROA,ROA,0.015159765143399064,CRC
+COOPEJUDICIALES R.L.,Sin clasificar,2026-07-30,Indicadores financieros,ROE,ROE,0.04106679565261902,CRC
+COOPEJUDICIALES R.L.,Sin clasificar,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.941162659603262,CRC
+COOPEJUDICIALES R.L.,Sin clasificar,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,0.45992076230632933,CRC
+COOPEJUDICIALES R.L.,Sin clasificar,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0.017979035959803075,CRC
+COOPEJUDICIALES R.L.,Sin clasificar,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.7090588342640923,CRC
+COOPEJUDICIALES R.L.,Sin clasificar,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.06261172382373102,CRC
+COOPEJUDICIALES R.L.,Sin clasificar,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.0104,CRC
+COOPEJUDICIALES R.L.,Sin clasificar,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.2619,CRC
+COOPEJUDICIALES R.L.,Sin clasificar,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.5388010314245004,CRC
+COOPEJUDICIALES R.L.,Sin clasificar,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,0,CRC
+COOPEJUDICIALES R.L.,Sin clasificar,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,0,CRC
+COOPEMEDICOS R.L.,Sin clasificar,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.055043498642665736,CRC
+COOPEMEDICOS R.L.,Sin clasificar,2026-07-30,Indicadores financieros,ROA,ROA,0.011326691494352132,CRC
+COOPEMEDICOS R.L.,Sin clasificar,2026-07-30,Indicadores financieros,ROE,ROE,0.05285284842658032,CRC
+COOPEMEDICOS R.L.,Sin clasificar,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.9103670674023046,CRC
+COOPEMEDICOS R.L.,Sin clasificar,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,0.532685085915689,CRC
+COOPEMEDICOS R.L.,Sin clasificar,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0.03727007762373881,CRC
+COOPEMEDICOS R.L.,Sin clasificar,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.5839564661511972,CRC
+COOPEMEDICOS R.L.,Sin clasificar,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.03178287663039448,CRC
+COOPEMEDICOS R.L.,Sin clasificar,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.0467,CRC
+COOPEMEDICOS R.L.,Sin clasificar,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.1947,CRC
+COOPEMEDICOS R.L.,Sin clasificar,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.5306411381283412,CRC
+COOPEMEDICOS R.L.,Sin clasificar,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,0,CRC
+COOPEMEDICOS R.L.,Sin clasificar,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,0,CRC
+COOPEMEP R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.07083593995854778,CRC
+COOPEMEP R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,ROA,ROA,0.008569307035558183,CRC
+COOPEMEP R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,ROE,ROE,0.03860289456602664,CRC
+COOPEMEP R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.9626705396473632,CRC
+COOPEMEP R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,0.49297043036457844,CRC
+COOPEMEP R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0.023313641117876094,CRC
+COOPEMEP R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.6700646226677579,CRC
+COOPEMEP R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.0493328170331775,CRC
+COOPEMEP R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.0335,CRC
+COOPEMEP R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.1838,CRC
+COOPEMEP R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.5708898016261434,CRC
+COOPEMEP R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,1,CRC
+COOPEMEP R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,1,CRC
+COOPENAE R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.05785401614058196,CRC
+COOPENAE R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,ROA,ROA,0.011841687353390366,CRC
+COOPENAE R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,ROE,ROE,0.0616975539836883,CRC
+COOPENAE R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.9163813796314345,CRC
+COOPENAE R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,0.46401214749050035,CRC
+COOPENAE R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0,CRC
+COOPENAE R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.504568998194133,CRC
+COOPENAE R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.0314380333546023,CRC
+COOPENAE R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.0382,CRC
+COOPENAE R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.1989,CRC
+COOPENAE R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.3856180500075377,CRC
+COOPENAE R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,1,CRC
+COOPENAE R.L.,Cooperativas de Ahorro y crédito supervisadas*,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,1,CRC
+COOPESANRAMON R.L.,Sin clasificar,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.049043248218436385,CRC
+COOPESANRAMON R.L.,Sin clasificar,2026-07-30,Indicadores financieros,ROA,ROA,0.01358918460196695,CRC
+COOPESANRAMON R.L.,Sin clasificar,2026-07-30,Indicadores financieros,ROE,ROE,0.05941736049584986,CRC
+COOPESANRAMON R.L.,Sin clasificar,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.6994887401538651,CRC
+COOPESANRAMON R.L.,Sin clasificar,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,0.15536873647065938,CRC
+COOPESANRAMON R.L.,Sin clasificar,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0.021956018301650275,CRC
+COOPESANRAMON R.L.,Sin clasificar,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.6975839143920639,CRC
+COOPESANRAMON R.L.,Sin clasificar,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.035523896527997624,CRC
+COOPESANRAMON R.L.,Sin clasificar,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.0943,CRC
+COOPESANRAMON R.L.,Sin clasificar,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.2032,CRC
+COOPESANRAMON R.L.,Sin clasificar,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.3396793302295371,CRC
+COOPESANRAMON R.L.,Sin clasificar,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,0,CRC
+COOPESANRAMON R.L.,Sin clasificar,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,0,CRC
+COOPEUNA,Sin clasificar,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.053741630380969165,CRC
+COOPEUNA,Sin clasificar,2026-07-30,Indicadores financieros,ROA,ROA,-0.003578869001611316,CRC
+COOPEUNA,Sin clasificar,2026-07-30,Indicadores financieros,ROE,ROE,-0.01793106944888761,CRC
+COOPEUNA,Sin clasificar,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.9366624757927673,CRC
+COOPEUNA,Sin clasificar,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,0.40925321520030095,CRC
+COOPEUNA,Sin clasificar,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0.029870217865629392,CRC
+COOPEUNA,Sin clasificar,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.8417112314285129,CRC
+COOPEUNA,Sin clasificar,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.05914904647317091,CRC
+COOPEUNA,Sin clasificar,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.0592,CRC
+COOPEUNA,Sin clasificar,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.1935,CRC
+COOPEUNA,Sin clasificar,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.813727725767694,CRC
+COOPEUNA,Sin clasificar,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,0,CRC
+COOPEUNA,Sin clasificar,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,0,CRC
+CREDECOOP R.L.,Sin clasificar,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.0647855949001185,CRC
+CREDECOOP R.L.,Sin clasificar,2026-07-30,Indicadores financieros,ROA,ROA,0.013009091536057128,CRC
+CREDECOOP R.L.,Sin clasificar,2026-07-30,Indicadores financieros,ROE,ROE,0.059723673438678584,CRC
+CREDECOOP R.L.,Sin clasificar,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.8729405823724867,CRC
+CREDECOOP R.L.,Sin clasificar,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,0.2617960772593807,CRC
+CREDECOOP R.L.,Sin clasificar,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0.0310198978897839,CRC
+CREDECOOP R.L.,Sin clasificar,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.6534289267627793,CRC
+CREDECOOP R.L.,Sin clasificar,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.0465269034434222,CRC
+CREDECOOP R.L.,Sin clasificar,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.0148,CRC
+CREDECOOP R.L.,Sin clasificar,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.1899,CRC
+CREDECOOP R.L.,Sin clasificar,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.33241971747575927,CRC
+CREDECOOP R.L.,Sin clasificar,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,0,CRC
+CREDECOOP R.L.,Sin clasificar,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,0,CRC
+DAVIVIENDA,Bancos Privados,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.03272268009544788,CRC
+DAVIVIENDA,Bancos Privados,2026-07-30,Indicadores financieros,ROA,ROA,-0.0017176245569353662,CRC
+DAVIVIENDA,Bancos Privados,2026-07-30,Indicadores financieros,ROE,ROE,-0.015294653193956656,CRC
+DAVIVIENDA,Bancos Privados,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.9349793692102527,CRC
+DAVIVIENDA,Bancos Privados,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,0.5000924270728131,CRC
+DAVIVIENDA,Bancos Privados,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0.02920139132937642,CRC
+DAVIVIENDA,Bancos Privados,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.7845397186936768,CRC
+DAVIVIENDA,Bancos Privados,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.027223813999392454,CRC
+DAVIVIENDA,Bancos Privados,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.0552,CRC
+DAVIVIENDA,Bancos Privados,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.1425,CRC
+DAVIVIENDA,Bancos Privados,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.3586876370102131,CRC
+DAVIVIENDA,Bancos Privados,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,1,CRC
+DAVIVIENDA,Bancos Privados,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,1,CRC
+"FINANCIERA CAFSA, SA",Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.028652179391438704,CRC
+"FINANCIERA CAFSA, SA",Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,ROA,ROA,-0.000847018549178782,CRC
+"FINANCIERA CAFSA, SA",Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,ROE,ROE,-0.005515880882781816,CRC
+"FINANCIERA CAFSA, SA",Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.9770899237948805,CRC
+"FINANCIERA CAFSA, SA",Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,0.3790859143065155,CRC
+"FINANCIERA CAFSA, SA",Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,-9.746404568700769e-12,CRC
+"FINANCIERA CAFSA, SA",Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.8309975830599224,CRC
+"FINANCIERA CAFSA, SA",Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.020705177813349872,CRC
+"FINANCIERA CAFSA, SA",Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.0709,CRC
+"FINANCIERA CAFSA, SA",Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.163,CRC
+"FINANCIERA CAFSA, SA",Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.3868104575483618,CRC
+"FINANCIERA CAFSA, SA",Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,1,CRC
+"FINANCIERA CAFSA, SA",Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,1,CRC
+"FINANCIERA COMECA, SA",Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.02741579485754769,CRC
+"FINANCIERA COMECA, SA",Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,ROA,ROA,0.01174618148737785,CRC
+"FINANCIERA COMECA, SA",Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,ROE,ROE,0.03414463377892536,CRC
+"FINANCIERA COMECA, SA",Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.9268143160977923,CRC
+"FINANCIERA COMECA, SA",Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,0.28924783284709704,CRC
+"FINANCIERA COMECA, SA",Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0.004460909557586963,CRC
+"FINANCIERA COMECA, SA",Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.6276310103784072,CRC
+"FINANCIERA COMECA, SA",Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.02684666356091278,CRC
+"FINANCIERA COMECA, SA",Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.0145,CRC
+"FINANCIERA COMECA, SA",Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.4871,CRC
+"FINANCIERA COMECA, SA",Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.5558167258637173,CRC
+"FINANCIERA COMECA, SA",Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,1,CRC
+"FINANCIERA COMECA, SA",Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,1,CRC
+FINANCIERA CREDILAT,Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.22069220862116687,CRC
+FINANCIERA CREDILAT,Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,ROA,ROA,0.025196467970306627,CRC
+FINANCIERA CREDILAT,Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,ROE,ROE,0.11361390301599936,CRC
+FINANCIERA CREDILAT,Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.8308923311748597,CRC
+FINANCIERA CREDILAT,Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,0.4974378181010417,CRC
+FINANCIERA CREDILAT,Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0.02729904490208288,CRC
+FINANCIERA CREDILAT,Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.2085433839161419,CRC
+FINANCIERA CREDILAT,Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.05421546629847759,CRC
+FINANCIERA CREDILAT,Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.1651,CRC
+FINANCIERA CREDILAT,Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.1913,CRC
+FINANCIERA CREDILAT,Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.2920858545714825,CRC
+FINANCIERA CREDILAT,Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,1,CRC
+FINANCIERA CREDILAT,Entidades financieras supervisadas no bancarias,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,1,CRC
+IMPROSA,Bancos Privados,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.026822991500525677,CRC
+IMPROSA,Bancos Privados,2026-07-30,Indicadores financieros,ROA,ROA,0.008974457027430624,CRC
+IMPROSA,Bancos Privados,2026-07-30,Indicadores financieros,ROE,ROE,0.06240759116170223,CRC
+IMPROSA,Bancos Privados,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.9278957607678191,CRC
+IMPROSA,Bancos Privados,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,0.3442698883311318,CRC
+IMPROSA,Bancos Privados,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0.01644253520946685,CRC
+IMPROSA,Bancos Privados,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.6158514375491284,CRC
+IMPROSA,Bancos Privados,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.029202650721662754,CRC
+IMPROSA,Bancos Privados,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.027,CRC
+IMPROSA,Bancos Privados,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.1403,CRC
+IMPROSA,Bancos Privados,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.45843715547007974,CRC
+IMPROSA,Bancos Privados,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,1,CRC
+IMPROSA,Bancos Privados,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,1,CRC
+LAFISE,Bancos Privados,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.03209881352297263,CRC
+LAFISE,Bancos Privados,2026-07-30,Indicadores financieros,ROA,ROA,-0.0006458634364685065,CRC
+LAFISE,Bancos Privados,2026-07-30,Indicadores financieros,ROE,ROE,-0.008022484912391464,CRC
+LAFISE,Bancos Privados,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.9286587441218922,CRC
+LAFISE,Bancos Privados,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,0.47707043573961616,CRC
+LAFISE,Bancos Privados,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0.03513228209814012,CRC
+LAFISE,Bancos Privados,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.9398059279505497,CRC
+LAFISE,Bancos Privados,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.039669496990375065,CRC
+LAFISE,Bancos Privados,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.0364,CRC
+LAFISE,Bancos Privados,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.1465,CRC
+LAFISE,Bancos Privados,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.48990185085237764,CRC
+LAFISE,Bancos Privados,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,1,CRC
+LAFISE,Bancos Privados,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,1,CRC
+MUTUAL ALAJUELA,Mutuales,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.03201807493014861,CRC
+MUTUAL ALAJUELA,Mutuales,2026-07-30,Indicadores financieros,ROA,ROA,0.005084600658301017,CRC
+MUTUAL ALAJUELA,Mutuales,2026-07-30,Indicadores financieros,ROE,ROE,0.05076931730320027,CRC
+MUTUAL ALAJUELA,Mutuales,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.8707640111231074,CRC
+MUTUAL ALAJUELA,Mutuales,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,0.1756468667844376,CRC
+MUTUAL ALAJUELA,Mutuales,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0.02333224497632843,CRC
+MUTUAL ALAJUELA,Mutuales,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.792212453281991,CRC
+MUTUAL ALAJUELA,Mutuales,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.02850959913340786,CRC
+MUTUAL ALAJUELA,Mutuales,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.0827,CRC
+MUTUAL ALAJUELA,Mutuales,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.1464,CRC
+MUTUAL ALAJUELA,Mutuales,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.3330260285690268,CRC
+MUTUAL ALAJUELA,Mutuales,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,1,CRC
+MUTUAL ALAJUELA,Mutuales,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,1,CRC
+MUTUAL CARTAGO,Mutuales,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.030347752668974284,CRC
+MUTUAL CARTAGO,Mutuales,2026-07-30,Indicadores financieros,ROA,ROA,0.004395141686255104,CRC
+MUTUAL CARTAGO,Mutuales,2026-07-30,Indicadores financieros,ROE,ROE,0.04540172634900402,CRC
+MUTUAL CARTAGO,Mutuales,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.9044305769483345,CRC
+MUTUAL CARTAGO,Mutuales,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,0.2014580988034525,CRC
+MUTUAL CARTAGO,Mutuales,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0.023972609358480265,CRC
+MUTUAL CARTAGO,Mutuales,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.817755046598945,CRC
+MUTUAL CARTAGO,Mutuales,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.024729857882178106,CRC
+MUTUAL CARTAGO,Mutuales,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.0873,CRC
+MUTUAL CARTAGO,Mutuales,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.1583,CRC
+MUTUAL CARTAGO,Mutuales,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.339366099415889,CRC
+MUTUAL CARTAGO,Mutuales,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,1,CRC
+MUTUAL CARTAGO,Mutuales,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,1,CRC
+PROMERICA,Mutuales,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.046636505472145706,CRC
+PROMERICA,Mutuales,2026-07-30,Indicadores financieros,ROA,ROA,-0.001256766456195191,CRC
+PROMERICA,Mutuales,2026-07-30,Indicadores financieros,ROE,ROE,-0.01546507355950146,CRC
+PROMERICA,Mutuales,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.9520821375086093,CRC
+PROMERICA,Mutuales,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,0.4689717841085848,CRC
+PROMERICA,Mutuales,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0.019510787353237673,CRC
+PROMERICA,Mutuales,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.691778962870961,CRC
+PROMERICA,Mutuales,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.038714698940086924,CRC
+PROMERICA,Mutuales,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.0331,CRC
+PROMERICA,Mutuales,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.1443,CRC
+PROMERICA,Mutuales,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.34003986824572263,CRC
+PROMERICA,Mutuales,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,1,CRC
+PROMERICA,Mutuales,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,1,CRC
+SCOTIABANK / DAVIBANK,Mutuales,2026-07-30,Indicadores financieros,MARGIN_INTERMEDIATION,Margen de Interm Financiera,0.034132692299401565,CRC
+SCOTIABANK / DAVIBANK,Mutuales,2026-07-30,Indicadores financieros,ROA,ROA,0.0009468684837254363,CRC
+SCOTIABANK / DAVIBANK,Mutuales,2026-07-30,Indicadores financieros,ROE,ROE,0.008721165900840653,CRC
+SCOTIABANK / DAVIBANK,Mutuales,2026-07-30,Indicadores financieros,CURRENT_PORTFOLIO,Cartera de crédito al día,0.9544416200276871,CRC
+SCOTIABANK / DAVIBANK,Mutuales,2026-07-30,Indicadores financieros,COVERAGE_ARREARS,Cobertura de cartera en atraso,0.4759180336081324,CRC
+SCOTIABANK / DAVIBANK,Mutuales,2026-07-30,Indicadores financieros,DELINQUENCY_90,Morosidad >90d y cobro judicial / Cartera Directa,0.012447098389640213,CRC
+SCOTIABANK / DAVIBANK,Mutuales,2026-07-30,Indicadores financieros,OPERATING_EFFICIENCY,Eficiencia Operativa,0.816734347580906,CRC
+SCOTIABANK / DAVIBANK,Mutuales,2026-07-30,Indicadores financieros,ADMIN_EXPENSE_ASSETS,Gasto administrativo sobre activos,0.03432726573098472,CRC
+SCOTIABANK / DAVIBANK,Mutuales,2026-07-30,Indicadores financieros,EQUITY_COMMITMENT,Compromiso Patrimonial,-0.0739,CRC
+SCOTIABANK / DAVIBANK,Mutuales,2026-07-30,Indicadores financieros,CAPITAL_ADEQUACY,Suficiencia Patrimonial,0.1534,CRC
+SCOTIABANK / DAVIBANK,Mutuales,2026-07-30,Indicadores financieros,LIQUIDITY_COVERAGE,Disponibilidades e Inversiones disponibles / Obligaciones público,0.2687332087246768,CRC
+SCOTIABANK / DAVIBANK,Mutuales,2026-07-30,Indicadores financieros,PROPORTIONAL_SUPERVISION,Aplica Supervisión Proporcional,1,CRC
+SCOTIABANK / DAVIBANK,Mutuales,2026-07-30,Indicadores financieros,STATE_GUARANTEE,Garantía del Estado,1,CRC

@@ -10,6 +10,7 @@ Classes:
     BusinessDayCalculator: Utility for business day calculations.
 """
 
+import sys
 from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Self, Sequence
@@ -18,6 +19,8 @@ from aip.shared.calendars import BusinessCalendar
 from aip.shared.calendars import CostaRicaCalendar as CostaRicaCalendar
 from aip.shared.conventions import BusinessDayConvention
 from aip.shared.validation import Guard
+
+sys.modules.setdefault("src.aip.shared.dates", sys.modules[__name__])
 
 
 @dataclass(frozen=True)

@@ -50,6 +50,9 @@ class ConfiguredApplicationFactory(DemoApplicationFactory):
                     "HEALTHY" if self._source_config.folder_watch.enabled else "DEGRADED"
                 ),
                 "bccr": "HEALTHY" if self._source_config.bccr.enabled else "DEGRADED",
+                "sugef_financial": (
+                    "HEALTHY" if self._source_config.sugef_financial.enabled else "DEGRADED"
+                ),
             },
             last_refresh=None,
             component_details={

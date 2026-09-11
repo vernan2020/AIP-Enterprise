@@ -8,7 +8,7 @@ from decimal import Decimal
 
 import pytest
 
-from src.aip.shared.money import (
+from aip.shared.money import (
     Currency,
     ExchangeRate,
     Money,
@@ -38,7 +38,7 @@ class TestCurrency:
 
     def test_currency_from_code_invalid_raises_error(self) -> None:
         """Test from_code with invalid code."""
-        from src.aip.shared.validation.exceptions import InvalidFormatError
+        from aip.shared.validation.exceptions import InvalidFormatError
 
         with pytest.raises(InvalidFormatError):
             Currency.from_code("INVALID")

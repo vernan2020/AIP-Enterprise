@@ -9,7 +9,9 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
 def _create_virtualenv(path: Path) -> Path:
-    venv.EnvBuilder(with_pip=True).create(path)
+    # Project dependencies and build tooling are already installed by the
+    # workflow. Reuse them so this test validates the editable package itself.
+    venv.EnvBuilder(with_pip=True, system_site_packages=True).create(path)
     if os.name == "nt":
         return path / "Scripts" / "python.exe"
     return path / "bin" / "python"
@@ -30,7 +32,16 @@ def test_editable_install_supports_import_without_repo_path(tmp_path: Path) -> N
     python_exe = _create_virtualenv(env_dir)
 
     install = subprocess.run(
-        [str(python_exe), "-m", "pip", "install", "-e", str(REPO_ROOT)],
+        [
+            str(python_exe),
+            "-m",
+            "pip",
+            "install",
+            "--no-deps",
+            "--no-build-isolation",
+            "-e",
+            str(REPO_ROOT),
+        ],
         cwd=REPO_ROOT,
         check=True,
         capture_output=True,

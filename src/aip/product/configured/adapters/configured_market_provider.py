@@ -4,10 +4,6 @@ from datetime import date
 from decimal import Decimal
 from typing import Any
 
-from aip.product.configured.services.institutional_portfolio_rotation_service import (
-    InstitutionalPortfolioRotationService,
-)
-
 from aip.domain.financial_math.curves.nelson_siegel import (
     nelson_siegel_zero_rate,
 )
@@ -24,6 +20,9 @@ from aip.product.configured.services.institutional_market_curve_service import (
 )
 from aip.product.configured.services.institutional_market_relative_value_service import (
     InstitutionalMarketRelativeValueService,
+)
+from aip.product.configured.services.institutional_portfolio_rotation_service import (
+    InstitutionalPortfolioRotationService,
 )
 from aip.product.configured.services.institutional_relative_value_service import (
     InstitutionalRelativeValueService,
