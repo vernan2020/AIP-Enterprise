@@ -18,10 +18,10 @@ from aip.domain.irrbb.nii_audit_repository_conformance import (
     NIIAuditRepositoryConformanceCheck,
     NIIAuditRepositoryConformanceFixture,
     NIIAuditRepositoryConformanceSuite,
-    NIIAuditRepositoryIntegrityError,
 )
 from aip.domain.irrbb.nii_run_audit import (
     NIIRunAuditRecord,
+    NIIRunAuditRepositoryIntegrityError,
     NIIRunAuditRepositoryPutResult,
 )
 from aip.domain.irrbb.nii_run_specification import (
@@ -114,7 +114,7 @@ class _ConformantMemoryRepository:
     def get_by_run_reference(self, *, run_reference: str) -> NIIRunAuditRecord | None:
         with self._store.lock:
             if run_reference in self._store.corrupted:
-                raise NIIAuditRepositoryIntegrityError(
+                raise NIIRunAuditRepositoryIntegrityError(
                     f"Integrity verification failed for {run_reference}"
                 )
             return self._store.records.get(run_reference)
