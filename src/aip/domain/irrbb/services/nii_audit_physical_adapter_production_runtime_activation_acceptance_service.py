@@ -24,9 +24,7 @@ class NIIRunAuditPhysicalAdapterProductionRuntimeActivationAcceptanceService:
         *,
         activation_receipt: NIIRunAuditPhysicalAdapterProductionRuntimeActivationReceipt,
         acceptance_reference: str,
-        evidence: Iterable[
-            NIIRunAuditPhysicalAdapterProductionRuntimeActivationAcceptanceEvidence
-        ],
+        evidence: Iterable[NIIRunAuditPhysicalAdapterProductionRuntimeActivationAcceptanceEvidence],
     ) -> NIIRunAuditPhysicalAdapterProductionRuntimeActivationAcceptance:
         if (
             activation_receipt.status
