@@ -50,9 +50,7 @@ class NetInterestIncomeService:
                     f"NII accrual {accrual.accrual_id} scenario does not match calculation scenario"
                 )
             if accrual.accrual_start_date < basis.valuation_date:
-                raise ValueError(
-                    f"NII accrual {accrual.accrual_id} starts before valuation_date"
-                )
+                raise ValueError(f"NII accrual {accrual.accrual_id} starts before valuation_date")
             if accrual.accrual_end_date > basis.horizon_end_date:
                 raise ValueError(
                     f"NII accrual {accrual.accrual_id} ends after the projection horizon"
