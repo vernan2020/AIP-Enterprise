@@ -1,31 +1,31 @@
 """Financial mathematics domain package."""
 
-from aip.domain.financial_math.bond_metrics.accrued_interest import accrued_interest
-from aip.domain.financial_math.bond_metrics.clean_dirty_price import clean_price, dirty_price
-from aip.domain.financial_math.bond_metrics.convexity import convexity
-from aip.domain.financial_math.bond_metrics.dv01 import dv01
-from aip.domain.financial_math.bond_metrics.effective_duration import effective_duration
-from aip.domain.financial_math.bond_metrics.macaulay_duration import macaulay_duration
-from aip.domain.financial_math.bond_metrics.modified_duration import modified_duration
-from aip.domain.financial_math.bond_metrics.pvbp import pvbp
-from aip.domain.financial_math.cashflows.cashflow import CashFlow
-from aip.domain.financial_math.cashflows.cashflow_series import CashFlowSeries
-from aip.domain.financial_math.curves.bootstrap import BootstrapResult, bootstrap_zero_curve
-from aip.domain.financial_math.curves.curve_point import CurvePoint
-from aip.domain.financial_math.curves.nelson_siegel import (
+from .bond_metrics.accrued_interest import accrued_interest
+from .bond_metrics.clean_dirty_price import clean_price, dirty_price
+from .bond_metrics.convexity import convexity
+from .bond_metrics.dv01 import dv01
+from .bond_metrics.effective_duration import effective_duration
+from .bond_metrics.macaulay_duration import macaulay_duration
+from .bond_metrics.modified_duration import modified_duration
+from .bond_metrics.pvbp import pvbp
+from .cashflows.cashflow import CashFlow
+from .cashflows.cashflow_series import CashFlowSeries
+from .curves.bootstrap import BootstrapResult, bootstrap_zero_curve
+from .curves.curve_point import CurvePoint
+from .curves.nelson_siegel import (
     nelson_siegel_curve,
     nelson_siegel_zero_rate,
 )
-from aip.domain.financial_math.curves.svensson import svensson_curve, svensson_zero_rate
-from aip.domain.financial_math.curves.yield_curve import YieldCurve
-from aip.domain.financial_math.discounting.compounding import (
+from .curves.svensson import svensson_curve, svensson_zero_rate
+from .curves.yield_curve import YieldCurve
+from .discounting.compounding import (
     accumulation_factor,
     discount_factor,
     equivalent_rate,
 )
-from aip.domain.financial_math.discounting.future_value import future_value, future_value_series
-from aip.domain.financial_math.discounting.present_value import present_value, present_value_series
-from aip.domain.financial_math.exceptions import (
+from .discounting.future_value import future_value, future_value_series
+from .discounting.present_value import present_value, present_value_series
+from .exceptions import (
     BootstrapError,
     ConvergenceError,
     CurrencyMismatchError,
@@ -36,21 +36,21 @@ from aip.domain.financial_math.exceptions import (
     InvalidCashFlowError,
     InvalidRateError,
 )
-from aip.domain.financial_math.interpolation.linear import interpolate_linear
-from aip.domain.financial_math.interpolation.logarithmic import interpolate_logarithmic
-from aip.domain.financial_math.rates.effective_rate import EffectiveRate
-from aip.domain.financial_math.rates.forward_rate import ForwardRate
-from aip.domain.financial_math.rates.interest_rate import InterestRate
-from aip.domain.financial_math.rates.nominal_rate import NominalRate
-from aip.domain.financial_math.rates.zero_rate import ZeroRate
-from aip.domain.financial_math.root_finding.bisection import bisection_solve
-from aip.domain.financial_math.root_finding.brent import brent_solve
-from aip.domain.financial_math.root_finding.newton_raphson import newton_raphson_solve
-from aip.domain.financial_math.yield_calculations.internal_rate_of_return import (
+from .interpolation.linear import interpolate_linear
+from .interpolation.logarithmic import interpolate_logarithmic
+from .rates.effective_rate import EffectiveRate
+from .rates.forward_rate import ForwardRate
+from .rates.interest_rate import InterestRate
+from .rates.nominal_rate import NominalRate
+from .rates.zero_rate import ZeroRate
+from .root_finding.bisection import bisection_solve
+from .root_finding.brent import brent_solve
+from .root_finding.newton_raphson import newton_raphson_solve
+from .yield_calculations.internal_rate_of_return import (
     internal_rate_of_return,
     money_weighted_return,
 )
-from aip.domain.financial_math.yield_calculations.yield_to_maturity import yield_to_maturity
+from .yield_calculations.yield_to_maturity import yield_to_maturity
 
 accrue_interest = accrued_interest
 
