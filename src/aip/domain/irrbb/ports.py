@@ -14,6 +14,7 @@ from aip.domain.irrbb.models import (
 )
 from aip.domain.irrbb.nii import NIIProjectionBasis
 from aip.domain.irrbb.nii_projection import NIIPositionProjection
+from aip.domain.irrbb.nii_readiness import NIIProjectionRequirementProfile
 from aip.domain.irrbb.scenario_repricing import FloatingRateCouponBasis
 from aip.shared.money import Currency, Money
 
@@ -213,6 +214,12 @@ class NIIProjectionStrategyResolver(Protocol):
     """Resolve the approved NII projection strategy for one canonical position."""
 
     def resolve(self, *, position: BankingBookPosition) -> NIIProjectionStrategy: ...
+
+
+class NIIProjectionRequirementProfileProvider(Protocol):
+    """Provide the approved evidence profile for one position's NII strategy."""
+
+    def profile_for(self, *, position: BankingBookPosition) -> NIIProjectionRequirementProfile: ...
 
 
 class ScenarioCurveShocker(Protocol):
