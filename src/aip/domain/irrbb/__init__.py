@@ -75,6 +75,10 @@ from aip.domain.irrbb.nii_readiness import (
     NIIProjectionRequirementProfile,
     NIIProjectionScopeStatus,
 )
+from aip.domain.irrbb.nii_run_specification import (
+    NIIMethodologyRunResult,
+    NIIMethodologyRunSpecification,
+)
 from aip.domain.irrbb.nii_scenario_set import (
     NIIScenarioSetEvaluationResult,
     NIIScenarioSetEvaluationStatus,
@@ -88,6 +92,7 @@ from aip.domain.irrbb.services.floating_rate_scenario_cashflow_projector import 
     FloatingRateScenarioCashFlowProjector,
 )
 from aip.domain.irrbb.services.net_interest_income_service import NetInterestIncomeService
+from aip.domain.irrbb.services.nii_methodology_run_service import NIIMethodologyRunService
 from aip.domain.irrbb.services.nii_projection_certification_service import (
     NIIProjectionCertificationService,
 )
@@ -165,6 +170,9 @@ __all__ = [
     "NIIAccrualType",
     "NIIBalanceSheetAssumption",
     "NIIInterestAccrual",
+    "NIIMethodologyRunResult",
+    "NIIMethodologyRunService",
+    "NIIMethodologyRunSpecification",
     "NIIPositionProjection",
     "NIIPositionProjectionStatus",
     "NIIProjectionBasis",
