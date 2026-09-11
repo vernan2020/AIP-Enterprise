@@ -5,8 +5,8 @@ from decimal import Decimal
 
 import pytest
 
-from src.aip.domain.portfolio.exceptions import InvalidPositionError
-from src.aip.domain.portfolio.value_objects import (
+from aip.domain.portfolio.exceptions import InvalidPositionError
+from aip.domain.portfolio.value_objects import (
     ISIN,
     AcquisitionCost,
     BookValue,
@@ -22,10 +22,10 @@ from src.aip.domain.portfolio.value_objects import (
     TransactionId,
     YieldRate,
 )
-from src.aip.shared.calendars import CostaRicaCalendar
-from src.aip.shared.dates import BusinessDate
-from src.aip.shared.math import Percentage
-from src.aip.shared.money import Currency, Money
+from aip.shared.calendars import CostaRicaCalendar
+from aip.shared.dates import BusinessDate
+from aip.shared.math import Percentage
+from aip.shared.money import Currency, Money
 
 
 def test_id_generation_and_parsing_roundtrip() -> None:
