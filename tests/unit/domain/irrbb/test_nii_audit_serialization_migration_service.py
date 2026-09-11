@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import hashlib
 from dataclasses import dataclass
+import hashlib
 from typing import cast
 
 import pytest
