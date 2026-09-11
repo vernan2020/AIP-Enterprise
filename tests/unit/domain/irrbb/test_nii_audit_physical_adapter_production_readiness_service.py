@@ -130,9 +130,7 @@ def test_complete_production_evidence_yields_ready_assessment() -> None:
     bundle = _certification_bundle()
     evidence = tuple(
         _production_evidence(requirement)
-        for requirement in reversed(
-            tuple(NIIRunAuditPhysicalAdapterProductionRequirement)
-        )
+        for requirement in reversed(tuple(NIIRunAuditPhysicalAdapterProductionRequirement))
     )
 
     assessment = NIIRunAuditPhysicalAdapterProductionReadinessService.assess(
@@ -190,9 +188,7 @@ def test_no_evidence_fails_closed_as_blocked() -> None:
 
 
 def test_duplicate_requirement_evidence_is_rejected() -> None:
-    requirement = (
-        NIIRunAuditPhysicalAdapterProductionRequirement.TARGET_ENVIRONMENT_IDENTIFIED
-    )
+    requirement = NIIRunAuditPhysicalAdapterProductionRequirement.TARGET_ENVIRONMENT_IDENTIFIED
 
     with pytest.raises(
         NIIRunAuditPhysicalAdapterProductionReadinessError,
