@@ -49,11 +49,14 @@ class NIIAuditRepositoryConformanceFixture:
 class NIIAuditRepositoryConformanceHarness(Protocol):
     """Test-only lifecycle hooks supplied by a physical persistence adapter.
 
-    Each suite execution receives a fresh harness instance. ``reopen_repository`` must
-    reconnect to the same backing store without reconstructing data from the in-memory
-    domain objects. ``corrupt_persisted_record`` must alter persisted bytes/state outside
-    the repository API so integrity detection can be exercised fail-closed.
+    ``reset`` must provision an empty isolated backing store for the next check.
+    ``reopen_repository`` must reconnect to that same store without reconstructing
+    data from the in-memory domain objects. ``corrupt_persisted_record`` must alter
+    persisted bytes/state outside the repository API so integrity detection can be
+    exercised fail-closed.
     """
+
+    def reset(self) -> None: ...
 
     def repository(self) -> NIIRunAuditRepository: ...
 
@@ -133,6 +136,7 @@ class NIIAuditRepositoryConformanceSuite:
     def _fresh_repository(
         *, harness: NIIAuditRepositoryConformanceHarness,
     ) -> NIIRunAuditRepository:
+        harness.reset()
         return harness.repository()
 
     @classmethod
