@@ -6,7 +6,7 @@ from aip.domain.irrbb.nii_run_audit import (
     NIIRunAuditWriteResult,
     NIIRunAuditWriteStatus,
 )
-from aip.domain.irrbb.ports import NIIRunAuditRepository
+from aip.domain.irrbb.nii_run_audit_ports import NIIRunAuditRepository
 from aip.domain.irrbb.services.nii_run_reproducibility_service import (
     NIIRunReproducibilityService,
 )
@@ -61,8 +61,6 @@ class NIIRunAuditService:
 
     @staticmethod
     def _validate_record(record: NIIRunAuditRecord) -> None:
-        expected_manifest = NIIRunReproducibilityService.build(
-            specification=record.specification
-        )
+        expected_manifest = NIIRunReproducibilityService.build(specification=record.specification)
         if record.manifest != expected_manifest:
             raise ValueError("NII audit manifest does not match methodology run specification")
