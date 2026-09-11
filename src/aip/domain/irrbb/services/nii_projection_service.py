@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from aip.domain.irrbb.models import BankingBookPosition, IRRBBScenario
 from aip.domain.irrbb.nii import NIIProjectionBasis
-from aip.domain.irrbb.nii_projection import NIIProjectionBatch
+from aip.domain.irrbb.nii_projection import NIIPositionProjection, NIIProjectionBatch
 from aip.domain.irrbb.ports import NIIProjectionStrategyResolver
 
 
@@ -22,7 +22,7 @@ class NIIProjectionService:
             raise ValueError("NII projection requires at least one position")
 
         seen_position_ids: set[str] = set()
-        projections = []
+        projections: list[NIIPositionProjection] = []
         for position in positions:
             if position.position_id in seen_position_ids:
                 raise ValueError(f"duplicate NII projection position_id: {position.position_id}")
