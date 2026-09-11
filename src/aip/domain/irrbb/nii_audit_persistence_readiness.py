@@ -55,13 +55,27 @@ class NIIAuditPersistenceReadinessAssessment:
         if not self.adapter_reference.strip():
             raise ValueError("NII audit persistence adapter_reference is required")
         if self.certified_requirements & self.missing_requirements:
-            raise ValueError("NII audit persistence requirements cannot be both certified and missing")
-        if self.certified_requirements | self.missing_requirements != REQUIRED_NII_AUDIT_PERSISTENCE_REQUIREMENTS:
-            raise ValueError("NII audit persistence assessment must cover every required capability")
+            raise ValueError(
+                "NII audit persistence requirements cannot be both certified and missing"
+            )
+        if (
+            self.certified_requirements | self.missing_requirements
+            != REQUIRED_NII_AUDIT_PERSISTENCE_REQUIREMENTS
+        ):
+            raise ValueError(
+                "NII audit persistence assessment must cover every required capability"
+            )
         if self.status is NIIAuditPersistenceReadinessStatus.READY and self.missing_requirements:
-            raise ValueError("READY NII audit persistence assessment cannot have missing requirements")
-        if self.status is NIIAuditPersistenceReadinessStatus.BLOCKED and not self.missing_requirements:
-            raise ValueError("BLOCKED NII audit persistence assessment requires missing requirements")
+            raise ValueError(
+                "READY NII audit persistence assessment cannot have missing requirements"
+            )
+        if (
+            self.status is NIIAuditPersistenceReadinessStatus.BLOCKED
+            and not self.missing_requirements
+        ):
+            raise ValueError(
+                "BLOCKED NII audit persistence assessment requires missing requirements"
+            )
 
     @property
     def is_ready(self) -> bool:
