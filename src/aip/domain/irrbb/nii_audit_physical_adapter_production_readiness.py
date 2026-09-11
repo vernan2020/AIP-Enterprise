@@ -60,9 +60,7 @@ class NIIRunAuditPhysicalAdapterProductionReadinessAssessment:
     certification_bundle: NIIRunAuditPhysicalAdapterCertificationBundle
     environment_reference: str
     status: NIIRunAuditPhysicalAdapterProductionReadinessStatus
-    certified_requirements: frozenset[
-        NIIRunAuditPhysicalAdapterProductionRequirement
-    ]
+    certified_requirements: frozenset[NIIRunAuditPhysicalAdapterProductionRequirement]
     missing_requirements: frozenset[NIIRunAuditPhysicalAdapterProductionRequirement]
     evidence: tuple[NIIRunAuditPhysicalAdapterProductionEvidence, ...]
 
@@ -85,9 +83,7 @@ class NIIRunAuditPhysicalAdapterProductionReadinessAssessment:
 
         evidence_requirements = tuple(item.requirement for item in self.evidence)
         if len(evidence_requirements) != len(set(evidence_requirements)):
-            raise ValueError(
-                "Duplicate NII audit physical adapter production evidence requirement"
-            )
+            raise ValueError("Duplicate NII audit physical adapter production evidence requirement")
         if frozenset(evidence_requirements) != self.certified_requirements:
             raise ValueError(
                 "NII audit physical adapter production evidence must match certified requirements"
@@ -99,21 +95,17 @@ class NIIRunAuditPhysicalAdapterProductionReadinessAssessment:
             )
         )
         if self.evidence != canonical_evidence:
-            raise ValueError(
-                "NII audit physical adapter production evidence must be canonicalized"
-            )
+            raise ValueError("NII audit physical adapter production evidence must be canonicalized")
 
         if (
-            self.status
-            is NIIRunAuditPhysicalAdapterProductionReadinessStatus.READY
+            self.status is NIIRunAuditPhysicalAdapterProductionReadinessStatus.READY
             and self.missing_requirements
         ):
             raise ValueError(
                 "READY NII audit physical adapter production assessment cannot have missing requirements"
             )
         if (
-            self.status
-            is NIIRunAuditPhysicalAdapterProductionReadinessStatus.BLOCKED
+            self.status is NIIRunAuditPhysicalAdapterProductionReadinessStatus.BLOCKED
             and not self.missing_requirements
         ):
             raise ValueError(
