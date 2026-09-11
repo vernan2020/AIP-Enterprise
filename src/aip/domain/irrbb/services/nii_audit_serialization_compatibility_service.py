@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from aip.domain.irrbb.nii_audit_schema_evolution import NIIAuditSchemaEvolutionContract
+from aip.domain.irrbb.nii_audit_schema_evolution import (
+    NIIAuditSchemaEvolutionContract,
+    NIIAuditSchemaMigrationStep,
+)
 from aip.domain.irrbb.nii_audit_serialization import (
     NIIRunAuditPayloadIntegrity,
     NIIRunAuditRecordCodec,
@@ -51,7 +54,7 @@ class NIIRunAuditSerializationCompatibilityService:
             step for step in schema_contract.migration_steps if step in used_steps
         )
 
-        transformer_references = {}
+        transformer_references: dict[NIIAuditSchemaMigrationStep, str] = {}
         for step in required_steps:
             transformer = transformer_resolver.resolve(step=step)
             if transformer.step != step:
