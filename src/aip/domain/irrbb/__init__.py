@@ -55,6 +55,10 @@ from aip.domain.irrbb.nii import (
     NIIScenarioAssessment,
     NIIShockTiming,
 )
+from aip.domain.irrbb.nii_certification import (
+    NIIProjectionCertificationResult,
+    NIIProjectionCertificationStatus,
+)
 from aip.domain.irrbb.nii_projection import (
     NIIPositionProjection,
     NIIPositionProjectionStatus,
@@ -80,6 +84,9 @@ from aip.domain.irrbb.services.floating_rate_scenario_cashflow_projector import 
     FloatingRateScenarioCashFlowProjector,
 )
 from aip.domain.irrbb.services.net_interest_income_service import NetInterestIncomeService
+from aip.domain.irrbb.services.nii_projection_certification_service import (
+    NIIProjectionCertificationService,
+)
 from aip.domain.irrbb.services.nii_projection_readiness_service import (
     NIIProjectionReadinessService,
 )
@@ -156,6 +163,9 @@ __all__ = [
     "NIIProjectionBasis",
     "NIIProjectionBatch",
     "NIIProjectionCapabilityEvidence",
+    "NIIProjectionCertificationResult",
+    "NIIProjectionCertificationService",
+    "NIIProjectionCertificationStatus",
     "NIIProjectionEvidenceAlternative",
     "NIIProjectionEvidenceKey",
     "NIIProjectionReadinessAssessment",
