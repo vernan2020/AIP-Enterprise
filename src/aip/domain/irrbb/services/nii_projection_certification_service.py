@@ -66,10 +66,7 @@ class NIIProjectionCertificationService:
                 ready_positions.append(position)
 
         assessment_tuple = tuple(assessments)
-        if any(
-            item.status is NIIProjectionReadinessStatus.BLOCKED
-            for item in assessment_tuple
-        ):
+        if any(item.status is NIIProjectionReadinessStatus.BLOCKED for item in assessment_tuple):
             return NIIProjectionCertificationResult(
                 basis=basis,
                 scenario=scenario,
