@@ -338,9 +338,7 @@ def _acceptance_evidence():
             source_reference=f"runtime-acceptance:{requirement.value.lower()}",
         )
         for requirement in reversed(
-            tuple(
-                NIIRunAuditPhysicalAdapterProductionRuntimeActivationAcceptanceRequirement
-            )
+            tuple(NIIRunAuditPhysicalAdapterProductionRuntimeActivationAcceptanceRequirement)
         )
     )
 
