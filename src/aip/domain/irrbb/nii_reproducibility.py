@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from hashlib import sha256
+import hashlib
 from dataclasses import dataclass
 
 
@@ -39,6 +39,6 @@ class NIIRunEvidenceManifest:
         if tuple(sorted(self.evidence_references)) != self.evidence_references:
             raise ValueError("NII reproducibility evidence references must be canonicalized")
 
-        expected = sha256(self.canonical_payload.encode("utf-8")).hexdigest()
+        expected = hashlib.sha256(self.canonical_payload.encode("utf-8")).hexdigest()
         if self.specification_fingerprint != expected:
             raise ValueError("NII reproducibility fingerprint does not match canonical payload")
