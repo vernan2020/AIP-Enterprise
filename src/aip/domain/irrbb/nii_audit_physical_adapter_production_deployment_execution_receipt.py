@@ -80,8 +80,7 @@ class NIIRunAuditPhysicalAdapterProductionDeploymentExecutionReceipt:
                 )
 
         expected_sequences = tuple(
-            step.sequence
-            for step in self.execution_authorization.deployment_plan.steps
+            step.sequence for step in self.execution_authorization.deployment_plan.steps
         )
         result_sequences = tuple(result.sequence for result in self.step_results)
         if result_sequences != expected_sequences:
@@ -92,8 +91,7 @@ class NIIRunAuditPhysicalAdapterProductionDeploymentExecutionReceipt:
         derived_status = (
             NIIRunAuditPhysicalAdapterProductionDeploymentExecutionStatus.SUCCEEDED
             if all(
-                result.status
-                is NIIRunAuditPhysicalAdapterProductionDeploymentStepStatus.SUCCEEDED
+                result.status is NIIRunAuditPhysicalAdapterProductionDeploymentStepStatus.SUCCEEDED
                 for result in self.step_results
             )
             else NIIRunAuditPhysicalAdapterProductionDeploymentExecutionStatus.FAILED
@@ -104,8 +102,7 @@ class NIIRunAuditPhysicalAdapterProductionDeploymentExecutionReceipt:
             )
 
         if (
-            self.status
-            is NIIRunAuditPhysicalAdapterProductionDeploymentExecutionStatus.SUCCEEDED
+            self.status is NIIRunAuditPhysicalAdapterProductionDeploymentExecutionStatus.SUCCEEDED
             and self.rollback_status
             is not NIIRunAuditPhysicalAdapterProductionDeploymentRollbackStatus.NOT_REQUIRED
         ):
