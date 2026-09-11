@@ -49,9 +49,7 @@ class NIIRunAuditSerializationCompatibilityCertificate:
             raise ValueError("NII audit compatibility codec_reference is required")
         if not self.integrity_reference.strip():
             raise ValueError("NII audit compatibility integrity_reference is required")
-        source_versions = tuple(
-            item.source_version for item in self.readable_schema_compatibility
-        )
+        source_versions = tuple(item.source_version for item in self.readable_schema_compatibility)
         if len(source_versions) != len(set(source_versions)):
             raise ValueError("Duplicate NII audit readable schema compatibility entry")
         if set(source_versions) != set(self.schema_contract.readable_versions):
