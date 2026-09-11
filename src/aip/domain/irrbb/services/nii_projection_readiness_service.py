@@ -6,6 +6,7 @@ from aip.domain.irrbb.models import (
     PaymentStructure,
 )
 from aip.domain.irrbb.nii_readiness import (
+    POSITION_EVIDENCE_KEYS,
     NIIProjectionCapabilityEvidence,
     NIIProjectionEvidenceKey,
     NIIProjectionReadinessAssessment,
@@ -13,7 +14,6 @@ from aip.domain.irrbb.nii_readiness import (
     NIIProjectionReadinessStatus,
     NIIProjectionRequirementProfile,
     NIIProjectionScopeStatus,
-    POSITION_EVIDENCE_KEYS,
 )
 
 
