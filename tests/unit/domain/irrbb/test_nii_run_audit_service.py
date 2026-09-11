@@ -189,9 +189,7 @@ def test_repository_substitution_after_create_fails_closed() -> None:
         run_reference=record.run_reference,
         basis_source_reference="basis:approved:v2",
     )
-    service = NIIRunAuditService(
-        repository=_SubstitutingRepository(substituted=substituted)
-    )
+    service = NIIRunAuditService(repository=_SubstitutingRepository(substituted=substituted))
 
     with pytest.raises(RuntimeError, match="substituted newly stored record"):
         service.store(record=record)
