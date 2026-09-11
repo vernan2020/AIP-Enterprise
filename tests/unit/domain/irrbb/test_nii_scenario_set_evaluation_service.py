@@ -110,8 +110,7 @@ class _ProfileProvider:
 class _CapabilityProvider:
     def __init__(
         self,
-        by_scenario: dict[IRRBBScenario, tuple[NIIProjectionCapabilityEvidence, ...]]
-        | None = None,
+        by_scenario: dict[IRRBBScenario, tuple[NIIProjectionCapabilityEvidence, ...]] | None = None,
     ) -> None:
         self._by_scenario = by_scenario or {}
         self.calls: list[IRRBBScenario] = []
