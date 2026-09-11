@@ -27,7 +27,6 @@ from aip.domain.irrbb.services.nii_audit_serialization_compatibility_service imp
     NIIRunAuditSerializationCompatibilityService,
 )
 
-
 _V1 = NIIAuditSchemaVersion("aip.irrbb.nii-audit", 1)
 _V2 = NIIAuditSchemaVersion("aip.irrbb.nii-audit", 2)
 _V3 = NIIAuditSchemaVersion("aip.irrbb.nii-audit", 3)
