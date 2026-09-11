@@ -44,14 +44,10 @@ class NIIProjectionCertificationResult:
             raise ValueError("duplicate NII projection certification position_id")
 
         blocked = tuple(
-            item
-            for item in self.assessments
-            if item.status is NIIProjectionReadinessStatus.BLOCKED
+            item for item in self.assessments if item.status is NIIProjectionReadinessStatus.BLOCKED
         )
         ready = tuple(
-            item
-            for item in self.assessments
-            if item.status is NIIProjectionReadinessStatus.READY
+            item for item in self.assessments if item.status is NIIProjectionReadinessStatus.READY
         )
         excluded = tuple(
             item
@@ -68,9 +64,7 @@ class NIIProjectionCertificationResult:
 
         if self.status is NIIProjectionCertificationStatus.NO_INCLUDED_POSITIONS:
             if len(excluded) != len(self.assessments):
-                raise ValueError(
-                    "NO_INCLUDED_POSITIONS requires every assessment to be EXCLUDED"
-                )
+                raise ValueError("NO_INCLUDED_POSITIONS requires every assessment to be EXCLUDED")
             if self.projection_batch is not None:
                 raise ValueError("excluded-only NII certification cannot contain projections")
             return
@@ -87,8 +81,7 @@ class NIIProjectionCertificationResult:
             raise ValueError("NII certification projection batch substituted scenario")
 
         projections_by_position = {
-            projection.position_id: projection
-            for projection in self.projection_batch.projections
+            projection.position_id: projection for projection in self.projection_batch.projections
         }
         ready_by_position = {item.position_id: item for item in ready}
         if projections_by_position.keys() != ready_by_position.keys():
