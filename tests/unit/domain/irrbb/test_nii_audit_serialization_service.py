@@ -218,9 +218,13 @@ def test_decode_rejects_substituted_codec_reference() -> None:
 
 def test_decode_rejects_schema_not_declared_readable() -> None:
     record = _record()
-    codec = _MemoryCodec(supported=frozenset({_V1, _V2, NIIAuditSchemaVersion("aip.irrbb.nii-audit", 3)}))
+    codec = _MemoryCodec(
+        supported=frozenset({_V1, _V2, NIIAuditSchemaVersion("aip.irrbb.nii-audit", 3)})
+    )
     integrity = _Sha256Integrity()
-    payload = codec.encode(record=record, schema_version=NIIAuditSchemaVersion("aip.irrbb.nii-audit", 3))
+    payload = codec.encode(
+        record=record, schema_version=NIIAuditSchemaVersion("aip.irrbb.nii-audit", 3)
+    )
     envelope = NIIRunAuditSerializationEnvelope(
         run_reference=record.run_reference,
         schema_version=NIIAuditSchemaVersion("aip.irrbb.nii-audit", 3),
