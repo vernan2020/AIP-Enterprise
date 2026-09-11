@@ -71,9 +71,7 @@ class NIIRunAuditSerializationCompatibilityService:
             NIIAuditReadableSchemaCompatibility(
                 source_version=source_version,
                 migration_steps=path,
-                transformer_references=tuple(
-                    transformer_references[step] for step in path
-                ),
+                transformer_references=tuple(transformer_references[step] for step in path),
             )
             for source_version, path in paths.items()
         )
