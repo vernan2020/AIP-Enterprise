@@ -24,8 +24,8 @@ class NIIRunAuditPhysicalAdapterProductionPostExecutionAcceptanceRequirement(str
     CHANGE_CLOSURE_RECORDED = "CHANGE_CLOSURE_RECORDED"
 
 
-REQUIRED_NII_AUDIT_PHYSICAL_ADAPTER_PRODUCTION_POST_EXECUTION_ACCEPTANCE_REQUIREMENTS = (
-    frozenset(NIIRunAuditPhysicalAdapterProductionPostExecutionAcceptanceRequirement)
+REQUIRED_NII_AUDIT_PHYSICAL_ADAPTER_PRODUCTION_POST_EXECUTION_ACCEPTANCE_REQUIREMENTS = frozenset(
+    NIIRunAuditPhysicalAdapterProductionPostExecutionAcceptanceRequirement
 )
 
 
@@ -50,9 +50,7 @@ class NIIRunAuditPhysicalAdapterProductionPostExecutionAcceptance:
 
     execution_receipt: NIIRunAuditPhysicalAdapterProductionDeploymentExecutionReceipt
     acceptance_reference: str
-    evidence: tuple[
-        NIIRunAuditPhysicalAdapterProductionPostExecutionAcceptanceEvidence, ...
-    ]
+    evidence: tuple[NIIRunAuditPhysicalAdapterProductionPostExecutionAcceptanceEvidence, ...]
 
     def __post_init__(self) -> None:
         if (
