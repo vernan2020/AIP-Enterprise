@@ -89,7 +89,9 @@ class NIIScenarioSetEvaluationResult:
             raise ValueError("NII results must match the exact requested scenario order")
         if any(item.basis != self.basis for item in self.scenario_results):
             raise ValueError("NII results must use the requested projection basis")
-        if any(item.reporting_currency is not self.reporting_currency for item in self.scenario_results):
+        if any(
+            item.reporting_currency is not self.reporting_currency for item in self.scenario_results
+        ):
             raise ValueError("NII results must use the requested reporting currency")
         if self.delta_nii is None:
             raise ValueError("EVALUATED NII scenario set requires delta_nii")
