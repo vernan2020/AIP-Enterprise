@@ -131,7 +131,8 @@ class NIIAuditRepositoryConformanceSuite:
 
     @staticmethod
     def _fresh_repository(
-        *, harness: NIIAuditRepositoryConformanceHarness,
+        *,
+        harness: NIIAuditRepositoryConformanceHarness,
     ) -> NIIRunAuditRepository:
         harness.reset()
         return harness.repository()
@@ -177,7 +178,10 @@ class NIIAuditRepositoryConformanceSuite:
         repository.put_if_absent(record=fixture.primary)
         conflicting = repository.put_if_absent(record=fixture.conflicting)
         if conflicting.created or conflicting.record != fixture.primary:
-            return check, "Conflicting reuse of run_reference must preserve and return the first record"
+            return (
+                check,
+                "Conflicting reuse of run_reference must preserve and return the first record",
+            )
         return check, None
 
     @classmethod
@@ -207,7 +211,10 @@ class NIIAuditRepositoryConformanceSuite:
         repository.put_if_absent(record=fixture.primary)
         loaded = repository.get_by_run_reference(run_reference=fixture.primary.run_reference)
         if loaded != fixture.primary:
-            return check, "Successful put_if_absent must be immediately visible to a subsequent read"
+            return (
+                check,
+                "Successful put_if_absent must be immediately visible to a subsequent read",
+            )
         return check, None
 
     @classmethod
