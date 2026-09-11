@@ -36,11 +36,17 @@ class NIIRunAuditPhysicalAdapterCertificationBundle:
         if not self.evidence_references:
             raise ValueError("NII audit physical adapter certification evidence is required")
         if any(not reference.strip() for reference in self.evidence_references):
-            raise ValueError("NII audit physical adapter certification evidence reference is required")
+            raise ValueError(
+                "NII audit physical adapter certification evidence reference is required"
+            )
         if self.evidence_references != tuple(sorted(self.evidence_references)):
-            raise ValueError("NII audit physical adapter certification evidence must be canonicalized")
+            raise ValueError(
+                "NII audit physical adapter certification evidence must be canonicalized"
+            )
         if len(self.evidence_references) != len(set(self.evidence_references)):
-            raise ValueError("Duplicate NII audit physical adapter certification evidence reference")
+            raise ValueError(
+                "Duplicate NII audit physical adapter certification evidence reference"
+            )
 
         authorization = self.activated_persistence.authorization
         descriptor = self.activated_persistence.descriptor
