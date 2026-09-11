@@ -123,9 +123,11 @@ def test_certifies_complete_declared_readable_perimeter() -> None:
 
     assert certificate.codec_reference == _Codec.reference
     assert certificate.integrity_reference == _Integrity.reference
-    assert tuple(
-        entry.source_version for entry in certificate.readable_schema_compatibility
-    ) == (_V1, _V2, _V3)
+    assert tuple(entry.source_version for entry in certificate.readable_schema_compatibility) == (
+        _V1,
+        _V2,
+        _V3,
+    )
 
     v1, v2, v3 = certificate.readable_schema_compatibility
     assert v1.migration_steps == (_STEP_12, _STEP_23)
