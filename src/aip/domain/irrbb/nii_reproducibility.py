@@ -3,7 +3,6 @@ from __future__ import annotations
 import hashlib
 from dataclasses import dataclass
 
-
 NII_REPRODUCIBILITY_SCHEMA_VERSION = "aip.irrbb.nii-run-reproducibility.v1"
 
 
