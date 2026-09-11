@@ -6,7 +6,10 @@ from aip.domain.irrbb.nii_certification import (
     NIIProjectionCertificationResult,
     NIIProjectionCertificationStatus,
 )
-from aip.domain.irrbb.nii_readiness import NIIProjectionReadinessStatus
+from aip.domain.irrbb.nii_readiness import (
+    NIIProjectionReadinessStatus,
+    NIIProjectionScopeStatus,
+)
 from aip.domain.irrbb.ports import (
     NIIProjectionCapabilityEvidenceProvider,
     NIIProjectionRequirementProfileProvider,
@@ -44,7 +47,7 @@ class NIIProjectionCertificationService:
         for position in positions:
             profile = profile_provider.profile_for(position=position)
             capabilities = ()
-            if profile.scope_status.value == "INCLUDED":
+            if profile.scope_status is NIIProjectionScopeStatus.INCLUDED:
                 capabilities = capability_provider.evidence_for(
                     position=position,
                     profile=profile,
