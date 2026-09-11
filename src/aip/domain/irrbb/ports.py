@@ -14,7 +14,10 @@ from aip.domain.irrbb.models import (
 )
 from aip.domain.irrbb.nii import NIIProjectionBasis
 from aip.domain.irrbb.nii_projection import NIIPositionProjection
-from aip.domain.irrbb.nii_readiness import NIIProjectionRequirementProfile
+from aip.domain.irrbb.nii_readiness import (
+    NIIProjectionCapabilityEvidence,
+    NIIProjectionRequirementProfile,
+)
 from aip.domain.irrbb.scenario_repricing import FloatingRateCouponBasis
 from aip.shared.money import Currency, Money
 
@@ -220,6 +223,19 @@ class NIIProjectionRequirementProfileProvider(Protocol):
     """Provide the approved evidence profile for one position's NII strategy."""
 
     def profile_for(self, *, position: BankingBookPosition) -> NIIProjectionRequirementProfile: ...
+
+
+class NIIProjectionCapabilityEvidenceProvider(Protocol):
+    """Provide approved non-position evidence for one NII strategy invocation."""
+
+    def evidence_for(
+        self,
+        *,
+        position: BankingBookPosition,
+        profile: NIIProjectionRequirementProfile,
+        basis: NIIProjectionBasis,
+        scenario: IRRBBScenario,
+    ) -> tuple[NIIProjectionCapabilityEvidence, ...]: ...
 
 
 class ScenarioCurveShocker(Protocol):
