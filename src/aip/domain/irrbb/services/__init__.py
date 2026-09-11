@@ -9,6 +9,9 @@ from aip.domain.irrbb.services.floating_rate_scenario_cashflow_projector import 
     FloatingRateScenarioCashFlowProjector,
 )
 from aip.domain.irrbb.services.net_interest_income_service import NetInterestIncomeService
+from aip.domain.irrbb.services.nii_audit_persistence_activation_service import (
+    NIIRunAuditPersistenceActivationService,
+)
 from aip.domain.irrbb.services.nii_audit_persistence_readiness_service import (
     NIIAuditPersistenceReadinessService,
 )
@@ -76,6 +79,7 @@ __all__ = [
     "NIIProjectionCertificationService",
     "NIIProjectionReadinessService",
     "NIIProjectionService",
+    "NIIRunAuditPersistenceActivationService",
     "NIIRunAuditSerializationCompatibilityService",
     "NIIRunAuditSerializationMigrationService",
     "NIIRunAuditSerializationService",
