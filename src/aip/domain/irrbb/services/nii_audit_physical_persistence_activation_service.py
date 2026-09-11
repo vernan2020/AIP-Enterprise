@@ -1,12 +1,12 @@
 from __future__ import annotations
 
+from aip.domain.irrbb.nii_audit_persistence_activation import (
+    NIIRunAuditPersistenceActivationAuthorization,
+)
 from aip.domain.irrbb.nii_audit_physical_persistence import (
     NIIRunAuditActivatedPhysicalPersistence,
     NIIRunAuditPhysicalPersistenceActivationError,
     NIIRunAuditPhysicalPersistenceAdapter,
-)
-from aip.domain.irrbb.nii_audit_persistence_activation import (
-    NIIRunAuditPersistenceActivationAuthorization,
 )
 
 
