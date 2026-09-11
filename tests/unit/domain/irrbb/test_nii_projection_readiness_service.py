@@ -277,7 +277,9 @@ def test_excluded_profile_returns_explicit_exclusion_without_requirements() -> N
 
 
 def test_excluded_profile_cannot_hide_requirements() -> None:
-    with pytest.raises(ValueError, match="excluded NII projection profile cannot declare requirements"):
+    with pytest.raises(
+        ValueError, match="excluded NII projection profile cannot declare requirements"
+    ):
         NIIProjectionRequirementProfile(
             strategy_reference="strategy:excluded:v1",
             source_reference="policy:scope:v1",
