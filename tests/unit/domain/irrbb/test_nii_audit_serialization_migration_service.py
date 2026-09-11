@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import hashlib
+from dataclasses import dataclass
 from typing import cast
 
 import pytest
@@ -22,7 +22,6 @@ from aip.domain.irrbb.nii_run_audit import NIIRunAuditRecord
 from aip.domain.irrbb.services.nii_audit_serialization_migration_service import (
     NIIRunAuditSerializationMigrationService,
 )
-
 
 _V1 = NIIAuditSchemaVersion("aip.irrbb.nii-audit", 1)
 _V2 = NIIAuditSchemaVersion("aip.irrbb.nii-audit", 2)
