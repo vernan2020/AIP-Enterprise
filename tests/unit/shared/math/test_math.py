@@ -7,7 +7,7 @@ from decimal import Decimal, InvalidOperation
 
 import pytest
 
-from src.aip.shared.math import (
+from aip.shared.math import (
     LinearInterpolation,
     Percentage,
     SafeDecimal,
