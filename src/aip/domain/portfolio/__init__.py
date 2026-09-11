@@ -1,6 +1,6 @@
 """Portfolio bounded context public API."""
 
-from src.aip.domain.portfolio.value_objects import (
+from .value_objects import (
     ISIN,
     AcquisitionCost,
     BookValue,
