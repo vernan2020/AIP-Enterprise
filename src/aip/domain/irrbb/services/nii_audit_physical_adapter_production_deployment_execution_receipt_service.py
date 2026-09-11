@@ -41,9 +41,7 @@ class NIIRunAuditPhysicalAdapterProductionDeploymentExecutionReceiptService:
                 )
 
         result_items = tuple(step_results)
-        result_by_sequence: dict[
-            int, NIIRunAuditPhysicalAdapterProductionDeploymentStepResult
-        ] = {}
+        result_by_sequence: dict[int, NIIRunAuditPhysicalAdapterProductionDeploymentStepResult] = {}
         for result in result_items:
             if result.sequence in result_by_sequence:
                 raise NIIRunAuditPhysicalAdapterProductionDeploymentExecutionReceiptError(
@@ -61,8 +59,7 @@ class NIIRunAuditPhysicalAdapterProductionDeploymentExecutionReceiptService:
             details: list[str] = []
             if missing_sequences:
                 details.append(
-                    "missing="
-                    + ",".join(str(sequence) for sequence in sorted(missing_sequences))
+                    "missing=" + ",".join(str(sequence) for sequence in sorted(missing_sequences))
                 )
             if unexpected_sequences:
                 details.append(
@@ -74,22 +71,18 @@ class NIIRunAuditPhysicalAdapterProductionDeploymentExecutionReceiptService:
                 + "; ".join(details)
             )
 
-        canonical_results = tuple(
-            result_by_sequence[sequence] for sequence in expected_sequences
-        )
+        canonical_results = tuple(result_by_sequence[sequence] for sequence in expected_sequences)
         status = (
             NIIRunAuditPhysicalAdapterProductionDeploymentExecutionStatus.SUCCEEDED
             if all(
-                result.status
-                is NIIRunAuditPhysicalAdapterProductionDeploymentStepStatus.SUCCEEDED
+                result.status is NIIRunAuditPhysicalAdapterProductionDeploymentStepStatus.SUCCEEDED
                 for result in canonical_results
             )
             else NIIRunAuditPhysicalAdapterProductionDeploymentExecutionStatus.FAILED
         )
 
         if (
-            status
-            is NIIRunAuditPhysicalAdapterProductionDeploymentExecutionStatus.SUCCEEDED
+            status is NIIRunAuditPhysicalAdapterProductionDeploymentExecutionStatus.SUCCEEDED
             and rollback_status
             is not NIIRunAuditPhysicalAdapterProductionDeploymentRollbackStatus.NOT_REQUIRED
         ):
