@@ -18,6 +18,9 @@ from aip.domain.irrbb.services.nii_audit_persistence_readiness_service import (
 from aip.domain.irrbb.services.nii_audit_physical_adapter_certification_service import (
     NIIRunAuditPhysicalAdapterCertificationService,
 )
+from aip.domain.irrbb.services.nii_audit_physical_adapter_production_deployment_execution_authorization_service import (
+    NIIRunAuditPhysicalAdapterProductionDeploymentExecutionAuthorizationService,
+)
 from aip.domain.irrbb.services.nii_audit_physical_adapter_production_deployment_plan_service import (
     NIIRunAuditPhysicalAdapterProductionDeploymentPlanService,
 )
@@ -96,6 +99,7 @@ __all__ = [
     "NIIProjectionService",
     "NIIRunAuditPersistenceActivationService",
     "NIIRunAuditPhysicalAdapterCertificationService",
+    "NIIRunAuditPhysicalAdapterProductionDeploymentExecutionAuthorizationService",
     "NIIRunAuditPhysicalAdapterProductionDeploymentPlanService",
     "NIIRunAuditPhysicalAdapterProductionPromotionService",
     "NIIRunAuditPhysicalAdapterProductionReadinessService",
