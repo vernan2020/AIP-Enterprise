@@ -27,9 +27,7 @@ class NIIRunAuditPhysicalAdapterProductionOperationalInterventionAuthorizationSe
         ),
         authorization_reference: str,
         action: NIIRunAuditPhysicalAdapterProductionOperationalInterventionAction,
-        evidence: Iterable[
-            NIIRunAuditPhysicalAdapterProductionOperationalInterventionEvidence
-        ],
+        evidence: Iterable[NIIRunAuditPhysicalAdapterProductionOperationalInterventionEvidence],
     ) -> NIIRunAuditPhysicalAdapterProductionOperationalInterventionAuthorization:
         if not authorization_reference.strip():
             raise NIIRunAuditPhysicalAdapterProductionOperationalInterventionAuthorizationError(
