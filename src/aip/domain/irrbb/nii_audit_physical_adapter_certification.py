@@ -6,6 +6,7 @@ from aip.domain.irrbb.nii_audit_persistence_activation import (
     NIIRunAuditPersistenceActivationAuthorization,
 )
 from aip.domain.irrbb.nii_audit_persistence_readiness import (
+    REQUIRED_NII_AUDIT_PERSISTENCE_REQUIREMENTS,
     NIIAuditPersistenceReadinessAssessment,
 )
 from aip.domain.irrbb.nii_audit_physical_persistence import (
@@ -49,11 +50,12 @@ class NIIRunAuditPhysicalAdapterCertificationBundle:
             )
 
         authorization = self.activated_persistence.authorization
+        readiness = authorization.readiness
         descriptor = self.activated_persistence.descriptor
         configuration = authorization.configuration
-        if not authorization.readiness.is_ready:
+        if not readiness.is_ready:
             raise ValueError("NII audit physical adapter certification requires READY assessment")
-        if authorization.readiness.adapter_reference != descriptor.adapter_reference:
+        if readiness.adapter_reference != descriptor.adapter_reference:
             raise ValueError("NII audit physical adapter certification readiness identity mismatch")
         if configuration.adapter_reference != descriptor.adapter_reference:
             raise ValueError("NII audit physical adapter certification adapter identity mismatch")
@@ -63,6 +65,17 @@ class NIIRunAuditPhysicalAdapterCertificationBundle:
             raise ValueError("NII audit physical adapter certification codec identity mismatch")
         if authorization.compatibility.integrity_reference != descriptor.integrity_reference:
             raise ValueError("NII audit physical adapter certification integrity identity mismatch")
+
+        evidence_requirements = tuple(item.requirement for item in readiness.evidence)
+        if len(evidence_requirements) != len(set(evidence_requirements)):
+            raise NIIRunAuditPhysicalAdapterCertificationError(
+                "NII audit physical adapter certification readiness evidence is duplicated"
+            )
+        if set(evidence_requirements) != REQUIRED_NII_AUDIT_PERSISTENCE_REQUIREMENTS:
+            raise NIIRunAuditPhysicalAdapterCertificationError(
+                "NII audit physical adapter certification requires explicit evidence for every "
+                "persistence capability"
+            )
 
     @property
     def authorization(self) -> NIIRunAuditPersistenceActivationAuthorization:
