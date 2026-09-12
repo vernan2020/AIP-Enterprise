@@ -53,19 +53,29 @@ def _schema_contract() -> NIIAuditSchemaEvolutionContract:
     )
 
 
-def _activated() -> NIIRunAuditActivatedPhysicalPersistence:
+def _readiness_evidence(*, complete: bool) -> tuple[NIIAuditPersistenceEvidence, ...]:
+    requirements = (
+        sorted(REQUIRED_NII_AUDIT_PERSISTENCE_REQUIREMENTS, key=lambda item: item.value)
+        if complete
+        else (NIIAuditPersistenceRequirement.ATOMIC_PUT_IF_ABSENT,)
+    )
+    return tuple(
+        NIIAuditPersistenceEvidence(
+            requirement=requirement,
+            source_reference="repo-conformance-report",
+        )
+        for requirement in requirements
+    )
+
+
+def _activated(*, complete_readiness_evidence: bool = True) -> NIIRunAuditActivatedPhysicalPersistence:
     schema_contract = _schema_contract()
     readiness = NIIAuditPersistenceReadinessAssessment(
         adapter_reference="adapter-v1",
         status=NIIAuditPersistenceReadinessStatus.READY,
         certified_requirements=REQUIRED_NII_AUDIT_PERSISTENCE_REQUIREMENTS,
         missing_requirements=frozenset(),
-        evidence=(
-            NIIAuditPersistenceEvidence(
-                requirement=NIIAuditPersistenceRequirement.ATOMIC_PUT_IF_ABSENT,
-                source_reference="repo-conformance-report",
-            ),
-        ),
+        evidence=_readiness_evidence(complete=complete_readiness_evidence),
     )
     compatibility = NIIRunAuditSerializationCompatibilityCertificate(
         schema_contract=schema_contract,
@@ -104,17 +114,22 @@ def _activated() -> NIIRunAuditActivatedPhysicalPersistence:
     )
 
 
+def _complete_bundle_evidence() -> tuple[str, ...]:
+    return (
+        "activation-policy",
+        "ci-certification-run",
+        "repo-conformance-report",
+        "schema-policy",
+    )
+
+
 def test_certification_bundle_preserves_exact_activated_chain() -> None:
     activated = _activated()
 
     bundle = NIIRunAuditPhysicalAdapterCertificationService.certify(
         certification_reference="physical-adapter-cert-2026-09",
         activated_persistence=activated,
-        evidence_references=(
-            "repo-conformance-report",
-            "activation-policy",
-            "ci-certification-run",
-        ),
+        evidence_references=_complete_bundle_evidence(),
     )
 
     assert bundle.activated_persistence is activated
@@ -123,18 +138,15 @@ def test_certification_bundle_preserves_exact_activated_chain() -> None:
     assert bundle.compatibility is activated.authorization.compatibility
     assert bundle.descriptor is activated.descriptor
     assert bundle.repository is activated.repository
-    assert bundle.evidence_references == (
-        "activation-policy",
-        "ci-certification-run",
-        "repo-conformance-report",
-    )
+    assert bundle.evidence_references == _complete_bundle_evidence()
 
 
 @pytest.mark.parametrize(
     "evidence_references",
     [
-        ("repo-conformance-report",),
-        ("activation-policy",),
+        ("activation-policy", "repo-conformance-report"),
+        ("repo-conformance-report", "schema-policy"),
+        ("activation-policy", "schema-policy"),
     ],
 )
 def test_missing_prerequisite_evidence_blocks_certification(
@@ -151,6 +163,18 @@ def test_missing_prerequisite_evidence_blocks_certification(
         )
 
 
+def test_ready_assessment_without_complete_capability_evidence_is_rejected() -> None:
+    with pytest.raises(
+        NIIRunAuditPhysicalAdapterCertificationError,
+        match="explicit evidence for every persistence capability",
+    ):
+        NIIRunAuditPhysicalAdapterCertificationService.certify(
+            certification_reference="cert-v1",
+            activated_persistence=_activated(complete_readiness_evidence=False),
+            evidence_references=_complete_bundle_evidence(),
+        )
+
+
 def test_duplicate_evidence_reference_is_rejected() -> None:
     with pytest.raises(
         NIIRunAuditPhysicalAdapterCertificationError,
@@ -163,6 +187,7 @@ def test_duplicate_evidence_reference_is_rejected() -> None:
                 "activation-policy",
                 "repo-conformance-report",
                 "repo-conformance-report",
+                "schema-policy",
             ),
         )
 
@@ -175,7 +200,7 @@ def test_blank_certification_reference_is_rejected() -> None:
         NIIRunAuditPhysicalAdapterCertificationService.certify(
             certification_reference=" ",
             activated_persistence=_activated(),
-            evidence_references=("activation-policy", "repo-conformance-report"),
+            evidence_references=_complete_bundle_evidence(),
         )
 
 
@@ -186,5 +211,10 @@ def test_bundle_requires_canonical_evidence_order() -> None:
         NIIRunAuditPhysicalAdapterCertificationBundle(
             certification_reference="cert-v1",
             activated_persistence=activated,
-            evidence_references=("repo-conformance-report", "activation-policy"),
+            evidence_references=(
+                "schema-policy",
+                "repo-conformance-report",
+                "ci-certification-run",
+                "activation-policy",
+            ),
         )
