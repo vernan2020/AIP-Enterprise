@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
+from aip.domain.irrbb.nii_audit_persistence_readiness import (
+    REQUIRED_NII_AUDIT_PERSISTENCE_REQUIREMENTS,
+)
 from aip.domain.irrbb.nii_audit_physical_adapter_certification import (
     NIIRunAuditPhysicalAdapterCertificationBundle,
     NIIRunAuditPhysicalAdapterCertificationError,
@@ -72,10 +75,25 @@ class NIIRunAuditPhysicalAdapterCertificationService:
                 "NII audit physical adapter certification integrity identity mismatch"
             )
 
+        evidence_requirements = tuple(item.requirement for item in readiness.evidence)
+        if len(evidence_requirements) != len(set(evidence_requirements)):
+            raise NIIRunAuditPhysicalAdapterCertificationError(
+                "NII audit physical adapter certification readiness evidence is duplicated"
+            )
+        if set(evidence_requirements) != REQUIRED_NII_AUDIT_PERSISTENCE_REQUIREMENTS:
+            raise NIIRunAuditPhysicalAdapterCertificationError(
+                "NII audit physical adapter certification requires explicit evidence for every "
+                "persistence capability"
+            )
+
         required_evidence = {
             configuration.source_reference,
+            configuration.schema_contract.source_reference,
             *(item.source_reference for item in readiness.evidence),
         }
+        for readable in compatibility.readable_schema_compatibility:
+            required_evidence.update(readable.transformer_references)
+
         missing_evidence = required_evidence.difference(references)
         if missing_evidence:
             raise NIIRunAuditPhysicalAdapterCertificationError(
