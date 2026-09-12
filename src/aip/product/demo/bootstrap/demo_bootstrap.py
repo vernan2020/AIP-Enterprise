@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import time
 from datetime import datetime, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from aip.product.demo.bootstrap.application_factory import DemoApplicationFactory
 from aip.product.demo.configuration.demo_config import DemoConfig
 from aip.product.demo.exceptions import DemoBootstrapError
 from aip.product.demo.status.startup_status import StartupStatus
+
+if TYPE_CHECKING:
+    from aip.product.configured.irrbb import ConfiguredIRRBBRuntimeDependencies
 
 
 class DemoBootstrap:
@@ -18,11 +21,13 @@ class DemoBootstrap:
         config: DemoConfig | None = None,
         *,
         source_config: Any | None = None,
+        irrbb_runtime_dependencies: ConfiguredIRRBBRuntimeDependencies | None = None,
     ) -> None:
         self._config = config or DemoConfig()
         self._factory = DemoApplicationFactory(
             self._config,
             source_config=source_config,
+            irrbb_runtime_dependencies=irrbb_runtime_dependencies,
         )
 
     @property

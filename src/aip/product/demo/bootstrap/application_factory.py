@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 from datetime import date
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from aip.core.container import Container
 from aip.product.configured.context.valuation_date_context import ValuationDateContext
@@ -24,6 +24,9 @@ from aip.product.demo.workflows.refresh_all_workflow import (
     RefreshAllWorkflow,
 )
 
+if TYPE_CHECKING:
+    from aip.product.configured.irrbb import ConfiguredIRRBBRuntimeDependencies
+
 
 class DemoApplicationFactory:
     """
@@ -38,6 +41,8 @@ class DemoApplicationFactory:
         self,
         config: DemoConfig | None = None,
         source_config: Any | None = None,
+        *,
+        irrbb_runtime_dependencies: ConfiguredIRRBBRuntimeDependencies | None = None,
     ) -> None:
         self._config = config or EnvironmentLoader().load()
 
@@ -45,9 +50,13 @@ class DemoApplicationFactory:
 
         self._configured_factory = None
         self._configured_source_config = None
+        self._irrbb_runtime_dependencies = irrbb_runtime_dependencies
 
         if self._config.execution_mode == "CONFIGURED":
-            self._configure_configured_mode(source_config)
+            self._configure_configured_mode(
+                source_config,
+                irrbb_runtime_dependencies=irrbb_runtime_dependencies,
+            )
 
         else:
             DemoDependencyComposition(self._config).compose(self._container)
@@ -59,6 +68,8 @@ class DemoApplicationFactory:
     def _configure_configured_mode(
         self,
         source_config: Any | None = None,
+        *,
+        irrbb_runtime_dependencies: ConfiguredIRRBBRuntimeDependencies | None = None,
     ) -> None:
         """
         Construye o reconstruye la composición CONFIGURED.
@@ -91,6 +102,7 @@ class DemoApplicationFactory:
         configured_factory = ConfiguredApplicationFactory(
             self._config,
             configured_source_config,
+            irrbb_runtime_dependencies=irrbb_runtime_dependencies,
         )
         self._configured_factory = configured_factory
         self._container = configured_factory.container

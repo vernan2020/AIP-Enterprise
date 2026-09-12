@@ -19,6 +19,7 @@ class Sidebar(QWidget):
         ("Portafolio", "portfolio"),
         ("Mercado", "market"),
         ("Riesgo de Precio", "price_risk"),
+        ("Riesgo de Tasas · RTILB", "rate_risk"),
         ("Inteligencia Macroeconómica", "macro_intelligence"),
         ("Liquidez", "liquidity"),
         ("Tesorería", "treasury"),

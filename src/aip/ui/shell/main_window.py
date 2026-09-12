@@ -56,6 +56,7 @@ class MainWindow(QMainWindow):
         "portfolio": "Portafolio",
         "market": "Mercado",
         "price_risk": "Riesgo de Precio",
+        "rate_risk": "Riesgo de Tasas · RTILB",
         "macro_intelligence": "Inteligencia Macroeconómica",
         "liquidity": "Liquidez",
         "treasury": "Tesorería",
@@ -134,6 +135,7 @@ class MainWindow(QMainWindow):
             Route("portfolio", "Portafolio", "portfolio"),
             Route("market", "Mercado", "market"),
             Route("price_risk", "Riesgo de Precio", "risk"),
+            Route("rate_risk", "Riesgo de Tasas · RTILB", "rate_risk"),
             Route("macro_intelligence", "Inteligencia Macroeconómica", "macro"),
             Route("liquidity", "Liquidez", "liquidity"),
             Route("treasury", "Tesorería", "treasury"),
@@ -151,6 +153,7 @@ class MainWindow(QMainWindow):
             "Portafolio": "portfolio",
             "Mercado": "market",
             "Riesgo de Precio": "price_risk",
+            "Riesgo de Tasas · RTILB": "rate_risk",
             "Inteligencia Macroeconómica": "macro_intelligence",
             "Liquidez": "liquidity",
             "Tesorería": "treasury",
@@ -359,6 +362,10 @@ class MainWindow(QMainWindow):
                 PriceRiskView(presenter=PriceRiskPresenter(self._demo_factory)),
                 "Riesgo de Precio",
             )
+        if route_id == "rate_risk":
+            from aip.ui.modules.rate_risk.views.rate_risk_view import RateRiskView
+
+            return (RateRiskView(), "Riesgo de Tasas · RTILB")
         if route_id == "macro_intelligence":
             from aip.ui.modules.macro_intelligence.views.macro_intelligence_view import (
                 MacroIntelligenceView,
