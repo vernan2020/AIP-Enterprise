@@ -56,13 +56,17 @@ def _status_attestation(
         evidence=tuple(
             sorted(evidence, key=lambda item: (item.requirement.value, item.source_reference))
         ),
-        exception_references=() if status is NIIRunAuditPhysicalAdapterProductionOperationalStatus.HEALTHY else ("incident:42",),
+        exception_references=(
+            ()
+            if status is NIIRunAuditPhysicalAdapterProductionOperationalStatus.HEALTHY
+            else ("incident:42",)
+        ),
     )
 
 
-def _intervention_evidence() -> tuple[
-    NIIRunAuditPhysicalAdapterProductionOperationalInterventionEvidence, ...
-]:
+def _intervention_evidence() -> (
+    tuple[NIIRunAuditPhysicalAdapterProductionOperationalInterventionEvidence, ...]
+):
     return tuple(
         NIIRunAuditPhysicalAdapterProductionOperationalInterventionEvidence(
             requirement=requirement,
@@ -86,16 +90,21 @@ def test_nonhealthy_status_can_authorize_explicit_action_without_inference(
 ) -> None:
     attestation = _status_attestation(status)
 
-    authorization = NIIRunAuditPhysicalAdapterProductionOperationalInterventionAuthorizationService.authorize(
-        operational_status_attestation=attestation,
-        authorization_reference="intervention-auth:2026-09-12",
-        action=NIIRunAuditPhysicalAdapterProductionOperationalInterventionAction.SUSPEND,
-        evidence=_intervention_evidence(),
+    authorization = (
+        NIIRunAuditPhysicalAdapterProductionOperationalInterventionAuthorizationService.authorize(
+            operational_status_attestation=attestation,
+            authorization_reference="intervention-auth:2026-09-12",
+            action=NIIRunAuditPhysicalAdapterProductionOperationalInterventionAction.SUSPEND,
+            evidence=_intervention_evidence(),
+        )
     )
 
     assert authorization.operational_status_attestation is attestation
     assert authorization.status is status
-    assert authorization.action is NIIRunAuditPhysicalAdapterProductionOperationalInterventionAction.SUSPEND
+    assert (
+        authorization.action
+        is NIIRunAuditPhysicalAdapterProductionOperationalInterventionAction.SUSPEND
+    )
     assert authorization.attestation_reference == attestation.attestation_reference
     assert authorization.adapter_reference == attestation.adapter_reference
     assert tuple(item.requirement.value for item in authorization.evidence) == tuple(
@@ -107,9 +116,7 @@ def test_nonhealthy_status_can_authorize_explicit_action_without_inference(
 
 
 def test_healthy_status_cannot_authorize_intervention() -> None:
-    attestation = _status_attestation(
-        NIIRunAuditPhysicalAdapterProductionOperationalStatus.HEALTHY
-    )
+    attestation = _status_attestation(NIIRunAuditPhysicalAdapterProductionOperationalStatus.HEALTHY)
 
     with pytest.raises(
         NIIRunAuditPhysicalAdapterProductionOperationalInterventionAuthorizationError,
