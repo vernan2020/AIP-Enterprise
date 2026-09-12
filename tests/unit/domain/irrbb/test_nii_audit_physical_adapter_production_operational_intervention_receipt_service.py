@@ -67,8 +67,9 @@ def _authorization(
 
 def _checkpoint_results(
     *,
-    failed_checkpoint: NIIRunAuditPhysicalAdapterProductionOperationalInterventionCheckpoint
-    | None = None,
+    failed_checkpoint: (
+        NIIRunAuditPhysicalAdapterProductionOperationalInterventionCheckpoint | None
+    ) = None,
 ) -> tuple[NIIRunAuditPhysicalAdapterProductionOperationalInterventionCheckpointResult, ...]:
     return tuple(
         NIIRunAuditPhysicalAdapterProductionOperationalInterventionCheckpointResult(
@@ -97,7 +98,10 @@ def test_successful_intervention_receipt_preserves_exact_authorization_and_canon
     )
 
     assert receipt.intervention_authorization is authorization
-    assert receipt.status is NIIRunAuditPhysicalAdapterProductionOperationalInterventionStatus.SUCCEEDED
+    assert (
+        receipt.status
+        is NIIRunAuditPhysicalAdapterProductionOperationalInterventionStatus.SUCCEEDED
+    )
     assert receipt.authorization_reference == authorization.authorization_reference
     assert receipt.action is authorization.action
     assert receipt.attestation_reference == authorization.attestation_reference
@@ -133,7 +137,9 @@ def test_failed_checkpoint_derives_failed_status_without_action_inference(
     )
 
     assert receipt.action is action
-    assert receipt.status is NIIRunAuditPhysicalAdapterProductionOperationalInterventionStatus.FAILED
+    assert (
+        receipt.status is NIIRunAuditPhysicalAdapterProductionOperationalInterventionStatus.FAILED
+    )
 
 
 def test_missing_or_duplicate_checkpoint_result_fails_closed() -> None:
