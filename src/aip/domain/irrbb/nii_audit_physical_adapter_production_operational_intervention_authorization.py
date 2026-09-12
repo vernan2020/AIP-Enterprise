@@ -25,8 +25,8 @@ class NIIRunAuditPhysicalAdapterProductionOperationalInterventionRequirement(str
     CONTINUITY_IMPACT_VERIFIED = "CONTINUITY_IMPACT_VERIFIED"
 
 
-REQUIRED_NII_AUDIT_PHYSICAL_ADAPTER_PRODUCTION_OPERATIONAL_INTERVENTION_REQUIREMENTS = (
-    frozenset(NIIRunAuditPhysicalAdapterProductionOperationalInterventionRequirement)
+REQUIRED_NII_AUDIT_PHYSICAL_ADAPTER_PRODUCTION_OPERATIONAL_INTERVENTION_REQUIREMENTS = frozenset(
+    NIIRunAuditPhysicalAdapterProductionOperationalInterventionRequirement
 )
 
 
@@ -52,14 +52,10 @@ class NIIRunAuditPhysicalAdapterProductionOperationalInterventionEvidence:
 class NIIRunAuditPhysicalAdapterProductionOperationalInterventionAuthorization:
     """Positive-only authorization bound to one exact non-healthy status attestation."""
 
-    operational_status_attestation: (
-        NIIRunAuditPhysicalAdapterProductionOperationalStatusAttestation
-    )
+    operational_status_attestation: NIIRunAuditPhysicalAdapterProductionOperationalStatusAttestation
     authorization_reference: str
     action: NIIRunAuditPhysicalAdapterProductionOperationalInterventionAction
-    evidence: tuple[
-        NIIRunAuditPhysicalAdapterProductionOperationalInterventionEvidence, ...
-    ]
+    evidence: tuple[NIIRunAuditPhysicalAdapterProductionOperationalInterventionEvidence, ...]
 
     def __post_init__(self) -> None:
         if not self.authorization_reference.strip():
@@ -70,9 +66,7 @@ class NIIRunAuditPhysicalAdapterProductionOperationalInterventionAuthorization:
             self.operational_status_attestation.status
             is NIIRunAuditPhysicalAdapterProductionOperationalStatus.HEALTHY
         ):
-            raise ValueError(
-                "HEALTHY NII audit operational status cannot authorize intervention"
-            )
+            raise ValueError("HEALTHY NII audit operational status cannot authorize intervention")
 
         evidence_requirements = tuple(item.requirement for item in self.evidence)
         if len(evidence_requirements) != len(set(evidence_requirements)):
