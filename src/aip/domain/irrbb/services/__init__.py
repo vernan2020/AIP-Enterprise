@@ -27,6 +27,9 @@ from aip.domain.irrbb.services.nii_audit_physical_adapter_production_deployment_
 from aip.domain.irrbb.services.nii_audit_physical_adapter_production_deployment_plan_service import (
     NIIRunAuditPhysicalAdapterProductionDeploymentPlanService,
 )
+from aip.domain.irrbb.services.nii_audit_physical_adapter_production_operational_intervention_authorization_service import (
+    NIIRunAuditPhysicalAdapterProductionOperationalInterventionAuthorizationService,
+)
 from aip.domain.irrbb.services.nii_audit_physical_adapter_production_operational_status_attestation_service import (
     NIIRunAuditPhysicalAdapterProductionOperationalStatusAttestationService,
 )
@@ -123,6 +126,7 @@ __all__ = [
     "NIIRunAuditPhysicalAdapterProductionDeploymentExecutionAuthorizationService",
     "NIIRunAuditPhysicalAdapterProductionDeploymentExecutionReceiptService",
     "NIIRunAuditPhysicalAdapterProductionDeploymentPlanService",
+    "NIIRunAuditPhysicalAdapterProductionOperationalInterventionAuthorizationService",
     "NIIRunAuditPhysicalAdapterProductionOperationalStatusAttestationService",
     "NIIRunAuditPhysicalAdapterProductionPostExecutionAcceptanceService",
     "NIIRunAuditPhysicalAdapterProductionPromotionService",
