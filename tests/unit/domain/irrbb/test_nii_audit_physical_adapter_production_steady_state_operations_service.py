@@ -54,11 +54,15 @@ def test_records_exact_phase47_acceptance_and_canonical_evidence() -> None:
         evidence=_evidence(),
     )
 
+    expected_requirements = tuple(
+        sorted(
+            requirement.value
+            for requirement in NIIRunAuditPhysicalAdapterProductionSteadyStateOperationsRequirement
+        )
+    )
     assert record.activation_acceptance is acceptance
     assert record.operations_reference == "steady-state:2026-09-11"
-    assert tuple(item.requirement.value for item in record.evidence) == tuple(
-        sorted(requirement.value for requirement in NIIRunAuditPhysicalAdapterProductionSteadyStateOperationsRequirement)
-    )
+    assert tuple(item.requirement.value for item in record.evidence) == expected_requirements
     assert record.runtime_activation_acceptance_reference == acceptance.acceptance_reference
     assert record.runtime_activation_receipt_reference == acceptance.runtime_activation_receipt_reference
     assert record.activation_reference == acceptance.activation_reference
