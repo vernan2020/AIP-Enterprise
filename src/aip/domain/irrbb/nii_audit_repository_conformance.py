@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from threading import Barrier, Thread
+from threading import Barrier, BrokenBarrierError, Thread
 from typing import Protocol
 
 from aip.domain.irrbb.nii_run_audit import (
@@ -90,6 +90,8 @@ class NIIAuditRepositoryConformanceResult:
 
 class NIIAuditRepositoryConformanceSuite:
     """Execute source-neutral behavioral checks against one physical repository."""
+
+    _CONCURRENCY_TIMEOUT_SECONDS = 5.0
 
     @classmethod
     def run(
@@ -233,8 +235,10 @@ class NIIAuditRepositoryConformanceSuite:
         def write(record: NIIRunAuditRecord) -> None:
             try:
                 repository = harness.repository()
-                barrier.wait()
+                barrier.wait(timeout=cls._CONCURRENCY_TIMEOUT_SECONDS)
                 results.append(repository.put_if_absent(record=record))
+            except BrokenBarrierError as exc:
+                errors.append(exc)
             except BaseException as exc:  # pragma: no cover - adapter failures are reported below
                 errors.append(exc)
 
@@ -245,8 +249,10 @@ class NIIAuditRepositoryConformanceSuite:
         for thread in threads:
             thread.start()
         for thread in threads:
-            thread.join()
+            thread.join(timeout=cls._CONCURRENCY_TIMEOUT_SECONDS)
 
+        if any(thread.is_alive() for thread in threads):
+            return check, "Concurrent put_if_absent did not complete within the conformance timeout"
         if errors:
             return check, f"Concurrent put_if_absent raised {type(errors[0]).__name__}: {errors[0]}"
         if len(results) != 2 or sum(result.created for result in results) != 1:
