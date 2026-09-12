@@ -41,8 +41,14 @@ Certification requires:
 6. exact serialization schema contract = descriptor schema contract;
 7. exact codec identity = descriptor codec identity;
 8. exact integrity identity = descriptor integrity identity;
-9. evidence coverage of the activation configuration `source_reference`;
-10. evidence coverage of every source reference already used by the readiness assessment.
+9. explicit readiness evidence for every required persistence capability;
+10. exactly one readiness evidence item per required capability;
+11. evidence coverage of the activation configuration `source_reference`;
+12. evidence coverage of the schema contract `source_reference`;
+13. evidence coverage of every source reference used by the readiness assessment;
+14. evidence coverage of every transformer reference required by historical schema compatibility.
+
+The required persistence capability perimeter is the complete `REQUIRED_NII_AUDIT_PERSISTENCE_REQUIREMENTS` set from Phase 30. A manually constructed `READY` assessment that does not carry explicit evidence for all required capabilities cannot cross Phase 38.
 
 Evidence references are canonicalized lexicographically in the resulting immutable bundle.
 
@@ -50,7 +56,7 @@ Evidence references are canonicalized lexicographically in the resulting immutab
 
 There is no `CERTIFIED=False` object.
 
-A certification bundle exists only when every prerequisite succeeds. Missing prerequisite evidence or an identity mismatch raises `NIIRunAuditPhysicalAdapterCertificationError` and produces no bundle.
+A certification bundle exists only when every prerequisite succeeds. Missing prerequisite evidence, incomplete readiness evidence or an identity mismatch raises `NIIRunAuditPhysicalAdapterCertificationError` and produces no bundle.
 
 This makes possession of a valid bundle an explicit capability indicating that one exact activated adapter has passed this certification boundary.
 
