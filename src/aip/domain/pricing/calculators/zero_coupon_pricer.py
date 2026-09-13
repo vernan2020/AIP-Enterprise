@@ -6,7 +6,8 @@ from decimal import Decimal
 from aip.domain.financial_math import clean_price as clean_price_fn
 from aip.domain.financial_math import dirty_price as dirty_price_fn
 from aip.domain.instruments.base.financial_instrument import FinancialInstrument
-from aip.domain.pricing.exceptions import PricingError
+
+from ..exceptions import PricingError
 
 
 def price_zero_coupon(

@@ -4,7 +4,8 @@ from datetime import date
 from decimal import Decimal
 
 from aip.domain.instruments.base.financial_instrument import FinancialInstrument
-from aip.domain.pricing.exceptions import PricingError
+
+from ..exceptions import PricingError
 
 
 def price_cash(
