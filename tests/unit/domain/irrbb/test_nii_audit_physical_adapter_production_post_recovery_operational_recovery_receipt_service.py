@@ -70,7 +70,9 @@ def _authorization() -> (
 
 def _checkpoint_results(
     *,
-    failed_checkpoint: NIIRunAuditPhysicalAdapterProductionOperationalRecoveryCheckpoint | None = None,
+    failed_checkpoint: (
+        NIIRunAuditPhysicalAdapterProductionOperationalRecoveryCheckpoint | None
+    ) = None,
 ) -> tuple[NIIRunAuditPhysicalAdapterProductionOperationalRecoveryCheckpointResult, ...]:
     return tuple(
         NIIRunAuditPhysicalAdapterProductionOperationalRecoveryCheckpointResult(
@@ -91,21 +93,28 @@ def _checkpoint_results(
 def test_receipt_preserves_exact_authorization_and_full_chain() -> None:
     authorization = _authorization()
 
-    receipt = NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalRecoveryReceiptService.record(
-        recovery_authorization=authorization,
-        receipt_reference="recovery-receipt:new-cycle:62",
-        recovery_reference="recovery-execution:new-cycle:62",
-        checkpoint_results=_checkpoint_results(),
+    receipt = (
+        NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalRecoveryReceiptService.record(
+            recovery_authorization=authorization,
+            receipt_reference="recovery-receipt:new-cycle:62",
+            recovery_reference="recovery-execution:new-cycle:62",
+            checkpoint_results=_checkpoint_results(),
+        )
     )
 
     assert receipt.recovery_authorization is authorization
     assert receipt.status is NIIRunAuditPhysicalAdapterProductionOperationalRecoveryStatus.SUCCEEDED
     assert receipt.authorization_reference == authorization.authorization_reference
     assert receipt.action is authorization.action
-    assert receipt.intervention_acceptance_reference == authorization.intervention_acceptance_reference
+    assert (
+        receipt.intervention_acceptance_reference == authorization.intervention_acceptance_reference
+    )
     assert receipt.intervention_receipt_reference == authorization.intervention_receipt_reference
     assert receipt.intervention_reference == authorization.intervention_reference
-    assert receipt.intervention_authorization_reference == authorization.intervention_authorization_reference
+    assert (
+        receipt.intervention_authorization_reference
+        == authorization.intervention_authorization_reference
+    )
     assert receipt.intervention_action is authorization.intervention_action
     assert receipt.reattestation_reference == authorization.reattestation_reference
     assert receipt.operational_status is authorization.operational_status
@@ -116,7 +125,10 @@ def test_receipt_preserves_exact_authorization_and_full_chain() -> None:
         receipt.previous_recovery_acceptance_reference
         == authorization.previous_recovery_acceptance_reference
     )
-    assert receipt.previous_recovery_receipt_reference == authorization.previous_recovery_receipt_reference
+    assert (
+        receipt.previous_recovery_receipt_reference
+        == authorization.previous_recovery_receipt_reference
+    )
     assert receipt.previous_recovery_reference == authorization.previous_recovery_reference
     assert (
         receipt.previous_recovery_authorization_reference
