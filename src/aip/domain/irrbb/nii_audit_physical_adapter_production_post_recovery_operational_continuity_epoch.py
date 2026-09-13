@@ -24,9 +24,7 @@ from aip.domain.irrbb.nii_audit_physical_adapter_production_post_recovery_operat
 )
 
 
-class NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalContinuityEpochError(
-    ValueError
-):
+class NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalContinuityEpochError(ValueError):
     """Raised when a new post-recovery continuity epoch cannot be recorded safely."""
 
 
@@ -65,7 +63,9 @@ class NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalContinuityEpoch
 
         requirements = tuple(item.requirement for item in self.evidence)
         if len(requirements) != len(set(requirements)):
-            raise ValueError("Duplicate NII audit post-recovery continuity epoch evidence requirement")
+            raise ValueError(
+                "Duplicate NII audit post-recovery continuity epoch evidence requirement"
+            )
         if (
             frozenset(requirements)
             != REQUIRED_NII_AUDIT_PHYSICAL_ADAPTER_PRODUCTION_OPERATIONAL_CONTINUITY_EPOCH_REQUIREMENTS
