@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Callable
 
-from aip.domain.financial_math.exceptions import ConvergenceError, InvalidBracketError
+from ..exceptions import ConvergenceError, InvalidBracketError
 
 
 @dataclass(frozen=True, slots=True)
