@@ -107,9 +107,9 @@ def _accepted_intervention(
     )
 
 
-def _recovery_evidence() -> tuple[
-    NIIRunAuditPhysicalAdapterProductionOperationalRecoveryEvidence, ...
-]:
+def _recovery_evidence() -> (
+    tuple[NIIRunAuditPhysicalAdapterProductionOperationalRecoveryEvidence, ...]
+):
     return tuple(
         NIIRunAuditPhysicalAdapterProductionOperationalRecoveryEvidence(
             requirement=requirement,
@@ -163,7 +163,9 @@ def test_authorization_preserves_exact_acceptance_and_full_post_recovery_chain(
         authorization.previous_recovery_acceptance_reference
         == acceptance.recovery_acceptance_reference
     )
-    assert authorization.previous_recovery_receipt_reference == acceptance.recovery_receipt_reference
+    assert (
+        authorization.previous_recovery_receipt_reference == acceptance.recovery_receipt_reference
+    )
     assert authorization.previous_recovery_reference == acceptance.recovery_reference
     assert (
         authorization.previous_recovery_authorization_reference
