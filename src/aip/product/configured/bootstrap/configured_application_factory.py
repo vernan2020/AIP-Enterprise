@@ -5,6 +5,10 @@ from aip.product.configured.bootstrap.configured_dependency_composition import (
     ConfiguredDependencyComposition,
 )
 from aip.product.configured.configuration.configured_source_config import ConfiguredSourceConfig
+from aip.product.configured.irrbb import (
+    ConfiguredIRRBBComposition,
+    ConfiguredIRRBBRuntimeDependencies,
+)
 from aip.product.demo.bootstrap.application_factory import DemoApplicationFactory
 from aip.product.demo.configuration.demo_config import DemoConfig
 from aip.product.demo.status.system_status import SystemStatus
@@ -15,12 +19,17 @@ from aip.product.demo.workflows.refresh_all_workflow import RefreshAllWorkflow
 
 class ConfiguredApplicationFactory(DemoApplicationFactory):
     def __init__(
-        self, config: DemoConfig | None = None, source_config: ConfiguredSourceConfig | None = None
+        self,
+        config: DemoConfig | None = None,
+        source_config: ConfiguredSourceConfig | None = None,
+        *,
+        irrbb_runtime_dependencies: ConfiguredIRRBBRuntimeDependencies | None = None,
     ) -> None:
         self._config = config or DemoConfig(execution_mode="CONFIGURED", demo_mode_enabled=False)
         self._source_config = source_config or ConfiguredSourceConfig()
         self._container = Container()
         ConfiguredDependencyComposition(self._config, self._source_config).compose(self._container)
+        ConfiguredIRRBBComposition(irrbb_runtime_dependencies).compose(self._container)
 
     @property
     def config(self) -> DemoConfig:
