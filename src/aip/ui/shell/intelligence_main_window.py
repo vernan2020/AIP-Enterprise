@@ -13,11 +13,19 @@ class FinancialIntelligenceMainWindow(MainWindow):
 
     _WORKSPACE_TITLES = {
         **MainWindow._WORKSPACE_TITLES,
+        "rate_risk": "Riesgo de Tasas · RTILB",
         "financial_intelligence": "Agente IA",
     }
 
     def _setup_navigation(self) -> None:
         super()._setup_navigation()
+        self._navigation.register(
+            Route(
+                "rate_risk",
+                "Riesgo de Tasas · RTILB",
+                "rate_risk",
+            )
+        )
         self._navigation.register(
             Route(
                 "financial_intelligence",
@@ -35,6 +43,9 @@ class FinancialIntelligenceMainWindow(MainWindow):
         finally:
             self._suppress_initial_executive = False
 
+        self._ribbon.action("Riesgo de Tasas · RTILB").triggered.connect(
+            lambda _checked=False: self.open_workspace("rate_risk")
+        )
         self._ribbon.action("Agente IA").triggered.connect(
             lambda _checked=False: self.open_workspace("financial_intelligence")
         )
