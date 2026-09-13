@@ -108,9 +108,9 @@ def _recovery_acceptance(
     )
 
 
-def _epoch_evidence() -> tuple[
-    NIIRunAuditPhysicalAdapterProductionOperationalContinuityEpochEvidence, ...
-]:
+def _epoch_evidence() -> (
+    tuple[NIIRunAuditPhysicalAdapterProductionOperationalContinuityEpochEvidence, ...]
+):
     return tuple(
         NIIRunAuditPhysicalAdapterProductionOperationalContinuityEpochEvidence(
             requirement=requirement,
@@ -136,7 +136,10 @@ def test_valid_epoch_preserves_exact_acceptance_and_chain_identity() -> None:
     assert epoch.recovery_receipt_reference == acceptance.recovery_receipt_reference
     assert epoch.recovery_reference == acceptance.recovery_reference
     assert epoch.recovery_authorization_reference == acceptance.recovery_authorization_reference
-    assert epoch.recovery_action is NIIRunAuditPhysicalAdapterProductionOperationalRecoveryAction.RESUME
+    assert (
+        epoch.recovery_action
+        is NIIRunAuditPhysicalAdapterProductionOperationalRecoveryAction.RESUME
+    )
     assert epoch.intervention_acceptance_reference == acceptance.intervention_acceptance_reference
     assert epoch.intervention_receipt_reference == acceptance.intervention_receipt_reference
     assert (
