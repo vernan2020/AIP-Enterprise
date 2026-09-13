@@ -98,7 +98,10 @@ class NIIRunAuditPhysicalAdapterProductionOperationalRecoveryReceipt:
             raise ValueError(
                 "NII audit operational recovery checkpoint results must cover every required checkpoint"
             )
-        if checkpoints != NII_AUDIT_PHYSICAL_ADAPTER_PRODUCTION_OPERATIONAL_RECOVERY_CHECKPOINT_ORDER:
+        if (
+            checkpoints
+            != NII_AUDIT_PHYSICAL_ADAPTER_PRODUCTION_OPERATIONAL_RECOVERY_CHECKPOINT_ORDER
+        ):
             raise ValueError(
                 "NII audit operational recovery checkpoint results must be canonicalized"
             )
@@ -140,7 +143,9 @@ class NIIRunAuditPhysicalAdapterProductionOperationalRecoveryReceipt:
         return self.recovery_authorization.intervention_authorization_reference
 
     @property
-    def intervention_action(self) -> NIIRunAuditPhysicalAdapterProductionOperationalInterventionAction:
+    def intervention_action(
+        self,
+    ) -> NIIRunAuditPhysicalAdapterProductionOperationalInterventionAction:
         return self.recovery_authorization.intervention_action
 
     @property
