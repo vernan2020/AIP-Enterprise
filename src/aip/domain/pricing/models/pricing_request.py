@@ -5,7 +5,8 @@ from datetime import date
 from decimal import Decimal
 
 from aip.domain.instruments.base.financial_instrument import FinancialInstrument
-from aip.domain.pricing.enums.pricing_method import PricingMethod
+
+from ..enums.pricing_method import PricingMethod
 
 
 @dataclass(frozen=True, slots=True)
