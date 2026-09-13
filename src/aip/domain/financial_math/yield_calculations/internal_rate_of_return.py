@@ -4,10 +4,10 @@ from datetime import date
 from decimal import Decimal
 from typing import Callable, Iterable, Protocol
 
-from aip.domain.financial_math.cashflows.cashflow import CashFlow
-from aip.domain.financial_math.cashflows.cashflow_series import CashFlowSeries
-from aip.domain.financial_math.exceptions import ConvergenceError, InvalidCashFlowError
-from aip.domain.financial_math.root_finding.bisection import bisection_solve
+from ..cashflows.cashflow import CashFlow
+from ..cashflows.cashflow_series import CashFlowSeries
+from ..exceptions import ConvergenceError, InvalidCashFlowError
+from ..root_finding.bisection import bisection_solve
 
 
 class SupportsConvergence(Protocol):
