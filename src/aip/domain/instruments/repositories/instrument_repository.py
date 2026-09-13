@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from aip.domain.instruments.base.financial_instrument import FinancialInstrument
+from ..base.financial_instrument import FinancialInstrument
 
 
 class InstrumentRepository(ABC):
