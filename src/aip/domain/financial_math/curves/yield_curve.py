@@ -4,9 +4,9 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 
-from aip.domain.financial_math.curves.curve_point import CurvePoint
-from aip.domain.financial_math.exceptions import CurveConstructionError, InterpolationError
-from aip.domain.financial_math.interpolation.linear import interpolate_linear
+from ..exceptions import CurveConstructionError, InterpolationError
+from ..interpolation.linear import interpolate_linear
+from .curve_point import CurvePoint
 
 
 @dataclass(frozen=True, slots=True)
