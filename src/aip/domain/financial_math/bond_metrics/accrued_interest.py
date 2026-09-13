@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from decimal import ROUND_HALF_UP, Decimal
 
-from aip.domain.financial_math.exceptions import InvalidCashFlowError
+from ..exceptions import InvalidCashFlowError
 
 
 def accrued_interest(

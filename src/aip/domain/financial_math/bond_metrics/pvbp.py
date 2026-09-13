@@ -3,8 +3,8 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Iterable
 
-from aip.domain.financial_math.bond_metrics.dv01 import dv01
-from aip.domain.financial_math.exceptions import InvalidRateError
+from ..exceptions import InvalidRateError
+from .dv01 import dv01
 
 
 def pvbp(
