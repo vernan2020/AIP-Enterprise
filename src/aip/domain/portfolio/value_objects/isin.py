@@ -3,7 +3,7 @@
 import re
 from dataclasses import dataclass
 
-from src.aip.domain.portfolio.exceptions import InvalidPositionError
+from ..exceptions import InvalidPositionError
 
 _ISIN_PATTERN = re.compile(r"^[A-Z]{2}[A-Z0-9]{9}[0-9]$")
 

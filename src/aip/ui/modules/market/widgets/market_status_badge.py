@@ -4,6 +4,11 @@ from PySide6.QtWidgets import QLabel
 
 
 class MarketStatusBadge(QLabel):
+    """Indicador compacto de estado del módulo de Mercado."""
+
     def __init__(self, text: str = "Ready") -> None:
         super().__init__(text)
-        self.setStyleSheet("border: 1px solid #4b5563; padding: 4px; border-radius: 4px;")
+        self.setStyleSheet(
+            "background:#E2F6F1; color:#167A68; border:1px solid #40C1AC; "
+            "padding:4px 8px; border-radius:9px; font-weight:700;"
+        )

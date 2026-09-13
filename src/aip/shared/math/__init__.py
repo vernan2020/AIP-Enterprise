@@ -10,12 +10,15 @@ Classes:
     LinearInterpolation: Linear interpolation between points.
 """
 
+import sys
 from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from typing import Self, Sequence
 
 from aip.shared.validation import Guard
 from aip.shared.validation import Validators as Validators
+
+sys.modules.setdefault("src.aip.shared.math", sys.modules[__name__])
 
 
 @dataclass(frozen=True)

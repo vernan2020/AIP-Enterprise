@@ -3,8 +3,8 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Iterable
 
-from aip.domain.financial_math.bond_metrics.macaulay_duration import macaulay_duration
-from aip.domain.financial_math.exceptions import InvalidRateError
+from ..exceptions import InvalidRateError
+from .macaulay_duration import macaulay_duration
 
 
 def modified_duration(

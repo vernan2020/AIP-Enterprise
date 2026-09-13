@@ -4,11 +4,11 @@ from abc import ABC
 from datetime import date
 from decimal import Decimal
 
-from src.aip.domain.portfolio.entities import Portfolio, Position
-from src.aip.domain.portfolio.enums import PortfolioStatus, ValuationSource
-from src.aip.domain.portfolio.events import DomainEvent, PortfolioCreated
-from src.aip.domain.portfolio.repositories import PortfolioRepository
-from src.aip.domain.portfolio.value_objects import (
+from aip.domain.portfolio.entities import Portfolio, Position
+from aip.domain.portfolio.enums import PortfolioStatus, ValuationSource
+from aip.domain.portfolio.events import DomainEvent, PortfolioCreated
+from aip.domain.portfolio.repositories import PortfolioRepository
+from aip.domain.portfolio.value_objects import (
     ISIN,
     AcquisitionCost,
     BookValue,
@@ -23,10 +23,10 @@ from src.aip.domain.portfolio.value_objects import (
     SettlementDate,
     YieldRate,
 )
-from src.aip.shared.calendars import CostaRicaCalendar
-from src.aip.shared.dates import BusinessDate
-from src.aip.shared.math import Percentage
-from src.aip.shared.money import Currency
+from aip.shared.calendars import CostaRicaCalendar
+from aip.shared.dates import BusinessDate
+from aip.shared.math import Percentage
+from aip.shared.money import Currency
 
 
 def _position() -> Position:

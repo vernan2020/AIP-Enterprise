@@ -2,6 +2,17 @@
 REM Copy this file to config\runtime.local.cmd only when local overrides are needed.
 REM Never commit runtime.local.cmd because it may contain credentials.
 
+REM Financial Copilot / OpenAI Responses API.
+REM The LLM is opt-in. AIP remains deterministic when this block is unset.
+REM Obtain the API key from the institutional OpenAI API project; do not paste it into Git.
+REM set "AIP_LLM_ENABLED=true"
+REM set "AIP_LLM_PROVIDER=openai"
+REM set "OPENAI_API_KEY=YOUR_OPENAI_API_KEY"
+REM set "AIP_LLM_MODEL=gpt-5.6"
+REM Optional operational limits:
+REM set "AIP_LLM_TIMEOUT_SECONDS=45"
+REM set "AIP_LLM_MAX_OUTPUT_TOKENS=1400"
+
 REM BCCR live API credentials. If omitted, Macro Intelligence uses persisted official history.
 REM set "AIP_BCCR_NAME=YOUR_REGISTERED_NAME"
 REM set "AIP_BCCR_EMAIL=YOUR_REGISTERED_EMAIL"
@@ -11,3 +22,11 @@ REM Optional explicit source paths. AIP auto-discovers the institutional paths w
 REM set "AIP_PORTFOLIO_ROOT=C:\Users\%%USERNAME%%\COOPEALIANZA R.L\Seidy Fonseca Hernandez - inversiones"
 REM set "AIP_ICL_ROOT=C:\Users\%%USERNAME%%\COOPEALIANZA R.L\Liquidez e Inversiones - Documentos\General\Análisis Financiero"
 REM set "AIP_DATA_CUTOFF_DATE=2026-08-27"
+
+REM Official SUGEF public REST API (enabled by default; no credentials required).
+REM set "AIP_SUGEF_FINANCIAL_ENABLED=true"
+REM set "AIP_SUGEF_FINANCIAL_API_ENABLED=true"
+REM set "AIP_SUGEF_FINANCIAL_ENTITY_CODES=3004045138"
+REM Optional local exports (.csv, .xls or .xlsx) are used as a resilient fallback.
+REM set "AIP_SUGEF_FINANCIAL_ROOT=C:\Datos\SUGEF\Informacion Financiera"
+REM set "AIP_SUGEF_FINANCIAL_FILE_PATTERN=*"

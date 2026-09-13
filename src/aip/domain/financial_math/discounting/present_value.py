@@ -4,11 +4,11 @@ from datetime import date
 from decimal import Decimal
 from typing import Iterable
 
-from aip.domain.financial_math.cashflows.cashflow import CashFlow
-from aip.domain.financial_math.cashflows.cashflow_series import CashFlowSeries
-from aip.domain.financial_math.discounting.compounding import discount_factor
-from aip.domain.financial_math.exceptions import InvalidCashFlowError
-from aip.domain.financial_math.rates.interest_rate import InterestRate
+from ..cashflows.cashflow import CashFlow
+from ..cashflows.cashflow_series import CashFlowSeries
+from ..exceptions import InvalidCashFlowError
+from ..rates.interest_rate import InterestRate
+from .compounding import discount_factor
 
 
 def _time_to_years(

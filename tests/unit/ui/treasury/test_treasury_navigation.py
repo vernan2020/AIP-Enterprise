@@ -26,7 +26,7 @@ def test_main_window_opens_treasury_workspace_from_shell(qt_app) -> None:
     window.open_workspace("treasury")
 
     tab_titles = [window.workspace.tabText(index) for index in range(window.workspace.count())]
-    assert "Treasury" in tab_titles
+    assert "Tesorería" in tab_titles
 
 
 def test_workspace_can_open_treasury_tab(qt_app) -> None:

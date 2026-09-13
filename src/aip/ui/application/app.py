@@ -6,7 +6,7 @@ from PySide6.QtWidgets import QApplication
 from aip.core.version import APP_NAME, APP_VERSION
 from aip.product.demo.bootstrap.application_factory import DemoApplicationFactory
 from aip.product.demo.configuration.environment_loader import EnvironmentLoader
-from aip.ui.shell.main_window import MainWindow
+from aip.ui.shell.intelligence_main_window import FinancialIntelligenceMainWindow as MainWindow
 
 
 class AIPApplication:

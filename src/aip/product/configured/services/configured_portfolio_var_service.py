@@ -14,13 +14,6 @@ from aip.domain.portfolio.risk.portfolio_historical_var_service import (
     PortfolioHistoricalVaRService,
     PortfolioVaRPosition,
 )
-from aip.product.configured.repositories.master_historical_price_repository import (
-    MasterHistoricalPriceRepository,
-)
-from aip.product.configured.repositories.pipca_historical_price_repository import (
-    PiPCAHistoricalPriceRepository,
-)
-
 from aip.product.configured.adapters.configured_portfolio_provider import (
     ConfiguredPortfolioProvider,
 )
@@ -28,6 +21,12 @@ from aip.product.configured.configuration.configured_source_config import (
     ConfiguredSourceConfig,
 )
 from aip.product.configured.context.valuation_date_context import ValuationDateContext
+from aip.product.configured.repositories.master_historical_price_repository import (
+    MasterHistoricalPriceRepository,
+)
+from aip.product.configured.repositories.pipca_historical_price_repository import (
+    PiPCAHistoricalPriceRepository,
+)
 from aip.product.demo.configuration.demo_config import DemoConfig
 
 
@@ -183,8 +182,9 @@ class ConfiguredPortfolioVaRService:
     Se excluyen:
 
     1. posiciones cuya clasificación inicia con "C.A";
-    2. operaciones cuyo product_code es "MIL";
-    3. posiciones con valor de mercado no positivo.
+    2. instrumentos cuyo product_code es "ICP";
+    3. operaciones cuyo product_code es "MIL";
+    4. posiciones con valor de mercado no positivo.
 
     El resto constituye el universo sujeto a VER.
 
@@ -345,6 +345,7 @@ class ConfiguredPortfolioVaRService:
         self,
         *,
         valuation_date: date | None = None,
+        portfolio: dict[str, Any] | None = None,
         force_refresh: bool = False,
     ) -> ConfiguredPortfolioVaRResult:
         """
@@ -373,6 +374,9 @@ class ConfiguredPortfolioVaRService:
         if valuation_date is not None:
             effective_date = valuation_date
 
+        elif portfolio is not None:
+            effective_date = self._resolve_valuation_date(portfolio)
+
         else:
             portfolio = self._portfolio_provider.get_portfolio()
 
@@ -392,7 +396,10 @@ class ConfiguredPortfolioVaRService:
         # CACHE MISS
         # --------------------------------------------------------
 
-        result = self._calculate_uncached(valuation_date=effective_date)
+        result = self._calculate_uncached(
+            valuation_date=effective_date,
+            portfolio=portfolio,
+        )
 
         self._result_cache[effective_date] = result
 
@@ -432,6 +439,7 @@ class ConfiguredPortfolioVaRService:
         self,
         *,
         valuation_date: date | None = None,
+        portfolio: dict[str, Any] | None = None,
     ) -> ConfiguredPortfolioVaRResult:
         """
         Calcula el VER para el portafolio del corte vigente.
@@ -447,12 +455,16 @@ class ConfiguredPortfolioVaRService:
         # ========================================================
 
         self._ensure_historical_repositories()
+        historical_repository = self._historical_repository
+        master_historical_repository = self._master_historical_repository
+        assert historical_repository is not None
+        assert master_historical_repository is not None
 
         # ========================================================
         # CURRENT PORTFOLIO
         # ========================================================
 
-        portfolio = self._portfolio_provider.get_portfolio()
+        portfolio = portfolio or self._portfolio_provider.get_portfolio()
 
         positions = [
             position
@@ -540,9 +552,7 @@ class ConfiguredPortfolioVaRService:
         # historical market window.
         # ========================================================
 
-        available_dates = self._historical_repository.available_vector_dates(
-            cutoff_date=(effective_date)
-        )
+        available_dates = historical_repository.available_vector_dates(cutoff_date=(effective_date))
 
         if len(available_dates) < self.REQUIRED_PRICES:
 
@@ -636,7 +646,7 @@ class ConfiguredPortfolioVaRService:
             # SOURCE 1: PiPCA
             # ====================================================
 
-            pipca_history = self._historical_repository.get_observations(
+            pipca_history = historical_repository.get_observations(
                 series=(title.series),
                 issuer=(title.issuer),
                 product_code=(title.product_code),
@@ -659,7 +669,7 @@ class ConfiguredPortfolioVaRService:
 
             if not historical_observations:
 
-                master_history = self._master_historical_repository.get_observations(
+                master_history = master_historical_repository.get_observations(
                     isin=(title.isin),
                     series=(title.series),
                     issuer=(title.issuer),
@@ -969,7 +979,10 @@ class ConfiguredPortfolioVaRService:
         1. classification inicia con "C.A"
            -> COST_AMORTIZED
 
-        2. product_code == "MIL"
+        2. product_code == "ICP"
+           -> ICP_OPERATION
+
+        3. product_code == "MIL"
            -> MIL_OPERATION
 
         El resto permanece elegible, sujeto a VM > 0.
@@ -981,6 +994,9 @@ class ConfiguredPortfolioVaRService:
 
         if classification.startswith("C.A"):
             return "COST_AMORTIZED"
+
+        if product_code == "ICP":
+            return "ICP_OPERATION"
 
         if product_code == "MIL":
             return "MIL_OPERATION"

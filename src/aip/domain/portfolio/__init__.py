@@ -1,20 +1,20 @@
 """Portfolio bounded context public API."""
 
-from src.aip.domain.portfolio.entities import Portfolio, Position, Transaction
-from src.aip.domain.portfolio.enums import (
+from .entities import Portfolio, Position, Transaction
+from .enums import (
     PortfolioStatus,
     PositionStatus,
     TransactionType,
     ValuationSource,
 )
-from src.aip.domain.portfolio.events import (
+from .events import (
     DomainEvent,
     PortfolioCreated,
     PositionAdded,
     PositionRemoved,
     TransactionRegistered,
 )
-from src.aip.domain.portfolio.exceptions import (
+from .exceptions import (
     DuplicatePositionError,
     InvalidPositionError,
     InvalidTransactionError,
@@ -22,9 +22,9 @@ from src.aip.domain.portfolio.exceptions import (
     PortfolioError,
     PositionNotFoundError,
 )
-from src.aip.domain.portfolio.repositories import PortfolioRepository
-from src.aip.domain.portfolio.services import PortfolioCalculationService
-from src.aip.domain.portfolio.value_objects import (
+from .repositories import PortfolioRepository
+from .services import PortfolioCalculationService
+from .value_objects import (
     ISIN,
     AcquisitionCost,
     BookValue,

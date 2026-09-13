@@ -6,7 +6,6 @@ from typing import Any
 from aip.product.configured.repositories.institutional_macro_scenario_repository import (
     InstitutionalMacroScenarioRepository,
 )
-
 from aip.product.economic.institutional_macro_driver_service import (
     InstitutionalMacroDriverService,
 )
@@ -31,7 +30,7 @@ class ConfiguredMacroIntelligenceService:
         scenario_id: str = DEFAULT_SCENARIO_ID,
     ) -> dict[str, Any]:
         versions = self._repository.list_versions(scenario_id)
-        approved = [item for item in versions if str(item[1]).upper() == "APPROVED"]
+        approved = tuple(item for item in versions if str(item.status).upper() == "APPROVED")
         if not approved:
             return {
                 "status": "UNAVAILABLE",
@@ -40,16 +39,7 @@ class ConfiguredMacroIntelligenceService:
                 "rows": [],
             }
 
-        version = int(approved[0][0])
-        scenario = self._repository.get(scenario_id, version)
-        if scenario is None:
-            return {
-                "status": "UNAVAILABLE",
-                "scenario_id": scenario_id,
-                "diagnostic": f"Approved scenario {scenario_id} v{version} could not be loaded",
-                "rows": [],
-            }
-
+        scenario = max(approved, key=lambda item: int(item.version))
         drivers = self._driver_service.build_from_scenario(scenario)
         return {
             "status": "AVAILABLE",

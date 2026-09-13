@@ -5,19 +5,19 @@ from decimal import Decimal
 
 import pytest
 
-from src.aip.domain.portfolio.entities.transaction import Transaction
-from src.aip.domain.portfolio.enums.transaction_type import TransactionType
-from src.aip.domain.portfolio.exceptions import InvalidTransactionError
-from src.aip.domain.portfolio.value_objects import (
+from aip.domain.portfolio.entities.transaction import Transaction
+from aip.domain.portfolio.enums.transaction_type import TransactionType
+from aip.domain.portfolio.exceptions import InvalidTransactionError
+from aip.domain.portfolio.value_objects import (
     PortfolioId,
     PositionId,
     Quantity,
     SettlementDate,
     TransactionId,
 )
-from src.aip.shared.calendars import CostaRicaCalendar
-from src.aip.shared.dates import BusinessDate
-from src.aip.shared.money import Currency, Money
+from aip.shared.calendars import CostaRicaCalendar
+from aip.shared.dates import BusinessDate
+from aip.shared.money import Currency, Money
 
 
 def _settlement() -> SettlementDate:

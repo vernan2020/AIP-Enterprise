@@ -464,10 +464,10 @@ class EconometricModelSelectionService:
             )
 
         if len(forecasts) < self._minimum_backtest_observations:
-            diagnostic = "Insufficient successful " "backtest forecasts"
+            failure_diagnostic = "Insufficient successful " "backtest forecasts"
 
             if failures:
-                diagnostic += f"; failures={len(failures)}"
+                failure_diagnostic += f"; failures={len(failures)}"
 
             return EconometricModelCandidateResult(
                 indicator_code=indicator_code,
@@ -478,7 +478,7 @@ class EconometricModelSelectionService:
                 metrics=(self._metrics(forecasts)),
                 forecasts=tuple(forecasts),
                 warnings=tuple(estimation_warnings),
-                diagnostic=diagnostic,
+                diagnostic=failure_diagnostic,
             )
 
         diagnostic_parts: list[str] = []
@@ -489,7 +489,7 @@ class EconometricModelSelectionService:
         if estimation_warnings:
             diagnostic_parts.append(f"{len(estimation_warnings)} " "estimation warnings captured")
 
-        diagnostic = "; ".join(diagnostic_parts) if diagnostic_parts else None
+        diagnostic: str | None = "; ".join(diagnostic_parts) if diagnostic_parts else None
 
         status = "AVAILABLE_WITH_WARNINGS" if estimation_warnings else "AVAILABLE"
 

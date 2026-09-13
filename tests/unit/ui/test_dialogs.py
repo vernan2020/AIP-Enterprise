@@ -7,7 +7,7 @@ from aip.ui.dialogs.settings_dialog import SettingsDialog
 
 def test_dialogs_construct(qt_app) -> None:
     about = AboutDialog()
-    assert about.windowTitle() == "About AIP Enterprise"
+    assert about.windowTitle() == "Acerca de AIP Enterprise"
 
     exception_dialog = ExceptionDialog(RuntimeError("boom"))
     assert exception_dialog.windowTitle() == "Unexpected Error"

@@ -5,11 +5,11 @@ from decimal import Decimal
 
 import pytest
 
-from src.aip.domain.portfolio.entities.position import Position
-from src.aip.domain.portfolio.enums.position_status import PositionStatus
-from src.aip.domain.portfolio.enums.valuation_source import ValuationSource
-from src.aip.domain.portfolio.exceptions import InvalidPositionError
-from src.aip.domain.portfolio.value_objects import (
+from aip.domain.portfolio.entities.position import Position
+from aip.domain.portfolio.enums.position_status import PositionStatus
+from aip.domain.portfolio.enums.valuation_source import ValuationSource
+from aip.domain.portfolio.exceptions import InvalidPositionError
+from aip.domain.portfolio.value_objects import (
     ISIN,
     AcquisitionCost,
     BookValue,
@@ -23,10 +23,10 @@ from src.aip.domain.portfolio.value_objects import (
     SettlementDate,
     YieldRate,
 )
-from src.aip.shared.calendars import CostaRicaCalendar
-from src.aip.shared.dates import BusinessDate
-from src.aip.shared.math import Percentage
-from src.aip.shared.money import Currency, Money
+from aip.shared.calendars import CostaRicaCalendar
+from aip.shared.dates import BusinessDate
+from aip.shared.math import Percentage
+from aip.shared.money import Currency, Money
 
 
 def _position() -> Position:

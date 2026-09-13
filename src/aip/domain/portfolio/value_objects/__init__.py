@@ -1,19 +1,19 @@
 """Portfolio domain value objects."""
 
-from src.aip.domain.portfolio.value_objects.acquisition_cost import AcquisitionCost
-from src.aip.domain.portfolio.value_objects.book_value import BookValue
-from src.aip.domain.portfolio.value_objects.convexity import Convexity
-from src.aip.domain.portfolio.value_objects.duration import Duration
-from src.aip.domain.portfolio.value_objects.instrument_name import InstrumentName
-from src.aip.domain.portfolio.value_objects.isin import ISIN
-from src.aip.domain.portfolio.value_objects.market_value import MarketValue
-from src.aip.domain.portfolio.value_objects.nominal_value import NominalValue
-from src.aip.domain.portfolio.value_objects.portfolio_id import PortfolioId
-from src.aip.domain.portfolio.value_objects.position_id import PositionId
-from src.aip.domain.portfolio.value_objects.quantity import Quantity
-from src.aip.domain.portfolio.value_objects.settlement_date import SettlementDate
-from src.aip.domain.portfolio.value_objects.transaction_id import TransactionId
-from src.aip.domain.portfolio.value_objects.yield_rate import YieldRate
+from .acquisition_cost import AcquisitionCost
+from .book_value import BookValue
+from .convexity import Convexity
+from .duration import Duration
+from .instrument_name import InstrumentName
+from .isin import ISIN
+from .market_value import MarketValue
+from .nominal_value import NominalValue
+from .portfolio_id import PortfolioId
+from .position_id import PositionId
+from .quantity import Quantity
+from .settlement_date import SettlementDate
+from .transaction_id import TransactionId
+from .yield_rate import YieldRate
 
 __all__ = [
     "AcquisitionCost",

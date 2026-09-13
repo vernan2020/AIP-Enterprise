@@ -25,7 +25,7 @@ def test_main_window_opens_liquidity_workspace_from_shell(qt_app) -> None:
     window.open_workspace("liquidity")
 
     tab_titles = [window.workspace.tabText(index) for index in range(window.workspace.count())]
-    assert "Liquidity" in tab_titles
+    assert "Liquidez" in tab_titles
 
 
 def test_workspace_can_open_liquidity_tab(qt_app) -> None:

@@ -3,22 +3,23 @@
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-from src.aip.domain.portfolio.enums.position_status import PositionStatus
-from src.aip.domain.portfolio.enums.valuation_source import ValuationSource
-from src.aip.domain.portfolio.exceptions import InvalidPositionError
-from src.aip.domain.portfolio.value_objects.acquisition_cost import AcquisitionCost
-from src.aip.domain.portfolio.value_objects.book_value import BookValue
-from src.aip.domain.portfolio.value_objects.convexity import Convexity
-from src.aip.domain.portfolio.value_objects.duration import Duration
-from src.aip.domain.portfolio.value_objects.instrument_name import InstrumentName
-from src.aip.domain.portfolio.value_objects.isin import ISIN
-from src.aip.domain.portfolio.value_objects.market_value import MarketValue
-from src.aip.domain.portfolio.value_objects.nominal_value import NominalValue
-from src.aip.domain.portfolio.value_objects.position_id import PositionId
-from src.aip.domain.portfolio.value_objects.quantity import Quantity
-from src.aip.domain.portfolio.value_objects.settlement_date import SettlementDate
-from src.aip.domain.portfolio.value_objects.yield_rate import YieldRate
-from src.aip.shared.money import Currency
+from aip.shared.money import Currency
+
+from ..enums.position_status import PositionStatus
+from ..enums.valuation_source import ValuationSource
+from ..exceptions import InvalidPositionError
+from ..value_objects.acquisition_cost import AcquisitionCost
+from ..value_objects.book_value import BookValue
+from ..value_objects.convexity import Convexity
+from ..value_objects.duration import Duration
+from ..value_objects.instrument_name import InstrumentName
+from ..value_objects.isin import ISIN
+from ..value_objects.market_value import MarketValue
+from ..value_objects.nominal_value import NominalValue
+from ..value_objects.position_id import PositionId
+from ..value_objects.quantity import Quantity
+from ..value_objects.settlement_date import SettlementDate
+from ..value_objects.yield_rate import YieldRate
 
 
 @dataclass(slots=True)

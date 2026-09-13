@@ -3,7 +3,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Iterable
 
-from aip.domain.financial_math.exceptions import InvalidRateError
+from ..exceptions import InvalidRateError
 
 
 def _normalize_cash_flows(

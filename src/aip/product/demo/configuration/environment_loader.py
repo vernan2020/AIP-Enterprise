@@ -13,6 +13,7 @@ from aip.product.configured.configuration.configured_source_config import (
     CurvesSourceConfig,
     FolderWatchSourceConfig,
     SQLServerSourceConfig,
+    SUGEFFinancialSourceConfig,
     VectorSourceConfig,
 )
 from aip.product.demo.configuration.demo_config import DemoConfig
@@ -153,6 +154,7 @@ class EnvironmentLoader:
         curves_source = self._read_curves_config()
         vector_source = self._read_vector_config()
         bccr_source = self._read_bccr_config()
+        sugef_source = self._read_sugef_financial_config()
         configured_source_config = ConfiguredSourceConfig(
             sql_server=SQLServerSourceConfig(
                 enabled=sql_source["enabled"],
@@ -207,6 +209,7 @@ class EnvironmentLoader:
                 email=bccr_source["email"],
                 token=bccr_source["token"],
             ),
+            sugef_financial=SUGEFFinancialSourceConfig(**sugef_source),
             diagnostic_mode=_parse_boolean_flag(
                 os.getenv("AIP_CONFIGURED_DIAGNOSTIC_MODE"), default=False
             ),
@@ -252,6 +255,7 @@ class EnvironmentLoader:
         curves_source = self._read_curves_config()
         vector_source = self._read_vector_config()
         bccr_source = self._read_bccr_config()
+        sugef_source = self._read_sugef_financial_config()
 
         return ConfiguredSourceConfig(
             sql_server=SQLServerSourceConfig(
@@ -307,6 +311,7 @@ class EnvironmentLoader:
                 email=bccr_source["email"],
                 token=bccr_source["token"],
             ),
+            sugef_financial=SUGEFFinancialSourceConfig(**sugef_source),
             diagnostic_mode=_parse_boolean_flag(
                 os.getenv("AIP_CONFIGURED_DIAGNOSTIC_MODE"),
                 default=False,
@@ -439,4 +444,59 @@ class EnvironmentLoader:
             "name": os.getenv("AIP_BCCR_NAME"),
             "email": os.getenv("AIP_BCCR_EMAIL"),
             "token": os.getenv("AIP_BCCR_TOKEN"),
+        }
+
+    def _read_sugef_financial_config(self) -> dict[str, Any]:
+        root = _normalize_path_value(os.getenv("AIP_SUGEF_FINANCIAL_ROOT"))
+        enabled_flag = os.getenv(
+            "AIP_SUGEF_FINANCIAL_ENABLED",
+            "true",
+        )
+        return {
+            "enabled": str(enabled_flag).lower() == "true",
+            "root": root,
+            "file_pattern": os.getenv("AIP_SUGEF_FINANCIAL_FILE_PATTERN", "*"),
+            "supported_extensions": tuple(
+                filter(
+                    None,
+                    os.getenv(
+                        "AIP_SUGEF_FINANCIAL_SUPPORTED_EXTENSIONS",
+                        ".csv,.xls,.xlsx",
+                    ).split(","),
+                )
+            ),
+            "recursive": _parse_boolean_flag(
+                os.getenv("AIP_SUGEF_FINANCIAL_RECURSIVE"), default=True
+            ),
+            "cache_enabled": _parse_boolean_flag(
+                os.getenv("AIP_SUGEF_FINANCIAL_CACHE_ENABLED"), default=True
+            ),
+            "api_enabled": _parse_boolean_flag(
+                os.getenv("AIP_SUGEF_FINANCIAL_API_ENABLED"), default=True
+            ),
+            "api_base_url": os.getenv(
+                "AIP_SUGEF_FINANCIAL_API_BASE_URL",
+                "https://www.sugef.fi.cr/Bccr.Sugef.Reportes_SitioWeb.API",
+            ),
+            "api_version": os.getenv("AIP_SUGEF_FINANCIAL_API_VERSION", "1.0"),
+            "api_entity_codes": tuple(
+                value.strip()
+                for value in os.getenv("AIP_SUGEF_FINANCIAL_ENTITY_CODES", "3004045138").split(",")
+                if value.strip()
+            ),
+            "api_timeout_seconds": float(
+                os.getenv("AIP_SUGEF_FINANCIAL_API_TIMEOUT_SECONDS", "90")
+            ),
+            "api_retries": int(os.getenv("AIP_SUGEF_FINANCIAL_API_RETRIES", "2")),
+            "api_backoff_seconds": float(os.getenv("AIP_SUGEF_FINANCIAL_API_BACKOFF_SECONDS", "1")),
+            "official_information_url": os.getenv(
+                "AIP_SUGEF_FINANCIAL_INFORMATION_URL",
+                "https://www.sugef.fi.cr/reportes/Informacion_Financiera_Contable.aspx",
+            ),
+            "supervised_entities_url": os.getenv(
+                "AIP_SUGEF_ENTITIES_URL",
+                "https://www.sugef.fi.cr/entidades_supervisadas/"
+                "lista_entidades_supervisadas_por_SUGEF.aspx",
+            ),
+            "download_endpoint": os.getenv("AIP_SUGEF_FINANCIAL_DOWNLOAD_ENDPOINT") or None,
         }

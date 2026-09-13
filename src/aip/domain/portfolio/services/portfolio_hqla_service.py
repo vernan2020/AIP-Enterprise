@@ -75,6 +75,8 @@ class PortfolioHQLAService:
             .replace("ó", "o")
             .replace("ú", "u")
         )
+        if normalized.startswith("v.c"):
+            return True
         return any(
             token in normalized
             for token in (

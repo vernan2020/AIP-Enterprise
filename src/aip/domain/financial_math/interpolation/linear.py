@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from aip.domain.financial_math.exceptions import InterpolationError
+from ..exceptions import InterpolationError
 
 
 def interpolate_linear(

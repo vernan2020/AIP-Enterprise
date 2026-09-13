@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 from decimal import Decimal
 
-from aip.domain.financial_math.exceptions import InvalidRateError
+from ..exceptions import InvalidRateError
 
 
 def _validate_rate(rate: Decimal) -> None:

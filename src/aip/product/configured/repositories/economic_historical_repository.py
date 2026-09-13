@@ -29,10 +29,7 @@ class EconomicHistoricalRepository:
         *,
         store: EconomicHistoricalStore | None = None,
     ) -> None:
-        self._store = (
-            store
-            or EconomicHistoricalStore()
-        )
+        self._store = store or EconomicHistoricalStore()
 
     @property
     def store(
@@ -47,26 +44,15 @@ class EconomicHistoricalRepository:
         from_date: date | None = None,
         to_date: date | None = None,
     ) -> EconomicHistoricalSeries:
-        normalized_code = (
-            indicator_code
-            .strip()
-            .upper()
+        normalized_code = indicator_code.strip().upper()
+
+        observations = self._store.observations_for_series(
+            indicator_code=normalized_code,
+            from_date=from_date,
+            to_date=to_date,
         )
 
-        observations = (
-            self._store
-            .observations_for_series(
-                indicator_code=normalized_code,
-                from_date=from_date,
-                to_date=to_date,
-            )
-        )
-
-        source = (
-            observations[-1].source
-            if observations
-            else "UNKNOWN"
-        )
+        source = observations[-1].source if observations else "UNKNOWN"
 
         return EconomicHistoricalSeries(
             indicator_code=normalized_code,
@@ -78,36 +64,22 @@ class EconomicHistoricalRepository:
         self,
         indicator_code: str,
     ) -> date | None:
-        observation = (
-            self._store
-            .latest_observation(
-                indicator_code=indicator_code
-            )
-        )
+        observation = self._store.latest_observation(indicator_code=indicator_code)
 
         if observation is None:
             return None
 
-        return (
-            observation
-            .observation_date
-        )
+        return observation.observation_date
 
     def available_series(
         self,
     ) -> tuple[str, ...]:
-        return (
-            self._store
-            .series_codes()
-        )
+        return self._store.series_codes()
 
     def statistics(
         self,
     ) -> dict[str, int]:
-        return (
-            self._store
-            .statistics()
-        )
+        return self._store.statistics()
 
     def append(
         self,
@@ -122,9 +94,4 @@ class EconomicHistoricalRepository:
 
         Este repositorio no realiza llamadas remotas.
         """
-        return (
-            self._store
-            .upsert_observations(
-                observations
-            )
-        )
+        return self._store.upsert_observations(observations)

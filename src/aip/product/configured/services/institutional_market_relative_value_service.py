@@ -56,9 +56,7 @@ class InstitutionalMarketRelativeValueService:
         }
 
         portfolio_series = {
-            str(position.get("series") or "")
-            .strip()
-            .upper()
+            str(position.get("series") or "").strip().upper()
             for position in (portfolio_positions or [])
             if position.get("series")
         }
@@ -66,20 +64,20 @@ class InstitutionalMarketRelativeValueService:
         results: list[InstitutionalMarketRelativeValueResult] = []
 
         for record in vector_records:
-            issuer = str(
-                record.get("issuer", "")
-            ).strip().upper()
+            issuer = str(record.get("issuer", "")).strip().upper()
 
-            mnemonic = str(
-                record.get(
-                    "instrument_type_or_mnemonic",
-                    "",
+            mnemonic = (
+                str(
+                    record.get(
+                        "instrument_type_or_mnemonic",
+                        "",
+                    )
                 )
-            ).strip().lower()
-
-            curve_id = self._CURVE_MAPPING.get(
-                (issuer, mnemonic)
+                .strip()
+                .lower()
             )
+
+            curve_id = self._CURVE_MAPPING.get((issuer, mnemonic))
 
             if curve_id is None:
                 continue
@@ -97,24 +95,13 @@ class InstitutionalMarketRelativeValueService:
             if not series:
                 continue
 
-            maturity = record.get(
-                "maturity_date_if_present"
-            )
+            maturity = record.get("maturity_date_if_present")
 
-            market_yield_raw = record.get(
-                "market_yield"
-            )
+            market_yield_raw = record.get("market_yield")
 
-            market_price_raw = record.get(
-                "market_price"
-            )
+            market_price_raw = record.get("market_price")
 
-            isin = str(
-                record.get(
-                    "isin_if_present"
-                )
-                or ""
-            ).strip()
+            isin = str(record.get("isin_if_present") or "").strip()
 
             if maturity is None:
                 continue
@@ -122,62 +109,33 @@ class InstitutionalMarketRelativeValueService:
             if market_yield_raw is None:
                 continue
 
-            market_yield = Decimal(
-                str(market_yield_raw)
-            )
+            market_yield = Decimal(str(market_yield_raw))
 
             if market_yield <= 0:
                 continue
 
-            tenor = Decimal(
-                str(
-                    (maturity - cutoff_date).days
-                    / 365.25
-                )
-            )
+            tenor = Decimal(str((maturity - cutoff_date).days / 365.25))
 
             if tenor <= 0:
                 continue
 
-            ns = curve_index[
-                curve_id
-            ]["nelson_siegel"]
+            ns = curve_index[curve_id]["nelson_siegel"]
 
             curve_yield = nelson_siegel_zero_rate(
                 tenor,
-                beta0=Decimal(
-                    str(ns["beta0"])
-                ),
-                beta1=Decimal(
-                    str(ns["beta1"])
-                ),
-                beta2=Decimal(
-                    str(ns["beta2"])
-                ),
-                tau=Decimal(
-                    str(ns["tau"])
-                ),
+                beta0=Decimal(str(ns["beta0"])),
+                beta1=Decimal(str(ns["beta1"])),
+                beta2=Decimal(str(ns["beta2"])),
+                tau=Decimal(str(ns["tau"])),
             )
 
-            spread_bp = (
-                market_yield
-                - curve_yield
-            ) * Decimal("100")
+            spread_bp = (market_yield - curve_yield) * Decimal("100")
 
-            classification = self._classify(
-                spread_bp
-            )
+            classification = self._classify(spread_bp)
 
-            market_price = (
-                Decimal(str(market_price_raw))
-                if market_price_raw is not None
-                else None
-            )
+            market_price = Decimal(str(market_price_raw)) if market_price_raw is not None else None
 
-            in_portfolio = (
-                series.upper()
-                in portfolio_series
-            )
+            in_portfolio = series.upper() in portfolio_series
 
             results.append(
                 InstitutionalMarketRelativeValueResult(

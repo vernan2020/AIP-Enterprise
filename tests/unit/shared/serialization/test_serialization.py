@@ -9,7 +9,7 @@ from decimal import Decimal
 
 import pytest
 
-from src.aip.shared.serialization import (
+from aip.shared.serialization import (
     DateEncoder,
     DecimalEncoder,
     JsonSerializer,

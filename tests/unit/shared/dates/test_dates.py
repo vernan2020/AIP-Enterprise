@@ -7,9 +7,9 @@ from datetime import date
 
 import pytest
 
-from src.aip.shared.calendars import CostaRicaCalendar
-from src.aip.shared.conventions import BusinessDayConvention
-from src.aip.shared.dates import (
+from aip.shared.calendars import CostaRicaCalendar
+from aip.shared.conventions import BusinessDayConvention
+from aip.shared.dates import (
     BusinessDate,
     BusinessDayCalculator,
     BusinessPeriod,

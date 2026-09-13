@@ -248,12 +248,6 @@ def test_production_pipca_combined_product_series_layouts_are_split_correctly() 
         line = f"BCCR{product_code}{series_code}{maturity_text}".ljust(120)
         record = reader._parse_line(line, source_cutoff=date(2026, 7, 29), source_line=1)
 
-        print(f"raw: {raw_field}")
-        print(f"product: {record.instrument_type_or_mnemonic if record is not None else None}")
-        print(f"series: {record.series_or_security_code if record is not None else None}")
-        print(f"maturity: {maturity_text}")
-        print(f"issuer: {record.issuer if record is not None else None}")
-
         assert record is not None
         assert record.issuer == "BCCR"
         assert record.instrument_type_or_mnemonic == product_code

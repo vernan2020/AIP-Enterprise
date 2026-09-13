@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from decimal import Decimal
 
-from src.aip.domain.portfolio.exceptions import InvalidPositionError
+from ..exceptions import InvalidPositionError
 
 
 @dataclass(frozen=True, slots=True)

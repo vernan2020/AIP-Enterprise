@@ -32,10 +32,10 @@ Shared Foundation provides reusable, production-ready building blocks for AIP En
 from decimal import Decimal
 from datetime import date
 
-from src.aip.shared.money import Money, Currency
-from src.aip.shared.serialization import JsonSerializer
-from src.aip.shared.calendars import CostaRicaCalendar
-from src.aip.shared.dates import BusinessDate
+from aip.shared.money import Money, Currency
+from aip.shared.serialization import JsonSerializer
+from aip.shared.calendars import CostaRicaCalendar
+from aip.shared.dates import BusinessDate
 
 amount = Money(Decimal("1000.00"), Currency.USD)
 trade_date = BusinessDate(date(2026, 7, 27), CostaRicaCalendar())
@@ -53,7 +53,7 @@ json_payload = JsonSerializer.serialize(payload)
 
 ## Error Handling
 
-Validation helpers raise specific exceptions from `src.aip.shared.validation.exceptions`, including:
+Validation helpers raise specific exceptions from `aip.shared.validation.exceptions`, including:
 
 - `RequiredValueError`
 - `PositiveValueError`

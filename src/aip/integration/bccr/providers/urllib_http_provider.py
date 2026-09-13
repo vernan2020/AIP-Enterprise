@@ -110,11 +110,10 @@ class UrllibHTTPProvider(HTTPProvider):
         if raw_headers is None:
             return {}
 
-        try:
-            items = raw_headers.items()
-        except AttributeError:
+        items_method = getattr(raw_headers, "items", None)
+        if not callable(items_method):
             return {}
-
+        items = items_method()
         return {str(key): str(value) for key, value in items}
 
     @staticmethod

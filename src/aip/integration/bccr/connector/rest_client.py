@@ -17,11 +17,7 @@ class BCCRRestClient:
         "Bccr.GE.SDDE.Publico.Indicadores.API/"
         "indicadoresEconomicos/{indicator}/series"
     )
-    _CHART_SERIES_PATH = (
-        "SDDE/api/"
-        "Bccr.GE.SDDE.Publico.Indicadores.API/"
-        "cuadro/{chart}/series"
-    )
+    _CHART_SERIES_PATH = "SDDE/api/" "Bccr.GE.SDDE.Publico.Indicadores.API/" "cuadro/{chart}/series"
     _MAX_RETRIES = 5
     _MIN_REQUEST_INTERVAL_SECONDS = 0.75
     _INITIAL_BACKOFF_SECONDS = 2.0

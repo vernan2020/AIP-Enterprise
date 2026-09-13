@@ -7,7 +7,7 @@ from decimal import Decimal
 
 import pytest
 
-from src.aip.shared.validation import (
+from aip.shared.validation import (
     Guard,
     InvalidFormatError,
     NotEmptyError,

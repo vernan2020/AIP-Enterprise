@@ -114,22 +114,14 @@ class InstitutionalRelativeValueService:
             curve_id, isin, series, maturity = key
             meta = metadata[key]
 
-            total_market_value = sum(
-                item["market_value_crc"]
-                for item in grouped_positions
-            )
+            total_market_value = sum(item["market_value_crc"] for item in grouped_positions)
 
             weighted_market_yield = (
-                sum(
-                    item["market_yield"] * item["market_value_crc"]
-                    for item in grouped_positions
-                )
+                sum(item["market_yield"] * item["market_value_crc"] for item in grouped_positions)
                 / total_market_value
             )
 
-            tenor = Decimal(
-                str((maturity - cutoff_date).days / 365.25)
-            )
+            tenor = Decimal(str((maturity - cutoff_date).days / 365.25))
 
             if tenor <= 0:
                 continue
@@ -144,9 +136,7 @@ class InstitutionalRelativeValueService:
                 tau=Decimal(str(ns["tau"])),
             )
 
-            spread_bp = (
-                weighted_market_yield - curve_yield
-            ) * Decimal("100")
+            spread_bp = (weighted_market_yield - curve_yield) * Decimal("100")
 
             classification = self._classify(spread_bp)
 
@@ -185,9 +175,7 @@ class InstitutionalRelativeValueService:
         currency = str(position.get("currency", "")).strip().upper()
         product_code = str(position.get("product_code", "")).strip().lower()
 
-        return self._CURVE_MAPPING.get(
-            (issuer, currency, product_code)
-        )
+        return self._CURVE_MAPPING.get((issuer, currency, product_code))
 
     def _classify(self, spread_bp: Decimal) -> str:
         if spread_bp > self.CHEAP_THRESHOLD_BP:
