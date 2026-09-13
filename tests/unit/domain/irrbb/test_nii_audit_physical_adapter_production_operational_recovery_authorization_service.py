@@ -106,9 +106,9 @@ def _accepted_intervention(
     )
 
 
-def _recovery_evidence() -> tuple[
-    NIIRunAuditPhysicalAdapterProductionOperationalRecoveryEvidence, ...
-]:
+def _recovery_evidence() -> (
+    tuple[NIIRunAuditPhysicalAdapterProductionOperationalRecoveryEvidence, ...]
+):
     return tuple(
         NIIRunAuditPhysicalAdapterProductionOperationalRecoveryEvidence(
             requirement=requirement,
@@ -139,11 +139,13 @@ def test_authorization_preserves_exact_acceptance_and_valid_action_pair(
 ) -> None:
     acceptance = _accepted_intervention(intervention_action)
 
-    authorization = NIIRunAuditPhysicalAdapterProductionOperationalRecoveryAuthorizationService.authorize(
-        intervention_acceptance=acceptance,
-        authorization_reference="recovery-auth:53",
-        action=recovery_action,
-        evidence=_recovery_evidence(),
+    authorization = (
+        NIIRunAuditPhysicalAdapterProductionOperationalRecoveryAuthorizationService.authorize(
+            intervention_acceptance=acceptance,
+            authorization_reference="recovery-auth:53",
+            action=recovery_action,
+            evidence=_recovery_evidence(),
+        )
     )
 
     assert authorization.intervention_acceptance is acceptance
