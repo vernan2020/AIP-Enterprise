@@ -53,18 +53,16 @@ def _epoch() -> NIIRunAuditPhysicalAdapterProductionOperationalContinuityEpoch:
     )
 
 
-def _evidence() -> tuple[
-    NIIRunAuditPhysicalAdapterProductionOperationalStatusReattestationEvidence, ...
-]:
+def _evidence() -> (
+    tuple[NIIRunAuditPhysicalAdapterProductionOperationalStatusReattestationEvidence, ...]
+):
     return tuple(
         NIIRunAuditPhysicalAdapterProductionOperationalStatusReattestationEvidence(
             requirement=requirement,
             source_reference=f"reattestation:{requirement.value.lower()}",
         )
         for requirement in reversed(
-            tuple(
-                NIIRunAuditPhysicalAdapterProductionOperationalStatusReattestationRequirement
-            )
+            tuple(NIIRunAuditPhysicalAdapterProductionOperationalStatusReattestationRequirement)
         )
     )
 
