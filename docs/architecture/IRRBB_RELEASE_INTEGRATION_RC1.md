@@ -76,3 +76,9 @@ El merge a `release/core-v1.0` solo es admisible si el mismo HEAD supera:
 - Recovery Runtime Validation Linux y Windows, incluyendo checkpoint, regresión institucional, desktop workspace y paquete Windows certificado.
 
 La existencia del workspace RTILB en la UI no implica que las fuentes físicas bloqueadas por Issue #66 estén activas.
+
+## Baseline final integrado
+
+La integración certificada de IRRBB/RTILB fue incorporada a `release/core-v1.0` mediante el merge `0b5f099ba1ba450da73b3352f1b06d1deaf22f89`, cuyos padres son el runtime RC1 sincronizado `2d8f9bd62b07e610789ce525c94cdc138da08ecb` y el HEAD IRRBB certificado `2d7f33e6c558eba495277014e2492f82a5fdb305`.
+
+Este registro final de certificación no modifica código productivo. Su propósito es forzar una validación completa y la generación de un paquete Windows certificado desde el release ya integrado, de modo que el artifact entregable y el baseline de release correspondan al mismo árbol funcional.
