@@ -28,7 +28,9 @@ class NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalRecoveryAccepta
         *,
         recovery_receipt: NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalRecoveryReceipt,
         acceptance_reference: str,
-        evidence: Iterable[NIIRunAuditPhysicalAdapterProductionOperationalRecoveryAcceptanceEvidence],
+        evidence: Iterable[
+            NIIRunAuditPhysicalAdapterProductionOperationalRecoveryAcceptanceEvidence
+        ],
     ) -> NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalRecoveryAcceptance:
         if (
             recovery_receipt.status
