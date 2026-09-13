@@ -83,18 +83,16 @@ def _reattestation(
     )
 
 
-def _intervention_evidence() -> tuple[
-    NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalInterventionEvidence, ...
-]:
+def _intervention_evidence() -> (
+    tuple[NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalInterventionEvidence, ...]
+):
     return tuple(
         NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalInterventionEvidence(
             requirement=requirement,
             source_reference=f"post-recovery-intervention:{requirement.value.lower()}",
         )
         for requirement in reversed(
-            tuple(
-                NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalInterventionRequirement
-            )
+            tuple(NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalInterventionRequirement)
         )
     )
 
@@ -130,9 +128,15 @@ def test_nonhealthy_reattestation_can_authorize_new_explicit_intervention(
     assert authorization.action is action
     assert authorization.reattestation_reference == reattestation.reattestation_reference
     assert authorization.epoch_reference == reattestation.epoch_reference
-    assert authorization.previous_operations_reference == reattestation.previous_operations_reference
-    assert authorization.previous_attestation_reference == reattestation.previous_attestation_reference
-    assert authorization.recovery_acceptance_reference == reattestation.recovery_acceptance_reference
+    assert (
+        authorization.previous_operations_reference == reattestation.previous_operations_reference
+    )
+    assert (
+        authorization.previous_attestation_reference == reattestation.previous_attestation_reference
+    )
+    assert (
+        authorization.recovery_acceptance_reference == reattestation.recovery_acceptance_reference
+    )
     assert authorization.recovery_receipt_reference == reattestation.recovery_receipt_reference
     assert authorization.recovery_reference == reattestation.recovery_reference
     assert (
@@ -166,9 +170,7 @@ def test_healthy_reattestation_cannot_authorize_intervention() -> None:
 
 
 def test_previous_authorization_reference_cannot_be_reused() -> None:
-    reattestation = _reattestation(
-        NIIRunAuditPhysicalAdapterProductionOperationalStatus.DEGRADED
-    )
+    reattestation = _reattestation(NIIRunAuditPhysicalAdapterProductionOperationalStatus.DEGRADED)
 
     with pytest.raises(
         NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalInterventionAuthorizationError,
@@ -183,9 +185,7 @@ def test_previous_authorization_reference_cannot_be_reused() -> None:
 
 
 def test_missing_or_duplicate_intervention_evidence_fails_closed() -> None:
-    reattestation = _reattestation(
-        NIIRunAuditPhysicalAdapterProductionOperationalStatus.DEGRADED
-    )
+    reattestation = _reattestation(NIIRunAuditPhysicalAdapterProductionOperationalStatus.DEGRADED)
     evidence = _intervention_evidence()
 
     with pytest.raises(
@@ -212,9 +212,7 @@ def test_missing_or_duplicate_intervention_evidence_fails_closed() -> None:
 
 
 def test_blank_authorization_or_evidence_reference_is_rejected() -> None:
-    reattestation = _reattestation(
-        NIIRunAuditPhysicalAdapterProductionOperationalStatus.DEGRADED
-    )
+    reattestation = _reattestation(NIIRunAuditPhysicalAdapterProductionOperationalStatus.DEGRADED)
 
     with pytest.raises(
         NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalInterventionAuthorizationError,
