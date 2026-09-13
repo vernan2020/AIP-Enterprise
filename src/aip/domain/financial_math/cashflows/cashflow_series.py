@@ -5,8 +5,8 @@ from datetime import date
 from decimal import Decimal
 from typing import Callable, Iterable
 
-from aip.domain.financial_math.cashflows.cashflow import CashFlow
-from aip.domain.financial_math.exceptions import CurrencyMismatchError, InvalidCashFlowError
+from ..exceptions import CurrencyMismatchError, InvalidCashFlowError
+from .cashflow import CashFlow
 
 
 @dataclass(frozen=True, slots=True)
@@ -79,7 +79,7 @@ class CashFlowSeries:
         compounding: str = "annual",
         frequency: int = 1,
     ) -> Decimal:
-        from aip.domain.financial_math.discounting.present_value import present_value_series
+        from ..discounting.present_value import present_value_series
 
         return present_value_series(
             self, rate, valuation_date=valuation_date, compounding=compounding, frequency=frequency

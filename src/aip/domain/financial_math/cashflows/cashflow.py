@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 
-from aip.domain.financial_math.exceptions import InvalidCashFlowError
+from ..exceptions import InvalidCashFlowError
 
 
 @dataclass(frozen=True, slots=True)
