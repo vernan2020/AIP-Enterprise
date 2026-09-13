@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
-from aip.domain.financial_math.discounting.compounding import accumulation_factor, discount_factor
-from aip.domain.financial_math.exceptions import InvalidRateError
+from ..discounting.compounding import accumulation_factor, discount_factor
+from ..exceptions import InvalidRateError
 
 
 @dataclass(frozen=True)
