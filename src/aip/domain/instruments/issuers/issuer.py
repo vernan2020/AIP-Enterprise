@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from aip.domain.instruments.issuers.credit_rating import CreditRating
-from aip.domain.instruments.issuers.issuer_type import IssuerType
+from .credit_rating import CreditRating
+from .issuer_type import IssuerType
 
 
 @dataclass(frozen=True, slots=True)
