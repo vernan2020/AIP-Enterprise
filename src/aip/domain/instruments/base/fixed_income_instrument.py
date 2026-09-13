@@ -3,12 +3,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
-from aip.domain.instruments.base.financial_instrument import FinancialInstrument
-from aip.domain.instruments.enums.amortization_type import AmortizationType
-from aip.domain.instruments.enums.coupon_type import CouponType
-from aip.domain.instruments.enums.payment_frequency import PaymentFrequency
-from aip.domain.instruments.exceptions import InstrumentValidationError
-from aip.domain.instruments.schedules.coupon_schedule import CouponSchedule
+from ..enums.amortization_type import AmortizationType
+from ..enums.coupon_type import CouponType
+from ..enums.payment_frequency import PaymentFrequency
+from ..exceptions import InstrumentValidationError
+from ..schedules.coupon_schedule import CouponSchedule
+from .financial_instrument import FinancialInstrument
 
 
 @dataclass

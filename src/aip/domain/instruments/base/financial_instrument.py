@@ -6,10 +6,11 @@ from datetime import date
 from decimal import Decimal
 from typing import Any
 
-from aip.domain.instruments.exceptions import InstrumentValidationError
-from aip.domain.instruments.issuers.issuer import Issuer
-from aip.domain.instruments.schedules.coupon_schedule import CouponSchedule
 from aip.shared.conventions import BusinessDayConvention, DayCountConvention
+
+from ..exceptions import InstrumentValidationError
+from ..issuers.issuer import Issuer
+from ..schedules.coupon_schedule import CouponSchedule
 
 
 @dataclass
