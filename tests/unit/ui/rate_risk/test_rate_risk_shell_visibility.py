@@ -2,7 +2,6 @@ from aip.ui.shell.intelligence_main_window import FinancialIntelligenceMainWindo
 from aip.ui.shell.ribbon import Ribbon
 from aip.ui.shell.sidebar import Sidebar
 
-
 RATE_RISK_LABEL = "Riesgo de Tasas · RTILB"
 RATE_RISK_ROUTE = "rate_risk"
 
