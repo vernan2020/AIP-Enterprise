@@ -121,9 +121,9 @@ def _failed_receipt() -> (
     )
 
 
-def _acceptance_evidence() -> tuple[
-    NIIRunAuditPhysicalAdapterProductionOperationalInterventionAcceptanceEvidence, ...
-]:
+def _acceptance_evidence() -> (
+    tuple[NIIRunAuditPhysicalAdapterProductionOperationalInterventionAcceptanceEvidence, ...]
+):
     return tuple(
         NIIRunAuditPhysicalAdapterProductionOperationalInterventionAcceptanceEvidence(
             requirement=requirement,
