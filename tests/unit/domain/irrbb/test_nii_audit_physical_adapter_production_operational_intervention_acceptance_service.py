@@ -75,9 +75,7 @@ def _checkpoint_results(
     failed_checkpoint: (
         NIIRunAuditPhysicalAdapterProductionOperationalInterventionCheckpoint | None
     ) = None,
-) -> tuple[
-    NIIRunAuditPhysicalAdapterProductionOperationalInterventionCheckpointResult, ...
-]:
+) -> tuple[NIIRunAuditPhysicalAdapterProductionOperationalInterventionCheckpointResult, ...]:
     return tuple(
         NIIRunAuditPhysicalAdapterProductionOperationalInterventionCheckpointResult(
             checkpoint=checkpoint,
@@ -116,18 +114,16 @@ def _failed_receipt() -> NIIRunAuditPhysicalAdapterProductionOperationalInterven
     )
 
 
-def _acceptance_evidence() -> tuple[
-    NIIRunAuditPhysicalAdapterProductionOperationalInterventionAcceptanceEvidence, ...
-]:
+def _acceptance_evidence() -> (
+    tuple[NIIRunAuditPhysicalAdapterProductionOperationalInterventionAcceptanceEvidence, ...]
+):
     return tuple(
         NIIRunAuditPhysicalAdapterProductionOperationalInterventionAcceptanceEvidence(
             requirement=requirement,
             source_reference=f"acceptance:{requirement.value.lower()}",
         )
         for requirement in reversed(
-            tuple(
-                NIIRunAuditPhysicalAdapterProductionOperationalInterventionAcceptanceRequirement
-            )
+            tuple(NIIRunAuditPhysicalAdapterProductionOperationalInterventionAcceptanceRequirement)
         )
     )
 
@@ -164,8 +160,7 @@ def test_acceptance_preserves_exact_receipt_and_derives_identity() -> None:
 def test_failed_intervention_receipt_is_rejected() -> None:
     receipt = _failed_receipt()
     assert (
-        receipt.status
-        is NIIRunAuditPhysicalAdapterProductionOperationalInterventionStatus.FAILED
+        receipt.status is NIIRunAuditPhysicalAdapterProductionOperationalInterventionStatus.FAILED
     )
 
     with pytest.raises(
