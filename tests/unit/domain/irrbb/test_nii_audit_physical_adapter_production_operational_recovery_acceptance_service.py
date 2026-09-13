@@ -47,7 +47,9 @@ class _RecoveryAuthorizationStub:
     artifact_reference = "artifact:nii-audit-adapter-v1"
 
 
-def _recovery_authorization() -> NIIRunAuditPhysicalAdapterProductionOperationalRecoveryAuthorization:
+def _recovery_authorization() -> (
+    NIIRunAuditPhysicalAdapterProductionOperationalRecoveryAuthorization
+):
     return cast(
         NIIRunAuditPhysicalAdapterProductionOperationalRecoveryAuthorization,
         _RecoveryAuthorizationStub(),
@@ -102,7 +104,10 @@ def test_valid_acceptance_preserves_exact_receipt_and_chain_identity() -> None:
     assert acceptance.recovery_receipt_reference == receipt.receipt_reference
     assert acceptance.recovery_reference == receipt.recovery_reference
     assert acceptance.recovery_authorization_reference == receipt.authorization_reference
-    assert acceptance.recovery_action is NIIRunAuditPhysicalAdapterProductionOperationalRecoveryAction.RESUME
+    assert (
+        acceptance.recovery_action
+        is NIIRunAuditPhysicalAdapterProductionOperationalRecoveryAction.RESUME
+    )
     assert acceptance.intervention_acceptance_reference == receipt.intervention_acceptance_reference
     assert acceptance.intervention_receipt_reference == receipt.intervention_receipt_reference
     assert (
