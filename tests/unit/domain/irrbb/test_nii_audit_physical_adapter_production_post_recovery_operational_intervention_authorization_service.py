@@ -92,7 +92,9 @@ def _intervention_evidence() -> (
             source_reference=f"post-recovery-intervention:{requirement.value.lower()}",
         )
         for requirement in reversed(
-            tuple(NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalInterventionRequirement)
+            tuple(
+                NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalInterventionRequirement
+            )
         )
     )
 
