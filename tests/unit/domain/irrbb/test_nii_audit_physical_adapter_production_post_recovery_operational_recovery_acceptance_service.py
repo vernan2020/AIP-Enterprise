@@ -56,7 +56,9 @@ class _ReceiptStub:
     previous_recovery_reference = "recovery-execution:previous:63"
     previous_recovery_action = NIIRunAuditPhysicalAdapterProductionOperationalRecoveryAction.RESUME
     previous_intervention_authorization_reference = "intervention-auth:previous:63"
-    previous_intervention_action = NIIRunAuditPhysicalAdapterProductionOperationalInterventionAction.SUSPEND
+    previous_intervention_action = (
+        NIIRunAuditPhysicalAdapterProductionOperationalInterventionAction.SUSPEND
+    )
     adapter_reference = "adapter-v1"
     environment_reference = "production-cr-primary"
     artifact_reference = "artifact:nii-audit-adapter-v1"
@@ -78,9 +80,9 @@ def _receipt() -> NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalRec
     )
 
 
-def _evidence() -> tuple[
-    NIIRunAuditPhysicalAdapterProductionOperationalRecoveryAcceptanceEvidence, ...
-]:
+def _evidence() -> (
+    tuple[NIIRunAuditPhysicalAdapterProductionOperationalRecoveryAcceptanceEvidence, ...]
+):
     return tuple(
         NIIRunAuditPhysicalAdapterProductionOperationalRecoveryAcceptanceEvidence(
             requirement=requirement,
@@ -108,7 +110,10 @@ def test_acceptance_preserves_exact_receipt_and_full_chain() -> None:
     assert acceptance.recovery_authorization_reference == receipt.authorization_reference
     assert acceptance.recovery_action is receipt.action
     assert acceptance.intervention_acceptance_reference == receipt.intervention_acceptance_reference
-    assert acceptance.intervention_authorization_reference == receipt.intervention_authorization_reference
+    assert (
+        acceptance.intervention_authorization_reference
+        == receipt.intervention_authorization_reference
+    )
     assert acceptance.reattestation_reference == receipt.reattestation_reference
     assert acceptance.epoch_reference == receipt.epoch_reference
     assert (
