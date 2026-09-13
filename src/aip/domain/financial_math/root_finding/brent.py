@@ -3,8 +3,8 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Callable
 
-from aip.domain.financial_math.exceptions import ConvergenceError, InvalidBracketError
-from aip.domain.financial_math.root_finding.bisection import ConvergenceResult
+from ..exceptions import ConvergenceError, InvalidBracketError
+from .bisection import ConvergenceResult
 
 
 def brent_solve(
