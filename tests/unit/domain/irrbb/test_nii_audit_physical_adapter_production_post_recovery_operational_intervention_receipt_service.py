@@ -49,9 +49,7 @@ class _OperationalStatusReattestationStub:
     recovery_authorization_reference = "recovery-auth:59"
     recovery_action = NIIRunAuditPhysicalAdapterProductionOperationalRecoveryAction.RESUME
     intervention_authorization_reference = "intervention-auth:previous:59"
-    intervention_action = (
-        NIIRunAuditPhysicalAdapterProductionOperationalInterventionAction.SUSPEND
-    )
+    intervention_action = NIIRunAuditPhysicalAdapterProductionOperationalInterventionAction.SUSPEND
     adapter_reference = "adapter-v1"
     environment_reference = "production-cr-primary"
     artifact_reference = "artifact:nii-audit-adapter-v1"
@@ -137,8 +135,7 @@ def test_successful_receipt_preserves_exact_authorization_and_full_chain() -> No
     assert receipt.recovery_receipt_reference == authorization.recovery_receipt_reference
     assert receipt.recovery_reference == authorization.recovery_reference
     assert (
-        receipt.recovery_authorization_reference
-        == authorization.recovery_authorization_reference
+        receipt.recovery_authorization_reference == authorization.recovery_authorization_reference
     )
     assert receipt.recovery_action is authorization.recovery_action
     assert (
