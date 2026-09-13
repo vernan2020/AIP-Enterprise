@@ -23,9 +23,7 @@ from aip.domain.irrbb.nii_audit_physical_adapter_production_post_recovery_operat
 )
 
 
-class NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalRecoveryReceiptError(
-    ValueError
-):
+class NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalRecoveryReceiptError(ValueError):
     """Raised when a post-recovery operational recovery receipt cannot be recorded safely."""
 
 
@@ -50,9 +48,7 @@ class NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalRecoveryReceipt
         }
         for name, value in required_references.items():
             if not value.strip():
-                raise ValueError(
-                    f"NII audit post-recovery operational recovery {name} is required"
-                )
+                raise ValueError(f"NII audit post-recovery operational recovery {name} is required")
 
         if not self.recovery_authorization.authorization_reference.strip():
             raise ValueError(
@@ -79,7 +75,10 @@ class NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalRecoveryReceipt
                 "NII audit post-recovery operational recovery checkpoint results must cover "
                 "every required checkpoint"
             )
-        if checkpoints != NII_AUDIT_PHYSICAL_ADAPTER_PRODUCTION_OPERATIONAL_RECOVERY_CHECKPOINT_ORDER:
+        if (
+            checkpoints
+            != NII_AUDIT_PHYSICAL_ADAPTER_PRODUCTION_OPERATIONAL_RECOVERY_CHECKPOINT_ORDER
+        ):
             raise ValueError(
                 "NII audit post-recovery operational recovery checkpoint results must be canonicalized"
             )
