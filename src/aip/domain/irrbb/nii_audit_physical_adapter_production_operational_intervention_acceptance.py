@@ -17,9 +17,7 @@ class NIIRunAuditPhysicalAdapterProductionOperationalInterventionAcceptanceError
     """Raised when operational intervention acceptance cannot be issued safely."""
 
 
-class NIIRunAuditPhysicalAdapterProductionOperationalInterventionAcceptanceRequirement(
-    str, Enum
-):
+class NIIRunAuditPhysicalAdapterProductionOperationalInterventionAcceptanceRequirement(str, Enum):
     """Evidence required before one successful intervention may be accepted."""
 
     INTERVENTION_RECEIPT_VERIFIED = "INTERVENTION_RECEIPT_VERIFIED"
@@ -29,8 +27,8 @@ class NIIRunAuditPhysicalAdapterProductionOperationalInterventionAcceptanceRequi
     OPERATIONS_OWNER_ACCEPTANCE_RECORDED = "OPERATIONS_OWNER_ACCEPTANCE_RECORDED"
 
 
-REQUIRED_NII_AUDIT_PHYSICAL_ADAPTER_PRODUCTION_OPERATIONAL_INTERVENTION_ACCEPTANCE_REQUIREMENTS = frozenset(
-    NIIRunAuditPhysicalAdapterProductionOperationalInterventionAcceptanceRequirement
+REQUIRED_NII_AUDIT_PHYSICAL_ADAPTER_PRODUCTION_OPERATIONAL_INTERVENTION_ACCEPTANCE_REQUIREMENTS = (
+    frozenset(NIIRunAuditPhysicalAdapterProductionOperationalInterventionAcceptanceRequirement)
 )
 
 
@@ -75,9 +73,7 @@ class NIIRunAuditPhysicalAdapterProductionOperationalInterventionAcceptance:
                 "NII audit operational intervention acceptance requires every checkpoint to succeed"
             )
         if not self.acceptance_reference.strip():
-            raise ValueError(
-                "NII audit operational intervention acceptance_reference is required"
-            )
+            raise ValueError("NII audit operational intervention acceptance_reference is required")
 
         requirements = tuple(item.requirement for item in self.evidence)
         if len(requirements) != len(set(requirements)):
