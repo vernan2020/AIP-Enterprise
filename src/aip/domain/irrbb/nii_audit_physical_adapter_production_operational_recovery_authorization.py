@@ -112,7 +112,9 @@ class NIIRunAuditPhysicalAdapterProductionOperationalRecoveryAuthorization:
         return self.intervention_acceptance.authorization_reference
 
     @property
-    def intervention_action(self) -> NIIRunAuditPhysicalAdapterProductionOperationalInterventionAction:
+    def intervention_action(
+        self,
+    ) -> NIIRunAuditPhysicalAdapterProductionOperationalInterventionAction:
         return self.intervention_acceptance.action
 
     @property
