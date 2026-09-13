@@ -17,9 +17,7 @@ from aip.domain.irrbb.nii_audit_physical_adapter_production_operational_status_r
 )
 
 
-class NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalInterventionRequirement(
-    str, Enum
-):
+class NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalInterventionRequirement(str, Enum):
     """Evidence required before a post-recovery intervention may be authorized."""
 
     STATUS_REATTESTATION_VERIFIED = "STATUS_REATTESTATION_VERIFIED"
@@ -108,9 +106,7 @@ class NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalInterventionAut
 
         evidence_requirements = tuple(item.requirement for item in self.evidence)
         if len(evidence_requirements) != len(set(evidence_requirements)):
-            raise ValueError(
-                "Duplicate NII audit post-recovery intervention evidence requirement"
-            )
+            raise ValueError("Duplicate NII audit post-recovery intervention evidence requirement")
         if (
             frozenset(evidence_requirements)
             != REQUIRED_NII_AUDIT_PHYSICAL_ADAPTER_PRODUCTION_POST_RECOVERY_OPERATIONAL_INTERVENTION_REQUIREMENTS
@@ -125,9 +121,7 @@ class NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalInterventionAut
             )
         )
         if self.evidence != canonical_evidence:
-            raise ValueError(
-                "NII audit post-recovery intervention evidence must be canonicalized"
-            )
+            raise ValueError("NII audit post-recovery intervention evidence must be canonicalized")
 
     @property
     def reattestation_reference(self) -> str:
