@@ -89,7 +89,9 @@ class NIIRunAuditPhysicalAdapterProductionOperationalContinuityEpoch:
 
         requirements = tuple(item.requirement for item in self.evidence)
         if len(requirements) != len(set(requirements)):
-            raise ValueError("Duplicate NII audit operational continuity epoch evidence requirement")
+            raise ValueError(
+                "Duplicate NII audit operational continuity epoch evidence requirement"
+            )
         if (
             frozenset(requirements)
             != REQUIRED_NII_AUDIT_PHYSICAL_ADAPTER_PRODUCTION_OPERATIONAL_CONTINUITY_EPOCH_REQUIREMENTS
