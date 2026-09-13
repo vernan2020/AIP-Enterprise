@@ -4,25 +4,26 @@ from datetime import date
 from decimal import Decimal
 from typing import Any
 
-from aip.domain.instruments.base.financial_instrument import FinancialInstrument
-from aip.domain.instruments.bonds.floating_rate_bond import FloatingRateBond
-from aip.domain.instruments.bonds.government_bond import GovernmentBond
-from aip.domain.instruments.bonds.treasury_bill import TreasuryBill
-from aip.domain.instruments.bonds.zero_coupon_bond import ZeroCouponBond
-from aip.domain.instruments.cash.cash import Cash
-from aip.domain.instruments.enums.amortization_type import AmortizationType
-from aip.domain.instruments.enums.coupon_type import CouponType
-from aip.domain.instruments.enums.instrument_type import InstrumentType
-from aip.domain.instruments.enums.payment_frequency import PaymentFrequency
-from aip.domain.instruments.exceptions import InstrumentFactoryError, InstrumentValidationError
-from aip.domain.instruments.funds.investment_fund import InvestmentFund
-from aip.domain.instruments.issuers.issuer import Issuer
-from aip.domain.instruments.issuers.issuer_type import IssuerType
-from aip.domain.instruments.money_market.certificate_of_deposit import CertificateOfDeposit
-from aip.domain.instruments.money_market.commercial_paper import CommercialPaper
-from aip.domain.instruments.money_market.repo import Repo
-from aip.domain.instruments.money_market.reverse_repo import ReverseRepo
 from aip.shared.conventions import DayCountConvention
+
+from ..base.financial_instrument import FinancialInstrument
+from ..bonds.floating_rate_bond import FloatingRateBond
+from ..bonds.government_bond import GovernmentBond
+from ..bonds.treasury_bill import TreasuryBill
+from ..bonds.zero_coupon_bond import ZeroCouponBond
+from ..cash.cash import Cash
+from ..enums.amortization_type import AmortizationType
+from ..enums.coupon_type import CouponType
+from ..enums.instrument_type import InstrumentType
+from ..enums.payment_frequency import PaymentFrequency
+from ..exceptions import InstrumentFactoryError, InstrumentValidationError
+from ..funds.investment_fund import InvestmentFund
+from ..issuers.issuer import Issuer
+from ..issuers.issuer_type import IssuerType
+from ..money_market.certificate_of_deposit import CertificateOfDeposit
+from ..money_market.commercial_paper import CommercialPaper
+from ..money_market.repo import Repo
+from ..money_market.reverse_repo import ReverseRepo
 
 
 class InstrumentFactory:
