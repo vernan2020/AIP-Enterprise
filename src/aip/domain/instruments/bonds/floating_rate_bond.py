@@ -4,9 +4,9 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 
-from aip.domain.instruments.bonds.bond import Bond
-from aip.domain.instruments.exceptions import InstrumentValidationError
-from aip.domain.instruments.schedules.coupon_schedule import CouponSchedule
+from ..exceptions import InstrumentValidationError
+from ..schedules.coupon_schedule import CouponSchedule
+from .bond import Bond
 
 
 @dataclass
