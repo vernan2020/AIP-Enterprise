@@ -67,18 +67,16 @@ class _RecoveryAcceptanceStub:
     artifact_reference = "artifact:nii-audit-adapter-v1"
 
 
-def _acceptance() -> (
-    NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalRecoveryAcceptance
-):
+def _acceptance() -> NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalRecoveryAcceptance:
     return cast(
         NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalRecoveryAcceptance,
         _RecoveryAcceptanceStub(),
     )
 
 
-def _evidence() -> tuple[
-    NIIRunAuditPhysicalAdapterProductionOperationalContinuityEpochEvidence, ...
-]:
+def _evidence() -> (
+    tuple[NIIRunAuditPhysicalAdapterProductionOperationalContinuityEpochEvidence, ...]
+):
     return tuple(
         NIIRunAuditPhysicalAdapterProductionOperationalContinuityEpochEvidence(
             requirement=requirement,
@@ -92,10 +90,12 @@ def _evidence() -> tuple[
 
 def test_record_preserves_exact_acceptance_and_full_chain() -> None:
     acceptance = _acceptance()
-    epoch = NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalContinuityEpochService.record(
-        recovery_acceptance=acceptance,
-        epoch_reference="steady-state:new:64",
-        evidence=_evidence(),
+    epoch = (
+        NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalContinuityEpochService.record(
+            recovery_acceptance=acceptance,
+            epoch_reference="steady-state:new:64",
+            evidence=_evidence(),
+        )
     )
 
     assert epoch.recovery_acceptance is acceptance
@@ -105,7 +105,10 @@ def test_record_preserves_exact_acceptance_and_full_chain() -> None:
     assert epoch.recovery_action is acceptance.recovery_action
     assert epoch.previous_epoch_reference == acceptance.epoch_reference
     assert epoch.reattestation_reference == acceptance.reattestation_reference
-    assert epoch.intervention_authorization_reference == acceptance.intervention_authorization_reference
+    assert (
+        epoch.intervention_authorization_reference
+        == acceptance.intervention_authorization_reference
+    )
     assert epoch.adapter_reference == acceptance.adapter_reference
     assert tuple(item.requirement.value for item in epoch.evidence) == tuple(
         sorted(
