@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from aip.domain.pricing.exceptions import PricingError, PricingValidationError
-from aip.domain.pricing.models.pricing_request import PricingRequest
-from aip.domain.pricing.models.pricing_result import PricingResult
-from aip.domain.pricing.services.pricing_service import PricingService
+from ..exceptions import PricingError, PricingValidationError
+from ..models.pricing_request import PricingRequest
+from ..models.pricing_result import PricingResult
+from ..services.pricing_service import PricingService
 
 
 @dataclass(slots=True)
