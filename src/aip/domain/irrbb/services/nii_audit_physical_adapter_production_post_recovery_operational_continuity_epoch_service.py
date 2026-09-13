@@ -30,9 +30,7 @@ class NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalContinuityEpoch
             NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalRecoveryAcceptance
         ),
         epoch_reference: str,
-        evidence: Iterable[
-            NIIRunAuditPhysicalAdapterProductionOperationalContinuityEpochEvidence
-        ],
+        evidence: Iterable[NIIRunAuditPhysicalAdapterProductionOperationalContinuityEpochEvidence],
     ) -> NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalContinuityEpoch:
         if (
             recovery_acceptance.recovery_receipt.status
