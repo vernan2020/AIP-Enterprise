@@ -44,7 +44,9 @@ class _InterventionAcceptanceStub:
     artifact_reference = "artifact:nii-audit-adapter-v1"
 
 
-def _intervention_acceptance() -> NIIRunAuditPhysicalAdapterProductionOperationalInterventionAcceptance:
+def _intervention_acceptance() -> (
+    NIIRunAuditPhysicalAdapterProductionOperationalInterventionAcceptance
+):
     return cast(
         NIIRunAuditPhysicalAdapterProductionOperationalInterventionAcceptance,
         _InterventionAcceptanceStub(),
@@ -80,7 +82,9 @@ def _checkpoint_results(
         if index == failed_index:
             status = NIIRunAuditPhysicalAdapterProductionOperationalRecoveryCheckpointStatus.FAILED
         if index == not_executed_index:
-            status = NIIRunAuditPhysicalAdapterProductionOperationalRecoveryCheckpointStatus.NOT_EXECUTED
+            status = (
+                NIIRunAuditPhysicalAdapterProductionOperationalRecoveryCheckpointStatus.NOT_EXECUTED
+            )
         results.append(
             NIIRunAuditPhysicalAdapterProductionOperationalRecoveryCheckpointResult(
                 checkpoint=checkpoint,
@@ -105,9 +109,14 @@ def test_successful_receipt_preserves_exact_authorization_and_chain_identity() -
     assert receipt.status is NIIRunAuditPhysicalAdapterProductionOperationalRecoveryStatus.SUCCEEDED
     assert receipt.action is NIIRunAuditPhysicalAdapterProductionOperationalRecoveryAction.RESUME
     assert receipt.authorization_reference == authorization.authorization_reference
-    assert receipt.intervention_acceptance_reference == authorization.intervention_acceptance_reference
+    assert (
+        receipt.intervention_acceptance_reference == authorization.intervention_acceptance_reference
+    )
     assert receipt.intervention_receipt_reference == authorization.intervention_receipt_reference
-    assert receipt.intervention_action is NIIRunAuditPhysicalAdapterProductionOperationalInterventionAction.SUSPEND
+    assert (
+        receipt.intervention_action
+        is NIIRunAuditPhysicalAdapterProductionOperationalInterventionAction.SUSPEND
+    )
     assert receipt.adapter_reference == authorization.adapter_reference
     assert tuple(item.checkpoint for item in receipt.checkpoint_results) == (
         NII_AUDIT_PHYSICAL_ADAPTER_PRODUCTION_OPERATIONAL_RECOVERY_CHECKPOINT_ORDER
