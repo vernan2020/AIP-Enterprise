@@ -55,9 +55,7 @@ class NIIRunAuditPhysicalAdapterProductionOperationalRecoveryAcceptance:
 
     recovery_receipt: NIIRunAuditPhysicalAdapterProductionOperationalRecoveryReceipt
     acceptance_reference: str
-    evidence: tuple[
-        NIIRunAuditPhysicalAdapterProductionOperationalRecoveryAcceptanceEvidence, ...
-    ]
+    evidence: tuple[NIIRunAuditPhysicalAdapterProductionOperationalRecoveryAcceptanceEvidence, ...]
 
     def __post_init__(self) -> None:
         if (
