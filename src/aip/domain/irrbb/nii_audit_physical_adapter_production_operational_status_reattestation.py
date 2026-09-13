@@ -21,9 +21,7 @@ class NIIRunAuditPhysicalAdapterProductionOperationalStatusReattestationError(Va
     """Raised when a post-recovery operational status re-attestation is inconsistent."""
 
 
-class NIIRunAuditPhysicalAdapterProductionOperationalStatusReattestationRequirement(
-    str, Enum
-):
+class NIIRunAuditPhysicalAdapterProductionOperationalStatusReattestationRequirement(str, Enum):
     """Evidence required for one status re-attestation of a continuity epoch."""
 
     CONTINUITY_EPOCH_VERIFIED = "CONTINUITY_EPOCH_VERIFIED"
@@ -59,9 +57,7 @@ class NIIRunAuditPhysicalAdapterProductionOperationalStatusReattestation:
     continuity_epoch: NIIRunAuditPhysicalAdapterProductionOperationalContinuityEpoch
     reattestation_reference: str
     status: NIIRunAuditPhysicalAdapterProductionOperationalStatus
-    evidence: tuple[
-        NIIRunAuditPhysicalAdapterProductionOperationalStatusReattestationEvidence, ...
-    ]
+    evidence: tuple[NIIRunAuditPhysicalAdapterProductionOperationalStatusReattestationEvidence, ...]
     exception_references: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
@@ -77,9 +73,7 @@ class NIIRunAuditPhysicalAdapterProductionOperationalStatusReattestation:
                 "NII audit operational status re-attestation requires a distinct continuity epoch"
             )
         if not self.reattestation_reference.strip():
-            raise ValueError(
-                "NII audit operational status reattestation_reference is required"
-            )
+            raise ValueError("NII audit operational status reattestation_reference is required")
 
         requirements = tuple(item.requirement for item in self.evidence)
         if len(requirements) != len(set(requirements)):
