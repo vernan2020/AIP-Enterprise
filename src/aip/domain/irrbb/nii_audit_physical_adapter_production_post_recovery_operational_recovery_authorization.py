@@ -151,7 +151,9 @@ class NIIRunAuditPhysicalAdapterProductionPostRecoveryOperationalRecoveryAuthori
         return self.intervention_acceptance.recovery_authorization_reference
 
     @property
-    def previous_recovery_action(self) -> NIIRunAuditPhysicalAdapterProductionOperationalRecoveryAction:
+    def previous_recovery_action(
+        self,
+    ) -> NIIRunAuditPhysicalAdapterProductionOperationalRecoveryAction:
         return self.intervention_acceptance.recovery_action
 
     @property
