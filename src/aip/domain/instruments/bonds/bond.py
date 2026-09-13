@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
-from aip.domain.instruments.base.fixed_income_instrument import FixedIncomeInstrument
-from aip.domain.instruments.schedules.coupon_schedule import CouponSchedule
+from ..base.fixed_income_instrument import FixedIncomeInstrument
+from ..schedules.coupon_schedule import CouponSchedule
 
 
 @dataclass
