@@ -14,7 +14,8 @@ from aip.domain.financial_math.bond_metrics import (
     pvbp,
 )
 from aip.domain.instruments.base.financial_instrument import FinancialInstrument
-from aip.domain.pricing.exceptions import PricingError
+
+from ..exceptions import PricingError
 
 
 def price_bond(
