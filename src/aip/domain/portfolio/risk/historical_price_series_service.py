@@ -4,7 +4,7 @@ from datetime import date
 from decimal import Decimal
 from typing import Iterable
 
-from aip.domain.portfolio.risk.historical_price_series import (
+from .historical_price_series import (
     HistoricalPriceObservation,
     HistoricalPriceSeries,
 )
