@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 
-from aip.domain.portfolio.risk.historical_price_series import HistoricalPriceSeries
+from .historical_price_series import HistoricalPriceSeries
 
 
 @dataclass(frozen=True, slots=True)

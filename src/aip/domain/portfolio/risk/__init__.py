@@ -1,13 +1,13 @@
 """Historical price-risk domain services used by configured VeR."""
 
-from aip.domain.portfolio.risk.historical_price_series import (
+from .historical_price_series import (
     HistoricalPriceObservation,
     HistoricalPriceSeries,
 )
-from aip.domain.portfolio.risk.historical_price_series_service import (
+from .historical_price_series_service import (
     HistoricalPriceSeriesService,
 )
-from aip.domain.portfolio.risk.portfolio_historical_var_service import (
+from .portfolio_historical_var_service import (
     PortfolioHistoricalVaRResult,
     PortfolioHistoricalVaRService,
     PortfolioVaRPosition,
