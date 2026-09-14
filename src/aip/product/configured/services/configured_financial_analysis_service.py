@@ -13,6 +13,7 @@ from aip.domain.financial_analysis.models import (
     FinancialMetric,
     FinancialMetricHistoryPoint,
     FinancialMetricHistorySeries,
+    FinancialStatementLine,
 )
 from aip.domain.financial_analysis.return_on_assets import ReturnOnAssetsService
 from aip.domain.financial_analysis.services import FinancialAnalysisService
@@ -86,7 +87,14 @@ class ConfiguredFinancialAnalysisService:
                 cutoff_date=snapshot.cutoff_date,
                 force_refresh=force_refresh,
             )
-            combined_lines = result.lines + history_result.lines
+            combined_lines = self._merge_lines(result.lines, history_result.lines)
+            enriched_snapshot = self._analysis.build_snapshot(
+                combined_lines,
+                selected_entity_id=entity_id,
+                cutoff_date=snapshot.cutoff_date,
+                diagnostics=result.diagnostics + history_result.diagnostics,
+                source_files=result.source_files,
+            )
             raw_history = self._history.build(
                 combined_lines,
                 entity_id=entity_id,
@@ -106,7 +114,7 @@ class ConfiguredFinancialAnalysisService:
                 raw_history,
                 cutoff_date=snapshot.cutoff_date,
             )
-            metrics = self._merge_headline_metrics(snapshot.metrics, enriched_metrics)
+            metrics = self._merge_headline_metrics(enriched_snapshot.metrics, enriched_metrics)
             history = self._align_history_current_cutoff(
                 raw_history,
                 metrics,
@@ -125,11 +133,33 @@ class ConfiguredFinancialAnalysisService:
             )
 
         return replace(
-            snapshot,
+            enriched_snapshot,
             metrics=metrics,
             metric_history=history,
-            diagnostics=snapshot.diagnostics + history_result.diagnostics,
         )
+
+    @staticmethod
+    def _merge_lines(
+        primary: tuple[FinancialStatementLine, ...],
+        history: tuple[FinancialStatementLine, ...],
+    ) -> tuple[FinancialStatementLine, ...]:
+        """Merge selected-entity history without replacing current authoritative rows."""
+
+        merged: list[FinancialStatementLine] = []
+        seen: set[tuple[str, date, str, str, str]] = set()
+        for line in primary + history:
+            key = (
+                line.entity.entity_id,
+                line.statement_date,
+                line.statement_type.value,
+                line.account_code,
+                line.account_name,
+            )
+            if key in seen:
+                continue
+            seen.add(key)
+            merged.append(line)
+        return tuple(merged)
 
     @staticmethod
     def _invalidate_roa(metrics: tuple[FinancialMetric, ...]) -> tuple[FinancialMetric, ...]:
