@@ -10,6 +10,9 @@ BORROWING_RESET_DAY_RULE_REFERENCE = "aip://irrbb/source-rules/borrowings/fecha-
 BORROWING_RESET_FREQUENCY_RULE_REFERENCE = (
     "aip://irrbb/source-rules/borrowings/actualizacion-reset-frequency/v1"
 )
+BORROWING_QUARTERLY_PHASE_RULE_REFERENCE = (
+    "aip://irrbb/source-rules/borrowings/opening-date-quarterly-reset-phase/v1"
+)
 
 
 class BorrowingSourceRules:
@@ -89,6 +92,56 @@ class BorrowingSourceRules:
         return day if 1 <= day <= 31 else None
 
     @classmethod
+    def next_repricing_date(
+        cls,
+        *,
+        cutoff_date: date,
+        payment_day: object,
+        update_frequency: object,
+        opening_date: date | None = None,
+    ) -> date | None:
+        """Derive the next governed repricing date strictly after ``cutoff_date``.
+
+        Monthly positions reprice on ``Fecha Pago`` in the month immediately after
+        the monthly cutoff. Quarterly positions use ``Fecha Apertura`` as the phase
+        anchor: each three-month period is counted from the opening month and the
+        repricing becomes effective in the following month, on ``Fecha Pago``.
+        Unsupported cadences, missing anchors, or impossible calendar days fail closed.
+        """
+
+        frequency_months = cls.reset_frequency_months(update_frequency)
+        day = cls.payment_day(payment_day)
+        if day is None or frequency_months is None:
+            return None
+
+        if frequency_months == 1:
+            year, month = cls._shift_year_month(cutoff_date.year, cutoff_date.month, 1)
+            return cls._exact_calendar_date(year=year, month=month, day=day)
+
+        if frequency_months != 3 or opening_date is None:
+            return None
+
+        first_repricing_ordinal = cls._month_ordinal(opening_date.year, opening_date.month) + 4
+        cutoff_ordinal = cls._month_ordinal(cutoff_date.year, cutoff_date.month)
+
+        if cutoff_ordinal <= first_repricing_ordinal:
+            candidate_ordinal = first_repricing_ordinal
+        else:
+            elapsed_months = cutoff_ordinal - first_repricing_ordinal
+            candidate_ordinal = first_repricing_ordinal + (elapsed_months // 3) * 3
+            if candidate_ordinal < cutoff_ordinal:
+                candidate_ordinal += 3
+
+        year, month = cls._year_month_from_ordinal(candidate_ordinal)
+        candidate = cls._exact_calendar_date(year=year, month=month, day=day)
+        if candidate is None:
+            return None
+        if candidate <= cutoff_date:
+            year, month = cls._year_month_from_ordinal(candidate_ordinal + 3)
+            candidate = cls._exact_calendar_date(year=year, month=month, day=day)
+        return candidate
+
+    @classmethod
     def next_monthly_repricing_date(
         cls,
         *,
@@ -96,25 +149,31 @@ class BorrowingSourceRules:
         payment_day: object,
         update_frequency: object,
     ) -> date | None:
-        """Derive the next monthly reset date after cutoff when the date exists exactly.
+        """Compatibility wrapper for the governed monthly repricing rule."""
 
-        The institution confirmed that repricing occurs on ``Fecha Pago`` and that
-        ``ACTUALIZACION`` governs cadence. For multi-month cadences, the workbook
-        still needs a schedule-phase anchor before an exact next reset month can be
-        certified, so this method intentionally returns ``None`` for those cases.
-        """
-
-        frequency_months = cls.reset_frequency_months(update_frequency)
-        day = cls.payment_day(payment_day)
-        if frequency_months != 1 or day is None:
+        if cls.reset_frequency_months(update_frequency) != 1:
             return None
+        return cls.next_repricing_date(
+            cutoff_date=cutoff_date,
+            payment_day=payment_day,
+            update_frequency=update_frequency,
+        )
 
-        if cutoff_date.month == 12:
-            year = cutoff_date.year + 1
-            month = 1
-        else:
-            year = cutoff_date.year
-            month = cutoff_date.month + 1
+    @staticmethod
+    def _month_ordinal(year: int, month: int) -> int:
+        return year * 12 + (month - 1)
+
+    @staticmethod
+    def _year_month_from_ordinal(ordinal: int) -> tuple[int, int]:
+        year, month_zero_based = divmod(ordinal, 12)
+        return year, month_zero_based + 1
+
+    @classmethod
+    def _shift_year_month(cls, year: int, month: int, months: int) -> tuple[int, int]:
+        return cls._year_month_from_ordinal(cls._month_ordinal(year, month) + months)
+
+    @staticmethod
+    def _exact_calendar_date(*, year: int, month: int, day: int) -> date | None:
         if day > monthrange(year, month)[1]:
             return None
         return date(year, month, day)
