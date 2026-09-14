@@ -13,6 +13,7 @@ from aip.product.configured.irrbb.borrowing_inspection_evidence import (
 )
 from aip.product.configured.irrbb.borrowing_source_requirements import (
     BORROWING_SOURCE_REQUIREMENT_PROFILE_CODE,
+    BORROWING_SOURCE_REQUIREMENT_PROFILE_VERSION,
     BorrowingSourceEvidenceAssessor,
     BorrowingSourceSchemaAssessment,
 )
@@ -47,7 +48,7 @@ _OBSERVED_HEADERS = (
     "Cuenta Int por Pagar",
     "Cuenta Gastos",
     "Destino Recursos",
-    "Tasa básica Pasiva",
+    "Tasa de Referencia",
     "SPREAD",
     "Total",
     "Tasa Piso",
@@ -61,7 +62,11 @@ _OBSERVED_HEADERS = (
 )
 
 
-def _bundle(headers: tuple[str, ...] = _OBSERVED_HEADERS) -> BorrowingInspectionEvidenceBundle:
+def _bundle(
+    headers: tuple[str, ...] = _OBSERVED_HEADERS,
+    *,
+    sheet_name: str = "AGO-26",
+) -> BorrowingInspectionEvidenceBundle:
     cells = tuple(
         ValidatedBorrowingHeaderCellEvidence(
             column_index=index,
@@ -78,7 +83,7 @@ def _bundle(headers: tuple[str, ...] = _OBSERVED_HEADERS) -> BorrowingInspection
         file_sha256=_FILE_SHA256,
         sheets=(
             ValidatedBorrowingSheetEvidence(
-                sheet_name="JUN-24",
+                sheet_name=sheet_name,
                 visibility="visible",
                 worksheet_max_row=347,
                 worksheet_max_column=len(headers),
@@ -95,7 +100,7 @@ def _bundle(headers: tuple[str, ...] = _OBSERVED_HEADERS) -> BorrowingInspection
         source_reference=_SOURCE_REFERENCE,
         source_file_name=BORROWING_WORKBOOK_SOURCE.logical_name,
         file_sha256=_FILE_SHA256,
-        sheet_name="JUN-24",
+        sheet_name=sheet_name,
         header_row=7,
         cells=cells,
         blank_column_indexes=(),
@@ -120,11 +125,12 @@ def _assessment_statuses(
     return {item.requirement_id: item.status for item in certification.assessments}
 
 
-def test_real_observed_schema_remains_blocked_without_silent_defaults() -> None:
+def test_current_observed_schema_applies_confirmed_cutoff_and_frequency_rules() -> None:
     result = BorrowingSourceEvidenceAssessor().assess(_bundle())
     statuses = _assessment_statuses(result)
 
     assert result.certification.profile.code == BORROWING_SOURCE_REQUIREMENT_PROFILE_CODE
+    assert result.certification.profile.version == BORROWING_SOURCE_REQUIREMENT_PROFILE_VERSION
     assert result.certification.status is IRRBBSourceCertificationStatus.BLOCKED
     assert statuses["BRW_PRINCIPAL"] is IRRBBSourceAvailabilityStatus.NATIVE_AVAILABLE
     assert statuses["BRW_START_DATE"] is IRRBBSourceAvailabilityStatus.NATIVE_AVAILABLE
@@ -135,11 +141,14 @@ def test_real_observed_schema_remains_blocked_without_silent_defaults() -> None:
     assert statuses["BRW_CURRENCY"] is IRRBBSourceAvailabilityStatus.MISSING_BLOCKING_EVE
     assert statuses["BRW_RATE_TYPE"] is IRRBBSourceAvailabilityStatus.MISSING_BLOCKING_EVE
     assert statuses["BRW_NEXT_RESET_DATE"] is IRRBBSourceAvailabilityStatus.MISSING_BLOCKING_EVE
-    assert statuses["BRW_RESET_FREQUENCY"] is IRRBBSourceAvailabilityStatus.MISSING_BLOCKING_EVE
-    assert statuses["BRW_CUTOFF"] is IRRBBSourceAvailabilityStatus.MISSING_BLOCKING_GAP
+    assert (
+        statuses["BRW_RESET_FREQUENCY"]
+        is IRRBBSourceAvailabilityStatus.DERIVABLE_WITH_DOCUMENTED_RULE
+    )
+    assert statuses["BRW_CUTOFF"] is IRRBBSourceAvailabilityStatus.DERIVABLE_WITH_DOCUMENTED_RULE
 
 
-def test_candidate_headers_are_not_promoted_to_contractual_semantics() -> None:
+def test_candidate_headers_remain_unresolved_for_unconfirmed_canonical_meaning() -> None:
     result = BorrowingSourceEvidenceAssessor().assess(_bundle())
     statuses = _assessment_statuses(result)
 
@@ -148,13 +157,13 @@ def test_candidate_headers_are_not_promoted_to_contractual_semantics() -> None:
     assert statuses["BRW_NEXT_PAYMENT_DATE"] is IRRBBSourceAvailabilityStatus.NOT_ASSESSED
     assert result.unresolved_candidate_labels == (
         "Código Tasa",
-        "Tasa básica Pasiva",
+        "Tasa de Referencia",
         "Forma de pago ",
         "Fecha Pago",
     )
 
 
-def test_governed_borrowing_segment_derives_liability_side_only() -> None:
+def test_governed_borrowing_segment_derives_liability_side() -> None:
     result = BorrowingSourceEvidenceAssessor().assess(_bundle())
     statuses = _assessment_statuses(result)
 
@@ -164,7 +173,39 @@ def test_governed_borrowing_segment_derives_liability_side_only() -> None:
     )
 
 
-def test_explicit_future_headers_can_resolve_structural_blockers_without_alias_guessing() -> None:
+def test_august_2026_sheet_derives_month_end_cutoff() -> None:
+    result = BorrowingSourceEvidenceAssessor().assess(_bundle(sheet_name="AGO-26"))
+    cutoff = next(
+        item for item in result.certification.assessments if item.requirement_id == "BRW_CUTOFF"
+    )
+
+    assert cutoff.status is IRRBBSourceAvailabilityStatus.DERIVABLE_WITH_DOCUMENTED_RULE
+    assert cutoff.notes is not None
+    assert "2026-08-31" in cutoff.notes
+
+
+def test_invalid_sheet_label_preserves_cutoff_blocker() -> None:
+    result = BorrowingSourceEvidenceAssessor().assess(_bundle(sheet_name="AGOSTO 2026"))
+    statuses = _assessment_statuses(result)
+
+    assert statuses["BRW_CUTOFF"] is IRRBBSourceAvailabilityStatus.MISSING_BLOCKING_GAP
+
+
+def test_fecha_pago_governs_reset_day_but_multimonth_phase_remains_blocking() -> None:
+    result = BorrowingSourceEvidenceAssessor().assess(_bundle())
+    reset_date = next(
+        item
+        for item in result.certification.assessments
+        if item.requirement_id == "BRW_NEXT_RESET_DATE"
+    )
+
+    assert reset_date.status is IRRBBSourceAvailabilityStatus.MISSING_BLOCKING_EVE
+    assert reset_date.notes is not None
+    assert "Fecha Pago" in reset_date.notes
+    assert "schedule-phase" in reset_date.notes
+
+
+def test_explicit_future_headers_override_documented_derivations() -> None:
     extended = _OBSERVED_HEADERS + (
         "Moneda",
         "Tipo Tasa",
