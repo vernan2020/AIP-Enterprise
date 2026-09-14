@@ -312,7 +312,9 @@ class FinancialAnalysisPresenter:
         elif series.unit == "NUMBER":
             display_unit = "Valor"
         else:
-            display_unit = f"{series.unit} MM" if series.unit else "MM"
+            display_unit = (
+                "₡ MM" if series.unit == "CRC" else (f"{series.unit} MM" if series.unit else "MM")
+            )
         return FinancialMetricHistorySeriesView(
             code=series.code,
             label=series.label,
