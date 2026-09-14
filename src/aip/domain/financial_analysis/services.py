@@ -16,8 +16,12 @@ from aip.domain.financial_analysis.models import (
     FinancialAnalysisSnapshot,
     FinancialEntity,
     FinancialMetric,
+    FinancialMetricHistoryPoint,
+    FinancialMetricHistorySeries,
     FinancialStatementLine,
     FinancialStatementType,
+    MarketCompositionPoint,
+    MarketCompositionSeries,
 )
 from aip.domain.financial_analysis.return_on_assets import ReturnOnAssetsService
 from aip.domain.financial_analysis.sugef_ratings import (
@@ -47,6 +51,7 @@ class FinancialAnalysisService:
             "RENTABILIDAD NOMINAL SOBRE PATRIMONIO PROMEDIO",
         ),
     }
+    _BINARY_INDICATOR_CODES = {"PROPORTIONAL_SUPERVISION", "STATE_GUARANTEE"}
 
     def __init__(
         self,
@@ -110,7 +115,13 @@ class FinancialAnalysisService:
             entity_id=selected.entity_id,
             statement_date=effective_date,
         )
+        statement_history = self._statement_history(
+            lines,
+            entity_id=selected.entity_id,
+            cutoff_date=effective_date,
+        )
         peers = self._peer_summaries(operational_lines, effective_date)
+        market_composition = self._market_composition(peers)
         rating_service = SUGEFOnlyFinancialEntityRatingService()
         rating = rating_service.evaluate(
             operational_lines,
@@ -154,8 +165,10 @@ class FinancialAnalysisService:
             entities=entities,
             available_dates=dates,
             metrics=metrics,
+            statement_history=statement_history,
             statement_lines=tuple(sorted(current, key=self._line_sort_key)),
             peer_summaries=peers,
+            market_composition=market_composition,
             peer_ratings=peer_ratings,
             rating=rating,
             indicator_reconciliations=reconciliations,
@@ -277,6 +290,64 @@ class FinancialAnalysisService:
         return tuple(metrics)
 
     @classmethod
+    def _statement_history(
+        cls,
+        lines: tuple[FinancialStatementLine, ...],
+        *,
+        entity_id: str,
+        cutoff_date: date,
+    ) -> tuple[FinancialMetricHistorySeries, ...]:
+        """Expose every observed SUGEF account/indicator as a historical series."""
+
+        grouped: dict[
+            tuple[FinancialStatementType, str, str, str],
+            dict[date, FinancialStatementLine],
+        ] = defaultdict(dict)
+        for line in lines:
+            if line.entity.entity_id != entity_id or line.statement_date > cutoff_date:
+                continue
+            key = (
+                line.statement_type,
+                line.account_code,
+                line.account_name,
+                line.currency,
+            )
+            grouped[key].setdefault(line.statement_date, line)
+
+        series: list[FinancialMetricHistorySeries] = []
+        for (statement_type, account_code, account_name, currency), by_date in grouped.items():
+            normalized_code = account_code.removeprefix("CALC:")
+            is_indicator = statement_type is FinancialStatementType.INDICATORS
+            is_binary = is_indicator and normalized_code in cls._BINARY_INDICATOR_CODES
+            unit = "NUMBER" if is_binary else ("PERCENT" if is_indicator else currency or "CRC")
+            points = tuple(
+                FinancialMetricHistoryPoint(
+                    statement_date=statement_date,
+                    value=(
+                        row.amount
+                        if not is_indicator or is_binary
+                        else row.amount * Decimal("100")
+                    ),
+                )
+                for statement_date, row in sorted(by_date.items())
+            )
+            series.append(
+                FinancialMetricHistorySeries(
+                    code=(
+                        f"SUGEF::{statement_type.value}::"
+                        f"{account_code or cls._normalize(account_name)}"
+                    ),
+                    label=(
+                        f"{account_code} · {account_name}" if account_code else account_name
+                    ),
+                    unit=unit,
+                    points=points,
+                    source_account=account_code or account_name,
+                )
+            )
+        return tuple(sorted(series, key=lambda item: (item.label.casefold(), item.code)))
+
+    @classmethod
     def _peer_summaries(
         cls,
         lines: tuple[FinancialStatementLine, ...],
@@ -328,6 +399,39 @@ class FinancialAnalysisService:
                 reverse=True,
             )
         )
+
+    @staticmethod
+    def _market_composition(
+        peers: tuple[EntityFinancialSummary, ...],
+    ) -> tuple[MarketCompositionSeries, ...]:
+        definitions = (
+            ("MARKET_ASSETS", "Composición de mercado por activos", "assets"),
+            ("MARKET_LOANS", "Composición de mercado por cartera", "loans"),
+        )
+        output: list[MarketCompositionSeries] = []
+        for code, label, attribute in definitions:
+            observed = tuple(
+                (item.entity, value)
+                for item in peers
+                if (value := getattr(item, attribute)) is not None and value > 0
+            )
+            total = sum((value for _, value in observed), Decimal("0"))
+            if total <= 0:
+                continue
+            points = tuple(
+                MarketCompositionPoint(
+                    entity=entity,
+                    amount=value,
+                    share_percent=value / total * Decimal("100"),
+                )
+                for entity, value in sorted(
+                    observed,
+                    key=lambda item: item[1],
+                    reverse=True,
+                )
+            )
+            output.append(MarketCompositionSeries(code=code, label=label, points=points))
+        return tuple(output)
 
     @staticmethod
     def _peer_ratings(
