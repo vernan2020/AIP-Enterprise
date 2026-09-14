@@ -176,9 +176,7 @@ def test_governed_borrowing_segment_derives_liability_side() -> None:
 def test_august_2026_sheet_derives_month_end_cutoff() -> None:
     result = BorrowingSourceEvidenceAssessor().assess(_bundle(sheet_name="AGO-26"))
     cutoff = next(
-        item
-        for item in result.certification.assessments
-        if item.requirement_id == "BRW_CUTOFF"
+        item for item in result.certification.assessments if item.requirement_id == "BRW_CUTOFF"
     )
 
     assert cutoff.status is IRRBBSourceAvailabilityStatus.DERIVABLE_WITH_DOCUMENTED_RULE
@@ -187,9 +185,7 @@ def test_august_2026_sheet_derives_month_end_cutoff() -> None:
 
 
 def test_invalid_sheet_label_preserves_cutoff_blocker() -> None:
-    result = BorrowingSourceEvidenceAssessor().assess(
-        _bundle(sheet_name="AGOSTO 2026")
-    )
+    result = BorrowingSourceEvidenceAssessor().assess(_bundle(sheet_name="AGOSTO 2026"))
     statuses = _assessment_statuses(result)
 
     assert statuses["BRW_CUTOFF"] is IRRBBSourceAvailabilityStatus.MISSING_BLOCKING_GAP
