@@ -5,10 +5,10 @@ from datetime import date
 from decimal import Decimal
 from typing import Any
 
-from aip.domain.portfolio.services.portfolio_dv01_bucket_service import (
+from .portfolio_dv01_bucket_service import (
     PortfolioDV01BucketService,
 )
-from aip.domain.portfolio.services.portfolio_dv01_service import PortfolioDV01Service
+from .portfolio_dv01_service import PortfolioDV01Service
 
 
 @dataclass(frozen=True, slots=True)

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
 
-from aip.domain.portfolio.services.portfolio_rate_shock_service import PortfolioRateShockService
+from .portfolio_rate_shock_service import PortfolioRateShockService
 
 
 @dataclass(frozen=True, slots=True)
