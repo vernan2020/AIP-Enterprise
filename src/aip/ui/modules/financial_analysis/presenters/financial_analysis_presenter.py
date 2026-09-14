@@ -15,6 +15,8 @@ from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model 
     FinancialMetricView,
     FinancialStatementRow,
     IndicatorReconciliationRow,
+    PeerChartPointView,
+    PeerChartSeriesView,
     PeerRatingRow,
     PeerSummaryRow,
     RatingDimensionRow,
@@ -63,6 +65,7 @@ class FinancialAnalysisPresenter:
             for item in snapshot.metrics
         )
         metric_history = tuple(cls._history_series(item) for item in snapshot.metric_history)
+        statement_history = tuple(cls._history_series(item) for item in snapshot.statement_history)
         statements = tuple(
             FinancialStatementRow(
                 statement=cls._statement_label(item.statement_type.value),
@@ -78,6 +81,11 @@ class FinancialAnalysisPresenter:
                     f"{item.trace.file_path} · {item.trace.sheet_name} · fila {item.trace.row_number}"
                     if item.trace is not None
                     else "-"
+                ),
+                history_code=(
+                    f"SUGEF::{item.statement_type.value}::{item.account_code}"
+                    if item.account_code
+                    else ""
                 ),
             )
             for item in snapshot.statement_lines
@@ -98,6 +106,7 @@ class FinancialAnalysisPresenter:
         )
         selected = snapshot.selected_entity
         selected_id = selected.entity_id if selected is not None else ""
+        peer_chart_series = cls._peer_chart_series(snapshot, selected_id=selected_id)
         peer_rating_rows: list[PeerRatingRow] = []
         emitted_position = 0
         for item in snapshot.peer_ratings:
@@ -181,8 +190,10 @@ class FinancialAnalysisPresenter:
             entities=tuple((item.entity_id, item.name) for item in snapshot.entities),
             metrics=metrics,
             metric_history=metric_history,
+            statement_history=statement_history,
             statement_rows=statements,
             peer_rows=peers,
+            peer_chart_series=peer_chart_series,
             peer_rating_rows=tuple(peer_rating_rows),
             rating_status=rating.status if rating is not None else "INCOMPLETE",
             rating_score=(f"{rating.score:,.3f}" if rating and rating.score is not None else "-"),
@@ -202,6 +213,78 @@ class FinancialAnalysisPresenter:
             source_url=snapshot.source_url,
             source_file_count=len(snapshot.source_files),
         )
+
+    @classmethod
+    def _peer_chart_series(
+        cls,
+        snapshot: FinancialAnalysisApplicationSnapshot,
+        *,
+        selected_id: str,
+    ) -> tuple[PeerChartSeriesView, ...]:
+        definitions = (
+            ("PEER_ASSETS", "Activos por entidad", "₡ MM", "assets", "MONEY"),
+            ("PEER_LOANS", "Cartera por entidad", "₡ MM", "loans", "MONEY"),
+            ("PEER_LIABILITIES", "Pasivos por entidad", "₡ MM", "liabilities", "MONEY"),
+            ("PEER_EQUITY", "Patrimonio por entidad", "₡ MM", "equity", "MONEY"),
+            ("PEER_NET_INCOME", "Resultado neto por entidad", "₡ MM", "net_income", "MONEY"),
+            ("PEER_ROA", "ROA por entidad", "%", "roa_percent", "PERCENT"),
+            ("PEER_ROE", "ROE por entidad", "%", "roe_percent", "PERCENT"),
+        )
+        output: list[PeerChartSeriesView] = []
+        for code, label, unit, attribute, value_kind in definitions:
+            points: list[PeerChartPointView] = []
+            for item in snapshot.peer_summaries:
+                raw_value = getattr(item, attribute)
+                if raw_value is None:
+                    continue
+                chart_value = (
+                    float(raw_value / Decimal("1000000"))
+                    if value_kind == "MONEY"
+                    else float(raw_value)
+                )
+                points.append(
+                    PeerChartPointView(
+                        entity_id=item.entity.entity_id,
+                        entity_name=item.entity.name,
+                        value=chart_value,
+                        display_value=(
+                            cls._money(raw_value)
+                            if value_kind == "MONEY"
+                            else cls._percent(raw_value)
+                        ),
+                        selected=item.entity.entity_id == selected_id,
+                    )
+                )
+            if points:
+                output.append(
+                    PeerChartSeriesView(
+                        code=code,
+                        label=label,
+                        unit=unit,
+                        chart_type="BAR",
+                        points=tuple(points),
+                    )
+                )
+        for series in snapshot.market_composition:
+            output.append(
+                PeerChartSeriesView(
+                    code=series.code,
+                    label=series.label,
+                    unit="%",
+                    chart_type="PIE",
+                    points=tuple(
+                        PeerChartPointView(
+                            entity_id=point.entity.entity_id,
+                            entity_name=point.entity.name,
+                            value=float(point.share_percent),
+                            display_value=f"{point.share_percent:,.2f}%",
+                            selected=point.entity.entity_id == selected_id,
+                        )
+                        for point in series.points
+                    ),
+                )
+            )
+        return tuple(output)
 
     @classmethod
     def _history_series(
@@ -224,10 +307,18 @@ class FinancialAnalysisPresenter:
             latest if len(available) >= 2 else None,
             series.unit,
         )
+        if series.unit == "PERCENT":
+            display_unit = "%"
+        elif series.unit == "NUMBER":
+            display_unit = "Valor"
+        else:
+            display_unit = (
+                "₡ MM" if series.unit == "CRC" else (f"{series.unit} MM" if series.unit else "MM")
+            )
         return FinancialMetricHistorySeriesView(
             code=series.code,
             label=series.label,
-            unit="%" if series.unit == "PERCENT" else "₡ MM",
+            unit=display_unit,
             latest_value=cls._metric_value(latest, series.unit),
             period_change=period_change,
             source_account=series.source_account or "Cuenta no identificada",
@@ -240,7 +331,7 @@ class FinancialAnalysisPresenter:
     def _chart_value(value: Decimal | None, unit: str) -> float | None:
         if value is None:
             return None
-        scaled = value if unit == "PERCENT" else value / Decimal("1000000")
+        scaled = value if unit in {"PERCENT", "NUMBER"} else value / Decimal("1000000")
         return float(scaled)
 
     @staticmethod
@@ -255,6 +346,8 @@ class FinancialAnalysisPresenter:
             difference = latest - first
             sign = "+" if difference > 0 else ""
             return f"{sign}{difference:,.2f} pp en la ventana"
+        if unit == "NUMBER":
+            return "Serie discreta"
         if first == Decimal("0"):
             return "Sin comparación en la ventana"
         try:
@@ -285,7 +378,13 @@ class FinancialAnalysisPresenter:
 
     @classmethod
     def _metric_value(cls, value: Decimal | None, unit: str) -> str:
-        return cls._percent(value) if unit == "PERCENT" else cls._money(value)
+        if value is None:
+            return "-"
+        if unit == "PERCENT":
+            return cls._percent(value)
+        if unit == "NUMBER":
+            return f"{value:,.3f}"
+        return cls._money(value)
 
     @staticmethod
     def _change(value: Decimal | None) -> str:

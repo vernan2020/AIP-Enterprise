@@ -41,6 +41,7 @@ class FinancialStatementRow:
     amount: str
     currency: str
     trace: str
+    history_code: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,6 +55,24 @@ class PeerSummaryRow:
     net_income: str
     roa: str
     roe: str
+
+
+@dataclass(frozen=True, slots=True)
+class PeerChartPointView:
+    entity_id: str
+    entity_name: str
+    value: float
+    display_value: str
+    selected: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class PeerChartSeriesView:
+    code: str
+    label: str
+    unit: str
+    chart_type: str
+    points: tuple[PeerChartPointView, ...] = field(default_factory=tuple)
 
 
 @dataclass(frozen=True, slots=True)
@@ -115,8 +134,10 @@ class FinancialAnalysisViewModel:
     entities: tuple[tuple[str, str], ...] = field(default_factory=tuple)
     metrics: tuple[FinancialMetricView, ...] = field(default_factory=tuple)
     metric_history: tuple[FinancialMetricHistorySeriesView, ...] = field(default_factory=tuple)
+    statement_history: tuple[FinancialMetricHistorySeriesView, ...] = field(default_factory=tuple)
     statement_rows: tuple[FinancialStatementRow, ...] = field(default_factory=tuple)
     peer_rows: tuple[PeerSummaryRow, ...] = field(default_factory=tuple)
+    peer_chart_series: tuple[PeerChartSeriesView, ...] = field(default_factory=tuple)
     peer_rating_rows: tuple[PeerRatingRow, ...] = field(default_factory=tuple)
     rating_status: str = "INCOMPLETE"
     rating_score: str = "-"
