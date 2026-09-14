@@ -9,7 +9,7 @@ from PySide6.QtCharts import (
     QPieSeries,
     QValueAxis,
 )
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QMargins, Qt
 from PySide6.QtGui import QPainter
 from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
@@ -32,10 +32,11 @@ class FinancialPeerChartPanel(QWidget):
 
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
-        root.setContentsMargins(8, 8, 8, 8)
-        root.setSpacing(6)
+        root.setContentsMargins(4, 4, 4, 4)
+        root.setSpacing(4)
 
         header = QHBoxLayout()
+        header.setSpacing(6)
         title = QLabel("Comparación y composición del mercado")
         title.setStyleSheet("font-size:11px; font-weight:700; color:#142E46;")
         header.addWidget(title)
@@ -46,15 +47,18 @@ class FinancialPeerChartPanel(QWidget):
         root.addLayout(header)
 
         selector_row = QHBoxLayout()
+        selector_row.setSpacing(6)
         selector_row.addWidget(QLabel("Gráfico:"))
         self._selector = QComboBox()
-        self._selector.setMinimumWidth(330)
+        self._selector.setMinimumWidth(280)
         self._selector.currentIndexChanged.connect(self._selection_changed)
         selector_row.addWidget(self._selector)
         selector_row.addStretch(1)
         root.addLayout(selector_row)
 
         self._chart_host = QVBoxLayout()
+        self._chart_host.setContentsMargins(0, 0, 0, 0)
+        self._chart_host.setSpacing(0)
         root.addLayout(self._chart_host, 1)
 
     def bind_series(self, series: tuple[PeerChartSeriesView, ...]) -> None:
@@ -110,6 +114,8 @@ class FinancialPeerChartPanel(QWidget):
         chart = QChart()
         chart.setTitle(item.label)
         chart.legend().hide()
+        chart.setBackgroundVisible(False)
+        chart.setMargins(QMargins(4, 2, 4, 2))
         chart.setAnimationOptions(QChart.AnimationOption.SeriesAnimations)
 
         bar_set = QBarSet(item.label)
@@ -120,9 +126,17 @@ class FinancialPeerChartPanel(QWidget):
 
         categories = QBarCategoryAxis()
         categories.append([cls._short_name(point.entity_name) for point in points])
+        categories.setLabelsAngle(-35)
+        category_font = categories.labelsFont()
+        category_font.setPointSize(7)
+        categories.setLabelsFont(category_font)
+
         value_axis = QValueAxis()
         value_axis.setTitleText(item.unit)
         value_axis.setLabelFormat("%.2f" if item.unit == "%" else "%.0f")
+        value_font = value_axis.labelsFont()
+        value_font.setPointSize(8)
+        value_axis.setLabelsFont(value_font)
 
         values = [point.value for point in points]
         if values:
@@ -144,7 +158,7 @@ class FinancialPeerChartPanel(QWidget):
         )
         view = QChartView(chart)
         view.setRenderHint(QPainter.RenderHint.Antialiasing)
-        view.setMinimumHeight(310)
+        view.setMinimumHeight(245)
         view.setToolTip(tooltip)
         return view
 
@@ -152,6 +166,8 @@ class FinancialPeerChartPanel(QWidget):
     def _pie_chart(cls, item: PeerChartSeriesView) -> QChartView:
         chart = QChart()
         chart.setTitle(item.label)
+        chart.setBackgroundVisible(False)
+        chart.setMargins(QMargins(4, 2, 4, 2))
         chart.legend().setAlignment(Qt.AlignmentFlag.AlignRight)
         series = QPieSeries()
         for index, point in enumerate(item.points):
@@ -164,7 +180,7 @@ class FinancialPeerChartPanel(QWidget):
         chart.addSeries(series)
         view = QChartView(chart)
         view.setRenderHint(QPainter.RenderHint.Antialiasing)
-        view.setMinimumHeight(310)
+        view.setMinimumHeight(245)
         view.setToolTip(
             "\n".join(f"{point.entity_name}: {point.display_value}" for point in item.points)
         )
