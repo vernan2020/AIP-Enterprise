@@ -12,8 +12,8 @@ from aip.product.configured.irrbb.investment_source_evidence import (
     InvestmentMasterSourceEvidenceAssessor,
 )
 from aip.product.configured.readers.institutional_portfolio_master_reader import (
-    InstitutionalPortfolioMasterReadResult,
     InstitutionalPortfolioMasterReader,
+    InstitutionalPortfolioMasterReadResult,
 )
 
 INVESTMENT_READINESS_REPORT_TYPE = "IRRBB_INVESTMENT_SOURCE_READINESS"
