@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QHeaderView,
     QLabel,
+    QLineEdit,
     QListWidget,
     QPushButton,
     QTableWidget,
@@ -27,6 +28,12 @@ from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model 
 )
 from aip.ui.modules.financial_analysis.views.financial_history_panel import (
     FinancialHistoryPanel,
+)
+from aip.ui.modules.financial_analysis.views.financial_peer_chart import (
+    FinancialPeerChartPanel,
+)
+from aip.ui.modules.financial_analysis.views.financial_statement_history_panel import (
+    FinancialStatementHistoryPanel,
 )
 
 
@@ -103,26 +110,11 @@ class FinancialAnalysisView(QWidget):
 
         self._tabs = QTabWidget()
         self._tabs.setDocumentMode(True)
-        self._statement_table = self._table(
-            ["Estado", "Cuenta", "Descripción", "Valor", "Moneda", "Trazabilidad"]
-        )
-        self._peer_table = self._table(
-            [
-                "Entidad",
-                "Categoría",
-                "Activos",
-                "Cartera",
-                "Patrimonio",
-                "Resultado",
-                "ROA",
-                "ROE",
-            ]
-        )
         self._history_panel = FinancialHistoryPanel()
         self._rating_panel = self._build_rating_panel()
         self._diagnostics = QListWidget()
-        self._tabs.addTab(self._statement_table, "Estados financieros")
-        self._tabs.addTab(self._peer_table, "Comparativo de entidades")
+        self._tabs.addTab(self._build_statement_panel(), "Estados financieros")
+        self._tabs.addTab(self._build_peer_panel(), "Comparativo de entidades")
         self._tabs.addTab(self._history_panel, "KPIs históricos")
         self._tabs.addTab(self._rating_panel, "Calificación")
         self._tabs.addTab(self._diagnostics, "Calidad y trazabilidad")
@@ -144,7 +136,7 @@ class FinancialAnalysisView(QWidget):
             "QFrame#financialMetricCard {background:#FFFFFF; border:1px solid #D7E0E8; "
             "border-radius:8px;} QFrame#sugefSourcePanel {background:#F3F8FB; "
             "border:1px solid #CFE0EC; border-radius:7px;}"
-            "QComboBox, QPushButton {padding:6px 8px;}"
+            "QComboBox, QPushButton, QLineEdit {padding:6px 8px;}"
             "QTabBar::tab {padding:8px 18px; font-weight:600;}"
             "QTabBar::tab:selected {color:#005EB8; border-bottom:2px solid #00A9E0;}"
             "QFrame#ratingSummary {background:#F3F8FB; border:1px solid #CFE0EC; "
@@ -154,6 +146,70 @@ class FinancialAnalysisView(QWidget):
             "QLabel#ratingNotes {background:#FFF9E8; border:1px solid #E8D79E; "
             "border-radius:6px; color:#5D563E; padding:6px 9px;}"
         )
+
+    def _build_statement_panel(self) -> QWidget:
+        panel = QWidget()
+        layout = QVBoxLayout(panel)
+        layout.setContentsMargins(6, 6, 6, 6)
+        layout.setSpacing(6)
+
+        controls = QHBoxLayout()
+        self._statement_search = QLineEdit()
+        self._statement_search.setPlaceholderText("Buscar por código, cuenta, estado o indicador…")
+        self._statement_search.textChanged.connect(self._apply_statement_filter)
+        controls.addWidget(self._statement_search, 1)
+        controls.addWidget(QLabel("Mostrar:"))
+        self._statement_type_filter = QComboBox()
+        self._statement_type_filter.addItems(
+            [
+                "Todos",
+                "Balance de situación",
+                "Estado de resultados",
+                "Indicadores financieros",
+                "Balanza de comprobación",
+            ]
+        )
+        self._statement_type_filter.currentTextChanged.connect(self._apply_statement_filter)
+        controls.addWidget(self._statement_type_filter)
+        self._statement_count = QLabel("0 registros")
+        self._statement_count.setStyleSheet("color:#667788; font-size:9px;")
+        controls.addWidget(self._statement_count)
+        layout.addLayout(controls)
+
+        self._statement_table = self._table(
+            ["Estado", "Cuenta", "Descripción", "Valor", "Moneda", "Trazabilidad"]
+        )
+        self._statement_table.setMinimumHeight(260)
+        self._statement_table.currentCellChanged.connect(self._statement_row_changed)
+        layout.addWidget(self._statement_table, 3)
+
+        self._statement_history_panel = FinancialStatementHistoryPanel()
+        layout.addWidget(self._statement_history_panel, 2)
+        return panel
+
+    def _build_peer_panel(self) -> QWidget:
+        panel = QWidget()
+        layout = QVBoxLayout(panel)
+        layout.setContentsMargins(6, 6, 6, 6)
+        layout.setSpacing(6)
+
+        self._peer_chart_panel = FinancialPeerChartPanel()
+        layout.addWidget(self._peer_chart_panel, 3)
+        self._peer_table = self._table(
+            [
+                "Entidad",
+                "Categoría",
+                "Activos",
+                "Cartera",
+                "Patrimonio",
+                "Resultado",
+                "ROA",
+                "ROE",
+            ]
+        )
+        self._peer_table.setMinimumHeight(230)
+        layout.addWidget(self._peer_table, 2)
+        return panel
 
     def _build_rating_panel(self) -> QWidget:
         panel = QWidget()
@@ -379,6 +435,8 @@ class FinancialAnalysisView(QWidget):
             self._kpi_values[code].setToolTip(metric.source_account if metric else "")
         self._bind_statements(view_model)
         self._bind_peers(view_model)
+        self._statement_history_panel.bind_history(view_model.statement_history)
+        self._peer_chart_panel.bind_series(view_model.peer_chart_series)
         self._history_panel.bind_history(view_model.metric_history)
         self._bind_rating(view_model)
         self._diagnostics.clear()
@@ -416,11 +474,50 @@ class FinancialAnalysisView(QWidget):
             )
             for column, value in enumerate(values):
                 item = QTableWidgetItem(value)
+                if column == 0:
+                    item.setData(Qt.ItemDataRole.UserRole, row.history_code)
                 if column == 3:
                     item.setTextAlignment(
                         Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
                     )
                 self._statement_table.setItem(row_index, column, item)
+        self._apply_statement_filter()
+        if view_model.statement_rows:
+            self._statement_table.setCurrentCell(0, 0)
+
+    def _apply_statement_filter(self, *_args: object) -> None:
+        search = self._statement_search.text().strip().casefold()
+        statement_type = self._statement_type_filter.currentText()
+        visible = 0
+        for row in range(self._statement_table.rowCount()):
+            values = [
+                self._statement_table.item(row, column).text()
+                if self._statement_table.item(row, column) is not None
+                else ""
+                for column in range(3)
+            ]
+            matches_search = not search or search in " ".join(values).casefold()
+            matches_type = statement_type == "Todos" or values[0] == statement_type
+            hidden = not (matches_search and matches_type)
+            self._statement_table.setRowHidden(row, hidden)
+            if not hidden:
+                visible += 1
+        total = self._statement_table.rowCount()
+        self._statement_count.setText(f"{visible} de {total} registros")
+
+    def _statement_row_changed(
+        self,
+        current_row: int,
+        _current_column: int,
+        _previous_row: int,
+        _previous_column: int,
+    ) -> None:
+        item = self._statement_table.item(current_row, 0) if current_row >= 0 else None
+        if item is None:
+            return
+        history_code = item.data(Qt.ItemDataRole.UserRole)
+        if history_code:
+            self._statement_history_panel.select_series(str(history_code))
 
     def _bind_peers(self, view_model: FinancialAnalysisViewModel) -> None:
         self._peer_table.setRowCount(len(view_model.peer_rows))
