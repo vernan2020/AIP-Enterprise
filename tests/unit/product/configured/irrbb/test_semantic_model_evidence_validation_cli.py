@@ -24,9 +24,7 @@ def _payload(
     term_deposit: bool = False,
     schema_freshness: str = "CURRENT",
 ) -> dict[str, object]:
-    source = (
-        TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE if term_deposit else CREDIT_SEMANTIC_MODEL_SOURCE
-    )
+    source = TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE if term_deposit else CREDIT_SEMANTIC_MODEL_SOURCE
     return {
         "report_type": SEMANTIC_MODEL_METADATA_REPORT_TYPE,
         "report_version": SEMANTIC_MODEL_INSPECTION_REPORT_VERSION,
