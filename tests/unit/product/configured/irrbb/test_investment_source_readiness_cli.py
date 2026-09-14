@@ -7,8 +7,8 @@ from pathlib import Path
 
 from aip.product.configured.irrbb.investment_source_readiness_cli import run
 from aip.product.configured.readers.institutional_portfolio_master_reader import (
-    InstitutionalPortfolioMasterReadResult,
     InstitutionalPortfolioMasterReader,
+    InstitutionalPortfolioMasterReadResult,
 )
 
 
