@@ -491,9 +491,11 @@ class FinancialAnalysisView(QWidget):
         visible = 0
         for row in range(self._statement_table.rowCount()):
             values = [
-                self._statement_table.item(row, column).text()
-                if self._statement_table.item(row, column) is not None
-                else ""
+                (
+                    self._statement_table.item(row, column).text()
+                    if self._statement_table.item(row, column) is not None
+                    else ""
+                )
                 for column in range(3)
             ]
             matches_search = not search or search in " ".join(values).casefold()

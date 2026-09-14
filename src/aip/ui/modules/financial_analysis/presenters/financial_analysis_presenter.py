@@ -65,9 +65,7 @@ class FinancialAnalysisPresenter:
             for item in snapshot.metrics
         )
         metric_history = tuple(cls._history_series(item) for item in snapshot.metric_history)
-        statement_history = tuple(
-            cls._history_series(item) for item in snapshot.statement_history
-        )
+        statement_history = tuple(cls._history_series(item) for item in snapshot.statement_history)
         statements = tuple(
             FinancialStatementRow(
                 statement=cls._statement_label(item.statement_type.value),

@@ -38,7 +38,9 @@ class FinancialStatementHistoryPanel(QWidget):
         selector_row.addWidget(QLabel("Serie:"))
         self._selector = QComboBox()
         self._selector.setMinimumWidth(420)
-        self._selector.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+        self._selector.setSizeAdjustPolicy(
+            QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon
+        )
         self._selector.setMinimumContentsLength(55)
         self._selector.currentIndexChanged.connect(self._selection_changed)
         selector_row.addWidget(self._selector, 1)

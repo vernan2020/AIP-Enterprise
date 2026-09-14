@@ -324,9 +324,7 @@ class FinancialAnalysisService:
                 FinancialMetricHistoryPoint(
                     statement_date=statement_date,
                     value=(
-                        row.amount
-                        if not is_indicator or is_binary
-                        else row.amount * Decimal("100")
+                        row.amount if not is_indicator or is_binary else row.amount * Decimal("100")
                     ),
                 )
                 for statement_date, row in sorted(by_date.items())
@@ -337,9 +335,7 @@ class FinancialAnalysisService:
                         f"SUGEF::{statement_type.value}::"
                         f"{account_code or cls._normalize(account_name)}"
                     ),
-                    label=(
-                        f"{account_code} · {account_name}" if account_code else account_name
-                    ),
+                    label=(f"{account_code} · {account_name}" if account_code else account_name),
                     unit=unit,
                     points=points,
                     source_account=account_code or account_name,

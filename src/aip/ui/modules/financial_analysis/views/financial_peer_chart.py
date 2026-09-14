@@ -138,7 +138,8 @@ class FinancialPeerChartPanel(QWidget):
         series.attachAxis(value_axis)
 
         tooltip = "\n".join(
-            f"{point.entity_name}: {point.display_value}" + (" · seleccionada" if point.selected else "")
+            f"{point.entity_name}: {point.display_value}"
+            + (" · seleccionada" if point.selected else "")
             for point in points
         )
         view = QChartView(chart)
