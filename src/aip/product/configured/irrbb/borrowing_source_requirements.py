@@ -48,9 +48,7 @@ class BorrowingSourceEvidenceAssessor:
         code=BORROWING_SOURCE_REQUIREMENT_PROFILE_CODE,
         version=BORROWING_SOURCE_REQUIREMENT_PROFILE_VERSION,
         effective_from=date(2026, 9, 13),
-        source_reference=(
-            "aip://irrbb/source-profiles/coopealianza/borrowings/2026.09.13"
-        ),
+        source_reference=("aip://irrbb/source-profiles/coopealianza/borrowings/2026.09.13"),
         requirements=(
             IRRBBSourceRequirement(
                 requirement_id="BRW_IDENTITY",
@@ -193,8 +191,7 @@ class BorrowingSourceEvidenceAssessor:
                 source_reference=source_reference,
                 derivation_rule_reference=BORROWING_BALANCE_SHEET_SIDE_RULE_REFERENCE,
                 evidence_reference=(
-                    "aip://irrbb/physical-source-registry/"
-                    f"{BORROWING_WORKBOOK_SOURCE.source_id}"
+                    "aip://irrbb/physical-source-registry/" f"{BORROWING_WORKBOOK_SOURCE.source_id}"
                 ),
                 notes="The governed borrowing source is mapped to the LIABILITY perimeter.",
             ),
@@ -339,11 +336,7 @@ class BorrowingSourceEvidenceAssessor:
         bundle: BorrowingInspectionEvidenceBundle,
         missing_status: IRRBBSourceAvailabilityStatus,
     ) -> IRRBBSourceRequirementAssessment:
-        matches = [
-            cell
-            for candidate in candidates
-            for cell in by_label.get(candidate, ())
-        ]
+        matches = [cell for candidate in candidates for cell in by_label.get(candidate, ())]
         if len(matches) == 1:
             cell = matches[0]
             return IRRBBSourceRequirementAssessment(
