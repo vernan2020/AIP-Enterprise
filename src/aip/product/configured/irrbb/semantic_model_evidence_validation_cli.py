@@ -15,9 +15,7 @@ from aip.product.configured.irrbb.semantic_model_inspection_evidence import (
     SemanticModelInspectionEvidenceValidator,
 )
 
-SEMANTIC_MODEL_EVIDENCE_VALIDATION_REPORT_TYPE = (
-    "IRRBB_POWER_BI_SEMANTIC_MODEL_EVIDENCE_VALIDATION"
-)
+SEMANTIC_MODEL_EVIDENCE_VALIDATION_REPORT_TYPE = "IRRBB_POWER_BI_SEMANTIC_MODEL_EVIDENCE_VALIDATION"
 SEMANTIC_MODEL_EVIDENCE_VALIDATION_REPORT_VERSION = "2026.09.14"
 _ALLOWED_SEGMENTS = (
     IRRBBPhysicalSourceSegment.CREDIT,
@@ -113,9 +111,7 @@ def _require_expected_segment(
         return
     expected = IRRBBPhysicalSourceSegment(expected_segment)
     if bundle.source.segment is not expected:
-        raise ValueError(
-            "semantic-model evidence source does not match --expected-segment"
-        )
+        raise ValueError("semantic-model evidence source does not match --expected-segment")
 
 
 def _write_report(report: dict[str, object], *, stdout: TextIO) -> None:
