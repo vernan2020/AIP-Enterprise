@@ -28,10 +28,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - name: Checkout certified recovery branch
+      - name: Checkout validation target
         uses: actions/checkout@v4
-        with:
-          ref: recovery/full-runtime-rc1-20260829
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -113,6 +111,22 @@ jobs:
               raise SystemExit('invalid critical modules: ' + ', '.join(invalid))
           print(f'critical production modules: PASS ({len(required)})')
 
+      - name: Validate integrated IRRBB release modules
+        if: github.event_name == 'pull_request'
+        shell: python
+        run: |
+          from pathlib import Path
+          required = [
+              'src/aip/domain/irrbb/models.py',
+              'src/aip/application/irrbb/run_analysis.py',
+              'src/aip/product/configured/irrbb/composition.py',
+              'src/aip/ui/modules/rate_risk/views/rate_risk_view.py',
+          ]
+          missing = [item for item in required if not Path(item).is_file()]
+          if missing:
+              raise SystemExit('missing integrated IRRBB modules: ' + ', '.join(missing))
+          print(f'integrated IRRBB modules: PASS ({len(required)})')
+
       - name: Compile production source
         run: python -m compileall -q src
 
@@ -184,6 +198,28 @@ jobs:
       - name: Verify certified Windows recovery package
         run: python scripts/recovery/verify_windows_recovery_package.py
 
+      - name: Validate packaged IRRBB release modules
+        if: github.event_name == 'pull_request'
+        shell: python
+        run: |
+          import zipfile
+          from pathlib import PurePosixPath
+
+          package = 'dist/AIP-Enterprise-RC1-Certified-Windows.zip'
+          root = PurePosixPath('AIP_RC1_CERTIFIED/payload')
+          required = [
+              root / 'src/aip/domain/irrbb/models.py',
+              root / 'src/aip/application/irrbb/run_analysis.py',
+              root / 'src/aip/product/configured/irrbb/composition.py',
+              root / 'src/aip/ui/modules/rate_risk/views/rate_risk_view.py',
+          ]
+          with zipfile.ZipFile(package, 'r') as archive:
+              names = set(archive.namelist())
+          missing = [path.as_posix() for path in required if path.as_posix() not in names]
+          if missing:
+              raise SystemExit('certified package missing IRRBB modules: ' + ', '.join(missing))
+          print(f'packaged IRRBB modules: PASS ({len(required)})')
+
       - name: Upload certified recovery package
         uses: actions/upload-artifact@v4
         with:
@@ -196,10 +232,8 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 30
     steps:
-      - name: Checkout certified recovery branch
+      - name: Checkout validation target
         uses: actions/checkout@v4
-        with:
-          ref: recovery/full-runtime-rc1-20260829
 
       - name: Set up Python
         uses: actions/setup-python@v5
