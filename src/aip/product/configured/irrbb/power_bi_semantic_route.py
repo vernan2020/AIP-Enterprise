@@ -48,9 +48,7 @@ class PowerBISemanticModelRoute:
 
     def __post_init__(self) -> None:
         self._require_reference_key("configuration_key", self.configuration_key)
-        self._require_reference_key(
-            "authentication_profile_key", self.authentication_profile_key
-        )
+        self._require_reference_key("authentication_profile_key", self.authentication_profile_key)
         self._require_non_nil_uuid("workspace_id", self.workspace_id)
         self._require_non_nil_uuid("dataset_id", self.dataset_id)
         if self.transport is not PowerBISemanticQueryTransport.EXECUTE_DAX_QUERIES_ARROW:

@@ -98,9 +98,7 @@ def test_non_power_bi_and_configuration_mismatch_fail_closed() -> None:
             route=route,
         )
 
-    wrong_key_route = _route(
-        configuration_key=TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE.configuration_key
-    )
+    wrong_key_route = _route(configuration_key=TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE.configuration_key)
     with pytest.raises(ValueError, match="configuration_key"):
         InstitutionalPowerBISemanticRouteBinding(
             descriptor=CREDIT_SEMANTIC_MODEL_SOURCE,
