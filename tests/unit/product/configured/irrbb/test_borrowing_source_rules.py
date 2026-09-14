@@ -39,9 +39,36 @@ def test_next_monthly_repricing_uses_fecha_pago_after_cutoff() -> None:
     ) == date(2026, 9, 3)
 
 
-def test_multimonth_repricing_remains_fail_closed_without_phase_anchor() -> None:
+def test_quarterly_repricing_uses_opening_date_phase_and_month_after_quarter() -> None:
+    assert BorrowingSourceRules.next_repricing_date(
+        cutoff_date=date(2026, 8, 31),
+        payment_day=23,
+        update_frequency="TRIMESTRAL",
+        opening_date=date(2025, 1, 15),
+    ) == date(2026, 11, 23)
+
+
+def test_quarterly_first_repricing_is_month_after_first_completed_quarter() -> None:
+    assert BorrowingSourceRules.next_repricing_date(
+        cutoff_date=date(2026, 4, 30),
+        payment_day=10,
+        update_frequency="TRIMESTRAL",
+        opening_date=date(2026, 1, 10),
+    ) == date(2026, 5, 10)
+
+
+def test_quarterly_repricing_rolls_to_next_cycle_when_cutoff_is_on_reset_day() -> None:
+    assert BorrowingSourceRules.next_repricing_date(
+        cutoff_date=date(2026, 8, 23),
+        payment_day=23,
+        update_frequency="TRIMESTRAL",
+        opening_date=date(2025, 1, 15),
+    ) == date(2026, 11, 23)
+
+
+def test_quarterly_repricing_fails_closed_without_opening_date_phase_anchor() -> None:
     assert (
-        BorrowingSourceRules.next_monthly_repricing_date(
+        BorrowingSourceRules.next_repricing_date(
             cutoff_date=date(2026, 8, 31),
             payment_day=23,
             update_frequency="TRIMESTRAL",
@@ -50,12 +77,21 @@ def test_multimonth_repricing_remains_fail_closed_without_phase_anchor() -> None
     )
 
 
-def test_monthly_repricing_does_not_invent_invalid_calendar_day() -> None:
+def test_repricing_does_not_invent_invalid_calendar_day() -> None:
     assert (
-        BorrowingSourceRules.next_monthly_repricing_date(
+        BorrowingSourceRules.next_repricing_date(
             cutoff_date=date(2026, 1, 31),
             payment_day=31,
             update_frequency="MENSUAL",
+        )
+        is None
+    )
+    assert (
+        BorrowingSourceRules.next_repricing_date(
+            cutoff_date=date(2026, 9, 30),
+            payment_day=31,
+            update_frequency="TRIMESTRAL",
+            opening_date=date(2025, 1, 1),
         )
         is None
     )

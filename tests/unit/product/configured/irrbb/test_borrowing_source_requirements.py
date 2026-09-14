@@ -125,7 +125,7 @@ def _assessment_statuses(
     return {item.requirement_id: item.status for item in certification.assessments}
 
 
-def test_current_observed_schema_applies_confirmed_cutoff_and_frequency_rules() -> None:
+def test_current_observed_schema_applies_confirmed_cutoff_and_repricing_rules() -> None:
     result = BorrowingSourceEvidenceAssessor().assess(_bundle())
     statuses = _assessment_statuses(result)
 
@@ -140,7 +140,10 @@ def test_current_observed_schema_applies_confirmed_cutoff_and_frequency_rules() 
     assert statuses["BRW_FLOOR"] is IRRBBSourceAvailabilityStatus.NATIVE_AVAILABLE
     assert statuses["BRW_CURRENCY"] is IRRBBSourceAvailabilityStatus.MISSING_BLOCKING_EVE
     assert statuses["BRW_RATE_TYPE"] is IRRBBSourceAvailabilityStatus.MISSING_BLOCKING_EVE
-    assert statuses["BRW_NEXT_RESET_DATE"] is IRRBBSourceAvailabilityStatus.MISSING_BLOCKING_EVE
+    assert (
+        statuses["BRW_NEXT_RESET_DATE"]
+        is IRRBBSourceAvailabilityStatus.DERIVABLE_WITH_DOCUMENTED_RULE
+    )
     assert (
         statuses["BRW_RESET_FREQUENCY"]
         is IRRBBSourceAvailabilityStatus.DERIVABLE_WITH_DOCUMENTED_RULE
@@ -191,7 +194,7 @@ def test_invalid_sheet_label_preserves_cutoff_blocker() -> None:
     assert statuses["BRW_CUTOFF"] is IRRBBSourceAvailabilityStatus.MISSING_BLOCKING_GAP
 
 
-def test_fecha_pago_governs_reset_day_but_multimonth_phase_remains_blocking() -> None:
+def test_fecha_apertura_fecha_pago_and_actualizacion_govern_next_reset_derivation() -> None:
     result = BorrowingSourceEvidenceAssessor().assess(_bundle())
     reset_date = next(
         item
@@ -199,10 +202,29 @@ def test_fecha_pago_governs_reset_day_but_multimonth_phase_remains_blocking() ->
         if item.requirement_id == "BRW_NEXT_RESET_DATE"
     )
 
-    assert reset_date.status is IRRBBSourceAvailabilityStatus.MISSING_BLOCKING_EVE
+    assert reset_date.status is IRRBBSourceAvailabilityStatus.DERIVABLE_WITH_DOCUMENTED_RULE
     assert reset_date.notes is not None
     assert "Fecha Pago" in reset_date.notes
-    assert "schedule-phase" in reset_date.notes
+    assert "Fecha Apertura" in reset_date.notes
+    assert "month after" in reset_date.notes
+
+
+def test_missing_opening_date_preserves_next_reset_blocker() -> None:
+    headers = tuple(label for label in _OBSERVED_HEADERS if label != "Fecha Apertura")
+    result = BorrowingSourceEvidenceAssessor().assess(_bundle(headers))
+    statuses = _assessment_statuses(result)
+
+    assert statuses["BRW_START_DATE"] is IRRBBSourceAvailabilityStatus.MISSING_BLOCKING_EVE
+    assert statuses["BRW_NEXT_RESET_DATE"] is IRRBBSourceAvailabilityStatus.MISSING_BLOCKING_EVE
+
+
+def test_missing_actualizacion_preserves_next_reset_and_frequency_blockers() -> None:
+    headers = tuple(label for label in _OBSERVED_HEADERS if label != "ACTUALIZACION")
+    result = BorrowingSourceEvidenceAssessor().assess(_bundle(headers))
+    statuses = _assessment_statuses(result)
+
+    assert statuses["BRW_NEXT_RESET_DATE"] is IRRBBSourceAvailabilityStatus.MISSING_BLOCKING_EVE
+    assert statuses["BRW_RESET_FREQUENCY"] is IRRBBSourceAvailabilityStatus.MISSING_BLOCKING_EVE
 
 
 def test_explicit_future_headers_override_documented_derivations() -> None:

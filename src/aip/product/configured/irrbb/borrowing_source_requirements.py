@@ -18,6 +18,8 @@ from aip.product.configured.irrbb.borrowing_inspection_evidence import (
 )
 from aip.product.configured.irrbb.borrowing_source_rules import (
     BORROWING_CUTOFF_RULE_REFERENCE,
+    BORROWING_NEXT_RESET_RULE_REFERENCE,
+    BORROWING_QUARTERLY_PHASE_RULE_REFERENCE,
     BORROWING_RESET_DAY_RULE_REFERENCE,
     BORROWING_RESET_FREQUENCY_RULE_REFERENCE,
     BorrowingSourceRules,
@@ -400,24 +402,33 @@ class BorrowingSourceEvidenceAssessor:
         if native.status is IRRBBSourceAvailabilityStatus.NATIVE_AVAILABLE:
             return native
 
+        opening_date = by_label.get("Fecha Apertura", ())
         payment_day = by_label.get("Fecha Pago", ())
         frequency = by_label.get("ACTUALIZACION", ())
-        if len(payment_day) != 1 or len(frequency) != 1:
+        if len(opening_date) != 1 or len(payment_day) != 1 or len(frequency) != 1:
             return native
         return IRRBBSourceRequirementAssessment(
             requirement_id="BRW_NEXT_RESET_DATE",
-            status=IRRBBSourceAvailabilityStatus.MISSING_BLOCKING_EVE,
+            status=IRRBBSourceAvailabilityStatus.DERIVABLE_WITH_DOCUMENTED_RULE,
             source_reference=bundle.header.source_reference,
+            derivation_rule_reference=BORROWING_NEXT_RESET_RULE_REFERENCE,
             evidence_reference=(
-                self._header_evidence_reference(bundle=bundle, cell=payment_day[0])
+                self._header_evidence_reference(bundle=bundle, cell=opening_date[0])
+                + ";"
+                + self._header_evidence_reference(bundle=bundle, cell=payment_day[0])
                 + ";"
                 + self._header_evidence_reference(bundle=bundle, cell=frequency[0])
+                + f";{bundle.header.source_reference}|sheet={bundle.header.sheet_name}"
             ),
             notes=(
                 "Institutional policy confirms repricing occurs on the Fecha Pago day "
-                f"({BORROWING_RESET_DAY_RULE_REFERENCE}) and ACTUALIZACION supplies cadence "
-                f"({BORROWING_RESET_FREQUENCY_RULE_REFERENCE}). Exact next reset date remains "
-                "blocking for multi-month cadences until schedule-phase evidence is available."
+                f"({BORROWING_RESET_DAY_RULE_REFERENCE}); ACTUALIZACION supplies cadence "
+                f"({BORROWING_RESET_FREQUENCY_RULE_REFERENCE}); and quarterly cadence uses "
+                "Fecha Apertura as its phase anchor, with repricing effective in the month "
+                "after each completed three-month period "
+                f"({BORROWING_QUARTERLY_PHASE_RULE_REFERENCE}). The monthly worksheet cutoff "
+                f"is governed by {BORROWING_CUTOFF_RULE_REFERENCE}. Row values remain subject "
+                "to strict validation; unsupported cadence or impossible calendar dates fail closed."
             ),
         )
 
