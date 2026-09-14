@@ -5,12 +5,8 @@ from calendar import monthrange
 from datetime import date
 from decimal import Decimal, InvalidOperation
 
-BORROWING_CUTOFF_RULE_REFERENCE = (
-    "aip://irrbb/source-rules/borrowings/month-end-sheet-cutoff/v1"
-)
-BORROWING_RESET_DAY_RULE_REFERENCE = (
-    "aip://irrbb/source-rules/borrowings/fecha-pago-reset-day/v1"
-)
+BORROWING_CUTOFF_RULE_REFERENCE = "aip://irrbb/source-rules/borrowings/month-end-sheet-cutoff/v1"
+BORROWING_RESET_DAY_RULE_REFERENCE = "aip://irrbb/source-rules/borrowings/fecha-pago-reset-day/v1"
 BORROWING_RESET_FREQUENCY_RULE_REFERENCE = (
     "aip://irrbb/source-rules/borrowings/actualizacion-reset-frequency/v1"
 )
