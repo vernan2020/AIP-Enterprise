@@ -224,3 +224,8 @@ def test_selected_entity_history_enriches_missing_kpis_and_recalculates_roa() ->
     assert metrics["ROA"].source_account is not None
     assert "promedio últimos 12 meses" in metrics["ROA"].source_account
     assert history["ROA"].points[-1].value == metrics["ROA"].value
+
+    current_codes = {line.account_code for line in snapshot.statement_lines}
+    assert {"11101", "20000"}.issubset(current_codes)
+    history_sources = {series.source_account for series in snapshot.statement_history}
+    assert {"11101", "20000"}.issubset(history_sources)
