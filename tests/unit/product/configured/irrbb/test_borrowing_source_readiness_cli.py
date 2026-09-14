@@ -113,7 +113,8 @@ def test_valid_evidence_renders_fail_closed_metadata_only_report(tmp_path: Path)
     assert "BRW_CURRENCY" in report["blocking_requirement_ids"]
     assert "BRW_RATE_TYPE" in report["blocking_requirement_ids"]
     assert "BRW_NEXT_RESET_DATE" in report["blocking_requirement_ids"]
-    assert "BRW_CUTOFF" in report["blocking_requirement_ids"]
+    assert "BRW_RESET_FREQUENCY" in report["blocking_requirement_ids"]
+    assert "BRW_CUTOFF" not in report["blocking_requirement_ids"]
     assert "BRW_NEXT_PAYMENT_DATE" in report["not_assessed_requirement_ids"]
     assert report["unresolved_candidate_labels"] == ["Fecha Pago"]
     assert str(tmp_path) not in stdout.getvalue()
