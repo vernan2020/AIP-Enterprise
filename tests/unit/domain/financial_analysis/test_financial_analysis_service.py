@@ -84,3 +84,70 @@ def test_snapshot_uses_latest_available_date_not_after_requested_cutoff() -> Non
 
     assert snapshot.cutoff_date == date(2026, 6, 30)
     assert snapshot.statement_lines[0].amount == Decimal("800")
+
+
+def test_snapshot_exposes_all_selected_entity_series_and_additive_market_composition() -> None:
+    selected = FinancialEntity("7", "Coopealianza R.L.", "Cooperativas")
+    peer = FinancialEntity("8", "Otra entidad", "Cooperativas")
+    current = date(2026, 7, 31)
+    previous = date(2026, 6, 30)
+    lines = (
+        _line(selected, previous, "TOTAL ACTIVO", "600"),
+        _line(selected, previous, "DISPONIBILIDADES", "80"),
+        _line(
+            selected,
+            previous,
+            "INDICADOR DE PRUEBA",
+            "0.11",
+            FinancialStatementType.INDICATORS,
+        ),
+        _line(selected, current, "TOTAL ACTIVO", "750"),
+        _line(selected, current, "DISPONIBILIDADES", "100"),
+        _line(
+            selected,
+            current,
+            "RESULTADO DEL PERIODO",
+            "20",
+            FinancialStatementType.INCOME_STATEMENT,
+        ),
+        _line(
+            selected,
+            current,
+            "INDICADOR DE PRUEBA",
+            "0.12",
+            FinancialStatementType.INDICATORS,
+        ),
+        _line(peer, current, "TOTAL ACTIVO", "250"),
+        _line(
+            peer,
+            current,
+            "RESULTADO DEL PERIODO",
+            "10",
+            FinancialStatementType.INCOME_STATEMENT,
+        ),
+    )
+
+    snapshot = FinancialAnalysisService().build_snapshot(
+        lines,
+        selected_entity_id=selected.entity_id,
+        cutoff_date=current,
+    )
+
+    history_by_source = {series.source_account: series for series in snapshot.statement_history}
+    assert "DISP" in history_by_source
+    assert tuple(point.value for point in history_by_source["DISP"].points) == (
+        Decimal("80"),
+        Decimal("100"),
+    )
+    assert history_by_source["INDI"].unit == "PERCENT"
+    assert tuple(point.value for point in history_by_source["INDI"].points) == (
+        Decimal("11.00"),
+        Decimal("12.00"),
+    )
+
+    market_assets = next(
+        series for series in snapshot.market_composition if series.code == "MARKET_ASSETS"
+    )
+    shares = {point.entity.entity_id: point.share_percent for point in market_assets.points}
+    assert shares == {"7": Decimal("75.00"), "8": Decimal("25.00")}
+    assert sum(shares.values(), Decimal("0")) == Decimal("100.00")
