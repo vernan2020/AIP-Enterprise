@@ -12,12 +12,13 @@ from aip.domain.instruments.money_market.certificate_of_deposit import Certifica
 from aip.domain.instruments.money_market.commercial_paper import CommercialPaper
 from aip.domain.instruments.money_market.repo import Repo
 from aip.domain.instruments.money_market.reverse_repo import ReverseRepo
-from aip.domain.pricing.calculators.bond_pricer import price_bond
-from aip.domain.pricing.calculators.cash_pricer import price_cash
-from aip.domain.pricing.calculators.floating_rate_pricer import price_floating_rate
-from aip.domain.pricing.calculators.treasury_bill_pricer import price_treasury_bill
-from aip.domain.pricing.calculators.zero_coupon_pricer import price_zero_coupon
-from aip.domain.pricing.exceptions import PricingError
+
+from ..calculators.bond_pricer import price_bond
+from ..calculators.cash_pricer import price_cash
+from ..calculators.floating_rate_pricer import price_floating_rate
+from ..calculators.treasury_bill_pricer import price_treasury_bill
+from ..calculators.zero_coupon_pricer import price_zero_coupon
+from ..exceptions import PricingError
 
 
 class PricingService:
