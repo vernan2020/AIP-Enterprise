@@ -5,7 +5,7 @@ from datetime import date
 from decimal import Decimal
 from typing import Any, Literal
 
-from aip.domain.portfolio.services.portfolio_duration_service import (
+from .portfolio_duration_service import (
     PortfolioDurationService,
 )
 
