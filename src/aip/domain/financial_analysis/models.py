@@ -105,6 +105,21 @@ class EntityFinancialSummary:
 
 
 @dataclass(frozen=True, slots=True)
+class MarketCompositionPoint:
+    entity: FinancialEntity
+    amount: Decimal
+    share_percent: Decimal
+
+
+@dataclass(frozen=True, slots=True)
+class MarketCompositionSeries:
+    code: str
+    label: str
+    unit: str = "PERCENT"
+    points: tuple[MarketCompositionPoint, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True, slots=True)
 class RatingIndicatorAssessment:
     code: str
     label: str
@@ -179,8 +194,10 @@ class FinancialAnalysisSnapshot:
     available_dates: tuple[date, ...] = field(default_factory=tuple)
     metrics: tuple[FinancialMetric, ...] = field(default_factory=tuple)
     metric_history: tuple[FinancialMetricHistorySeries, ...] = field(default_factory=tuple)
+    statement_history: tuple[FinancialMetricHistorySeries, ...] = field(default_factory=tuple)
     statement_lines: tuple[FinancialStatementLine, ...] = field(default_factory=tuple)
     peer_summaries: tuple[EntityFinancialSummary, ...] = field(default_factory=tuple)
+    market_composition: tuple[MarketCompositionSeries, ...] = field(default_factory=tuple)
     peer_ratings: tuple[EntityRatingSummary, ...] = field(default_factory=tuple)
     rating: EntityFinancialRating | None = None
     indicator_reconciliations: tuple[FinancialIndicatorReconciliation, ...] = field(
