@@ -13,6 +13,9 @@ BORROWING_RESET_FREQUENCY_RULE_REFERENCE = (
 BORROWING_QUARTERLY_PHASE_RULE_REFERENCE = (
     "aip://irrbb/source-rules/borrowings/opening-date-quarterly-reset-phase/v1"
 )
+BORROWING_NEXT_RESET_RULE_REFERENCE = (
+    "aip://irrbb/source-rules/borrowings/next-repricing-date/v2"
+)
 
 
 class BorrowingSourceRules:
