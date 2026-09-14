@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - recovery/full-runtime-rc1-20260829
+      - release/core-v1.0
   pull_request:
     branches:
       - release/core-v1.0
@@ -112,7 +113,7 @@ jobs:
           print(f'critical production modules: PASS ({len(required)})')
 
       - name: Validate integrated IRRBB release modules
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/release/core-v1.0'
         shell: python
         run: |
           from pathlib import Path
@@ -199,7 +200,7 @@ jobs:
         run: python scripts/recovery/verify_windows_recovery_package.py
 
       - name: Validate packaged IRRBB release modules
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/release/core-v1.0'
         shell: python
         run: |
           import zipfile
