@@ -1,0 +1,46 @@
+name: Format PR 179
+
+on:
+  push:
+    branches:
+      - feature/financial-analysis-full-sugef-charts-20260914
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install Black
+        run: python -m pip install black==26.5.1
+      - name: Format changed financial-analysis files
+        run: |
+          black \
+            src/aip/domain/financial_analysis/services.py \
+            src/aip/ui/modules/financial_analysis/presenters/financial_analysis_presenter.py \
+            src/aip/ui/modules/financial_analysis/views/financial_analysis_view.py \
+            src/aip/ui/modules/financial_analysis/views/financial_peer_chart.py \
+            src/aip/ui/modules/financial_analysis/views/financial_statement_history_panel.py
+          git diff --check
+      - name: Commit formatting
+        run: |
+          if git diff --quiet; then
+            echo "No formatting changes required."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            src/aip/domain/financial_analysis/services.py \
+            src/aip/ui/modules/financial_analysis/presenters/financial_analysis_presenter.py \
+            src/aip/ui/modules/financial_analysis/views/financial_analysis_view.py \
+            src/aip/ui/modules/financial_analysis/views/financial_peer_chart.py \
+            src/aip/ui/modules/financial_analysis/views/financial_statement_history_panel.py
+          git commit -m "Apply Black formatting to financial analysis charts"
+          git push origin HEAD:${GITHUB_REF_NAME}
