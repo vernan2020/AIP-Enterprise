@@ -18,6 +18,7 @@ class Ribbon(QToolBar):
         "Portafolio",
         "Mercado",
         "Riesgo de Precio",
+        "Riesgo de Tasas · RTILB",
         "Inteligencia Macroeconómica",
         "Liquidez",
         "Tesorería",
@@ -43,7 +44,7 @@ class Ribbon(QToolBar):
         self.addSeparator()
 
         for index, label in enumerate(self._LABELS):
-            if index in {4, 10, 11}:
+            if index in {4, 11, 12}:
                 self.addSeparator()
             action = QAction(label, self)
             self.addAction(action)
