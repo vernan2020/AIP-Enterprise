@@ -9,10 +9,7 @@ from pathlib import Path
 from typing import NoReturn, TextIO
 
 from aip.application.irrbb.physical_source_registry import IRRBBPhysicalSourceSegment
-from aip.application.irrbb.semantic_model_inspection import (
-    IRRBBSemanticModelInspectionSnapshot,
-    IRRBBSemanticModelSchemaFreshness,
-)
+from aip.application.irrbb.semantic_model_inspection import IRRBBSemanticModelSchemaFreshness
 from aip.product.configured.irrbb.semantic_model_inspection_evidence import (
     SemanticModelInspectionEvidenceBundle,
     SemanticModelInspectionEvidenceValidator,
