@@ -6,6 +6,10 @@ from aip.product.configured.irrbb.borrowing_inspection_evidence import (
     ValidatedBorrowingHeaderEvidence,
     ValidatedBorrowingSheetEvidence,
 )
+from aip.product.configured.irrbb.borrowing_source_requirements import (
+    BorrowingSourceEvidenceAssessor,
+    BorrowingSourceSchemaAssessment,
+)
 from aip.product.configured.irrbb.borrowing_workbook_inspector import (
     BorrowingWorkbookDiscovery,
     BorrowingWorkbookHeaderCellEvidence,
@@ -70,6 +74,8 @@ __all__ = [
     "CREDIT_SEMANTIC_MODEL_SOURCE",
     "BorrowingInspectionEvidenceBundle",
     "BorrowingInspectionEvidenceValidator",
+    "BorrowingSourceEvidenceAssessor",
+    "BorrowingSourceSchemaAssessment",
     "BorrowingWorkbookDiscovery",
     "BorrowingWorkbookHeaderCellEvidence",
     "BorrowingWorkbookHeaderInspection",
