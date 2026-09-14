@@ -490,14 +490,10 @@ class FinancialAnalysisView(QWidget):
         statement_type = self._statement_type_filter.currentText()
         visible = 0
         for row in range(self._statement_table.rowCount()):
-            values = [
-                (
-                    self._statement_table.item(row, column).text()
-                    if self._statement_table.item(row, column) is not None
-                    else ""
-                )
-                for column in range(3)
-            ]
+            values: list[str] = []
+            for column in range(3):
+                table_item = self._statement_table.item(row, column)
+                values.append(table_item.text() if table_item is not None else "")
             matches_search = not search or search in " ".join(values).casefold()
             matches_type = statement_type == "Todos" or values[0] == statement_type
             hidden = not (matches_search and matches_type)
