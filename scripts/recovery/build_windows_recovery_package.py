@@ -31,30 +31,41 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _resolve_source_commit() -> str:
-    """Resolve the exact branch-head commit packaged by CI.
+def _load_github_event() -> dict:
+    event_path = os.getenv("GITHUB_EVENT_PATH")
+    if not event_path:
+        return {}
+    try:
+        payload = json.loads(Path(event_path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
 
-    ``GITHUB_SHA`` points to the synthetic merge commit for pull-request runs,
-    even when Actions checks out the recovery branch explicitly. Prefer the
-    pull request head SHA from the event payload so the manifest identifies the
-    exact source revision whose files were packaged.
+
+def _resolve_source_commit() -> str:
+    """Return the exact checkout SHA whose files are packaged.
+
+    GitHub Actions sets ``GITHUB_SHA`` to the checked-out synthetic merge
+    candidate for ``pull_request`` workflows and to the pushed commit for push
+    workflows. The package must identify that exact tree instead of a PR head
+    SHA that may omit changes already present on the target branch.
     """
 
-    event_path = os.getenv("GITHUB_EVENT_PATH")
-    if event_path:
-        try:
-            event = json.loads(Path(event_path).read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            event = {}
-        pull_request = event.get("pull_request") if isinstance(event, dict) else None
-        if isinstance(pull_request, dict):
-            head = pull_request.get("head")
-            if isinstance(head, dict):
-                head_sha = head.get("sha")
-                if isinstance(head_sha, str) and head_sha.strip():
-                    return head_sha.strip()
-
     return os.getenv("GITHUB_SHA", "local-build")
+
+
+def _resolve_source_branch() -> str:
+    """Return a traceable source branch without hard-coding recovery."""
+
+    event = _load_github_event()
+    pull_request = event.get("pull_request")
+    if isinstance(pull_request, dict):
+        head = pull_request.get("head")
+        if isinstance(head, dict):
+            head_ref = head.get("ref")
+            if isinstance(head_ref, str) and head_ref.strip():
+                return head_ref.strip()
+    return os.getenv("GITHUB_REF_NAME", "local-build")
 
 
 def _should_include(path: Path) -> bool:
@@ -143,7 +154,7 @@ def main() -> int:
         manifest = {
             "package_name": PACKAGE_NAME,
             "package_version": "RC1-CERTIFIED-20260829",
-            "source_branch": "recovery/full-runtime-rc1-20260829",
+            "source_branch": _resolve_source_branch(),
             "source_commit": _resolve_source_commit(),
             "file_count": len(manifest_entries),
             "files": manifest_entries,
