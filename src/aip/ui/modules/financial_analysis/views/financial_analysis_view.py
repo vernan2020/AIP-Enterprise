@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QListWidget,
     QPushButton,
+    QSplitter,
     QTableWidget,
     QTableWidgetItem,
     QTabWidget,
@@ -55,11 +56,14 @@ class FinancialAnalysisView(QWidget):
 
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
-        root.setContentsMargins(14, 10, 14, 14)
-        root.setSpacing(8)
+        root.setContentsMargins(10, 8, 10, 10)
+        root.setSpacing(6)
 
         header = QHBoxLayout()
+        header.setSpacing(7)
         title_box = QVBoxLayout()
+        title_box.setContentsMargins(0, 0, 0, 0)
+        title_box.setSpacing(1)
         self._title = QLabel("ANÁLISIS FINANCIERO")
         title_font = QFont()
         title_font.setPointSize(15)
@@ -68,14 +72,14 @@ class FinancialAnalysisView(QWidget):
         self._subtitle = QLabel(
             "Estados financieros y comparación de entidades supervisadas por SUGEF"
         )
-        self._subtitle.setStyleSheet("color:#667788; font-size:10px;")
+        self._subtitle.setStyleSheet("color:#667788; font-size:9px;")
         title_box.addWidget(self._title)
         title_box.addWidget(self._subtitle)
         header.addLayout(title_box)
         header.addStretch(1)
         header.addWidget(QLabel("Entidad:"))
         self._entity_selector = QComboBox()
-        self._entity_selector.setMinimumWidth(310)
+        self._entity_selector.setMinimumWidth(360)
         self._entity_selector.currentIndexChanged.connect(self._entity_changed)
         header.addWidget(self._entity_selector)
         self._refresh_button = QPushButton("Actualizar fuente")
@@ -86,14 +90,15 @@ class FinancialAnalysisView(QWidget):
             "Último corte oficial SUGEF disponible que no excede el corte general de AIP."
         )
         self._cutoff.setStyleSheet(
-            "padding:7px 11px; background:#F3F6F9; border:1px solid #D7E0E8; "
+            "padding:6px 10px; background:#F3F6F9; border:1px solid #D7E0E8; "
             "border-radius:6px; font-weight:600;"
         )
         header.addWidget(self._cutoff)
         root.addLayout(header)
 
         kpis = QGridLayout()
-        kpis.setHorizontalSpacing(7)
+        kpis.setHorizontalSpacing(6)
+        kpis.setVerticalSpacing(0)
         for index, definition in enumerate(
             (
                 ("ASSETS", "Activos"),
@@ -123,7 +128,7 @@ class FinancialAnalysisView(QWidget):
         source = QFrame()
         source.setObjectName("sugefSourcePanel")
         source_layout = QHBoxLayout(source)
-        source_layout.setContentsMargins(10, 6, 10, 6)
+        source_layout.setContentsMargins(8, 4, 8, 4)
         self._source_status = QLabel("SUGEF · fuente no configurada")
         source_layout.addWidget(self._source_status)
         source_layout.addStretch(1)
@@ -136,8 +141,8 @@ class FinancialAnalysisView(QWidget):
             "QFrame#financialMetricCard {background:#FFFFFF; border:1px solid #D7E0E8; "
             "border-radius:8px;} QFrame#sugefSourcePanel {background:#F3F8FB; "
             "border:1px solid #CFE0EC; border-radius:7px;}"
-            "QComboBox, QPushButton, QLineEdit {padding:6px 8px;}"
-            "QTabBar::tab {padding:8px 18px; font-weight:600;}"
+            "QComboBox, QPushButton, QLineEdit {padding:5px 8px;}"
+            "QTabBar::tab {padding:6px 14px; font-weight:600;}"
             "QTabBar::tab:selected {color:#005EB8; border-bottom:2px solid #00A9E0;}"
             "QFrame#ratingSummary {background:#F3F8FB; border:1px solid #CFE0EC; "
             "border-radius:8px;}"
@@ -150,10 +155,11 @@ class FinancialAnalysisView(QWidget):
     def _build_statement_panel(self) -> QWidget:
         panel = QWidget()
         layout = QVBoxLayout(panel)
-        layout.setContentsMargins(6, 6, 6, 6)
-        layout.setSpacing(6)
+        layout.setContentsMargins(4, 4, 4, 4)
+        layout.setSpacing(4)
 
         controls = QHBoxLayout()
+        controls.setSpacing(6)
         self._statement_search = QLineEdit()
         self._statement_search.setPlaceholderText("Buscar por código, cuenta, estado o indicador…")
         self._statement_search.textChanged.connect(self._apply_statement_filter)
@@ -179,22 +185,37 @@ class FinancialAnalysisView(QWidget):
         self._statement_table = self._table(
             ["Estado", "Cuenta", "Descripción", "Valor", "Moneda", "Trazabilidad"]
         )
-        self._statement_table.setMinimumHeight(260)
+        self._statement_table.setMinimumHeight(185)
+        statement_header = self._statement_table.horizontalHeader()
+        statement_header.setStretchLastSection(False)
+        statement_header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        statement_header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+        statement_header.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
+        statement_header.setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
+        statement_header.setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents)
+        statement_header.setSectionResizeMode(5, QHeaderView.ResizeMode.Interactive)
+        self._statement_table.setColumnWidth(5, 280)
         self._statement_table.currentCellChanged.connect(self._statement_row_changed)
-        layout.addWidget(self._statement_table, 3)
 
         self._statement_history_panel = FinancialStatementHistoryPanel()
-        layout.addWidget(self._statement_history_panel, 2)
+        self._statement_splitter = QSplitter(Qt.Orientation.Vertical)
+        self._statement_splitter.setChildrenCollapsible(False)
+        self._statement_splitter.setHandleWidth(4)
+        self._statement_splitter.addWidget(self._statement_table)
+        self._statement_splitter.addWidget(self._statement_history_panel)
+        self._statement_splitter.setStretchFactor(0, 11)
+        self._statement_splitter.setStretchFactor(1, 9)
+        self._statement_splitter.setSizes([320, 250])
+        layout.addWidget(self._statement_splitter, 1)
         return panel
 
     def _build_peer_panel(self) -> QWidget:
         panel = QWidget()
         layout = QVBoxLayout(panel)
-        layout.setContentsMargins(6, 6, 6, 6)
-        layout.setSpacing(6)
+        layout.setContentsMargins(4, 4, 4, 4)
+        layout.setSpacing(4)
 
         self._peer_chart_panel = FinancialPeerChartPanel()
-        layout.addWidget(self._peer_chart_panel, 3)
         self._peer_table = self._table(
             [
                 "Entidad",
@@ -207,8 +228,23 @@ class FinancialAnalysisView(QWidget):
                 "ROE",
             ]
         )
-        self._peer_table.setMinimumHeight(230)
-        layout.addWidget(self._peer_table, 2)
+        self._peer_table.setMinimumHeight(175)
+        peer_header = self._peer_table.horizontalHeader()
+        peer_header.setStretchLastSection(False)
+        peer_header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        peer_header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        for column in range(2, 8):
+            peer_header.setSectionResizeMode(column, QHeaderView.ResizeMode.ResizeToContents)
+
+        self._peer_splitter = QSplitter(Qt.Orientation.Vertical)
+        self._peer_splitter.setChildrenCollapsible(False)
+        self._peer_splitter.setHandleWidth(4)
+        self._peer_splitter.addWidget(self._peer_chart_panel)
+        self._peer_splitter.addWidget(self._peer_table)
+        self._peer_splitter.setStretchFactor(0, 3)
+        self._peer_splitter.setStretchFactor(1, 2)
+        self._peer_splitter.setSizes([350, 235])
+        layout.addWidget(self._peer_splitter, 1)
         return panel
 
     def _build_rating_panel(self) -> QWidget:
@@ -385,13 +421,14 @@ class FinancialAnalysisView(QWidget):
     def _metric_card(self, code: str, label: str) -> QFrame:
         card = QFrame()
         card.setObjectName("financialMetricCard")
-        card.setMinimumHeight(82)
+        card.setMinimumHeight(68)
         layout = QVBoxLayout(card)
-        layout.setContentsMargins(9, 7, 9, 7)
+        layout.setContentsMargins(8, 5, 8, 5)
+        layout.setSpacing(2)
         caption = QLabel(label)
         caption.setStyleSheet("color:#667788; font-size:8px; border:none;")
         value = QLabel("-")
-        value.setStyleSheet("color:#142E46; font-size:12px; font-weight:700; border:none;")
+        value.setStyleSheet("color:#142E46; font-size:11px; font-weight:700; border:none;")
         change = QLabel("Sin datos")
         change.setStyleSheet("color:#8393A3; font-size:7px; border:none;")
         change.setWordWrap(True)
@@ -415,8 +452,8 @@ class FinancialAnalysisView(QWidget):
         table.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
         table.setVerticalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
         table.verticalHeader().setVisible(False)
-        table.verticalHeader().setDefaultSectionSize(28)
-        table.horizontalHeader().setMinimumSectionSize(52)
+        table.verticalHeader().setDefaultSectionSize(26)
+        table.horizontalHeader().setMinimumSectionSize(48)
         table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         table.horizontalHeader().setStretchLastSection(True)
         return table

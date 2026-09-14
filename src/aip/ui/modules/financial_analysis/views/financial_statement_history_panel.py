@@ -21,10 +21,11 @@ class FinancialStatementHistoryPanel(QWidget):
 
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
-        root.setContentsMargins(8, 8, 8, 8)
-        root.setSpacing(6)
+        root.setContentsMargins(4, 4, 4, 4)
+        root.setSpacing(4)
 
         header = QHBoxLayout()
+        header.setSpacing(6)
         title = QLabel("Histórico de la cuenta / indicador seleccionado")
         title.setStyleSheet("font-size:11px; font-weight:700; color:#142E46;")
         header.addWidget(title)
@@ -35,13 +36,14 @@ class FinancialStatementHistoryPanel(QWidget):
         root.addLayout(header)
 
         selector_row = QHBoxLayout()
+        selector_row.setSpacing(6)
         selector_row.addWidget(QLabel("Serie:"))
         self._selector = QComboBox()
-        self._selector.setMinimumWidth(420)
+        self._selector.setMinimumWidth(320)
         self._selector.setSizeAdjustPolicy(
             QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon
         )
-        self._selector.setMinimumContentsLength(55)
+        self._selector.setMinimumContentsLength(42)
         self._selector.currentIndexChanged.connect(self._selection_changed)
         selector_row.addWidget(self._selector, 1)
         root.addLayout(selector_row)
@@ -51,6 +53,8 @@ class FinancialStatementHistoryPanel(QWidget):
         root.addWidget(self._latest)
 
         self._chart_host = QVBoxLayout()
+        self._chart_host.setContentsMargins(0, 0, 0, 0)
+        self._chart_host.setSpacing(0)
         root.addLayout(self._chart_host, 1)
 
     def bind_history(self, series: tuple[FinancialMetricHistorySeriesView, ...]) -> None:
@@ -105,7 +109,7 @@ class FinancialStatementHistoryPanel(QWidget):
         chart = QChart()
         chart.legend().hide()
         chart.setBackgroundVisible(False)
-        chart.setMargins(QMargins(2, 2, 2, 2))
+        chart.setMargins(QMargins(1, 1, 1, 1))
 
         dates = tuple(
             QDateTime.fromString(point.iso_date, Qt.DateFormat.ISODate) for point in item.points
@@ -114,9 +118,12 @@ class FinancialStatementHistoryPanel(QWidget):
 
         axis_x = QDateTimeAxis()
         axis_x.setFormat("MMM-yy")
-        axis_x.setLabelsAngle(-35)
+        axis_x.setLabelsAngle(-30)
         axis_x.setTickCount(min(7, max(2, len(item.points))))
         axis_x.setGridLineVisible(False)
+        axis_font = axis_x.labelsFont()
+        axis_font.setPointSize(8)
+        axis_x.setLabelsFont(axis_font)
         if dates:
             start = dates[0]
             end = dates[-1]
@@ -128,7 +135,10 @@ class FinancialStatementHistoryPanel(QWidget):
         axis_y = QValueAxis()
         axis_y.setTitleText(item.unit)
         axis_y.setLabelFormat("%.2f" if item.unit in {"%", "Valor"} else "%.0f")
-        axis_y.setTickCount(6)
+        axis_y.setTickCount(5)
+        value_font = axis_y.labelsFont()
+        value_font.setPointSize(8)
+        axis_y.setLabelsFont(value_font)
         if values:
             minimum = min(values)
             maximum = max(values)
@@ -161,6 +171,6 @@ class FinancialStatementHistoryPanel(QWidget):
 
         view = QChartView(chart)
         view.setRenderHint(QPainter.RenderHint.Antialiasing)
-        view.setMinimumHeight(230)
+        view.setMinimumHeight(190)
         view.setToolTip("\n".join(tooltip))
         return view
