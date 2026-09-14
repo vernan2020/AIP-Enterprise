@@ -88,10 +88,10 @@ def test_repricing_does_not_invent_invalid_calendar_day() -> None:
     )
     assert (
         BorrowingSourceRules.next_repricing_date(
-            cutoff_date=date(2026, 7, 31),
+            cutoff_date=date(2026, 9, 30),
             payment_day=31,
             update_frequency="TRIMESTRAL",
-            opening_date=date(2026, 3, 1),
+            opening_date=date(2025, 1, 1),
         )
         is None
     )
