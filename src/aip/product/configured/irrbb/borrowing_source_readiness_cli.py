@@ -42,7 +42,8 @@ def borrowing_readiness_report(
 
     certification = assessment.certification
     requirement_by_id = {
-        requirement.requirement_id: requirement for requirement in certification.profile.requirements
+        requirement.requirement_id: requirement
+        for requirement in certification.profile.requirements
     }
     return {
         "report_type": BORROWING_READINESS_REPORT_TYPE,
