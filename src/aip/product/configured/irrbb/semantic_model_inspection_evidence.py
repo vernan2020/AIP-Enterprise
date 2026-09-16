@@ -61,6 +61,14 @@ _GOVERNED_SEMANTIC_MODEL_SOURCES = {
     CREDIT_SEMANTIC_MODEL_SOURCE.source_id: CREDIT_SEMANTIC_MODEL_SOURCE,
     TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE.source_id: TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE,
 }
+# Provider semantic-model identity is deliberately independent from the canonical
+# IRRBB logical perimeter. Captaciones is a broader institutional provider model;
+# its metadata may be inspected for the Certificados perimeter without implying
+# that every Captaciones product is a TERM_DEPOSIT or authorizing row extraction.
+_GOVERNED_PROVIDER_MODEL_NAMES = {
+    CREDIT_SEMANTIC_MODEL_SOURCE.source_id: "Credito",
+    TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE.source_id: "Captaciones",
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -100,8 +108,11 @@ class SemanticModelInspectionEvidenceValidator:
             payload["provider_model_name"],
             "provider_model_name",
         )
-        if provider_model_name != source.logical_name:
-            raise ValueError("semantic-model provider_model_name does not match governed source")
+        expected_provider_model_name = _GOVERNED_PROVIDER_MODEL_NAMES[source.source_id]
+        if provider_model_name != expected_provider_model_name:
+            raise ValueError(
+                "semantic-model provider_model_name does not match governed provider identity"
+            )
 
         row_data_included = self._require_bool(
             payload["row_data_included"],
