@@ -21,6 +21,8 @@ _CANONICAL_SEMANTIC_SOURCES = {
     IRRBBPhysicalSourceSegment.CREDIT: CREDIT_SEMANTIC_MODEL_SOURCE,
     IRRBBPhysicalSourceSegment.TERM_DEPOSIT: TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE,
 }
+CAPTACIONES_INSPECTION_SOURCE_ID = "coopealianza.liability.powerbi.captaciones"
+CAPTACIONES_INSPECTION_CONFIGURATION_KEY = "irrbb.sources.captaciones.power_bi"
 
 
 class PowerBISemanticQueryTransport(str, Enum):
@@ -129,6 +131,106 @@ class PowerBISemanticModelRoute:
             raise ValueError(
                 f"Power BI route {field_name} must be an opaque configuration reference"
             )
+
+
+@dataclass(frozen=True, slots=True)
+class PowerBISemanticModelInspectionTarget:
+    """Provider model identity that may exist before canonical IRRBB classification.
+
+    Inspection targets deliberately separate provider discovery from production
+    financial mapping. ``canonical_descriptor`` is present only when the provider
+    model is already governed as one exact IRRBB physical source. A model such as
+    Captaciones can therefore be inspected without pretending that every product in
+    the model is a term deposit or any other canonical segment.
+    """
+
+    inspection_source_id: str
+    logical_name: str
+    route: PowerBISemanticModelRoute
+    canonical_descriptor: IRRBBPhysicalSourceDescriptor | None = None
+
+    def __post_init__(self) -> None:
+        self._require_identity("inspection_source_id", self.inspection_source_id)
+        if not isinstance(self.logical_name, str) or not self.logical_name.strip():
+            raise ValueError("Power BI inspection target logical_name is required")
+        if self.logical_name != self.logical_name.strip():
+            raise ValueError("Power BI inspection target logical_name cannot have outer whitespace")
+
+        descriptor = self.canonical_descriptor
+        if descriptor is None:
+            return
+        if descriptor.kind is not IRRBBPhysicalSourceKind.POWER_BI_SEMANTIC_MODEL:
+            raise ValueError("canonical Power BI inspection target must be a semantic-model source")
+        expected_descriptor = _CANONICAL_SEMANTIC_SOURCES.get(descriptor.segment)
+        if expected_descriptor is None or descriptor != expected_descriptor:
+            raise ValueError("canonical Power BI inspection target is not an exact governed source")
+        if descriptor.source_id != self.inspection_source_id:
+            raise ValueError("inspection_source_id does not match canonical descriptor")
+        if descriptor.logical_name != self.logical_name:
+            raise ValueError("logical_name does not match canonical descriptor")
+        if descriptor.configuration_key != self.route.configuration_key:
+            raise ValueError("route configuration_key does not match canonical descriptor")
+
+    @property
+    def canonical_mapping_authorized(self) -> bool:
+        """Whether this target already has an exact governed canonical source."""
+
+        return self.canonical_descriptor is not None
+
+    @property
+    def safe_reference(self) -> str:
+        """Return non-secret provider lineage without authentication material."""
+
+        return f"{self.inspection_source_id}@{self.route.safe_reference}"
+
+    @staticmethod
+    def _require_identity(field_name: str, value: str) -> None:
+        if not isinstance(value, str) or _REFERENCE_KEY_PATTERN.fullmatch(value) is None:
+            raise ValueError(f"Power BI inspection target {field_name} must be an opaque identity")
+
+
+def institutional_power_bi_inspection_targets(
+    *,
+    credit_dataset_id: str,
+    captaciones_dataset_id: str,
+    authentication_profile_key: str,
+    credit_workspace_id: str | None = None,
+    captaciones_workspace_id: str | None = None,
+) -> tuple[PowerBISemanticModelInspectionTarget, PowerBISemanticModelInspectionTarget]:
+    """Build deployment-resolved Crédito and Captaciones inspection targets.
+
+    Crédito retains its existing canonical CREDIT binding. Captaciones is intentionally
+    inspection-only until governed metadata proves which canonical liability segments
+    and product mappings are present. Dataset identifiers are supplied by deployment
+    configuration and are never embedded as institutional constants in source code.
+    """
+
+    credit_route = PowerBISemanticModelRoute.from_strings(
+        configuration_key=CREDIT_SEMANTIC_MODEL_SOURCE.configuration_key,
+        workspace_id=credit_workspace_id,
+        dataset_id=credit_dataset_id,
+        authentication_profile_key=authentication_profile_key,
+    )
+    captaciones_route = PowerBISemanticModelRoute.from_strings(
+        configuration_key=CAPTACIONES_INSPECTION_CONFIGURATION_KEY,
+        workspace_id=captaciones_workspace_id,
+        dataset_id=captaciones_dataset_id,
+        authentication_profile_key=authentication_profile_key,
+    )
+    return (
+        PowerBISemanticModelInspectionTarget(
+            inspection_source_id=CREDIT_SEMANTIC_MODEL_SOURCE.source_id,
+            logical_name=CREDIT_SEMANTIC_MODEL_SOURCE.logical_name,
+            route=credit_route,
+            canonical_descriptor=CREDIT_SEMANTIC_MODEL_SOURCE,
+        ),
+        PowerBISemanticModelInspectionTarget(
+            inspection_source_id=CAPTACIONES_INSPECTION_SOURCE_ID,
+            logical_name="Captaciones",
+            route=captaciones_route,
+            canonical_descriptor=None,
+        ),
+    )
 
 
 @dataclass(frozen=True, slots=True)
