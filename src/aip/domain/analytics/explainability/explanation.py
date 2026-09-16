@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
-from aip.domain.analytics.explainability.explanation_factor import ExplanationFactor
+from .explanation_factor import ExplanationFactor
 
 
 @dataclass(frozen=True, slots=True)
