@@ -6,7 +6,7 @@ from collections import defaultdict
 from datetime import date
 from decimal import Decimal, DivisionByZero, InvalidOperation
 
-from aip.domain.financial_analysis.models import (
+from .models import (
     FinancialEntity,
     FinancialStatementLine,
     FinancialStatementType,
