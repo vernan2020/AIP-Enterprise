@@ -15,14 +15,19 @@ from aip.product.configured.irrbb.physical_source_registry import (
     TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE,
 )
 from aip.product.configured.irrbb.power_bi_semantic_route import (
+    CAPTACIONES_INSPECTION_CONFIGURATION_KEY,
+    CAPTACIONES_INSPECTION_SOURCE_ID,
     InstitutionalPowerBISemanticRouteBinding,
+    PowerBISemanticModelInspectionTarget,
     PowerBISemanticModelRoute,
     PowerBISemanticQueryTransport,
+    institutional_power_bi_inspection_targets,
 )
 
 _WORKSPACE_ID = "12345678-1234-4234-8234-1234567890ab"
 _CREDIT_DATASET_ID = "22345678-1234-4234-8234-1234567890ab"
 _TERM_DATASET_ID = "32345678-1234-4234-8234-1234567890ab"
+_CAPTACIONES_DATASET_ID = "42345678-1234-4234-8234-1234567890ab"
 
 
 def _route(
@@ -197,4 +202,58 @@ def test_direct_constructor_rejects_non_uuid_runtime_values() -> None:
             workspace_id=_WORKSPACE_ID,  # type: ignore[arg-type]
             dataset_id=UUID(_CREDIT_DATASET_ID),
             authentication_profile_key="security.auth.power_bi.readonly",
+        )
+
+
+def test_institutional_inspection_targets_keep_captaciones_unmapped() -> None:
+    credit, captaciones = institutional_power_bi_inspection_targets(
+        credit_dataset_id=_CREDIT_DATASET_ID,
+        captaciones_dataset_id=_CAPTACIONES_DATASET_ID,
+        authentication_profile_key="security.auth.power_bi.readonly",
+    )
+
+    assert credit.logical_name == "Credito"
+    assert credit.canonical_mapping_authorized is True
+    assert credit.canonical_descriptor is CREDIT_SEMANTIC_MODEL_SOURCE
+    assert credit.route.dataset_id == UUID(_CREDIT_DATASET_ID)
+
+    assert captaciones.logical_name == "Captaciones"
+    assert captaciones.inspection_source_id == CAPTACIONES_INSPECTION_SOURCE_ID
+    assert captaciones.route.configuration_key == CAPTACIONES_INSPECTION_CONFIGURATION_KEY
+    assert captaciones.route.dataset_id == UUID(_CAPTACIONES_DATASET_ID)
+    assert captaciones.route.workspace_id is None
+    assert captaciones.canonical_descriptor is None
+    assert captaciones.canonical_mapping_authorized is False
+    assert IRRBBPhysicalSourceSegment.TERM_DEPOSIT.value not in captaciones.safe_reference
+
+
+def test_unmapped_inspection_target_cannot_smuggle_a_canonical_descriptor() -> None:
+    captaciones_route = _route(
+        configuration_key=CAPTACIONES_INSPECTION_CONFIGURATION_KEY,
+        dataset_id=_CAPTACIONES_DATASET_ID,
+        workspace_id=None,
+    )
+
+    with pytest.raises(ValueError, match="inspection_source_id does not match"):
+        PowerBISemanticModelInspectionTarget(
+            inspection_source_id=CAPTACIONES_INSPECTION_SOURCE_ID,
+            logical_name="Captaciones",
+            route=captaciones_route,
+            canonical_descriptor=TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE,
+        )
+
+
+def test_inspection_target_requires_exact_canonical_route_identity() -> None:
+    wrong_route = _route(
+        configuration_key=TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE.configuration_key,
+        dataset_id=_CREDIT_DATASET_ID,
+        workspace_id=None,
+    )
+
+    with pytest.raises(ValueError, match="configuration_key"):
+        PowerBISemanticModelInspectionTarget(
+            inspection_source_id=CREDIT_SEMANTIC_MODEL_SOURCE.source_id,
+            logical_name=CREDIT_SEMANTIC_MODEL_SOURCE.logical_name,
+            route=wrong_route,
+            canonical_descriptor=CREDIT_SEMANTIC_MODEL_SOURCE,
         )
