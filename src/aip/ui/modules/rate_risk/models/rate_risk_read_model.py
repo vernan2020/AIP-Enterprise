@@ -176,6 +176,19 @@ class RateRiskDataIssueRow:
 
 
 @dataclass(frozen=True, slots=True)
+class RateRiskSourceSummaryRow:
+    """Cross-currency-safe source perimeter summary by canonical instrument class."""
+
+    segment: str
+    label: str
+    position_count: int
+    ready_count: int
+    incomplete_count: int
+    excluded_count: int
+    currencies: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class RateRiskSourceMappingFailureRow:
     """Auditable source record that failed before canonical position validation."""
 
@@ -228,4 +241,5 @@ class RateRiskReadModel:
     warnings: tuple[str, ...] = ()
     analysis_status: str = "CALCULATED"
     gap_coverage_issue_rows: tuple[RateRiskGapCoverageIssueRow, ...] = ()
+    source_summary_rows: tuple[RateRiskSourceSummaryRow, ...] = ()
     source_mapping_failure_rows: tuple[RateRiskSourceMappingFailureRow, ...] = ()
