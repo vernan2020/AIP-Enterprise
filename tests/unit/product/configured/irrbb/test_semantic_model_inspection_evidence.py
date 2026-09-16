@@ -22,13 +22,14 @@ def _payload(
     source_id: str = CREDIT_SEMANTIC_MODEL_SOURCE.source_id,
     logical_name: str = CREDIT_SEMANTIC_MODEL_SOURCE.logical_name,
     provider_model_name: str = CREDIT_SEMANTIC_MODEL_SOURCE.logical_name,
+    provider_workspace_reference: str | None = "workspace-runtime-reference",
 ) -> dict[str, object]:
     return {
         "report_type": SEMANTIC_MODEL_METADATA_REPORT_TYPE,
         "report_version": SEMANTIC_MODEL_INSPECTION_REPORT_VERSION,
         "source_id": source_id,
         "logical_name": logical_name,
-        "provider_workspace_reference": "workspace-runtime-reference",
+        "provider_workspace_reference": provider_workspace_reference,
         "provider_model_reference": "model-runtime-reference",
         "provider_model_name": provider_model_name,
         "inspection_method": "provider-metadata-scan",
@@ -77,6 +78,22 @@ def test_validator_binds_credit_metadata_to_governed_source() -> None:
     assert bundle.snapshot.provider_model_name == "Credito"
     assert len(bundle.snapshot.tables) == 2
     assert len(bundle.snapshot.relationships) == 1
+
+
+def test_validator_accepts_dataset_only_metadata_without_workspace_reference() -> None:
+    bundle = SemanticModelInspectionEvidenceValidator().validate_report(
+        _payload(provider_workspace_reference=None)
+    )
+
+    assert bundle.snapshot.provider_workspace_reference is None
+    assert bundle.snapshot.provider_model_reference == "model-runtime-reference"
+
+
+def test_validator_rejects_blank_workspace_reference_instead_of_normalizing_it() -> None:
+    with pytest.raises(ValueError, match="provider_workspace_reference must be a non-blank string"):
+        SemanticModelInspectionEvidenceValidator().validate_report(
+            _payload(provider_workspace_reference="")
+        )
 
 
 def test_validator_binds_term_deposit_metadata_to_governed_source() -> None:
