@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
 
-from aip.domain.analytics.exceptions import AnalyticsError
+from ..exceptions import AnalyticsError
 
 
 @dataclass(frozen=True, slots=True)
