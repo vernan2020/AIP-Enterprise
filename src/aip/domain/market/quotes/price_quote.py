@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from aip.domain.market.quotes.market_quote import MarketQuote
+from .market_quote import MarketQuote
 
 
 @dataclass(frozen=True)
