@@ -5,7 +5,7 @@ import unicodedata
 from datetime import date
 from decimal import Decimal
 
-from aip.domain.financial_analysis.models import (
+from .models import (
     FinancialEntity,
     FinancialStatementLine,
     FinancialStatementType,
