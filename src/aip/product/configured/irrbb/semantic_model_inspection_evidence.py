@@ -140,7 +140,7 @@ class SemanticModelInspectionEvidenceValidator:
         snapshot = IRRBBSemanticModelInspectionSnapshot(
             source_id=source.source_id,
             logical_name=logical_name,
-            provider_workspace_reference=self._require_string(
+            provider_workspace_reference=self._require_optional_string(
                 payload["provider_workspace_reference"],
                 "provider_workspace_reference",
             ),
