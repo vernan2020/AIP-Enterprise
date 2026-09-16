@@ -104,9 +104,7 @@ class RateRiskPresenter(_BaseRateRiskPresenter):
             grouped.items(),
             key=lambda item: cls._SEGMENT_ORDER.get(item[0], 99),
         ):
-            statuses = Counter(
-                assessments.get(position.position_id, "") for position in positions
-            )
+            statuses = Counter(assessments.get(position.position_id, "") for position in positions)
             rows.append(
                 RateRiskSourceSummaryRow(
                     segment=segment.value,
@@ -115,9 +113,7 @@ class RateRiskPresenter(_BaseRateRiskPresenter):
                     ready_count=statuses["READY"],
                     incomplete_count=statuses["INCOMPLETE"],
                     excluded_count=statuses["EXCLUDED"],
-                    currencies=tuple(
-                        sorted({position.currency.value for position in positions})
-                    ),
+                    currencies=tuple(sorted({position.currency.value for position in positions})),
                 )
             )
         return tuple(rows)
