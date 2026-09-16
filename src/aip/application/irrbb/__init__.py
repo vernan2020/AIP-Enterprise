@@ -7,6 +7,10 @@ from aip.application.irrbb.analysis_contracts import (
     IRRBBGapCurrencyResult,
     IRRBBGapMatrixCell,
 )
+from aip.application.irrbb.composite_data_gateway import (
+    CompositeIRRBBDataGateway,
+    IRRBBDataGatewayBinding,
+)
 from aip.application.irrbb.contracts import (
     IRRBBCurveSourcePoint,
     IRRBBPositionSourceRecord,
@@ -53,6 +57,7 @@ from aip.application.irrbb.source_certification import (
 )
 
 __all__ = [
+    "CompositeIRRBBDataGateway",
     "INVESTMENT_SOURCE_REQUIREMENT_PROFILE_CODE",
     "INVESTMENT_SOURCE_REQUIREMENT_PROFILE_REFERENCE",
     "INVESTMENT_SOURCE_REQUIREMENT_PROFILE_VERSION",
@@ -62,6 +67,7 @@ __all__ = [
     "IRRBBAnalysisStatus",
     "IRRBBCurveSourcePoint",
     "IRRBBDataGateway",
+    "IRRBBDataGatewayBinding",
     "IRRBBGapCoverageIssue",
     "IRRBBGapCoverageIssueCode",
     "IRRBBGapCurrencyResult",
