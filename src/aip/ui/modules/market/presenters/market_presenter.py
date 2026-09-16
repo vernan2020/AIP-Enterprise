@@ -20,8 +20,8 @@ class MarketPresenter:
     """Adapta la analítica institucional de mercado a presentación."""
 
     _CLASSIFICATION_TRANSLATIONS = {
-        "CHEAP": "BARATO",
-        "RICH": "CARO",
+        "CHEAP": "COMPRA",
+        "RICH": "VENTA",
         "FAIR": "EN VALOR",
         "NEUTRAL": "NEUTRAL",
         "BUY": "COMPRAR",
