@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
-from aip.domain.analytics.enums.score_direction import ScoreDirection
-from aip.domain.analytics.exceptions import ScoringError
+from ..enums.score_direction import ScoreDirection
+from ..exceptions import ScoringError
 
 
 @dataclass(frozen=True, slots=True)
