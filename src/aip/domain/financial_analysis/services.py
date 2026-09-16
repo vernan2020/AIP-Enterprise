@@ -5,12 +5,12 @@ from collections import defaultdict
 from datetime import date
 from decimal import Decimal, DivisionByZero, InvalidOperation
 
-from aip.domain.financial_analysis.indicator_calculator import OfficialRatingIndicatorCalculator
-from aip.domain.financial_analysis.indicator_reconciliation import (
+from .indicator_calculator import OfficialRatingIndicatorCalculator
+from .indicator_reconciliation import (
     FinancialIndicatorReconciliationService,
 )
-from aip.domain.financial_analysis.institutional_flags import InstitutionalEntityFlagService
-from aip.domain.financial_analysis.models import (
+from .institutional_flags import InstitutionalEntityFlagService
+from .models import (
     EntityFinancialSummary,
     EntityRatingSummary,
     FinancialAnalysisSnapshot,
@@ -19,8 +19,8 @@ from aip.domain.financial_analysis.models import (
     FinancialStatementLine,
     FinancialStatementType,
 )
-from aip.domain.financial_analysis.return_on_assets import ReturnOnAssetsService
-from aip.domain.financial_analysis.sugef_ratings import (
+from .return_on_assets import ReturnOnAssetsService
+from .sugef_ratings import (
     SUGEFOnlyFinancialEntityRatingService,
 )
 
