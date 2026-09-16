@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from aip.domain.analytics.exceptions import StatisticsError
+from ..exceptions import StatisticsError
 
 
 class WeightedStatistics:

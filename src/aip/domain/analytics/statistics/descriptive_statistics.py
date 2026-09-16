@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from decimal import ROUND_CEILING, ROUND_FLOOR, Decimal
 
-from aip.domain.analytics.exceptions import StatisticsError
+from ..exceptions import StatisticsError
 
 
 class DescriptiveStatistics:
