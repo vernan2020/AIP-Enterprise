@@ -6,6 +6,7 @@ from aip.domain.financial_analysis.models import FinancialStatementLine, Financi
 from aip.product.configured.configuration.configured_source_config import (
     SUGEFFinancialSourceConfig,
 )
+from aip.product.configured.readers.sugef_financial_api_client import SUGEFApiReadResult
 from aip.product.configured.readers.sugef_official_financial_api_client import (
     SUGEFOfficialFinancialApiClient,
 )
@@ -20,10 +21,104 @@ class SUGEFCompletePeerFinancialApiClient(SUGEFOfficialFinancialApiClient):
     entity. The inherited filtered-job executor keeps concurrency at two workers,
     avoiding the former artificial four-entity limit without issuing full-state
     downloads or manufacturing missing observations.
+
+    The same selective strategy is used for the peer liability aggregate. Its
+    IASEF account is discovered from the authoritative full balance of the
+    configured primary entity and then queried for the complete SFN universe at
+    the same accounting cutoff. No liability account code or peer value is
+    manufactured when the official source cannot resolve it.
     """
+
+    _LIABILITY_ACCOUNT_TERMS = ("TOTAL PASIVO", "PASIVO TOTAL")
 
     def __init__(self, config: SUGEFFinancialSourceConfig) -> None:
         super().__init__(config)
+
+    def read(self, cutoff_date: date) -> SUGEFApiReadResult:
+        """Read the official dataset and complete peer liabilities fail-closed."""
+
+        result = super().read(cutoff_date)
+        lines = list(result.lines)
+        endpoints = set(result.endpoints)
+        diagnostics = list(result.diagnostics)
+        effective_cutoff = self._primary_statement_cutoff(lines)
+
+        if effective_cutoff is None or not self._config.api_entity_codes:
+            return result
+
+        primary_entity = self._config.api_entity_codes[0]
+        primary_balance = tuple(
+            line
+            for line in lines
+            if line.entity.entity_id == primary_entity
+            and line.statement_date == effective_cutoff
+            and line.statement_type is FinancialStatementType.BALANCE_SHEET
+        )
+        liability_account = self._resolve_liability_account_code(primary_balance)
+        if liability_account is None:
+            diagnostics.append(
+                "No fue posible resolver en el Balance oficial la cuenta IASEF de Pasivos; "
+                "la comparativa conserva N/D sin fabricar valores."
+            )
+            return SUGEFApiReadResult(
+                lines=tuple(lines),
+                endpoints=tuple(sorted(endpoints)),
+                diagnostics=tuple(diagnostics),
+            )
+
+        effective_period = date(
+            effective_cutoff.year,
+            effective_cutoff.month,
+            1,
+        ).strftime("%Y%m%d")
+        self._execute_filtered_jobs(
+            [
+                (
+                    "",
+                    effective_period,
+                    *self._BALANCE_REPORT,
+                    liability_account,
+                )
+            ],
+            lines,
+            endpoints,
+            diagnostics,
+        )
+        lines = self._deduplicate(lines)
+        lines = self._clip_to_primary_statement_cutoff(lines)
+        diagnostics.append(
+            "Pasivos comparativos SFN consultados con la misma cuenta IASEF "
+            "detectada en el Balance oficial de la entidad principal: "
+            f"{liability_account}."
+        )
+        return SUGEFApiReadResult(
+            lines=tuple(lines),
+            endpoints=tuple(sorted(endpoints)),
+            diagnostics=tuple(diagnostics),
+        )
+
+    @classmethod
+    def _resolve_liability_account_code(
+        cls,
+        balance_lines: tuple[FinancialStatementLine, ...],
+    ) -> str | None:
+        """Resolve the IASEF liability aggregate from the authoritative balance."""
+
+        candidates: list[tuple[int, int, str, FinancialStatementLine]] = []
+        for line in balance_lines:
+            if line.statement_type is not FinancialStatementType.BALANCE_SHEET:
+                continue
+            normalized = cls._normalize_account_name(line.account_name)
+            for term in cls._LIABILITY_ACCOUNT_TERMS:
+                if normalized == term:
+                    candidates.append((0, len(normalized), line.account_code, line))
+                elif term in normalized:
+                    candidates.append((1, len(normalized), line.account_code, line))
+        if not candidates:
+            return None
+        selected = min(candidates, key=lambda item: (item[0], item[1], item[2]))[3]
+        account_code = selected.account_code.strip().removesuffix(".0")
+        return account_code or None
 
     def _missing_peer_history(
         self,

@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from aip.ui.modules.market.presentation_labels import relative_value_classification_label
 from aip.ui.modules.market.presenters.market_presenter import MarketPresenter
 from aip.ui.modules.market.viewmodels.market_view_model import (
     MarketCurveViewData,
@@ -257,7 +258,11 @@ class MarketView(QWidget):
         market_filters.addWidget(self._market_curve_filter)
         market_filters.addWidget(QLabel("Clasificación"))
         self._market_class_filter = QComboBox()
-        self._market_class_filter.addItems(("TODAS", "BARATO", "NEUTRAL", "CARO"))
+        self._market_class_filter.setObjectName("marketRelativeValueClassificationFilter")
+        self._market_class_filter.addItem("TODAS", "")
+        self._market_class_filter.addItem("COMPRA", "BARATO")
+        self._market_class_filter.addItem("NEUTRAL", "NEUTRAL")
+        self._market_class_filter.addItem("VENTA", "CARO")
         market_filters.addWidget(self._market_class_filter)
         market_filters.addWidget(QLabel("Portafolio"))
         self._market_portfolio_filter = QComboBox()
@@ -278,6 +283,7 @@ class MarketView(QWidget):
                 "Portafolio",
             )
         )
+        self._market_table.setObjectName("marketRelativeValueTable")
         self._market_table.currentCellChanged.connect(self._on_market_selection_changed)
         market_layout.addWidget(self._market_table, 1)
         self._rv_tabs.addTab(market_tab, "RV Mercado")
@@ -435,10 +441,10 @@ class MarketView(QWidget):
         font = item.font()
         font.setBold(True)
         item.setFont(font)
-        token = value.strip().upper()
-        if token == "BARATO":
+        token = relative_value_classification_label(value).upper()
+        if token == "COMPRA":
             item.setForeground(QColor("#167A68"))
-        elif token == "CARO":
+        elif token == "VENTA":
             item.setForeground(QColor("#B42335"))
         else:
             item.setForeground(QColor("#566D7C"))
@@ -520,13 +526,13 @@ class MarketView(QWidget):
 
     def _bind_market_rows(self) -> None:
         curve_filter = str(self._market_curve_filter.currentData() or "")
-        class_filter = self._market_class_filter.currentText().strip().upper()
+        class_filter = str(self._market_class_filter.currentData() or "").strip().upper()
         portfolio_filter = self._market_portfolio_filter.currentText().strip().upper()
         filtered: list[RelativeValueViewRow] = []
         for row in self._view_model.market_relative_value:
             if curve_filter and row.curve_id != curve_filter:
                 continue
-            if class_filter != "TODAS" and row.classification.strip().upper() != class_filter:
+            if class_filter and row.classification.strip().upper() != class_filter:
                 continue
             if portfolio_filter == "EN PORTAFOLIO" and row.in_portfolio is not True:
                 continue
@@ -543,7 +549,7 @@ class MarketView(QWidget):
             values = (
                 row.series,
                 row.currency or "-",
-                row.classification,
+                relative_value_classification_label(row.classification),
                 f"{row.spread_bp:+.1f} pb",
                 f"{row.market_yield:.3f}%",
                 f"{row.curve_yield:.3f}%",
@@ -626,7 +632,7 @@ class MarketView(QWidget):
             "series": row.series,
             "issuer": row.issuer,
             "currency": row.currency or "-",
-            "classification": row.classification,
+            "classification": relative_value_classification_label(row.classification),
             "market_yield": f"{row.market_yield:.4f}%",
             "curve_yield": f"{row.curve_yield:.4f}%",
             "spread_bp": f"{row.spread_bp:+.2f} pb",
