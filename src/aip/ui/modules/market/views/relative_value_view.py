@@ -150,9 +150,9 @@ class RelativeValueView(QWidget):
         font = item.font()
         font.setBold(True)
         item.setFont(font)
-        if classification == "BARATO":
+        if classification == "COMPRA":
             item.setForeground(QColor("#167A68"))
-        elif classification == "CARO":
+        elif classification == "VENTA":
             item.setForeground(QColor("#B42335"))
         else:
             item.setForeground(QColor("#566D7C"))

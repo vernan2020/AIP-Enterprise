@@ -1,29 +1,136 @@
 from __future__ import annotations
 
 from datetime import date
+from urllib.error import HTTPError, URLError
 
 from aip.domain.financial_analysis.models import FinancialStatementLine, FinancialStatementType
 from aip.product.configured.configuration.configured_source_config import (
     SUGEFFinancialSourceConfig,
 )
+from aip.product.configured.readers.sugef_financial_api_client import SUGEFApiReadResult
 from aip.product.configured.readers.sugef_official_financial_api_client import (
     SUGEFOfficialFinancialApiClient,
 )
 
 
 class SUGEFCompletePeerFinancialApiClient(SUGEFOfficialFinancialApiClient):
-    """Official SUGEF client with exhaustive, selective peer-history recovery.
+    """Official SUGEF client with exhaustive, selective peer recovery.
 
     The bulk SFN queries remain the primary source. When the public API omits
     part of the history required by 08ME14-01 for one or more peers, this client
     directly re-queries only the missing methodology accounts for every affected
-    entity. The inherited filtered-job executor keeps concurrency at two workers,
-    avoiding the former artificial four-entity limit without issuing full-state
-    downloads or manufacturing missing observations.
+    entity. It also supplements the current peer snapshot with the same total
+    liabilities account observed in the primary entity's authoritative balance.
+    No liability account is hard-coded or derived from accounting identities.
     """
+
+    _LIABILITY_ACCOUNT_TERMS = ("TOTAL PASIVO", "PASIVO TOTAL")
 
     def __init__(self, config: SUGEFFinancialSourceConfig) -> None:
         super().__init__(config)
+
+    def read(self, cutoff_date: date) -> SUGEFApiReadResult:
+        result = super().read(cutoff_date)
+        return self._supplement_peer_liabilities(result)
+
+    def _supplement_peer_liabilities(
+        self,
+        result: SUGEFApiReadResult,
+    ) -> SUGEFApiReadResult:
+        """Load peer liabilities from the source-native account used by the primary entity."""
+
+        lines = list(result.lines)
+        diagnostics = list(result.diagnostics)
+        endpoints = set(result.endpoints)
+        effective_cutoff = self._primary_statement_cutoff(lines)
+        if effective_cutoff is None or not self._config.api_entity_codes:
+            return result
+
+        primary = self._config.api_entity_codes[0]
+        primary_balance = tuple(
+            line
+            for line in lines
+            if line.entity.entity_id == primary
+            and line.statement_date == effective_cutoff
+            and line.statement_type is FinancialStatementType.BALANCE_SHEET
+        )
+        liability_account = self._resolve_liability_account_code(primary_balance)
+        if liability_account is None:
+            diagnostics.append(
+                "No fue posible resolver en el Balance oficial la cuenta IASEF de Pasivo total; "
+                "la comparativa conserva N/D sin fabricar valores."
+            )
+            return SUGEFApiReadResult(
+                lines=result.lines,
+                endpoints=result.endpoints,
+                diagnostics=tuple(diagnostics),
+            )
+
+        period = date(effective_cutoff.year, effective_cutoff.month, 1).strftime("%Y%m%d")
+        try:
+            peer_lines, endpoint = self._read_filtered_report(
+                "",
+                period,
+                *self._BALANCE_REPORT,
+                liability_account,
+            )
+        except (HTTPError, URLError, TimeoutError, ValueError, OSError) as exc:
+            diagnostics.append(
+                "Pasivos comparativos SFN no disponibles desde la consulta oficial filtrada "
+                f"({type(exc).__name__}); la comparativa conserva N/D."
+            )
+            return SUGEFApiReadResult(
+                lines=result.lines,
+                endpoints=result.endpoints,
+                diagnostics=tuple(diagnostics),
+            )
+
+        lines.extend(peer_lines)
+        lines = self._deduplicate(lines)
+        lines = self._clip_to_primary_statement_cutoff(lines)
+        endpoints.add(endpoint)
+        peer_count = len(
+            {
+                line.entity.entity_id
+                for line in lines
+                if line.statement_date == effective_cutoff
+                and line.statement_type is FinancialStatementType.BALANCE_SHEET
+                and line.account_code.removesuffix(".0") == liability_account
+            }
+        )
+        diagnostics.append(
+            "Pasivos comparativos SFN consultados con la misma cuenta IASEF detectada en "
+            "el Balance oficial de la entidad principal: "
+            f"{liability_account}; {peer_count} entidad(es) con dato en el corte."
+        )
+        return SUGEFApiReadResult(
+            lines=tuple(lines),
+            endpoints=tuple(sorted(endpoints)),
+            diagnostics=tuple(diagnostics),
+        )
+
+    @classmethod
+    def _resolve_liability_account_code(
+        cls,
+        balance_lines: tuple[FinancialStatementLine, ...],
+    ) -> str | None:
+        """Resolve total liabilities from the primary entity's authoritative full balance."""
+
+        candidates: list[tuple[int, int, str, FinancialStatementLine]] = []
+        for line in balance_lines:
+            if line.statement_type is not FinancialStatementType.BALANCE_SHEET:
+                continue
+            normalized = cls._normalize_account_name(line.account_name)
+            for term in cls._LIABILITY_ACCOUNT_TERMS:
+                if normalized == term:
+                    candidates.append((0, len(normalized), line.account_code, line))
+                elif term in normalized:
+                    candidates.append((1, len(normalized), line.account_code, line))
+        if not candidates:
+            return None
+        selected = min(candidates, key=lambda item: (item[0], item[1], item[2]))[3]
+        account_code = selected.account_code.strip().removesuffix(".0")
+        return account_code or None
 
     def _missing_peer_history(
         self,

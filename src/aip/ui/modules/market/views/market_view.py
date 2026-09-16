@@ -257,7 +257,7 @@ class MarketView(QWidget):
         market_filters.addWidget(self._market_curve_filter)
         market_filters.addWidget(QLabel("Clasificación"))
         self._market_class_filter = QComboBox()
-        self._market_class_filter.addItems(("TODAS", "BARATO", "NEUTRAL", "CARO"))
+        self._market_class_filter.addItems(("TODAS", "COMPRA", "NEUTRAL", "VENTA"))
         market_filters.addWidget(self._market_class_filter)
         market_filters.addWidget(QLabel("Portafolio"))
         self._market_portfolio_filter = QComboBox()
@@ -436,9 +436,9 @@ class MarketView(QWidget):
         font.setBold(True)
         item.setFont(font)
         token = value.strip().upper()
-        if token == "BARATO":
+        if token == "COMPRA":
             item.setForeground(QColor("#167A68"))
-        elif token == "CARO":
+        elif token == "VENTA":
             item.setForeground(QColor("#B42335"))
         else:
             item.setForeground(QColor("#566D7C"))
