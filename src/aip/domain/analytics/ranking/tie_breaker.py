@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from aip.domain.analytics.enums.ranking_order import RankingOrder
-from aip.domain.analytics.exceptions import RankingError
-from aip.domain.analytics.ranking.rank_item import RankItem
+from ..enums.ranking_order import RankingOrder
+from ..exceptions import RankingError
+from .rank_item import RankItem
 
 
 @dataclass(frozen=True, slots=True)

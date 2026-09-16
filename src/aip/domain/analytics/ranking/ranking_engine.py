@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from aip.domain.analytics.enums.ranking_order import RankingOrder
-from aip.domain.analytics.exceptions import DuplicateRankItemError, RankingError
-from aip.domain.analytics.ranking.rank_item import RankItem
-from aip.domain.analytics.ranking.ranking_result import RankingResult
-from aip.domain.analytics.ranking.tie_breaker import TieBreaker
+from ..enums.ranking_order import RankingOrder
+from ..exceptions import DuplicateRankItemError, RankingError
+from .rank_item import RankItem
+from .ranking_result import RankingResult
+from .tie_breaker import TieBreaker
 
 
 class RankingEngine:
