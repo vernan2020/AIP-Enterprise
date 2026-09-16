@@ -73,9 +73,7 @@ class PowerBISemanticModelRoute:
         return cls(
             configuration_key=configuration_key,
             workspace_id=(
-                None
-                if workspace_id is None
-                else cls._parse_uuid("workspace_id", workspace_id)
+                None if workspace_id is None else cls._parse_uuid("workspace_id", workspace_id)
             ),
             dataset_id=cls._parse_uuid("dataset_id", dataset_id),
             authentication_profile_key=authentication_profile_key,
@@ -87,8 +85,7 @@ class PowerBISemanticModelRoute:
 
         if self.workspace_id is None:
             return (
-                f"{_POWER_BI_API_ORIGIN}/v1.0/myorg/datasets/{self.dataset_id}"
-                "/executeDaxQueries"
+                f"{_POWER_BI_API_ORIGIN}/v1.0/myorg/datasets/{self.dataset_id}" "/executeDaxQueries"
             )
         return (
             f"{_POWER_BI_API_ORIGIN}/v1.0/myorg/groups/{self.workspace_id}"
