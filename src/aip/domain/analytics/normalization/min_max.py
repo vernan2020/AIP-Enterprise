@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from aip.domain.analytics.exceptions import NormalizationError
+from ..exceptions import NormalizationError
 
 
 class MinMaxNormalizer:
