@@ -7,7 +7,7 @@ from datetime import date
 from decimal import Decimal, DivisionByZero, InvalidOperation
 from typing import Literal
 
-from aip.domain.financial_analysis.models import FinancialStatementLine, FinancialStatementType
+from .models import FinancialStatementLine, FinancialStatementType
 
 ROAStatus = Literal["CALCULATED", "INSUFFICIENT_HISTORY", "DATA_UNAVAILABLE"]
 
