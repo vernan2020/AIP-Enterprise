@@ -18,3 +18,14 @@ def test_market_view_renders_and_binds(qt_app) -> None:
     assert tabs.tabText(0).startswith("RV Portafolio")
     assert tabs.tabText(1).startswith("RV Mercado")
     assert tabs.tabText(2).startswith("Rotación")
+
+
+def test_market_view_uses_buy_sell_classification_filters(qt_app) -> None:
+    view = MarketView()
+
+    labels = tuple(
+        view._market_class_filter.itemText(index)
+        for index in range(view._market_class_filter.count())
+    )
+
+    assert labels == ("TODAS", "COMPRA", "NEUTRAL", "VENTA")
