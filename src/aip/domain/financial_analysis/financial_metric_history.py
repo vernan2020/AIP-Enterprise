@@ -3,13 +3,13 @@ from __future__ import annotations
 from calendar import monthrange
 from datetime import date
 
-from aip.domain.financial_analysis.models import (
+from .models import (
     FinancialMetricHistoryPoint,
     FinancialMetricHistorySeries,
     FinancialStatementLine,
 )
-from aip.domain.financial_analysis.return_on_assets import ReturnOnAssetsService
-from aip.domain.financial_analysis.services import FinancialAnalysisService
+from .return_on_assets import ReturnOnAssetsService
+from .services import FinancialAnalysisService
 
 
 class FinancialMetricHistoryService:
@@ -67,6 +67,7 @@ class FinancialMetricHistoryService:
                 cutoff_date=statement_date,
             )
             for code in values:
+                source_account: str | None
                 if code == "ROA":
                     value = roa.value_percent
                     source_account = roa.source_account
