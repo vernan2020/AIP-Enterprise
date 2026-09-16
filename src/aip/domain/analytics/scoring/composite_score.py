@@ -3,9 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
-from aip.domain.analytics.exceptions import InvalidScoreBandError
-from aip.domain.analytics.scoring.score_band import ScoreBand
-from aip.domain.analytics.scoring.weighted_score import WeightedScore
+from ..exceptions import InvalidScoreBandError
+from .score_band import ScoreBand
+from .weighted_score import WeightedScore
 
 
 @dataclass(frozen=True, slots=True)

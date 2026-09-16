@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
-from aip.domain.analytics.exceptions import InvalidWeightError
-from aip.domain.analytics.scoring.score_component import ScoreComponent
+from ..exceptions import InvalidWeightError
+from .score_component import ScoreComponent
 
 
 @dataclass(frozen=True, slots=True)
