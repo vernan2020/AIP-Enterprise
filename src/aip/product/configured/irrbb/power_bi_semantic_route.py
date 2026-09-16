@@ -35,7 +35,7 @@ class PowerBISemanticModelRoute:
 
     The route contains non-secret identifiers plus an opaque authentication-profile
     reference. ``workspace_id`` is optional so models in My workspace can use the
-    Microsoft dataset-only Execute DAX Queries endpoint. Models in another workspace
+    Microsoft dataset-only Execute Queries endpoint. Models in another workspace
     continue to use the explicit group/workspace route.
 
     Credentials, bearer tokens, client secrets and tenant secrets are intentionally
@@ -81,15 +81,13 @@ class PowerBISemanticModelRoute:
 
     @property
     def execute_dax_queries_url(self) -> str:
-        """Return the pinned Microsoft Arrow endpoint for this semantic model."""
+        """Return the pinned Microsoft Execute Queries REST endpoint."""
 
         if self.workspace_id is None:
-            return (
-                f"{_POWER_BI_API_ORIGIN}/v1.0/myorg/datasets/{self.dataset_id}" "/executeDaxQueries"
-            )
+            return f"{_POWER_BI_API_ORIGIN}/v1.0/myorg/datasets/{self.dataset_id}/executeQueries"
         return (
             f"{_POWER_BI_API_ORIGIN}/v1.0/myorg/groups/{self.workspace_id}"
-            f"/datasets/{self.dataset_id}/executeDaxQueries"
+            f"/datasets/{self.dataset_id}/executeQueries"
         )
 
     @property
