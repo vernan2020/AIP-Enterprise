@@ -4,8 +4,8 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 
-from aip.domain.financial_math.curves.curve_point import CurvePoint
-from aip.domain.financial_math.exceptions import BootstrapError
+from ..exceptions import BootstrapError
+from .curve_point import CurvePoint
 
 
 @dataclass(frozen=True, slots=True)
