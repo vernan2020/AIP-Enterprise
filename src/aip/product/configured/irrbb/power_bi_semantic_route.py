@@ -11,15 +11,15 @@ from aip.application.irrbb.physical_source_registry import (
     IRRBBPhysicalSourceSegment,
 )
 from aip.product.configured.irrbb.physical_source_registry import (
+    CAPTACIONES_SEMANTIC_MODEL_SOURCE,
     CREDIT_SEMANTIC_MODEL_SOURCE,
-    TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE,
 )
 
 _POWER_BI_API_ORIGIN = "https://api.powerbi.com"
 _REFERENCE_KEY_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9_.-]{0,127}$")
 _CANONICAL_SEMANTIC_SOURCES = {
     IRRBBPhysicalSourceSegment.CREDIT: CREDIT_SEMANTIC_MODEL_SOURCE,
-    IRRBBPhysicalSourceSegment.TERM_DEPOSIT: TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE,
+    IRRBBPhysicalSourceSegment.TERM_DEPOSIT: CAPTACIONES_SEMANTIC_MODEL_SOURCE,
 }
 
 
