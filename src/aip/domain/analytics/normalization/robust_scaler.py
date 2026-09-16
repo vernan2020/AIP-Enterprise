@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from aip.domain.analytics.exceptions import NormalizationError
-from aip.domain.analytics.statistics.descriptive_statistics import DescriptiveStatistics
+from ..exceptions import NormalizationError
+from ..statistics.descriptive_statistics import DescriptiveStatistics
 
 
 class RobustScaler:
