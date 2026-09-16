@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 
-from aip.domain.financial_analysis.models import (
+from .models import (
     EntityFinancialRating,
     FinancialStatementLine,
     RatingDimensionAssessment,
