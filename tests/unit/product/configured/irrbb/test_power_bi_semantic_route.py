@@ -29,10 +29,11 @@ def _route(
     *,
     configuration_key: str,
     dataset_id: str = _CREDIT_DATASET_ID,
+    workspace_id: str | None = _WORKSPACE_ID,
 ) -> PowerBISemanticModelRoute:
     return PowerBISemanticModelRoute.from_strings(
         configuration_key=configuration_key,
-        workspace_id=_WORKSPACE_ID,
+        workspace_id=workspace_id,
         dataset_id=dataset_id,
         authentication_profile_key="security.auth.power_bi.readonly",
     )
@@ -73,6 +74,35 @@ def test_execute_dax_endpoint_is_pinned_to_microsoft_host() -> None:
     )
     assert "security.auth.power_bi.readonly" not in route.execute_dax_queries_url
     assert "security.auth.power_bi.readonly" not in route.safe_reference
+
+
+def test_dataset_only_route_uses_my_workspace_arrow_endpoint() -> None:
+    route = _route(
+        configuration_key=CREDIT_SEMANTIC_MODEL_SOURCE.configuration_key,
+        workspace_id=None,
+    )
+
+    assert route.workspace_id is None
+    assert route.execute_dax_queries_url == (
+        f"https://api.powerbi.com/v1.0/myorg/datasets/{_CREDIT_DATASET_ID}/executeDaxQueries"
+    )
+    assert route.safe_reference == f"powerbi://dataset/{_CREDIT_DATASET_ID}"
+
+    binding = InstitutionalPowerBISemanticRouteBinding(
+        descriptor=CREDIT_SEMANTIC_MODEL_SOURCE,
+        route=route,
+    )
+    assert binding.source_reference == (
+        f"{CREDIT_SEMANTIC_MODEL_SOURCE.source_id}@powerbi://dataset/{_CREDIT_DATASET_ID}"
+    )
+
+
+def test_dataset_only_route_requires_workspace_to_be_omitted_not_blank() -> None:
+    with pytest.raises(ValueError, match="workspace_id.*canonical UUID"):
+        _route(
+            configuration_key=CREDIT_SEMANTIC_MODEL_SOURCE.configuration_key,
+            workspace_id="",
+        )
 
 
 def test_route_uses_only_approved_arrow_transport() -> None:
