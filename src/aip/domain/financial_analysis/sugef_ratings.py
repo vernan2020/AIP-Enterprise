@@ -4,18 +4,18 @@ from dataclasses import replace
 from datetime import date
 from decimal import Decimal
 
-from aip.domain.financial_analysis.models import (
+from .models import (
     EntityFinancialRating,
     FinancialStatementLine,
     FinancialStatementType,
     RatingDirection,
     SourceTrace,
 )
-from aip.domain.financial_analysis.ratings import (
+from .ratings import (
     FinancialEntityRatingService,
     RatingIndicatorDefinition,
 )
-from aip.domain.financial_analysis.return_on_assets import ReturnOnAssetsService
+from .return_on_assets import ReturnOnAssetsService
 
 
 class SUGEFOnlyFinancialEntityRatingService(FinancialEntityRatingService):
