@@ -11,6 +11,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from aip.ui.modules.market.presentation_labels import relative_value_classification_label
+
 
 class RelativeValueView(QWidget):
     """Ranking compacto de Valor Relativo del portafolio."""
@@ -104,7 +106,7 @@ class RelativeValueView(QWidget):
         if column == 1:
             return str(getattr(row, "currency", ""))
         if column == 2:
-            return str(getattr(row, "classification", ""))
+            return relative_value_classification_label(getattr(row, "classification", ""))
         if column == 3:
             return cls._number(getattr(row, "spread_bp", None), 1, " pb")
         if column == 4:
@@ -146,13 +148,15 @@ class RelativeValueView(QWidget):
 
     @staticmethod
     def _apply_classification_style(item: QTableWidgetItem, row: object) -> None:
-        classification = str(getattr(row, "classification", "")).strip().upper()
+        classification = relative_value_classification_label(
+            getattr(row, "classification", "")
+        ).upper()
         font = item.font()
         font.setBold(True)
         item.setFont(font)
-        if classification == "BARATO":
+        if classification == "COMPRA":
             item.setForeground(QColor("#167A68"))
-        elif classification == "CARO":
+        elif classification == "VENTA":
             item.setForeground(QColor("#B42335"))
         else:
             item.setForeground(QColor("#566D7C"))
