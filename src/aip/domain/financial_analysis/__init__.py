@@ -1,6 +1,6 @@
 """Dominio de análisis financiero de entidades supervisadas por SUGEF."""
 
-from aip.domain.financial_analysis.models import (
+from .models import (
     EntityFinancialRating,
     EntityRatingSummary,
     FinancialAnalysisSnapshot,
@@ -14,8 +14,8 @@ from aip.domain.financial_analysis.models import (
     RatingLevel,
     SourceTrace,
 )
-from aip.domain.financial_analysis.ratings import FinancialEntityRatingService
-from aip.domain.financial_analysis.services import FinancialAnalysisService
+from .ratings import FinancialEntityRatingService
+from .services import FinancialAnalysisService
 
 __all__ = [
     "FinancialAnalysisService",
