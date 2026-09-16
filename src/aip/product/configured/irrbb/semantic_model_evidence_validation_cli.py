@@ -50,7 +50,7 @@ def semantic_model_evidence_validation_report(
         "inspection_method": snapshot.inspection_method,
         "observed_at": snapshot.observed_at.isoformat(),
         "schema_freshness": snapshot.schema_freshness.value,
-        "provider_workspace_reference_fingerprint": _reference_fingerprint(
+        "provider_workspace_reference_fingerprint": _optional_reference_fingerprint(
             snapshot.provider_workspace_reference
         ),
         "provider_model_reference_fingerprint": _reference_fingerprint(
@@ -68,6 +68,12 @@ def semantic_model_evidence_validation_report(
 
 def _reference_fingerprint(value: str) -> str:
     return "sha256:" + hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def _optional_reference_fingerprint(value: str | None) -> str | None:
+    if value is None:
+        return None
+    return _reference_fingerprint(value)
 
 
 def _build_parser() -> _SafeArgumentParser:
