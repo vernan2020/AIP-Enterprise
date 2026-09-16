@@ -4,13 +4,13 @@ import unicodedata
 from datetime import date
 from decimal import Decimal
 
-from aip.domain.financial_analysis.models import (
+from .models import (
     FinancialIndicatorReconciliation,
     FinancialIndicatorReconciliationStatus,
     FinancialStatementLine,
     FinancialStatementType,
 )
-from aip.domain.financial_analysis.ratings import FinancialEntityRatingService
+from .ratings import FinancialEntityRatingService
 
 
 class FinancialIndicatorReconciliationService:
