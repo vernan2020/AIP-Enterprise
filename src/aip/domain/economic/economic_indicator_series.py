@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
-from aip.domain.economic.economic_indicator_catalog import EconomicIndicatorDefinition
-from aip.domain.economic.economic_indicator_observation import EconomicIndicatorObservation
+from .economic_indicator_catalog import EconomicIndicatorDefinition
+from .economic_indicator_observation import EconomicIndicatorObservation
 
 
 @dataclass(frozen=True, slots=True)
