@@ -86,15 +86,17 @@ class IRRBBSemanticModelRelationshipMetadata:
 class IRRBBSemanticModelInspectionSnapshot:
     """Auditable metadata-only evidence returned by a semantic-model inspector.
 
-    Provider workspace/model references are runtime-observed opaque identifiers. They
-    are evidence, not source configuration, and must never be hard-coded by callers.
-    The contract rejects row data and expressions so discovery cannot silently turn
-    into contractual-position extraction.
+    Provider workspace/model references are runtime-observed opaque identifiers. The
+    workspace reference is optional because Power BI supports dataset-only access for
+    models in My workspace. These references are evidence, not source configuration,
+    and must never be hard-coded by callers. The contract rejects row data and
+    expressions so discovery cannot silently turn into contractual-position
+    extraction.
     """
 
     source_id: str
     logical_name: str
-    provider_workspace_reference: str
+    provider_workspace_reference: str | None
     provider_model_reference: str
     provider_model_name: str
     inspection_method: str
@@ -108,7 +110,7 @@ class IRRBBSemanticModelInspectionSnapshot:
     def __post_init__(self) -> None:
         _require_text("semantic-model source_id", self.source_id)
         _require_text("semantic-model logical_name", self.logical_name)
-        _require_text(
+        _validate_optional_text(
             "semantic-model provider_workspace_reference",
             self.provider_workspace_reference,
         )
