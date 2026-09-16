@@ -41,8 +41,20 @@ class _PeerLiabilityClient(SUGEFCompletePeerFinancialApiClient):
         self.requested_account = account_code
         return (
             [
-                _line("PEER-1", FinancialStatementType.BALANCE_SHEET, account_code, "PASIVO TOTAL", "80"),
-                _line("PEER-2", FinancialStatementType.BALANCE_SHEET, account_code, "PASIVO TOTAL", "120"),
+                _line(
+                    "PEER-1",
+                    FinancialStatementType.BALANCE_SHEET,
+                    account_code,
+                    "PASIVO TOTAL",
+                    "80",
+                ),
+                _line(
+                    "PEER-2",
+                    FinancialStatementType.BALANCE_SHEET,
+                    account_code,
+                    "PASIVO TOTAL",
+                    "120",
+                ),
             ],
             "test://sugef/liabilities",
         )
@@ -94,7 +106,8 @@ def test_peer_liabilities_use_source_native_account_from_primary_balance() -> No
     peer_ids = {
         line.entity.entity_id
         for line in enriched.lines
-        if line.account_code == _LIABILITY_ACCOUNT and line.entity.entity_id.startswith("PEER-")
+        if line.account_code == _LIABILITY_ACCOUNT
+        and line.entity.entity_id.startswith("PEER-")
     }
     assert peer_ids == {"PEER-1", "PEER-2"}
     assert "test://sugef/liabilities" in enriched.endpoints
