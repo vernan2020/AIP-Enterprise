@@ -22,3 +22,8 @@ def test_presenter_supports_filters_and_selection() -> None:
 
     assert view_model.filters["currency"] == "USD"
     assert selected.selected_curve == "USD"
+
+
+def test_presenter_uses_buy_sell_terms_for_relative_value_classification() -> None:
+    assert MarketPresenter._translate_classification("CHEAP") == "COMPRA"
+    assert MarketPresenter._translate_classification("RICH") == "VENTA"
