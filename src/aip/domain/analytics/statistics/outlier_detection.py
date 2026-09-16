@@ -3,9 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
-from aip.domain.analytics.enums.outlier_method import OutlierMethod
-from aip.domain.analytics.exceptions import StatisticsError
-from aip.domain.analytics.statistics.descriptive_statistics import DescriptiveStatistics
+from ..enums.outlier_method import OutlierMethod
+from ..exceptions import StatisticsError
+from .descriptive_statistics import DescriptiveStatistics
 
 
 @dataclass(frozen=True, slots=True)
