@@ -79,17 +79,29 @@ def test_validator_binds_credit_metadata_to_governed_source() -> None:
     assert len(bundle.snapshot.relationships) == 1
 
 
-def test_validator_binds_term_deposit_metadata_to_governed_source() -> None:
+def test_validator_binds_captaciones_provider_to_term_deposit_perimeter() -> None:
     payload = _payload(
         source_id=TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE.source_id,
         logical_name=TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE.logical_name,
-        provider_model_name=TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE.logical_name,
+        provider_model_name="Captaciones",
     )
 
     bundle = SemanticModelInspectionEvidenceValidator().validate_report(payload)
 
     assert bundle.source is TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE
     assert bundle.snapshot.logical_name == "Certificados"
+    assert bundle.snapshot.provider_model_name == "Captaciones"
+
+
+def test_validator_does_not_treat_certificados_as_provider_model_alias() -> None:
+    payload = _payload(
+        source_id=TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE.source_id,
+        logical_name=TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE.logical_name,
+        provider_model_name="Certificados",
+    )
+
+    with pytest.raises(ValueError, match="provider_model_name does not match"):
+        SemanticModelInspectionEvidenceValidator().validate_report(payload)
 
 
 def test_parse_json_document_validates_complete_transferred_report() -> None:
