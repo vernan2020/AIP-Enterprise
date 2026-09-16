@@ -34,12 +34,16 @@ class PowerBISemanticModelRoute:
     """Deployment-resolved route to one Power BI semantic model.
 
     The route contains non-secret identifiers plus an opaque authentication-profile
-    reference. Credentials, bearer tokens, client secrets and tenant secrets are
-    intentionally outside this contract.
+    reference. ``workspace_id`` is optional so models in My workspace can use the
+    Microsoft dataset-only Execute DAX Queries endpoint. Models in another workspace
+    continue to use the explicit group/workspace route.
+
+    Credentials, bearer tokens, client secrets and tenant secrets are intentionally
+    outside this contract.
     """
 
     configuration_key: str
-    workspace_id: UUID
+    workspace_id: UUID | None
     dataset_id: UUID
     authentication_profile_key: str
     transport: PowerBISemanticQueryTransport = (
@@ -49,7 +53,8 @@ class PowerBISemanticModelRoute:
     def __post_init__(self) -> None:
         self._require_reference_key("configuration_key", self.configuration_key)
         self._require_reference_key("authentication_profile_key", self.authentication_profile_key)
-        self._require_non_nil_uuid("workspace_id", self.workspace_id)
+        if self.workspace_id is not None:
+            self._require_non_nil_uuid("workspace_id", self.workspace_id)
         self._require_non_nil_uuid("dataset_id", self.dataset_id)
         if self.transport is not PowerBISemanticQueryTransport.EXECUTE_DAX_QUERIES_ARROW:
             raise ValueError("unsupported Power BI semantic query transport")
@@ -59,7 +64,7 @@ class PowerBISemanticModelRoute:
         cls,
         *,
         configuration_key: str,
-        workspace_id: str,
+        workspace_id: str | None,
         dataset_id: str,
         authentication_profile_key: str,
     ) -> PowerBISemanticModelRoute:
@@ -67,15 +72,24 @@ class PowerBISemanticModelRoute:
 
         return cls(
             configuration_key=configuration_key,
-            workspace_id=cls._parse_uuid("workspace_id", workspace_id),
+            workspace_id=(
+                None
+                if workspace_id is None
+                else cls._parse_uuid("workspace_id", workspace_id)
+            ),
             dataset_id=cls._parse_uuid("dataset_id", dataset_id),
             authentication_profile_key=authentication_profile_key,
         )
 
     @property
     def execute_dax_queries_url(self) -> str:
-        """Return the pinned Microsoft endpoint for this workspace/model pair."""
+        """Return the pinned Microsoft Arrow endpoint for this semantic model."""
 
+        if self.workspace_id is None:
+            return (
+                f"{_POWER_BI_API_ORIGIN}/v1.0/myorg/datasets/{self.dataset_id}"
+                "/executeDaxQueries"
+            )
         return (
             f"{_POWER_BI_API_ORIGIN}/v1.0/myorg/groups/{self.workspace_id}"
             f"/datasets/{self.dataset_id}/executeDaxQueries"
@@ -85,6 +99,8 @@ class PowerBISemanticModelRoute:
     def safe_reference(self) -> str:
         """Return a diagnostic route reference containing no authentication material."""
 
+        if self.workspace_id is None:
+            return f"powerbi://dataset/{self.dataset_id}"
         return f"powerbi://workspace/{self.workspace_id}/dataset/{self.dataset_id}"
 
     @staticmethod
