@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from aip.domain.policies.base.policy_result import PolicyResult
+from ..base.policy_result import PolicyResult
 
 
 @dataclass(frozen=True, slots=True)
