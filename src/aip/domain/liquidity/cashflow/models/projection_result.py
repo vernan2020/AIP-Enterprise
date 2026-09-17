@@ -4,7 +4,8 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 
 from aip.domain.analytics.explainability.explanation_factor import ExplanationFactor
-from aip.domain.liquidity.cashflow.models.projected_cashflow import ProjectedCashFlow
+
+from .projected_cashflow import ProjectedCashFlow
 
 
 @dataclass(frozen=True, slots=True)

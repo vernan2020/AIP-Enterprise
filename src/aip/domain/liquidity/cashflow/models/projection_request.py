@@ -6,12 +6,13 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from aip.domain.financial_math.cashflows.cashflow import CashFlow
-from aip.domain.liquidity.cashflow.models.behavioral_assumption import BehavioralAssumption
+
+from .behavioral_assumption import BehavioralAssumption
 
 if TYPE_CHECKING:
-    from aip.domain.liquidity.cashflow.providers.behavioral_provider import BehavioralProvider
-    from aip.domain.liquidity.cashflow.providers.rollover_provider import RolloverProvider
-    from aip.domain.liquidity.cashflow.providers.scenario_provider import ScenarioProvider
+    from ..providers.behavioral_provider import BehavioralProvider
+    from ..providers.rollover_provider import RolloverProvider
+    from ..providers.scenario_provider import ScenarioProvider
 
 
 @dataclass(frozen=True, slots=True)
