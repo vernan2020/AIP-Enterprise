@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from decimal import Decimal
 
-from aip.domain.intelligence.models import (
+from .models import (
     FinancialIntelligenceContext,
     FinancialIntelligenceReport,
     IntelligenceEvidence,
