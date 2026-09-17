@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from aip.domain.liquidity.hqla.models.hqla_policy_result import HQLAPolicyResult
 from aip.domain.policies.base.policy_context import PolicyContext
 from aip.domain.policies.engine.policy_engine import PolicyEngine
 from aip.domain.policies.registry.policy_registry import PolicyRegistry
+
+from ..models.hqla_policy_result import HQLAPolicyResult
 
 
 class HQLAPolicyEngine:
