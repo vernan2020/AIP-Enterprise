@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from aip.domain.policies.base.policy import Policy
-from aip.domain.policies.exceptions import PolicyValidationError
+from ..base.policy import Policy
+from ..exceptions import PolicyValidationError
 
 
 class PolicyRegistry:
