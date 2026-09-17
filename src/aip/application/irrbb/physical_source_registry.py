@@ -15,10 +15,16 @@ class IRRBBPhysicalSourceKind(str, Enum):
 
 
 class IRRBBPhysicalSourceSegment(str, Enum):
-    """Institutional RTILB position segments requiring independent physical sources."""
+    """Institutional RTILB physical-source segments requiring independent governance.
+
+    Physical-source identity is deliberately broader than canonical instrument
+    classification. In particular, ``CAPTACIONES`` identifies the institutional
+    Power BI source before its records are evidenced and classified as term deposits,
+    non-maturity deposits, or any other supported IRRBB instrument class.
+    """
 
     CREDIT = "CREDIT"
-    TERM_DEPOSIT = "TERM_DEPOSIT"
+    CAPTACIONES = "CAPTACIONES"
     BORROWING = "BORROWING"
     INVESTMENT = "INVESTMENT"
 
@@ -29,7 +35,7 @@ class IRRBBPhysicalSourceSegment(str, Enum):
         if self is IRRBBPhysicalSourceSegment.CREDIT:
             return IRRBBSourcePerimeter.CREDIT
         if self in {
-            IRRBBPhysicalSourceSegment.TERM_DEPOSIT,
+            IRRBBPhysicalSourceSegment.CAPTACIONES,
             IRRBBPhysicalSourceSegment.BORROWING,
         }:
             return IRRBBSourcePerimeter.LIABILITY

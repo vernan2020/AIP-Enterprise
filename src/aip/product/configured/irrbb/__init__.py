@@ -38,10 +38,10 @@ from aip.product.configured.irrbb.investment_source_rules import (
 )
 from aip.product.configured.irrbb.physical_source_registry import (
     BORROWING_WORKBOOK_SOURCE,
+    CAPTACIONES_SEMANTIC_MODEL_SOURCE,
     CREDIT_SEMANTIC_MODEL_SOURCE,
     INSTITUTIONAL_IRRBB_PHYSICAL_SOURCES,
     INVESTMENT_PORTFOLIO_SOURCE,
-    TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE,
     institutional_irrbb_physical_source_registry,
 )
 from aip.product.configured.irrbb.power_bi_semantic_metadata_inspector import (
@@ -83,6 +83,7 @@ from aip.product.configured.irrbb.source_acl import (
 
 __all__ = [
     "BORROWING_WORKBOOK_SOURCE",
+    "CAPTACIONES_SEMANTIC_MODEL_SOURCE",
     "CREDIT_SEMANTIC_MODEL_SOURCE",
     "BorrowingInspectionEvidenceBundle",
     "BorrowingInspectionEvidenceValidator",
@@ -124,7 +125,6 @@ __all__ = [
     "SemanticModelInspectionEvidenceBundle",
     "SemanticModelInspectionEvidenceRenderer",
     "SemanticModelInspectionEvidenceValidator",
-    "TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE",
     "ValidatedBorrowingDiscoveryEvidence",
     "ValidatedBorrowingHeaderCellEvidence",
     "ValidatedBorrowingHeaderEvidence",
