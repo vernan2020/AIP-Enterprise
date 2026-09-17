@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from aip.domain.policies.base.policy import Policy
-from aip.domain.policies.base.policy_context import PolicyContext
-from aip.domain.policies.evaluation.evaluation_result import EvaluationResult
-from aip.domain.policies.exceptions import PolicyValidationError
-from aip.domain.policies.metadata.policy_reference import PolicyReference
-from aip.domain.policies.severity.policy_severity import PolicySeverity
+from ..base.policy import Policy
+from ..base.policy_context import PolicyContext
+from ..evaluation.evaluation_result import EvaluationResult
+from ..exceptions import PolicyValidationError
+from ..metadata.policy_reference import PolicyReference
+from ..severity.policy_severity import PolicySeverity
 
 
 class CompositePolicy(Policy):
