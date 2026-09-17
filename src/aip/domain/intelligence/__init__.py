@@ -1,5 +1,5 @@
-from aip.domain.intelligence.engine import FinancialIntelligenceEngine
-from aip.domain.intelligence.models import (
+from .engine import FinancialIntelligenceEngine
+from .models import (
     FinancialIntelligenceContext,
     FinancialIntelligenceReport,
     IntelligenceFinding,
