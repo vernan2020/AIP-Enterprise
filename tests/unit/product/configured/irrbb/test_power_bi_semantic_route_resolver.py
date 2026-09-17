@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime
 
 import pytest
@@ -267,5 +268,6 @@ def test_configured_metadata_inspector_integrates_with_governed_coordinator() ->
 
     assert result.source is CREDIT_SEMANTIC_MODEL_SOURCE
     assert result.snapshot == _snapshot()
-    assert '"row_data_included": false' in result.evidence_document
-    assert '"expressions_included": false' in result.evidence_document
+    evidence = json.loads(result.evidence_document)
+    assert evidence["row_data_included"] is False
+    assert evidence["expressions_included"] is False
