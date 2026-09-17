@@ -4,14 +4,13 @@ from decimal import Decimal
 
 from aip.domain.analytics.explainability.explanation_factor import ExplanationFactor
 from aip.domain.analytics.statistics.descriptive_statistics import DescriptiveStatistics
-from aip.domain.liquidity.cashflow.engine.aggregation_engine import AggregationEngine
-from aip.domain.liquidity.cashflow.engine.projection_engine import ProjectionEngine
-from aip.domain.liquidity.cashflow.exceptions import ScenarioError
-from aip.domain.liquidity.cashflow.explainability.projection_explanation import (
-    ProjectionExplanation,
-)
-from aip.domain.liquidity.cashflow.models.projection_request import ProjectionRequest
-from aip.domain.liquidity.cashflow.models.projection_result import ProjectionResult
+
+from ..exceptions import ScenarioError
+from ..explainability.projection_explanation import ProjectionExplanation
+from ..models.projection_request import ProjectionRequest
+from ..models.projection_result import ProjectionResult
+from .aggregation_engine import AggregationEngine
+from .projection_engine import ProjectionEngine
 
 
 class CashFlowEngine:
