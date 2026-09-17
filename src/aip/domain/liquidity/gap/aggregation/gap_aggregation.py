@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from aip.domain.liquidity.cashflow.models.projection_request import ProjectionRequest
-from aip.domain.liquidity.gap.models.gap_value import GapValue
+from ...cashflow.models.projection_request import ProjectionRequest
+from ..models.gap_value import GapValue
 
 
 class GapAggregation:
