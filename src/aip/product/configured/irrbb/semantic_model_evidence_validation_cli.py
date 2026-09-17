@@ -19,7 +19,7 @@ SEMANTIC_MODEL_EVIDENCE_VALIDATION_REPORT_TYPE = "IRRBB_POWER_BI_SEMANTIC_MODEL_
 SEMANTIC_MODEL_EVIDENCE_VALIDATION_REPORT_VERSION = "2026.09.14"
 _ALLOWED_SEGMENTS = (
     IRRBBPhysicalSourceSegment.CREDIT,
-    IRRBBPhysicalSourceSegment.TERM_DEPOSIT,
+    IRRBBPhysicalSourceSegment.DEPOSIT_LIABILITY,
 )
 
 
@@ -86,7 +86,7 @@ def _build_parser() -> _SafeArgumentParser:
     parser.add_argument(
         "--expected-segment",
         choices=tuple(segment.value for segment in _ALLOWED_SEGMENTS),
-        help="Optionally require CREDIT or TERM_DEPOSIT governed source identity.",
+        help="Optionally require CREDIT or DEPOSIT_LIABILITY governed source identity.",
     )
     parser.add_argument(
         "--require-current-schema",
