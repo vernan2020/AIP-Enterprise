@@ -3,8 +3,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from datetime import date
 
-from aip.domain.market.snapshots.market_snapshot import MarketSnapshot
-from aip.domain.market.versioning.snapshot_version import SnapshotVersion
+from ..snapshots.market_snapshot import MarketSnapshot
+from ..versioning.snapshot_version import SnapshotVersion
 
 
 class MarketRepository(ABC):
