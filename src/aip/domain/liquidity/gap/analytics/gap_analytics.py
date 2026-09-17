@@ -3,7 +3,8 @@ from __future__ import annotations
 from decimal import Decimal
 
 from aip.domain.analytics.statistics.descriptive_statistics import DescriptiveStatistics
-from aip.domain.liquidity.gap.models.gap_value import GapValue
+
+from ..models.gap_value import GapValue
 
 
 class GapAnalytics:
