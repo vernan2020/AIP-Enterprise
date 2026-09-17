@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from aip.domain.liquidity.gap.models.gap_request import GapRequest
+from ..models.gap_request import GapRequest
 
 
 class LiquidityPolicyProvider(Protocol):
