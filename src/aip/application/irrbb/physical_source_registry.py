@@ -15,21 +15,25 @@ class IRRBBPhysicalSourceKind(str, Enum):
 
 
 class IRRBBPhysicalSourceSegment(str, Enum):
-    """Institutional RTILB position segments requiring independent physical sources."""
+    """Independent physical acquisition perimeters required by institutional RTILB."""
 
     CREDIT = "CREDIT"
-    TERM_DEPOSIT = "TERM_DEPOSIT"
+    DEPOSIT_LIABILITY = "DEPOSIT_LIABILITY"
+    # Backward-compatible source-routing alias. It must not be interpreted as a
+    # canonical product classification: one deposit-liability source may contain
+    # term deposits, non-maturity deposits or other deposit products.
+    TERM_DEPOSIT = "DEPOSIT_LIABILITY"
     BORROWING = "BORROWING"
     INVESTMENT = "INVESTMENT"
 
     @property
     def certification_perimeter(self) -> IRRBBSourcePerimeter:
-        """Map the physical segment to the existing canonical certification perimeter."""
+        """Map the physical acquisition perimeter to canonical source certification."""
 
         if self is IRRBBPhysicalSourceSegment.CREDIT:
             return IRRBBSourcePerimeter.CREDIT
         if self in {
-            IRRBBPhysicalSourceSegment.TERM_DEPOSIT,
+            IRRBBPhysicalSourceSegment.DEPOSIT_LIABILITY,
             IRRBBPhysicalSourceSegment.BORROWING,
         }:
             return IRRBBSourcePerimeter.LIABILITY
@@ -39,6 +43,9 @@ class IRRBBPhysicalSourceSegment(str, Enum):
 @dataclass(frozen=True, slots=True)
 class IRRBBPhysicalSourceDescriptor:
     """Governed identity of one candidate physical source.
+
+    ``segment`` identifies the physical acquisition perimeter, not the canonical
+    product classification of every record returned by that source.
 
     ``configuration_key`` is an opaque deployment key. It is deliberately not a
     workstation path, URL, credential, workspace identifier or connector secret.
@@ -76,7 +83,7 @@ class IRRBBPhysicalSourceDescriptor:
 
 
 class IRRBBPhysicalSourceRegistry:
-    """Fail-closed registry of physical source identities by RTILB segment."""
+    """Fail-closed registry of physical source identities by acquisition perimeter."""
 
     def __init__(self, sources: tuple[IRRBBPhysicalSourceDescriptor, ...]) -> None:
         if not sources:
