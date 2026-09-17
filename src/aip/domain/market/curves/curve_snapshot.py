@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, datetime
 
-from aip.domain.market.curves.market_curve import MarketCurve
-from aip.domain.market.versioning.snapshot_version import SnapshotVersion
+from ..versioning.snapshot_version import SnapshotVersion
+from .market_curve import MarketCurve
 
 
 @dataclass(frozen=True, slots=True)
