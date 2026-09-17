@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from aip.domain.policies.base.policy import Policy
-from aip.domain.policies.base.policy_context import PolicyContext
-from aip.domain.policies.composition.composite_policy import CompositePolicy
-from aip.domain.policies.evaluation.evaluation_result import EvaluationResult
-from aip.domain.policies.severity.policy_severity import PolicySeverity
+from ..base.policy import Policy
+from ..base.policy_context import PolicyContext
+from ..evaluation.evaluation_result import EvaluationResult
+from ..severity.policy_severity import PolicySeverity
+from .composite_policy import CompositePolicy
 
 
 class AndPolicy(CompositePolicy):
