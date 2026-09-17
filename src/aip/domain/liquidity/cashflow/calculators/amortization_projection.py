@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from aip.domain.liquidity.cashflow.exceptions import ProjectionError
+from ..exceptions import ProjectionError
 
 
 class AmortizationProjection:

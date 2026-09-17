@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from aip.domain.liquidity.cashflow.exceptions import BehavioralError, ProjectionError
-from aip.domain.liquidity.cashflow.models.projected_cashflow import ProjectedCashFlow
-from aip.domain.liquidity.cashflow.models.projection_request import ProjectionRequest
+from ..exceptions import BehavioralError, ProjectionError
+from ..models.projected_cashflow import ProjectedCashFlow
+from ..models.projection_request import ProjectionRequest
 
 
 class BehavioralProjection:
