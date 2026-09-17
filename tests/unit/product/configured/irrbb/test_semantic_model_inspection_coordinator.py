@@ -15,8 +15,8 @@ from aip.application.irrbb.semantic_model_inspection import (
     IRRBBSemanticModelTableMetadata,
 )
 from aip.product.configured.irrbb.physical_source_registry import (
+    CAPTACIONES_SEMANTIC_MODEL_SOURCE,
     CREDIT_SEMANTIC_MODEL_SOURCE,
-    TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE,
 )
 from aip.product.configured.irrbb.semantic_model_inspection_coordinator import (
     GovernedSemanticModelInspectionCoordinator,
@@ -79,8 +79,8 @@ def _snapshot(
     [
         (IRRBBPhysicalSourceSegment.CREDIT, CREDIT_SEMANTIC_MODEL_SOURCE),
         (
-            IRRBBPhysicalSourceSegment.TERM_DEPOSIT,
-            TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE,
+            IRRBBPhysicalSourceSegment.CAPTACIONES,
+            CAPTACIONES_SEMANTIC_MODEL_SOURCE,
         ),
     ],
 )
@@ -114,7 +114,7 @@ def test_coordinator_rejects_non_semantic_registered_segment_before_inspection()
 
 
 def test_coordinator_rejects_governed_source_substitution() -> None:
-    inspector = _RecordingInspector(_snapshot(source=TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE))
+    inspector = _RecordingInspector(_snapshot(source=CAPTACIONES_SEMANTIC_MODEL_SOURCE))
     coordinator = GovernedSemanticModelInspectionCoordinator(inspector=inspector)
 
     with pytest.raises(ValueError, match="different source_id"):
