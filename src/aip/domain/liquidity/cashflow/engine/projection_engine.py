@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from aip.domain.liquidity.cashflow.calculators.behavioral_projection import BehavioralProjection
-from aip.domain.liquidity.cashflow.calculators.contractual_projection import ContractualProjection
-from aip.domain.liquidity.cashflow.exceptions import BehavioralError
-from aip.domain.liquidity.cashflow.models.projected_cashflow import ProjectedCashFlow
-from aip.domain.liquidity.cashflow.models.projection_request import ProjectionRequest
+from ..calculators.behavioral_projection import BehavioralProjection
+from ..calculators.contractual_projection import ContractualProjection
+from ..exceptions import BehavioralError
+from ..models.projected_cashflow import ProjectedCashFlow
+from ..models.projection_request import ProjectionRequest
 
 
 class ProjectionEngine:
