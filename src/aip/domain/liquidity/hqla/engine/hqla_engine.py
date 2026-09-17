@@ -107,8 +107,10 @@ class HQLAEngine:
             explanation=explanation,
             currency=cast(
                 str,
-                request.configuration.get("currency", "USD")
-                if isinstance(request.configuration.get("currency"), str)
-                else "USD",
+                (
+                    request.configuration.get("currency", "USD")
+                    if isinstance(request.configuration.get("currency"), str)
+                    else "USD"
+                ),
             ),
         )
