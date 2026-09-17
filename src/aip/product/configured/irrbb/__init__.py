@@ -60,7 +60,6 @@ from aip.product.configured.irrbb.power_bi_semantic_route_resolver import (
 )
 from aip.product.configured.irrbb.power_bi_semantic_route_settings_provider import (
     ConfiguredPowerBISemanticRouteSettingsProvider,
-    PowerBISemanticRouteConfiguration,
 )
 from aip.product.configured.irrbb.runtime_dependencies import (
     ConfiguredIRRBBRuntimeDependencies,
@@ -120,7 +119,6 @@ __all__ = [
     "PowerBISemanticMetadataSnapshotFetcher",
     "PowerBISemanticModelRoute",
     "PowerBISemanticQueryTransport",
-    "PowerBISemanticRouteConfiguration",
     "PowerBISemanticRouteSettings",
     "PowerBISemanticRouteSettingsProvider",
     "SemanticModelInspectionEvidenceBundle",
