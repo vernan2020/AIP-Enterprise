@@ -65,18 +65,18 @@ def test_credit_and_term_deposit_routes_bind_to_exact_governed_sources() -> None
     )
 
 
-def test_execute_queries_endpoint_is_pinned_to_microsoft_host() -> None:
+def test_execute_dax_queries_endpoint_is_pinned_to_microsoft_host() -> None:
     route = _route(configuration_key=CREDIT_SEMANTIC_MODEL_SOURCE.configuration_key)
 
     assert route.execute_dax_queries_url == (
         "https://api.powerbi.com/v1.0/myorg/groups/"
-        f"{_WORKSPACE_ID}/datasets/{_CREDIT_DATASET_ID}/executeQueries"
+        f"{_WORKSPACE_ID}/datasets/{_CREDIT_DATASET_ID}/executeDaxQueries"
     )
     assert "security.auth.power_bi.readonly" not in route.execute_dax_queries_url
     assert "security.auth.power_bi.readonly" not in route.safe_reference
 
 
-def test_dataset_only_route_uses_my_workspace_execute_queries_endpoint() -> None:
+def test_dataset_only_route_uses_my_workspace_execute_dax_queries_endpoint() -> None:
     route = _route(
         configuration_key=CREDIT_SEMANTIC_MODEL_SOURCE.configuration_key,
         workspace_id=None,
@@ -84,7 +84,7 @@ def test_dataset_only_route_uses_my_workspace_execute_queries_endpoint() -> None
 
     assert route.workspace_id is None
     assert route.execute_dax_queries_url == (
-        f"https://api.powerbi.com/v1.0/myorg/datasets/{_CREDIT_DATASET_ID}/executeQueries"
+        f"https://api.powerbi.com/v1.0/myorg/datasets/{_CREDIT_DATASET_ID}/executeDaxQueries"
     )
     assert route.safe_reference == f"powerbi://dataset/{_CREDIT_DATASET_ID}"
 

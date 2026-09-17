@@ -133,7 +133,7 @@ def test_resolver_builds_dataset_only_route_from_external_settings() -> None:
     assert binding.route.workspace_id is None
     assert binding.route.authentication_profile_key == _AUTH_PROFILE
     assert binding.route.execute_dax_queries_url.endswith(
-        f"/datasets/{_CREDIT_DATASET_ID}/executeQueries"
+        f"/datasets/{_CREDIT_DATASET_ID}/executeDaxQueries"
     )
 
 
