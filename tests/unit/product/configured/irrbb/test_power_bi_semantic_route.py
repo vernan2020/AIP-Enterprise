@@ -11,8 +11,8 @@ from aip.application.irrbb.physical_source_registry import (
 )
 from aip.product.configured.irrbb.physical_source_registry import (
     BORROWING_WORKBOOK_SOURCE,
+    CAPTACIONES_SEMANTIC_MODEL_SOURCE,
     CREDIT_SEMANTIC_MODEL_SOURCE,
-    TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE,
 )
 from aip.product.configured.irrbb.power_bi_semantic_route import (
     InstitutionalPowerBISemanticRouteBinding,
@@ -22,7 +22,7 @@ from aip.product.configured.irrbb.power_bi_semantic_route import (
 
 _WORKSPACE_ID = "12345678-1234-4234-8234-1234567890ab"
 _CREDIT_DATASET_ID = "22345678-1234-4234-8234-1234567890ab"
-_TERM_DATASET_ID = "32345678-1234-4234-8234-1234567890ab"
+_CAPTACIONES_DATASET_ID = "32345678-1234-4234-8234-1234567890ab"
 
 
 def _route(
@@ -39,29 +39,29 @@ def _route(
     )
 
 
-def test_credit_and_term_deposit_routes_bind_to_exact_governed_sources() -> None:
+def test_credit_and_captaciones_routes_bind_to_exact_governed_sources() -> None:
     credit_route = _route(configuration_key=CREDIT_SEMANTIC_MODEL_SOURCE.configuration_key)
-    term_route = _route(
-        configuration_key=TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE.configuration_key,
-        dataset_id=_TERM_DATASET_ID,
+    captaciones_route = _route(
+        configuration_key=CAPTACIONES_SEMANTIC_MODEL_SOURCE.configuration_key,
+        dataset_id=_CAPTACIONES_DATASET_ID,
     )
 
     credit_binding = InstitutionalPowerBISemanticRouteBinding(
         descriptor=CREDIT_SEMANTIC_MODEL_SOURCE,
         route=credit_route,
     )
-    term_binding = InstitutionalPowerBISemanticRouteBinding(
-        descriptor=TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE,
-        route=term_route,
+    captaciones_binding = InstitutionalPowerBISemanticRouteBinding(
+        descriptor=CAPTACIONES_SEMANTIC_MODEL_SOURCE,
+        route=captaciones_route,
     )
 
     assert credit_binding.descriptor.segment is IRRBBPhysicalSourceSegment.CREDIT
-    assert term_binding.descriptor.segment is IRRBBPhysicalSourceSegment.TERM_DEPOSIT
+    assert captaciones_binding.descriptor.segment is IRRBBPhysicalSourceSegment.CAPTACIONES
     assert credit_binding.source_reference.startswith(
         f"{CREDIT_SEMANTIC_MODEL_SOURCE.source_id}@powerbi://workspace/"
     )
-    assert term_binding.source_reference.startswith(
-        f"{TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE.source_id}@powerbi://workspace/"
+    assert captaciones_binding.source_reference.startswith(
+        f"{CAPTACIONES_SEMANTIC_MODEL_SOURCE.source_id}@powerbi://workspace/"
     )
 
 
@@ -128,7 +128,7 @@ def test_non_power_bi_and_configuration_mismatch_fail_closed() -> None:
             route=route,
         )
 
-    wrong_key_route = _route(configuration_key=TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE.configuration_key)
+    wrong_key_route = _route(configuration_key=CAPTACIONES_SEMANTIC_MODEL_SOURCE.configuration_key)
     with pytest.raises(ValueError, match="configuration_key"):
         InstitutionalPowerBISemanticRouteBinding(
             descriptor=CREDIT_SEMANTIC_MODEL_SOURCE,
