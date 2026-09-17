@@ -213,9 +213,7 @@ class ConfiguredPowerBISemanticMetadataSnapshotFetcher:
             source_id=source.source_id,
             logical_name=source.logical_name,
             provider_workspace_reference=(
-                _MY_WORKSPACE_REFERENCE
-                if route.workspace_id is None
-                else str(route.workspace_id)
+                _MY_WORKSPACE_REFERENCE if route.workspace_id is None else str(route.workspace_id)
             ),
             provider_model_reference=str(route.dataset_id),
             provider_model_name=provider_model_name,
@@ -301,9 +299,7 @@ class ConfiguredPowerBISemanticMetadataSnapshotFetcher:
             timeout_seconds=self._timeout_seconds,
         )
         if response.status_code != 200:
-            raise ConnectionError(
-                f"Power BI metadata query returned HTTP {response.status_code}"
-            )
+            raise ConnectionError(f"Power BI metadata query returned HTTP {response.status_code}")
         content_type = _header_value(response.headers, "content-type")
         if content_type is None or not content_type.casefold().startswith(_ARROW_MEDIA_TYPE):
             raise ValueError("Power BI metadata query did not return Apache Arrow content")
@@ -373,9 +369,7 @@ class ConfiguredPowerBISemanticMetadataSnapshotFetcher:
                 to_table=_required_row_text(row, "ToTable"),
                 to_column=_required_row_text(row, "ToColumn"),
                 is_active=_optional_bool(_row_value(row, "IsActive")),
-                cross_filter_direction=_optional_text(
-                    _row_value(row, "CrossFilteringBehavior")
-                ),
+                cross_filter_direction=_optional_text(_row_value(row, "CrossFilteringBehavior")),
                 from_cardinality=_optional_text(_row_value(row, "FromCardinality")),
                 to_cardinality=_optional_text(_row_value(row, "ToCardinality")),
             )
