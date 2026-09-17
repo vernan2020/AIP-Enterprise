@@ -11,6 +11,7 @@ from aip.application.irrbb.physical_source_registry import (
 from aip.application.irrbb.source_certification import IRRBBSourcePerimeter
 from aip.product.configured.irrbb.physical_source_registry import (
     BORROWING_WORKBOOK_SOURCE,
+    CAPTACIONES_SEMANTIC_MODEL_SOURCE,
     CREDIT_SEMANTIC_MODEL_SOURCE,
     INSTITUTIONAL_IRRBB_PHYSICAL_SOURCES,
     INVESTMENT_PORTFOLIO_SOURCE,
@@ -34,7 +35,7 @@ def _source(
     )
 
 
-def test_institutional_registry_has_exactly_one_source_for_each_position_segment() -> None:
+def test_institutional_registry_has_exactly_one_source_for_each_acquisition_perimeter() -> None:
     registry = institutional_irrbb_physical_source_registry()
 
     assert registry.sources == INSTITUTIONAL_IRRBB_PHYSICAL_SOURCES
@@ -42,18 +43,40 @@ def test_institutional_registry_has_exactly_one_source_for_each_position_segment
     assert len(registry.sources) == 4
 
 
-def test_power_bi_semantic_model_identities_are_governed_without_schema_assumptions() -> None:
+def test_power_bi_semantic_model_identities_are_governed_without_product_assumptions() -> None:
     assert CREDIT_SEMANTIC_MODEL_SOURCE.logical_name == "Credito"
     assert CREDIT_SEMANTIC_MODEL_SOURCE.owner == "TIPowerBI"
     assert CREDIT_SEMANTIC_MODEL_SOURCE.location == "MS Área de Crédito"
     assert CREDIT_SEMANTIC_MODEL_SOURCE.kind is IRRBBPhysicalSourceKind.POWER_BI_SEMANTIC_MODEL
 
-    assert TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE.logical_name == "Certificados"
-    assert TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE.owner == "TIPowerBI"
-    assert TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE.location == "MS Área de Ahorros"
-    assert (
-        TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE.kind is IRRBBPhysicalSourceKind.POWER_BI_SEMANTIC_MODEL
+    assert CAPTACIONES_SEMANTIC_MODEL_SOURCE.source_id == (
+        "coopealianza.liability.powerbi.captaciones"
     )
+    assert CAPTACIONES_SEMANTIC_MODEL_SOURCE.logical_name == "Captaciones"
+    assert (
+        CAPTACIONES_SEMANTIC_MODEL_SOURCE.segment
+        is IRRBBPhysicalSourceSegment.DEPOSIT_LIABILITY
+    )
+    assert CAPTACIONES_SEMANTIC_MODEL_SOURCE.configuration_key == (
+        "irrbb.sources.deposit_liability.power_bi"
+    )
+    assert CAPTACIONES_SEMANTIC_MODEL_SOURCE.owner is None
+    assert CAPTACIONES_SEMANTIC_MODEL_SOURCE.location is None
+    assert (
+        CAPTACIONES_SEMANTIC_MODEL_SOURCE.kind is IRRBBPhysicalSourceKind.POWER_BI_SEMANTIC_MODEL
+    )
+
+
+def test_legacy_term_deposit_source_names_are_aliases_not_product_classification() -> None:
+    assert IRRBBPhysicalSourceSegment.TERM_DEPOSIT is IRRBBPhysicalSourceSegment.DEPOSIT_LIABILITY
+    assert TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE is CAPTACIONES_SEMANTIC_MODEL_SOURCE
+
+    serialized = "|".join(
+        f"{item.source_id}|{item.logical_name}|{item.configuration_key}"
+        for item in INSTITUTIONAL_IRRBB_PHYSICAL_SOURCES
+    ).casefold()
+    assert "certificados" not in serialized
+    assert "term_deposit" not in serialized
 
 
 def test_borrowing_registry_uses_configuration_key_not_personal_workstation_path() -> None:
@@ -95,7 +118,7 @@ def test_registry_does_not_register_aggregate_icl_or_unproven_sql_view_as_contra
 def test_physical_segments_map_to_existing_source_certification_perimeters() -> None:
     assert IRRBBPhysicalSourceSegment.CREDIT.certification_perimeter is IRRBBSourcePerimeter.CREDIT
     assert (
-        IRRBBPhysicalSourceSegment.TERM_DEPOSIT.certification_perimeter
+        IRRBBPhysicalSourceSegment.DEPOSIT_LIABILITY.certification_perimeter
         is IRRBBSourcePerimeter.LIABILITY
     )
     assert (
@@ -172,8 +195,8 @@ def test_registry_lookup_returns_exact_registered_descriptor() -> None:
 
     assert registry.require(IRRBBPhysicalSourceSegment.CREDIT) is CREDIT_SEMANTIC_MODEL_SOURCE
     assert (
-        registry.require(IRRBBPhysicalSourceSegment.TERM_DEPOSIT)
-        is TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE
+        registry.require(IRRBBPhysicalSourceSegment.DEPOSIT_LIABILITY)
+        is CAPTACIONES_SEMANTIC_MODEL_SOURCE
     )
     assert registry.require(IRRBBPhysicalSourceSegment.BORROWING) is BORROWING_WORKBOOK_SOURCE
     assert registry.require(IRRBBPhysicalSourceSegment.INVESTMENT) is INVESTMENT_PORTFOLIO_SOURCE
