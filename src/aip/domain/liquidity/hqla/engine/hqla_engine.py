@@ -2,14 +2,15 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from aip.domain.liquidity.hqla.analytics.hqla_analytics import HQLAAnalytics
-from aip.domain.liquidity.hqla.engine.hqla_policy_engine import HQLAPolicyEngine
-from aip.domain.liquidity.hqla.enums import HQLAClassification
-from aip.domain.liquidity.hqla.exceptions import HQLAProviderError
-from aip.domain.liquidity.hqla.explainability.hqla_explanation import HQLAExplanation
-from aip.domain.liquidity.hqla.models.hqla_request import HQLARequest
-from aip.domain.liquidity.hqla.models.hqla_result import HQLAResult
 from aip.domain.policies.base.policy_context import PolicyContext
+
+from ..analytics.hqla_analytics import HQLAAnalytics
+from ..enums import HQLAClassification
+from ..exceptions import HQLAProviderError
+from ..explainability.hqla_explanation import HQLAExplanation
+from ..models.hqla_request import HQLARequest
+from ..models.hqla_result import HQLAResult
+from .hqla_policy_engine import HQLAPolicyEngine
 
 
 class HQLAEngine:
