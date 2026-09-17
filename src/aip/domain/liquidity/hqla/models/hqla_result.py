@@ -5,7 +5,8 @@ from datetime import date
 from decimal import Decimal
 
 from aip.domain.analytics.explainability.explanation import Explanation
-from aip.domain.liquidity.hqla.enums import HQLAClassification
+
+from ..enums import HQLAClassification
 
 
 @dataclass(frozen=True, slots=True)
