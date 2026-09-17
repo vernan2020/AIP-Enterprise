@@ -3,10 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, datetime
 
-from aip.domain.market.curves.curve_snapshot import CurveSnapshot
-from aip.domain.market.exceptions import MarketSnapshotError
-from aip.domain.market.quotes.market_quote import MarketQuote
-from aip.domain.market.versioning.snapshot_version import SnapshotVersion
+from ..curves.curve_snapshot import CurveSnapshot
+from ..exceptions import MarketSnapshotError
+from ..quotes.market_quote import MarketQuote
+from ..versioning.snapshot_version import SnapshotVersion
 
 
 @dataclass(frozen=True, slots=True)
