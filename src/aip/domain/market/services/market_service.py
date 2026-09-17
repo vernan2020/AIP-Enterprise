@@ -5,13 +5,13 @@ from decimal import Decimal
 
 from aip.domain.financial_math.curves.curve_point import CurvePoint
 from aip.domain.instruments.base.financial_instrument import FinancialInstrument
-from aip.domain.market.curves.curve_snapshot import CurveSnapshot
-from aip.domain.market.curves.market_curve import MarketCurve
-from aip.domain.market.exceptions import MarketSnapshotError
-from aip.domain.market.quotes.market_quote import MarketQuote
-from aip.domain.market.repositories.market_repository import MarketRepository
-from aip.domain.market.snapshots.market_snapshot import MarketSnapshot
-from aip.domain.market.versioning.snapshot_version import SnapshotVersion
+from ..curves.curve_snapshot import CurveSnapshot
+from ..curves.market_curve import MarketCurve
+from ..exceptions import MarketSnapshotError
+from ..quotes.market_quote import MarketQuote
+from ..repositories.market_repository import MarketRepository
+from ..snapshots.market_snapshot import MarketSnapshot
+from ..versioning.snapshot_version import SnapshotVersion
 
 
 class MarketService:
