@@ -18,8 +18,8 @@ from aip.application.irrbb.semantic_model_inspection import (
 )
 from aip.product.configured.irrbb.physical_source_registry import (
     BORROWING_WORKBOOK_SOURCE,
+    CAPTACIONES_SEMANTIC_MODEL_SOURCE,
     CREDIT_SEMANTIC_MODEL_SOURCE,
-    TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE,
 )
 from aip.product.configured.irrbb.power_bi_semantic_metadata_inspector import (
     ConfiguredPowerBISemanticModelMetadataInspector,
@@ -34,7 +34,7 @@ from aip.product.configured.irrbb.semantic_model_inspection_coordinator import (
 )
 
 _CREDIT_DATASET_ID = "22345678-1234-4234-8234-1234567890ab"
-_TERM_DATASET_ID = "32345678-1234-4234-8234-1234567890ab"
+_CAPTACIONES_DATASET_ID = "32345678-1234-4234-8234-1234567890ab"
 _WORKSPACE_ID = "12345678-1234-4234-8234-1234567890ab"
 _AUTH_PROFILE = "security.auth.power_bi.readonly"
 
@@ -137,22 +137,22 @@ def test_resolver_builds_dataset_only_route_from_external_settings() -> None:
     )
 
 
-def test_resolver_preserves_explicit_workspace_route() -> None:
+def test_resolver_preserves_explicit_workspace_route_for_captaciones() -> None:
     provider = _SettingsProvider(
         {
-            TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE.configuration_key: _settings(
-                dataset_id=_TERM_DATASET_ID,
+            CAPTACIONES_SEMANTIC_MODEL_SOURCE.configuration_key: _settings(
+                dataset_id=_CAPTACIONES_DATASET_ID,
                 workspace_id=_WORKSPACE_ID,
             )
         }
     )
     resolver = InstitutionalPowerBISemanticRouteResolver(settings_provider=provider)
 
-    binding = resolver.resolve_segment(segment=IRRBBPhysicalSourceSegment.TERM_DEPOSIT)
+    binding = resolver.resolve_segment(segment=IRRBBPhysicalSourceSegment.CAPTACIONES)
 
-    assert binding.descriptor is TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE
+    assert binding.descriptor is CAPTACIONES_SEMANTIC_MODEL_SOURCE
     assert str(binding.route.workspace_id) == _WORKSPACE_ID
-    assert str(binding.route.dataset_id) == _TERM_DATASET_ID
+    assert str(binding.route.dataset_id) == _CAPTACIONES_DATASET_ID
     assert f"/groups/{_WORKSPACE_ID}/datasets/" in binding.route.execute_dax_queries_url
 
 
