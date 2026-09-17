@@ -58,7 +58,9 @@ class InstitutionalPowerBISemanticRouteResolver:
     ) -> None:
         self._settings_provider = settings_provider
         self._registry = (
-            registry if registry is not None else institutional_irrbb_physical_source_registry()
+            registry
+            if registry is not None
+            else institutional_irrbb_physical_source_registry()
         )
 
     def resolve_segment(
@@ -80,7 +82,9 @@ class InstitutionalPowerBISemanticRouteResolver:
 
         registered_source = self._registry.require(source.segment)
         if source != registered_source:
-            raise ValueError("Power BI route source is not the exact governed registered source")
+            raise ValueError(
+                "Power BI route source is not the exact governed registered source"
+            )
         if source.kind is not IRRBBPhysicalSourceKind.POWER_BI_SEMANTIC_MODEL:
             raise ValueError("Power BI route requires a semantic-model physical source")
 
