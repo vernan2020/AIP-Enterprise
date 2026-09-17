@@ -80,6 +80,17 @@ class PowerBISemanticModelRoute:
         )
 
     @property
+    def dataset_metadata_url(self) -> str:
+        """Return the pinned Microsoft REST endpoint for routed dataset identity."""
+
+        if self.workspace_id is None:
+            return f"{_POWER_BI_API_ORIGIN}/v1.0/myorg/datasets/{self.dataset_id}"
+        return (
+            f"{_POWER_BI_API_ORIGIN}/v1.0/myorg/groups/{self.workspace_id}"
+            f"/datasets/{self.dataset_id}"
+        )
+
+    @property
     def execute_dax_queries_url(self) -> str:
         """Return the pinned Microsoft Execute DAX Queries Arrow REST endpoint."""
 
