@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from aip.domain.liquidity.cashflow.models.projection_request import ProjectionRequest
-from aip.domain.liquidity.gap.models.gap_request import GapRequest
+from ...cashflow.models.projection_request import ProjectionRequest
+from ..models.gap_request import GapRequest
 
 
 class GapProvider(Protocol):
