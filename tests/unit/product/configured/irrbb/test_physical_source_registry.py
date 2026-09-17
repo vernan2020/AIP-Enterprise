@@ -51,9 +51,7 @@ def test_power_bi_semantic_model_identities_are_governed_without_schema_assumpti
     assert CAPTACIONES_SEMANTIC_MODEL_SOURCE.logical_name == "Captaciones"
     assert CAPTACIONES_SEMANTIC_MODEL_SOURCE.owner == "TIPowerBI"
     assert CAPTACIONES_SEMANTIC_MODEL_SOURCE.location == "MS Área de Ahorros"
-    assert (
-        CAPTACIONES_SEMANTIC_MODEL_SOURCE.kind is IRRBBPhysicalSourceKind.POWER_BI_SEMANTIC_MODEL
-    )
+    assert CAPTACIONES_SEMANTIC_MODEL_SOURCE.kind is IRRBBPhysicalSourceKind.POWER_BI_SEMANTIC_MODEL
     assert CAPTACIONES_SEMANTIC_MODEL_SOURCE.segment is IRRBBPhysicalSourceSegment.CAPTACIONES
     assert "term_deposit" not in CAPTACIONES_SEMANTIC_MODEL_SOURCE.configuration_key
     assert "certificados" not in CAPTACIONES_SEMANTIC_MODEL_SOURCE.source_id
