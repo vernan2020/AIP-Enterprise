@@ -4,11 +4,11 @@ from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from time import perf_counter
 
-from aip.domain.policies.base.policy_context import PolicyContext
-from aip.domain.policies.evaluation.evaluation_result import EvaluationResult
-from aip.domain.policies.exceptions import PolicyValidationError
-from aip.domain.policies.metadata.policy_reference import PolicyReference
-from aip.domain.policies.severity.policy_severity import PolicySeverity
+from ..evaluation.evaluation_result import EvaluationResult
+from ..exceptions import PolicyValidationError
+from ..metadata.policy_reference import PolicyReference
+from ..severity.policy_severity import PolicySeverity
+from .policy_context import PolicyContext
 
 
 class Policy(ABC):
