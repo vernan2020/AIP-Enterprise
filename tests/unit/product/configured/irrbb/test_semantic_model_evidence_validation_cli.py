@@ -6,8 +6,8 @@ from io import StringIO
 from pathlib import Path
 
 from aip.product.configured.irrbb.physical_source_registry import (
+    CAPTACIONES_SEMANTIC_MODEL_SOURCE,
     CREDIT_SEMANTIC_MODEL_SOURCE,
-    TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE,
 )
 from aip.product.configured.irrbb.semantic_model_evidence_validation_cli import run
 from aip.product.configured.irrbb.semantic_model_inspection_report_contract import (
@@ -21,10 +21,10 @@ _MODEL_REFERENCE = "model-runtime-reference"
 
 def _payload(
     *,
-    term_deposit: bool = False,
+    deposit_liability: bool = False,
     schema_freshness: str = "CURRENT",
 ) -> dict[str, object]:
-    source = TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE if term_deposit else CREDIT_SEMANTIC_MODEL_SOURCE
+    source = CAPTACIONES_SEMANTIC_MODEL_SOURCE if deposit_liability else CREDIT_SEMANTIC_MODEL_SOURCE
     return {
         "report_type": SEMANTIC_MODEL_METADATA_REPORT_TYPE,
         "report_version": SEMANTIC_MODEL_INSPECTION_REPORT_VERSION,
@@ -102,8 +102,10 @@ def test_credit_metadata_evidence_validates_without_echoing_provider_references(
     assert str(tmp_path) not in stdout.getvalue()
 
 
-def test_term_deposit_evidence_can_be_bound_to_expected_segment(tmp_path: Path) -> None:
-    evidence_path = _write_payload(tmp_path, _payload(term_deposit=True))
+def test_captaciones_evidence_can_be_bound_to_deposit_liability_perimeter(
+    tmp_path: Path,
+) -> None:
+    evidence_path = _write_payload(tmp_path, _payload(deposit_liability=True))
     stdout = StringIO()
     stderr = StringIO()
 
@@ -112,14 +114,17 @@ def test_term_deposit_evidence_can_be_bound_to_expected_segment(tmp_path: Path) 
             "--evidence-json",
             str(evidence_path),
             "--expected-segment",
-            "TERM_DEPOSIT",
+            "DEPOSIT_LIABILITY",
         ],
         stdout=stdout,
         stderr=stderr,
     )
 
     assert status == 0
-    assert json.loads(stdout.getvalue())["logical_name"] == "Certificados"
+    report = json.loads(stdout.getvalue())
+    assert report["segment"] == "DEPOSIT_LIABILITY"
+    assert report["logical_name"] == "Captaciones"
+    assert report["production_activation_authorized"] is False
     assert stderr.getvalue() == ""
 
 
@@ -133,7 +138,7 @@ def test_expected_segment_mismatch_fails_closed(tmp_path: Path) -> None:
             "--evidence-json",
             str(evidence_path),
             "--expected-segment",
-            "TERM_DEPOSIT",
+            "DEPOSIT_LIABILITY",
         ],
         stdout=stdout,
         stderr=stderr,
