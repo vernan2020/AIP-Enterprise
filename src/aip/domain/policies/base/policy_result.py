@@ -4,8 +4,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from aip.domain.policies.metadata.policy_reference import PolicyReference
-from aip.domain.policies.severity.policy_severity import PolicySeverity
+from ..metadata.policy_reference import PolicyReference
+from ..severity.policy_severity import PolicySeverity
 
 
 @dataclass(frozen=True, slots=True)
