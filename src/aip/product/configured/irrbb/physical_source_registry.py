@@ -17,15 +17,18 @@ CREDIT_SEMANTIC_MODEL_SOURCE = IRRBBPhysicalSourceDescriptor(
     location="MS Área de Crédito",
 )
 
-TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE = IRRBBPhysicalSourceDescriptor(
-    source_id="coopealianza.liability.powerbi.certificados",
-    segment=IRRBBPhysicalSourceSegment.TERM_DEPOSIT,
+CAPTACIONES_SEMANTIC_MODEL_SOURCE = IRRBBPhysicalSourceDescriptor(
+    source_id="coopealianza.liability.powerbi.captaciones",
+    segment=IRRBBPhysicalSourceSegment.DEPOSIT_LIABILITY,
     kind=IRRBBPhysicalSourceKind.POWER_BI_SEMANTIC_MODEL,
-    logical_name="Certificados",
-    configuration_key="irrbb.sources.term_deposit.power_bi",
-    owner="TIPowerBI",
-    location="MS Área de Ahorros",
+    logical_name="Captaciones",
+    configuration_key="irrbb.sources.deposit_liability.power_bi",
 )
+
+# Compatibility alias for callers compiled against the previous source-registry API.
+# The source is Captaciones and its records are not classified as TERM_DEPOSIT by
+# this alias; product classification remains a downstream canonical-mapping concern.
+TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE = CAPTACIONES_SEMANTIC_MODEL_SOURCE
 
 BORROWING_WORKBOOK_SOURCE = IRRBBPhysicalSourceDescriptor(
     source_id="coopealianza.liability.excel.obligaciones_entidades",
@@ -45,7 +48,7 @@ INVESTMENT_PORTFOLIO_SOURCE = IRRBBPhysicalSourceDescriptor(
 
 INSTITUTIONAL_IRRBB_PHYSICAL_SOURCES = (
     CREDIT_SEMANTIC_MODEL_SOURCE,
-    TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE,
+    CAPTACIONES_SEMANTIC_MODEL_SOURCE,
     BORROWING_WORKBOOK_SOURCE,
     INVESTMENT_PORTFOLIO_SOURCE,
 )
