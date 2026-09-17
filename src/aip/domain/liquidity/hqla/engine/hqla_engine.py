@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from typing import cast
 
 from aip.domain.policies.base.policy_context import PolicyContext
 
@@ -104,9 +105,10 @@ class HQLAEngine:
             reason=reason,
             analytics=analytics,
             explanation=explanation,
-            currency=(
+            currency=cast(
+                str,
                 request.configuration.get("currency", "USD")
                 if isinstance(request.configuration.get("currency"), str)
-                else "USD"
+                else "USD",
             ),
         )
