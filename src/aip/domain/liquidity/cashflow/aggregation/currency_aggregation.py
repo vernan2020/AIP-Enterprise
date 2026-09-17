@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from aip.domain.liquidity.cashflow.models.projected_cashflow import ProjectedCashFlow
+from ..models.projected_cashflow import ProjectedCashFlow
 
 
 class CurrencyAggregation:
