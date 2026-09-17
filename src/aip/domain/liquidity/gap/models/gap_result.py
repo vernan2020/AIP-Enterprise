@@ -6,8 +6,9 @@ from decimal import Decimal
 
 from aip.domain.analytics.explainability.explanation import Explanation
 from aip.domain.analytics.explainability.explanation_factor import ExplanationFactor
-from aip.domain.liquidity.cashflow.models.projected_cashflow import ProjectedCashFlow
-from aip.domain.liquidity.gap.models.gap_value import GapValue
+
+from ...cashflow.models.projected_cashflow import ProjectedCashFlow
+from .gap_value import GapValue
 
 
 @dataclass(frozen=True, slots=True)
