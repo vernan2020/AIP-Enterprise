@@ -5,21 +5,22 @@ from decimal import Decimal
 from typing import Iterable, cast
 
 from aip.domain.analytics.explainability.explanation_factor import ExplanationFactor
-from aip.domain.liquidity.cashflow.engine.cashflow_engine import CashFlowEngine
-from aip.domain.liquidity.cashflow.models.projection_request import ProjectionRequest
-from aip.domain.liquidity.gap.aggregation.gap_aggregation import GapAggregation
-from aip.domain.liquidity.gap.analytics.gap_analytics import GapAnalytics
-from aip.domain.liquidity.gap.exceptions import (
+
+from ...cashflow.engine.cashflow_engine import CashFlowEngine
+from ...cashflow.models.projection_request import ProjectionRequest
+from ..aggregation.gap_aggregation import GapAggregation
+from ..analytics.gap_analytics import GapAnalytics
+from ..exceptions import (
     AggregationError,
     CurrencyAggregationError,
     CurrencyMismatchError,
     GapProviderError,
     LiquidityGapError,
 )
-from aip.domain.liquidity.gap.explainability.gap_explanation import GapExplanation
-from aip.domain.liquidity.gap.models.gap_request import GapRequest
-from aip.domain.liquidity.gap.models.gap_result import GapResult
-from aip.domain.liquidity.gap.models.gap_value import GapValue
+from ..explainability.gap_explanation import GapExplanation
+from ..models.gap_request import GapRequest
+from ..models.gap_result import GapResult
+from ..models.gap_value import GapValue
 
 
 class GapEngine:
