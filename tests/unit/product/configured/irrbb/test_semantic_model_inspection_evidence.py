@@ -5,8 +5,8 @@ import json
 import pytest
 
 from aip.product.configured.irrbb.physical_source_registry import (
+    CAPTACIONES_SEMANTIC_MODEL_SOURCE,
     CREDIT_SEMANTIC_MODEL_SOURCE,
-    TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE,
 )
 from aip.product.configured.irrbb.semantic_model_inspection_evidence import (
     SemanticModelInspectionEvidenceValidator,
@@ -79,17 +79,17 @@ def test_validator_binds_credit_metadata_to_governed_source() -> None:
     assert len(bundle.snapshot.relationships) == 1
 
 
-def test_validator_binds_term_deposit_metadata_to_governed_source() -> None:
+def test_validator_binds_captaciones_metadata_without_product_classification() -> None:
     payload = _payload(
-        source_id=TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE.source_id,
-        logical_name=TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE.logical_name,
-        provider_model_name=TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE.logical_name,
+        source_id=CAPTACIONES_SEMANTIC_MODEL_SOURCE.source_id,
+        logical_name=CAPTACIONES_SEMANTIC_MODEL_SOURCE.logical_name,
+        provider_model_name=CAPTACIONES_SEMANTIC_MODEL_SOURCE.logical_name,
     )
 
     bundle = SemanticModelInspectionEvidenceValidator().validate_report(payload)
 
-    assert bundle.source is TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE
-    assert bundle.snapshot.logical_name == "Certificados"
+    assert bundle.source is CAPTACIONES_SEMANTIC_MODEL_SOURCE
+    assert bundle.snapshot.logical_name == "Captaciones"
 
 
 def test_parse_json_document_validates_complete_transferred_report() -> None:
