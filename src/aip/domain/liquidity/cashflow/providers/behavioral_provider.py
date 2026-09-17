@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol
 
-from aip.domain.liquidity.cashflow.models.behavioral_assumption import BehavioralAssumption
+from ..models.behavioral_assumption import BehavioralAssumption
 
 if TYPE_CHECKING:
-    from aip.domain.liquidity.cashflow.models.projection_request import ProjectionRequest
+    from ..models.projection_request import ProjectionRequest
 
 
 class BehavioralProvider(Protocol):
