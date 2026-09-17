@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Any
 
-from aip.domain.liquidity.hqla.exceptions import HQLAError
+from ..exceptions import HQLAError
 
 
 @dataclass(frozen=True, slots=True)
