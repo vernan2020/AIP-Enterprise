@@ -5,3 +5,6 @@ application:
   debug: true
   window_width: 1440
   window_height: 900
+
+irrbb:
+  power_bi_semantic_routes: {}
