@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from aip.domain.liquidity.cashflow.aggregation.bucket_aggregation import BucketAggregation
-from aip.domain.liquidity.cashflow.aggregation.currency_aggregation import CurrencyAggregation
-from aip.domain.liquidity.cashflow.aggregation.scenario_aggregation import ScenarioAggregation
-from aip.domain.liquidity.cashflow.exceptions import AggregationError
-from aip.domain.liquidity.cashflow.models.projected_cashflow import ProjectedCashFlow
-from aip.domain.liquidity.cashflow.models.projection_request import ProjectionRequest
+from ..aggregation.bucket_aggregation import BucketAggregation
+from ..aggregation.currency_aggregation import CurrencyAggregation
+from ..aggregation.scenario_aggregation import ScenarioAggregation
+from ..exceptions import AggregationError
+from ..models.projected_cashflow import ProjectedCashFlow
+from ..models.projection_request import ProjectionRequest
 
 
 class AggregationEngine:
