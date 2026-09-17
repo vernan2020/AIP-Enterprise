@@ -58,6 +58,9 @@ from aip.product.configured.irrbb.power_bi_semantic_route_resolver import (
     PowerBISemanticRouteSettings,
     PowerBISemanticRouteSettingsProvider,
 )
+from aip.product.configured.irrbb.power_bi_semantic_route_settings_provider import (
+    ConfiguredPowerBISemanticRouteSettingsProvider,
+)
 from aip.product.configured.irrbb.runtime_dependencies import (
     ConfiguredIRRBBRuntimeDependencies,
 )
@@ -93,6 +96,7 @@ __all__ = [
     "ConfiguredIRRBBComposition",
     "ConfiguredIRRBBRuntimeDependencies",
     "ConfiguredPowerBISemanticModelMetadataInspector",
+    "ConfiguredPowerBISemanticRouteSettingsProvider",
     "GovernedSemanticModelInspectionCoordinator",
     "GovernedSemanticModelInspectionResult",
     "INSTITUTIONAL_IRRBB_PHYSICAL_SOURCES",
