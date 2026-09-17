@@ -3,13 +3,13 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Sequence
 
-from aip.domain.policies.base.policy import Policy
-from aip.domain.policies.base.policy_context import PolicyContext
-from aip.domain.policies.base.policy_result import PolicyResult
-from aip.domain.policies.evaluation.evaluation_report import EvaluationReport
-from aip.domain.policies.evaluation.evaluation_result import EvaluationResult
-from aip.domain.policies.exceptions import PolicyDependencyError
-from aip.domain.policies.registry.policy_registry import PolicyRegistry
+from ..base.policy import Policy
+from ..base.policy_context import PolicyContext
+from ..base.policy_result import PolicyResult
+from ..evaluation.evaluation_report import EvaluationReport
+from ..evaluation.evaluation_result import EvaluationResult
+from ..exceptions import PolicyDependencyError
+from ..registry.policy_registry import PolicyRegistry
 
 
 class PolicyEngine:
