@@ -8,7 +8,7 @@ from aip.product.configured.irrbb.power_bi_semantic_route_resolver import (
 )
 
 
-class PowerBISemanticRouteConfiguration(Protocol):
+class PowerBISemanticRouteConfigurationSource(Protocol):
     """Structural configuration required to build one governed runtime route."""
 
     dataset_id: str
@@ -26,7 +26,7 @@ class ConfiguredPowerBISemanticRouteSettingsProvider:
 
     def __init__(
         self,
-        settings_by_key: Mapping[str, PowerBISemanticRouteConfiguration],
+        settings_by_key: Mapping[str, PowerBISemanticRouteConfigurationSource],
     ) -> None:
         snapshot: dict[str, PowerBISemanticRouteSettings] = {}
         for configuration_key, configuration in settings_by_key.items():
