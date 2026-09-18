@@ -17,13 +17,16 @@ class RateRiskView(_BaseRateRiskView):
 
     _SOURCE_GATE_LABELS = {
         IRRBBPhysicalSourceSegment.CREDIT: (
-            "Metadata adapter disponible · autenticación institucional pendiente"
+            "Metadata adapter y contrato de gobernanza disponibles · "
+            "8 decisiones de autenticación institucional pendientes"
         ),
         IRRBBPhysicalSourceSegment.CAPTACIONES: (
-            "Metadata adapter disponible · autenticación y clasificación contractual pendientes"
+            "Metadata adapter y contrato de gobernanza disponibles · "
+            "8 decisiones de autenticación y clasificación contractual pendientes"
         ),
         IRRBBPhysicalSourceSegment.BORROWING: (
-            "Semántica de reprecio certificada · mapeo y reconciliación pendientes"
+            "Reprecio y contrato de gobernanza disponibles · "
+            "6 decisiones institucionales y reconciliación pendientes"
         ),
         IRRBBPhysicalSourceSegment.INVESTMENT: (
             "Mapper/evidencia parcial · gobernanza y paridad pendientes"
