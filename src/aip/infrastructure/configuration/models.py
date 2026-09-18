@@ -43,6 +43,17 @@ class PowerBISemanticRouteConfiguration(BaseModel):
     authentication_profile_key: str = Field(min_length=1)
 
 
+class PowerBIAuthenticationProfileConfiguration(BaseModel):
+    """Non-secret Microsoft Entra public-client profile for Power BI delegated access."""
+
+    model_config = ConfigDict(frozen=True, str_strip_whitespace=True)
+    client_id: str = Field(min_length=1)
+    tenant_id: str = Field(min_length=1)
+    scopes: tuple[str, ...] = (
+        "https://analysis.windows.net/powerbi/api/Dataset.Read.All",
+    )
+
+
 class IRRBBSettings(BaseModel):
     """Optional deployment configuration used by governed IRRBB physical adapters."""
 
@@ -50,6 +61,9 @@ class IRRBBSettings(BaseModel):
     power_bi_semantic_routes: dict[str, PowerBISemanticRouteConfiguration] = Field(
         default_factory=dict
     )
+    power_bi_authentication_profiles: dict[
+        str, PowerBIAuthenticationProfileConfiguration
+    ] = Field(default_factory=dict)
 
 
 class Settings(BaseModel):
