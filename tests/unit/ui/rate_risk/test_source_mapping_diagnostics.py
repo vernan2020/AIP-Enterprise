@@ -136,7 +136,12 @@ def test_passive_view_exposes_governed_source_integration_progress_without_activ
     assert "Auxiliar Obligaciones Entidades 2026.xlsx" in rows
     assert "Portafolio de Inversiones" in rows
     assert all(values[4] == "REGISTRADA · NO ACTIVADA" for values in rows.values())
-    assert "autenticación institucional pendiente" in rows["Credito"][5]
-    assert "clasificación contractual pendientes" in rows["Captaciones"][5]
-    assert "reconciliación pendientes" in rows["Auxiliar Obligaciones Entidades 2026.xlsx"][5]
+    assert "contrato de gobernanza disponibles" in rows["Credito"][5]
+    assert "8 decisiones de autenticación institucional pendientes" in rows["Credito"][5]
+    assert "contrato de gobernanza disponibles" in rows["Captaciones"][5]
+    assert "8 decisiones de autenticación y clasificación contractual pendientes" in rows["Captaciones"][5]
+    assert "contrato de gobernanza disponibles" in rows["Auxiliar Obligaciones Entidades 2026.xlsx"][5]
+    assert "6 decisiones institucionales y reconciliación pendientes" in rows[
+        "Auxiliar Obligaciones Entidades 2026.xlsx"
+    ][5]
     assert "paridad pendientes" in rows["Portafolio de Inversiones"][5]
