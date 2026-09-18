@@ -44,6 +44,13 @@ from aip.product.configured.irrbb.physical_source_registry import (
     INVESTMENT_PORTFOLIO_SOURCE,
     institutional_irrbb_physical_source_registry,
 )
+from aip.product.configured.irrbb.power_bi_authentication_governance import (
+    POWER_BI_AUTHENTICATION_GOVERNANCE_REPORT_TYPE,
+    POWER_BI_AUTHENTICATION_GOVERNANCE_REPORT_VERSION,
+    PowerBIAuthenticationGovernanceEvidence,
+    PowerBIAuthenticationGovernanceEvidenceValidator,
+    PowerBIInteractiveAuthenticationPolicy,
+)
 from aip.product.configured.irrbb.power_bi_semantic_metadata_inspector import (
     ConfiguredPowerBISemanticModelMetadataInspector,
     PowerBISemanticMetadataSnapshotFetcher,
@@ -117,6 +124,11 @@ __all__ = [
     "InvestmentMasterSourceEvidenceAssessor",
     "InvestmentMasterSourcePayload",
     "InvestmentMasterSourceRules",
+    "POWER_BI_AUTHENTICATION_GOVERNANCE_REPORT_TYPE",
+    "POWER_BI_AUTHENTICATION_GOVERNANCE_REPORT_VERSION",
+    "PowerBIAuthenticationGovernanceEvidence",
+    "PowerBIAuthenticationGovernanceEvidenceValidator",
+    "PowerBIInteractiveAuthenticationPolicy",
     "PowerBISemanticMetadataSnapshotFetcher",
     "PowerBISemanticModelRoute",
     "PowerBISemanticQueryTransport",
