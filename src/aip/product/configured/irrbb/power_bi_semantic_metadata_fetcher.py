@@ -278,9 +278,7 @@ class ConfiguredPowerBISemanticMetadataSnapshotFetcher:
 
         provider_model_name = _required_text("Power BI dataset name", raw_name)
         if provider_model_name != source.logical_name:
-            raise ValueError(
-                "Power BI dataset name does not match the governed physical source"
-            )
+            raise ValueError("Power BI dataset name does not match the governed physical source")
         return provider_model_name
 
     def _execute_metadata_query(
