@@ -165,7 +165,7 @@ def _required_uuid(field_name: str, value: str) -> UUID:
         parsed = UUID(value)
     except (ValueError, AttributeError) as exc:
         raise ValueError(f"{field_name} must be a canonical UUID string") from exc
-    if str(parsed) != value.casefold():
+    if str(parsed) != value:
         raise ValueError(f"{field_name} must be a canonical UUID string")
     return parsed
 
