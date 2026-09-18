@@ -12,7 +12,13 @@ def test_load_configuration(tmp_path: Path) -> None:
         "    irrbb.sources.credit.power_bi:\n"
         "      dataset_id: 22345678-1234-4234-8234-1234567890ab\n"
         "      workspace_id: null\n"
-        "      authentication_profile_key: security.auth.power_bi.readonly\n",
+        "      authentication_profile_key: security.auth.power_bi.readonly\n"
+        "  power_bi_authentication_profiles:\n"
+        "    security.auth.power_bi.readonly:\n"
+        "      client_id: 12345678-1234-4234-8234-1234567890ab\n"
+        "      tenant_id: 32345678-1234-4234-8234-1234567890ab\n"
+        "      scopes:\n"
+        "        - https://analysis.windows.net/powerbi/api/Dataset.Read.All\n",
         encoding="utf-8",
     )
     (tmp_path / "database.yaml").write_text("database:\n  path: test.duckdb\n", encoding="utf-8")
@@ -26,3 +32,12 @@ def test_load_configuration(tmp_path: Path) -> None:
     assert route.dataset_id == "22345678-1234-4234-8234-1234567890ab"
     assert route.workspace_id is None
     assert route.authentication_profile_key == "security.auth.power_bi.readonly"
+
+    profile = settings.irrbb.power_bi_authentication_profiles[
+        "security.auth.power_bi.readonly"
+    ]
+    assert profile.client_id == "12345678-1234-4234-8234-1234567890ab"
+    assert profile.tenant_id == "32345678-1234-4234-8234-1234567890ab"
+    assert profile.scopes == (
+        "https://analysis.windows.net/powerbi/api/Dataset.Read.All",
+    )
