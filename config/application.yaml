@@ -8,3 +8,4 @@ application:
 
 irrbb:
   power_bi_semantic_routes: {}
+  power_bi_authentication_profiles: {}
