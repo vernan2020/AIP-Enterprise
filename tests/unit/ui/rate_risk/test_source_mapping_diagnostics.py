@@ -116,3 +116,27 @@ def test_passive_view_renders_source_mapping_failure_without_financial_values() 
     )
     assert view._source_mapping_failure_table.item(0, 3).text() == "currency"
     assert "Canonical currency" in view._source_mapping_failure_table.item(0, 4).text()
+
+
+def test_passive_view_exposes_governed_source_integration_progress_without_activation() -> None:
+    _app()
+    view = RateRiskView()
+
+    table = view._source_integration_table
+    assert table.rowCount() == 4
+    rows = {
+        table.item(row, 0).text(): tuple(
+            table.item(row, column).text() for column in range(table.columnCount())
+        )
+        for row in range(table.rowCount())
+    }
+
+    assert "Credito" in rows
+    assert "Captaciones" in rows
+    assert "Auxiliar Obligaciones Entidades 2026.xlsx" in rows
+    assert "Portafolio de Inversiones" in rows
+    assert all(values[4] == "REGISTRADA · NO ACTIVADA" for values in rows.values())
+    assert "autenticación institucional pendiente" in rows["Credito"][5]
+    assert "clasificación contractual pendientes" in rows["Captaciones"][5]
+    assert "reconciliación pendientes" in rows["Auxiliar Obligaciones Entidades 2026.xlsx"][5]
+    assert "paridad pendientes" in rows["Portafolio de Inversiones"][5]
