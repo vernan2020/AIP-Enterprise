@@ -8,7 +8,8 @@ from aip.domain.analytics.ranking.rank_item import RankItem
 from aip.domain.analytics.ranking.ranking_engine import RankingEngine
 from aip.domain.analytics.ranking.ranking_result import RankingResult
 from aip.domain.analytics.ranking.tie_breaker import TieBreaker
-from aip.domain.relative_value.models.investment_opportunity import InvestmentOpportunity
+
+from ..models.investment_opportunity import InvestmentOpportunity
 
 
 @dataclass(frozen=True, slots=True)
