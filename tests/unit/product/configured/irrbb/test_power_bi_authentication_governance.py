@@ -33,9 +33,7 @@ def test_validator_accepts_complete_provider_agnostic_governance_evidence() -> N
     )
 
     assert evidence.authentication_mode == "institutionally-approved-mode"
-    assert evidence.identity_or_application_pattern == (
-        "institutionally-approved-identity-pattern"
-    )
+    assert evidence.identity_or_application_pattern == ("institutionally-approved-identity-pattern")
     assert evidence.permitted_api_permissions == ("approved.permission",)
     assert (
         evidence.interactive_authentication_policy
