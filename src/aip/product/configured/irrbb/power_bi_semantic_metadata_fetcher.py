@@ -189,7 +189,11 @@ class ConfiguredPowerBISemanticMetadataSnapshotFetcher:
             raise ValueError("Power BI authentication provider returned a malformed access token")
 
         headers = self._authorization_headers(access_token)
-        provider_model_name = self._validate_dataset_identity(route=route, headers=headers)
+        provider_model_name = self._validate_dataset_identity(
+            source=source,
+            route=route,
+            headers=headers,
+        )
 
         result_sets: dict[str, list[dict[str, Any]]] = {}
         for result_name, query in _METADATA_QUERIES:
@@ -239,6 +243,7 @@ class ConfiguredPowerBISemanticMetadataSnapshotFetcher:
     def _validate_dataset_identity(
         self,
         *,
+        source: IRRBBPhysicalSourceDescriptor,
         route: PowerBISemanticModelRoute,
         headers: Mapping[str, str],
     ) -> str:
@@ -270,7 +275,11 @@ class ConfiguredPowerBISemanticMetadataSnapshotFetcher:
             raise ValueError("Power BI dataset identity response contains an invalid id") from exc
         if observed_dataset_id != route.dataset_id:
             raise ValueError("Power BI dataset identity does not match the governed route")
-        return _required_text("Power BI dataset name", raw_name)
+
+        provider_model_name = _required_text("Power BI dataset name", raw_name)
+        if provider_model_name != source.logical_name:
+            raise ValueError("Power BI dataset name does not match the governed physical source")
+        return provider_model_name
 
     def _execute_metadata_query(
         self,

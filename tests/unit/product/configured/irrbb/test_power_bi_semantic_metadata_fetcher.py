@@ -269,6 +269,19 @@ def test_dataset_identity_mismatch_fails_before_any_dax_metadata_query() -> None
     assert transport.calls[0]["method"] == "GET"
 
 
+def test_provider_model_name_mismatch_fails_before_any_dax_metadata_query() -> None:
+    transport = _FakeHTTPTransport(dataset_name="UnexpectedModel")
+
+    with pytest.raises(ValueError, match="dataset name does not match"):
+        _fetcher(http_transport=transport).fetch_metadata(
+            source=CREDIT_SEMANTIC_MODEL_SOURCE,
+            route=_route(),
+        )
+
+    assert len(transport.calls) == 1
+    assert transport.calls[0]["method"] == "GET"
+
+
 def test_provider_arrow_error_rowset_fails_closed_even_with_http_200() -> None:
     transport = _FakeHTTPTransport(arrow_error_for="columns")
 
