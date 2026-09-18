@@ -4,8 +4,8 @@ from dataclasses import dataclass, field
 from datetime import date, timedelta
 from decimal import Decimal
 
-from aip.domain.instruments.enums.payment_frequency import PaymentFrequency
-from aip.domain.instruments.schedules.coupon import Coupon
+from ..enums.payment_frequency import PaymentFrequency
+from .coupon import Coupon
 
 
 @dataclass(slots=True)
