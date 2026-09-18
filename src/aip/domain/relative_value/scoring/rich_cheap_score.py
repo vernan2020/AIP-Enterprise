@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
-from aip.domain.relative_value.enums.valuation_status import ValuationStatus
+from ..enums.valuation_status import ValuationStatus
 
 
 @dataclass(frozen=True, slots=True)
