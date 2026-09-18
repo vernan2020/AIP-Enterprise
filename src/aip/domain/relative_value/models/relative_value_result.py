@@ -5,8 +5,9 @@ from datetime import datetime
 from decimal import Decimal
 
 from aip.domain.analytics.ranking.ranking_result import RankingResult
-from aip.domain.relative_value.enums.recommendation_type import RecommendationType
-from aip.domain.relative_value.enums.valuation_status import ValuationStatus
+
+from ..enums.recommendation_type import RecommendationType
+from ..enums.valuation_status import ValuationStatus
 
 
 @dataclass(frozen=True, slots=True)
