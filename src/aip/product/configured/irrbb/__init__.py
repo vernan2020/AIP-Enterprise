@@ -44,6 +44,10 @@ from aip.product.configured.irrbb.physical_source_registry import (
     INVESTMENT_PORTFOLIO_SOURCE,
     institutional_irrbb_physical_source_registry,
 )
+from aip.product.configured.irrbb.power_bi_msal_access_token_provider import (
+    ConfiguredMSALPowerBIAccessTokenProvider,
+    PowerBIDelegatedAuthenticationProfile,
+)
 from aip.product.configured.irrbb.power_bi_semantic_metadata_inspector import (
     ConfiguredPowerBISemanticModelMetadataInspector,
     PowerBISemanticMetadataSnapshotFetcher,
@@ -96,6 +100,7 @@ __all__ = [
     "BorrowingWorkbookSheetTopology",
     "ConfiguredIRRBBComposition",
     "ConfiguredIRRBBRuntimeDependencies",
+    "ConfiguredMSALPowerBIAccessTokenProvider",
     "ConfiguredPowerBISemanticModelMetadataInspector",
     "ConfiguredPowerBISemanticRouteSettingsProvider",
     "GovernedSemanticModelInspectionCoordinator",
@@ -117,6 +122,7 @@ __all__ = [
     "InvestmentMasterSourceEvidenceAssessor",
     "InvestmentMasterSourcePayload",
     "InvestmentMasterSourceRules",
+    "PowerBIDelegatedAuthenticationProfile",
     "PowerBISemanticMetadataSnapshotFetcher",
     "PowerBISemanticModelRoute",
     "PowerBISemanticQueryTransport",
