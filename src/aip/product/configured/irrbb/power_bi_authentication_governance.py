@@ -5,9 +5,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
-POWER_BI_AUTHENTICATION_GOVERNANCE_REPORT_TYPE = (
-    "IRRBB_POWER_BI_AUTHENTICATION_GOVERNANCE_EVIDENCE"
-)
+POWER_BI_AUTHENTICATION_GOVERNANCE_REPORT_TYPE = "IRRBB_POWER_BI_AUTHENTICATION_GOVERNANCE_EVIDENCE"
 POWER_BI_AUTHENTICATION_GOVERNANCE_REPORT_VERSION = "2026.09.18"
 
 _REPORT_KEYS = frozenset(
@@ -61,7 +59,9 @@ class PowerBIAuthenticationGovernanceEvidenceValidator:
         try:
             payload = json.loads(document)
         except json.JSONDecodeError as exc:
-            raise ValueError("Power BI authentication governance evidence is not valid JSON") from exc
+            raise ValueError(
+                "Power BI authentication governance evidence is not valid JSON"
+            ) from exc
         if not isinstance(payload, dict):
             raise ValueError("Power BI authentication governance evidence root must be an object")
         return self.validate_report(payload)
@@ -157,8 +157,7 @@ class PowerBIAuthenticationGovernanceEvidenceValidator:
         if unknown:
             details.append(f"unknown={unknown}")
         raise ValueError(
-            "Power BI authentication governance evidence has invalid shape: "
-            + ", ".join(details)
+            "Power BI authentication governance evidence has invalid shape: " + ", ".join(details)
         )
 
     @staticmethod
@@ -176,8 +175,7 @@ class PowerBIAuthenticationGovernanceEvidenceValidator:
         if not isinstance(value, list) or not value:
             raise ValueError(f"{field_name} must be a non-empty array")
         values = tuple(
-            cls._require_text(item, f"{field_name}[{index}]")
-            for index, item in enumerate(value)
+            cls._require_text(item, f"{field_name}[{index}]") for index, item in enumerate(value)
         )
         normalized = tuple(item.casefold() for item in values)
         if len(set(normalized)) != len(normalized):
