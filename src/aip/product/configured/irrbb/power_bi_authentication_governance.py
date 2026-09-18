@@ -175,7 +175,10 @@ class PowerBIAuthenticationGovernanceEvidenceValidator:
     ) -> tuple[str, ...]:
         if not isinstance(value, list) or not value:
             raise ValueError(f"{field_name} must be a non-empty array")
-        values = tuple(cls._require_text(item, f"{field_name}[{index}]") for index, item in enumerate(value))
+        values = tuple(
+            cls._require_text(item, f"{field_name}[{index}]")
+            for index, item in enumerate(value)
+        )
         normalized = tuple(item.casefold() for item in values)
         if len(set(normalized)) != len(normalized):
             raise ValueError(f"{field_name} must contain unique values ignoring case")
