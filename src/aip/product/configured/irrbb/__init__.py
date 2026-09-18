@@ -44,6 +44,12 @@ from aip.product.configured.irrbb.physical_source_registry import (
     INVESTMENT_PORTFOLIO_SOURCE,
     institutional_irrbb_physical_source_registry,
 )
+from aip.product.configured.irrbb.power_bi_arrow_metadata_fetcher import (
+    PowerBIAccessTokenProvider,
+    PowerBIArrowMetadataTransport,
+    PowerBIArrowSemanticMetadataSnapshotFetcher,
+    UrllibPowerBIArrowMetadataTransport,
+)
 from aip.product.configured.irrbb.power_bi_semantic_metadata_inspector import (
     ConfiguredPowerBISemanticModelMetadataInspector,
     PowerBISemanticMetadataSnapshotFetcher,
@@ -117,11 +123,15 @@ __all__ = [
     "InvestmentMasterSourceEvidenceAssessor",
     "InvestmentMasterSourcePayload",
     "InvestmentMasterSourceRules",
+    "PowerBIAccessTokenProvider",
+    "PowerBIArrowMetadataTransport",
+    "PowerBIArrowSemanticMetadataSnapshotFetcher",
     "PowerBISemanticMetadataSnapshotFetcher",
     "PowerBISemanticModelRoute",
     "PowerBISemanticQueryTransport",
     "PowerBISemanticRouteSettings",
     "PowerBISemanticRouteSettingsProvider",
+    "UrllibPowerBIArrowMetadataTransport",
     "SemanticModelInspectionEvidenceBundle",
     "SemanticModelInspectionEvidenceRenderer",
     "SemanticModelInspectionEvidenceValidator",
