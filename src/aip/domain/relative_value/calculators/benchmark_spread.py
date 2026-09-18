@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from aip.domain.relative_value.exceptions import BenchmarkNotAvailableError, SpreadCalculationError
+from ..exceptions import BenchmarkNotAvailableError, SpreadCalculationError
 
 
 class BenchmarkSpreadCalculator:
