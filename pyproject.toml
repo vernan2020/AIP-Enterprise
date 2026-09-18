@@ -29,6 +29,7 @@ dependencies = [
   "numpy>=2.0",
   "pandas>=2.2",
   "pyarrow>=20.0",
+  "msal>=1.33,<2",
   "statsmodels>=0.14",
 ]
 
