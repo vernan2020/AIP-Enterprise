@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from aip.domain.relative_value.enums.recommendation_type import RecommendationType
-from aip.domain.relative_value.exceptions import RecommendationError
-from aip.domain.relative_value.models.recommendation import Recommendation
+from ..enums.recommendation_type import RecommendationType
+from ..exceptions import RecommendationError
+from ..models.recommendation import Recommendation
 
 
 class RecommendationEngine:
