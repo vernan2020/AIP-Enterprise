@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
-from aip.domain.relative_value.enums.confidence_level import ConfidenceLevel
+from ..enums.confidence_level import ConfidenceLevel
 
 
 @dataclass(frozen=True, slots=True)
