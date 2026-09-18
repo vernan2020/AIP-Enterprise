@@ -7,14 +7,14 @@ from aip.domain.analytics.enums.score_direction import ScoreDirection
 from aip.domain.analytics.explainability.explanation_builder import ExplanationBuilder
 from aip.domain.analytics.explainability.explanation_factor import ExplanationFactor
 
-from .recommendation_engine import RecommendationEngine
-from .spread_engine import SpreadEngine
 from ..exceptions import CurveNotAvailableError, RelativeValueError
 from ..models.relative_value_request import RelativeValueRequest
 from ..models.relative_value_result import RelativeValueResult
 from ..scoring.confidence_score import ConfidenceScore
 from ..scoring.relative_value_score import RelativeValueScore
 from ..scoring.rich_cheap_score import RichCheapScore
+from .recommendation_engine import RecommendationEngine
+from .spread_engine import SpreadEngine
 
 
 class RelativeValueEngine:
