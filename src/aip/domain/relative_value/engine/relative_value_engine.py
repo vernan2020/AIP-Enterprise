@@ -6,14 +6,15 @@ from decimal import Decimal
 from aip.domain.analytics.enums.score_direction import ScoreDirection
 from aip.domain.analytics.explainability.explanation_builder import ExplanationBuilder
 from aip.domain.analytics.explainability.explanation_factor import ExplanationFactor
-from aip.domain.relative_value.engine.recommendation_engine import RecommendationEngine
-from aip.domain.relative_value.engine.spread_engine import SpreadEngine
-from aip.domain.relative_value.exceptions import CurveNotAvailableError, RelativeValueError
-from aip.domain.relative_value.models.relative_value_request import RelativeValueRequest
-from aip.domain.relative_value.models.relative_value_result import RelativeValueResult
-from aip.domain.relative_value.scoring.confidence_score import ConfidenceScore
-from aip.domain.relative_value.scoring.relative_value_score import RelativeValueScore
-from aip.domain.relative_value.scoring.rich_cheap_score import RichCheapScore
+
+from .recommendation_engine import RecommendationEngine
+from .spread_engine import SpreadEngine
+from ..exceptions import CurveNotAvailableError, RelativeValueError
+from ..models.relative_value_request import RelativeValueRequest
+from ..models.relative_value_result import RelativeValueResult
+from ..scoring.confidence_score import ConfidenceScore
+from ..scoring.relative_value_score import RelativeValueScore
+from ..scoring.rich_cheap_score import RichCheapScore
 
 
 class RelativeValueEngine:
