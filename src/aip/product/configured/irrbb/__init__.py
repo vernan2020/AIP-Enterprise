@@ -1,3 +1,9 @@
+from aip.product.configured.irrbb.borrowing_governance import (
+    BORROWING_GOVERNANCE_REPORT_TYPE,
+    BORROWING_GOVERNANCE_REPORT_VERSION,
+    BorrowingGovernanceEvidence,
+    BorrowingGovernanceEvidenceValidator,
+)
 from aip.product.configured.irrbb.borrowing_inspection_evidence import (
     BorrowingInspectionEvidenceBundle,
     BorrowingInspectionEvidenceValidator,
@@ -89,9 +95,13 @@ from aip.product.configured.irrbb.source_acl import (
 )
 
 __all__ = [
+    "BORROWING_GOVERNANCE_REPORT_TYPE",
+    "BORROWING_GOVERNANCE_REPORT_VERSION",
     "BORROWING_WORKBOOK_SOURCE",
     "CAPTACIONES_SEMANTIC_MODEL_SOURCE",
     "CREDIT_SEMANTIC_MODEL_SOURCE",
+    "BorrowingGovernanceEvidence",
+    "BorrowingGovernanceEvidenceValidator",
     "BorrowingInspectionEvidenceBundle",
     "BorrowingInspectionEvidenceValidator",
     "BorrowingSourceEvidenceAssessor",
