@@ -7,9 +7,7 @@ from uuid import UUID
 
 import msal
 
-_POWER_BI_DATASET_READ_SCOPE = (
-    "https://analysis.windows.net/powerbi/api/Dataset.Read.All"
-)
+_POWER_BI_DATASET_READ_SCOPE = "https://analysis.windows.net/powerbi/api/Dataset.Read.All"
 _ENTRA_AUTHORITY_BASE = "https://login.microsoftonline.com"
 
 

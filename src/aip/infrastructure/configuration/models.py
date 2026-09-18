@@ -49,9 +49,7 @@ class PowerBIAuthenticationProfileConfiguration(BaseModel):
     model_config = ConfigDict(frozen=True, str_strip_whitespace=True)
     client_id: str = Field(min_length=1)
     tenant_id: str = Field(min_length=1)
-    scopes: tuple[str, ...] = (
-        "https://analysis.windows.net/powerbi/api/Dataset.Read.All",
-    )
+    scopes: tuple[str, ...] = ("https://analysis.windows.net/powerbi/api/Dataset.Read.All",)
 
 
 class IRRBBSettings(BaseModel):
@@ -61,9 +59,9 @@ class IRRBBSettings(BaseModel):
     power_bi_semantic_routes: dict[str, PowerBISemanticRouteConfiguration] = Field(
         default_factory=dict
     )
-    power_bi_authentication_profiles: dict[
-        str, PowerBIAuthenticationProfileConfiguration
-    ] = Field(default_factory=dict)
+    power_bi_authentication_profiles: dict[str, PowerBIAuthenticationProfileConfiguration] = Field(
+        default_factory=dict
+    )
 
 
 class Settings(BaseModel):

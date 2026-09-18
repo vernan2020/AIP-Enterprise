@@ -33,11 +33,7 @@ def test_load_configuration(tmp_path: Path) -> None:
     assert route.workspace_id is None
     assert route.authentication_profile_key == "security.auth.power_bi.readonly"
 
-    profile = settings.irrbb.power_bi_authentication_profiles[
-        "security.auth.power_bi.readonly"
-    ]
+    profile = settings.irrbb.power_bi_authentication_profiles["security.auth.power_bi.readonly"]
     assert profile.client_id == "12345678-1234-4234-8234-1234567890ab"
     assert profile.tenant_id == "32345678-1234-4234-8234-1234567890ab"
-    assert profile.scopes == (
-        "https://analysis.windows.net/powerbi/api/Dataset.Read.All",
-    )
+    assert profile.scopes == ("https://analysis.windows.net/powerbi/api/Dataset.Read.All",)

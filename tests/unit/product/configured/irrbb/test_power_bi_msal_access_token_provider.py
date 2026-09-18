@@ -124,9 +124,7 @@ def test_provider_prefers_silent_token_and_does_not_prompt() -> None:
     assert token == "silent-token"
     assert client.silent_calls == 1
     assert client.interactive_calls == 0
-    assert factory.calls == [
-        (_CLIENT_ID, f"https://login.microsoftonline.com/{_TENANT_ID}")
-    ]
+    assert factory.calls == [(_CLIENT_ID, f"https://login.microsoftonline.com/{_TENANT_ID}")]
 
 
 def test_provider_falls_back_to_interactive_pkce_flow_when_cache_misses() -> None:
@@ -157,9 +155,7 @@ def test_provider_fails_closed_for_unknown_profile() -> None:
 
 def test_provider_rejects_noncanonical_profile_key() -> None:
     with pytest.raises(ValueError, match="profile key must be non-blank"):
-        ConfiguredMSALPowerBIAccessTokenProvider(
-            {f" {_PROFILE_KEY} ": _profile()}
-        )
+        ConfiguredMSALPowerBIAccessTokenProvider({f" {_PROFILE_KEY} ": _profile()})
 
 
 def test_provider_rejects_noncanonical_uuid_identifiers() -> None:
