@@ -3,13 +3,12 @@ from __future__ import annotations
 from decimal import Decimal
 
 from aip.domain.financial_math.curves.yield_curve import YieldCurve
-from aip.domain.relative_value.calculators.benchmark_spread import BenchmarkSpreadCalculator
-from aip.domain.relative_value.calculators.interpolated_curve_spread import (
-    InterpolatedCurveSpreadCalculator,
-)
-from aip.domain.relative_value.calculators.nominal_spread import NominalSpreadCalculator
-from aip.domain.relative_value.calculators.z_spread import ZSpreadCalculator
-from aip.domain.relative_value.exceptions import UnsupportedSpreadTypeError
+
+from ..calculators.benchmark_spread import BenchmarkSpreadCalculator
+from ..calculators.interpolated_curve_spread import InterpolatedCurveSpreadCalculator
+from ..calculators.nominal_spread import NominalSpreadCalculator
+from ..calculators.z_spread import ZSpreadCalculator
+from ..exceptions import UnsupportedSpreadTypeError
 
 
 class SpreadEngine:
