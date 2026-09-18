@@ -126,9 +126,7 @@ class BorrowingGovernanceEvidenceValidator:
             details.append(f"missing={missing}")
         if unknown:
             details.append(f"unknown={unknown}")
-        raise ValueError(
-            "borrowing governance evidence has invalid shape: " + ", ".join(details)
-        )
+        raise ValueError("borrowing governance evidence has invalid shape: " + ", ".join(details))
 
     @staticmethod
     def _require_text(value: Any, field_name: str) -> str:
