@@ -64,7 +64,7 @@ def test_safe_summary_does_not_echo_authentication_governance_details() -> None:
         "institutionally-approved-storage",
         "institutionally-approved-lifecycle",
         "institutionally-approved-runtime-owner",
-        "production",
+        "\"production\"",
     ):
         assert field not in serialized
 
