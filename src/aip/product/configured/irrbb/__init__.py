@@ -1,3 +1,9 @@
+from aip.product.configured.irrbb.borrowing_governance import (
+    BORROWING_GOVERNANCE_REPORT_TYPE,
+    BORROWING_GOVERNANCE_REPORT_VERSION,
+    BorrowingGovernanceEvidence,
+    BorrowingGovernanceEvidenceValidator,
+)
 from aip.product.configured.irrbb.borrowing_inspection_evidence import (
     BorrowingInspectionEvidenceBundle,
     BorrowingInspectionEvidenceValidator,
@@ -5,6 +11,10 @@ from aip.product.configured.irrbb.borrowing_inspection_evidence import (
     ValidatedBorrowingHeaderCellEvidence,
     ValidatedBorrowingHeaderEvidence,
     ValidatedBorrowingSheetEvidence,
+)
+from aip.product.configured.irrbb.borrowing_source_requirements import (
+    BorrowingSourceEvidenceAssessor,
+    BorrowingSourceSchemaAssessment,
 )
 from aip.product.configured.irrbb.borrowing_workbook_inspector import (
     BorrowingWorkbookDiscovery,
@@ -34,16 +44,35 @@ from aip.product.configured.irrbb.investment_source_rules import (
 )
 from aip.product.configured.irrbb.physical_source_registry import (
     BORROWING_WORKBOOK_SOURCE,
+    CAPTACIONES_SEMANTIC_MODEL_SOURCE,
     CREDIT_SEMANTIC_MODEL_SOURCE,
     INSTITUTIONAL_IRRBB_PHYSICAL_SOURCES,
     INVESTMENT_PORTFOLIO_SOURCE,
-    TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE,
     institutional_irrbb_physical_source_registry,
+)
+from aip.product.configured.irrbb.power_bi_authentication_governance import (
+    POWER_BI_AUTHENTICATION_GOVERNANCE_REPORT_TYPE,
+    POWER_BI_AUTHENTICATION_GOVERNANCE_REPORT_VERSION,
+    PowerBIAuthenticationGovernanceEvidence,
+    PowerBIAuthenticationGovernanceEvidenceValidator,
+    PowerBIInteractiveAuthenticationPolicy,
+)
+from aip.product.configured.irrbb.power_bi_semantic_metadata_inspector import (
+    ConfiguredPowerBISemanticModelMetadataInspector,
+    PowerBISemanticMetadataSnapshotFetcher,
 )
 from aip.product.configured.irrbb.power_bi_semantic_route import (
     InstitutionalPowerBISemanticRouteBinding,
     PowerBISemanticModelRoute,
     PowerBISemanticQueryTransport,
+)
+from aip.product.configured.irrbb.power_bi_semantic_route_resolver import (
+    InstitutionalPowerBISemanticRouteResolver,
+    PowerBISemanticRouteSettings,
+    PowerBISemanticRouteSettingsProvider,
+)
+from aip.product.configured.irrbb.power_bi_semantic_route_settings_provider import (
+    ConfiguredPowerBISemanticRouteSettingsProvider,
 )
 from aip.product.configured.irrbb.runtime_dependencies import (
     ConfiguredIRRBBRuntimeDependencies,
@@ -66,10 +95,17 @@ from aip.product.configured.irrbb.source_acl import (
 )
 
 __all__ = [
+    "BORROWING_GOVERNANCE_REPORT_TYPE",
+    "BORROWING_GOVERNANCE_REPORT_VERSION",
     "BORROWING_WORKBOOK_SOURCE",
+    "CAPTACIONES_SEMANTIC_MODEL_SOURCE",
     "CREDIT_SEMANTIC_MODEL_SOURCE",
+    "BorrowingGovernanceEvidence",
+    "BorrowingGovernanceEvidenceValidator",
     "BorrowingInspectionEvidenceBundle",
     "BorrowingInspectionEvidenceValidator",
+    "BorrowingSourceEvidenceAssessor",
+    "BorrowingSourceSchemaAssessment",
     "BorrowingWorkbookDiscovery",
     "BorrowingWorkbookHeaderCellEvidence",
     "BorrowingWorkbookHeaderInspection",
@@ -77,6 +113,8 @@ __all__ = [
     "BorrowingWorkbookSheetTopology",
     "ConfiguredIRRBBComposition",
     "ConfiguredIRRBBRuntimeDependencies",
+    "ConfiguredPowerBISemanticModelMetadataInspector",
+    "ConfiguredPowerBISemanticRouteSettingsProvider",
     "GovernedSemanticModelInspectionCoordinator",
     "GovernedSemanticModelInspectionResult",
     "INSTITUTIONAL_IRRBB_PHYSICAL_SOURCES",
@@ -88,6 +126,7 @@ __all__ = [
     "InstitutionalInvestmentMasterCanonicalMapper",
     "InstitutionalInvestmentMasterEnvelopeFactory",
     "InstitutionalPowerBISemanticRouteBinding",
+    "InstitutionalPowerBISemanticRouteResolver",
     "InvestmentMasterBatchBridgeResult",
     "InvestmentMasterCanonicalMappingPolicy",
     "InvestmentMasterMappingRule",
@@ -95,12 +134,19 @@ __all__ = [
     "InvestmentMasterSourceEvidenceAssessor",
     "InvestmentMasterSourcePayload",
     "InvestmentMasterSourceRules",
+    "POWER_BI_AUTHENTICATION_GOVERNANCE_REPORT_TYPE",
+    "POWER_BI_AUTHENTICATION_GOVERNANCE_REPORT_VERSION",
+    "PowerBIAuthenticationGovernanceEvidence",
+    "PowerBIAuthenticationGovernanceEvidenceValidator",
+    "PowerBIInteractiveAuthenticationPolicy",
+    "PowerBISemanticMetadataSnapshotFetcher",
     "PowerBISemanticModelRoute",
     "PowerBISemanticQueryTransport",
+    "PowerBISemanticRouteSettings",
+    "PowerBISemanticRouteSettingsProvider",
     "SemanticModelInspectionEvidenceBundle",
     "SemanticModelInspectionEvidenceRenderer",
     "SemanticModelInspectionEvidenceValidator",
-    "TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE",
     "ValidatedBorrowingDiscoveryEvidence",
     "ValidatedBorrowingHeaderCellEvidence",
     "ValidatedBorrowingHeaderEvidence",
