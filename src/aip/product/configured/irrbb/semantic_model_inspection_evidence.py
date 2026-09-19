@@ -15,8 +15,8 @@ from aip.application.irrbb.semantic_model_inspection import (
     IRRBBSemanticModelTableMetadata,
 )
 from aip.product.configured.irrbb.physical_source_registry import (
+    CAPTACIONES_SEMANTIC_MODEL_SOURCE,
     CREDIT_SEMANTIC_MODEL_SOURCE,
-    TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE,
 )
 from aip.product.configured.irrbb.semantic_model_inspection_report_contract import (
     SEMANTIC_MODEL_INSPECTION_REPORT_VERSION,
@@ -59,7 +59,7 @@ _RELATIONSHIP_KEYS = frozenset(
 )
 _GOVERNED_SEMANTIC_MODEL_SOURCES = {
     CREDIT_SEMANTIC_MODEL_SOURCE.source_id: CREDIT_SEMANTIC_MODEL_SOURCE,
-    TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE.source_id: TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE,
+    CAPTACIONES_SEMANTIC_MODEL_SOURCE.source_id: CAPTACIONES_SEMANTIC_MODEL_SOURCE,
 }
 
 

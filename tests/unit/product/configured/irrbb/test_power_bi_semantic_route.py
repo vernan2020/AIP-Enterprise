@@ -11,8 +11,8 @@ from aip.application.irrbb.physical_source_registry import (
 )
 from aip.product.configured.irrbb.physical_source_registry import (
     BORROWING_WORKBOOK_SOURCE,
+    CAPTACIONES_SEMANTIC_MODEL_SOURCE,
     CREDIT_SEMANTIC_MODEL_SOURCE,
-    TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE,
 )
 from aip.product.configured.irrbb.power_bi_semantic_route import (
     InstitutionalPowerBISemanticRouteBinding,
@@ -22,57 +22,95 @@ from aip.product.configured.irrbb.power_bi_semantic_route import (
 
 _WORKSPACE_ID = "12345678-1234-4234-8234-1234567890ab"
 _CREDIT_DATASET_ID = "22345678-1234-4234-8234-1234567890ab"
-_TERM_DATASET_ID = "32345678-1234-4234-8234-1234567890ab"
+_CAPTACIONES_DATASET_ID = "32345678-1234-4234-8234-1234567890ab"
 
 
 def _route(
     *,
     configuration_key: str,
     dataset_id: str = _CREDIT_DATASET_ID,
+    workspace_id: str | None = _WORKSPACE_ID,
 ) -> PowerBISemanticModelRoute:
     return PowerBISemanticModelRoute.from_strings(
         configuration_key=configuration_key,
-        workspace_id=_WORKSPACE_ID,
+        workspace_id=workspace_id,
         dataset_id=dataset_id,
         authentication_profile_key="security.auth.power_bi.readonly",
     )
 
 
-def test_credit_and_term_deposit_routes_bind_to_exact_governed_sources() -> None:
+def test_credit_and_captaciones_routes_bind_to_exact_governed_sources() -> None:
     credit_route = _route(configuration_key=CREDIT_SEMANTIC_MODEL_SOURCE.configuration_key)
-    term_route = _route(
-        configuration_key=TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE.configuration_key,
-        dataset_id=_TERM_DATASET_ID,
+    captaciones_route = _route(
+        configuration_key=CAPTACIONES_SEMANTIC_MODEL_SOURCE.configuration_key,
+        dataset_id=_CAPTACIONES_DATASET_ID,
     )
 
     credit_binding = InstitutionalPowerBISemanticRouteBinding(
         descriptor=CREDIT_SEMANTIC_MODEL_SOURCE,
         route=credit_route,
     )
-    term_binding = InstitutionalPowerBISemanticRouteBinding(
-        descriptor=TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE,
-        route=term_route,
+    captaciones_binding = InstitutionalPowerBISemanticRouteBinding(
+        descriptor=CAPTACIONES_SEMANTIC_MODEL_SOURCE,
+        route=captaciones_route,
     )
 
     assert credit_binding.descriptor.segment is IRRBBPhysicalSourceSegment.CREDIT
-    assert term_binding.descriptor.segment is IRRBBPhysicalSourceSegment.TERM_DEPOSIT
+    assert captaciones_binding.descriptor.segment is IRRBBPhysicalSourceSegment.CAPTACIONES
     assert credit_binding.source_reference.startswith(
         f"{CREDIT_SEMANTIC_MODEL_SOURCE.source_id}@powerbi://workspace/"
     )
-    assert term_binding.source_reference.startswith(
-        f"{TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE.source_id}@powerbi://workspace/"
+    assert captaciones_binding.source_reference.startswith(
+        f"{CAPTACIONES_SEMANTIC_MODEL_SOURCE.source_id}@powerbi://workspace/"
     )
 
 
-def test_execute_dax_endpoint_is_pinned_to_microsoft_host() -> None:
+def test_execute_dax_queries_endpoint_is_pinned_to_microsoft_host() -> None:
     route = _route(configuration_key=CREDIT_SEMANTIC_MODEL_SOURCE.configuration_key)
 
+    assert route.dataset_metadata_url == (
+        "https://api.powerbi.com/v1.0/myorg/groups/"
+        f"{_WORKSPACE_ID}/datasets/{_CREDIT_DATASET_ID}"
+    )
     assert route.execute_dax_queries_url == (
         "https://api.powerbi.com/v1.0/myorg/groups/"
         f"{_WORKSPACE_ID}/datasets/{_CREDIT_DATASET_ID}/executeDaxQueries"
     )
+    assert "security.auth.power_bi.readonly" not in route.dataset_metadata_url
     assert "security.auth.power_bi.readonly" not in route.execute_dax_queries_url
     assert "security.auth.power_bi.readonly" not in route.safe_reference
+
+
+def test_dataset_only_route_uses_my_workspace_execute_dax_queries_endpoint() -> None:
+    route = _route(
+        configuration_key=CREDIT_SEMANTIC_MODEL_SOURCE.configuration_key,
+        workspace_id=None,
+    )
+
+    assert route.workspace_id is None
+    assert route.dataset_metadata_url == (
+        f"https://api.powerbi.com/v1.0/myorg/datasets/{_CREDIT_DATASET_ID}"
+    )
+    assert route.execute_dax_queries_url == (
+        f"https://api.powerbi.com/v1.0/myorg/datasets/{_CREDIT_DATASET_ID}/executeDaxQueries"
+    )
+    assert route.safe_reference == f"powerbi://dataset/{_CREDIT_DATASET_ID}"
+
+    binding = InstitutionalPowerBISemanticRouteBinding(
+        descriptor=CREDIT_SEMANTIC_MODEL_SOURCE,
+        route=route,
+    )
+    assert binding.source_reference == (
+        f"{CREDIT_SEMANTIC_MODEL_SOURCE.source_id}@powerbi://dataset/{_CREDIT_DATASET_ID}"
+    )
+
+
+def test_dataset_only_route_requires_workspace_to_be_omitted_not_blank() -> None:
+    with pytest.raises(ValueError, match="workspace_id.*canonical UUID"):
+        _route(
+            configuration_key=CREDIT_SEMANTIC_MODEL_SOURCE.configuration_key,
+            workspace_id="",
+        )
 
 
 def test_route_uses_only_approved_arrow_transport() -> None:
@@ -98,7 +136,7 @@ def test_non_power_bi_and_configuration_mismatch_fail_closed() -> None:
             route=route,
         )
 
-    wrong_key_route = _route(configuration_key=TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE.configuration_key)
+    wrong_key_route = _route(configuration_key=CAPTACIONES_SEMANTIC_MODEL_SOURCE.configuration_key)
     with pytest.raises(ValueError, match="configuration_key"):
         InstitutionalPowerBISemanticRouteBinding(
             descriptor=CREDIT_SEMANTIC_MODEL_SOURCE,

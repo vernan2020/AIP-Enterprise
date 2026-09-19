@@ -17,12 +17,12 @@ CREDIT_SEMANTIC_MODEL_SOURCE = IRRBBPhysicalSourceDescriptor(
     location="MS Área de Crédito",
 )
 
-TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE = IRRBBPhysicalSourceDescriptor(
-    source_id="coopealianza.liability.powerbi.certificados",
-    segment=IRRBBPhysicalSourceSegment.TERM_DEPOSIT,
+CAPTACIONES_SEMANTIC_MODEL_SOURCE = IRRBBPhysicalSourceDescriptor(
+    source_id="coopealianza.liability.powerbi.captaciones",
+    segment=IRRBBPhysicalSourceSegment.CAPTACIONES,
     kind=IRRBBPhysicalSourceKind.POWER_BI_SEMANTIC_MODEL,
-    logical_name="Certificados",
-    configuration_key="irrbb.sources.term_deposit.power_bi",
+    logical_name="Captaciones",
+    configuration_key="irrbb.sources.captaciones.power_bi",
     owner="TIPowerBI",
     location="MS Área de Ahorros",
 )
@@ -45,7 +45,7 @@ INVESTMENT_PORTFOLIO_SOURCE = IRRBBPhysicalSourceDescriptor(
 
 INSTITUTIONAL_IRRBB_PHYSICAL_SOURCES = (
     CREDIT_SEMANTIC_MODEL_SOURCE,
-    TERM_DEPOSIT_SEMANTIC_MODEL_SOURCE,
+    CAPTACIONES_SEMANTIC_MODEL_SOURCE,
     BORROWING_WORKBOOK_SOURCE,
     INVESTMENT_PORTFOLIO_SOURCE,
 )
