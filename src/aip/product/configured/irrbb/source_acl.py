@@ -148,7 +148,7 @@ class IRRBBSourceSnapshotAssembler(Generic[SourceRecordT]):
         source_record: IRRBBSourceRecordEnvelope[SourceRecordT],
         mapped: IRRBBCanonicalPositionMapResult,
     ) -> None:
-        if isinstance(mapped, IRRBBSourceMappingFailure):
+        if isinstance(mapped, (IRRBBSourceMappingFailure, IRRBBSourceExclusion)):
             if mapped.source_record_id != source_record.source_record_id:
                 raise ValueError("mapper changed source_record_id")
             if mapped.source_reference != source_record.source_reference:
