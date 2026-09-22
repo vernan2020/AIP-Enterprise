@@ -152,7 +152,6 @@ def test_snapshot_rejects_duplicate_canonical_position_ids() -> None:
         )
 
 
-
 def test_source_only_exclusions_are_processed_not_reported_as_empty() -> None:
     exclusion = IRRBBSourceExclusion(
         source_record_id="ROW-133",
