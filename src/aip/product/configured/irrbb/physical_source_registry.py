@@ -84,6 +84,11 @@ INVESTMENT_XML_CONFIA_SOURCE = IRRBBPhysicalSourceDescriptor(
     location="XML CONFÍA mensual",
 )
 
+POWER_BI_SEMANTIC_MODEL_SOURCES = (
+    CREDIT_SEMANTIC_MODEL_SOURCE,
+    CAPTACIONES_SEMANTIC_MODEL_SOURCE,
+)
+
 INSTITUTIONAL_IRRBB_PHYSICAL_SOURCES = (
     CREDIT_XML_CONFIA_SOURCE,
     CAPTACIONES_XML_CONFIA_SOURCE,
@@ -96,3 +101,13 @@ def institutional_irrbb_physical_source_registry() -> IRRBBPhysicalSourceRegistr
     """Build the governed institutional source registry without runtime source resolution."""
 
     return IRRBBPhysicalSourceRegistry(INSTITUTIONAL_IRRBB_PHYSICAL_SOURCES)
+
+
+def power_bi_semantic_model_source_registry() -> IRRBBPhysicalSourceRegistry:
+    """Build the governed metadata-inspection registry for legacy Power BI models.
+
+    This registry is intentionally separate from the production RTILB physical-source
+    registry, whose primary perimeter is XML CONFÍA.
+    """
+
+    return IRRBBPhysicalSourceRegistry(POWER_BI_SEMANTIC_MODEL_SOURCES)
