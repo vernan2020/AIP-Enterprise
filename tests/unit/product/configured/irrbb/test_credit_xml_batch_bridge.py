@@ -135,6 +135,4 @@ def test_bridge_rejects_blank_xml_registro_id() -> None:
     reader = _Reader((_record(" "),))
 
     with pytest.raises(ValueError, match="Registro id is required"):
-        CreditXMLMonthlyNormalizationBridge(source_reader=reader).normalize(
-            cutoff_date=CUTOFF
-        )
+        CreditXMLMonthlyNormalizationBridge(source_reader=reader).normalize(cutoff_date=CUTOFF)
