@@ -35,6 +35,12 @@ class FolderWatchSourceConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class XMLConfiaSourceConfig:
+    enabled: bool = False
+    root: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class CurvesSourceConfig:
     enabled: bool = False
     workbook: str | None = None
@@ -98,6 +104,7 @@ class SUGEFFinancialSourceConfig:
 class ConfiguredSourceConfig:
     sql_server: SQLServerSourceConfig = field(default_factory=SQLServerSourceConfig)
     folder_watch: FolderWatchSourceConfig = field(default_factory=FolderWatchSourceConfig)
+    xml_confia: XMLConfiaSourceConfig = field(default_factory=XMLConfiaSourceConfig)
     curves: CurvesSourceConfig = field(default_factory=CurvesSourceConfig)
     vector: VectorSourceConfig = field(default_factory=VectorSourceConfig)
     bccr: BCCRSourceConfig = field(default_factory=BCCRSourceConfig)
@@ -139,6 +146,10 @@ class ConfiguredSourceConfig:
                 "icl_root": self.folder_watch.icl_root,
                 "portfolio_master_pattern": self.folder_watch.portfolio_master_pattern,
                 "icl_file_pattern": self.folder_watch.icl_file_pattern,
+            },
+            "xml_confia": {
+                "enabled": self.xml_confia.enabled,
+                "root": self.xml_confia.root,
             },
             "curves": {
                 "enabled": self.curves.enabled,
@@ -189,6 +200,7 @@ class ConfiguredSourceConfig:
         source_config_payload = payload or {}
         sql_payload = source_config_payload.get("sql_server") or {}
         folder_payload = source_config_payload.get("folder_watch") or {}
+        xml_confia_payload = source_config_payload.get("xml_confia") or {}
         curves_payload = source_config_payload.get("curves") or {}
         vector_payload = source_config_payload.get("vector") or {}
         bccr_payload = source_config_payload.get("bccr") or {}
@@ -219,6 +231,10 @@ class ConfiguredSourceConfig:
                 stale_data_threshold_seconds=int(
                     folder_payload.get("stale_data_threshold_seconds", 3600)
                 ),
+            ),
+            xml_confia=XMLConfiaSourceConfig(
+                enabled=bool(xml_confia_payload.get("enabled", False)),
+                root=xml_confia_payload.get("root"),
             ),
             curves=CurvesSourceConfig(
                 enabled=bool(curves_payload.get("enabled", False)),
