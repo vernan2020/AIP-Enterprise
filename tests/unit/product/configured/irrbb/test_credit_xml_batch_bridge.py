@@ -19,7 +19,7 @@ from aip.product.configured.irrbb.xml_confia_source import (
 )
 
 CUTOFF = date(2026, 8, 31)
-SOURCE_PATH = Path(r"C:\Institutional\XML CONFÍA\2026\08-AGOSTO\NEC2024_Operaciones_5103.xml")
+SOURCE_PATH = Path("/Institutional/XML CONFÍA/2026/08-AGOSTO/NEC2024_Operaciones_5103.xml")
 SHA256 = "a" * 64
 
 
