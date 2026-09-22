@@ -26,6 +26,8 @@ def _fact(*, record_id: str, rate_indicator: str) -> CreditXMLCanonicalBucketFac
         source_reference=f"XML_CONFIA:credit.xml|record={record_id}",
         operation_id=f"OP-{record_id}",
         accounting_account_code="13131101",
+        principal=Money(Decimal("1000.00"), Currency.CRC),
+        product=Money(Decimal("10.00"), Currency.CRC),
         amount=Money(Decimal("1010.00"), Currency.CRC),
         rate_indicator=rate_indicator,
         source_rule_code="RULE",
