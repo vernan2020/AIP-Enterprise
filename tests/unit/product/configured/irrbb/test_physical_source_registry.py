@@ -11,10 +11,14 @@ from aip.application.irrbb.physical_source_registry import (
 from aip.application.irrbb.source_certification import IRRBBSourcePerimeter
 from aip.product.configured.irrbb.physical_source_registry import (
     BORROWING_WORKBOOK_SOURCE,
+    BORROWING_XML_CONFIA_SOURCE,
     CAPTACIONES_SEMANTIC_MODEL_SOURCE,
+    CAPTACIONES_XML_CONFIA_SOURCE,
     CREDIT_SEMANTIC_MODEL_SOURCE,
+    CREDIT_XML_CONFIA_SOURCE,
     INSTITUTIONAL_IRRBB_PHYSICAL_SOURCES,
     INVESTMENT_PORTFOLIO_SOURCE,
+    INVESTMENT_XML_CONFIA_SOURCE,
     institutional_irrbb_physical_source_registry,
 )
 
@@ -42,7 +46,26 @@ def test_institutional_registry_has_exactly_one_source_for_each_position_segment
     assert len(registry.sources) == 4
 
 
-def test_power_bi_semantic_model_identities_are_governed_without_schema_assumptions() -> None:
+def test_xml_confia_sources_are_primary_for_all_four_irrbb_segments() -> None:
+    expected = (
+        CREDIT_XML_CONFIA_SOURCE,
+        CAPTACIONES_XML_CONFIA_SOURCE,
+        BORROWING_XML_CONFIA_SOURCE,
+        INVESTMENT_XML_CONFIA_SOURCE,
+    )
+
+    assert INSTITUTIONAL_IRRBB_PHYSICAL_SOURCES == expected
+    assert all(source.kind is IRRBBPhysicalSourceKind.XML_DOCUMENT for source in expected)
+    assert CREDIT_XML_CONFIA_SOURCE.logical_name == "NEC2024_Operaciones_5103.xml"
+    assert CAPTACIONES_XML_CONFIA_SOURCE.logical_name == "Pasivos_Cuentas_Contables_210.xml"
+    assert BORROWING_XML_CONFIA_SOURCE.logical_name == (
+        "Pasivos_Cuentas_Contables_220_230_260_270_280.xml"
+    )
+    assert INVESTMENT_XML_CONFIA_SOURCE.logical_name == "Crediticio_InversionesActivas.xml"
+    assert all(source.location == "XML CONFÍA / corte mensual" for source in expected)
+
+
+def test_power_bi_semantic_model_identities_remain_governed_as_historical_candidates() -> None:
     assert CREDIT_SEMANTIC_MODEL_SOURCE.logical_name == "Credito"
     assert CREDIT_SEMANTIC_MODEL_SOURCE.owner == "TIPowerBI"
     assert CREDIT_SEMANTIC_MODEL_SOURCE.location == "MS Área de Crédito"
@@ -57,7 +80,7 @@ def test_power_bi_semantic_model_identities_are_governed_without_schema_assumpti
     assert "certificados" not in CAPTACIONES_SEMANTIC_MODEL_SOURCE.source_id
 
 
-def test_borrowing_registry_uses_configuration_key_not_personal_workstation_path() -> None:
+def test_historical_borrowing_workbook_keeps_configuration_key_not_personal_path() -> None:
     assert BORROWING_WORKBOOK_SOURCE.logical_name == "Auxiliar Obligaciones Entidades 2026.xlsx"
     assert BORROWING_WORKBOOK_SOURCE.kind is IRRBBPhysicalSourceKind.EXCEL_WORKBOOK
     assert BORROWING_WORKBOOK_SOURCE.configuration_key == "irrbb.sources.borrowing.workbook"
@@ -75,7 +98,7 @@ def test_borrowing_registry_uses_configuration_key_not_personal_workstation_path
     assert "ahidalgo" not in serialized.casefold()
 
 
-def test_investments_continue_to_use_portfolio_master_source_identity() -> None:
+def test_historical_investment_portfolio_source_identity_is_retained() -> None:
     assert INVESTMENT_PORTFOLIO_SOURCE.logical_name == "Portafolio de Inversiones"
     assert INVESTMENT_PORTFOLIO_SOURCE.kind is IRRBBPhysicalSourceKind.PORTFOLIO_MASTER
     assert INVESTMENT_PORTFOLIO_SOURCE.segment is IRRBBPhysicalSourceSegment.INVESTMENT
@@ -171,10 +194,7 @@ def test_registry_missing_segment_fails_instead_of_falling_back() -> None:
 def test_registry_lookup_returns_exact_registered_descriptor() -> None:
     registry = institutional_irrbb_physical_source_registry()
 
-    assert registry.require(IRRBBPhysicalSourceSegment.CREDIT) is CREDIT_SEMANTIC_MODEL_SOURCE
-    assert (
-        registry.require(IRRBBPhysicalSourceSegment.CAPTACIONES)
-        is CAPTACIONES_SEMANTIC_MODEL_SOURCE
-    )
-    assert registry.require(IRRBBPhysicalSourceSegment.BORROWING) is BORROWING_WORKBOOK_SOURCE
-    assert registry.require(IRRBBPhysicalSourceSegment.INVESTMENT) is INVESTMENT_PORTFOLIO_SOURCE
+    assert registry.require(IRRBBPhysicalSourceSegment.CREDIT) is CREDIT_XML_CONFIA_SOURCE
+    assert registry.require(IRRBBPhysicalSourceSegment.CAPTACIONES) is CAPTACIONES_XML_CONFIA_SOURCE
+    assert registry.require(IRRBBPhysicalSourceSegment.BORROWING) is BORROWING_XML_CONFIA_SOURCE
+    assert registry.require(IRRBBPhysicalSourceSegment.INVESTMENT) is INVESTMENT_XML_CONFIA_SOURCE
