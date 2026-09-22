@@ -10,6 +10,7 @@ from aip.application.irrbb.analysis_contracts import (
 from aip.application.irrbb.contracts import (
     IRRBBCurveSourcePoint,
     IRRBBPositionSourceRecord,
+    IRRBBSourceExclusion,
     IRRBBSourceLoadRequest,
     IRRBBSourceLoadResult,
     IRRBBSourceLoadStatus,
@@ -85,6 +86,7 @@ __all__ = [
     "IRRBBSourceLoadRequest",
     "IRRBBSourceLoadResult",
     "IRRBBSourceLoadStatus",
+    "IRRBBSourceExclusion",
     "IRRBBSourceMappingFailure",
     "IRRBBSourceMappingFailureCode",
     "IRRBBSourcePerimeter",
