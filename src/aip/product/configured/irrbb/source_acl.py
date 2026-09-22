@@ -7,6 +7,7 @@ from typing import Generic, Protocol, TypeAlias, TypeVar
 from aip.application.irrbb.contracts import (
     IRRBBCurveSourcePoint,
     IRRBBPositionSourceRecord,
+    IRRBBSourceExclusion,
     IRRBBSourceMappingFailure,
     IRRBBSourceMappingFailureCode,
     IRRBBSourceSnapshot,
@@ -37,7 +38,9 @@ class IRRBBSourceRecordEnvelope(Generic[SourceRecordT]):
             raise ValueError("source_reference is required")
 
 
-IRRBBCanonicalPositionMapResult: TypeAlias = IRRBBPositionSourceRecord | IRRBBSourceMappingFailure
+IRRBBCanonicalPositionMapResult: TypeAlias = (
+    IRRBBPositionSourceRecord | IRRBBSourceMappingFailure | IRRBBSourceExclusion
+)
 
 
 class IRRBBCanonicalPositionMapper(Protocol[SourceRecordT]):
@@ -52,8 +55,8 @@ class IRRBBCanonicalPositionMapper(Protocol[SourceRecordT]):
 class IRRBBSourceSnapshotAssembler(Generic[SourceRecordT]):
     """Assemble a traceable canonical snapshot behind a certification gate.
 
-    Mappers may return either a canonical position record or an explicit mapping
-    failure. Failures are retained in the snapshot and are never converted into
+    Mappers may return a canonical position, an explicit mapping failure or an
+    approved source exclusion. Failures and exclusions are retained and never converted into
     zero-valued positions or silently discarded. A source certification report is
     mandatory for every assembly call because source sufficiency can vary by cutoff
     and snapshot. The mapper is never invoked unless that report is ``READY``.
@@ -73,13 +76,16 @@ class IRRBBSourceSnapshotAssembler(Generic[SourceRecordT]):
     ) -> IRRBBSourceSnapshot:
         position_records: list[IRRBBPositionSourceRecord] = []
         mapping_failures: list[IRRBBSourceMappingFailure] = []
+        source_exclusions: list[IRRBBSourceExclusion] = []
 
         if source_certification.is_ready:
             for source_record in source_records:
                 mapped = self._mapper.map_record(source_record)
                 self._validate_lineage(source_record=source_record, mapped=mapped)
-                if isinstance(mapped, IRRBBSourceMappingFailure):
+                if isinstance(mapped, (IRRBBSourceMappingFailure, IRRBBSourceExclusion)):
                     mapping_failures.append(mapped)
+                elif isinstance(mapped, IRRBBSourceExclusion):
+                    source_exclusions.append(mapped)
                 else:
                     position_records.append(mapped)
         else:
@@ -102,6 +108,7 @@ class IRRBBSourceSnapshotAssembler(Generic[SourceRecordT]):
             curve_points=curve_points,
             source_references=lineage,
             mapping_failures=tuple(mapping_failures),
+            source_exclusions=tuple(source_exclusions),
         )
 
     @classmethod
