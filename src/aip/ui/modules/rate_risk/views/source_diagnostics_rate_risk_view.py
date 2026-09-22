@@ -27,7 +27,7 @@ class RateRiskView(_BaseRateRiskView):
             "XML obligaciones disponible · reconciliación y primera cuota contractual pendientes"
         ),
         IRRBBPhysicalSourceSegment.INVESTMENT: (
-            "XML inversiones disponible · cupones y periodicidad requieren complemento gobernado"
+            "Maestro de Inversiones al cierre mensual · posiciones, tasa, vencimiento y periodicidad"
         ),
     }
 
@@ -55,8 +55,9 @@ class RateRiskView(_BaseRateRiskView):
         source_status_box.setStyleSheet(self._group_style())
         source_status_layout = QVBoxLayout(source_status_box)
         source_status_note = QLabel(
-            "Fuentes físicas primarias XML CONFÍA registradas para RTILB. El estado muestra "
-            "avance de normalización; no implica que el cálculo productivo esté activado."
+            "Fuentes físicas primarias registradas para RTILB: XML CONFÍA para crédito y pasivos, "
+            "y Maestro de Inversiones al cierre mensual para inversiones. El estado muestra avance "
+            "de normalización; no implica que el cálculo productivo esté activado."
         )
         source_status_note.setWordWrap(True)
         source_status_note.setStyleSheet("color:#566D7C; font-size:9px;")
