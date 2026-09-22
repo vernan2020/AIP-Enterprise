@@ -20,6 +20,7 @@ from aip.product.configured.irrbb.physical_source_registry import (
     INVESTMENT_PORTFOLIO_SOURCE,
     INVESTMENT_XML_CONFIA_SOURCE,
     institutional_irrbb_physical_source_registry,
+    power_bi_semantic_model_source_registry,
 )
 
 
@@ -44,6 +45,22 @@ def test_institutional_registry_has_exactly_one_source_for_each_position_segment
     assert registry.sources == INSTITUTIONAL_IRRBB_PHYSICAL_SOURCES
     assert {item.segment for item in registry.sources} == set(IRRBBPhysicalSourceSegment)
     assert len(registry.sources) == 4
+
+
+def test_power_bi_metadata_inspection_registry_remains_separate_from_xml_runtime() -> None:
+    registry = power_bi_semantic_model_source_registry()
+
+    assert registry.require(IRRBBPhysicalSourceSegment.CREDIT) is CREDIT_SEMANTIC_MODEL_SOURCE
+    assert (
+        registry.require(IRRBBPhysicalSourceSegment.CAPTACIONES)
+        is CAPTACIONES_SEMANTIC_MODEL_SOURCE
+    )
+    assert all(
+        source.kind is IRRBBPhysicalSourceKind.POWER_BI_SEMANTIC_MODEL
+        for source in registry.sources
+    )
+    with pytest.raises(KeyError):
+        registry.require(IRRBBPhysicalSourceSegment.BORROWING)
 
 
 def test_xml_confia_is_the_primary_governed_source_perimeter() -> None:
