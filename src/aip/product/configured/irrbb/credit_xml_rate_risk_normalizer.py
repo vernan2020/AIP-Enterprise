@@ -68,6 +68,8 @@ class CreditXMLRateRiskNormalizer:
     def normalize(
         self,
         record: IRRBBSourceRecordEnvelope[XMLConfiaRecord],
+        *,
+        cutoff_date: date,
     ) -> CreditXMLNormalizationResult:
         values = record.payload.values
 
@@ -177,6 +179,17 @@ class CreditXMLRateRiskNormalizer:
             rule_code = CREDIT_XML_RULE_FV_CHANGE_DATE
             sensitive_date = rate_change
             bucket_hint = None
+
+        if sensitive_date is not None and sensitive_date < cutoff_date:
+            return self._failure(
+                record,
+                code=IRRBBSourceMappingFailureCode.INVALID_CANONICAL_VALUE,
+                field="sensitive_date",
+                message=(
+                    f"Audited credit sensitive date {sensitive_date.isoformat()} "
+                    f"is before cutoff {cutoff_date.isoformat()}."
+                ),
+            )
 
         return CreditXMLRateRiskFact(
             source_record_id=record.source_record_id,
