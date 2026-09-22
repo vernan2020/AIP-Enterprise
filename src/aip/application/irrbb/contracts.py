@@ -153,9 +153,7 @@ class IRRBBSourceSnapshot:
             raise ValueError("IRRBB source snapshot exclusion ids must be unique")
         overlap = set(failure_ids) & set(exclusion_ids)
         if overlap:
-            raise ValueError(
-                "IRRBB source snapshot record ids cannot be both failed and excluded"
-            )
+            raise ValueError("IRRBB source snapshot record ids cannot be both failed and excluded")
         for source_reference in self.source_references:
             if not source_reference.strip():
                 raise ValueError("source_references cannot contain blank values")
