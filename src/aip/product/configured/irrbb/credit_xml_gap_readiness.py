@@ -52,7 +52,9 @@ class CreditXMLGapReadinessBatchResult:
     mapping_failures: tuple[IRRBBSourceMappingFailure, ...]
 
     def __post_init__(self) -> None:
-        represented = len(self.assessments) + len(self.source_exclusions) + len(self.mapping_failures)
+        represented = (
+            len(self.assessments) + len(self.source_exclusions) + len(self.mapping_failures)
+        )
         if represented != self.source_record_count:
             raise ValueError("every credit XML source record must have one GAP readiness outcome")
 
