@@ -17,7 +17,8 @@ class RateRiskView(_BaseRateRiskView):
 
     _SOURCE_GATE_LABELS = {
         IRRBBPhysicalSourceSegment.CREDIT: (
-            "XML mensual disponible · mapping R1 y exclusiones por mora/judicial pendiente"
+            "XML mensual disponible · V→R1 · F→vencimiento · FV→cambio de tasa · "
+            "mora/judicial con exclusión auditable"
         ),
         IRRBBPhysicalSourceSegment.CAPTACIONES: (
             "XML 210 disponible · CAPF requiere modalidad y frecuencia contractual complementarias"
