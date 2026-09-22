@@ -87,9 +87,7 @@ def test_monthly_bridge_preserves_every_record_as_fact_exclusion_or_failure() ->
         )
     )
 
-    result = CreditXMLMonthlyNormalizationBridge(source_reader=reader).normalize(
-        cutoff_date=CUTOFF
-    )
+    result = CreditXMLMonthlyNormalizationBridge(source_reader=reader).normalize(cutoff_date=CUTOFF)
 
     assert reader.resolve_calls == [("CREDIT", CUTOFF)]
     assert reader.sha_calls == [SOURCE_PATH]
@@ -130,9 +128,7 @@ def test_bridge_rejects_duplicate_xml_registro_lineage() -> None:
     reader = _Reader((_record("7"), _record("7")))
 
     with pytest.raises(ValueError, match="lineage must be unique"):
-        CreditXMLMonthlyNormalizationBridge(source_reader=reader).normalize(
-            cutoff_date=CUTOFF
-        )
+        CreditXMLMonthlyNormalizationBridge(source_reader=reader).normalize(cutoff_date=CUTOFF)
 
 
 def test_bridge_rejects_blank_xml_registro_id() -> None:
