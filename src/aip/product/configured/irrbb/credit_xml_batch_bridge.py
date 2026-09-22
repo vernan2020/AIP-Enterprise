@@ -52,9 +52,7 @@ class CreditXMLNormalizationBatchResult:
             raise ValueError("credit XML source_record_count cannot be negative")
 
         represented = (
-            len(self.normalized_facts)
-            + len(self.source_exclusions)
-            + len(self.mapping_failures)
+            len(self.normalized_facts) + len(self.source_exclusions) + len(self.mapping_failures)
         )
         if represented != self.source_record_count:
             raise ValueError("every credit XML source record must have one normalization outcome")
