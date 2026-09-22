@@ -97,8 +97,7 @@ class XMLConfiaMonthlySourceReader:
 
     def resolve_required_sources(self, cutoff_date: date) -> tuple[XMLConfiaResolvedSource, ...]:
         return tuple(
-            self.resolve_source(key=key, cutoff_date=cutoff_date)
-            for key in XML_CONFIA_SOURCE_STEMS
+            self.resolve_source(key=key, cutoff_date=cutoff_date) for key in XML_CONFIA_SOURCE_STEMS
         )
 
     def read_header(self, path: Path) -> XMLConfiaHeader:
@@ -134,10 +133,7 @@ class XMLConfiaMonthlySourceReader:
         for event, element in ElementTree.iterparse(source.path, events=("end",)):
             if element.tag != "Registro":
                 continue
-            values = {
-                child.tag.strip(): (child.text or "").strip()
-                for child in element
-            }
+            values = {child.tag.strip(): (child.text or "").strip() for child in element}
             yield XMLConfiaRecord(
                 record_id=(element.attrib.get("id") or "").strip(),
                 action=(element.attrib.get("accion") or "").strip(),
