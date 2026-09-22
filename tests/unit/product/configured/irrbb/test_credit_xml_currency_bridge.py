@@ -30,6 +30,8 @@ def _fact(*, record_id: str, source_code: str) -> CreditXMLIRRBBBucketFact:
         operation_id=f"OP-{record_id}",
         currency_source_code=source_code,
         accounting_account_code="13131101",
+        principal_amount=Decimal("1000.00"),
+        product_amount=Decimal("10.00"),
         amount=Decimal("1010.00"),
         rate_indicator="F",
         source_rule_code="CREDIT_FIXED_MATURITY",
@@ -85,6 +87,8 @@ def test_governed_catalog_maps_bucket_fact_into_money_without_default_codes() ->
         Decimal("1010.00"),
         Decimal("1010.00"),
     ]
+    assert result.canonical_bucket_facts[0].principal.amount == Decimal("1000.00")
+    assert result.canonical_bucket_facts[0].product.amount == Decimal("10.00")
     assert result.canonical_bucket_facts[0].bucket is IRRBBTimeBucket.MONTH_3_TO_6
 
 
