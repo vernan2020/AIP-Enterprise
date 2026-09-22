@@ -46,23 +46,27 @@ def test_institutional_registry_has_exactly_one_source_for_each_position_segment
     assert len(registry.sources) == 4
 
 
-def test_xml_confia_sources_are_primary_for_all_four_irrbb_segments() -> None:
+def test_primary_irrbb_registry_uses_xml_for_credit_and_liabilities_and_month_end_master_for_investments() -> (
+    None
+):
     expected = (
         CREDIT_XML_CONFIA_SOURCE,
         CAPTACIONES_XML_CONFIA_SOURCE,
         BORROWING_XML_CONFIA_SOURCE,
-        INVESTMENT_XML_CONFIA_SOURCE,
+        INVESTMENT_PORTFOLIO_SOURCE,
     )
 
     assert INSTITUTIONAL_IRRBB_PHYSICAL_SOURCES == expected
-    assert all(source.kind is IRRBBPhysicalSourceKind.XML_DOCUMENT for source in expected)
+    assert all(source.kind is IRRBBPhysicalSourceKind.XML_DOCUMENT for source in expected[:3])
+    assert expected[3].kind is IRRBBPhysicalSourceKind.PORTFOLIO_MASTER
     assert CREDIT_XML_CONFIA_SOURCE.logical_name == "NEC2024_Operaciones_5103.xml"
     assert CAPTACIONES_XML_CONFIA_SOURCE.logical_name == "Pasivos_Cuentas_Contables_210.xml"
     assert BORROWING_XML_CONFIA_SOURCE.logical_name == (
         "Pasivos_Cuentas_Contables_220_230_260_270_280.xml"
     )
-    assert INVESTMENT_XML_CONFIA_SOURCE.logical_name == "Crediticio_InversionesActivas.xml"
-    assert all(source.location == "XML CONFÍA / corte mensual" for source in expected)
+    assert INVESTMENT_PORTFOLIO_SOURCE.logical_name == "Maestro de Inversiones - cierre mensual"
+    assert INVESTMENT_PORTFOLIO_SOURCE.location == "Inversiones / maestro / cierre de mes"
+    assert all(source.location == "XML CONFÍA / corte mensual" for source in expected[:3])
 
 
 def test_power_bi_semantic_model_identities_remain_governed_as_historical_candidates() -> None:
@@ -98,10 +102,10 @@ def test_historical_borrowing_workbook_keeps_configuration_key_not_personal_path
     assert "ahidalgo" not in serialized.casefold()
 
 
-def test_historical_investment_portfolio_source_identity_is_retained() -> None:
-    assert INVESTMENT_PORTFOLIO_SOURCE.logical_name == "Portafolio de Inversiones"
-    assert INVESTMENT_PORTFOLIO_SOURCE.kind is IRRBBPhysicalSourceKind.PORTFOLIO_MASTER
-    assert INVESTMENT_PORTFOLIO_SOURCE.segment is IRRBBPhysicalSourceSegment.INVESTMENT
+def test_investment_xml_is_retained_only_as_historical_candidate() -> None:
+    assert INVESTMENT_XML_CONFIA_SOURCE.logical_name == "Crediticio_InversionesActivas.xml"
+    assert INVESTMENT_XML_CONFIA_SOURCE.kind is IRRBBPhysicalSourceKind.XML_DOCUMENT
+    assert INVESTMENT_XML_CONFIA_SOURCE.segment is IRRBBPhysicalSourceSegment.INVESTMENT
 
 
 def test_registry_does_not_register_aggregate_icl_or_unproven_sql_view_as_contractual_source() -> (
@@ -197,4 +201,4 @@ def test_registry_lookup_returns_exact_registered_descriptor() -> None:
     assert registry.require(IRRBBPhysicalSourceSegment.CREDIT) is CREDIT_XML_CONFIA_SOURCE
     assert registry.require(IRRBBPhysicalSourceSegment.CAPTACIONES) is CAPTACIONES_XML_CONFIA_SOURCE
     assert registry.require(IRRBBPhysicalSourceSegment.BORROWING) is BORROWING_XML_CONFIA_SOURCE
-    assert registry.require(IRRBBPhysicalSourceSegment.INVESTMENT) is INVESTMENT_XML_CONFIA_SOURCE
+    assert registry.require(IRRBBPhysicalSourceSegment.INVESTMENT) is INVESTMENT_PORTFOLIO_SOURCE

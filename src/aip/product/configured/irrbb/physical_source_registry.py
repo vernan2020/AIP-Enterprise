@@ -43,8 +43,8 @@ INVESTMENT_XML_CONFIA_SOURCE = IRRBBPhysicalSourceDescriptor(
     location="XML CONFÍA / corte mensual",
 )
 
-# Historical/candidate sources are retained for auditability and rollback, but they
-# are no longer registered as the primary RTILB physical sources.
+# Historical/candidate sources are retained for auditability and rollback. The
+# investment XML descriptor is not a primary RTILB source; the month-end Maestro is.
 CREDIT_SEMANTIC_MODEL_SOURCE = IRRBBPhysicalSourceDescriptor(
     source_id="coopealianza.credit.powerbi.credito",
     segment=IRRBBPhysicalSourceSegment.CREDIT,
@@ -74,25 +74,26 @@ BORROWING_WORKBOOK_SOURCE = IRRBBPhysicalSourceDescriptor(
 )
 
 INVESTMENT_PORTFOLIO_SOURCE = IRRBBPhysicalSourceDescriptor(
-    source_id="coopealianza.investment.portfolio_master",
+    source_id="coopealianza.investment.month_end_master",
     segment=IRRBBPhysicalSourceSegment.INVESTMENT,
     kind=IRRBBPhysicalSourceKind.PORTFOLIO_MASTER,
-    logical_name="Portafolio de Inversiones",
+    logical_name="Maestro de Inversiones - cierre mensual",
     configuration_key="irrbb.sources.investment.portfolio_master",
+    location="Inversiones / maestro / cierre de mes",
 )
 
 INSTITUTIONAL_IRRBB_PHYSICAL_SOURCES = (
     CREDIT_XML_CONFIA_SOURCE,
     CAPTACIONES_XML_CONFIA_SOURCE,
     BORROWING_XML_CONFIA_SOURCE,
-    INVESTMENT_XML_CONFIA_SOURCE,
+    INVESTMENT_PORTFOLIO_SOURCE,
 )
 
 HISTORICAL_IRRBB_CANDIDATE_SOURCES = (
     CREDIT_SEMANTIC_MODEL_SOURCE,
     CAPTACIONES_SEMANTIC_MODEL_SOURCE,
     BORROWING_WORKBOOK_SOURCE,
-    INVESTMENT_PORTFOLIO_SOURCE,
+    INVESTMENT_XML_CONFIA_SOURCE,
 )
 
 

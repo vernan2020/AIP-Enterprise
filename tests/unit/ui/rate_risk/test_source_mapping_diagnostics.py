@@ -134,10 +134,13 @@ def test_passive_view_exposes_governed_source_integration_progress_without_activ
     credit = "NEC2024_Operaciones_5103.xml"
     captaciones = "Pasivos_Cuentas_Contables_210.xml"
     borrowing = "Pasivos_Cuentas_Contables_220_230_260_270_280.xml"
-    investment = "Crediticio_InversionesActivas.xml"
+    investment = "Maestro de Inversiones - cierre mensual"
 
     assert {credit, captaciones, borrowing, investment} <= set(rows)
-    assert all(values[2] == "XML_DOCUMENT" for values in rows.values())
+    assert rows[credit][2] == "XML_DOCUMENT"
+    assert rows[captaciones][2] == "XML_DOCUMENT"
+    assert rows[borrowing][2] == "XML_DOCUMENT"
+    assert rows[investment][2] == "PORTFOLIO_MASTER"
     assert all(values[4] == "REGISTRADA · NO ACTIVADA" for values in rows.values())
     assert "V→R1" in rows[credit][5]
     assert "F→vencimiento" in rows[credit][5]
@@ -145,4 +148,5 @@ def test_passive_view_exposes_governed_source_integration_progress_without_activ
     assert "exclusión auditable" in rows[credit][5]
     assert "CAPF requiere modalidad y frecuencia" in rows[captaciones][5]
     assert "reconciliación" in rows[borrowing][5]
-    assert "cupones y periodicidad" in rows[investment][5]
+    assert "cierre mensual" in rows[investment][5]
+    assert "vencimiento y periodicidad" in rows[investment][5]
