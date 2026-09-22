@@ -5,6 +5,8 @@ from datetime import date
 from enum import IntEnum
 
 from aip.product.configured.irrbb.credit_xml_rate_risk_normalizer import (
+    CREDIT_XML_RULE_FIXED_MATURITY,
+    CREDIT_XML_RULE_FV_CHANGE_DATE,
     CREDIT_XML_RULE_VARIABLE_R1,
     CreditXMLRateRiskFact,
 )
@@ -59,6 +61,12 @@ class CreditSICVECARangeClassifier:
                 days_sensitivity=None,
                 rule_code=fact.rule_code,
             )
+
+        if fact.rule_code not in {
+            CREDIT_XML_RULE_FIXED_MATURITY,
+            CREDIT_XML_RULE_FV_CHANGE_DATE,
+        }:
+            raise ValueError(f"unsupported credit SICVECA rule_code: {fact.rule_code}")
 
         sensitive_date = fact.sensitive_date
         if sensitive_date is None:
