@@ -56,8 +56,9 @@ class IRRBBSourceSnapshotAssembler(Generic[SourceRecordT]):
     """Assemble a traceable canonical snapshot behind a certification gate.
 
     Mappers may return a canonical position, an explicit mapping failure or an
-    approved source exclusion. Failures and exclusions are retained and never converted into
-    zero-valued positions or silently discarded. A source certification report is
+    approved source exclusion. Failures and exclusions are retained and never
+    converted into zero-valued positions or silently discarded. A source
+    certification report is
     mandatory for every assembly call because source sufficiency can vary by cutoff
     and snapshot. The mapper is never invoked unless that report is ``READY``.
     """
@@ -82,7 +83,7 @@ class IRRBBSourceSnapshotAssembler(Generic[SourceRecordT]):
             for source_record in source_records:
                 mapped = self._mapper.map_record(source_record)
                 self._validate_lineage(source_record=source_record, mapped=mapped)
-                if isinstance(mapped, (IRRBBSourceMappingFailure, IRRBBSourceExclusion)):
+                if isinstance(mapped, IRRBBSourceMappingFailure):
                     mapping_failures.append(mapped)
                 elif isinstance(mapped, IRRBBSourceExclusion):
                     source_exclusions.append(mapped)
