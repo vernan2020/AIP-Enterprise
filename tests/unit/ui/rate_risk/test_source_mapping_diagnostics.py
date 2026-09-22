@@ -131,12 +131,16 @@ def test_passive_view_exposes_governed_source_integration_progress_without_activ
         for row in range(table.rowCount())
     }
 
-    assert "Credito" in rows
-    assert "Captaciones" in rows
-    assert "Auxiliar Obligaciones Entidades 2026.xlsx" in rows
-    assert "Portafolio de Inversiones" in rows
+    assert "NEC2024_Operaciones_5103.xml" in rows
+    assert "Pasivos_Cuentas_Contables_210.xml" in rows
+    assert "Pasivos_Cuentas_Contables_220_230_260_270_280.xml" in rows
+    assert "Crediticio_InversionesActivas.xml" in rows
+    assert all(values[2] == "XML_FILE" for values in rows.values())
     assert all(values[4] == "REGISTRADA · NO ACTIVADA" for values in rows.values())
-    assert "autenticación institucional pendiente" in rows["Credito"][5]
-    assert "clasificación contractual pendientes" in rows["Captaciones"][5]
-    assert "reconciliación pendientes" in rows["Auxiliar Obligaciones Entidades 2026.xlsx"][5]
-    assert "paridad pendientes" in rows["Portafolio de Inversiones"][5]
+    assert "mapper de crédito" in rows["NEC2024_Operaciones_5103.xml"][5]
+    assert "clasificación CAPF" in rows["Pasivos_Cuentas_Contables_210.xml"][5]
+    assert (
+        "mapper contractual"
+        in rows["Pasivos_Cuentas_Contables_220_230_260_270_280.xml"][5]
+    )
+    assert "cupones/periodicidad" in rows["Crediticio_InversionesActivas.xml"][5]
