@@ -139,7 +139,10 @@ def test_passive_view_exposes_governed_source_integration_progress_without_activ
     assert {credit, captaciones, borrowing, investment} <= set(rows)
     assert all(values[2] == "XML_DOCUMENT" for values in rows.values())
     assert all(values[4] == "REGISTRADA · NO ACTIVADA" for values in rows.values())
-    assert "mapping R1" in rows[credit][5]
+    assert "V→R1" in rows[credit][5]
+    assert "F→vencimiento" in rows[credit][5]
+    assert "FV→cambio de tasa" in rows[credit][5]
+    assert "exclusión auditable" in rows[credit][5]
     assert "CAPF requiere modalidad y frecuencia" in rows[captaciones][5]
     assert "reconciliación" in rows[borrowing][5]
     assert "cupones y periodicidad" in rows[investment][5]
