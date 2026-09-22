@@ -5,6 +5,9 @@ from typing import Protocol
 
 from aip.application.irrbb.analysis_contracts import IRRBBAnalysisRequest
 from aip.application.irrbb.contracts import IRRBBSourceSnapshot
+from aip.application.irrbb.credit_gap_schedule_contracts import (
+    IRRBBCreditGapScheduleSnapshot,
+)
 
 
 class IRRBBDataGateway(Protocol):
@@ -27,3 +30,19 @@ class IRRBBAnalysisRequestProvider(Protocol):
     """
 
     def request_for(self, *, cutoff_date: date) -> IRRBBAnalysisRequest: ...
+
+
+class IRRBBCreditGapScheduleGateway(Protocol):
+    """Application port for an explicit contractual Credit GAP schedule complement.
+
+    Implementations may use any approved physical source, but they must return one
+    auditable outcome for every requested operation and must not infer installments
+    or manufacture residual principal.
+    """
+
+    def load_schedule_snapshot(
+        self,
+        *,
+        cutoff_date: date,
+        operation_ids: tuple[str, ...],
+    ) -> IRRBBCreditGapScheduleSnapshot: ...
