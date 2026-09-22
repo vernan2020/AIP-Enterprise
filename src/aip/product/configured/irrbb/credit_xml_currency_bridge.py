@@ -25,6 +25,8 @@ class CreditXMLCanonicalBucketFact:
     source_reference: str
     operation_id: str
     accounting_account_code: str
+    principal: Money
+    product: Money
     amount: Money
     rate_indicator: str
     source_rule_code: str
@@ -42,8 +44,18 @@ class CreditXMLCanonicalBucketFact:
             raise ValueError("canonical credit bucket operation_id is required")
         if not self.accounting_account_code.strip():
             raise ValueError("canonical credit bucket accounting_account_code is required")
+        if self.principal.currency is not self.amount.currency:
+            raise ValueError("canonical credit principal currency must match amount currency")
+        if self.product.currency is not self.amount.currency:
+            raise ValueError("canonical credit product currency must match amount currency")
+        if self.principal.amount < 0:
+            raise ValueError("canonical credit principal cannot be negative")
+        if self.product.amount < 0:
+            raise ValueError("canonical credit product cannot be negative")
         if self.amount.amount < 0:
             raise ValueError("canonical credit bucket amount cannot be negative")
+        if self.amount.amount != self.principal.amount + self.product.amount:
+            raise ValueError("canonical credit amount must equal principal plus product")
         if not self.rate_indicator.strip():
             raise ValueError("canonical credit bucket rate_indicator is required")
         if not self.source_rule_code.strip():
@@ -138,6 +150,8 @@ class CreditXMLCurrencyBridge:
             source_reference=fact.source_reference,
             operation_id=fact.operation_id,
             accounting_account_code=fact.accounting_account_code,
+            principal=Money(fact.principal_amount, currency),
+            product=Money(fact.product_amount, currency),
             amount=Money(fact.amount, currency),
             rate_indicator=fact.rate_indicator,
             source_rule_code=fact.source_rule_code,
