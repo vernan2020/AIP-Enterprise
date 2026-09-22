@@ -12,6 +12,7 @@ class IRRBBPhysicalSourceKind(str, Enum):
     POWER_BI_SEMANTIC_MODEL = "POWER_BI_SEMANTIC_MODEL"
     EXCEL_WORKBOOK = "EXCEL_WORKBOOK"
     PORTFOLIO_MASTER = "PORTFOLIO_MASTER"
+    XML_DOCUMENT = "XML_DOCUMENT"
 
 
 class IRRBBPhysicalSourceSegment(str, Enum):
@@ -19,7 +20,7 @@ class IRRBBPhysicalSourceSegment(str, Enum):
 
     Physical-source identity is deliberately broader than canonical instrument
     classification. In particular, ``CAPTACIONES`` identifies the institutional
-    Power BI source before its records are evidenced and classified as term deposits,
+    liability source before its records are evidenced and classified as term deposits,
     non-maturity deposits, or any other supported IRRBB instrument class.
     """
 

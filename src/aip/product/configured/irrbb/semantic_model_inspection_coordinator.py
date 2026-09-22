@@ -13,7 +13,7 @@ from aip.application.irrbb.semantic_model_inspection import (
     IRRBBSemanticModelMetadataInspector,
 )
 from aip.product.configured.irrbb.physical_source_registry import (
-    institutional_irrbb_physical_source_registry,
+    historical_irrbb_candidate_source_registry,
 )
 from aip.product.configured.irrbb.semantic_model_inspection_renderer import (
     SemanticModelInspectionEvidenceRenderer,
@@ -49,7 +49,7 @@ class GovernedSemanticModelInspectionCoordinator:
             renderer if renderer is not None else SemanticModelInspectionEvidenceRenderer()
         )
         self._registry = (
-            registry if registry is not None else institutional_irrbb_physical_source_registry()
+            registry if registry is not None else historical_irrbb_candidate_source_registry()
         )
 
     def inspect(

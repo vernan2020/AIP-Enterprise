@@ -10,7 +10,7 @@ from aip.application.irrbb.physical_source_registry import (
     IRRBBPhysicalSourceSegment,
 )
 from aip.product.configured.irrbb.physical_source_registry import (
-    institutional_irrbb_physical_source_registry,
+    historical_irrbb_candidate_source_registry,
 )
 from aip.product.configured.irrbb.power_bi_semantic_route import (
     InstitutionalPowerBISemanticRouteBinding,
@@ -46,7 +46,7 @@ class InstitutionalPowerBISemanticRouteResolver:
     """Resolve exact governed semantic sources to validated runtime routes.
 
     The resolver is fail-closed: it accepts only a source registered in the
-    institutional IRRBB physical-source registry, requires Power BI source kind,
+    retained institutional candidate-source registry, requires Power BI source kind,
     and delegates UUID/reference validation to ``PowerBISemanticModelRoute``.
     """
 
@@ -58,7 +58,7 @@ class InstitutionalPowerBISemanticRouteResolver:
     ) -> None:
         self._settings_provider = settings_provider
         self._registry = (
-            registry if registry is not None else institutional_irrbb_physical_source_registry()
+            registry if registry is not None else historical_irrbb_candidate_source_registry()
         )
 
     def resolve_segment(
