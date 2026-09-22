@@ -37,9 +37,7 @@ def _fact(*, record_id: str, rate_indicator: str) -> CreditXMLCanonicalBucketFac
 
 
 def test_fixed_credit_is_blocked_until_contractual_payment_schedule_exists() -> None:
-    assessment = CreditXMLGapReadinessService.assess_fact(
-        _fact(record_id="1", rate_indicator="F")
-    )
+    assessment = CreditXMLGapReadinessService.assess_fact(_fact(record_id="1", rate_indicator="F"))
 
     assert assessment.status is CreditXMLGapReadinessStatus.BLOCKED_CONTRACTUAL_SCHEDULE
     assert assessment.missing_capabilities == (
@@ -50,9 +48,7 @@ def test_fixed_credit_is_blocked_until_contractual_payment_schedule_exists() -> 
 
 
 def test_semivariable_credit_requires_schedule_and_residual_principal_at_repricing() -> None:
-    assessment = CreditXMLGapReadinessService.assess_fact(
-        _fact(record_id="2", rate_indicator="FV")
-    )
+    assessment = CreditXMLGapReadinessService.assess_fact(_fact(record_id="2", rate_indicator="FV"))
 
     assert assessment.status is CreditXMLGapReadinessStatus.BLOCKED_CONTRACTUAL_SCHEDULE
     assert assessment.missing_capabilities == (
