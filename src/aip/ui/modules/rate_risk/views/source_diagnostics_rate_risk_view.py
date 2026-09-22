@@ -17,16 +17,16 @@ class RateRiskView(_BaseRateRiskView):
 
     _SOURCE_GATE_LABELS = {
         IRRBBPhysicalSourceSegment.CREDIT: (
-            "Metadata adapter disponible · autenticación institucional pendiente"
+            "XML mensual disponible · mapping R1 y exclusiones por mora/judicial pendiente"
         ),
         IRRBBPhysicalSourceSegment.CAPTACIONES: (
-            "Metadata adapter disponible · autenticación y clasificación contractual pendientes"
+            "XML 210 disponible · CAPF requiere modalidad y frecuencia contractual complementarias"
         ),
         IRRBBPhysicalSourceSegment.BORROWING: (
-            "Semántica de reprecio certificada · mapeo y reconciliación pendientes"
+            "XML obligaciones disponible · reconciliación y primera cuota contractual pendientes"
         ),
         IRRBBPhysicalSourceSegment.INVESTMENT: (
-            "Mapper/evidencia parcial · gobernanza y paridad pendientes"
+            "XML inversiones disponible · cupones y periodicidad requieren complemento gobernado"
         ),
     }
 
@@ -54,8 +54,8 @@ class RateRiskView(_BaseRateRiskView):
         source_status_box.setStyleSheet(self._group_style())
         source_status_layout = QVBoxLayout(source_status_box)
         source_status_note = QLabel(
-            "Fuentes físicas gobernadas registradas para RTILB. Este panel muestra avance de "
-            "integración y no implica que exista extracción contractual o cálculo productivo."
+            "Fuentes físicas primarias XML CONFÍA registradas para RTILB. El estado muestra "
+            "avance de normalización; no implica que el cálculo productivo esté activado."
         )
         source_status_note.setWordWrap(True)
         source_status_note.setStyleSheet("color:#566D7C; font-size:9px;")
