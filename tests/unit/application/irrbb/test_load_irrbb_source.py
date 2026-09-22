@@ -7,6 +7,7 @@ import pytest
 
 from aip.application.irrbb import (
     IRRBBPositionSourceRecord,
+    IRRBBSourceExclusion,
     IRRBBSourceLoadRequest,
     IRRBBSourceLoadStatus,
     IRRBBSourceMappingFailure,
@@ -148,4 +149,51 @@ def test_snapshot_rejects_duplicate_canonical_position_ids() -> None:
         IRRBBSourceSnapshot(
             cutoff_date=CUTOFF,
             position_records=(record, record),
+        )
+
+
+
+def test_source_only_exclusions_are_processed_not_reported_as_empty() -> None:
+    exclusion = IRRBBSourceExclusion(
+        source_record_id="ROW-133",
+        source_reference="XML:CREDIT:ROW-133",
+        reason_code="TEST_POLICY_EXCLUSION",
+        message="Source row is explicitly excluded by the approved test rule.",
+        rule_reference="TEST:RULE:1",
+    )
+    snapshot = IRRBBSourceSnapshot(
+        cutoff_date=CUTOFF,
+        position_records=(),
+        source_exclusions=(exclusion,),
+    )
+
+    result = LoadIRRBBSourceSnapshot(_Gateway(snapshot)).execute(IRRBBSourceLoadRequest(CUTOFF))
+
+    assert result.status is IRRBBSourceLoadStatus.READY
+    assert result.assessments == ()
+    assert result.snapshot.source_exclusions == (exclusion,)
+
+
+def test_snapshot_rejects_record_that_is_both_failed_and_excluded() -> None:
+    failure = IRRBBSourceMappingFailure(
+        source_record_id="ROW-1",
+        source_reference="XML:CREDIT:ROW-1",
+        code=IRRBBSourceMappingFailureCode.INVALID_CANONICAL_VALUE,
+        canonical_field="rate_type",
+        message="Unsupported test value.",
+    )
+    exclusion = IRRBBSourceExclusion(
+        source_record_id="ROW-1",
+        source_reference="XML:CREDIT:ROW-1",
+        reason_code="TEST_POLICY_EXCLUSION",
+        message="Excluded by test policy.",
+        rule_reference="TEST:RULE:1",
+    )
+
+    with pytest.raises(ValueError, match="cannot be both failed and excluded"):
+        IRRBBSourceSnapshot(
+            cutoff_date=CUTOFF,
+            position_records=(),
+            mapping_failures=(failure,),
+            source_exclusions=(exclusion,),
         )
