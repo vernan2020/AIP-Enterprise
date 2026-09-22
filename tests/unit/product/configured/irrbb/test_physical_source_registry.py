@@ -46,7 +46,9 @@ def test_institutional_registry_has_exactly_one_source_for_each_position_segment
     assert len(registry.sources) == 4
 
 
-def test_primary_irrbb_registry_uses_xml_for_credit_and_liabilities_and_month_end_master_for_investments() -> None:
+def test_primary_irrbb_registry_uses_xml_for_credit_and_liabilities_and_month_end_master_for_investments() -> (
+    None
+):
     expected = (
         CREDIT_XML_CONFIA_SOURCE,
         CAPTACIONES_XML_CONFIA_SOURCE,
@@ -55,10 +57,7 @@ def test_primary_irrbb_registry_uses_xml_for_credit_and_liabilities_and_month_en
     )
 
     assert INSTITUTIONAL_IRRBB_PHYSICAL_SOURCES == expected
-    assert all(
-        source.kind is IRRBBPhysicalSourceKind.XML_DOCUMENT
-        for source in expected[:3]
-    )
+    assert all(source.kind is IRRBBPhysicalSourceKind.XML_DOCUMENT for source in expected[:3])
     assert expected[3].kind is IRRBBPhysicalSourceKind.PORTFOLIO_MASTER
     assert CREDIT_XML_CONFIA_SOURCE.logical_name == "NEC2024_Operaciones_5103.xml"
     assert CAPTACIONES_XML_CONFIA_SOURCE.logical_name == "Pasivos_Cuentas_Contables_210.xml"
