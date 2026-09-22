@@ -102,13 +102,13 @@ class XMLConfiaMonthlySourceReader:
 
     def read_header(self, path: Path) -> XMLConfiaHeader:
         values: dict[str, str] = {}
-        for event, element in ElementTree.iterparse(path, events=("end",)):
-            if element.tag == "Encabezado":
-                for child in element:
-                    values[child.tag] = (child.text or "").strip()
-                element.clear()
-                break
+        for _event, element in ElementTree.iterparse(path, events=("end",)):
+            if element.tag != "Encabezado":
+                continue
+            for child in element:
+                values[child.tag] = (child.text or "").strip()
             element.clear()
+            break
 
         required = ("ClaseDato", "Archivo", "Periodo", "IdEntidad", "TipoCarga", "TipoMoneda")
         missing = tuple(name for name in required if not values.get(name))
@@ -130,8 +130,13 @@ class XMLConfiaMonthlySourceReader:
         )
 
     def iter_records(self, source: XMLConfiaResolvedSource) -> Iterator[XMLConfiaRecord]:
-        for event, element in ElementTree.iterparse(source.path, events=("end",)):
-            if element.tag != "Registro":
+        context = ElementTree.iterparse(source.path, events=("start", "end"))
+        first_event, root = next(context)
+        if first_event != "start" or root.tag != "ArchivoSICVECA":
+            raise ValueError("XML CONFÍA root element must be ArchivoSICVECA")
+
+        for event, element in context:
+            if event != "end" or element.tag != "Registro":
                 continue
             values = {child.tag.strip(): (child.text or "").strip() for child in element}
             yield XMLConfiaRecord(
@@ -140,6 +145,7 @@ class XMLConfiaMonthlySourceReader:
                 values=values,
             )
             element.clear()
+            root.clear()
 
     @staticmethod
     def sha256(path: Path, *, chunk_size: int = 1024 * 1024) -> str:
