@@ -88,8 +88,21 @@ INSTITUTIONAL_IRRBB_PHYSICAL_SOURCES = (
     INVESTMENT_XML_CONFIA_SOURCE,
 )
 
+HISTORICAL_IRRBB_CANDIDATE_SOURCES = (
+    CREDIT_SEMANTIC_MODEL_SOURCE,
+    CAPTACIONES_SEMANTIC_MODEL_SOURCE,
+    BORROWING_WORKBOOK_SOURCE,
+    INVESTMENT_PORTFOLIO_SOURCE,
+)
+
 
 def institutional_irrbb_physical_source_registry() -> IRRBBPhysicalSourceRegistry:
     """Build the governed primary institutional source registry for RTILB."""
 
     return IRRBBPhysicalSourceRegistry(INSTITUTIONAL_IRRBB_PHYSICAL_SOURCES)
+
+
+def historical_irrbb_candidate_source_registry() -> IRRBBPhysicalSourceRegistry:
+    """Build the retained legacy/candidate registry for diagnostics and rollback."""
+
+    return IRRBBPhysicalSourceRegistry(HISTORICAL_IRRBB_CANDIDATE_SOURCES)
