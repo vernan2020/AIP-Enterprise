@@ -136,7 +136,6 @@ def test_assignment_preserves_source_and_operation_lineage() -> None:
     assert result.operation_id == "OP-42"
 
 
-
 def test_classifier_rejects_unknown_rule_code() -> None:
     fact = _fact(rule_code="CREDIT_UNKNOWN", sensitive_date=date(2026, 9, 30))
 
