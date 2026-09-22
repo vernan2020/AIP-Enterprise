@@ -18,6 +18,12 @@ from aip.application.irrbb.contracts import (
     IRRBBSourceMappingFailureCode,
     IRRBBSourceSnapshot,
 )
+from aip.application.irrbb.credit_gap_schedule_contracts import (
+    IRRBBCreditGapScheduleEntry,
+    IRRBBCreditGapScheduleFailure,
+    IRRBBCreditGapScheduleFailureCode,
+    IRRBBCreditGapScheduleSnapshot,
+)
 from aip.application.irrbb.investment_source_requirements import (
     INVESTMENT_SOURCE_REQUIREMENT_PROFILE_CODE,
     INVESTMENT_SOURCE_REQUIREMENT_PROFILE_REFERENCE,
@@ -31,7 +37,11 @@ from aip.application.irrbb.physical_source_registry import (
     IRRBBPhysicalSourceRegistry,
     IRRBBPhysicalSourceSegment,
 )
-from aip.application.irrbb.ports import IRRBBAnalysisRequestProvider, IRRBBDataGateway
+from aip.application.irrbb.ports import (
+    IRRBBAnalysisRequestProvider,
+    IRRBBCreditGapScheduleGateway,
+    IRRBBDataGateway,
+)
 from aip.application.irrbb.run_analysis import RunIRRBBAnalysis
 from aip.application.irrbb.semantic_model_inspection import (
     IRRBBSemanticModelColumnMetadata,
@@ -62,6 +72,11 @@ __all__ = [
     "IRRBBAnalysisResult",
     "IRRBBAnalysisStatus",
     "IRRBBCurveSourcePoint",
+    "IRRBBCreditGapScheduleEntry",
+    "IRRBBCreditGapScheduleFailure",
+    "IRRBBCreditGapScheduleFailureCode",
+    "IRRBBCreditGapScheduleGateway",
+    "IRRBBCreditGapScheduleSnapshot",
     "IRRBBDataGateway",
     "IRRBBGapCoverageIssue",
     "IRRBBGapCoverageIssueCode",
