@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 
 from aip.application.irrbb import (
     IRRBBSourceExclusion,
@@ -27,7 +28,7 @@ class CreditXMLCanonicalBucketFact:
     amount: Money
     rate_indicator: str
     source_rule_code: str
-    risk_date: object
+    risk_date: date
     bucket: IRRBBTimeBucket
     ordinal: int
     bucket_label: str
