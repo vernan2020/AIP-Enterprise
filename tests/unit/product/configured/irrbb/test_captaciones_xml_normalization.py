@@ -75,9 +75,7 @@ def test_normalizer_preserves_source_codes_without_inventing_deposit_semantics()
 
 
 def test_missing_account_type_is_explicit_mapping_failure_not_nmd_inference() -> None:
-    result = CaptacionesXMLNormalizer().normalize(
-        _envelope(_record(TipoCuenta=""))
-    )
+    result = CaptacionesXMLNormalizer().normalize(_envelope(_record(TipoCuenta="")))
 
     assert isinstance(result, IRRBBSourceMappingFailure)
     assert result.canonical_field == "TipoCuenta"
@@ -85,9 +83,7 @@ def test_missing_account_type_is_explicit_mapping_failure_not_nmd_inference() ->
 
 
 def test_negative_balance_fails_closed() -> None:
-    result = CaptacionesXMLNormalizer().normalize(
-        _envelope(_record(SaldoPrincipal="-1"))
-    )
+    result = CaptacionesXMLNormalizer().normalize(_envelope(_record(SaldoPrincipal="-1")))
 
     assert isinstance(result, IRRBBSourceMappingFailure)
     assert result.canonical_field == "principal/product"
