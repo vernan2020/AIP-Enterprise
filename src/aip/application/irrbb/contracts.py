@@ -109,6 +109,28 @@ class IRRBBSourceMappingFailure:
 
 
 @dataclass(frozen=True, slots=True)
+class IRRBBSourceExclusion:
+    """Auditable source row intentionally excluded by an approved mapping rule."""
+
+    source_record_id: str
+    source_reference: str
+    reason_code: str
+    message: str
+    rule_reference: str
+
+    def __post_init__(self) -> None:
+        for field_name, value in (
+            ("source_record_id", self.source_record_id),
+            ("source_reference", self.source_reference),
+            ("reason_code", self.reason_code),
+            ("message", self.message),
+            ("rule_reference", self.rule_reference),
+        ):
+            if not value.strip():
+                raise ValueError(f"source exclusion {field_name} is required")
+
+
+@dataclass(frozen=True, slots=True)
 class IRRBBSourceSnapshot:
     """Normalized source snapshot independent of the physical ingestion technology."""
 
@@ -117,6 +139,7 @@ class IRRBBSourceSnapshot:
     curve_points: tuple[IRRBBCurveSourcePoint, ...] = ()
     source_references: tuple[str, ...] = ()
     mapping_failures: tuple[IRRBBSourceMappingFailure, ...] = ()
+    source_exclusions: tuple[IRRBBSourceExclusion, ...] = ()
 
     def __post_init__(self) -> None:
         identifiers = tuple(record.position.position_id for record in self.position_records)
@@ -125,6 +148,14 @@ class IRRBBSourceSnapshot:
         failure_ids = tuple(failure.source_record_id for failure in self.mapping_failures)
         if len(set(failure_ids)) != len(failure_ids):
             raise ValueError("IRRBB source snapshot mapping failure ids must be unique")
+        exclusion_ids = tuple(exclusion.source_record_id for exclusion in self.source_exclusions)
+        if len(set(exclusion_ids)) != len(exclusion_ids):
+            raise ValueError("IRRBB source snapshot exclusion ids must be unique")
+        overlap = set(failure_ids) & set(exclusion_ids)
+        if overlap:
+            raise ValueError(
+                "IRRBB source snapshot record ids cannot be both failed and excluded"
+            )
         for source_reference in self.source_references:
             if not source_reference.strip():
                 raise ValueError("source_references cannot contain blank values")
