@@ -10,6 +10,7 @@ class IRRBBPhysicalSourceKind(str, Enum):
     """Supported physical source technologies without adapter-specific behavior."""
 
     POWER_BI_SEMANTIC_MODEL = "POWER_BI_SEMANTIC_MODEL"
+    XML_FILE = "XML_FILE"
     EXCEL_WORKBOOK = "EXCEL_WORKBOOK"
     PORTFOLIO_MASTER = "PORTFOLIO_MASTER"
 

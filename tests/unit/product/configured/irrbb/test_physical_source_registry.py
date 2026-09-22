@@ -11,11 +11,16 @@ from aip.application.irrbb.physical_source_registry import (
 from aip.application.irrbb.source_certification import IRRBBSourcePerimeter
 from aip.product.configured.irrbb.physical_source_registry import (
     BORROWING_WORKBOOK_SOURCE,
+    BORROWING_XML_CONFIA_SOURCE,
     CAPTACIONES_SEMANTIC_MODEL_SOURCE,
+    CAPTACIONES_XML_CONFIA_SOURCE,
     CREDIT_SEMANTIC_MODEL_SOURCE,
+    CREDIT_XML_CONFIA_SOURCE,
     INSTITUTIONAL_IRRBB_PHYSICAL_SOURCES,
     INVESTMENT_PORTFOLIO_SOURCE,
+    INVESTMENT_XML_CONFIA_SOURCE,
     institutional_irrbb_physical_source_registry,
+    power_bi_semantic_model_source_registry,
 )
 
 
@@ -40,6 +45,59 @@ def test_institutional_registry_has_exactly_one_source_for_each_position_segment
     assert registry.sources == INSTITUTIONAL_IRRBB_PHYSICAL_SOURCES
     assert {item.segment for item in registry.sources} == set(IRRBBPhysicalSourceSegment)
     assert len(registry.sources) == 4
+
+
+def test_power_bi_metadata_inspection_registry_remains_separate_from_xml_runtime() -> None:
+    registry = power_bi_semantic_model_source_registry()
+
+    assert registry.require(IRRBBPhysicalSourceSegment.CREDIT) is CREDIT_SEMANTIC_MODEL_SOURCE
+    assert (
+        registry.require(IRRBBPhysicalSourceSegment.CAPTACIONES)
+        is CAPTACIONES_SEMANTIC_MODEL_SOURCE
+    )
+    assert all(
+        source.kind is IRRBBPhysicalSourceKind.POWER_BI_SEMANTIC_MODEL
+        for source in registry.sources
+    )
+    with pytest.raises(KeyError):
+        registry.require(IRRBBPhysicalSourceSegment.BORROWING)
+
+
+def test_xml_confia_is_the_primary_governed_source_perimeter() -> None:
+    expected = {
+        IRRBBPhysicalSourceSegment.CREDIT: (
+            CREDIT_XML_CONFIA_SOURCE,
+            "NEC2024_Operaciones_5103.xml",
+        ),
+        IRRBBPhysicalSourceSegment.CAPTACIONES: (
+            CAPTACIONES_XML_CONFIA_SOURCE,
+            "Pasivos_Cuentas_Contables_210.xml",
+        ),
+        IRRBBPhysicalSourceSegment.BORROWING: (
+            BORROWING_XML_CONFIA_SOURCE,
+            "Pasivos_Cuentas_Contables_220_230_260_270_280.xml",
+        ),
+        IRRBBPhysicalSourceSegment.INVESTMENT: (
+            INVESTMENT_XML_CONFIA_SOURCE,
+            "Crediticio_InversionesActivas.xml",
+        ),
+    }
+
+    registry = institutional_irrbb_physical_source_registry()
+    for segment, (source, logical_name) in expected.items():
+        assert registry.require(segment) is source
+        assert source.kind is IRRBBPhysicalSourceKind.XML_FILE
+        assert source.logical_name == logical_name
+        assert source.location == "XML CONFÍA mensual"
+        assert "C:\\Users\\" not in "|".join(
+            (
+                source.source_id,
+                source.logical_name,
+                source.configuration_key,
+                source.owner or "",
+                source.location or "",
+            )
+        )
 
 
 def test_power_bi_semantic_model_identities_are_governed_without_schema_assumptions() -> None:
@@ -171,10 +229,7 @@ def test_registry_missing_segment_fails_instead_of_falling_back() -> None:
 def test_registry_lookup_returns_exact_registered_descriptor() -> None:
     registry = institutional_irrbb_physical_source_registry()
 
-    assert registry.require(IRRBBPhysicalSourceSegment.CREDIT) is CREDIT_SEMANTIC_MODEL_SOURCE
-    assert (
-        registry.require(IRRBBPhysicalSourceSegment.CAPTACIONES)
-        is CAPTACIONES_SEMANTIC_MODEL_SOURCE
-    )
-    assert registry.require(IRRBBPhysicalSourceSegment.BORROWING) is BORROWING_WORKBOOK_SOURCE
-    assert registry.require(IRRBBPhysicalSourceSegment.INVESTMENT) is INVESTMENT_PORTFOLIO_SOURCE
+    assert registry.require(IRRBBPhysicalSourceSegment.CREDIT) is CREDIT_XML_CONFIA_SOURCE
+    assert registry.require(IRRBBPhysicalSourceSegment.CAPTACIONES) is CAPTACIONES_XML_CONFIA_SOURCE
+    assert registry.require(IRRBBPhysicalSourceSegment.BORROWING) is BORROWING_XML_CONFIA_SOURCE
+    assert registry.require(IRRBBPhysicalSourceSegment.INVESTMENT) is INVESTMENT_XML_CONFIA_SOURCE

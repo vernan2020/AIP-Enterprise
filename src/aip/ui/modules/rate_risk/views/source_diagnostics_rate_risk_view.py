@@ -17,16 +17,16 @@ class RateRiskView(_BaseRateRiskView):
 
     _SOURCE_GATE_LABELS = {
         IRRBBPhysicalSourceSegment.CREDIT: (
-            "Metadata adapter disponible · autenticación institucional pendiente"
+            "XML CONFÍA 5103 registrado · mapper de crédito y reconciliación pendientes"
         ),
         IRRBBPhysicalSourceSegment.CAPTACIONES: (
-            "Metadata adapter disponible · autenticación y clasificación contractual pendientes"
+            "XML CONFÍA 210 registrado · clasificación CAPF y complemento contractual pendientes"
         ),
         IRRBBPhysicalSourceSegment.BORROWING: (
-            "Semántica de reprecio certificada · mapeo y reconciliación pendientes"
+            "XML CONFÍA 2701/2703 registrados · mapper contractual y reconciliación pendientes"
         ),
         IRRBBPhysicalSourceSegment.INVESTMENT: (
-            "Mapper/evidencia parcial · gobernanza y paridad pendientes"
+            "XML de inversiones activas registrado · complemento de cupones/periodicidad pendiente"
         ),
     }
 

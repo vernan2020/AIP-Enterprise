@@ -10,7 +10,7 @@ from aip.application.irrbb.physical_source_registry import (
     IRRBBPhysicalSourceSegment,
 )
 from aip.product.configured.irrbb.physical_source_registry import (
-    institutional_irrbb_physical_source_registry,
+    power_bi_semantic_model_source_registry,
 )
 from aip.product.configured.irrbb.power_bi_semantic_route import (
     InstitutionalPowerBISemanticRouteBinding,
@@ -58,7 +58,7 @@ class InstitutionalPowerBISemanticRouteResolver:
     ) -> None:
         self._settings_provider = settings_provider
         self._registry = (
-            registry if registry is not None else institutional_irrbb_physical_source_registry()
+            registry if registry is not None else power_bi_semantic_model_source_registry()
         )
 
     def resolve_segment(
