@@ -4,19 +4,12 @@ from datetime import date
 from decimal import Decimal
 
 import pytest
-
-from aip.application.irrbb import (
-    IRRBBSourceMappingFailure,
-    IRRBBSourceMappingFailureCode,
-)
+from aip.application.irrbb import IRRBBSourceMappingFailure, IRRBBSourceMappingFailureCode
 from aip.domain.irrbb.models import RateType
-from aip.product.configured.irrbb.captaciones_capf_contractual import (
-    CaptacionesCAPFContractualFact,
-)
+from aip.product.configured.irrbb.captaciones_capf_contractual import CaptacionesCAPFContractualFact
 from aip.product.configured.irrbb.captaciones_capf_operation_binding import (
+    CAPF_CERTIFICATE_OPERATION_RULE_REFERENCE,
     CaptacionesCAPFJoinedFact,
-    CaptacionesCAPFOperationBinding,
-    CaptacionesCAPFOperationBindingCatalog,
     CaptacionesCAPFOperationJoinService,
 )
 from aip.product.configured.irrbb.captaciones_xml_currency_bridge import (
@@ -25,26 +18,9 @@ from aip.product.configured.irrbb.captaciones_xml_currency_bridge import (
 from aip.shared.money import Currency, Money
 
 
-def _binding() -> CaptacionesCAPFOperationBinding:
-    return CaptacionesCAPFOperationBinding(
-        certificate_number="CERT-346-1",
-        operation_id="XML-OP-1",
-        evidence_reference="TEST:EVIDENCE:ROW-1",
-    )
-
-
-def _catalog(*bindings: CaptacionesCAPFOperationBinding) -> CaptacionesCAPFOperationBindingCatalog:
-    return CaptacionesCAPFOperationBindingCatalog(
-        code="TEST-CAPF-OPERATION-BINDING",
-        version="1",
-        evidence_reference="TEST:EVIDENCE",
-        bindings=bindings or (_binding(),),
-    )
-
-
 def _xml_fact(
     *,
-    operation_id: str = "XML-OP-1",
+    operation_id: str = "CERT-346-1",
     rate_type: str = "F",
     maturity_date: date | None = date(2027, 1, 31),
 ) -> CaptacionesXMLCanonicalCurrencyFact:
@@ -107,10 +83,8 @@ def _contractual_fact(
 def _join(
     xml_fact: CaptacionesXMLCanonicalCurrencyFact,
     facts: tuple[CaptacionesCAPFContractualFact, ...],
-    *,
-    catalog: CaptacionesCAPFOperationBindingCatalog | None = None,
 ):
-    service = CaptacionesCAPFOperationJoinService(catalog=catalog or _catalog())
+    service = CaptacionesCAPFOperationJoinService()
     return service.join(
         xml_fact=xml_fact,
         contractual_facts_by_certificate=service.index_contractual_facts(facts),
@@ -121,27 +95,65 @@ def test_governed_join_preserves_xml_principal_and_contractual_maturity() -> Non
     result = _join(_xml_fact(), (_contractual_fact(),))
 
     assert isinstance(result, CaptacionesCAPFJoinedFact)
-    assert result.operation_id == "XML-OP-1"
+    assert result.operation_id == "CERT-346-1"
     assert result.certificate_number == "CERT-346-1"
     assert result.principal == Money(Decimal("1000000"), Currency.CRC)
     assert result.principal.amount != result.contractual_fact.certificate_amount_colonized
     assert result.currency is Currency.CRC
     assert result.risk_date == date(2027, 1, 31)
     assert result.contractual_rate_type is RateType.FIXED
-    assert "operation=XML-OP-1" in result.binding_reference
+    assert "operation=CERT-346-1" in result.binding_reference
     assert "certificate=CERT-346-1" in result.binding_reference
 
 
-def test_missing_binding_fails_without_assuming_certificate_equals_operation() -> None:
-    result = _join(
-        _xml_fact(operation_id="CERT-346-1"),
-        (_contractual_fact(),),
-    )
+def test_documented_identity_join_needs_no_per_certificate_catalog() -> None:
+    result = _join(_xml_fact(), (_contractual_fact(),))
+    assert isinstance(result, CaptacionesCAPFJoinedFact)
+    assert CAPF_CERTIFICATE_OPERATION_RULE_REFERENCE in result.binding_reference
+    assert result.xml_fact.source_reference.startswith("XML_CONFIA:")
+    assert result.contractual_fact.source_reference.startswith("CAPF_XLSX:")
 
+
+@pytest.mark.parametrize("operation_id", ["000123", "123.0", "abc"])
+def test_identifiers_are_not_numerically_or_case_normalized(operation_id: str) -> None:
+    result = _join(
+        _xml_fact(operation_id=operation_id),
+        (_contractual_fact(certificate_number="123"), _contractual_fact(certificate_number="ABC")),
+    )
     assert isinstance(result, IRRBBSourceMappingFailure)
-    assert result.code is IRRBBSourceMappingFailureCode.MISSING_REQUIRED_CANONICAL_FIELD
-    assert result.canonical_field == "capf_contractual_binding"
-    assert "equality with IdOperacion is not assumed" in result.message
+    assert result.canonical_field == "capf_contractual_record"
+
+
+@pytest.mark.parametrize("key", [" CERT-346-1", "CERT-346-1 "])
+def test_invalid_xml_identity_is_a_mapping_failure(key: str) -> None:
+    result = _join(_xml_fact(operation_id=key), (_contractual_fact(),))
+    assert isinstance(result, IRRBBSourceMappingFailure)
+    assert result.canonical_field == "operation_id"
+
+
+@pytest.mark.parametrize("key", ["", " "])
+def test_empty_xml_identity_is_rejected_before_join(key: str) -> None:
+    with pytest.raises(ValueError, match="operation_id is required"):
+        _xml_fact(operation_id=key)
+
+
+@pytest.mark.parametrize("key", ["", " ", " CERT-346-1", "CERT-346-1 "])
+def test_contractual_index_rejects_invalid_identity(key: str) -> None:
+    with pytest.raises(ValueError, match="nonempty canonical text|certificate_number is required"):
+        CaptacionesCAPFOperationJoinService.index_contractual_facts(
+            (_contractual_fact(certificate_number=key),)
+        )
+
+
+def test_substituted_index_record_is_rejected() -> None:
+    result = CaptacionesCAPFOperationJoinService().join(
+        xml_fact=_xml_fact(),
+        contractual_facts_by_certificate={
+            "CERT-346-1": _contractual_fact(certificate_number="OTHER")
+        },
+    )
+    assert isinstance(result, IRRBBSourceMappingFailure)
+    assert result.canonical_field == "certificate_number"
 
 
 def test_binding_to_absent_contractual_certificate_fails_closed() -> None:
@@ -176,28 +188,6 @@ def test_non_fixed_xml_rate_type_conflicts_with_governed_capf_rule() -> None:
     assert isinstance(result, IRRBBSourceMappingFailure)
     assert result.code is IRRBBSourceMappingFailureCode.SOURCE_RECORD_REJECTED
     assert result.canonical_field == "rate_type"
-
-
-def test_catalog_rejects_ambiguous_certificate_or_operation_bindings() -> None:
-    with pytest.raises(ValueError, match="certificate numbers must be unique"):
-        _catalog(
-            _binding(),
-            CaptacionesCAPFOperationBinding(
-                certificate_number="CERT-346-1",
-                operation_id="XML-OP-2",
-                evidence_reference="TEST:OTHER",
-            ),
-        )
-
-    with pytest.raises(ValueError, match="operation ids must be unique"):
-        _catalog(
-            _binding(),
-            CaptacionesCAPFOperationBinding(
-                certificate_number="CERT-346-2",
-                operation_id="XML-OP-1",
-                evidence_reference="TEST:OTHER",
-            ),
-        )
 
 
 def test_contractual_index_rejects_duplicate_certificate_identity() -> None:

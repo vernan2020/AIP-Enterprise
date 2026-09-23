@@ -5,90 +5,19 @@ from dataclasses import dataclass
 from datetime import date
 from typing import TypeAlias
 
-from aip.application.irrbb import (
-    IRRBBSourceMappingFailure,
-    IRRBBSourceMappingFailureCode,
-)
+from aip.application.irrbb import IRRBBSourceMappingFailure, IRRBBSourceMappingFailureCode
 from aip.domain.irrbb.models import RateType
-from aip.product.configured.irrbb.captaciones_capf_contractual import (
-    CaptacionesCAPFContractualFact,
-)
+from aip.product.configured.irrbb.captaciones_capf_contractual import CaptacionesCAPFContractualFact
 from aip.product.configured.irrbb.captaciones_xml_currency_bridge import (
     CaptacionesXMLCanonicalCurrencyFact,
 )
 from aip.shared.money import Currency, Money
 
-
-@dataclass(frozen=True, slots=True)
-class CaptacionesCAPFOperationBinding:
-    """One institutionally evidenced certificate-to-XML-operation relationship."""
-
-    certificate_number: str
-    operation_id: str
-    evidence_reference: str
-
-    def __post_init__(self) -> None:
-        for field_name, value in (
-            ("certificate_number", self.certificate_number),
-            ("operation_id", self.operation_id),
-            ("evidence_reference", self.evidence_reference),
-        ):
-            if not value.strip():
-                raise ValueError(f"CAPF operation binding {field_name} is required")
-            if value != value.strip():
-                raise ValueError(f"CAPF operation binding {field_name} must be canonical text")
-
-
-@dataclass(frozen=True, slots=True)
-class CaptacionesCAPFOperationBindingCatalog:
-    """Versioned and fail-closed CAPF certificate-to-operation bindings.
-
-    The catalog deliberately has no default transformation. In particular,
-    certificate number equality with XML IdOperacion is never assumed.
-    """
-
-    code: str
-    version: str
-    evidence_reference: str
-    bindings: tuple[CaptacionesCAPFOperationBinding, ...]
-
-    def __post_init__(self) -> None:
-        if not self.code.strip():
-            raise ValueError("CAPF operation binding catalog code is required")
-        if not self.version.strip():
-            raise ValueError("CAPF operation binding catalog version is required")
-        if not self.evidence_reference.strip():
-            raise ValueError("CAPF operation binding catalog evidence_reference is required")
-        if not self.bindings:
-            raise ValueError("CAPF operation binding catalog requires evidenced bindings")
-
-        certificate_numbers = tuple(item.certificate_number for item in self.bindings)
-        operation_ids = tuple(item.operation_id for item in self.bindings)
-        if len(certificate_numbers) != len(set(certificate_numbers)):
-            raise ValueError("CAPF operation binding certificate numbers must be unique")
-        if len(operation_ids) != len(set(operation_ids)):
-            raise ValueError("CAPF operation binding operation ids must be unique")
-
-    @property
-    def reference(self) -> str:
-        return f"{self.code}@{self.version}|{self.evidence_reference}"
-
-    def resolve_operation(self, operation_id: str) -> CaptacionesCAPFOperationBinding:
-        canonical = operation_id.strip()
-        if not canonical:
-            raise ValueError("CAPF XML operation_id is required")
-        if operation_id != canonical:
-            raise ValueError("CAPF XML operation_id must be canonical text")
-        for binding in self.bindings:
-            if binding.operation_id == canonical:
-                return binding
-        raise KeyError(f"unmapped CAPF XML operation_id: {canonical}")
-
-    def binding_reference(self, binding: CaptacionesCAPFOperationBinding) -> str:
-        return (
-            f"{self.reference}|operation={binding.operation_id}|"
-            f"certificate={binding.certificate_number}|{binding.evidence_reference}"
-        )
+CAPF_CERTIFICATE_OPERATION_RULE_REFERENCE = (
+    "CAPF_CERTIFICATE_EQUALS_OPERATION@1|"
+    "Informe_Reconstruccion_Brechas_Tasas_Agosto_2026:4.3|"
+    "Especificacion_Tecnico_Funcional_Motor_Brechas_SICVECA_205_Actualizada:v2.0:8.1"
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -102,6 +31,11 @@ class CaptacionesCAPFJoinedFact:
     contractual_rate_type: RateType
 
     def __post_init__(self) -> None:
+        operation_id = self.xml_fact.operation_id
+        if not operation_id.strip() or operation_id != operation_id.strip():
+            raise ValueError("CAPF joined fact operation_id must be nonempty canonical text")
+        if operation_id != self.contractual_fact.certificate_number:
+            raise ValueError("CAPF joined fact requires Número Certificado = IdOperacion")
         if not self.binding_reference.strip():
             raise ValueError("CAPF joined fact binding_reference is required")
         if self.xml_fact.operation_id not in self.binding_reference:
@@ -136,10 +70,11 @@ CaptacionesCAPFJoinResult: TypeAlias = CaptacionesCAPFJoinedFact | IRRBBSourceMa
 
 
 class CaptacionesCAPFOperationJoinService:
-    """Join one explicitly selected CAPF XML fact through governed evidence only."""
+    """Join selected CAPF facts by the documented exact certificate/operation key.
 
-    def __init__(self, *, catalog: CaptacionesCAPFOperationBindingCatalog) -> None:
-        self._catalog = catalog
+    Inputs must already preserve canonical source text. No numeric conversion,
+    zero stripping, case folding or per-certificate correspondence is applied.
+    """
 
     def join(
         self,
@@ -147,33 +82,28 @@ class CaptacionesCAPFOperationJoinService:
         xml_fact: CaptacionesXMLCanonicalCurrencyFact,
         contractual_facts_by_certificate: Mapping[str, CaptacionesCAPFContractualFact],
     ) -> CaptacionesCAPFJoinResult:
-        try:
-            binding = self._catalog.resolve_operation(xml_fact.operation_id)
-        except KeyError:
+        operation_id = xml_fact.operation_id
+        if not operation_id.strip() or operation_id != operation_id.strip():
             return self._failure(
                 xml_fact,
-                code=IRRBBSourceMappingFailureCode.MISSING_REQUIRED_CANONICAL_FIELD,
-                canonical_field="capf_contractual_binding",
-                message=(
-                    "No governed CAPF certificate binding exists for XML operation "
-                    f"{xml_fact.operation_id!r} under {self._catalog.reference}; "
-                    "Número Certificado equality with IdOperacion is not assumed."
-                ),
+                code=IRRBBSourceMappingFailureCode.SOURCE_RECORD_REJECTED,
+                canonical_field="operation_id",
+                message="CAPF XML operation_id must be nonempty canonical source text.",
             )
 
-        contractual_fact = contractual_facts_by_certificate.get(binding.certificate_number)
+        contractual_fact = contractual_facts_by_certificate.get(operation_id)
         if contractual_fact is None:
             return self._failure(
                 xml_fact,
                 code=IRRBBSourceMappingFailureCode.MISSING_REQUIRED_CANONICAL_FIELD,
                 canonical_field="capf_contractual_record",
                 message=(
-                    "Governed CAPF binding references certificate "
-                    f"{binding.certificate_number!r}, but that certificate is absent from "
-                    "the contractual workbook cut."
+                    f"No CAPF certificate matches XML operation {operation_id!r} by "
+                    f"Número Certificado = IdOperacion under "
+                    f"{CAPF_CERTIFICATE_OPERATION_RULE_REFERENCE}."
                 ),
             )
-        if contractual_fact.certificate_number != binding.certificate_number:
+        if contractual_fact.certificate_number != operation_id:
             return self._failure(
                 xml_fact,
                 code=IRRBBSourceMappingFailureCode.SOURCE_RECORD_REJECTED,
@@ -218,7 +148,10 @@ class CaptacionesCAPFOperationJoinService:
         return CaptacionesCAPFJoinedFact(
             xml_fact=xml_fact,
             contractual_fact=contractual_fact,
-            binding_reference=self._catalog.binding_reference(binding),
+            binding_reference=(
+                f"{CAPF_CERTIFICATE_OPERATION_RULE_REFERENCE}|"
+                f"operation={operation_id}|certificate={contractual_fact.certificate_number}"
+            ),
             risk_date=contractual_fact.maturity_date,
             contractual_rate_type=RateType.FIXED,
         )
@@ -229,6 +162,9 @@ class CaptacionesCAPFOperationJoinService:
     ) -> Mapping[str, CaptacionesCAPFContractualFact]:
         result: dict[str, CaptacionesCAPFContractualFact] = {}
         for fact in facts:
+            certificate = fact.certificate_number
+            if not certificate.strip() or certificate != certificate.strip():
+                raise ValueError("CAPF certificate numbers must be nonempty canonical text")
             if fact.certificate_number in result:
                 raise ValueError("CAPF contractual certificate numbers must be unique")
             result[fact.certificate_number] = fact
