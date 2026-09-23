@@ -38,6 +38,8 @@ class CreditXMLIRRBBBucketFact:
     operation_id: str
     currency_source_code: str
     accounting_account_code: str
+    principal_amount: Decimal
+    product_amount: Decimal
     amount: Decimal
     rate_indicator: str
     source_rule_code: str
@@ -57,8 +59,14 @@ class CreditXMLIRRBBBucketFact:
             raise ValueError("credit IRRBB bucket currency_source_code is required")
         if not self.accounting_account_code.strip():
             raise ValueError("credit IRRBB bucket accounting_account_code is required")
+        if self.principal_amount < 0:
+            raise ValueError("credit IRRBB bucket principal_amount cannot be negative")
+        if self.product_amount < 0:
+            raise ValueError("credit IRRBB bucket product_amount cannot be negative")
         if self.amount < 0:
             raise ValueError("credit IRRBB bucket amount cannot be negative")
+        if self.amount != self.principal_amount + self.product_amount:
+            raise ValueError("credit IRRBB bucket amount must equal principal plus product")
         if not self.rate_indicator.strip():
             raise ValueError("credit IRRBB bucket rate_indicator is required")
         if not self.source_rule_code.strip():
@@ -166,6 +174,8 @@ class CreditXMLMonthlyIRRBBBucketBridge:
             operation_id=fact.operation_id,
             currency_source_code=fact.currency_source_code,
             accounting_account_code=fact.accounting_account_code,
+            principal_amount=fact.principal_amount,
+            product_amount=fact.product_amount,
             amount=fact.total_gap_amount,
             rate_indicator=fact.rate_indicator,
             source_rule_code=fact.rule_code,

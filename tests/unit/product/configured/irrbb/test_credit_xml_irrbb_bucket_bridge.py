@@ -106,6 +106,8 @@ def test_fixed_credit_uses_exact_maturity_date_in_canonical_19_bucket_service() 
     assert fact.risk_date == date(2026, 12, 15)
     assert fact.bucket is IRRBBTimeBucket.MONTH_3_TO_6
     assert fact.ordinal == 4
+    assert fact.principal_amount == Decimal("1000.00")
+    assert fact.product_amount == Decimal("10.00")
     assert fact.amount == Decimal("1010.00")
     assert fact.currency_source_code == "1"
     assert fact.source_rule_code == CREDIT_XML_RULE_FIXED_MATURITY
