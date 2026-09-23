@@ -4,6 +4,7 @@ from datetime import date
 from decimal import Decimal
 
 import pytest
+
 from aip.application.irrbb import IRRBBSourceMappingFailure, IRRBBSourceMappingFailureCode
 from aip.domain.irrbb.models import RateType
 from aip.product.configured.irrbb.captaciones_capf_contractual import CaptacionesCAPFContractualFact
