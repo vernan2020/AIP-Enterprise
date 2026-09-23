@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
+from typing import TypeAlias
 
 from aip.application.irrbb import (
     IRRBBSourceMappingFailure,
@@ -34,7 +35,7 @@ class CaptacionesIRRBBAccountClassification:
     rule_reference: str
 
 
-CaptacionesIRRBBAccountClassificationResult = (
+CaptacionesIRRBBAccountClassificationResult: TypeAlias = (
     CaptacionesIRRBBAccountClassification | IRRBBSourceMappingFailure
 )
 
