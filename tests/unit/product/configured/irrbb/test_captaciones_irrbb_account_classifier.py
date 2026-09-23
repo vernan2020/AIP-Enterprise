@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from decimal import Decimal
 
 from aip.application.irrbb import IRRBBSourceMappingFailure
@@ -21,10 +22,21 @@ def _fact(account: str) -> CaptacionesXMLCanonicalCurrencyFact:
         creditor_id="ACR-1",
         operation_id=f"OP-{account}",
         operation_type_source_code="1",
+        guarantee_indicator="N",
         account_type_source_code="4",
         rate_type_source_code="V",
+        variable_rate_source_code="7",
+        nominal_rate_percent=Decimal("3.25"),
+        sugef_catalog_source_code="14",
         accounting_account_code=account,
+        principal=Money(Decimal("990"), Currency.CRC),
+        product_account_code="21900100",
+        product=Money(Decimal("10"), Currency.CRC),
         amount=Money(Decimal("1000"), Currency.CRC),
+        origination_date=date(2025, 1, 1),
+        maturity_date=date(2027, 1, 1),
+        reserve_requirement_indicator="S",
+        deposit_fgd_source_code="FGD-1",
     )
 
 
