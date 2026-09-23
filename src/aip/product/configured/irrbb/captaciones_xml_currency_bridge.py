@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
+from decimal import Decimal
 
 from aip.application.irrbb import (
     IRRBBSourceMappingFailure,
@@ -25,10 +27,21 @@ class CaptacionesXMLCanonicalCurrencyFact:
     creditor_id: str
     operation_id: str
     operation_type_source_code: str
+    guarantee_indicator: str | None
     account_type_source_code: str
     rate_type_source_code: str
+    variable_rate_source_code: str | None
+    nominal_rate_percent: Decimal | None
+    sugef_catalog_source_code: str | None
     accounting_account_code: str
+    principal: Money
+    product_account_code: str | None
+    product: Money
     amount: Money
+    origination_date: date | None
+    maturity_date: date | None
+    reserve_requirement_indicator: str | None
+    deposit_fgd_source_code: str | None
 
     def __post_init__(self) -> None:
         if not self.source_record_id.strip():
@@ -47,8 +60,18 @@ class CaptacionesXMLCanonicalCurrencyFact:
             raise ValueError("canonical Captaciones rate_type_source_code is required")
         if not self.accounting_account_code.strip():
             raise ValueError("canonical Captaciones accounting_account_code is required")
+        if self.principal.currency is not self.amount.currency:
+            raise ValueError("canonical Captaciones principal currency must match amount currency")
+        if self.product.currency is not self.amount.currency:
+            raise ValueError("canonical Captaciones product currency must match amount currency")
+        if self.principal.amount < 0:
+            raise ValueError("canonical Captaciones principal cannot be negative")
+        if self.product.amount < 0:
+            raise ValueError("canonical Captaciones product cannot be negative")
         if self.amount.amount < 0:
             raise ValueError("canonical Captaciones amount cannot be negative")
+        if self.amount.amount != self.principal.amount + self.product.amount:
+            raise ValueError("canonical Captaciones amount must equal principal plus product")
 
     @property
     def currency(self) -> Currency:
@@ -128,8 +151,19 @@ class CaptacionesXMLCurrencyBridge:
             creditor_id=fact.creditor_id,
             operation_id=fact.operation_id,
             operation_type_source_code=fact.operation_type_source_code,
+            guarantee_indicator=fact.guarantee_indicator,
             account_type_source_code=fact.account_type_source_code,
             rate_type_source_code=fact.rate_type_source_code,
+            variable_rate_source_code=fact.variable_rate_source_code,
+            nominal_rate_percent=fact.nominal_rate_percent,
+            sugef_catalog_source_code=fact.sugef_catalog_source_code,
             accounting_account_code=fact.accounting_account_code,
+            principal=Money(fact.principal_amount, currency),
+            product_account_code=fact.product_account_code,
+            product=Money(fact.product_amount, currency),
             amount=Money(fact.total_balance, currency),
+            origination_date=fact.origination_date,
+            maturity_date=fact.maturity_date,
+            reserve_requirement_indicator=fact.reserve_requirement_indicator,
+            deposit_fgd_source_code=fact.deposit_fgd_source_code,
         )
