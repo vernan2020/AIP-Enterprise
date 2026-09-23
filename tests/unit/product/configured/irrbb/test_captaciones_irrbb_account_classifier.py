@@ -39,7 +39,16 @@ def test_21103_and_21204_are_governed_sight_nmd_accounts() -> None:
 
 
 def test_213_term_account_families_map_to_term_deposit_without_capf_inference() -> None:
-    for account in ("21301100", "21301200", "21302100", "21302200", "21312100", "21312200", "21314100", "21314200"):
+    for account in (
+        "21301100",
+        "21301200",
+        "21302100",
+        "21302200",
+        "21312100",
+        "21312200",
+        "21314100",
+        "21314200",
+    ):
         result = CaptacionesIRRBBAccountClassifier.classify(_fact(account))
 
         assert not isinstance(result, IRRBBSourceMappingFailure)
