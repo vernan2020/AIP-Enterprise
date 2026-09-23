@@ -132,9 +132,7 @@ class CaptacionesCAPFJoinedFact:
         return self.xml_fact.principal.currency
 
 
-CaptacionesCAPFJoinResult: TypeAlias = (
-    CaptacionesCAPFJoinedFact | IRRBBSourceMappingFailure
-)
+CaptacionesCAPFJoinResult: TypeAlias = CaptacionesCAPFJoinedFact | IRRBBSourceMappingFailure
 
 
 class CaptacionesCAPFOperationJoinService:
