@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date
+from typing import TypeAlias
 
 from aip.application.irrbb import (
     IRRBBSourceMappingFailure,
@@ -131,7 +132,9 @@ class CaptacionesCAPFJoinedFact:
         return self.xml_fact.principal.currency
 
 
-CaptacionesCAPFJoinResult = CaptacionesCAPFJoinedFact | IRRBBSourceMappingFailure
+CaptacionesCAPFJoinResult: TypeAlias = (
+    CaptacionesCAPFJoinedFact | IRRBBSourceMappingFailure
+)
 
 
 class CaptacionesCAPFOperationJoinService:
