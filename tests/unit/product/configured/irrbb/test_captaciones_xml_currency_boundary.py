@@ -50,21 +50,21 @@ def _fact(*, record_id: str, currency_code: str) -> CaptacionesXMLFact:
         creditor_id="ACREEDOR",
         operation_id=f"OP-{record_id}",
         operation_type_source_code="OP-TYPE",
-        guarantee_indicator=None,
+        guarantee_indicator="N",
         currency_source_code=currency_code,
         rate_type_source_code="RATE-TYPE",
-        variable_rate_source_code=None,
-        nominal_rate_percent=None,
-        sugef_catalog_source_code=None,
+        variable_rate_source_code="7",
+        nominal_rate_percent=Decimal("3.25"),
+        sugef_catalog_source_code="14",
         accounting_account_code="21103100",
         principal_amount=Decimal("1000"),
-        product_account_code=None,
+        product_account_code="21900100",
         product_amount=Decimal("10"),
         origination_date=date(2025, 1, 1),
         maturity_date=date(2027, 1, 1),
-        reserve_requirement_indicator=None,
+        reserve_requirement_indicator="S",
         account_type_source_code="ACCOUNT-TYPE",
-        deposit_fgd_source_code=None,
+        deposit_fgd_source_code="FGD-1",
     )
 
 
@@ -107,11 +107,21 @@ def test_bridge_maps_total_balance_to_money_without_product_classification() -> 
     assert not result.mapping_failures
     assert len(result.canonical_facts) == 1
     fact = result.canonical_facts[0]
+    assert fact.principal.amount == Decimal("1000")
+    assert fact.product.amount == Decimal("10")
     assert fact.amount.amount == Decimal("1010")
     assert fact.currency is Currency.CRC
     assert fact.account_type_source_code == "ACCOUNT-TYPE"
     assert fact.operation_type_source_code == "OP-TYPE"
     assert fact.rate_type_source_code == "RATE-TYPE"
+    assert fact.variable_rate_source_code == "7"
+    assert fact.nominal_rate_percent == Decimal("3.25")
+    assert fact.maturity_date == date(2027, 1, 1)
+    assert fact.origination_date == date(2025, 1, 1)
+    assert fact.product_account_code == "21900100"
+    assert fact.guarantee_indicator == "N"
+    assert fact.reserve_requirement_indicator == "S"
+    assert fact.deposit_fgd_source_code == "FGD-1"
 
 
 def test_unmapped_currency_fails_closed_without_assuming_numeric_semantics() -> None:
