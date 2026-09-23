@@ -23,8 +23,7 @@ from aip.product.configured.irrbb.xml_confia_source import (
 
 CUTOFF = date(2026, 8, 31)
 SOURCE_PATH = Path(
-    "/Institutional/XML CONFÍA/2026/08-AGOSTO/"
-    "Pasivos_Cuentas_Contables_220_230_260_270_280.xml"
+    "/Institutional/XML CONFÍA/2026/08-AGOSTO/" "Pasivos_Cuentas_Contables_220_230_260_270_280.xml"
 )
 SHA256 = "b" * 64
 
@@ -139,9 +138,7 @@ def test_blank_optional_values_remain_none_instead_of_zero() -> None:
 
 
 def test_invalid_optional_date_is_explicit_mapping_failure() -> None:
-    result = BorrowingXMLNormalizer().normalize(
-        _envelope(_record(FechaVencimiento="2038-08-13"))
-    )
+    result = BorrowingXMLNormalizer().normalize(_envelope(_record(FechaVencimiento="2038-08-13")))
 
     assert isinstance(result, IRRBBSourceMappingFailure)
     assert result.canonical_field == "FechaVencimiento"
@@ -205,6 +202,4 @@ def test_monthly_bridge_rejects_duplicate_record_lineage() -> None:
     reader = _Reader((_record("7"), _record("7")))
 
     with pytest.raises(ValueError, match="lineage must be unique"):
-        BorrowingXMLMonthlyNormalizationBridge(source_reader=reader).normalize(
-            cutoff_date=CUTOFF
-        )
+        BorrowingXMLMonthlyNormalizationBridge(source_reader=reader).normalize(cutoff_date=CUTOFF)
