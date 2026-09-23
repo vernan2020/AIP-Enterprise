@@ -120,9 +120,7 @@ class BorrowingXMLNormalizer:
             conditional_indicator=self._optional_text(values, "IndicadorCondicional"),
             country_source_code=self._optional_text(values, "PaisOrigen"),
             contract_currency_source_code=self._optional_text(values, "TipoMonedaContrato"),
-            disbursement_currency_source_code=self._optional_text(
-                values, "TipoMonedaDesembolso"
-            ),
+            disbursement_currency_source_code=self._optional_text(values, "TipoMonedaDesembolso"),
             rate_type_source_code=rate_type,
             variable_rate_source_code=self._optional_text(values, "TipoTasaVariable"),
             nominal_rate_percent=optional_decimals["Tasa"],
