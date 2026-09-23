@@ -183,12 +183,8 @@ class BorrowingXMLCurrencyBridge:
             maturity_date=fact.maturity_date,
             next_principal_payment_date=fact.next_principal_payment_date,
             next_interest_payment_date=fact.next_interest_payment_date,
-            principal_payment_frequency_source_code=(
-                fact.principal_payment_frequency_source_code
-            ),
-            interest_payment_frequency_source_code=(
-                fact.interest_payment_frequency_source_code
-            ),
+            principal_payment_frequency_source_code=(fact.principal_payment_frequency_source_code),
+            interest_payment_frequency_source_code=(fact.interest_payment_frequency_source_code),
         )
 
     @staticmethod
