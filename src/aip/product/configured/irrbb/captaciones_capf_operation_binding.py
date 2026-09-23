@@ -35,9 +35,7 @@ class CaptacionesCAPFOperationBinding:
             if not value.strip():
                 raise ValueError(f"CAPF operation binding {field_name} is required")
             if value != value.strip():
-                raise ValueError(
-                    f"CAPF operation binding {field_name} must be canonical text"
-                )
+                raise ValueError(f"CAPF operation binding {field_name} must be canonical text")
 
 
 @dataclass(frozen=True, slots=True)
@@ -188,8 +186,7 @@ class CaptacionesCAPFOperationJoinService:
                 code=IRRBBSourceMappingFailureCode.SOURCE_RECORD_REJECTED,
                 canonical_field="rate_type",
                 message=(
-                    "CAPF contractual evidence conflicts with the fixed-rate "
-                    "institutional rule."
+                    "CAPF contractual evidence conflicts with the fixed-rate " "institutional rule."
                 ),
             )
         if xml_fact.rate_type_source_code.strip().upper() != "F":
