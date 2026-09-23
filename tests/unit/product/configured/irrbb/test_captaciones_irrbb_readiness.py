@@ -48,7 +48,9 @@ def _fact(
     )
 
 
-def test_sight_nmd_requires_behavioral_profile_and_ignores_xml_maturity_as_bucket_shortcut() -> None:
+def test_sight_nmd_requires_behavioral_profile_and_ignores_xml_maturity_as_bucket_shortcut() -> (
+    None
+):
     fact = _fact("21103100", maturity=date(2035, 12, 31))
     classification = CaptacionesIRRBBAccountClassifier.classify(fact)
 
