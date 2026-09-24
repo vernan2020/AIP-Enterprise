@@ -108,8 +108,7 @@ def test_batch_aggregates_xml_principal_by_currency_and_canonical_bucket() -> No
     assert not result.mapping_failures
     assert not result.eve_ready
     observed = [
-        (item.bucket, item.principal.amount, item.record_count)
-        for item in result.bucket_totals
+        (item.bucket, item.principal.amount, item.record_count) for item in result.bucket_totals
     ]
     assert observed == [
         (IRRBBTimeBucket.DAY_1_TO_MONTH_1, Decimal("3500"), 2),
