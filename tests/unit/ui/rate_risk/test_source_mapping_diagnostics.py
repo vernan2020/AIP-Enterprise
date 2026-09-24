@@ -118,7 +118,7 @@ def test_passive_view_renders_source_mapping_failure_without_financial_values() 
     assert "Canonical currency" in view._source_mapping_failure_table.item(0, 4).text()
 
 
-def test_passive_view_exposes_governed_source_integration_progress_without_activation() -> None:
+def test_passive_view_exposes_functional_source_progress_without_false_activation() -> None:
     _app()
     view = RateRiskView()
 
@@ -141,12 +141,17 @@ def test_passive_view_exposes_governed_source_integration_progress_without_activ
     assert rows[captaciones][2] == "XML_DOCUMENT"
     assert rows[borrowing][2] == "XML_DOCUMENT"
     assert rows[investment][2] == "PORTFOLIO_MASTER"
-    assert all(values[4] == "REGISTRADA · NO ACTIVADA" for values in rows.values())
-    assert "V→R1" in rows[credit][5]
-    assert "F→vencimiento" in rows[credit][5]
-    assert "FV→cambio de tasa" in rows[credit][5]
-    assert "exclusión auditable" in rows[credit][5]
-    assert "CAPF requiere modalidad y frecuencia" in rows[captaciones][5]
-    assert "reconciliación" in rows[borrowing][5]
-    assert "cierre mensual" in rows[investment][5]
-    assert "vencimiento y periodicidad" in rows[investment][5]
+    assert table.columnCount() == 9
+    assert rows[credit][4] == "AUDITADA"
+    assert rows[credit][5] == "19 BANDAS · TEMPORAL"
+    assert rows[captaciones][3] == "CAPF XLSX contractual"
+    assert rows[captaciones][4] == "XML + CAPF AUDITADOS"
+    assert rows[captaciones][5] == "CAPF PRINCIPAL · 19 BANDAS"
+    assert rows[captaciones][6] == "COMPONENTE PARCIAL"
+    assert rows[captaciones][7] == "BLOQUEADO"
+    assert "Cupones/capitalización" in rows[captaciones][8]
+    assert rows[borrowing][5] == "PENDIENTE"
+    assert "primera cuota" in rows[borrowing][8]
+    assert rows[investment][4] == "GATE FAIL-CLOSED"
+    assert rows[investment][7] == "BLOQUEADO"
+    assert all(values[7] == "BLOQUEADO" for values in rows.values())

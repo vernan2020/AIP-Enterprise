@@ -4,9 +4,8 @@ from typing import cast
 
 from PySide6.QtWidgets import QGridLayout, QGroupBox, QLabel, QVBoxLayout
 
-from aip.application.irrbb.physical_source_registry import IRRBBPhysicalSourceSegment
-from aip.product.configured.irrbb.physical_source_registry import (
-    INSTITUTIONAL_IRRBB_PHYSICAL_SOURCES,
+from aip.product.configured.irrbb.source_integration_progress import (
+    INSTITUTIONAL_IRRBB_SOURCE_PROGRESS,
 )
 from aip.ui.modules.rate_risk.models import RateRiskReadModel
 from aip.ui.modules.rate_risk.views.rate_risk_view import RateRiskView as _BaseRateRiskView
@@ -14,22 +13,6 @@ from aip.ui.modules.rate_risk.views.rate_risk_view import RateRiskView as _BaseR
 
 class RateRiskView(_BaseRateRiskView):
     """Passive RTILB view extended with source-integration diagnostics."""
-
-    _SOURCE_GATE_LABELS = {
-        IRRBBPhysicalSourceSegment.CREDIT: (
-            "XML mensual disponible · V→R1 · F→vencimiento · FV→cambio de tasa · "
-            "mora/judicial con exclusión auditable"
-        ),
-        IRRBBPhysicalSourceSegment.CAPTACIONES: (
-            "XML 210 disponible · CAPF requiere modalidad y frecuencia contractual complementarias"
-        ),
-        IRRBBPhysicalSourceSegment.BORROWING: (
-            "XML obligaciones disponible · reconciliación y primera cuota contractual pendientes"
-        ),
-        IRRBBPhysicalSourceSegment.INVESTMENT: (
-            "Maestro de Inversiones al cierre mensual · posiciones, tasa, vencimiento y periodicidad"
-        ),
-    }
 
     def _build_summary_page(self) -> None:
         super()._build_summary_page()
@@ -55,18 +38,28 @@ class RateRiskView(_BaseRateRiskView):
         source_status_box.setStyleSheet(self._group_style())
         source_status_layout = QVBoxLayout(source_status_box)
         source_status_note = QLabel(
-            "Fuentes físicas primarias registradas para RTILB: XML CONFÍA para crédito y pasivos, "
-            "y Maestro de Inversiones al cierre mensual para inversiones. El estado muestra avance "
-            "de normalización; no implica que el cálculo productivo esté activado."
+            "Cobertura real por segmento: distingue fuente primaria, complemento contractual, "
+            "normalización, asignación a 19 bandas, componente GAP y preparación VEP. "
+            "PARCIAL o BLOQUEADO nunca se interpreta como cero ni como cálculo productivo."
         )
         source_status_note.setWordWrap(True)
         source_status_note.setStyleSheet("color:#566D7C; font-size:9px;")
         source_status_layout.addWidget(source_status_note)
         self._source_integration_table = self._table()
         self._source_integration_table.setObjectName("rateRiskSourceIntegrationStatus")
-        self._source_integration_table.setColumnCount(6)
+        self._source_integration_table.setColumnCount(9)
         self._source_integration_table.setHorizontalHeaderLabels(
-            ["Fuente", "Segmento", "Tecnología", "Perímetro", "Estado RTILB", "Gate pendiente"]
+            [
+                "Fuente primaria",
+                "Segmento",
+                "Tecnología",
+                "Complemento",
+                "Normalización",
+                "19 bandas",
+                "GAP",
+                "VEP",
+                "Gate pendiente",
+            ]
         )
         source_status_layout.addWidget(self._source_integration_table)
         layout.insertWidget(0, source_status_box)
@@ -97,19 +90,22 @@ class RateRiskView(_BaseRateRiskView):
         self._source_mapping_failure_table.setRowCount(0)
 
     def _populate_source_integration_status(self) -> None:
-        rows = INSTITUTIONAL_IRRBB_PHYSICAL_SOURCES
+        rows = INSTITUTIONAL_IRRBB_SOURCE_PROGRESS
         self._source_integration_table.setRowCount(len(rows))
-        for row_index, source in enumerate(rows):
+        for row_index, progress in enumerate(rows):
             self._set_row(
                 self._source_integration_table,
                 row_index,
                 (
-                    source.logical_name,
-                    source.segment.value,
-                    source.kind.value,
-                    source.certification_perimeter.value,
-                    "REGISTRADA · NO ACTIVADA",
-                    self._SOURCE_GATE_LABELS[source.segment],
+                    progress.primary_source,
+                    progress.segment.value,
+                    progress.technology,
+                    progress.contractual_complement,
+                    progress.normalization_status,
+                    progress.bucket_status,
+                    progress.gap_status,
+                    progress.eve_status,
+                    progress.pending_gate,
                 ),
             )
 
