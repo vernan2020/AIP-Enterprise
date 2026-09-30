@@ -6,6 +6,9 @@ from aip.ui.modules.portfolio.models.portfolio_dashboard_point import PortfolioD
 from aip.ui.modules.portfolio.models.portfolio_history_point import PortfolioHistoryPoint
 from aip.ui.modules.portfolio.models.portfolio_row import PortfolioRow
 from aip.ui.modules.portfolio.models.portfolio_summary import PortfolioSummary
+from aip.ui.modules.portfolio.models.portfolio_valuation_comparison import (
+    PortfolioValuationComparisonDisplay,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,6 +37,9 @@ class PortfolioViewModel:
     currency_points: tuple[PortfolioDashboardPoint, ...] = ()
     duration_points: tuple[PortfolioDashboardPoint, ...] = ()
     opportunity_points: tuple[PortfolioDashboardPoint, ...] = ()
+    valuation_comparison: PortfolioValuationComparisonDisplay = field(
+        default_factory=PortfolioValuationComparisonDisplay
+    )
     history_points: tuple[PortfolioHistoryPoint, ...] = ()
     history_status: str = "UNAVAILABLE"
     history_sampling: str = "monthly"

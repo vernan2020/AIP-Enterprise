@@ -20,6 +20,7 @@ def test_portfolio_view_exposes_historical_kpi_tab_between_panel_and_positions(q
     assert [tabs.tabText(index) for index in range(tabs.count())] == [
         "Panel",
         "Histórico KPIs",
+        "Ganancia / pérdida",
         "Posiciones",
     ]
 
