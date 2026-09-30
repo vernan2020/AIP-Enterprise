@@ -71,9 +71,7 @@ class PortfolioValuationComparisonService:
 
         difference = item.market_value - item.book_value
         percentage = (
-            difference / abs(item.book_value) * Decimal("100")
-            if item.book_value != 0
-            else None
+            difference / abs(item.book_value) * Decimal("100") if item.book_value != 0 else None
         )
         return PortfolioValuationComparisonRow(
             source=item,
@@ -101,7 +99,11 @@ class PortfolioValuationComparisonService:
                 and row.source.currency.strip()
             ]
             market_value = sum(
-                (row.source.market_value for row in included if row.source.market_value is not None),
+                (
+                    row.source.market_value
+                    for row in included
+                    if row.source.market_value is not None
+                ),
                 Decimal("0"),
             )
             book_value = sum(
