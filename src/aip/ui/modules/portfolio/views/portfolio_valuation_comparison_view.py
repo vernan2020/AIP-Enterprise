@@ -38,9 +38,7 @@ class PortfolioValuationComparisonView(QWidget):
         self._note.setStyleSheet("color:#617386; padding:4px 2px;")
         layout.addWidget(self._note)
 
-        self._totals = self._table(
-            ["Moneda", "Mercado", "Contable", "G/P", "G/P %", "Cobertura"]
-        )
+        self._totals = self._table(["Moneda", "Mercado", "Contable", "G/P", "G/P %", "Cobertura"])
         self._totals.setObjectName("portfolioValuationTotals")
         self._totals.setMaximumHeight(180)
         layout.addWidget(self._totals)
