@@ -83,11 +83,12 @@ class PortfolioValuationComparisonView(QWidget):
 
     def _populate(self, table: QTableWidget, rows) -> None:
         table.setRowCount(len(rows))
+        tone_column = 3 if table is self._totals else 5
         for row_index, row in enumerate(rows):
             color = self._tone_color(row.tone)
             for column, value in enumerate(row.cells):
                 item = QTableWidgetItem(value)
-                if column in {3, 5}:
+                if column == tone_column:
                     item.setForeground(color)
                 table.setItem(row_index, column, item)
 
