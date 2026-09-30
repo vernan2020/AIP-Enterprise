@@ -21,6 +21,7 @@ def test_portfolio_view_exposes_historical_kpi_tab_between_panel_and_positions(q
         "Panel",
         "Histórico KPIs",
         "Posiciones",
+        "Ganancia / pérdida",
     ]
 
 

@@ -23,6 +23,14 @@ from aip.ui.modules.portfolio.models.portfolio_history_point import (
 )
 from aip.ui.modules.portfolio.models.portfolio_row import PortfolioRow
 from aip.ui.modules.portfolio.models.portfolio_summary import PortfolioSummary
+
+from aip.product.configured.services.configured_portfolio_valuation_comparison_service import (
+    ConfiguredPortfolioValuationComparisonService,
+)
+from aip.ui.modules.portfolio.models.portfolio_valuation_comparison import (
+    PortfolioValuationComparisonDisplay,
+    PortfolioValuationComparisonDisplayRow,
+)
 from aip.ui.modules.portfolio.viewmodels.portfolio_view_model import PortfolioViewModel
 
 logger = logging.getLogger(__name__)
@@ -262,6 +270,59 @@ class PortfolioPresenter:
             currency_points=currency_points,
             duration_points=duration_points,
             opportunity_points=opportunity_points,
+            valuation_comparison=self._valuation_comparison(portfolio),
+        )
+
+    @staticmethod
+    def _valuation_comparison(portfolio: dict[str, Any]) -> PortfolioValuationComparisonDisplay:
+        result = ConfiguredPortfolioValuationComparisonService.calculate(portfolio)
+
+        def number(value: Decimal | None, *, signed: bool = False) -> str:
+            if value is None or not value.is_finite():
+                return "N/D"
+            return f"{value:+,.2f}" if signed else f"{value:,.2f}"
+
+        def percent(value: Decimal | None) -> str:
+            return "N/D" if value is None else f"{value:+.2f}%"
+
+        def tone(value: Decimal | None) -> str:
+            if value is None or value == 0:
+                return "neutral"
+            return "gain" if value > 0 else "loss"
+
+        return PortfolioValuationComparisonDisplay(
+            totals=tuple(
+                PortfolioValuationComparisonDisplayRow(
+                    cells=(
+                        item.currency or "N/D",
+                        number(item.market_value),
+                        number(item.book_value),
+                        number(item.difference, signed=True),
+                        percent(item.percentage),
+                        f"{item.included_count}/{item.total_count} posiciones"
+                        + (" · parcial" if item.included_count < item.total_count else ""),
+                    ),
+                    tone=tone(item.difference),
+                )
+                for item in result.totals
+            ),
+            positions=tuple(
+                PortfolioValuationComparisonDisplayRow(
+                    cells=(
+                        item.source.identity,
+                        item.source.issuer,
+                        item.source.currency or "N/D",
+                        number(item.source.market_value),
+                        number(item.source.book_value),
+                        number(item.difference, signed=True),
+                        percent(item.percentage),
+                        item.status,
+                        item.source.source_reference,
+                    ),
+                    tone=tone(item.difference),
+                )
+                for item in result.rows
+            ),
         )
 
     def refresh(
