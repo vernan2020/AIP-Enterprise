@@ -25,9 +25,7 @@ def _input(
 
 
 def test_calculates_unrealized_gain_and_percentage() -> None:
-    result = PortfolioValuationComparisonService.calculate(
-        (_input("A", "CRC", "110", "100"),)
-    )
+    result = PortfolioValuationComparisonService.calculate((_input("A", "CRC", "110", "100"),))
 
     row = result.rows[0]
     assert row.difference == Decimal("10")
@@ -37,9 +35,7 @@ def test_calculates_unrealized_gain_and_percentage() -> None:
 
 
 def test_calculates_unrealized_loss() -> None:
-    result = PortfolioValuationComparisonService.calculate(
-        (_input("A", "USD", "90", "100"),)
-    )
+    result = PortfolioValuationComparisonService.calculate((_input("A", "USD", "90", "100"),))
 
     assert result.rows[0].difference == Decimal("-10")
     assert result.rows[0].percentage == Decimal("-10")
@@ -77,9 +73,7 @@ def test_missing_values_are_not_zero_filled() -> None:
 
 
 def test_missing_currency_is_not_included_in_currency_total() -> None:
-    result = PortfolioValuationComparisonService.calculate(
-        (_input("A", "", "110", "100"),)
-    )
+    result = PortfolioValuationComparisonService.calculate((_input("A", "", "110", "100"),))
 
     assert result.rows[0].status == "Moneda ausente"
     assert result.totals[0].currency == "N/D"
@@ -88,9 +82,7 @@ def test_missing_currency_is_not_included_in_currency_total() -> None:
 
 
 def test_zero_book_value_keeps_difference_but_percentage_unavailable() -> None:
-    result = PortfolioValuationComparisonService.calculate(
-        (_input("A", "CRC", "10", "0"),)
-    )
+    result = PortfolioValuationComparisonService.calculate((_input("A", "CRC", "10", "0"),))
 
     assert result.rows[0].difference == Decimal("10")
     assert result.rows[0].percentage is None
