@@ -575,6 +575,7 @@ class InstitutionalPortfolioMasterReader:
             "contract_number": contract_number,
             "broker": broker,
             "currency": currency or "CRC",
+            "source_currency": currency,
             "acquisition_date": acquisition_date,
             "issue_date": issue_date,
             "maturity_date": maturity_date,
