@@ -11,7 +11,7 @@ from aip.domain.portfolio.services.portfolio_valuation_comparison_service import
 
 
 class ConfiguredPortfolioValuationComparisonService:
-    """Build governed valuation comparison inputs from the monthly Investment Master."""
+    """Read authoritative accumulated valuation from the monthly Investment Master."""
 
     @classmethod
     def calculate(cls, portfolio: dict[str, Any]) -> PortfolioValuationComparisonResult:
@@ -27,7 +27,7 @@ class ConfiguredPortfolioValuationComparisonService:
         cls,
         position: dict[str, Any],
     ) -> PortfolioValuationComparisonInput:
-        raw = position.get("valuation_comparison_source")
+        raw = position.get("valuation_accumulated_source")
         source = raw if isinstance(raw, dict) else {}
         source_file = str(source.get("source_file") or position.get("source_file") or "").strip()
         source_row = source.get("source_row") or position.get("source_row")
@@ -44,8 +44,7 @@ class ConfiguredPortfolioValuationComparisonService:
             identity=identity,
             issuer=str(position.get("issuer") or "").strip(),
             currency=str(source.get("currency") or "").strip().upper(),
-            market_value=cls._decimal_or_none(source.get("market_value")),
-            book_value=cls._decimal_or_none(source.get("book_value")),
+            valuation_accumulated=cls._decimal_or_none(source.get("value")),
             source_reference=source_reference,
         )
 
