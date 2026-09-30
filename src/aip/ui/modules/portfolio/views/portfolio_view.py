@@ -22,12 +22,12 @@ from aip.ui.modules.portfolio.presenters.portfolio_presenter import PortfolioPre
 from aip.ui.modules.portfolio.viewmodels.portfolio_view_model import PortfolioViewModel
 from aip.ui.modules.portfolio.views.portfolio_details_view import PortfolioDetailsView
 from aip.ui.modules.portfolio.views.portfolio_history_view import PortfolioHistoryView
-from aip.ui.modules.portfolio.views.portfolio_valuation_comparison_view import (
-    PortfolioValuationComparisonView,
-)
 from aip.ui.modules.portfolio.views.portfolio_positions_view import PortfolioPositionsView
 from aip.ui.modules.portfolio.views.portfolio_summary_view import PortfolioSummaryView
 from aip.ui.modules.portfolio.views.portfolio_toolbar import PortfolioToolbar
+from aip.ui.modules.portfolio.views.portfolio_valuation_comparison_view import (
+    PortfolioValuationComparisonView,
+)
 from aip.ui.modules.portfolio.widgets.portfolio_dashboard_chart import PortfolioDashboardBarChart
 from aip.ui.modules.portfolio.widgets.portfolio_filter_panel import PortfolioFilterPanel
 from aip.ui.modules.portfolio.widgets.portfolio_status_badge import PortfolioStatusBadge
