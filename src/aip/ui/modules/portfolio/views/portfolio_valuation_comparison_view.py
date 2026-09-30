@@ -17,7 +17,7 @@ from aip.ui.modules.portfolio.models.portfolio_valuation_comparison import (
 
 
 class PortfolioValuationComparisonView(QWidget):
-    """Passive market-versus-book valuation view."""
+    """Passive view of the authoritative accumulated valuation from the Master."""
 
     _GAIN = QColor("#16794B")
     _LOSS = QColor("#B42318")
@@ -31,27 +31,19 @@ class PortfolioValuationComparisonView(QWidget):
         layout.setSpacing(8)
 
         self._note = QLabel(
-            "Ganancia / pérdida no realizada = valor de mercado − valor contable. "
-            "Los totales se presentan por moneda; posiciones incompletas no se convierten a cero."
+            "Ganancia / pérdida usa directamente la columna Valuación Acumulada del "
+            "Maestro de Inversiones. AIP no recalcula el indicador."
         )
         self._note.setWordWrap(True)
         self._note.setStyleSheet("color:#617386; padding:4px 2px;")
         layout.addWidget(self._note)
-
-        self._totals = self._table(["Moneda", "Mercado", "Contable", "G/P", "G/P %", "Cobertura"])
-        self._totals.setObjectName("portfolioValuationTotals")
-        self._totals.setMaximumHeight(180)
-        layout.addWidget(self._totals)
 
         self._positions = self._table(
             [
                 "Posición",
                 "Emisor",
                 "Moneda",
-                "Mercado",
-                "Contable",
-                "G/P",
-                "G/P %",
+                "Valuación acumulada",
                 "Estado",
                 "Fuente",
             ]
@@ -73,20 +65,18 @@ class PortfolioValuationComparisonView(QWidget):
 
     def bind(self, model: PortfolioValuationComparisonDisplay, valuation_date: str) -> None:
         self._note.setText(
-            f"Corte {valuation_date} · Ganancia / pérdida no realizada = valor de mercado − "
-            "valor contable. Totales separados por moneda; faltantes quedan como N/D."
+            f"Corte {valuation_date} · Ganancia / pérdida corresponde directamente a "
+            "Valuación Acumulada del Maestro de Inversiones; no se realiza cálculo adicional."
         )
-        self._populate(self._totals, model.totals)
         self._populate(self._positions, model.positions)
 
     def _populate(self, table: QTableWidget, rows) -> None:
         table.setRowCount(len(rows))
-        tone_column = 3 if table is self._totals else 5
         for row_index, row in enumerate(rows):
             color = self._tone_color(row.tone)
             for column, value in enumerate(row.cells):
                 item = QTableWidgetItem(value)
-                if column == tone_column:
+                if column == 3:
                     item.setForeground(color)
                 table.setItem(row_index, column, item)
 
