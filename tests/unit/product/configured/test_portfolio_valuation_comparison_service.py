@@ -7,18 +7,15 @@ from aip.product.configured.services.configured_portfolio_valuation_comparison_s
 )
 
 
-def test_configured_service_uses_raw_master_values_and_lineage() -> None:
+def test_configured_service_uses_accumulated_valuation_and_lineage() -> None:
     portfolio = {
         "positions": [
             {
                 "isin": "CRTEST",
                 "issuer": "Emisor",
-                "market_value": 0.0,
-                "book_value": 0.0,
-                "valuation_comparison_source": {
+                "valuation_accumulated_source": {
                     "currency": "CRC",
-                    "market_value": 125.5,
-                    "book_value": 100,
+                    "value": 25.5,
                     "source_file": "Maestro.xlsx",
                     "source_row": 42,
                 },
@@ -29,25 +26,22 @@ def test_configured_service_uses_raw_master_values_and_lineage() -> None:
     result = ConfiguredPortfolioValuationComparisonService.calculate(portfolio)
 
     row = result.rows[0]
-    assert row.source.market_value == Decimal("125.5")
-    assert row.source.book_value == Decimal("100")
-    assert row.difference == Decimal("25.5")
+    assert row.valuation_accumulated == Decimal("25.5")
+    assert row.source.currency == "CRC"
     assert row.source.source_reference == "Maestro.xlsx · fila 42"
 
 
-def test_configured_service_does_not_reuse_zero_filled_display_values() -> None:
+def test_configured_service_does_not_derive_from_market_or_book_values() -> None:
     portfolio = {
         "positions": [
             {
                 "isin": "CRTEST",
                 "issuer": "Emisor",
-                "currency": "CRC",
-                "market_value": 0.0,
-                "book_value": 0.0,
-                "valuation_comparison_source": {
+                "market_value": 999.0,
+                "book_value": 1.0,
+                "valuation_accumulated_source": {
                     "currency": "CRC",
-                    "market_value": None,
-                    "book_value": None,
+                    "value": None,
                     "source_file": "Maestro.xlsx",
                     "source_row": 7,
                 },
@@ -57,6 +51,5 @@ def test_configured_service_does_not_reuse_zero_filled_display_values() -> None:
 
     result = ConfiguredPortfolioValuationComparisonService.calculate(portfolio)
 
-    assert result.rows[0].difference is None
-    assert result.rows[0].status == "Valor ausente o inválido"
-    assert result.totals[0].included_count == 0
+    assert result.rows[0].valuation_accumulated is None
+    assert result.rows[0].status == "Valuacion acumulada ausente o invalida"
