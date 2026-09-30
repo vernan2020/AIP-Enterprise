@@ -2,6 +2,15 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+from aip.ui.modules.portfolio.models.portfolio_history_point import PortfolioHistorySeries
+from aip.ui.modules.portfolio.views.portfolio_details_view import PortfolioDetailsView
+from aip.ui.modules.portfolio.views.portfolio_history_view import PortfolioHistoryView
+from aip.ui.modules.portfolio.views.portfolio_positions_view import PortfolioPositionsView
+from aip.ui.modules.portfolio.views.portfolio_summary_view import PortfolioSummaryView
+from aip.ui.modules.portfolio.views.portfolio_toolbar import PortfolioToolbar
+from aip.ui.modules.portfolio.widgets.portfolio_dashboard_chart import PortfolioDashboardBarChart
+from aip.ui.modules.portfolio.widgets.portfolio_filter_panel import PortfolioFilterPanel
+from aip.ui.modules.portfolio.widgets.portfolio_status_badge import PortfolioStatusBadge
 from PySide6.QtCore import QObject, Qt, QThread, Signal, Slot
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
@@ -17,17 +26,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from aip.ui.modules.portfolio.models.portfolio_history_point import PortfolioHistorySeries
 from aip.ui.modules.portfolio.presenters.portfolio_presenter import PortfolioPresenter
 from aip.ui.modules.portfolio.viewmodels.portfolio_view_model import PortfolioViewModel
-from aip.ui.modules.portfolio.views.portfolio_details_view import PortfolioDetailsView
-from aip.ui.modules.portfolio.views.portfolio_history_view import PortfolioHistoryView
-from aip.ui.modules.portfolio.views.portfolio_positions_view import PortfolioPositionsView
-from aip.ui.modules.portfolio.views.portfolio_summary_view import PortfolioSummaryView
-from aip.ui.modules.portfolio.views.portfolio_toolbar import PortfolioToolbar
-from aip.ui.modules.portfolio.widgets.portfolio_dashboard_chart import PortfolioDashboardBarChart
-from aip.ui.modules.portfolio.widgets.portfolio_filter_panel import PortfolioFilterPanel
-from aip.ui.modules.portfolio.widgets.portfolio_status_badge import PortfolioStatusBadge
+from aip.ui.modules.portfolio.views.portfolio_valuation_comparison_view import (
+    PortfolioValuationComparisonView,
+)
 
 
 class _PortfolioHistoryWorker(QObject):
@@ -65,6 +68,7 @@ class PortfolioView(QWidget):
             self._view_model.rows[0] if self._view_model.rows else None
         )
         self._history = PortfolioHistoryView()
+        self._valuation_comparison = PortfolioValuationComparisonView()
         self._status_bar = PortfolioStatusBadge("Portafolio listo")
         self._content_splitter: QSplitter | None = None
         self._positions_page: QWidget | None = None
@@ -194,6 +198,7 @@ class PortfolioView(QWidget):
         self._build_dashboard_tab()
         self._tabs.addTab(self._history, "Histórico KPIs")
         self._build_positions_tab()
+        self._tabs.addTab(self._valuation_comparison, "Ganancia / pérdida")
 
         layout.addWidget(self._status_bar)
 
@@ -266,6 +271,7 @@ class PortfolioView(QWidget):
 
     def _bind_dashboard(self, view_model: PortfolioViewModel) -> None:
         summary = view_model.summary
+        self._valuation_comparison.bind(view_model.valuation_comparison, summary.valuation_date)
         self._date_label.setText(f"Corte: {summary.valuation_date}")
         values = {
             "health": view_model.health_score,
