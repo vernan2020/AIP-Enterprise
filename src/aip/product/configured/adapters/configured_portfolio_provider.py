@@ -1129,10 +1129,9 @@ class ConfiguredPortfolioProvider:
                 market_value_local = market_value_crc
             payload.append(
                 {
-                    "valuation_comparison_source": {
+                    "valuation_accumulated_source": {
                         "currency": position.get("source_currency", ""),
-                        "market_value": position.get("market_value"),
-                        "book_value": position.get("book_value"),
+                        "value": position.get("valuation_accumulated"),
                         "source_file": position.get("source_file"),
                         "source_row": position.get("source_row"),
                     },

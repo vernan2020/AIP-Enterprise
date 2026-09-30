@@ -70,6 +70,7 @@ class InstitutionalPortfolioMasterReader:
             "valor de mercado",
             "valor mercado",
         ),
+        "valuation_accumulated": ("valuacion acumulada", "valuación acumulada"),
         "nominal_rate": ("tasa nominal", "nominal rate"),
         "periodicity": ("periodicidad", "periodicity"),
         "accrued_interest": ("interes por cobrar", "interés por cobrar", "accrued interest"),
@@ -541,6 +542,9 @@ class InstitutionalPortfolioMasterReader:
             self._find_field(normalized_cells, "market_price_percentage")
         )
         market_value = self._parse_number(self._find_field(normalized_cells, "market_value"))
+        valuation_accumulated = self._parse_number(
+            self._find_field(normalized_cells, "valuation_accumulated")
+        )
         nominal_rate = self._parse_number(self._find_field(normalized_cells, "nominal_rate"))
         periodicity = self._coerce_text(self._find_field(normalized_cells, "periodicity"))
         accrued_interest = self._parse_number(
@@ -599,6 +603,9 @@ class InstitutionalPortfolioMasterReader:
                 float(market_price_percentage) if market_price_percentage is not None else None
             ),
             "market_value": float(market_value) if market_value is not None else None,
+            "valuation_accumulated": (
+                float(valuation_accumulated) if valuation_accumulated is not None else None
+            ),
             "nominal_rate": float(nominal_rate) if nominal_rate is not None else None,
             "periodicity": periodicity,
             "accrued_interest": float(accrued_interest) if accrued_interest is not None else None,
