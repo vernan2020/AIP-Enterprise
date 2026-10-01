@@ -28,14 +28,55 @@ class PortfolioHistoryView(QWidget):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self.setObjectName("portfolioHistoryWorkspace")
+        self.setStyleSheet("""
+            QWidget#portfolioHistoryWorkspace {
+                background: #F6F8FB;
+            }
+            QGroupBox[historyCard="true"] {
+                background: #FFFFFF;
+                border: 1px solid #E3EAF2;
+                border-radius: 12px;
+                margin-top: 18px;
+                padding-top: 12px;
+                font-weight: 700;
+                color: #17324D;
+            }
+            QGroupBox[historyCard="true"]::title {
+                subcontrol-origin: margin;
+                subcontrol-position: top left;
+                left: 14px;
+                padding: 0 6px;
+                color: #17324D;
+            }
+            QComboBox[historyControl="true"] {
+                min-height: 28px;
+                padding: 2px 28px 2px 10px;
+                border: 1px solid #D8E2EC;
+                border-radius: 7px;
+                background: #FFFFFF;
+                color: #243746;
+            }
+            QLabel[role="historySubtitle"] {
+                color: #617386;
+                padding: 0 2px 2px 2px;
+            }
+            QLabel[role="historyStatus"] {
+                color: #526678;
+                background: #EDF3F8;
+                border-radius: 7px;
+                padding: 5px 9px;
+                font-weight: 600;
+            }
+            """)
         self._points: tuple[PortfolioHistoryPoint, ...] = ()
         self._sampling = "monthly"
         self._status = "UNAVAILABLE"
         self._warnings: tuple[str, ...] = ()
 
         root = QVBoxLayout(self)
-        root.setContentsMargins(8, 8, 8, 8)
-        root.setSpacing(8)
+        root.setContentsMargins(12, 10, 12, 12)
+        root.setSpacing(10)
 
         controls = QHBoxLayout()
         title = QLabel("EVOLUCIÓN HISTÓRICA DE KPIs")
@@ -45,6 +86,7 @@ class PortfolioHistoryView(QWidget):
 
         controls.addWidget(QLabel("Horizonte"))
         self._horizon = QComboBox()
+        self._horizon.setProperty("historyControl", True)
         self._horizon.addItem("3 meses", "3M")
         self._horizon.addItem("6 meses", "6M")
         self._horizon.addItem("12 meses", "12M")
@@ -56,6 +98,7 @@ class PortfolioHistoryView(QWidget):
 
         controls.addWidget(QLabel("Frecuencia"))
         self._frequency = QComboBox()
+        self._frequency.setProperty("historyControl", True)
         self._frequency.addItem("Mensual", "monthly")
         self._frequency.addItem("Cada corte", "daily")
         self._frequency.currentIndexChanged.connect(self._on_frequency_changed)
@@ -66,18 +109,18 @@ class PortfolioHistoryView(QWidget):
             "Cada punto se recalcula desde el maestro institucional del corte; "
             "no se interpolan datos faltantes. Comparativos contra mes anterior y cierre 2025."
         )
-        subtitle.setProperty("role", "subtle")
+        subtitle.setProperty("role", "historySubtitle")
         subtitle.setWordWrap(True)
         root.addWidget(subtitle)
 
         self._status_label = QLabel("Histórico no cargado")
-        self._status_label.setProperty("role", "subtle")
+        self._status_label.setProperty("role", "historyStatus")
         root.addWidget(self._status_label)
 
         self._charts: dict[str, PortfolioHistoryLineChart] = {}
         grid = QGridLayout()
-        grid.setHorizontalSpacing(10)
-        grid.setVerticalSpacing(10)
+        grid.setHorizontalSpacing(12)
+        grid.setVerticalSpacing(12)
 
         definitions = (
             (
@@ -139,8 +182,11 @@ class PortfolioHistoryView(QWidget):
             reference_label,
         ) in enumerate(definitions):
             group = QGroupBox(heading)
+            group.setProperty("historyCard", True)
             group.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
             box = QVBoxLayout(group)
+            box.setContentsMargins(12, 8, 12, 12)
+            box.setSpacing(6)
             description = QLabel(detail)
             description.setProperty("role", "subtle")
             description.setWordWrap(True)
