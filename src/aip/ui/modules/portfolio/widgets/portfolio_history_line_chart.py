@@ -28,6 +28,7 @@ class PortfolioHistoryLineChart(QWidget):
         self._reference_value = reference_value
         self._reference_label = reference_label or "Referencia"
         self._hover_points: tuple[tuple[QPointF, date, Decimal], ...] = ()
+        self._active_hover: tuple[QPointF, date, Decimal] | None = None
         self.setMinimumHeight(245)
         self.setMouseTracking(True)
 
@@ -42,6 +43,7 @@ class PortfolioHistoryLineChart(QWidget):
         self._previous_month_value = previous_month_value
         self._year_end_value = year_end_value
         self._hover_points = ()
+        self._active_hover = None
         self.update()
 
     def paintEvent(self, event) -> None:  # noqa: N802
@@ -157,7 +159,26 @@ class PortfolioHistoryLineChart(QWidget):
             if index % marker_step == 0:
                 painter.drawEllipse(coordinate, 2.5, 2.5)
 
+        if self._active_hover is not None:
+            active_point = self._active_hover[0]
+            hover_pen = QPen(QColor(31, 90, 138, 90))
+            hover_pen.setWidthF(1.0)
+            hover_pen.setStyle(Qt.PenStyle.DashLine)
+            painter.setPen(hover_pen)
+            painter.drawLine(
+                QPointF(active_point.x(), top),
+                QPointF(active_point.x(), top + plot_height),
+            )
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor(31, 90, 138, 36))
+            painter.drawEllipse(active_point, 7.5, 7.5)
+            painter.setBrush(QColor("#FFFFFF"))
+            painter.drawEllipse(active_point, 4.8, 4.8)
+            painter.setBrush(QColor("#1F5A8A"))
+            painter.drawEllipse(active_point, 3.0, 3.0)
+
         latest_coordinate = coordinates[-1]
+        painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(QColor(31, 90, 138, 40))
         painter.drawEllipse(latest_coordinate, 7.0, 7.0)
         painter.setBrush(QColor("#FFFFFF"))
@@ -238,25 +259,31 @@ class PortfolioHistoryLineChart(QWidget):
 
     def mouseMoveEvent(self, event) -> None:  # noqa: N802
         if not self._hover_points:
+            self._active_hover = None
             super().mouseMoveEvent(event)
             return
         cursor = event.position()
-        nearest = min(
-            self._hover_points,
-            key=lambda item: (item[0].x() - cursor.x()) ** 2 + (item[0].y() - cursor.y()) ** 2,
-        )
-        distance_squared = (nearest[0].x() - cursor.x()) ** 2 + (nearest[0].y() - cursor.y()) ** 2
-        if distance_squared <= 144.0:
+        nearest = min(self._hover_points, key=lambda item: abs(item[0].x() - cursor.x()))
+        x_distance = abs(nearest[0].x() - cursor.x())
+        if x_distance <= 18.0:
+            if self._active_hover != nearest:
+                self._active_hover = nearest
+                self.update()
             QToolTip.showText(
                 event.globalPosition().toPoint(),
                 f"{nearest[1].strftime('%d/%m/%Y')}\n{self._formatter(nearest[2])}",
                 self,
             )
         else:
+            if self._active_hover is not None:
+                self._active_hover = None
+                self.update()
             QToolTip.hideText()
         super().mouseMoveEvent(event)
 
     def leaveEvent(self, event) -> None:  # noqa: N802
+        self._active_hover = None
+        self.update()
         QToolTip.hideText()
         super().leaveEvent(event)
 

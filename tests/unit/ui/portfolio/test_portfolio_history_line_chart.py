@@ -44,3 +44,28 @@ def test_chart_renders_modern_history_series(qt_app) -> None:
 
     pixmap = chart.grab()
     assert not pixmap.isNull()
+
+
+def test_chart_renders_active_hover_guide(qt_app) -> None:
+    chart = PortfolioHistoryLineChart(value_formatter=lambda value: f"{value:,.2f}")
+    chart.resize(640, 280)
+    chart.set_data(
+        (
+            (date(2026, 7, 31), Decimal("1.10")),
+            (date(2026, 8, 31), Decimal("1.25")),
+            (date(2026, 9, 30), Decimal("1.20")),
+        )
+    )
+
+    chart.show()
+    qt_app.processEvents()
+    chart.grab()
+    assert chart._hover_points
+
+    chart._active_hover = chart._hover_points[1]
+    chart.update()
+    qt_app.processEvents()
+
+    pixmap = chart.grab()
+    assert not pixmap.isNull()
+    assert chart._active_hover[1] == date(2026, 8, 31)
