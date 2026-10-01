@@ -32,9 +32,9 @@ class PortfolioValuationBreakdown:
 @dataclass(frozen=True, slots=True)
 class PortfolioValuationComparisonResult:
     rows: tuple[PortfolioValuationComparisonRow, ...]
-    gain_total: Decimal
-    loss_total: Decimal
-    net_total: Decimal
+    gain_total: Decimal | None
+    loss_total: Decimal | None
+    net_total: Decimal | None
     gain_count: int
     loss_count: int
     available_count: int
@@ -54,25 +54,42 @@ class PortfolioValuationComparisonService:
         available = tuple(
             row for row in rows if row.valuation_accumulated is not None
         )
-        gain_total = sum(
-            (
-                row.valuation_accumulated
-                for row in available
-                if row.valuation_accumulated is not None
-                and row.valuation_accumulated > 0
-            ),
-            Decimal("0"),
+        currencies = {
+            (row.source.currency or "N/D").strip().upper() or "N/D"
+            for row in available
+        }
+        single_currency = len(currencies) == 1
+        gain_total = (
+            sum(
+                (
+                    row.valuation_accumulated
+                    for row in available
+                    if row.valuation_accumulated is not None
+                    and row.valuation_accumulated > 0
+                ),
+                Decimal("0"),
+            )
+            if single_currency
+            else None
         )
-        loss_total = sum(
-            (
-                abs(row.valuation_accumulated)
-                for row in available
-                if row.valuation_accumulated is not None
-                and row.valuation_accumulated < 0
-            ),
-            Decimal("0"),
+        loss_total = (
+            sum(
+                (
+                    abs(row.valuation_accumulated)
+                    for row in available
+                    if row.valuation_accumulated is not None
+                    and row.valuation_accumulated < 0
+                ),
+                Decimal("0"),
+            )
+            if single_currency
+            else None
         )
-        net_total = gain_total - loss_total
+        net_total = (
+            gain_total - loss_total
+            if gain_total is not None and loss_total is not None
+            else None
+        )
         return PortfolioValuationComparisonResult(
             rows=rows,
             gain_total=gain_total,
@@ -109,6 +126,9 @@ class PortfolioValuationComparisonService:
                 continue
             raw_label = getattr(row.source, by, "")
             label = str(raw_label or "").strip() or "N/D"
+            if by == "issuer":
+                currency = (row.source.currency or "").strip().upper() or "N/D"
+                label = f"{label} · {currency}"
             buckets.setdefault(label, []).append(value)
 
         result = []
