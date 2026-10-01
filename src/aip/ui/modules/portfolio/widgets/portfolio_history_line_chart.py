@@ -326,7 +326,11 @@ class PortfolioHistoryLineChart(QWidget):
         )
 
     def _hover_delta(self, cutoff: date, value: Decimal) -> str:
-        valid = tuple((point_date, point_value) for point_date, point_value in self._points if point_value is not None)
+        valid = tuple(
+            (point_date, point_value)
+            for point_date, point_value in self._points
+            if point_value is not None
+        )
         current_index = next(
             (
                 index
