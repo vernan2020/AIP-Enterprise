@@ -202,6 +202,19 @@ class PortfolioHistoryLineChart(QWidget):
         painter.setBrush(QColor("#1F5A8A"))
         painter.drawEllipse(latest_coordinate, 2.8, 2.8)
 
+        latest = valid[-1][1]
+        assert latest is not None
+        if self._active_hover is None or self._active_hover[0] != latest_coordinate:
+            self._draw_latest_value_pill(
+                painter,
+                point=latest_coordinate,
+                value=latest,
+                left=left,
+                top=top,
+                plot_width=plot_width,
+                plot_height=plot_height,
+            )
+
         baseline_pen = QPen(QColor("#DCE5EE"))
         baseline_pen.setWidthF(1.0)
         painter.setPen(baseline_pen)
@@ -218,8 +231,6 @@ class PortfolioHistoryLineChart(QWidget):
             plot_height=plot_height,
         )
 
-        latest = valid[-1][1]
-        assert latest is not None
         latest_width = min(190.0, plot_width * 0.34)
         latest_rect = QRectF(left + plot_width - latest_width, 3, latest_width, 46)
 
@@ -267,6 +278,41 @@ class PortfolioHistoryLineChart(QWidget):
             QRectF(left, 59, plot_width, 18),
             Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
             f"Mín {self._formatter(minimum_value)} · Máx {self._formatter(maximum_value)}",
+        )
+
+    def _draw_latest_value_pill(
+        self,
+        painter: QPainter,
+        *,
+        point: QPointF,
+        value: Decimal,
+        left: float,
+        top: float,
+        plot_width: float,
+        plot_height: float,
+    ) -> None:
+        pill_font = QFont(self.font())
+        pill_font.setPointSize(8)
+        pill_font.setBold(True)
+        painter.setFont(pill_font)
+
+        text = self._formatter(value)
+        width = painter.fontMetrics().horizontalAdvance(text) + 18.0
+        height = 22.0
+        x = point.x() - width - 10.0
+        x = max(left + 4.0, min(x, left + plot_width - width - 4.0))
+        y = point.y() - height / 2
+        y = max(top + 4.0, min(y, top + plot_height - height - 4.0))
+        rect = QRectF(x, y, width, height)
+
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QColor("#1F5A8A"))
+        painter.drawRoundedRect(rect, 7.0, 7.0)
+        painter.setPen(QColor("#FFFFFF"))
+        painter.drawText(
+            rect.adjusted(8, 0, -8, 0),
+            Qt.AlignmentFlag.AlignCenter,
+            text,
         )
 
     def _draw_hover_card(
