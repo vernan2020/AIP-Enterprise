@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -131,7 +132,7 @@ class PortfolioValuationComparisonView(QWidget):
         table.verticalHeader().setVisible(False)
         table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         table.horizontalHeader().setStretchLastSection(True)
-        table.setHorizontalScrollBarPolicy(table.horizontalScrollBarPolicy().ScrollBarAlwaysOff)
+        table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         return table
 
     def bind(self, model: PortfolioValuationComparisonDisplay, valuation_date: str) -> None:
