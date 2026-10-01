@@ -10,7 +10,6 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QGroupBox,
     QHeaderView,
-    QHBoxLayout,
     QLabel,
     QSizePolicy,
     QTableWidget,
