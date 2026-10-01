@@ -113,9 +113,15 @@ class PortfolioPresenter:
                 )
                 for item in result.rows
             ),
-            gain_total=float(result.gain_total),
-            loss_total=float(result.loss_total),
-            net_total=float(result.net_total),
+            gain_total=(
+                float(result.gain_total) if result.gain_total is not None else None
+            ),
+            loss_total=(
+                float(result.loss_total) if result.loss_total is not None else None
+            ),
+            net_total=(
+                float(result.net_total) if result.net_total is not None else None
+            ),
             gain_count=result.gain_count,
             loss_count=result.loss_count,
             available_count=result.available_count,
