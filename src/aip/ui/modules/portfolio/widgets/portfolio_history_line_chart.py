@@ -5,7 +5,7 @@ from decimal import Decimal
 from typing import Callable
 
 from PySide6.QtCore import QPointF, QRectF, Qt
-from PySide6.QtGui import QColor, QFont, QPainter, QPainterPath, QPen
+from PySide6.QtGui import QColor, QFont, QLinearGradient, QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import QToolTip, QWidget
 
 
@@ -76,7 +76,7 @@ class PortfolioHistoryLineChart(QWidget):
         if y_max <= y_min:
             y_max = y_min + 1.0
 
-        grid_pen = QPen(QColor("#E7EDF3"))
+        grid_pen = QPen(QColor("#EDF2F7"))
         grid_pen.setWidthF(1.0)
         label_font = QFont(self.font())
         label_font.setPointSize(8)
@@ -127,23 +127,43 @@ class PortfolioHistoryLineChart(QWidget):
             hover_points.append((coordinate, cutoff, point_value))
         self._hover_points = tuple(hover_points)
 
-        path = QPainterPath()
-        path.moveTo(coordinates[0])
-        for coordinate in coordinates[1:]:
-            path.lineTo(coordinate)
+        path = self._smooth_path(coordinates)
+
+        area_path = QPainterPath()
+        area_path.addPath(path)
+        area_path.lineTo(coordinates[-1].x(), top + plot_height)
+        area_path.lineTo(coordinates[0].x(), top + plot_height)
+        area_path.closeSubpath()
+        gradient = QLinearGradient(0.0, top, 0.0, top + plot_height)
+        gradient.setColorAt(0.0, QColor(31, 90, 138, 52))
+        gradient.setColorAt(0.70, QColor(31, 90, 138, 18))
+        gradient.setColorAt(1.0, QColor(31, 90, 138, 0))
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(gradient)
+        painter.drawPath(area_path)
 
         line_pen = QPen(QColor("#1F5A8A"))
-        line_pen.setWidthF(2.2)
+        line_pen.setWidthF(2.4)
+        line_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        line_pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
         painter.setPen(line_pen)
         painter.setBrush(Qt.BrushStyle.NoBrush)
         painter.drawPath(path)
 
         painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(QColor("#1F5A8A"))
-        marker_step = max(1, len(coordinates) // 18)
-        for index, coordinate in enumerate(coordinates):
-            if index % marker_step == 0 or index == len(coordinates) - 1:
-                painter.drawEllipse(coordinate, 3.1, 3.1)
+        marker_step = max(1, len(coordinates) // 12)
+        for index, coordinate in enumerate(coordinates[:-1]):
+            if index % marker_step == 0:
+                painter.drawEllipse(coordinate, 2.5, 2.5)
+
+        latest_coordinate = coordinates[-1]
+        painter.setBrush(QColor(31, 90, 138, 40))
+        painter.drawEllipse(latest_coordinate, 7.0, 7.0)
+        painter.setBrush(QColor("#FFFFFF"))
+        painter.drawEllipse(latest_coordinate, 4.5, 4.5)
+        painter.setBrush(QColor("#1F5A8A"))
+        painter.drawEllipse(latest_coordinate, 2.8, 2.8)
 
         first_date = valid[0][0]
         middle_date = valid[len(valid) // 2][0]
@@ -200,6 +220,21 @@ class PortfolioHistoryLineChart(QWidget):
             Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
             f"Mín {self._formatter(minimum_value)} · Máx {self._formatter(maximum_value)}",
         )
+
+    @staticmethod
+    def _smooth_path(coordinates: list[QPointF]) -> QPainterPath:
+        path = QPainterPath()
+        path.moveTo(coordinates[0])
+        if len(coordinates) == 1:
+            return path
+        for previous, current in zip(coordinates, coordinates[1:]):
+            delta = (current.x() - previous.x()) * 0.42
+            path.cubicTo(
+                QPointF(previous.x() + delta, previous.y()),
+                QPointF(current.x() - delta, current.y()),
+                current,
+            )
+        return path
 
     def mouseMoveEvent(self, event) -> None:  # noqa: N802
         if not self._hover_points:
