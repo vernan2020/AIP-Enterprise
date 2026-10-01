@@ -27,6 +27,7 @@ from aip.ui.modules.portfolio.models.portfolio_history_point import (
 from aip.ui.modules.portfolio.models.portfolio_row import PortfolioRow
 from aip.ui.modules.portfolio.models.portfolio_summary import PortfolioSummary
 from aip.ui.modules.portfolio.models.portfolio_valuation_comparison import (
+    PortfolioValuationBreakdownDisplay,
     PortfolioValuationComparisonDisplay,
     PortfolioValuationComparisonDisplayRow,
 )
@@ -80,6 +81,18 @@ class PortfolioPresenter:
                 return "neutral"
             return "gain" if value > 0 else "loss"
 
+        def breakdown(items) -> tuple[PortfolioValuationBreakdownDisplay, ...]:
+            return tuple(
+                PortfolioValuationBreakdownDisplay(
+                    label=item.label,
+                    gain=item.gain,
+                    loss=item.loss,
+                    net=item.net,
+                    position_count=item.position_count,
+                )
+                for item in items
+            )
+
         return PortfolioValuationComparisonDisplay(
             positions=tuple(
                 PortfolioValuationComparisonDisplayRow(
@@ -92,9 +105,18 @@ class PortfolioPresenter:
                         item.source.source_reference,
                     ),
                     tone=tone(item.valuation_accumulated),
+                    value=item.valuation_accumulated,
                 )
                 for item in result.rows
             ),
+            gain_total=result.gain_total,
+            loss_total=result.loss_total,
+            net_total=result.net_total,
+            gain_count=result.gain_count,
+            loss_count=result.loss_count,
+            available_count=result.available_count,
+            currency_breakdown=breakdown(result.currency_breakdown),
+            issuer_breakdown=breakdown(result.issuer_breakdown),
         )
 
     def clear_history_cache(self) -> None:
