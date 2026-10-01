@@ -18,8 +18,17 @@ if not defined AIP_BCCR_BASE_URL set "AIP_BCCR_BASE_URL=https://apim.bccr.fi.cr"
 if not defined AIP_ALLOW_PRIOR_SOURCE_DATE set "AIP_ALLOW_PRIOR_SOURCE_DATE=true"
 
 REM Self-heal only when manifest-declared critical runtime modules are absent.
+REM Never overwrite a Git working tree with the legacy recovery checkpoint: the
+REM checkpoint can intentionally lag the active release and would regress newer UI.
 python scripts\recovery\runtime_checkpoint_status.py --critical-only >nul 2>&1
 if errorlevel 1 (
+    if exist ".git\" (
+        echo.
+        echo AIP runtime source is incomplete inside a Git checkout.
+        echo Automatic checkpoint restore is blocked to prevent source regression.
+        echo Restore src from origin/release/core-v1.0 and retry.
+        exit /b 1
+    )
     echo AIP critical runtime is incomplete. Restoring the certified local checkpoint...
     python scripts\recovery\restore_runtime_checkpoint.py
     if errorlevel 1 (
@@ -27,6 +36,16 @@ if errorlevel 1 (
         echo AIP certified runtime restore failed. Review the diagnostics above.
         exit /b 1
     )
+)
+
+REM Refuse to launch a silently regressed Portfolio UI even when all generic
+REM critical files happen to exist.
+python scripts\recovery\verify_release_ui_contract.py
+if errorlevel 1 (
+    echo.
+    echo AIP runtime UI contract validation failed.
+    echo Restore src from origin/release/core-v1.0 before launching AIP.
+    exit /b 1
 )
 
 REM The fast configured preflight now runs inside the same Python process that
