@@ -163,8 +163,7 @@ class PortfolioValuationComparisonView(QWidget):
             card = QFrame()
             card.setObjectName(f"portfolioValuationKpi_{kpi.key}")
             card.setStyleSheet(
-                "QFrame {background:#FFFFFF; border:1px solid #DCE5EC; "
-                "border-radius:8px;}"
+                "QFrame {background:#FFFFFF; border:1px solid #DCE5EC; " "border-radius:8px;}"
             )
             card_layout = QVBoxLayout(card)
             card_layout.setContentsMargins(10, 7, 10, 7)
@@ -183,9 +182,7 @@ class PortfolioValuationComparisonView(QWidget):
 
     def _toggle_positions(self) -> None:
         self._show_all = not self._show_all
-        self._toggle.setText(
-            "Ver Top 10" if self._show_all else "Ver todas las posiciones"
-        )
+        self._toggle.setText("Ver Top 10" if self._show_all else "Ver todas las posiciones")
         rows = self._model.all_positions if self._show_all else self._model.positions
         self._populate_detail(rows)
 
