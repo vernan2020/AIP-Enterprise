@@ -69,3 +69,10 @@ def test_chart_renders_active_hover_guide(qt_app) -> None:
     pixmap = chart.grab()
     assert not pixmap.isNull()
     assert chart._active_hover[1] == date(2026, 8, 31)
+
+
+def test_axis_label_indices_are_adaptive_and_preserve_endpoints() -> None:
+    assert PortfolioHistoryLineChart._axis_label_indices(0) == ()
+    assert PortfolioHistoryLineChart._axis_label_indices(3) == (0, 1, 2)
+    assert PortfolioHistoryLineChart._axis_label_indices(12) == (0, 3, 6, 8, 11)
+    assert PortfolioHistoryLineChart._axis_label_indices(25) == (0, 6, 12, 18, 24)
