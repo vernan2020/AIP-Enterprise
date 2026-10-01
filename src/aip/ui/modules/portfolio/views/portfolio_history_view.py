@@ -29,8 +29,7 @@ class PortfolioHistoryView(QWidget):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setObjectName("portfolioHistoryWorkspace")
-        self.setStyleSheet(
-            """
+        self.setStyleSheet("""
             QWidget#portfolioHistoryWorkspace {
                 background: #F6F8FB;
             }
@@ -69,8 +68,7 @@ class PortfolioHistoryView(QWidget):
                 padding: 5px 9px;
                 font-weight: 600;
             }
-            """
-        )
+            """)
         self._points: tuple[PortfolioHistoryPoint, ...] = ()
         self._sampling = "monthly"
         self._status = "UNAVAILABLE"
