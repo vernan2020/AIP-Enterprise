@@ -53,3 +53,67 @@ def test_configured_service_does_not_derive_from_market_or_book_values() -> None
 
     assert result.rows[0].valuation_accumulated is None
     assert result.rows[0].status == "Valuacion acumulada ausente o invalida"
+
+
+def test_configured_service_aggregates_only_real_accumulated_valuation() -> None:
+    portfolio = {
+        "positions": [
+            {
+                "isin": "GAIN1",
+                "issuer": "Emisor A",
+                "valuation_accumulated_source": {
+                    "currency": "CRC",
+                    "value": 100,
+                    "source_file": "Maestro.xlsx",
+                    "source_row": 2,
+                },
+            },
+            {
+                "isin": "LOSS1",
+                "issuer": "Emisor A",
+                "valuation_accumulated_source": {
+                    "currency": "CRC",
+                    "value": -40,
+                    "source_file": "Maestro.xlsx",
+                    "source_row": 3,
+                },
+            },
+            {
+                "isin": "GAIN2",
+                "issuer": "Emisor B",
+                "valuation_accumulated_source": {
+                    "currency": "USD",
+                    "value": 20,
+                    "source_file": "Maestro.xlsx",
+                    "source_row": 4,
+                },
+            },
+            {
+                "isin": "MISSING",
+                "issuer": "Emisor C",
+                "valuation_accumulated_source": {
+                    "currency": "USD",
+                    "value": None,
+                    "source_file": "Maestro.xlsx",
+                    "source_row": 5,
+                },
+            },
+        ]
+    }
+
+    result = ConfiguredPortfolioValuationComparisonService.calculate(portfolio)
+
+    assert result.gain_total == Decimal("120")
+    assert result.loss_total == Decimal("-40")
+    assert result.net_total == Decimal("80")
+    assert result.gain_count == 2
+    assert result.loss_count == 1
+    assert [row.source.identity for row in result.top_gains] == ["GAIN1", "GAIN2"]
+    assert [row.source.identity for row in result.top_losses] == ["LOSS1"]
+    assert [row.source.identity for row in result.top_positions] == ["GAIN1", "LOSS1", "GAIN2"]
+
+    currencies = {item.label: item for item in result.currency_contributions}
+    assert currencies["CRC"].gain == Decimal("100")
+    assert currencies["CRC"].loss == Decimal("-40")
+    assert currencies["USD"].gain == Decimal("20")
+    assert currencies["USD"].loss == Decimal("0")
