@@ -85,9 +85,9 @@ class PortfolioPresenter:
             return tuple(
                 PortfolioValuationBreakdownDisplay(
                     label=item.label,
-                    gain=float(item.gain),
-                    loss=float(item.loss),
-                    net=float(item.net),
+                    gain=item.gain,
+                    loss=item.loss,
+                    net=item.net,
                     position_count=item.position_count,
                 )
                 for item in items
@@ -105,23 +105,13 @@ class PortfolioPresenter:
                         item.source.source_reference,
                     ),
                     tone=tone(item.valuation_accumulated),
-                    value=(
-                        float(item.valuation_accumulated)
-                        if item.valuation_accumulated is not None
-                        else None
-                    ),
+                    value=item.valuation_accumulated,
                 )
                 for item in result.rows
             ),
-            gain_total=(
-                float(result.gain_total) if result.gain_total is not None else None
-            ),
-            loss_total=(
-                float(result.loss_total) if result.loss_total is not None else None
-            ),
-            net_total=(
-                float(result.net_total) if result.net_total is not None else None
-            ),
+            gain_total=result.gain_total,
+            loss_total=result.loss_total,
+            net_total=result.net_total,
             gain_count=result.gain_count,
             loss_count=result.loss_count,
             available_count=result.available_count,
