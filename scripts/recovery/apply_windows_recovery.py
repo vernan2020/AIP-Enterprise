@@ -280,11 +280,49 @@ def _replace_src_transactionally(payload_root: Path, project_root: Path) -> None
             _remove_path(previous)
 
 
-def _run_validation(project_root: Path) -> None:
+def _runtime_validation_env(project_root: Path) -> dict[str, str]:
     env = os.environ.copy()
-    env["PYTHONPATH"] = "src"
+    env["PYTHONPATH"] = str((project_root / "src").resolve())
+    env["PYTHONNOUSERSITE"] = "1"
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
     env.setdefault("AIP_EXECUTION_MODE", "CONFIGURED")
     env.setdefault("AIP_DEMO_MODE_ENABLED", "false")
+    return env
+
+
+def _validate_installed_runtime_contract(project_root: Path, env: dict[str, str]) -> None:
+    expected_src = (project_root / "src").resolve()
+    contract = (
+        "import inspect\n"
+        "from pathlib import Path\n"
+        "from aip.integration.bccr.connector.cache import BCCRCache\n"
+        f"expected = Path({str(expected_src)!r}).resolve()\n"
+        "origin = Path(inspect.getsourcefile(BCCRCache) or '').resolve()\n"
+        "params = inspect.signature(BCCRCache.set).parameters\n"
+        "print(f'BCCRCache origin: {origin}')\n"
+        "print(f'BCCRCache.set signature: {inspect.signature(BCCRCache.set)}')\n"
+        "if expected != origin and expected not in origin.parents:\n"
+        "    raise SystemExit(f'BCCRCache resolved outside installed src: {origin}')\n"
+        "if 'ttl_seconds' not in params:\n"
+        "    raise SystemExit('BCCRCache.set missing ttl_seconds contract')\n"
+    )
+    command = [sys.executable, "-c", contract]
+    completed = subprocess.run(command, cwd=project_root, env=env, check=False)
+    if completed.returncode != 0:
+        raise RuntimeError("Installed runtime import contract failed")
+
+    ui_contract = [
+        sys.executable,
+        "scripts/recovery/verify_release_ui_contract.py",
+    ]
+    completed = subprocess.run(ui_contract, cwd=project_root, env=env, check=False)
+    if completed.returncode != 0:
+        raise RuntimeError("Installed Portfolio UI contract failed")
+
+
+def _run_validation(project_root: Path) -> None:
+    env = _runtime_validation_env(project_root)
+    _validate_installed_runtime_contract(project_root, env)
 
     commands = [
         [sys.executable, "-m", "compileall", "-q", "src"],
