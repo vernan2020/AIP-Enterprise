@@ -62,7 +62,7 @@ class PortfolioHistoryLineChart(QWidget):
         left = 64.0
         right = 18.0
         top = 86.0
-        bottom = 30.0
+        bottom = 38.0
         plot_width = max(30.0, self.width() - left - right)
         plot_height = max(30.0, self.height() - top - bottom)
 
@@ -186,24 +186,20 @@ class PortfolioHistoryLineChart(QWidget):
         painter.setBrush(QColor("#1F5A8A"))
         painter.drawEllipse(latest_coordinate, 2.8, 2.8)
 
-        first_date = valid[0][0]
-        middle_date = valid[len(valid) // 2][0]
-        last_date = valid[-1][0]
-        painter.setPen(QColor("#718096"))
-        painter.drawText(
-            QRectF(left, top + plot_height + 7, plot_width / 3, 18),
-            Qt.AlignmentFlag.AlignLeft,
-            first_date.strftime("%b-%y"),
+        baseline_pen = QPen(QColor("#DCE5EE"))
+        baseline_pen.setWidthF(1.0)
+        painter.setPen(baseline_pen)
+        painter.drawLine(
+            QPointF(left, top + plot_height),
+            QPointF(left + plot_width, top + plot_height),
         )
-        painter.drawText(
-            QRectF(left + plot_width / 3, top + plot_height + 7, plot_width / 3, 18),
-            Qt.AlignmentFlag.AlignCenter,
-            middle_date.strftime("%b-%y"),
-        )
-        painter.drawText(
-            QRectF(left + 2 * plot_width / 3, top + plot_height + 7, plot_width / 3, 18),
-            Qt.AlignmentFlag.AlignRight,
-            last_date.strftime("%b-%y"),
+        self._draw_time_axis(
+            painter,
+            valid,
+            left=left,
+            top=top,
+            plot_width=plot_width,
+            plot_height=plot_height,
         )
 
         latest = valid[-1][1]
@@ -256,6 +252,78 @@ class PortfolioHistoryLineChart(QWidget):
             Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
             f"Mín {self._formatter(minimum_value)} · Máx {self._formatter(maximum_value)}",
         )
+
+    def _draw_time_axis(
+        self,
+        painter: QPainter,
+        points: list[tuple[date, Decimal]],
+        *,
+        left: float,
+        top: float,
+        plot_width: float,
+        plot_height: float,
+    ) -> None:
+        indexes = self._time_axis_indexes(len(points))
+        label_font = QFont(self.font())
+        label_font.setPointSize(8)
+        painter.setFont(label_font)
+
+        for index in indexes:
+            cutoff = points[index][0]
+            x_ratio = index / max(1, len(points) - 1)
+            x = left + plot_width * x_ratio
+
+            tick_pen = QPen(QColor("#DCE5EE"))
+            tick_pen.setWidthF(1.0)
+            painter.setPen(tick_pen)
+            painter.drawLine(
+                QPointF(x, top + plot_height),
+                QPointF(x, top + plot_height + 4),
+            )
+
+            painter.setPen(QColor("#718096"))
+            alignment = Qt.AlignmentFlag.AlignHCenter
+            rect_x = x - 38.0
+            if index == 0:
+                alignment = Qt.AlignmentFlag.AlignLeft
+                rect_x = x
+            elif index == len(points) - 1:
+                alignment = Qt.AlignmentFlag.AlignRight
+                rect_x = x - 76.0
+            painter.drawText(
+                QRectF(rect_x, top + plot_height + 8, 76.0, 16.0),
+                alignment | Qt.AlignmentFlag.AlignVCenter,
+                self._time_axis_label(cutoff),
+            )
+
+    @staticmethod
+    def _time_axis_indexes(count: int) -> tuple[int, ...]:
+        if count <= 1:
+            return (0,)
+        desired = min(5, count)
+        indexes = {
+            round(position * (count - 1) / (desired - 1))
+            for position in range(desired)
+        }
+        return tuple(sorted(indexes))
+
+    @staticmethod
+    def _time_axis_label(cutoff: date) -> str:
+        months = (
+            "ene",
+            "feb",
+            "mar",
+            "abr",
+            "may",
+            "jun",
+            "jul",
+            "ago",
+            "sep",
+            "oct",
+            "nov",
+            "dic",
+        )
+        return f"{months[cutoff.month - 1]} {str(cutoff.year)[2:]}"
 
     def _draw_comparison_chip(
         self,
