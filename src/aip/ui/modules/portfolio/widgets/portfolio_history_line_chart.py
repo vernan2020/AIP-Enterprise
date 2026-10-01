@@ -61,7 +61,7 @@ class PortfolioHistoryLineChart(QWidget):
 
         left = 64.0
         right = 18.0
-        top = 72.0
+        top = 86.0
         bottom = 30.0
         plot_width = max(30.0, self.width() - left - right)
         plot_height = max(30.0, self.height() - top - bottom)
@@ -208,38 +208,74 @@ class PortfolioHistoryLineChart(QWidget):
 
         latest = valid[-1][1]
         assert latest is not None
+        latest_width = min(190.0, plot_width * 0.34)
+        latest_rect = QRectF(left + plot_width - latest_width, 3, latest_width, 46)
+
+        latest_label_font = QFont(self.font())
+        latest_label_font.setPointSize(7)
+        latest_label_font.setBold(True)
+        painter.setFont(latest_label_font)
+        painter.setPen(QColor("#718096"))
+        painter.drawText(
+            QRectF(latest_rect.left(), 2, latest_rect.width(), 14),
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
+            "ACTUAL",
+        )
+
         header_font = QFont(self.font())
-        header_font.setPointSize(10)
+        header_font.setPointSize(12)
         header_font.setBold(True)
         painter.setFont(header_font)
         painter.setPen(QColor("#17324D"))
         painter.drawText(
-            QRectF(left, 3, plot_width, 22),
+            QRectF(latest_rect.left(), 15, latest_rect.width(), 28),
             Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
             self._formatter(latest),
         )
 
-        comparison_font = QFont(self.font())
-        comparison_font.setPointSize(8)
-        painter.setFont(comparison_font)
-        painter.setPen(QColor("#617386"))
-        painter.drawText(
-            QRectF(left, 5, plot_width * 0.72, 18),
-            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+        chip_width = min(205.0, max(130.0, plot_width * 0.46))
+        self._draw_comparison_chip(
+            painter,
+            QRectF(left, 3, chip_width, 24),
             self._comparison_text("Mes ant.", latest, self._previous_month_value),
         )
-        painter.drawText(
-            QRectF(left, 26, plot_width, 18),
-            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+        self._draw_comparison_chip(
+            painter,
+            QRectF(left, 31, chip_width, 24),
             self._comparison_text("Dic-25", latest, self._year_end_value),
         )
 
         minimum_value = min(value for _, value in valid if value is not None)
         maximum_value = max(value for _, value in valid if value is not None)
+        comparison_font = QFont(self.font())
+        comparison_font.setPointSize(8)
+        painter.setFont(comparison_font)
+        painter.setPen(QColor("#718096"))
         painter.drawText(
-            QRectF(left, 45, plot_width, 18),
+            QRectF(left, 59, plot_width, 18),
             Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
             f"Mín {self._formatter(minimum_value)} · Máx {self._formatter(maximum_value)}",
+        )
+
+    def _draw_comparison_chip(
+        self,
+        painter: QPainter,
+        rect: QRectF,
+        text: str,
+    ) -> None:
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QColor("#F3F6F9"))
+        painter.drawRoundedRect(rect, 7.0, 7.0)
+
+        chip_font = QFont(self.font())
+        chip_font.setPointSize(8)
+        chip_font.setBold(True)
+        painter.setFont(chip_font)
+        painter.setPen(QColor("#526678"))
+        painter.drawText(
+            rect.adjusted(9, 0, -9, 0),
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+            text,
         )
 
     @staticmethod
