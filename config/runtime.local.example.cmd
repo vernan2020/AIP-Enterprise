@@ -13,10 +13,14 @@ REM Optional operational limits:
 REM set "AIP_LLM_TIMEOUT_SECONDS=45"
 REM set "AIP_LLM_MAX_OUTPUT_TOKENS=1400"
 
-REM BCCR live API credentials. If omitted, Macro Intelligence uses persisted official history.
+REM BCCR live SDDE REST API. Current official base:
+REM https://apim.bccr.fi.cr/SDDE/api/Bccr.GE.SDDE.Publico.Indicadores.API
+REM A Bearer token generated in BCCR Indicadores Economicos -> Mi Perfil is required.
+REM If omitted, Macro Intelligence can only use already-persisted official history.
+REM set "AIP_BCCR_BASE_URL=https://apim.bccr.fi.cr"
 REM set "AIP_BCCR_NAME=YOUR_REGISTERED_NAME"
 REM set "AIP_BCCR_EMAIL=YOUR_REGISTERED_EMAIL"
-REM set "AIP_BCCR_TOKEN=YOUR_TOKEN"
+REM set "AIP_BCCR_TOKEN=YOUR_BCCR_BEARER_TOKEN"
 
 REM Optional explicit source paths. AIP auto-discovers the institutional paths when available.
 REM set "AIP_PORTFOLIO_ROOT=C:\Users\%%USERNAME%%\COOPEALIANZA R.L\Seidy Fonseca Hernandez - inversiones"
