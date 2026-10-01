@@ -27,6 +27,7 @@ from aip.ui.modules.portfolio.models.portfolio_history_point import (
 from aip.ui.modules.portfolio.models.portfolio_row import PortfolioRow
 from aip.ui.modules.portfolio.models.portfolio_summary import PortfolioSummary
 from aip.ui.modules.portfolio.models.portfolio_valuation_comparison import (
+    PortfolioValuationBreakdownPoint,
     PortfolioValuationComparisonDisplay,
     PortfolioValuationComparisonDisplayRow,
 )
@@ -80,21 +81,99 @@ class PortfolioPresenter:
                 return "neutral"
             return "gain" if value > 0 else "loss"
 
-        return PortfolioValuationComparisonDisplay(
-            positions=tuple(
-                PortfolioValuationComparisonDisplayRow(
-                    cells=(
-                        item.source.identity,
-                        item.source.issuer,
-                        item.source.currency or "N/D",
-                        number(item.valuation_accumulated),
-                        item.status,
-                        item.source.source_reference,
-                    ),
-                    tone=tone(item.valuation_accumulated),
+        positions = tuple(
+            PortfolioValuationComparisonDisplayRow(
+                cells=(
+                    item.source.identity,
+                    item.source.issuer,
+                    item.source.currency or "N/D",
+                    number(item.valuation_accumulated),
+                    item.status,
+                    item.source.source_reference,
+                ),
+                tone=tone(item.valuation_accumulated),
+                amount=item.valuation_accumulated,
+            )
+            for item in result.rows
+        )
+        valued = tuple(
+            row for row in result.rows if row.valuation_accumulated is not None
+        )
+        gains = tuple(row for row in valued if row.valuation_accumulated > 0)
+        losses = tuple(row for row in valued if row.valuation_accumulated < 0)
+        neutral_count = len(valued) - len(gains) - len(losses)
+
+        gain_total = sum(
+            (row.valuation_accumulated for row in gains),
+            Decimal("0"),
+        )
+        loss_total = sum(
+            (-row.valuation_accumulated for row in losses),
+            Decimal("0"),
+        )
+        net_total = gain_total - loss_total
+
+        def display_row(item) -> PortfolioValuationComparisonDisplayRow:
+            return PortfolioValuationComparisonDisplayRow(
+                cells=(
+                    item.source.identity,
+                    item.source.issuer,
+                    item.source.currency or "N/D",
+                    number(item.valuation_accumulated),
+                    item.status,
+                    item.source.source_reference,
+                ),
+                tone=tone(item.valuation_accumulated),
+                amount=item.valuation_accumulated,
+            )
+
+        top_gains = tuple(
+            display_row(item)
+            for item in sorted(
+                gains,
+                key=lambda row: row.valuation_accumulated,
+                reverse=True,
+            )[:5]
+        )
+        top_losses = tuple(
+            display_row(item)
+            for item in sorted(
+                losses,
+                key=lambda row: row.valuation_accumulated,
+            )[:5]
+        )
+
+        def breakdown(attribute: str) -> tuple[PortfolioValuationBreakdownPoint, ...]:
+            grouped: dict[str, Decimal] = {}
+            for item in valued:
+                label = str(getattr(item.source, attribute) or "N/D").strip() or "N/D"
+                grouped[label] = grouped.get(label, Decimal("0")) + item.valuation_accumulated
+            ordered = sorted(
+                grouped.items(),
+                key=lambda pair: abs(pair[1]),
+                reverse=True,
+            )
+            return tuple(
+                PortfolioValuationBreakdownPoint(
+                    label=label,
+                    amount=amount,
+                    tone=tone(amount),
                 )
-                for item in result.rows
-            ),
+                for label, amount in ordered
+            )
+
+        return PortfolioValuationComparisonDisplay(
+            positions=positions,
+            gain_total=gain_total,
+            loss_total=loss_total,
+            net_total=net_total,
+            gain_count=len(gains),
+            loss_count=len(losses),
+            neutral_count=neutral_count,
+            top_gains=top_gains,
+            top_losses=top_losses,
+            currency_breakdown=breakdown("currency"),
+            issuer_breakdown=breakdown("issuer"),
         )
 
     def clear_history_cache(self) -> None:
