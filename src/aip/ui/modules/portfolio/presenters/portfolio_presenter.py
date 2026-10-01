@@ -27,8 +27,10 @@ from aip.ui.modules.portfolio.models.portfolio_history_point import (
 from aip.ui.modules.portfolio.models.portfolio_row import PortfolioRow
 from aip.ui.modules.portfolio.models.portfolio_summary import PortfolioSummary
 from aip.ui.modules.portfolio.models.portfolio_valuation_comparison import (
+    PortfolioValuationChartPoint,
     PortfolioValuationComparisonDisplay,
     PortfolioValuationComparisonDisplayRow,
+    PortfolioValuationKpi,
 )
 from aip.ui.modules.portfolio.viewmodels.portfolio_view_model import PortfolioViewModel
 
@@ -80,21 +82,81 @@ class PortfolioPresenter:
                 return "neutral"
             return "gain" if value > 0 else "loss"
 
+        def chart_row(row) -> PortfolioValuationChartPoint:
+            value = row.valuation_accumulated or Decimal("0")
+            return PortfolioValuationChartPoint(
+                label=row.source.identity,
+                value=value,
+            )
+
+        def display_row(row) -> PortfolioValuationComparisonDisplayRow:
+            return PortfolioValuationComparisonDisplayRow(
+                cells=(
+                    row.source.identity,
+                    row.source.issuer or "N/D",
+                    row.source.currency or "N/D",
+                    number(row.valuation_accumulated),
+                    row.status,
+                    row.source.source_reference,
+                ),
+                tone=tone(row.valuation_accumulated),
+            )
+
         return PortfolioValuationComparisonDisplay(
-            positions=tuple(
-                PortfolioValuationComparisonDisplayRow(
-                    cells=(
-                        item.source.identity,
-                        item.source.issuer,
-                        item.source.currency or "N/D",
-                        number(item.valuation_accumulated),
-                        item.status,
-                        item.source.source_reference,
-                    ),
-                    tone=tone(item.valuation_accumulated),
-                )
-                for item in result.rows
+            kpis=(
+                PortfolioValuationKpi(
+                    key="gain_total",
+                    title="Ganancia total",
+                    value=number(result.gain_total),
+                    tone="gain",
+                ),
+                PortfolioValuationKpi(
+                    key="loss_total",
+                    title="Pérdida total",
+                    value=number(result.loss_total),
+                    tone="loss",
+                ),
+                PortfolioValuationKpi(
+                    key="net_total",
+                    title="Resultado neto",
+                    value=number(result.net_total),
+                    tone=tone(result.net_total),
+                ),
+                PortfolioValuationKpi(
+                    key="gain_count",
+                    title="Posiciones con ganancia",
+                    value=str(result.gain_count),
+                    tone="gain",
+                ),
+                PortfolioValuationKpi(
+                    key="loss_count",
+                    title="Posiciones con pérdida",
+                    value=str(result.loss_count),
+                    tone="loss",
+                ),
             ),
+            top_gains=tuple(chart_row(row) for row in result.top_gains),
+            top_losses=tuple(chart_row(row) for row in result.top_losses),
+            currency_points=tuple(
+                PortfolioValuationChartPoint(
+                    label=item.label,
+                    value=item.net,
+                    positive=item.gain,
+                    negative=item.loss,
+                )
+                for item in result.currency_contributions
+            ),
+            issuer_points=tuple(
+                PortfolioValuationChartPoint(
+                    label=item.label,
+                    value=item.net,
+                    positive=item.gain,
+                    negative=item.loss,
+                )
+                for item in result.issuer_contributions
+            ),
+            positions=tuple(display_row(row) for row in result.top_positions),
+            all_positions=tuple(display_row(row) for row in result.rows),
         )
 
     def clear_history_cache(self) -> None:
