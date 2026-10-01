@@ -31,7 +31,6 @@ class BCCRCache:
         self._entries.pop(key, None)
         return None
 
-
     def size(self) -> int:
         expired_keys = []
         now = time()
