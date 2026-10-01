@@ -11,7 +11,6 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QGroupBox,
     QHeaderView,
-    QHBoxLayout,
     QLabel,
     QSizePolicy,
     QTableWidget,
@@ -220,7 +219,7 @@ class _IssuerNetChart(QWidget):
                 item.label,
             )
             painter.setPen(QColor("#16794B" if positive else "#B42318"))
-            value_text = f"{item.net:+,.2f}"
+            value_text = f"{item.net / Decimal('1000000'):+,.2f} MM"
             painter.drawText(
                 QRectF(center_x + plot_half + 8, center_y - 11, 105, 22),
                 Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
@@ -418,7 +417,7 @@ class PortfolioValuationComparisonView(QWidget):
         )[:5]
         negative = sorted(
             (row for row in model.positions if row.value is not None and row.value < 0),
-            key=lambda row: row.value or 0.0,
+            key=lambda row: row.value or Decimal("0"),
         )[:5]
         self._gain_chart.set_data(tuple(self._chart_item(row) for row in positive))
         self._loss_chart.set_data(tuple(self._chart_item(row) for row in negative))
@@ -456,6 +455,8 @@ class PortfolioValuationComparisonView(QWidget):
             color = self._tone_color(row.tone)
             for column, value in enumerate(values):
                 item = QTableWidgetItem(value)
+                if len(row.cells) > 5:
+                    item.setToolTip(f"Fuente: {row.cells[5]}")
                 if column == 3:
                     item.setForeground(color)
                     item.setTextAlignment(
