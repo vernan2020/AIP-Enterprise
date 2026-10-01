@@ -186,25 +186,24 @@ class PortfolioHistoryLineChart(QWidget):
         painter.setBrush(QColor("#1F5A8A"))
         painter.drawEllipse(latest_coordinate, 2.8, 2.8)
 
-        first_date = valid[0][0]
-        middle_date = valid[len(valid) // 2][0]
-        last_date = valid[-1][0]
         painter.setPen(QColor("#718096"))
-        painter.drawText(
-            QRectF(left, top + plot_height + 7, plot_width / 3, 18),
-            Qt.AlignmentFlag.AlignLeft,
-            first_date.strftime("%b-%y"),
-        )
-        painter.drawText(
-            QRectF(left + plot_width / 3, top + plot_height + 7, plot_width / 3, 18),
-            Qt.AlignmentFlag.AlignCenter,
-            middle_date.strftime("%b-%y"),
-        )
-        painter.drawText(
-            QRectF(left + 2 * plot_width / 3, top + plot_height + 7, plot_width / 3, 18),
-            Qt.AlignmentFlag.AlignRight,
-            last_date.strftime("%b-%y"),
-        )
+        axis_indices = self._axis_label_indices(len(valid))
+        label_width = min(72.0, max(52.0, plot_width / max(1, len(axis_indices))))
+        for axis_position, index in enumerate(axis_indices):
+            coordinate = coordinates[index]
+            alignment = Qt.AlignmentFlag.AlignCenter
+            label_left = coordinate.x() - label_width / 2
+            if axis_position == 0:
+                alignment = Qt.AlignmentFlag.AlignLeft
+                label_left = left
+            elif axis_position == len(axis_indices) - 1:
+                alignment = Qt.AlignmentFlag.AlignRight
+                label_left = left + plot_width - label_width
+            painter.drawText(
+                QRectF(label_left, top + plot_height + 7, label_width, 18),
+                alignment,
+                valid[index][0].strftime("%b-%y"),
+            )
 
         latest = valid[-1][1]
         assert latest is not None
@@ -256,6 +255,22 @@ class PortfolioHistoryLineChart(QWidget):
             Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
             f"Mín {self._formatter(minimum_value)} · Máx {self._formatter(maximum_value)}",
         )
+
+    @staticmethod
+    def _axis_label_indices(point_count: int, *, max_labels: int = 5) -> tuple[int, ...]:
+        if point_count <= 0:
+            return ()
+        if point_count <= max_labels:
+            return tuple(range(point_count))
+        last = point_count - 1
+        raw = [round(last * step / (max_labels - 1)) for step in range(max_labels)]
+        indices: list[int] = []
+        for index in raw:
+            if not indices or index != indices[-1]:
+                indices.append(index)
+        if indices[-1] != last:
+            indices[-1] = last
+        return tuple(indices)
 
     def _draw_comparison_chip(
         self,
