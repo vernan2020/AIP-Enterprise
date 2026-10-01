@@ -14,6 +14,24 @@ REQUIRED_TOP_LEVEL = {
     (PACKAGE_ROOT / "APPLY_TO_PROJECT.cmd").as_posix(),
 }
 
+REQUIRED_SOURCE_CONTRACTS: dict[str, tuple[str, ...]] = {
+    "src/aip/integration/bccr/connector/cache.py": (
+        "def set(self, key: str, value: Any, *, ttl_seconds: int | None = None)",
+        "def size(self) -> int:",
+    ),
+    "src/aip/ui/modules/portfolio/views/portfolio_view.py": (
+        'self._tabs.addTab(self._valuation_comparison, "Ganancia / pérdida")',
+    ),
+    "src/aip/ui/modules/portfolio/widgets/portfolio_history_line_chart.py": (
+        "def _draw_hover_card(",
+        "def _draw_latest_value_pill(",
+        "def _draw_time_axis(",
+    ),
+    "scripts/recovery/verify_release_ui_contract.py": (
+        "AIP RELEASE UI CONTRACT: CURRENT",
+    ),
+}
+
 
 def _sha256_bytes(payload: bytes) -> str:
     return hashlib.sha256(payload).hexdigest()
@@ -102,6 +120,18 @@ def verify_package(path: Path) -> tuple[int, str]:
                 "Recovery manifest file_count mismatch: "
                 f"declared {manifest.get('file_count')}, listed {len(files)}"
             )
+
+        for relative, markers in REQUIRED_SOURCE_CONTRACTS.items():
+            member_name = (PACKAGE_ROOT / "payload" / PurePosixPath(relative)).as_posix()
+            if member_name not in names:
+                raise RuntimeError(f"Recovery package missing required contract file: {relative}")
+            content = archive.read(member_name).decode("utf-8", errors="replace")
+            missing_markers = [marker for marker in markers if marker not in content]
+            if missing_markers:
+                raise RuntimeError(
+                    f"Recovery package has stale contract file {relative}: "
+                    + ", ".join(missing_markers)
+                )
 
     return len(files), package_digest
 

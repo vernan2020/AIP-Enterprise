@@ -68,3 +68,14 @@ def test_source_branch_falls_back_to_github_ref_name(monkeypatch: pytest.MonkeyP
     monkeypatch.setenv("GITHUB_REF_NAME", "recovery/full-runtime-rc1-20260829")
 
     assert builder._resolve_source_branch() == "recovery/full-runtime-rc1-20260829"
+
+
+def test_package_version_uses_exact_source_commit_prefix(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    builder = _load_builder()
+    monkeypatch.setenv("GITHUB_SHA", "abcdef1234567890deadbeef")
+
+    source_commit = builder._resolve_source_commit()
+
+    assert f"RC1-CERTIFIED-{source_commit[:12]}" == "RC1-CERTIFIED-abcdef123456"

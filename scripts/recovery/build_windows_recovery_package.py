@@ -151,11 +151,12 @@ def main() -> int:
         shutil.copy2(installer_source, package_dir / "apply_windows_recovery.py")
         _write_apply_cmd(package_dir)
 
+        source_commit = _resolve_source_commit()
         manifest = {
             "package_name": PACKAGE_NAME,
-            "package_version": "RC1-CERTIFIED-20260829",
+            "package_version": f"RC1-CERTIFIED-{source_commit[:12]}",
             "source_branch": _resolve_source_branch(),
-            "source_commit": _resolve_source_commit(),
+            "source_commit": source_commit,
             "file_count": len(manifest_entries),
             "files": manifest_entries,
             "preserved_local_assets": [
