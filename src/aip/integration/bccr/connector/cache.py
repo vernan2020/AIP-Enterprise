@@ -30,3 +30,13 @@ class BCCRCache:
             return value
         self._entries.pop(key, None)
         return None
+
+    def size(self) -> int:
+        expired_keys = []
+        now = time()
+        for key, (created_at, _value, ttl_seconds) in self._entries.items():
+            if ttl_seconds <= 0 or (now - created_at) > ttl_seconds:
+                expired_keys.append(key)
+        for key in expired_keys:
+            self._entries.pop(key, None)
+        return len(self._entries)
