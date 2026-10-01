@@ -10,7 +10,9 @@ class BCCRCache:
     """In-memory cache with simple time-based expiration."""
 
     ttl_seconds: int = 300
-    _entries: dict[str, tuple[float, Any, int]] = field(default_factory=dict, init=False, repr=False)
+    _entries: dict[str, tuple[float, Any, int]] = field(
+        default_factory=dict, init=False, repr=False
+    )
 
     def set(self, key: str, value: Any, *, ttl_seconds: int | None = None) -> None:
         effective_ttl = self.ttl_seconds if ttl_seconds is None else int(ttl_seconds)
