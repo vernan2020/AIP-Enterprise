@@ -59,7 +59,7 @@ class PortfolioHistoryLineChart(QWidget):
             painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "Sin datos disponibles")
             return
 
-        left = 64.0
+        left = 72.0
         right = 18.0
         top = 86.0
         bottom = 38.0
@@ -78,8 +78,6 @@ class PortfolioHistoryLineChart(QWidget):
         if y_max <= y_min:
             y_max = y_min + 1.0
 
-        grid_pen = QPen(QColor("#EDF2F7"))
-        grid_pen.setWidthF(1.0)
         label_font = QFont(self.font())
         label_font.setPointSize(8)
         painter.setFont(label_font)
@@ -88,11 +86,22 @@ class PortfolioHistoryLineChart(QWidget):
             ratio = index / 3
             y = top + plot_height * ratio
             axis_value = y_max - (y_max - y_min) * ratio
+
+            grid_pen = QPen(QColor("#EDF2F7"))
+            grid_pen.setWidthF(1.0)
+            if y_min < 0.0 < y_max and abs(axis_value) <= (y_max - y_min) / 12:
+                grid_pen = QPen(QColor("#C8D4E0"))
+                grid_pen.setWidthF(1.2)
             painter.setPen(grid_pen)
             painter.drawLine(QPointF(left, y), QPointF(left + plot_width, y))
+
+            label_rect = QRectF(4, y - 10, left - 14, 20)
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor("#F7F9FC"))
+            painter.drawRoundedRect(label_rect, 5.0, 5.0)
             painter.setPen(QColor("#718096"))
             painter.drawText(
-                QRectF(0, y - 9, left - 7, 18),
+                label_rect.adjusted(4, 0, -6, 0),
                 Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignRight,
                 self._axis_label(Decimal(str(axis_value))),
             )
@@ -100,7 +109,7 @@ class PortfolioHistoryLineChart(QWidget):
         if self._reference_value is not None:
             reference_ratio = (float(self._reference_value) - y_min) / (y_max - y_min)
             reference_y = top + plot_height * (1.0 - reference_ratio)
-            reference_pen = QPen(QColor("#9B6A00"))
+            reference_pen = QPen(QColor("#A97812"))
             reference_pen.setWidthF(1.2)
             reference_pen.setStyle(Qt.PenStyle.DashLine)
             painter.setPen(reference_pen)
@@ -108,11 +117,11 @@ class PortfolioHistoryLineChart(QWidget):
                 QPointF(left, reference_y),
                 QPointF(left + plot_width, reference_y),
             )
-            painter.setPen(QColor("#7A5300"))
-            painter.drawText(
-                QRectF(left + 4, reference_y - 18, plot_width - 8, 16),
-                Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
-                self._reference_label,
+            self._draw_reference_badge(
+                painter,
+                reference_y=reference_y,
+                left=left,
+                plot_width=plot_width,
             )
 
         coordinates: list[QPointF] = []
@@ -251,6 +260,38 @@ class PortfolioHistoryLineChart(QWidget):
             QRectF(left, 59, plot_width, 18),
             Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
             f"Mín {self._formatter(minimum_value)} · Máx {self._formatter(maximum_value)}",
+        )
+
+    def _draw_reference_badge(
+        self,
+        painter: QPainter,
+        *,
+        reference_y: float,
+        left: float,
+        plot_width: float,
+    ) -> None:
+        badge_font = QFont(self.font())
+        badge_font.setPointSize(8)
+        badge_font.setBold(True)
+        painter.setFont(badge_font)
+        width = min(
+            plot_width * 0.72,
+            max(118.0, painter.fontMetrics().horizontalAdvance(self._reference_label) + 18.0),
+        )
+        rect = QRectF(
+            left + plot_width - width,
+            reference_y - 23.0,
+            width,
+            20.0,
+        )
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QColor("#FFF7E2"))
+        painter.drawRoundedRect(rect, 6.0, 6.0)
+        painter.setPen(QColor("#7A5300"))
+        painter.drawText(
+            rect.adjusted(8, 0, -8, 0),
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
+            self._reference_label,
         )
 
     def _draw_time_axis(
