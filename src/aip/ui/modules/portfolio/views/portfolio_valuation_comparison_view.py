@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from decimal import Decimal
 from math import fsum
 
 from PySide6.QtCore import QRectF, Qt
@@ -26,7 +27,7 @@ from aip.ui.modules.portfolio.models.portfolio_valuation_comparison import (
 )
 
 
-def _money(value: float | None, currency: str | None = None) -> str:
+def _money(value: Decimal | None, currency: str | None = None) -> str:
     if value is None:
         return "N/D"
     prefix = ""
@@ -34,18 +35,18 @@ def _money(value: float | None, currency: str | None = None) -> str:
         prefix = "₡"
     elif currency == "USD":
         prefix = "$"
-    return f"{prefix}{value:,.2f}"
+    return f"{prefix}{value / Decimal('1000000'):,.2f} MM"
 
 
 class _HorizontalBarChart(QWidget):
     def __init__(self, *, loss: bool = False, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._loss = loss
-        self._items: tuple[tuple[str, float, str], ...] = ()
+        self._items: tuple[tuple[str, Decimal, str], ...] = ()
         self.setMinimumHeight(170)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
-    def set_data(self, items: tuple[tuple[str, float, str], ...]) -> None:
+    def set_data(self, items: tuple[tuple[str, Decimal, str], ...]) -> None:
         self._items = items
         self.update()
 
@@ -59,7 +60,7 @@ class _HorizontalBarChart(QWidget):
             painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, "Sin datos disponibles")
             return
 
-        max_value = max(abs(value) for _label, value, _currency in self._items) or 1.0
+        max_value = max(abs(value) for _label, value, _currency in self._items) or Decimal("1")
         label_width = min(150, max(95, int(rect.width() * 0.22)))
         value_width = min(115, max(88, int(rect.width() * 0.18)))
         plot_left = label_width + 8
@@ -72,7 +73,7 @@ class _HorizontalBarChart(QWidget):
         painter.setFont(QFont("Segoe UI", 9))
         for index, (label, value, currency) in enumerate(self._items):
             center_y = 8 + index * row_height + row_height / 2
-            bar_width = plot_width * abs(value) / max_value
+            bar_width = plot_width * float(abs(value) / max_value)
             bar_rect = QRectF(
                 plot_right - bar_width if self._loss else plot_left,
                 center_y - 7,
@@ -190,7 +191,7 @@ class _IssuerNetChart(QWidget):
             painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, "Sin datos disponibles")
             return
 
-        max_value = max(abs(item.net) for item in self._items) or 1.0
+        max_value = max(abs(item.net) for item in self._items) or Decimal("1")
         center_x = int(rect.width() * 0.5)
         plot_half = max(50, int(rect.width() * 0.28))
         label_width = max(100, center_x - plot_half - 12)
@@ -201,7 +202,7 @@ class _IssuerNetChart(QWidget):
         painter.setFont(QFont("Segoe UI", 9))
         for index, item in enumerate(self._items):
             center_y = 8 + index * row_height + row_height / 2
-            width = plot_half * abs(item.net) / max_value
+            width = plot_half * float(abs(item.net) / max_value)
             positive = item.net >= 0
             bar_rect = QRectF(
                 center_x if positive else center_x - width,
@@ -412,7 +413,7 @@ class PortfolioValuationComparisonView(QWidget):
 
         positive = sorted(
             (row for row in model.positions if row.value is not None and row.value > 0),
-            key=lambda row: row.value or 0.0,
+            key=lambda row: row.value or Decimal("0"),
             reverse=True,
         )[:5]
         negative = sorted(
@@ -433,10 +434,10 @@ class PortfolioValuationComparisonView(QWidget):
     @staticmethod
     def _chart_item(
         row: PortfolioValuationComparisonDisplayRow,
-    ) -> tuple[str, float, str]:
+    ) -> tuple[str, Decimal, str]:
         return (
             row.cells[0],
-            float(row.value or 0.0),
+            row.value or Decimal("0"),
             row.cells[2] if len(row.cells) > 2 else "",
         )
 
@@ -446,7 +447,7 @@ class PortfolioValuationComparisonView(QWidget):
     ) -> None:
         ranked = sorted(
             (row for row in rows if row.value is not None),
-            key=lambda row: abs(row.value or 0.0),
+            key=lambda row: abs(row.value or Decimal("0")),
             reverse=True,
         )[:10]
         self._positions.setRowCount(len(ranked))
