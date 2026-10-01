@@ -154,6 +154,8 @@ class PortfolioValuationComparisonView(QWidget):
     def _bind_kpis(self, kpis: tuple[PortfolioValuationKpi, ...]) -> None:
         while self._kpi_grid.count():
             item = self._kpi_grid.takeAt(0)
+            if item is None:
+                continue
             widget = item.widget()
             if widget is not None:
                 widget.deleteLater()
