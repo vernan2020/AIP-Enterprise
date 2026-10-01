@@ -7,6 +7,7 @@ from dataclasses import dataclass
 class PortfolioValuationComparisonDisplayRow:
     cells: tuple[str, ...]
     tone: str = "neutral"
+    value: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
