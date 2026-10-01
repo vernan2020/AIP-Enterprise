@@ -105,6 +105,11 @@ class PortfolioPresenter:
                         item.source.source_reference,
                     ),
                     tone=tone(item.valuation_accumulated),
+                    value=(
+                        float(item.valuation_accumulated)
+                        if item.valuation_accumulated is not None
+                        else None
+                    ),
                 )
                 for item in result.rows
             ),
