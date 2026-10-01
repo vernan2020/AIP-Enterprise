@@ -6,7 +6,7 @@ from typing import Callable
 
 from PySide6.QtCore import QPointF, QRectF, Qt
 from PySide6.QtGui import QColor, QFont, QLinearGradient, QPainter, QPainterPath, QPen
-from PySide6.QtWidgets import QToolTip, QWidget
+from PySide6.QtWidgets import QWidget
 
 
 class PortfolioHistoryLineChart(QWidget):
@@ -185,6 +185,13 @@ class PortfolioHistoryLineChart(QWidget):
             painter.drawEllipse(active_point, 4.8, 4.8)
             painter.setBrush(QColor("#1F5A8A"))
             painter.drawEllipse(active_point, 3.0, 3.0)
+            self._draw_hover_card(
+                painter,
+                active_hover=self._active_hover,
+                left=left,
+                top=top,
+                plot_width=plot_width,
+            )
 
         latest_coordinate = coordinates[-1]
         painter.setPen(Qt.PenStyle.NoPen)
@@ -261,6 +268,85 @@ class PortfolioHistoryLineChart(QWidget):
             Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
             f"Mín {self._formatter(minimum_value)} · Máx {self._formatter(maximum_value)}",
         )
+
+    def _draw_hover_card(
+        self,
+        painter: QPainter,
+        *,
+        active_hover: tuple[QPointF, date, Decimal],
+        left: float,
+        top: float,
+        plot_width: float,
+    ) -> None:
+        point, cutoff, value = active_hover
+        width = min(220.0, max(168.0, plot_width * 0.42))
+        height = 58.0
+        x = point.x() + 12.0
+        if x + width > left + plot_width:
+            x = point.x() - width - 12.0
+        x = max(left, x)
+        y = max(top + 6.0, point.y() - height - 12.0)
+
+        rect = QRectF(x, y, width, height)
+        painter.setPen(QPen(QColor("#D8E2EC")))
+        painter.setBrush(QColor("#FFFFFF"))
+        painter.drawRoundedRect(rect, 9.0, 9.0)
+
+        date_font = QFont(self.font())
+        date_font.setPointSize(8)
+        date_font.setBold(True)
+        painter.setFont(date_font)
+        painter.setPen(QColor("#617386"))
+        painter.drawText(
+            rect.adjusted(10, 5, -10, -34),
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+            cutoff.strftime("%d/%m/%Y"),
+        )
+
+        value_font = QFont(self.font())
+        value_font.setPointSize(10)
+        value_font.setBold(True)
+        painter.setFont(value_font)
+        painter.setPen(QColor("#17324D"))
+        painter.drawText(
+            rect.adjusted(10, 20, -10, -16),
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+            self._formatter(value),
+        )
+
+        delta = self._hover_delta(cutoff, value)
+        delta_font = QFont(self.font())
+        delta_font.setPointSize(8)
+        painter.setFont(delta_font)
+        painter.setPen(QColor("#718096"))
+        painter.drawText(
+            rect.adjusted(10, 38, -10, -4),
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+            delta,
+        )
+
+    def _hover_delta(self, cutoff: date, value: Decimal) -> str:
+        valid = tuple(
+            (point_date, point_value)
+            for point_date, point_value in self._points
+            if point_value is not None
+        )
+        current_index = next(
+            (
+                index
+                for index, (point_date, point_value) in enumerate(valid)
+                if point_date == cutoff and point_value == value
+            ),
+            None,
+        )
+        if current_index is None or current_index == 0:
+            return "Δ corte anterior: N/D"
+        previous_value = valid[current_index - 1][1]
+        assert previous_value is not None
+        delta = value - previous_value
+        percentage = self._percentage_change(value, previous_value)
+        percentage_text = "N/D" if percentage is None else f"{percentage:+.1f}%"
+        return f"Δ corte anterior: {self._signed(delta)} ({percentage_text})"
 
     def _draw_reference_badge(
         self,
@@ -411,22 +497,14 @@ class PortfolioHistoryLineChart(QWidget):
             if self._active_hover != nearest:
                 self._active_hover = nearest
                 self.update()
-            QToolTip.showText(
-                event.globalPosition().toPoint(),
-                f"{nearest[1].strftime('%d/%m/%Y')}\n{self._formatter(nearest[2])}",
-                self,
-            )
-        else:
-            if self._active_hover is not None:
-                self._active_hover = None
-                self.update()
-            QToolTip.hideText()
+        elif self._active_hover is not None:
+            self._active_hover = None
+            self.update()
         super().mouseMoveEvent(event)
 
     def leaveEvent(self, event) -> None:  # noqa: N802
         self._active_hover = None
         self.update()
-        QToolTip.hideText()
         super().leaveEvent(event)
 
     def _axis_label(self, value: Decimal) -> str:

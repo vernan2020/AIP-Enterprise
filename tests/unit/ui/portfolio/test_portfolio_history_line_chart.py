@@ -80,3 +80,41 @@ def test_time_axis_indexes_are_evenly_spaced_and_bounded() -> None:
 def test_time_axis_label_uses_compact_spanish_month() -> None:
     assert PortfolioHistoryLineChart._time_axis_label(date(2026, 9, 30)) == "sep 26"
     assert PortfolioHistoryLineChart._time_axis_label(date(2025, 12, 31)) == "dic 25"
+
+
+def test_hover_delta_uses_previous_visible_source_point() -> None:
+    chart = PortfolioHistoryLineChart(value_formatter=lambda value: f"{value:,.2f}%")
+    chart.set_data(
+        (
+            (date(2026, 7, 31), Decimal("1.10")),
+            (date(2026, 8, 31), Decimal("1.25")),
+            (date(2026, 9, 30), Decimal("1.20")),
+        )
+    )
+
+    assert chart._hover_delta(date(2026, 7, 31), Decimal("1.10")) == "Δ corte anterior: N/D"
+    assert chart._hover_delta(date(2026, 8, 31), Decimal("1.25")) == (
+        "Δ corte anterior: +0.15% (+13.6%)"
+    )
+
+
+def test_chart_renders_hover_detail_card(qt_app) -> None:
+    chart = PortfolioHistoryLineChart(value_formatter=lambda value: f"{value:,.2f}")
+    chart.resize(640, 280)
+    chart.set_data(
+        (
+            (date(2026, 7, 31), Decimal("1.10")),
+            (date(2026, 8, 31), Decimal("1.25")),
+            (date(2026, 9, 30), Decimal("1.20")),
+        )
+    )
+
+    chart.show()
+    qt_app.processEvents()
+    chart.grab()
+    chart._active_hover = chart._hover_points[1]
+    chart.update()
+    qt_app.processEvents()
+
+    pixmap = chart.grab()
+    assert not pixmap.isNull()
