@@ -103,13 +103,16 @@ class PortfolioGainLossBarChart(QWidget):
         center = left + half
         height = max(30.0, self.height() - top - bottom)
         row_height = height / max(1, len(self._points))
-        maximum = max(
-            (
-                max(abs(float(point.positive)), abs(float(point.negative)))
-                for point in self._points
-            ),
-            default=0.0,
-        ) or 1.0
+        maximum = (
+            max(
+                (
+                    max(abs(float(point.positive)), abs(float(point.negative)))
+                    for point in self._points
+                ),
+                default=0.0,
+            )
+            or 1.0
+        )
 
         painter.setPen(QPen(self._AXIS, 1))
         painter.drawLine(int(center), int(top), int(center), int(top + height))
