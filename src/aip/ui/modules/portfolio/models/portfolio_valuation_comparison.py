@@ -23,9 +23,9 @@ class PortfolioValuationBreakdownDisplay:
 class PortfolioValuationComparisonDisplay:
     totals: tuple[PortfolioValuationComparisonDisplayRow, ...] = ()
     positions: tuple[PortfolioValuationComparisonDisplayRow, ...] = ()
-    gain_total: float = 0.0
-    loss_total: float = 0.0
-    net_total: float = 0.0
+    gain_total: float | None = None
+    loss_total: float | None = None
+    net_total: float | None = None
     gain_count: int = 0
     loss_count: int = 0
     available_count: int = 0
