@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from decimal import Decimal
+
 from PySide6.QtWidgets import QTableWidget
 
 from aip.ui.modules.portfolio.models.portfolio_valuation_comparison import (
@@ -26,7 +28,7 @@ def test_valuation_comparison_view_renders_accumulated_valuation(qt_app) -> None
                     "Maestro.xlsx · fila 2",
                 ),
                 "gain",
-                25.5,
+                Decimal("25.5"),
             ),
         ),
     )
@@ -50,8 +52,12 @@ def test_valuation_dashboard_keeps_cross_currency_totals_unavailable(qt_app) -> 
         loss_count=1,
         available_count=2,
         currency_breakdown=(
-            PortfolioValuationBreakdownDisplay("CRC", 25.0, 0.0, 25.0, 1),
-            PortfolioValuationBreakdownDisplay("USD", 10.0, 0.0, 10.0, 1),
+            PortfolioValuationBreakdownDisplay(
+                "CRC", Decimal("25"), Decimal("0"), Decimal("25"), 1
+            ),
+            PortfolioValuationBreakdownDisplay(
+                "USD", Decimal("10"), Decimal("0"), Decimal("10"), 1
+            ),
         ),
     )
 
