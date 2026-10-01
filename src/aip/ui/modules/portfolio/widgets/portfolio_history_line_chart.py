@@ -301,10 +301,7 @@ class PortfolioHistoryLineChart(QWidget):
         if count <= 1:
             return (0,)
         desired = min(5, count)
-        indexes = {
-            round(position * (count - 1) / (desired - 1))
-            for position in range(desired)
-        }
+        indexes = {round(position * (count - 1) / (desired - 1)) for position in range(desired)}
         return tuple(sorted(indexes))
 
     @staticmethod
