@@ -69,3 +69,14 @@ def test_chart_renders_active_hover_guide(qt_app) -> None:
     pixmap = chart.grab()
     assert not pixmap.isNull()
     assert chart._active_hover[1] == date(2026, 8, 31)
+
+
+def test_time_axis_indexes_are_evenly_spaced_and_bounded() -> None:
+    assert PortfolioHistoryLineChart._time_axis_indexes(1) == (0,)
+    assert PortfolioHistoryLineChart._time_axis_indexes(3) == (0, 1, 2)
+    assert PortfolioHistoryLineChart._time_axis_indexes(12) == (0, 3, 6, 8, 11)
+
+
+def test_time_axis_label_uses_compact_spanish_month() -> None:
+    assert PortfolioHistoryLineChart._time_axis_label(date(2026, 9, 30)) == "sep 26"
+    assert PortfolioHistoryLineChart._time_axis_label(date(2025, 12, 31)) == "dic 25"
