@@ -51,12 +51,9 @@ class PortfolioValuationComparisonService:
         inputs: tuple[PortfolioValuationComparisonInput, ...],
     ) -> PortfolioValuationComparisonResult:
         rows = tuple(cls._map(item) for item in inputs)
-        available = tuple(
-            row for row in rows if row.valuation_accumulated is not None
-        )
+        available = tuple(row for row in rows if row.valuation_accumulated is not None)
         currencies = {
-            (row.source.currency or "N/D").strip().upper() or "N/D"
-            for row in available
+            (row.source.currency or "N/D").strip().upper() or "N/D" for row in available
         }
         single_currency = len(currencies) == 1
         gain_total = (
@@ -64,8 +61,7 @@ class PortfolioValuationComparisonService:
                 (
                     row.valuation_accumulated
                     for row in available
-                    if row.valuation_accumulated is not None
-                    and row.valuation_accumulated > 0
+                    if row.valuation_accumulated is not None and row.valuation_accumulated > 0
                 ),
                 Decimal("0"),
             )
@@ -77,8 +73,7 @@ class PortfolioValuationComparisonService:
                 (
                     abs(row.valuation_accumulated)
                     for row in available
-                    if row.valuation_accumulated is not None
-                    and row.valuation_accumulated < 0
+                    if row.valuation_accumulated is not None and row.valuation_accumulated < 0
                 ),
                 Decimal("0"),
             )
@@ -86,9 +81,7 @@ class PortfolioValuationComparisonService:
             else None
         )
         net_total = (
-            gain_total - loss_total
-            if gain_total is not None and loss_total is not None
-            else None
+            gain_total - loss_total if gain_total is not None and loss_total is not None else None
         )
         return PortfolioValuationComparisonResult(
             rows=rows,
@@ -98,14 +91,12 @@ class PortfolioValuationComparisonService:
             gain_count=sum(
                 1
                 for row in available
-                if row.valuation_accumulated is not None
-                and row.valuation_accumulated > 0
+                if row.valuation_accumulated is not None and row.valuation_accumulated > 0
             ),
             loss_count=sum(
                 1
                 for row in available
-                if row.valuation_accumulated is not None
-                and row.valuation_accumulated < 0
+                if row.valuation_accumulated is not None and row.valuation_accumulated < 0
             ),
             available_count=len(available),
             currency_breakdown=cls._breakdown(available, by="currency"),
