@@ -237,8 +237,7 @@ class PortfolioValuationComparisonView(QWidget):
     def __init__(self) -> None:
         super().__init__()
         self.setObjectName("portfolioValuationComparison")
-        self.setStyleSheet(
-            """
+        self.setStyleSheet("""
             QWidget#portfolioValuationComparison { background:#F7F9FC; }
             QFrame[valuationCard="true"] {
                 background:#FFFFFF;
@@ -258,8 +257,7 @@ class PortfolioValuationComparisonView(QWidget):
                 left:12px;
                 padding:0 5px;
             }
-            """
-        )
+            """)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(8, 8, 8, 8)
@@ -386,11 +384,7 @@ class PortfolioValuationComparisonView(QWidget):
             f"fuente; no se deriva valor de mercado menos valor contable.{suffix}"
         )
 
-        currency = (
-            model.currency_breakdown[0].label
-            if len(model.currency_breakdown) == 1
-            else None
-        )
+        currency = model.currency_breakdown[0].label if len(model.currency_breakdown) == 1 else None
         self._card_values["gain"].setText(_money(model.gain_total, currency))
         self._card_values["loss"].setText(_money(model.loss_total, currency))
         self._card_values["net"].setText(_money(model.net_total, currency))
