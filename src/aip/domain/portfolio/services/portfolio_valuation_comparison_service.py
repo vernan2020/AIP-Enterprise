@@ -58,8 +58,7 @@ class PortfolioValuationComparisonService:
         available = tuple(
             row
             for row in rows
-            if row.valuation_accumulated is not None
-            and row.valuation_accumulated.is_finite()
+            if row.valuation_accumulated is not None and row.valuation_accumulated.is_finite()
         )
 
         gains = tuple(row for row in available if row.valuation_accumulated > 0)
