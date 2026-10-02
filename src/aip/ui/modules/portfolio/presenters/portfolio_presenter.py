@@ -100,7 +100,9 @@ class PortfolioPresenter:
                     observation_date = getattr(observation, "observation_date", None)
                     value = getattr(observation, "value", None)
                     if isinstance(observation, dict):
-                        observation_date = observation.get("observation_date") or observation.get("date")
+                        observation_date = observation.get("observation_date") or observation.get(
+                            "date"
+                        )
                         value = observation.get("value")
                     if str(observation_date)[:10] != cutoff.isoformat():
                         continue
@@ -126,9 +128,7 @@ class PortfolioPresenter:
         self,
         portfolio: dict[str, Any],
     ) -> PortfolioValuationComparisonDisplay:
-        fx_sell_rate, fx_rate_date = self._fx_sell_rate_for_cutoff(
-            portfolio.get("valuation_date")
-        )
+        fx_sell_rate, fx_rate_date = self._fx_sell_rate_for_cutoff(portfolio.get("valuation_date"))
         result = ConfiguredPortfolioValuationComparisonService.calculate(
             portfolio,
             fx_sell_rate=fx_sell_rate,
