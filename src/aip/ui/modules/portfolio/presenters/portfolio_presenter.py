@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from datetime import date
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from typing import Any
 
 from aip.product.configured.services.configured_portfolio_dashboard_analytics_service import (
@@ -106,7 +106,7 @@ class PortfolioPresenter:
                         continue
                     try:
                         rate = Decimal(str(value))
-                    except (TypeError, ValueError):
+                    except (InvalidOperation, TypeError, ValueError):
                         continue
                     if rate.is_finite() and rate > 0:
                         return rate, cutoff.isoformat()
