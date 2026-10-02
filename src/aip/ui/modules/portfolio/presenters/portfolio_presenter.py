@@ -5,6 +5,7 @@ from datetime import date
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
+from aip.product.configured.protocols import EconomicIndicatorsProvider
 from aip.product.configured.services.configured_portfolio_dashboard_analytics_service import (
     ConfiguredPortfolioDashboardAnalyticsService,
 )
@@ -14,7 +15,6 @@ from aip.product.configured.services.configured_portfolio_dv01_service import (
 from aip.product.configured.services.configured_portfolio_history_service import (
     ConfiguredPortfolioHistoryService,
 )
-from aip.product.configured.protocols import EconomicIndicatorsProvider
 from aip.product.configured.services.configured_portfolio_valuation_comparison_service import (
     ConfiguredPortfolioValuationComparisonService,
 )
