@@ -17,6 +17,9 @@ class PortfolioValuationComparisonInput:
 class PortfolioValuationComparisonRow:
     source: PortfolioValuationComparisonInput
     valuation_accumulated: Decimal | None
+    valuation_accumulated_crc: Decimal | None
+    fx_sell_rate: Decimal | None
+    fx_rate_date: str | None
     status: str
 
 
@@ -47,49 +50,67 @@ class PortfolioValuationComparisonResult:
 
 
 class PortfolioValuationComparisonService:
-    """Expose and aggregate the Master's accumulated valuation without deriving gain/loss."""
+    """Expose Master's valuation and aggregate a reporting value normalized to CRC."""
+
+    @staticmethod
+    def _crc_value(row: PortfolioValuationComparisonRow) -> Decimal:
+        value = row.valuation_accumulated_crc
+        if value is None:
+            raise ValueError("row does not contain a CRC-normalized accumulated valuation")
+        return value
 
     @classmethod
     def calculate(
         cls,
         inputs: tuple[PortfolioValuationComparisonInput, ...],
+        *,
+        fx_sell_rate: Decimal | None = None,
+        fx_rate_date: str | None = None,
     ) -> PortfolioValuationComparisonResult:
-        rows = tuple(cls._map(item) for item in inputs)
+        rows = tuple(
+            cls._map(
+                item,
+                fx_sell_rate=fx_sell_rate,
+                fx_rate_date=fx_rate_date,
+            )
+            for item in inputs
+        )
         available = tuple(
             row
             for row in rows
-            if row.valuation_accumulated is not None and row.valuation_accumulated.is_finite()
+            if row.valuation_accumulated_crc is not None
+            and row.valuation_accumulated_crc.is_finite()
         )
 
-        gains = tuple(row for row in available if row.valuation_accumulated > 0)
-        losses = tuple(row for row in available if row.valuation_accumulated < 0)
+        gains = tuple(row for row in available if cls._crc_value(row) > 0)
+        losses = tuple(row for row in available if cls._crc_value(row) < 0)
 
         gain_total = sum(
-            (row.valuation_accumulated for row in gains),
+            (cls._crc_value(row) for row in gains),
             Decimal("0"),
         )
         loss_total = sum(
-            (row.valuation_accumulated for row in losses),
+            (cls._crc_value(row) for row in losses),
             Decimal("0"),
         )
 
         top_gains = tuple(
             sorted(
                 gains,
-                key=lambda row: row.valuation_accumulated,
+                key=cls._crc_value,
                 reverse=True,
             )[:5]
         )
         top_losses = tuple(
             sorted(
                 losses,
-                key=lambda row: row.valuation_accumulated,
+                key=cls._crc_value,
             )[:5]
         )
         top_positions = tuple(
             sorted(
                 available,
-                key=lambda row: abs(row.valuation_accumulated),
+                key=lambda row: abs(cls._crc_value(row)),
                 reverse=True,
             )[:10]
         )
@@ -115,17 +136,60 @@ class PortfolioValuationComparisonService:
         )
 
     @staticmethod
-    def _map(item: PortfolioValuationComparisonInput) -> PortfolioValuationComparisonRow:
-        if item.valuation_accumulated is None:
+    def _map(
+        item: PortfolioValuationComparisonInput,
+        *,
+        fx_sell_rate: Decimal | None,
+        fx_rate_date: str | None,
+    ) -> PortfolioValuationComparisonRow:
+        value = item.valuation_accumulated
+        if value is None or not value.is_finite():
             return PortfolioValuationComparisonRow(
                 source=item,
                 valuation_accumulated=None,
+                valuation_accumulated_crc=None,
+                fx_sell_rate=None,
+                fx_rate_date=None,
                 status="Valuacion acumulada ausente o invalida",
             )
+
+        currency = item.currency.strip().upper()
+        if currency in {"", "CRC", "COL", "COLONES"}:
+            return PortfolioValuationComparisonRow(
+                source=item,
+                valuation_accumulated=value,
+                valuation_accumulated_crc=value,
+                fx_sell_rate=None,
+                fx_rate_date=None,
+                status="Maestro de Inversiones · CRC",
+            )
+
+        if currency == "USD":
+            if fx_sell_rate is None or not fx_sell_rate.is_finite() or fx_sell_rate <= 0:
+                return PortfolioValuationComparisonRow(
+                    source=item,
+                    valuation_accumulated=value,
+                    valuation_accumulated_crc=None,
+                    fx_sell_rate=None,
+                    fx_rate_date=fx_rate_date,
+                    status="N/D · TC venta BCCR del corte no disponible",
+                )
+            return PortfolioValuationComparisonRow(
+                source=item,
+                valuation_accumulated=value,
+                valuation_accumulated_crc=value * fx_sell_rate,
+                fx_sell_rate=fx_sell_rate,
+                fx_rate_date=fx_rate_date,
+                status="Maestro de Inversiones · USD convertido a CRC con TC venta BCCR",
+            )
+
         return PortfolioValuationComparisonRow(
             source=item,
-            valuation_accumulated=item.valuation_accumulated,
-            status="Maestro de Inversiones",
+            valuation_accumulated=value,
+            valuation_accumulated_crc=None,
+            fx_sell_rate=None,
+            fx_rate_date=None,
+            status=f"N/D · moneda no soportada para consolidacion: {currency or 'N/D'}",
         )
 
     @staticmethod
@@ -135,7 +199,7 @@ class PortfolioValuationComparisonService:
     ) -> tuple[PortfolioValuationContribution, ...]:
         grouped: dict[str, tuple[Decimal, Decimal]] = {}
         for row in rows:
-            value = row.valuation_accumulated
+            value = row.valuation_accumulated_crc
             if value is None:
                 continue
             raw_label = getattr(row.source, dimension, "")

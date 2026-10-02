@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import logging
 from datetime import date
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from typing import Any
 
+from aip.product.configured.protocols import EconomicIndicatorsProvider
 from aip.product.configured.services.configured_portfolio_dashboard_analytics_service import (
     ConfiguredPortfolioDashboardAnalyticsService,
 )
@@ -68,9 +69,71 @@ class PortfolioPresenter:
             return "N/D"
         return f"₡{amount / Decimal('1000000'):,.2f} MM"
 
-    @staticmethod
-    def _valuation_comparison(portfolio: dict[str, Any]) -> PortfolioValuationComparisonDisplay:
-        result = ConfiguredPortfolioValuationComparisonService.calculate(portfolio)
+    def _fx_sell_rate_for_cutoff(
+        self,
+        valuation_date: object,
+    ) -> tuple[Decimal | None, str | None]:
+        try:
+            cutoff = date.fromisoformat(str(valuation_date)[:10])
+        except ValueError:
+            return None, None
+
+        try:
+            container = self._demo_factory.container
+            provider = container.resolve(EconomicIndicatorsProvider)
+            payload = provider.get_indicators()
+        except Exception as exc:
+            logger.debug("BCCR FX sell rate unavailable for portfolio valuation: %s", exc)
+            return None, None
+
+        indicators = payload.get("indicators") if isinstance(payload, dict) else None
+        if not isinstance(indicators, list):
+            return None, None
+
+        for indicator in indicators:
+            if not isinstance(indicator, dict) or str(indicator.get("code")) != "FX_SELL":
+                continue
+
+            observations = indicator.get("observations")
+            if isinstance(observations, (list, tuple)):
+                for observation in observations:
+                    observation_date = getattr(observation, "observation_date", None)
+                    value = getattr(observation, "value", None)
+                    if isinstance(observation, dict):
+                        observation_date = observation.get("observation_date") or observation.get(
+                            "date"
+                        )
+                        value = observation.get("value")
+                    if str(observation_date)[:10] != cutoff.isoformat():
+                        continue
+                    try:
+                        rate = Decimal(str(value))
+                    except (InvalidOperation, TypeError, ValueError):
+                        continue
+                    if rate.is_finite() and rate > 0:
+                        return rate, cutoff.isoformat()
+
+            indicator_date = indicator.get("date")
+            if str(indicator_date)[:10] == cutoff.isoformat():
+                try:
+                    rate = Decimal(str(indicator.get("value")))
+                except (TypeError, ValueError):
+                    continue
+                if rate.is_finite() and rate > 0:
+                    return rate, cutoff.isoformat()
+
+        return None, cutoff.isoformat()
+
+    def _valuation_comparison(
+        self,
+        portfolio: dict[str, Any],
+    ) -> PortfolioValuationComparisonDisplay:
+        fx_sell_rate, fx_rate_date = self._fx_sell_rate_for_cutoff(portfolio.get("valuation_date"))
+        result = ConfiguredPortfolioValuationComparisonService.calculate(
+            portfolio,
+            fx_sell_rate=fx_sell_rate,
+            fx_rate_date=fx_rate_date,
+        )
 
         def number(value: Decimal | None) -> str:
             if value is None or not value.is_finite():
@@ -83,23 +146,26 @@ class PortfolioPresenter:
             return "gain" if value > 0 else "loss"
 
         def chart_row(row) -> PortfolioValuationChartPoint:
-            value = row.valuation_accumulated or Decimal("0")
+            value = row.valuation_accumulated_crc
             return PortfolioValuationChartPoint(
                 label=row.source.identity,
-                value=value,
+                value=value if value is not None else Decimal("0"),
             )
 
         def display_row(row) -> PortfolioValuationComparisonDisplayRow:
+            original = number(row.valuation_accumulated)
+            consolidated = number(row.valuation_accumulated_crc)
             return PortfolioValuationComparisonDisplayRow(
                 cells=(
                     row.source.identity,
                     row.source.issuer or "N/D",
                     row.source.currency or "N/D",
-                    number(row.valuation_accumulated),
+                    original,
+                    consolidated,
                     row.status,
                     row.source.source_reference,
                 ),
-                tone=tone(row.valuation_accumulated),
+                tone=tone(row.valuation_accumulated_crc),
             )
 
         return PortfolioValuationComparisonDisplay(
@@ -107,19 +173,19 @@ class PortfolioPresenter:
                 PortfolioValuationKpi(
                     key="gain_total",
                     title="Ganancia total",
-                    value=number(result.gain_total),
+                    value=f"₡{abs(result.gain_total):,.2f}",
                     tone="gain",
                 ),
                 PortfolioValuationKpi(
                     key="loss_total",
                     title="Pérdida total",
-                    value=number(result.loss_total),
+                    value=f"-₡{abs(result.loss_total):,.2f}",
                     tone="loss",
                 ),
                 PortfolioValuationKpi(
                     key="net_total",
                     title="Resultado neto",
-                    value=number(result.net_total),
+                    value=f"{'+' if result.net_total > 0 else '-' if result.net_total < 0 else ''}₡{abs(result.net_total):,.2f}",
                     tone=tone(result.net_total),
                 ),
                 PortfolioValuationKpi(
@@ -157,6 +223,9 @@ class PortfolioPresenter:
             ),
             positions=tuple(display_row(row) for row in result.top_positions),
             all_positions=tuple(display_row(row) for row in result.rows),
+            reporting_currency="CRC",
+            fx_sell_rate=(f"{fx_sell_rate:,.4f}" if fx_sell_rate is not None else "N/D"),
+            fx_rate_date=fx_rate_date or "N/D",
         )
 
     def clear_history_cache(self) -> None:
