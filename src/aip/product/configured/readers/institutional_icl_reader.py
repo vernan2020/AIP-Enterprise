@@ -58,9 +58,21 @@ class InstitutionalICLReader:
 
         sheet_name = workbook.sheetnames[0]
         worksheet = workbook[sheet_name]
+
+        warnings: list[str] = []
         valuation_date = self._coerce_date(worksheet["B7"].value)
+        valuation_date_source = "B7"
         if valuation_date is None:
-            raise ValueError("ICL valuation date was not found in B7")
+            valuation_date = self._date_from_filename(path)
+            valuation_date_source = f"filename:{path.name}"
+            if valuation_date is None:
+                raise ValueError(
+                    "ICL valuation date was not found in B7 or the institutional filename"
+                )
+            warnings.append(
+                "ICL valuation date was resolved from the institutional filename "
+                "because B7 was empty or invalid"
+            )
 
         rows_by_code, values_by_code = self._read_required_rows(worksheet)
         required_codes = (
@@ -80,13 +92,12 @@ class InstitutionalICLReader:
         total_outflows = values_by_code[self._CODE_TOTAL_OUTFLOWS]
         total_inflows = values_by_code[self._CODE_TOTAL_INFLOWS]
 
-        warnings: list[str] = []
         self._validate_difference(total_outflows, total_inflows, net_outflow, warnings)
         self._validate_icl_ratio(liquid_asset_fund, net_outflow, icl, warnings)
 
         diagnostics = {
             "source_cells": {
-                "valuation_date": "B7",
+                "valuation_date": valuation_date_source,
                 "icl": self._trace_cells(rows_by_code[self._CODE_ICL]),
                 "liquid_asset_fund": self._trace_cells(rows_by_code[self._CODE_LIQUID_ASSET_FUND]),
                 "net_cash_outflow_30d": self._trace_cells(rows_by_code[self._CODE_NET_OUTFLOW]),
@@ -207,14 +218,59 @@ class InstitutionalICLReader:
             return None
 
     @staticmethod
+    def _date_from_filename(path: Path) -> date | None:
+        normalized = (
+            path.stem.upper()
+            .replace("_", " ")
+            .replace("-", " ")
+            .replace(".", " ")
+        )
+        tokens = " ".join(normalized.split()).split()
+        month_numbers = {
+            "ENERO": 1,
+            "FEBRERO": 2,
+            "MARZO": 3,
+            "ABRIL": 4,
+            "MAYO": 5,
+            "JUNIO": 6,
+            "JULIO": 7,
+            "AGOSTO": 8,
+            "SETIEMBRE": 9,
+            "SEPTIEMBRE": 9,
+            "OCTUBRE": 10,
+            "NOVIEMBRE": 11,
+            "DICIEMBRE": 12,
+        }
+        for index, token in enumerate(tokens):
+            month = month_numbers.get(token)
+            if month is None or index == 0 or index + 1 >= len(tokens):
+                continue
+            try:
+                return date(
+                    int(tokens[index + 1]),
+                    month,
+                    int(tokens[index - 1]),
+                )
+            except (TypeError, ValueError):
+                continue
+        return None
+
+    @staticmethod
     def _coerce_date(value: Any) -> date | None:
         if isinstance(value, datetime):
             return value.date()
         if isinstance(value, date):
             return value
-        if isinstance(value, str) and value:
-            try:
-                return date.fromisoformat(value)
-            except ValueError:
-                return None
+        if isinstance(value, str) and value.strip():
+            normalized = value.strip()
+            for parser in (
+                date.fromisoformat,
+                lambda raw: datetime.strptime(raw, "%d/%m/%Y").date(),
+                lambda raw: datetime.strptime(raw, "%d-%m-%Y").date(),
+                lambda raw: datetime.strptime(raw, "%d.%m.%Y").date(),
+            ):
+                try:
+                    return parser(normalized)
+                except ValueError:
+                    continue
         return None
