@@ -35,3 +35,6 @@ class PortfolioValuationComparisonDisplay:
     issuer_points: tuple[PortfolioValuationChartPoint, ...] = ()
     positions: tuple[PortfolioValuationComparisonDisplayRow, ...] = ()
     all_positions: tuple[PortfolioValuationComparisonDisplayRow, ...] = ()
+    reporting_currency: str = "CRC"
+    fx_sell_rate: str = "N/D"
+    fx_rate_date: str = "N/D"
