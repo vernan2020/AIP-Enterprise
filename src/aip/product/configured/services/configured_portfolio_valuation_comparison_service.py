@@ -14,13 +14,23 @@ class ConfiguredPortfolioValuationComparisonService:
     """Read authoritative accumulated valuation from the monthly Investment Master."""
 
     @classmethod
-    def calculate(cls, portfolio: dict[str, Any]) -> PortfolioValuationComparisonResult:
+    def calculate(
+        cls,
+        portfolio: dict[str, Any],
+        *,
+        fx_sell_rate: Decimal | None = None,
+        fx_rate_date: str | None = None,
+    ) -> PortfolioValuationComparisonResult:
         inputs = tuple(
             cls._input_from_position(position)
             for position in portfolio.get("positions", ())
             if isinstance(position, dict)
         )
-        return PortfolioValuationComparisonService.calculate(inputs)
+        return PortfolioValuationComparisonService.calculate(
+            inputs,
+            fx_sell_rate=fx_sell_rate,
+            fx_rate_date=fx_rate_date,
+        )
 
     @classmethod
     def _input_from_position(
