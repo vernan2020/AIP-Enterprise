@@ -101,11 +101,15 @@ def test_configured_service_aggregates_only_real_accumulated_valuation() -> None
         ]
     }
 
-    result = ConfiguredPortfolioValuationComparisonService.calculate(portfolio)
+    result = ConfiguredPortfolioValuationComparisonService.calculate(
+        portfolio,
+        fx_sell_rate=Decimal("2"),
+        fx_rate_date="2026-09-30",
+    )
 
-    assert result.gain_total == Decimal("120")
+    assert result.gain_total == Decimal("140")
     assert result.loss_total == Decimal("-40")
-    assert result.net_total == Decimal("80")
+    assert result.net_total == Decimal("100")
     assert result.gain_count == 2
     assert result.loss_count == 1
     assert [row.source.identity for row in result.top_gains] == ["GAIN1", "GAIN2"]
@@ -115,5 +119,33 @@ def test_configured_service_aggregates_only_real_accumulated_valuation() -> None
     currencies = {item.label: item for item in result.currency_contributions}
     assert currencies["CRC"].gain == Decimal("100")
     assert currencies["CRC"].loss == Decimal("-40")
-    assert currencies["USD"].gain == Decimal("20")
+    assert currencies["USD"].gain == Decimal("40")
     assert currencies["USD"].loss == Decimal("0")
+
+
+def test_configured_service_preserves_original_usd_and_uses_crc_reporting_value() -> None:
+    portfolio = {
+        "positions": [
+            {
+                "isin": "USD1",
+                "issuer": "Emisor USD",
+                "valuation_accumulated_source": {
+                    "currency": "USD",
+                    "value": "10.25",
+                    "source_file": "Maestro.xlsx",
+                    "source_row": 8,
+                },
+            }
+        ]
+    }
+
+    result = ConfiguredPortfolioValuationComparisonService.calculate(
+        portfolio,
+        fx_sell_rate=Decimal("500"),
+        fx_rate_date="2026-09-30",
+    )
+
+    row = result.rows[0]
+    assert row.valuation_accumulated == Decimal("10.25")
+    assert row.valuation_accumulated_crc == Decimal("5125.00")
+    assert row.fx_sell_rate == Decimal("500")
