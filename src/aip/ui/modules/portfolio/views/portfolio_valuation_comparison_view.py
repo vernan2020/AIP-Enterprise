@@ -44,8 +44,9 @@ class PortfolioValuationComparisonView(QWidget):
         layout.setSpacing(8)
 
         self._note = QLabel(
-            "La información de ganancia / pérdida corresponde directamente a la "
-            "‘Valuación acumulada’ del Maestro de Inversiones; no se realiza cálculo adicional."
+            "La ganancia / pérdida parte directamente de la ‘Valuación acumulada’ del "
+            "Maestro de Inversiones. Las posiciones USD se convierten a CRC con el "
+            "tipo de cambio de venta BCCR del cierre del corte."
         )
         self._note.setObjectName("portfolioValuationMethodology")
         self._note.setWordWrap(True)
@@ -103,7 +104,14 @@ class PortfolioValuationComparisonView(QWidget):
         layout.addLayout(detail_header)
 
         self._positions = self._table(
-            ["#", "Posición / ISIN", "Emisor", "Moneda", "Ganancia / Pérdida"]
+            [
+                "#",
+                "Posición / ISIN",
+                "Emisor",
+                "Moneda",
+                "Valuación acum. original",
+                "G/P consolidada CRC",
+            ]
         )
         self._positions.setObjectName("portfolioValuationPositions")
         self._positions.setMinimumHeight(180)
@@ -140,9 +148,11 @@ class PortfolioValuationComparisonView(QWidget):
         self._show_all = False
         self._toggle.setText("Ver todas las posiciones")
         self._note.setText(
-            f"Corte {valuation_date} · La información de ganancia / pérdida corresponde "
-            "directamente a la ‘Valuación acumulada’ del Maestro de Inversiones; "
-            "no se realiza cálculo adicional."
+            f"Corte {valuation_date} · Ganancia / pérdida basada en la ‘Valuación acumulada’ "
+            "del Maestro de Inversiones. CRC se mantiene en moneda original; USD se convierte "
+            f"a CRC con TC venta BCCR {model.fx_sell_rate} del {model.fx_rate_date}. "
+            "Si el TC exacto del corte no está disponible, la posición USD queda N/D para "
+            "consolidación y no se sustituye por cero."
         )
         self._bind_kpis(model.kpis)
         self._top_gains.set_data(model.top_gains)
@@ -194,12 +204,19 @@ class PortfolioValuationComparisonView(QWidget):
     ) -> None:
         self._positions.setRowCount(len(rows))
         for row_index, row in enumerate(rows):
-            identity, issuer, currency, value, *_ = row.cells
-            values = (str(row_index + 1), identity, issuer, currency, value)
+            identity, issuer, currency, original, consolidated, *_ = row.cells
+            values = (
+                str(row_index + 1),
+                identity,
+                issuer,
+                currency,
+                original,
+                consolidated,
+            )
             color = self._tone_color(row.tone)
             for column, text in enumerate(values):
                 item = QTableWidgetItem(text)
-                if column == 4:
+                if column == 5:
                     item.setForeground(color)
                 self._positions.setItem(row_index, column, item)
 
