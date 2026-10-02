@@ -50,7 +50,14 @@ class PortfolioValuationComparisonResult:
 
 
 class PortfolioValuationComparisonService:
-    """Expose and aggregate the Master's accumulated valuation without deriving gain/loss."""
+    """Expose Master's valuation and aggregate a reporting value normalized to CRC."""
+
+    @staticmethod
+    def _crc_value(row: PortfolioValuationComparisonRow) -> Decimal:
+        value = row.valuation_accumulated_crc
+        if value is None:
+            raise ValueError("row does not contain a CRC-normalized accumulated valuation")
+        return value
 
     @classmethod
     def calculate(
@@ -75,35 +82,35 @@ class PortfolioValuationComparisonService:
             and row.valuation_accumulated_crc.is_finite()
         )
 
-        gains = tuple(row for row in available if row.valuation_accumulated_crc > 0)
-        losses = tuple(row for row in available if row.valuation_accumulated_crc < 0)
+        gains = tuple(row for row in available if cls._crc_value(row) > 0)
+        losses = tuple(row for row in available if cls._crc_value(row) < 0)
 
         gain_total = sum(
-            (row.valuation_accumulated_crc for row in gains),
+            (cls._crc_value(row) for row in gains),
             Decimal("0"),
         )
         loss_total = sum(
-            (row.valuation_accumulated_crc for row in losses),
+            (cls._crc_value(row) for row in losses),
             Decimal("0"),
         )
 
         top_gains = tuple(
             sorted(
                 gains,
-                key=lambda row: row.valuation_accumulated_crc,
+                key=cls._crc_value,
                 reverse=True,
             )[:5]
         )
         top_losses = tuple(
             sorted(
                 losses,
-                key=lambda row: row.valuation_accumulated,
+                key=cls._crc_value,
             )[:5]
         )
         top_positions = tuple(
             sorted(
                 available,
-                key=lambda row: abs(row.valuation_accumulated_crc),
+                key=lambda row: abs(cls._crc_value(row)),
                 reverse=True,
             )[:10]
         )
