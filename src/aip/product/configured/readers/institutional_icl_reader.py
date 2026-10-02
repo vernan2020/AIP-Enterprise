@@ -219,12 +219,7 @@ class InstitutionalICLReader:
 
     @staticmethod
     def _date_from_filename(path: Path) -> date | None:
-        normalized = (
-            path.stem.upper()
-            .replace("_", " ")
-            .replace("-", " ")
-            .replace(".", " ")
-        )
+        normalized = path.stem.upper().replace("_", " ").replace("-", " ").replace(".", " ")
         tokens = " ".join(normalized.split()).split()
         month_numbers = {
             "ENERO": 1,
