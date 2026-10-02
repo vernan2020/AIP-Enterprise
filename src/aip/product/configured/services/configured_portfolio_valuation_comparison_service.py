@@ -53,7 +53,7 @@ class ConfiguredPortfolioValuationComparisonService:
         return PortfolioValuationComparisonInput(
             identity=identity,
             issuer=str(position.get("issuer") or "").strip(),
-            currency=str(source.get("currency") or "").strip().upper(),
+            currency=str(source.get("currency") or position.get("currency") or "").strip().upper(),
             valuation_accumulated=cls._decimal_or_none(source.get("value")),
             source_reference=source_reference,
         )
