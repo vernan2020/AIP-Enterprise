@@ -149,3 +149,30 @@ def test_configured_service_preserves_original_usd_and_uses_crc_reporting_value(
     assert row.valuation_accumulated == Decimal("10.25")
     assert row.valuation_accumulated_crc == Decimal("5125.00")
     assert row.fx_sell_rate == Decimal("500")
+
+
+def test_configured_service_uses_position_currency_when_source_currency_is_missing() -> None:
+    portfolio = {
+        "positions": [
+            {
+                "isin": "USD2",
+                "issuer": "Emisor USD",
+                "currency": "USD",
+                "valuation_accumulated_source": {
+                    "value": "3",
+                    "source_file": "Maestro.xlsx",
+                    "source_row": 9,
+                },
+            }
+        ]
+    }
+
+    result = ConfiguredPortfolioValuationComparisonService.calculate(
+        portfolio,
+        fx_sell_rate=Decimal("500"),
+        fx_rate_date="2026-09-30",
+    )
+
+    row = result.rows[0]
+    assert row.source.currency == "USD"
+    assert row.valuation_accumulated_crc == Decimal("1500")
