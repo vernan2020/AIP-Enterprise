@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
+from decimal import Decimal
 
 import openpyxl
 
@@ -299,3 +300,58 @@ def test_refresh_action_rebinds_view_model_and_table_rows(qt_app) -> None:
 
     assert view.view_model().summary.total_positions == 2
     assert view._positions._table.rowCount() == 2
+
+
+class FakeEconomicProvider:
+    def get_indicators(self) -> dict[str, object]:
+        return {
+            "indicators": [
+                {
+                    "code": "FX_SELL",
+                    "date": "2026-10-01",
+                    "value": "505.00",
+                    "observations": (
+                        {"observation_date": "2026-09-29", "value": "501.00"},
+                        {"observation_date": "2026-09-30", "value": "503.25"},
+                        {"observation_date": "2026-10-01", "value": "505.00"},
+                    ),
+                }
+            ]
+        }
+
+
+class FakeContainer:
+    def resolve(self, _contract):
+        return FakeEconomicProvider()
+
+
+class FakeApplicationFactoryWithEconomic(FakeApplicationFactory):
+    def __init__(self, payloads: tuple[dict[str, object], ...]) -> None:
+        super().__init__(payloads)
+        self.container = FakeContainer()
+
+
+def test_presenter_uses_bccr_sell_rate_from_exact_portfolio_cutoff() -> None:
+    payload = {
+        "valuation_date": "2026-09-30",
+        "positions": [],
+    }
+    presenter = PortfolioPresenter(FakeApplicationFactoryWithEconomic((payload,)))
+
+    rate, rate_date = presenter._fx_sell_rate_for_cutoff("2026-09-30")
+
+    assert rate == Decimal("503.25")
+    assert rate_date == "2026-09-30"
+
+
+def test_presenter_does_not_substitute_another_fx_date() -> None:
+    payload = {
+        "valuation_date": "2026-09-28",
+        "positions": [],
+    }
+    presenter = PortfolioPresenter(FakeApplicationFactoryWithEconomic((payload,)))
+
+    rate, rate_date = presenter._fx_sell_rate_for_cutoff("2026-09-28")
+
+    assert rate is None
+    assert rate_date == "2026-09-28"
