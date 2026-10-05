@@ -867,11 +867,11 @@ class FinancialAnalysisView(QWidget):
         entity_ids: object,
         series_code: str,
     ) -> None:
-        normalized_ids = tuple(
-            str(item)
-            for item in entity_ids
-            if str(item).strip()
-        ) if isinstance(entity_ids, (tuple, list)) else ()
+        normalized_ids = (
+            tuple(str(item) for item in entity_ids if str(item).strip())
+            if isinstance(entity_ids, (tuple, list))
+            else ()
+        )
         comparison = self._presenter.build_comparison_view_model(
             entity_ids=normalized_ids,
             series_code=series_code,
