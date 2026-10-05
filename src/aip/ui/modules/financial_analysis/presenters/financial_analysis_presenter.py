@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from decimal import Decimal, DivisionByZero, InvalidOperation
 
-from aip.domain.financial_analysis.models import FinancialMetricHistorySeries, FinancialStatementLine
+from aip.domain.financial_analysis.models import (
+    FinancialMetricHistorySeries,
+    FinancialStatementLine,
+)
 from aip.product.configured.services.configured_financial_analysis_service import (
     ConfiguredFinancialAnalysisService,
     FinancialAnalysisApplicationSnapshot,
