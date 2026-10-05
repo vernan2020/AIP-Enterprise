@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import date
-from decimal import Decimal
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
@@ -144,8 +143,8 @@ class PortfolioHistoryView(QWidget):
                 "Duración modificada",
                 "Sensibilidad agregada del portafolio a movimientos de tasas.",
                 lambda value: f"{value:,.2f}",
-                Decimal("3.00"),
-                "Objetivo institucional ≤ 3,00",
+                None,
+                None,
             ),
             (
                 "hqla",
