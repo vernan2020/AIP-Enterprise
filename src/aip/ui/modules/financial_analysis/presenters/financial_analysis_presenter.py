@@ -155,9 +155,13 @@ class FinancialAnalysisPresenter:
                     )
                 ),
             )
+            available_points = tuple(point for point in mapped.points if point.value is not None)
             mapped = replace(
                 mapped,
-                available_points=sum(point.value is not None for point in mapped.points),
+                latest_value=(
+                    available_points[-1].display_value if available_points else "N/D"
+                ),
+                available_points=len(available_points),
                 total_points=len(mapped.points),
             )
             if unit and mapped.unit != unit:
