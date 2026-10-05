@@ -70,9 +70,7 @@ class ConfiguredFinancialAnalysisService:
         self._cached_account_catalog_diagnostics: tuple[str, ...] = ()
         self._cached_results: dict[date, SUGEFFinancialReadResult] = {}
         self._cached_history: dict[tuple[str, date], SUGEFApiReadResult] = {}
-        self._cached_comparison_history: dict[
-            tuple[str, date, int | None], SUGEFApiReadResult
-        ] = {}
+        self._cached_comparison_history: dict[tuple[str, date, int | None], SUGEFApiReadResult] = {}
         self._lock = RLock()
 
     def load(
@@ -205,7 +203,9 @@ class ConfiguredFinancialAnalysisService:
             return entity_id, fetched, False
 
         with ThreadPoolExecutor(max_workers=min(5, len(unique_ids))) as executor:
-            futures = {executor.submit(load_history, entity_id): entity_id for entity_id in unique_ids}
+            futures = {
+                executor.submit(load_history, entity_id): entity_id for entity_id in unique_ids
+            }
             for future in as_completed(futures):
                 entity_id, history_result, hit = future.result()
                 histories[entity_id] = history_result
