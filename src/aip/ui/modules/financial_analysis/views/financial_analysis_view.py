@@ -27,6 +27,9 @@ from aip.ui.modules.financial_analysis.presenters.financial_analysis_presenter i
 from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model import (
     FinancialAnalysisViewModel,
 )
+from aip.ui.modules.financial_analysis.views.financial_entity_comparison_panel import (
+    FinancialEntityComparisonPanel,
+)
 from aip.ui.modules.financial_analysis.views.financial_history_panel import (
     FinancialHistoryPanel,
 )
@@ -116,11 +119,14 @@ class FinancialAnalysisView(QWidget):
         self._tabs = QTabWidget()
         self._tabs.setDocumentMode(True)
         self._history_panel = FinancialHistoryPanel()
+        self._comparison_panel = FinancialEntityComparisonPanel()
+        self._comparison_panel.compareRequested.connect(self._run_entity_comparison)
         self._rating_panel = self._build_rating_panel()
         self._diagnostics = QListWidget()
         self._tabs.addTab(self._build_statement_panel(), "Estados financieros")
         self._tabs.addTab(self._build_peer_panel(), "Comparativo de entidades")
         self._tabs.addTab(self._history_panel, "KPIs históricos")
+        self._tabs.addTab(self._comparison_panel, "Comparativo gráfico")
         self._tabs.addTab(self._rating_panel, "Calificación")
         self._tabs.addTab(self._diagnostics, "Calidad y trazabilidad")
         root.addWidget(self._tabs, 1)
@@ -540,6 +546,7 @@ class FinancialAnalysisView(QWidget):
         self._statement_history_panel.bind_history(view_model.statement_history)
         self._peer_chart_panel.bind_series(view_model.peer_chart_series)
         self._history_panel.bind_history(view_model.metric_history)
+        self._comparison_panel.bind_context(view_model)
         self._bind_rating(view_model)
         self._diagnostics.clear()
         self._diagnostics.addItems(list(view_model.diagnostics) or ["Sin incidencias de calidad."])
@@ -854,6 +861,22 @@ class FinancialAnalysisView(QWidget):
             self.bind_view_model(
                 self._presenter.build_view_model(selected_entity_id=str(entity_id))
             )
+
+    def _run_entity_comparison(
+        self,
+        entity_ids: object,
+        series_code: str,
+    ) -> None:
+        normalized_ids = tuple(
+            str(item)
+            for item in entity_ids
+            if str(item).strip()
+        ) if isinstance(entity_ids, (tuple, list)) else ()
+        comparison = self._presenter.build_comparison_view_model(
+            entity_ids=normalized_ids,
+            series_code=series_code,
+        )
+        self._comparison_panel.bind_comparison(comparison)
 
     def _refresh(self) -> None:
         entity_id = self._entity_selector.currentData()
