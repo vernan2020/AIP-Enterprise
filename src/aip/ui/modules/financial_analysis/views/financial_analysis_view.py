@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QObject, QThread, Qt, Signal, Slot
 from PySide6.QtGui import QDesktopServices, QFont
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -41,6 +41,39 @@ from aip.ui.modules.financial_analysis.views.financial_statement_history_panel i
 )
 
 
+class _ComparisonWorker(QObject):
+    finished = Signal(object)
+
+    def __init__(
+        self,
+        presenter: FinancialAnalysisPresenter,
+        *,
+        entity_ids: tuple[str, ...],
+        series_code: str,
+        horizon: str,
+        custom_from: object,
+        custom_to: object,
+    ) -> None:
+        super().__init__()
+        self._presenter = presenter
+        self._entity_ids = entity_ids
+        self._series_code = series_code
+        self._horizon = horizon
+        self._custom_from = custom_from
+        self._custom_to = custom_to
+
+    @Slot()
+    def run(self) -> None:
+        comparison = self._presenter.build_comparison_view_model(
+            entity_ids=self._entity_ids,
+            series_code=self._series_code,
+            horizon=self._horizon,
+            custom_from=self._custom_from,
+            custom_to=self._custom_to,
+        )
+        self.finished.emit(comparison)
+
+
 class FinancialAnalysisView(QWidget):
     """Workspace comparativo de estados financieros publicados por SUGEF."""
 
@@ -54,6 +87,8 @@ class FinancialAnalysisView(QWidget):
         self._kpi_values: dict[str, QLabel] = {}
         self._kpi_changes: dict[str, QLabel] = {}
         self._building_entity_selector = False
+        self._comparison_thread: QThread | None = None
+        self._comparison_worker: _ComparisonWorker | None = None
         self._build_ui()
         self.bind_view_model(self._presenter.build_view_model())
 
@@ -866,17 +901,42 @@ class FinancialAnalysisView(QWidget):
         self,
         entity_ids: object,
         series_code: str,
+        horizon: str,
+        custom_from: object,
+        custom_to: object,
     ) -> None:
+        if self._comparison_thread is not None and self._comparison_thread.isRunning():
+            return
         normalized_ids = (
             tuple(str(item) for item in entity_ids if str(item).strip())
             if isinstance(entity_ids, (tuple, list))
             else ()
         )
-        comparison = self._presenter.build_comparison_view_model(
+        thread = QThread(self)
+        worker = _ComparisonWorker(
+            self._presenter,
             entity_ids=normalized_ids,
             series_code=series_code,
+            horizon=horizon,
+            custom_from=custom_from,
+            custom_to=custom_to,
         )
-        self._comparison_panel.bind_comparison(comparison)
+        worker.moveToThread(thread)
+        thread.started.connect(worker.run)
+        worker.finished.connect(self._comparison_panel.bind_comparison)
+        worker.finished.connect(thread.quit)
+        thread.finished.connect(worker.deleteLater)
+        thread.finished.connect(self._comparison_finished)
+        self._comparison_thread = thread
+        self._comparison_worker = worker
+        thread.start()
+
+    @Slot()
+    def _comparison_finished(self) -> None:
+        if self._comparison_thread is not None:
+            self._comparison_thread.deleteLater()
+        self._comparison_thread = None
+        self._comparison_worker = None
 
     def _refresh(self) -> None:
         entity_id = self._entity_selector.currentData()
