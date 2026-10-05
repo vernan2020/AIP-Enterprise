@@ -94,7 +94,11 @@ class FinancialAnalysisPresenter:
             )
             if display_end is None:
                 effective_end = next(
-                    (snapshot.cutoff_date for snapshot in snapshots if snapshot.cutoff_date is not None),
+                    (
+                        snapshot.cutoff_date
+                        for snapshot in snapshots
+                        if snapshot.cutoff_date is not None
+                    ),
                     None,
                 )
                 if effective_end is not None:
@@ -106,11 +110,7 @@ class FinancialAnalysisPresenter:
                         "5Y": 60,
                     }.get(horizon.strip().upper())
                     if visible_months is not None:
-                        month_index = (
-                            effective_end.year * 12
-                            + effective_end.month
-                            - visible_months
-                        )
+                        month_index = effective_end.year * 12 + effective_end.month - visible_months
                         start_year, zero_based_month = divmod(month_index, 12)
                         display_start = date(start_year, zero_based_month + 1, 1)
         except Exception as exc:
@@ -158,9 +158,7 @@ class FinancialAnalysisPresenter:
             available_points = tuple(point for point in mapped.points if point.value is not None)
             mapped = replace(
                 mapped,
-                latest_value=(
-                    available_points[-1].display_value if available_points else "N/D"
-                ),
+                latest_value=(available_points[-1].display_value if available_points else "N/D"),
                 available_points=len(available_points),
                 total_points=len(mapped.points),
             )
