@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import replace
 from datetime import date
 from decimal import Decimal
+import logging
 from threading import RLock
+from time import perf_counter
 
 from aip.domain.financial_analysis.financial_metric_history import (
     FinancialMetricHistoryService,
@@ -37,6 +40,8 @@ from aip.product.configured.readers.sugef_official_financial_statement_reader im
 
 FinancialAnalysisApplicationSnapshot = FinancialAnalysisSnapshot
 
+_LOGGER = logging.getLogger(__name__)
+
 
 class ConfiguredFinancialAnalysisService:
     """Caso de uso de análisis SUGEF con caché invalidada por cambios de archivo."""
@@ -65,6 +70,9 @@ class ConfiguredFinancialAnalysisService:
         self._cached_account_catalog_diagnostics: tuple[str, ...] = ()
         self._cached_results: dict[date, SUGEFFinancialReadResult] = {}
         self._cached_history: dict[tuple[str, date], SUGEFApiReadResult] = {}
+        self._cached_comparison_history: dict[
+            tuple[str, date, int | None], SUGEFApiReadResult
+        ] = {}
         self._lock = RLock()
 
     def load(
@@ -153,6 +161,114 @@ class ConfiguredFinancialAnalysisService:
             metrics=metrics,
             metric_history=history,
         )
+
+    def load_comparison(
+        self,
+        *,
+        entity_ids: tuple[str, ...],
+        cutoff_date: date | None = None,
+        lookback_months: int | None = 35,
+    ) -> tuple[FinancialAnalysisSnapshot, ...]:
+        """Load 1-5 entity histories with one shared cutoff read and bounded parallel I/O."""
+
+        unique_ids = tuple(dict.fromkeys(item for item in entity_ids if item))
+        if not unique_ids:
+            return ()
+        if len(unique_ids) > 5:
+            raise ValueError("El comparativo admite un máximo de 5 entidades.")
+
+        started = perf_counter()
+        requested_date = cutoff_date or self._valuation_date_context.value
+        common_started = perf_counter()
+        result = self._read(cutoff_date=requested_date, force_refresh=False)
+        common_seconds = perf_counter() - common_started
+
+        histories: dict[str, SUGEFApiReadResult] = {}
+        cache_hits = 0
+        cache_misses = 0
+
+        def load_history(entity_id: str) -> tuple[str, SUGEFApiReadResult, bool]:
+            key = (entity_id, requested_date, lookback_months)
+            with self._lock:
+                cached = self._cached_comparison_history.get(key)
+            if self._config.cache_enabled and cached is not None:
+                return entity_id, cached, True
+            fetched = self._history_reader.read_entity_history_range(
+                entity_id,
+                requested_date,
+                lookback_months=lookback_months,
+            )
+            if self._config.cache_enabled:
+                with self._lock:
+                    existing = self._cached_comparison_history.setdefault(key, fetched)
+                    fetched = existing
+            return entity_id, fetched, False
+
+        with ThreadPoolExecutor(max_workers=min(5, len(unique_ids))) as executor:
+            futures = {executor.submit(load_history, entity_id): entity_id for entity_id in unique_ids}
+            for future in as_completed(futures):
+                entity_id, history_result, hit = future.result()
+                histories[entity_id] = history_result
+                cache_hits += int(hit)
+                cache_misses += int(not hit)
+
+        snapshots: list[FinancialAnalysisSnapshot] = []
+        total_points = 0
+        for entity_id in unique_ids:
+            history_result = histories[entity_id]
+            combined_lines = self._merge_lines(result.lines, history_result.lines)
+            snapshot = self._analysis.build_snapshot(
+                combined_lines,
+                selected_entity_id=entity_id,
+                cutoff_date=requested_date,
+                diagnostics=result.diagnostics + history_result.diagnostics,
+                source_files=result.source_files,
+            )
+            if snapshot.selected_entity is None or snapshot.cutoff_date is None:
+                snapshots.append(snapshot)
+                continue
+
+            raw_history = self._history.build(
+                combined_lines,
+                entity_id=entity_id,
+                cutoff_date=snapshot.cutoff_date,
+            )
+            enriched_metrics = self._analysis.metrics_for_period(
+                combined_lines,
+                entity_id=entity_id,
+                statement_date=snapshot.cutoff_date,
+            )
+            enriched_metrics = self._apply_institutional_roa(
+                enriched_metrics,
+                raw_history,
+                cutoff_date=snapshot.cutoff_date,
+            )
+            metrics = self._merge_headline_metrics(snapshot.metrics, enriched_metrics)
+            metric_history = self._align_history_current_cutoff(
+                raw_history,
+                metrics,
+                cutoff_date=snapshot.cutoff_date,
+            )
+            snapshot = replace(snapshot, metrics=metrics, metric_history=metric_history)
+            total_points += sum(len(series.points) for series in snapshot.metric_history)
+            total_points += sum(len(series.points) for series in snapshot.statement_history)
+            snapshots.append(snapshot)
+
+        elapsed = perf_counter() - started
+        _LOGGER.info(
+            "financial_comparison_load total_seconds=%.3f common_seconds=%.3f "
+            "entities=%d lookback_months=%s history_source_calls=%d cache_hits=%d "
+            "cache_misses=%d points=%d",
+            elapsed,
+            common_seconds,
+            len(unique_ids),
+            "ALL" if lookback_months is None else lookback_months,
+            cache_misses,
+            cache_hits,
+            cache_misses,
+            total_points,
+        )
+        return tuple(snapshots)
 
     @staticmethod
     def _merge_lines(
