@@ -84,6 +84,15 @@ class _ComparisonService:
             "E2": FinancialEntity("E2", "Entidad Dos"),
         }
 
+    def load_comparison(
+        self,
+        *,
+        entity_ids: tuple[str, ...],
+        cutoff_date: date | None = None,
+        lookback_months: int | None = 35,
+    ) -> tuple[FinancialAnalysisSnapshot, ...]:
+        return tuple(self.load(selected_entity_id=entity_id) for entity_id in entity_ids)
+
     def load(
         self, *, selected_entity_id: str | None = None, **_kwargs
     ) -> FinancialAnalysisSnapshot:
@@ -190,3 +199,56 @@ def test_comparison_panel_enforces_five_checked_entities(qt_app) -> None:
     assert len(panel.selected_entity_ids()) == 5
     assert panel._entity_list.item(5).checkState() == Qt.CheckState.Unchecked
     assert panel._selection_summary.text() == "5/5 entidades"
+
+
+def test_presenter_requests_36_month_horizon_with_roa_support_window() -> None:
+    service = _ComparisonService()
+
+    class _TrackingService(_ComparisonService):
+        def __init__(self) -> None:
+            super().__init__()
+            self.lookback_months: int | None = -1
+
+        def load_comparison(
+            self,
+            *,
+            entity_ids: tuple[str, ...],
+            cutoff_date: date | None = None,
+            lookback_months: int | None = 35,
+        ) -> tuple[FinancialAnalysisSnapshot, ...]:
+            self.lookback_months = lookback_months
+            return super().load_comparison(
+                entity_ids=entity_ids,
+                cutoff_date=cutoff_date,
+                lookback_months=lookback_months,
+            )
+
+    tracking = _TrackingService()
+    presenter = FinancialAnalysisPresenter(
+        application_factory=_Factory(tracking)  # type: ignore[arg-type]
+    )
+
+    presenter.build_comparison_view_model(
+        entity_ids=("E1",),
+        series_code="ROA",
+        horizon="36M",
+    )
+
+    assert tracking.lookback_months == 47
+
+
+def test_custom_comparison_range_rejects_inverted_dates() -> None:
+    presenter = FinancialAnalysisPresenter(
+        application_factory=_Factory(_ComparisonService())  # type: ignore[arg-type]
+    )
+
+    comparison = presenter.build_comparison_view_model(
+        entity_ids=("E1",),
+        series_code="ROA",
+        horizon="CUSTOM",
+        custom_from=date(2026, 9, 1),
+        custom_to=date(2026, 8, 31),
+    )
+
+    assert comparison.entities == ()
+    assert any("Desde no puede ser posterior" in item for item in comparison.diagnostics)
