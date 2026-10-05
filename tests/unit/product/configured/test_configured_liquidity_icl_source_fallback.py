@@ -10,8 +10,8 @@ from aip.product.configured.adapters.configured_liquidity_provider import (
     ConfiguredLiquidityProvider,
 )
 from aip.product.configured.readers.institutional_icl_reader import (
-    InstitutionalICLReadResult,
     InstitutionalICLReader,
+    InstitutionalICLReadResult,
 )
 from aip.product.demo.configuration.demo_config import DemoConfig
 
