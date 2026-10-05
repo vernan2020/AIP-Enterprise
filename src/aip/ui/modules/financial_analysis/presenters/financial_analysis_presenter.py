@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from calendar import monthrange
+from datetime import date
 from decimal import Decimal, DivisionByZero, InvalidOperation
 
 from aip.domain.financial_analysis.models import (
@@ -61,6 +63,9 @@ class FinancialAnalysisPresenter:
         *,
         entity_ids: tuple[str, ...],
         series_code: str,
+        horizon: str = "36M",
+        custom_from: date | None = None,
+        custom_to: date | None = None,
     ) -> FinancialEntityComparisonViewModel:
         unique_ids = tuple(dict.fromkeys(item for item in entity_ids if item))
         if not unique_ids:
@@ -76,8 +81,15 @@ class FinancialAnalysisPresenter:
 
         try:
             service = self._factory.container.resolve(ConfiguredFinancialAnalysisService)
-            snapshots = tuple(
-                service.load(selected_entity_id=entity_id) for entity_id in unique_ids
+            display_start, display_end, lookback_months = self._comparison_window(
+                horizon=horizon,
+                custom_from=custom_from,
+                custom_to=custom_to,
+            )
+            snapshots = service.load_comparison(
+                entity_ids=unique_ids,
+                cutoff_date=display_end,
+                lookback_months=lookback_months,
             )
         except Exception as exc:
             return FinancialEntityComparisonViewModel(
@@ -109,6 +121,23 @@ class FinancialAnalysisPresenter:
                 continue
 
             mapped = self._history_series(candidate)
+            mapped = replace(
+                mapped,
+                points=tuple(
+                    point
+                    for point in mapped.points
+                    if self._point_in_window(
+                        point.iso_date,
+                        start=display_start,
+                        end=display_end,
+                    )
+                ),
+            )
+            mapped = replace(
+                mapped,
+                available_points=sum(point.value is not None for point in mapped.points),
+                total_points=len(mapped.points),
+            )
             if unit and mapped.unit != unit:
                 diagnostics.append(
                     f"{entity.name}: unidad incompatible ({mapped.unit}); serie omitida."
@@ -135,6 +164,67 @@ class FinancialAnalysisPresenter:
             entities=tuple(series_views),
             diagnostics=tuple(diagnostics),
         )
+
+    @staticmethod
+    def _comparison_window(
+        *,
+        horizon: str,
+        custom_from: date | None,
+        custom_to: date | None,
+    ) -> tuple[date | None, date | None, int | None]:
+        normalized = horizon.strip().upper()
+        months = {
+            "12M": 12,
+            "24M": 24,
+            "36M": 36,
+            "5Y": 60,
+        }.get(normalized)
+        if normalized == "ALL":
+            return None, custom_to, None
+        if normalized == "CUSTOM":
+            if custom_from is None or custom_to is None:
+                raise ValueError("El horizonte personalizado requiere Desde y Hasta.")
+            if custom_from > custom_to:
+                raise ValueError("Desde no puede ser posterior a Hasta.")
+            display_start = date(custom_from.year, custom_from.month, 1)
+            display_end = date(
+                custom_to.year,
+                custom_to.month,
+                monthrange(custom_to.year, custom_to.month)[1],
+            )
+            month_span = (
+                (display_end.year - display_start.year) * 12
+                + display_end.month
+                - display_start.month
+                + 1
+            )
+            return display_start, display_end, month_span + 11
+
+        if months is None:
+            raise ValueError(f"Horizonte no reconocido: {horizon}")
+        end = custom_to
+        if end is None:
+            # El servicio resolverá el corte vigente. El filtro inferior se
+            # calcula después sobre cada serie para conservar exactamente N meses.
+            return None, None, months + 11
+        end = date(end.year, end.month, monthrange(end.year, end.month)[1])
+        month_index = end.year * 12 + end.month - months
+        start_year, zero_based_month = divmod(month_index, 12)
+        return date(start_year, zero_based_month + 1, 1), end, months + 11
+
+    @staticmethod
+    def _point_in_window(
+        iso_date: str,
+        *,
+        start: date | None,
+        end: date | None,
+    ) -> bool:
+        point_date = date.fromisoformat(iso_date)
+        if start is not None and point_date < start:
+            return False
+        if end is not None and point_date > end:
+            return False
+        return True
 
     @classmethod
     def _from_snapshot(
