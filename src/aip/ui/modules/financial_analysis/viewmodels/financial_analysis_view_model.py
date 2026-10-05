@@ -34,6 +34,21 @@ class FinancialMetricHistorySeriesView:
 
 
 @dataclass(frozen=True, slots=True)
+class FinancialAccountCatalogRow:
+    account_code: str
+    account_name: str
+    catalog_type_code: str
+    catalog_type_name: str
+    level: str
+    parent_account_code: str
+    sign: str
+    balance: str
+    currency: str
+    balance_status: str
+    history_code: str = ""
+
+
+@dataclass(frozen=True, slots=True)
 class FinancialStatementRow:
     statement: str
     account_code: str
@@ -136,6 +151,7 @@ class FinancialAnalysisViewModel:
     metric_history: tuple[FinancialMetricHistorySeriesView, ...] = field(default_factory=tuple)
     statement_history: tuple[FinancialMetricHistorySeriesView, ...] = field(default_factory=tuple)
     statement_rows: tuple[FinancialStatementRow, ...] = field(default_factory=tuple)
+    account_catalog_rows: tuple[FinancialAccountCatalogRow, ...] = field(default_factory=tuple)
     peer_rows: tuple[PeerSummaryRow, ...] = field(default_factory=tuple)
     peer_chart_series: tuple[PeerChartSeriesView, ...] = field(default_factory=tuple)
     peer_rating_rows: tuple[PeerRatingRow, ...] = field(default_factory=tuple)
