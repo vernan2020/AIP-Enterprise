@@ -430,15 +430,9 @@ class LiquidityView(QWidget):
         self._date_label.setText(f"Corte: {getattr(summary, 'liquidity_date', '-')}")
         icl_available = bool(getattr(summary, "icl_available", False))
         values = {
-            "icl_total": (
-                f"{getattr(summary, 'icl_total', 0.0):.2f}" if icl_available else "N/D"
-            ),
-            "icl_mn": (
-                f"{getattr(summary, 'icl_mn', 0.0):.2f}" if icl_available else "N/D"
-            ),
-            "icl_me": (
-                f"{getattr(summary, 'icl_me', 0.0):.2f}" if icl_available else "N/D"
-            ),
+            "icl_total": (f"{getattr(summary, 'icl_total', 0.0):.2f}" if icl_available else "N/D"),
+            "icl_mn": (f"{getattr(summary, 'icl_mn', 0.0):.2f}" if icl_available else "N/D"),
+            "icl_me": (f"{getattr(summary, 'icl_me', 0.0):.2f}" if icl_available else "N/D"),
             "liquid_fund": (
                 self._format_crc_mm(getattr(summary, "liquid_asset_fund_total", 0.0))
                 if icl_available
