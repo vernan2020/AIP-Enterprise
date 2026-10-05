@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from decimal import Decimal, DivisionByZero, InvalidOperation
 
-from aip.domain.financial_analysis.models import FinancialMetricHistorySeries
+from aip.domain.financial_analysis.models import FinancialMetricHistorySeries, FinancialStatementLine
 from aip.product.configured.services.configured_financial_analysis_service import (
     ConfiguredFinancialAnalysisService,
     FinancialAnalysisApplicationSnapshot,
@@ -222,7 +222,7 @@ class FinancialAnalysisPresenter:
         cls,
         snapshot: FinancialAnalysisApplicationSnapshot,
     ) -> tuple[FinancialAccountCatalogRow, ...]:
-        by_code: dict[str, list[object]] = {}
+        by_code: dict[str, list[FinancialStatementLine]] = {}
         for line in snapshot.statement_lines:
             code = line.account_code.strip().removesuffix(".0")
             if code:
