@@ -216,9 +216,7 @@ class FinancialEntityComparisonPanel(QWidget):
             item.setHidden(bool(search) and search not in item.text().casefold())
 
     def _horizon_changed(self, *_args: object) -> None:
-        self._custom_range.setVisible(
-            str(self._horizon_selector.currentData() or "") == "CUSTOM"
-        )
+        self._custom_range.setVisible(str(self._horizon_selector.currentData() or "") == "CUSTOM")
 
     @staticmethod
     def _parse_month(value: str, *, month_end: bool) -> date:
