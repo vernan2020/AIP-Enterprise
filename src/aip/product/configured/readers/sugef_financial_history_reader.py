@@ -52,6 +52,19 @@ class SUGEFFinancialHistoryReader(SUGEFFinancialApiClient):
         entity_id: str,
         cutoff_date: date,
     ) -> SUGEFApiReadResult:
+        return self.read_entity_history_range(
+            entity_id,
+            cutoff_date,
+            lookback_months=self.SUPPORT_HISTORY_MONTHS - 1,
+        )
+
+    def read_entity_history_range(
+        self,
+        entity_id: str,
+        cutoff_date: date,
+        *,
+        lookback_months: int | None,
+    ) -> SUGEFApiReadResult:
         if not self._config.api_enabled:
             return SUGEFApiReadResult(
                 (),
@@ -61,10 +74,22 @@ class SUGEFFinancialHistoryReader(SUGEFFinancialApiClient):
         if not entity_id.strip():
             return SUGEFApiReadResult((), (), ("Histórico KPI SUGEF: entidad no definida.",))
 
-        period = self._period_range(
-            cutoff_date,
-            lookback_months=self.SUPPORT_HISTORY_MONTHS - 1,
-        )
+        if lookback_months is None:
+            # Solicita un rango suficientemente amplio para recuperar toda la
+            # historia que la API pública mantenga disponible. Solo se conservan
+            # observaciones efectivamente publicadas por SUGEF.
+            month_index = 1995 * 12
+            start_year, zero_based_month = divmod(month_index, 12)
+            start = date(start_year, zero_based_month + 1, 1)
+            end = date(cutoff_date.year, cutoff_date.month, 1)
+            period = f"{start:%Y%m%d}-{end:%Y%m%d}"
+            window_label = "toda la historia disponible"
+        else:
+            period = self._period_range(
+                cutoff_date,
+                lookback_months=max(0, lookback_months),
+            )
+            window_label = f"{lookback_months + 1} meses"
         lines: list[FinancialStatementLine] = []
         endpoints: set[str] = set()
         diagnostics: list[str] = []
@@ -95,9 +120,7 @@ class SUGEFFinancialHistoryReader(SUGEFFinancialApiClient):
             periods = {line.statement_date for line in bounded}
             diagnostics.append(
                 "Histórico KPI SUGEF: consulta acotada a una entidad, "
-                f"{len(periods)} cortes mensuales recibidos para una ventana de soporte de "
-                f"{self.SUPPORT_HISTORY_MONTHS} meses; la vista mantiene "
-                f"{self.DISPLAY_HISTORY_MONTHS} meses."
+                f"{len(periods)} cortes mensuales recibidos para {window_label}."
             )
         else:
             diagnostics.append(

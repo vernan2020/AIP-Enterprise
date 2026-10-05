@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from calendar import monthrange
+from datetime import date
+
 from PySide6.QtCharts import QChart, QChartView, QDateTimeAxis, QLineSeries, QValueAxis
 from PySide6.QtCore import QDateTime, QMargins, Qt, Signal
 from PySide6.QtGui import QPainter
@@ -26,7 +29,7 @@ from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model 
 class FinancialEntityComparisonPanel(QWidget):
     """Compare one financial series across one to five SUGEF entities."""
 
-    compareRequested = Signal(object, str)
+    compareRequested = Signal(object, str, str, object, object)
     _MAX_ENTITIES = 5
 
     def __init__(self) -> None:
@@ -70,10 +73,39 @@ class FinancialEntityComparisonPanel(QWidget):
         )
         self._series_selector.setMinimumContentsLength(48)
         controls.addWidget(self._series_selector, 1)
+        controls.addWidget(QLabel("Horizonte:"))
+        self._horizon_selector = QComboBox()
+        self._horizon_selector.addItem("12 meses", "12M")
+        self._horizon_selector.addItem("24 meses", "24M")
+        self._horizon_selector.addItem("36 meses", "36M")
+        self._horizon_selector.addItem("5 años", "5Y")
+        self._horizon_selector.addItem("Toda la historia disponible", "ALL")
+        self._horizon_selector.addItem("Personalizado", "CUSTOM")
+        self._horizon_selector.setCurrentIndex(2)
+        self._horizon_selector.currentIndexChanged.connect(self._horizon_changed)
+        controls.addWidget(self._horizon_selector)
         self._compare_button = QPushButton("Graficar comparación")
         self._compare_button.clicked.connect(self._request_comparison)
         controls.addWidget(self._compare_button)
         root.addLayout(controls)
+
+        self._custom_range = QWidget()
+        custom_controls = QHBoxLayout(self._custom_range)
+        custom_controls.setContentsMargins(0, 0, 0, 0)
+        custom_controls.setSpacing(6)
+        custom_controls.addWidget(QLabel("Desde:"))
+        self._custom_from = QLineEdit()
+        self._custom_from.setPlaceholderText("MM/AAAA")
+        self._custom_from.setMaximumWidth(90)
+        custom_controls.addWidget(self._custom_from)
+        custom_controls.addWidget(QLabel("Hasta:"))
+        self._custom_to = QLineEdit()
+        self._custom_to.setPlaceholderText("MM/AAAA")
+        self._custom_to.setMaximumWidth(90)
+        custom_controls.addWidget(self._custom_to)
+        custom_controls.addStretch(1)
+        self._custom_range.setVisible(False)
+        root.addWidget(self._custom_range)
 
         splitter = QSplitter(Qt.Orientation.Horizontal)
         splitter.setChildrenCollapsible(False)
@@ -183,6 +215,27 @@ class FinancialEntityComparisonPanel(QWidget):
             item = self._entity_list.item(index)
             item.setHidden(bool(search) and search not in item.text().casefold())
 
+    def _horizon_changed(self, *_args: object) -> None:
+        self._custom_range.setVisible(str(self._horizon_selector.currentData() or "") == "CUSTOM")
+
+    @staticmethod
+    def _parse_month(value: str, *, month_end: bool) -> date:
+        parts = value.strip().split("/")
+        if len(parts) != 2:
+            raise ValueError("Use el formato MM/AAAA.")
+        month, year = (int(item) for item in parts)
+        if month < 1 or month > 12 or year < 1900:
+            raise ValueError("Mes o año inválido.")
+        day = monthrange(year, month)[1] if month_end else 1
+        return date(year, month, day)
+
+    def set_loading(self, loading: bool) -> None:
+        self._compare_button.setEnabled(not loading)
+        self._horizon_selector.setEnabled(not loading)
+        self._series_selector.setEnabled(not loading)
+        self._entity_list.setEnabled(not loading)
+        self._status.setText("Cargando comparación…" if loading else self._status.text())
+
     def _request_comparison(self) -> None:
         entity_ids = self.selected_entity_ids()
         if not entity_ids:
@@ -192,10 +245,24 @@ class FinancialEntityComparisonPanel(QWidget):
         if not series_code:
             self._status.setText("No hay una serie disponible para comparar.")
             return
-        self._status.setText("Cargando comparación SUGEF…")
-        self.compareRequested.emit(entity_ids, series_code)
+        horizon = str(self._horizon_selector.currentData() or "36M")
+        custom_from = None
+        custom_to = None
+        if horizon == "CUSTOM":
+            try:
+                custom_from = self._parse_month(self._custom_from.text(), month_end=False)
+                custom_to = self._parse_month(self._custom_to.text(), month_end=True)
+            except (TypeError, ValueError) as exc:
+                self._status.setText(f"Rango personalizado inválido: {exc}")
+                return
+            if custom_from > custom_to:
+                self._status.setText("Rango personalizado inválido: Desde es posterior a Hasta.")
+                return
+        self.set_loading(True)
+        self.compareRequested.emit(entity_ids, series_code, horizon, custom_from, custom_to)
 
     def bind_comparison(self, view_model: FinancialEntityComparisonViewModel) -> None:
+        self.set_loading(False)
         self._clear_chart()
         if not view_model.entities:
             message = " · ".join(view_model.diagnostics) or "No hay series comparables disponibles."
