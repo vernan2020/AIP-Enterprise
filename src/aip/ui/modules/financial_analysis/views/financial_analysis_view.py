@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import date
+
 from PySide6.QtCore import QObject, QThread, Qt, Signal, Slot
 from PySide6.QtGui import QDesktopServices, QFont
 from PySide6.QtWidgets import (
@@ -51,8 +53,8 @@ class _ComparisonWorker(QObject):
         entity_ids: tuple[str, ...],
         series_code: str,
         horizon: str,
-        custom_from: object,
-        custom_to: object,
+        custom_from: date | None,
+        custom_to: date | None,
     ) -> None:
         super().__init__()
         self._presenter = presenter
@@ -902,8 +904,8 @@ class FinancialAnalysisView(QWidget):
         entity_ids: object,
         series_code: str,
         horizon: str,
-        custom_from: object,
-        custom_to: object,
+        custom_from: date | None,
+        custom_to: date | None,
     ) -> None:
         if self._comparison_thread is not None and self._comparison_thread.isRunning():
             return
