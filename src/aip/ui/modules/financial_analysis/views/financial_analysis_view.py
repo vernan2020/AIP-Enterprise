@@ -158,6 +158,14 @@ class FinancialAnalysisView(QWidget):
         layout.setContentsMargins(4, 4, 4, 4)
         layout.setSpacing(4)
 
+        self._statement_content_tabs = QTabWidget()
+        self._statement_content_tabs.setDocumentMode(True)
+
+        balances_page = QWidget()
+        balances_layout = QVBoxLayout(balances_page)
+        balances_layout.setContentsMargins(4, 4, 4, 4)
+        balances_layout.setSpacing(4)
+
         controls = QHBoxLayout()
         controls.setSpacing(6)
         self._statement_search = QLineEdit()
@@ -180,7 +188,7 @@ class FinancialAnalysisView(QWidget):
         self._statement_count = QLabel("0 registros")
         self._statement_count.setStyleSheet("color:#667788; font-size:9px;")
         controls.addWidget(self._statement_count)
-        layout.addLayout(controls)
+        balances_layout.addLayout(controls)
 
         self._statement_table = self._table(
             ["Estado", "Cuenta", "Descripción", "Valor", "Moneda", "Trazabilidad"]
@@ -206,7 +214,63 @@ class FinancialAnalysisView(QWidget):
         self._statement_splitter.setStretchFactor(0, 11)
         self._statement_splitter.setStretchFactor(1, 9)
         self._statement_splitter.setSizes([320, 250])
-        layout.addWidget(self._statement_splitter, 1)
+        balances_layout.addWidget(self._statement_splitter, 1)
+
+        catalog_page = QWidget()
+        catalog_layout = QVBoxLayout(catalog_page)
+        catalog_layout.setContentsMargins(4, 4, 4, 4)
+        catalog_layout.setSpacing(4)
+
+        catalog_intro = QLabel(
+            "Catálogo contable oficial completo publicado por SUGEF. "
+            "Las cuentas sin saldo publicado para la entidad/corte se muestran como N/D."
+        )
+        catalog_intro.setWordWrap(True)
+        catalog_intro.setStyleSheet("color:#52687A; font-size:9px;")
+        catalog_layout.addWidget(catalog_intro)
+
+        catalog_controls = QHBoxLayout()
+        catalog_controls.setSpacing(6)
+        self._catalog_search = QLineEdit()
+        self._catalog_search.setPlaceholderText("Buscar por código, descripción o cuenta padre…")
+        self._catalog_search.textChanged.connect(self._apply_catalog_filter)
+        catalog_controls.addWidget(self._catalog_search, 1)
+        catalog_controls.addWidget(QLabel("Catálogo:"))
+        self._catalog_type_filter = QComboBox()
+        self._catalog_type_filter.addItem("Todos", "")
+        self._catalog_type_filter.currentIndexChanged.connect(self._apply_catalog_filter)
+        catalog_controls.addWidget(self._catalog_type_filter)
+        self._catalog_count = QLabel("0 cuentas")
+        self._catalog_count.setStyleSheet("color:#667788; font-size:9px;")
+        catalog_controls.addWidget(self._catalog_count)
+        catalog_layout.addLayout(catalog_controls)
+
+        self._catalog_table = self._table(
+            [
+                "Código",
+                "Descripción",
+                "Tipo catálogo",
+                "Nivel",
+                "Cuenta padre",
+                "Signo",
+                "Saldo del corte",
+                "Moneda",
+                "Estado saldo",
+            ]
+        )
+        catalog_header = self._catalog_table.horizontalHeader()
+        catalog_header.setStretchLastSection(False)
+        catalog_header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        catalog_header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        catalog_header.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
+        for column in range(3, 9):
+            catalog_header.setSectionResizeMode(column, QHeaderView.ResizeMode.ResizeToContents)
+        self._catalog_table.currentCellChanged.connect(self._catalog_row_changed)
+        catalog_layout.addWidget(self._catalog_table, 1)
+
+        self._statement_content_tabs.addTab(balances_page, "Saldos del corte")
+        self._statement_content_tabs.addTab(catalog_page, "Plan de cuentas SUGEF")
+        layout.addWidget(self._statement_content_tabs, 1)
         return panel
 
     def _build_peer_panel(self) -> QWidget:
@@ -471,6 +535,7 @@ class FinancialAnalysisView(QWidget):
             self._kpi_changes[code].setText(metric.change if metric else "Sin datos")
             self._kpi_values[code].setToolTip(metric.source_account if metric else "")
         self._bind_statements(view_model)
+        self._bind_account_catalog(view_model)
         self._bind_peers(view_model)
         self._statement_history_panel.bind_history(view_model.statement_history)
         self._peer_chart_panel.bind_series(view_model.peer_chart_series)
@@ -521,6 +586,84 @@ class FinancialAnalysisView(QWidget):
         self._apply_statement_filter()
         if view_model.statement_rows:
             self._statement_table.setCurrentCell(0, 0)
+
+    def _bind_account_catalog(self, view_model: FinancialAnalysisViewModel) -> None:
+        self._catalog_table.setRowCount(len(view_model.account_catalog_rows))
+        existing_filters = {
+            str(self._catalog_type_filter.itemData(index) or "")
+            for index in range(self._catalog_type_filter.count())
+        }
+        for row_index, row in enumerate(view_model.account_catalog_rows):
+            values = (
+                row.account_code,
+                row.account_name,
+                row.catalog_type_name or row.catalog_type_code,
+                row.level,
+                row.parent_account_code,
+                row.sign,
+                row.balance,
+                row.currency,
+                row.balance_status,
+            )
+            for column, value in enumerate(values):
+                item = QTableWidgetItem(value)
+                if column == 0:
+                    item.setData(Qt.ItemDataRole.UserRole, row.history_code)
+                    item.setData(Qt.ItemDataRole.UserRole + 1, row.catalog_type_code)
+                if column in {3, 5, 6}:
+                    item.setTextAlignment(
+                        Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+                    )
+                self._catalog_table.setItem(row_index, column, item)
+
+            if row.catalog_type_code not in existing_filters:
+                label = (
+                    f"{row.catalog_type_code} · {row.catalog_type_name}"
+                    if row.catalog_type_name
+                    else row.catalog_type_code
+                )
+                self._catalog_type_filter.addItem(label, row.catalog_type_code)
+                existing_filters.add(row.catalog_type_code)
+
+        self._apply_catalog_filter()
+
+    def _apply_catalog_filter(self, *_args: object) -> None:
+        search = self._catalog_search.text().strip().casefold()
+        catalog_type = str(self._catalog_type_filter.currentData() or "")
+        visible = 0
+        for row in range(self._catalog_table.rowCount()):
+            values: list[str] = []
+            for column in (0, 1, 2, 4, 8):
+                item = self._catalog_table.item(row, column)
+                values.append(item.text() if item is not None else "")
+            code_item = self._catalog_table.item(row, 0)
+            row_catalog_type = (
+                str(code_item.data(Qt.ItemDataRole.UserRole + 1) or "")
+                if code_item is not None
+                else ""
+            )
+            matches_search = not search or search in " ".join(values).casefold()
+            matches_catalog = not catalog_type or row_catalog_type == catalog_type
+            hidden = not (matches_search and matches_catalog)
+            self._catalog_table.setRowHidden(row, hidden)
+            if not hidden:
+                visible += 1
+        total = self._catalog_table.rowCount()
+        self._catalog_count.setText(f"{visible} de {total} cuentas")
+
+    def _catalog_row_changed(
+        self,
+        current_row: int,
+        _current_column: int,
+        _previous_row: int,
+        _previous_column: int,
+    ) -> None:
+        item = self._catalog_table.item(current_row, 0) if current_row >= 0 else None
+        if item is None:
+            return
+        history_code = item.data(Qt.ItemDataRole.UserRole)
+        if history_code:
+            self._statement_history_panel.select_series(str(history_code))
 
     def _apply_statement_filter(self, *_args: object) -> None:
         search = self._statement_search.text().strip().casefold()
