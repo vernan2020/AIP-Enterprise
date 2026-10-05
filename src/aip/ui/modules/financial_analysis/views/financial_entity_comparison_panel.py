@@ -232,9 +232,7 @@ class FinancialEntityComparisonPanel(QWidget):
 
         all_dates: list[QDateTime] = []
         all_values: list[float] = []
-        prepared: list[
-            tuple[FinancialEntityComparisonSeriesView, tuple[QDateTime, ...]]
-        ] = []
+        prepared: list[tuple[FinancialEntityComparisonSeriesView, tuple[QDateTime, ...]]] = []
         for entity in view_model.entities:
             dates = tuple(
                 QDateTime.fromString(point.iso_date, Qt.DateFormat.ISODate)
@@ -242,9 +240,7 @@ class FinancialEntityComparisonPanel(QWidget):
             )
             prepared.append((entity, dates))
             all_dates.extend(dates)
-            all_values.extend(
-                point.value for point in entity.points if point.value is not None
-            )
+            all_values.extend(point.value for point in entity.points if point.value is not None)
 
         axis_x = QDateTimeAxis()
         axis_x.setFormat("MMM-yy")
