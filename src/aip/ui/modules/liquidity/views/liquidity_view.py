@@ -428,11 +428,16 @@ class LiquidityView(QWidget):
         self._view_model = view_model
         summary = view_model.summary
         self._date_label.setText(f"Corte: {getattr(summary, 'liquidity_date', '-')}")
+        icl_available = bool(getattr(summary, "icl_available", False))
         values = {
-            "icl_total": f"{getattr(summary, 'icl_total', 0.0):.2f}",
-            "icl_mn": f"{getattr(summary, 'icl_mn', 0.0):.2f}",
-            "icl_me": f"{getattr(summary, 'icl_me', 0.0):.2f}",
-            "liquid_fund": self._format_crc_mm(getattr(summary, "liquid_asset_fund_total", 0.0)),
+            "icl_total": (f"{getattr(summary, 'icl_total', 0.0):.2f}" if icl_available else "N/D"),
+            "icl_mn": (f"{getattr(summary, 'icl_mn', 0.0):.2f}" if icl_available else "N/D"),
+            "icl_me": (f"{getattr(summary, 'icl_me', 0.0):.2f}" if icl_available else "N/D"),
+            "liquid_fund": (
+                self._format_crc_mm(getattr(summary, "liquid_asset_fund_total", 0.0))
+                if icl_available
+                else "N/D"
+            ),
             "hqla": self._format_crc_mm(getattr(summary, "hqla_capacity_value", 0.0)),
             "mil": self._format_crc_mm(getattr(summary, "mil_capacity_value", 0.0)),
             "maturity30": self._format_crc_mm(getattr(summary, "principal_inflows_30d_crc", 0.0)),
@@ -443,10 +448,14 @@ class LiquidityView(QWidget):
 
         self._flow_chart.set_data(
             (
-                ("Fondo líquido", getattr(summary, "liquid_asset_fund_total", 0.0)),
-                ("Entradas 30 días", getattr(summary, "total_inflows_30d", 0.0)),
-                ("Salidas 30 días", getattr(summary, "total_outflows_30d", 0.0)),
-                ("Salida neta", getattr(summary, "net_cash_outflow_30d", 0.0)),
+                (
+                    ("Fondo líquido", getattr(summary, "liquid_asset_fund_total", 0.0)),
+                    ("Entradas 30 días", getattr(summary, "total_inflows_30d", 0.0)),
+                    ("Salidas 30 días", getattr(summary, "total_outflows_30d", 0.0)),
+                    ("Salida neta", getattr(summary, "net_cash_outflow_30d", 0.0)),
+                )
+                if icl_available
+                else ()
             )
         )
         self._maturity_chart.set_data(

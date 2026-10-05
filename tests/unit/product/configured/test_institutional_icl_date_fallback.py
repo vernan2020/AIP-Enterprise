@@ -4,6 +4,7 @@ from datetime import date
 from pathlib import Path
 
 import openpyxl
+import pytest
 
 from aip.product.configured.readers.institutional_icl_reader import InstitutionalICLReader
 
@@ -52,3 +53,18 @@ def test_reader_keeps_b7_as_primary_date_source(tmp_path: Path) -> None:
     assert result.valuation_date == date(2026, 9, 30)
     assert result.diagnostics["source_cells"]["valuation_date"] == "B7"
     assert not any("institutional filename" in warning for warning in result.warnings)
+
+
+def test_reader_rejects_missing_required_icl_value_instead_of_zero_fill(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "ICL 30 SETIEMBRE_2026.xlsx"
+    _write_icl_workbook(path, b7_value="30/09/2026")
+
+    workbook = openpyxl.load_workbook(path)
+    worksheet = workbook["ICL"]
+    worksheet["AA10"] = None
+    workbook.save(path)
+
+    with pytest.raises(ValueError, match="Required ICL value is missing at AA10"):
+        InstitutionalICLReader().read(path)

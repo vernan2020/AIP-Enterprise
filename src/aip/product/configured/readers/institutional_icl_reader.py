@@ -158,9 +158,9 @@ class InstitutionalICLReader:
 
             rows_by_code[code] = row_number
             values_by_code[code] = (
-                self._decimal(values[16]),
-                self._decimal(values[17]),
-                self._decimal(values[18]),
+                self._required_decimal(values[16], cell=f"AA{row_number}"),
+                self._required_decimal(values[17], cell=f"AB{row_number}"),
+                self._required_decimal(values[18], cell=f"AC{row_number}"),
             )
 
             if len(rows_by_code) == len(required_codes):
@@ -200,13 +200,19 @@ class InstitutionalICLReader:
         }
 
     @staticmethod
-    def _decimal(value: Any) -> Decimal:
+    def _required_decimal(value: Any, *, cell: str) -> Decimal:
         if value in (None, ""):
-            return Decimal("0")
+            raise ValueError(
+                f"Required ICL value is missing at {cell}; "
+                "the workbook may contain a formula without a cached result"
+            )
         try:
-            return Decimal(str(value))
+            parsed = Decimal(str(value))
         except (InvalidOperation, ValueError, TypeError) as exc:
-            raise ValueError(f"Invalid numeric ICL value: {value!r}") from exc
+            raise ValueError(f"Invalid numeric ICL value at {cell}: {value!r}") from exc
+        if not parsed.is_finite():
+            raise ValueError(f"Non-finite ICL value at {cell}: {value!r}")
+        return parsed
 
     @staticmethod
     def _coerce_int(value: Any) -> int | None:

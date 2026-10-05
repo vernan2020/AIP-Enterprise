@@ -74,6 +74,7 @@ class LiquidityPresenter:
             mil_eligible_capacity=f"{self._float(liquidity.get('mil_eligible_capacity')):.2f}",
             stress_result=str(liquidity.get("stress_result") or "No configurado"),
             policy_status=str(liquidity.get("policy_status") or "No evaluado"),
+            icl_available=bool(liquidity.get("icl_available")),
             icl_total=self._float(liquidity.get("icl_total")),
             icl_mn=self._float(liquidity.get("icl_mn")),
             icl_me=self._float(liquidity.get("icl_me")),

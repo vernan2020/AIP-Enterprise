@@ -14,6 +14,7 @@ from aip.product.configured.protocols import (
 )
 from aip.product.configured.readers.institutional_icl_reader import (
     InstitutionalICLReader,
+    InstitutionalICLReadResult,
 )
 from aip.product.demo.configuration.demo_config import DemoConfig
 
@@ -64,6 +65,7 @@ class ConfiguredLiquidityProvider:
             "cash_position": 0.0,
             "net_cash_flow": 0.0,
             "liquidity_gap": 0.0,
+            "icl_available": False,
             "icl_total": 0.0,
             "icl_mn": 0.0,
             "icl_me": 0.0,
@@ -148,23 +150,26 @@ class ConfiguredLiquidityProvider:
         # ICL
         # =========================================================
 
-        icl_file = self._discover_icl_file(self._current_cutoff_date())
+        cutoff_date = self._current_cutoff_date()
+        icl, source_errors = self._load_icl_for_cutoff(cutoff_date)
 
-        if icl_file is None:
+        if icl is None:
+            result["icl_source_errors"] = source_errors
             if positions:
                 result["configuration_message"] = (
-                    "Portfolio liquidity loaded; " "ICL file unavailable for configured cutoff date"
+                    "Portfolio liquidity loaded; ICL source invalid or unavailable "
+                    "for configured cutoff date"
                 )
             else:
-                result["configuration_message"] = "ICL file unavailable for configured cutoff date"
-
+                result["configuration_message"] = (
+                    "ICL source invalid or unavailable for configured cutoff date"
+                )
             return result
-
-        icl = InstitutionalICLReader().read(icl_file)
 
         result.update(
             {
                 "liquidity_date": (icl.valuation_date.isoformat()),
+                "icl_available": True,
                 "cash_position": float(icl.liquid_asset_fund_total),
                 "net_cash_flow": float(icl.total_inflows_30d_total - icl.total_outflows_30d_total),
                 "liquidity_gap": float(icl.total_inflows_30d_total - icl.total_outflows_30d_total),
@@ -184,20 +189,28 @@ class ConfiguredLiquidityProvider:
                 "icl_diagnostics": (icl.diagnostics),
                 "icl_warnings": (
                     list(icl.warnings)
+                    + source_errors
                     + (
                         [
                             "ICL prior-date fallback used: "
                             f"source={icl.valuation_date.isoformat()} "
-                            f"cutoff={self._current_cutoff_date().isoformat()}"
+                            f"cutoff={cutoff_date.isoformat()}"
                         ]
-                        if icl.valuation_date < self._current_cutoff_date()
+                        if icl.valuation_date < cutoff_date
                         else []
                     )
                 ),
                 "configuration_message": (
-                    "Institutional ICL and enriched portfolio " "liquidity sources loaded"
-                    if positions
-                    else "Institutional ICL source loaded"
+                    (
+                        "Institutional ICL loaded from prior valid date "
+                        f"{icl.valuation_date.isoformat()} for cutoff {cutoff_date.isoformat()}"
+                    )
+                    if icl.valuation_date < cutoff_date
+                    else (
+                        "Institutional ICL and enriched portfolio liquidity sources loaded"
+                        if positions
+                        else "Institutional ICL source loaded"
+                    )
                 ),
             }
         )
@@ -585,17 +598,37 @@ class ConfiguredLiquidityProvider:
     # ICL DISCOVERY
     # =============================================================
 
+    def _load_icl_for_cutoff(
+        self,
+        cutoff_date: date,
+    ) -> tuple[InstitutionalICLReadResult | None, list[str]]:
+        reader = InstitutionalICLReader()
+        errors: list[str] = []
+        for candidate in self._icl_candidates(cutoff_date):
+            try:
+                return reader.read(candidate), errors
+            except ValueError as exc:
+                errors.append(f"ICL source rejected: {candidate.name}: {exc}")
+        return None, errors
+
     def _discover_icl_file(
         self,
         cutoff_date: date,
     ) -> Path | None:
+        candidates = self._icl_candidates(cutoff_date)
+        return candidates[0] if candidates else None
+
+    def _icl_candidates(
+        self,
+        cutoff_date: date,
+    ) -> list[Path]:
         root_value = self._source_config.folder_watch.icl_root
         if not root_value:
-            return None
+            return []
 
         root = Path(root_value)
         if not root.exists():
-            return None
+            return []
 
         search_root = self._resolve_icl_search_root(root)
         candidates: list[tuple[date, Path]] = []
@@ -607,18 +640,16 @@ class ConfiguredLiquidityProvider:
                 continue
             candidates.append((document_date, candidate))
 
-        if not candidates:
-            return None
-
-        exact = [path for document_date, path in candidates if document_date == cutoff_date]
-        if exact:
-            return sorted(exact, key=lambda item: str(item).casefold())[0]
+        exact = sorted(
+            (path for document_date, path in candidates if document_date == cutoff_date),
+            key=lambda item: str(item).casefold(),
+        )
 
         allow_prior = self._source_config.metadata.get("allow_prior_source_date", False)
         if isinstance(allow_prior, str):
             allow_prior = allow_prior.strip().lower() in {"1", "true", "yes", "on"}
         if not bool(allow_prior):
-            return None
+            return exact
 
         raw_max_age = self._source_config.metadata.get("icl_max_prior_days", 7)
         try:
@@ -631,12 +662,8 @@ class ConfiguredLiquidityProvider:
             for document_date, path in candidates
             if document_date < cutoff_date and (cutoff_date - document_date).days <= max_age_days
         ]
-        if not prior:
-            return None
-
-        latest_date = max(document_date for document_date, _ in prior)
-        latest_paths = [path for document_date, path in prior if document_date == latest_date]
-        return sorted(latest_paths, key=lambda item: str(item).casefold())[0]
+        prior.sort(key=lambda item: (-item[0].toordinal(), str(item[1]).casefold()))
+        return exact + [path for _, path in prior]
 
     @staticmethod
     def _resolve_icl_search_root(root: Path) -> Path:
