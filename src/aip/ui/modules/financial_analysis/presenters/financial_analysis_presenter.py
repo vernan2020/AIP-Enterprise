@@ -11,6 +11,8 @@ from aip.product.demo.bootstrap.application_factory import DemoApplicationFactor
 from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model import (
     FinancialAccountCatalogRow,
     FinancialAnalysisViewModel,
+    FinancialEntityComparisonSeriesView,
+    FinancialEntityComparisonViewModel,
     FinancialMetricHistoryPointView,
     FinancialMetricHistorySeriesView,
     FinancialMetricView,
@@ -50,6 +52,85 @@ class FinancialAnalysisPresenter:
                 diagnostics=(f"Módulo SUGEF no disponible: {type(exc).__name__}: {exc}",)
             )
         return self._from_snapshot(snapshot)
+
+    def build_comparison_view_model(
+        self,
+        *,
+        entity_ids: tuple[str, ...],
+        series_code: str,
+    ) -> FinancialEntityComparisonViewModel:
+        unique_ids = tuple(dict.fromkeys(item for item in entity_ids if item))
+        if not unique_ids:
+            return FinancialEntityComparisonViewModel(
+                series_code=series_code,
+                diagnostics=("Seleccione al menos una entidad.",),
+            )
+        if len(unique_ids) > 5:
+            return FinancialEntityComparisonViewModel(
+                series_code=series_code,
+                diagnostics=("El comparativo admite un máximo de 5 entidades.",),
+            )
+
+        try:
+            service = self._factory.container.resolve(ConfiguredFinancialAnalysisService)
+            snapshots = tuple(
+                service.load(selected_entity_id=entity_id)
+                for entity_id in unique_ids
+            )
+        except Exception as exc:
+            return FinancialEntityComparisonViewModel(
+                series_code=series_code,
+                diagnostics=(f"Comparativo SUGEF no disponible: {type(exc).__name__}: {exc}",),
+            )
+
+        series_views: list[FinancialEntityComparisonSeriesView] = []
+        label = ""
+        unit = ""
+        diagnostics: list[str] = []
+
+        for snapshot in snapshots:
+            entity = snapshot.selected_entity
+            if entity is None:
+                continue
+            candidate = next(
+                (
+                    item
+                    for item in (*snapshot.metric_history, *snapshot.statement_history)
+                    if item.code == series_code
+                ),
+                None,
+            )
+            if candidate is None:
+                diagnostics.append(f"{entity.name}: serie no disponible para el corte seleccionado.")
+                continue
+
+            mapped = self._history_series(candidate)
+            if unit and mapped.unit != unit:
+                diagnostics.append(
+                    f"{entity.name}: unidad incompatible ({mapped.unit}); serie omitida."
+                )
+                continue
+            label = label or candidate.label
+            unit = unit or mapped.unit
+            series_views.append(
+                FinancialEntityComparisonSeriesView(
+                    entity_id=entity.entity_id,
+                    entity_name=entity.name,
+                    unit=mapped.unit,
+                    latest_value=mapped.latest_value,
+                    available_points=mapped.available_points,
+                    total_points=mapped.total_points,
+                    points=mapped.points,
+                )
+            )
+
+        return FinancialEntityComparisonViewModel(
+            series_code=series_code,
+            label=label,
+            unit=unit,
+            entities=tuple(series_views),
+            diagnostics=tuple(diagnostics),
+        )
 
     @classmethod
     def _from_snapshot(
