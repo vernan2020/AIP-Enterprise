@@ -9,6 +9,7 @@ from aip.domain.financial_analysis.financial_metric_history import (
     FinancialMetricHistoryService,
 )
 from aip.domain.financial_analysis.models import (
+    FinancialAccountCatalogEntry,
     FinancialAnalysisSnapshot,
     FinancialMetric,
     FinancialMetricHistoryPoint,
@@ -21,6 +22,7 @@ from aip.product.configured.configuration.configured_source_config import (
     SUGEFFinancialSourceConfig,
 )
 from aip.product.configured.context.valuation_date_context import ValuationDateContext
+from aip.product.configured.readers.sugef_account_catalog_reader import SUGEFAccountCatalogReader
 from aip.product.configured.readers.sugef_financial_api_client import SUGEFApiReadResult
 from aip.product.configured.readers.sugef_financial_history_reader import (
     SUGEFFinancialHistoryReader,
@@ -48,6 +50,7 @@ class ConfiguredFinancialAnalysisService:
         analysis_service: FinancialAnalysisService | None = None,
         history_reader: SUGEFFinancialHistoryReader | None = None,
         history_service: FinancialMetricHistoryService | None = None,
+        account_catalog_reader: SUGEFAccountCatalogReader | None = None,
     ) -> None:
         self._config = config
         self._valuation_date_context = valuation_date_context
@@ -57,6 +60,9 @@ class ConfiguredFinancialAnalysisService:
         self._analysis = analysis_service or FinancialAnalysisService()
         self._history_reader = history_reader or SUGEFFinancialHistoryReader(config)
         self._history = history_service or FinancialMetricHistoryService(self._analysis)
+        self._account_catalog_reader = account_catalog_reader or SUGEFAccountCatalogReader(config)
+        self._cached_account_catalog: tuple[FinancialAccountCatalogEntry, ...] | None = None
+        self._cached_account_catalog_diagnostics: tuple[str, ...] = ()
         self._cached_results: dict[date, SUGEFFinancialReadResult] = {}
         self._cached_history: dict[tuple[str, date], SUGEFApiReadResult] = {}
         self._lock = RLock()
@@ -70,13 +76,17 @@ class ConfiguredFinancialAnalysisService:
     ) -> FinancialAnalysisSnapshot:
         requested_date = cutoff_date or self._valuation_date_context.value
         result = self._read(cutoff_date=requested_date, force_refresh=force_refresh)
+        account_catalog, account_catalog_diagnostics = self._read_account_catalog(
+            force_refresh=force_refresh
+        )
         snapshot = self._analysis.build_snapshot(
             result.lines,
             selected_entity_id=selected_entity_id,
             cutoff_date=requested_date,
-            diagnostics=result.diagnostics,
+            diagnostics=result.diagnostics + account_catalog_diagnostics,
             source_files=result.source_files,
         )
+        snapshot = replace(snapshot, account_catalog=account_catalog)
         if snapshot.selected_entity is None or snapshot.cutoff_date is None:
             return snapshot
 
@@ -92,8 +102,14 @@ class ConfiguredFinancialAnalysisService:
                 combined_lines,
                 selected_entity_id=entity_id,
                 cutoff_date=snapshot.cutoff_date,
-                diagnostics=result.diagnostics + history_result.diagnostics,
+                diagnostics=(
+                    result.diagnostics + history_result.diagnostics + account_catalog_diagnostics
+                ),
                 source_files=result.source_files,
+            )
+            enriched_snapshot = replace(
+                enriched_snapshot,
+                account_catalog=account_catalog,
             )
             raw_history = self._history.build(
                 combined_lines,
@@ -310,6 +326,38 @@ class ConfiguredFinancialAnalysisService:
             )
             aligned.append(replace(series, points=points))
         return tuple(aligned)
+
+    def _read_account_catalog(
+        self,
+        *,
+        force_refresh: bool,
+    ) -> tuple[tuple[FinancialAccountCatalogEntry, ...], tuple[str, ...]]:
+        if not self._config.enabled or not self._config.api_enabled:
+            return (), ("Catálogo contable SUGEF no consultado: API pública deshabilitada.",)
+        with self._lock:
+            if (
+                force_refresh
+                or not self._config.cache_enabled
+                or self._cached_account_catalog is None
+            ):
+                result = self._account_catalog_reader.read()
+                self._cached_account_catalog = tuple(
+                    FinancialAccountCatalogEntry(
+                        account_code=item.account_code,
+                        catalog_type_code=item.catalog_type_code,
+                        catalog_type_name=item.catalog_type_name,
+                        parent_account_code=item.parent_account_code,
+                        account_name=item.account_name,
+                        level=item.level,
+                        sign=item.sign,
+                    )
+                    for item in result.entries
+                )
+                self._cached_account_catalog_diagnostics = result.diagnostics
+            return (
+                self._cached_account_catalog or (),
+                self._cached_account_catalog_diagnostics,
+            )
 
     def _read(self, *, cutoff_date: date, force_refresh: bool) -> SUGEFFinancialReadResult:
         with self._lock:

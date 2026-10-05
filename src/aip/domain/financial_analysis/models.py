@@ -186,6 +186,17 @@ class FinancialIndicatorReconciliation:
 
 
 @dataclass(frozen=True, slots=True)
+class FinancialAccountCatalogEntry:
+    account_code: str
+    catalog_type_code: str
+    catalog_type_name: str
+    parent_account_code: str | None
+    account_name: str
+    level: Decimal | None
+    sign: int | None
+
+
+@dataclass(frozen=True, slots=True)
 class FinancialAnalysisSnapshot:
     status: str
     cutoff_date: date | None
@@ -196,6 +207,7 @@ class FinancialAnalysisSnapshot:
     metric_history: tuple[FinancialMetricHistorySeries, ...] = field(default_factory=tuple)
     statement_history: tuple[FinancialMetricHistorySeries, ...] = field(default_factory=tuple)
     statement_lines: tuple[FinancialStatementLine, ...] = field(default_factory=tuple)
+    account_catalog: tuple[FinancialAccountCatalogEntry, ...] = field(default_factory=tuple)
     peer_summaries: tuple[EntityFinancialSummary, ...] = field(default_factory=tuple)
     market_composition: tuple[MarketCompositionSeries, ...] = field(default_factory=tuple)
     peer_ratings: tuple[EntityRatingSummary, ...] = field(default_factory=tuple)

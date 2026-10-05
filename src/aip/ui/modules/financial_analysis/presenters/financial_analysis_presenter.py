@@ -2,14 +2,20 @@ from __future__ import annotations
 
 from decimal import Decimal, DivisionByZero, InvalidOperation
 
-from aip.domain.financial_analysis.models import FinancialMetricHistorySeries
+from aip.domain.financial_analysis.models import (
+    FinancialMetricHistorySeries,
+    FinancialStatementLine,
+)
 from aip.product.configured.services.configured_financial_analysis_service import (
     ConfiguredFinancialAnalysisService,
     FinancialAnalysisApplicationSnapshot,
 )
 from aip.product.demo.bootstrap.application_factory import DemoApplicationFactory
 from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model import (
+    FinancialAccountCatalogRow,
     FinancialAnalysisViewModel,
+    FinancialEntityComparisonSeriesView,
+    FinancialEntityComparisonViewModel,
     FinancialMetricHistoryPointView,
     FinancialMetricHistorySeriesView,
     FinancialMetricView,
@@ -50,6 +56,86 @@ class FinancialAnalysisPresenter:
             )
         return self._from_snapshot(snapshot)
 
+    def build_comparison_view_model(
+        self,
+        *,
+        entity_ids: tuple[str, ...],
+        series_code: str,
+    ) -> FinancialEntityComparisonViewModel:
+        unique_ids = tuple(dict.fromkeys(item for item in entity_ids if item))
+        if not unique_ids:
+            return FinancialEntityComparisonViewModel(
+                series_code=series_code,
+                diagnostics=("Seleccione al menos una entidad.",),
+            )
+        if len(unique_ids) > 5:
+            return FinancialEntityComparisonViewModel(
+                series_code=series_code,
+                diagnostics=("El comparativo admite un máximo de 5 entidades.",),
+            )
+
+        try:
+            service = self._factory.container.resolve(ConfiguredFinancialAnalysisService)
+            snapshots = tuple(
+                service.load(selected_entity_id=entity_id) for entity_id in unique_ids
+            )
+        except Exception as exc:
+            return FinancialEntityComparisonViewModel(
+                series_code=series_code,
+                diagnostics=(f"Comparativo SUGEF no disponible: {type(exc).__name__}: {exc}",),
+            )
+
+        series_views: list[FinancialEntityComparisonSeriesView] = []
+        label = ""
+        unit = ""
+        diagnostics: list[str] = []
+
+        for snapshot in snapshots:
+            entity = snapshot.selected_entity
+            if entity is None:
+                continue
+            candidate = next(
+                (
+                    item
+                    for item in (*snapshot.metric_history, *snapshot.statement_history)
+                    if item.code == series_code
+                ),
+                None,
+            )
+            if candidate is None:
+                diagnostics.append(
+                    f"{entity.name}: serie no disponible para el corte seleccionado."
+                )
+                continue
+
+            mapped = self._history_series(candidate)
+            if unit and mapped.unit != unit:
+                diagnostics.append(
+                    f"{entity.name}: unidad incompatible ({mapped.unit}); serie omitida."
+                )
+                continue
+            label = label or candidate.label
+            unit = unit or mapped.unit
+            series_views.append(
+                FinancialEntityComparisonSeriesView(
+                    entity_id=entity.entity_id,
+                    entity_name=entity.name,
+                    unit=mapped.unit,
+                    latest_value=mapped.latest_value,
+                    available_points=mapped.available_points,
+                    total_points=mapped.total_points,
+                    points=mapped.points,
+                )
+            )
+
+        return FinancialEntityComparisonViewModel(
+            series_code=series_code,
+            label=label,
+            unit=unit,
+            entities=tuple(series_views),
+            diagnostics=tuple(diagnostics),
+        )
+
     @classmethod
     def _from_snapshot(
         cls, snapshot: FinancialAnalysisApplicationSnapshot
@@ -66,6 +152,7 @@ class FinancialAnalysisPresenter:
         )
         metric_history = tuple(cls._history_series(item) for item in snapshot.metric_history)
         statement_history = tuple(cls._history_series(item) for item in snapshot.statement_history)
+        account_catalog_rows = cls._account_catalog_rows(snapshot)
         statements = tuple(
             FinancialStatementRow(
                 statement=cls._statement_label(item.statement_type.value),
@@ -192,6 +279,7 @@ class FinancialAnalysisPresenter:
             metric_history=metric_history,
             statement_history=statement_history,
             statement_rows=statements,
+            account_catalog_rows=account_catalog_rows,
             peer_rows=peers,
             peer_chart_series=peer_chart_series,
             peer_rating_rows=tuple(peer_rating_rows),
@@ -212,6 +300,88 @@ class FinancialAnalysisPresenter:
             source_name=snapshot.source_name,
             source_url=snapshot.source_url,
             source_file_count=len(snapshot.source_files),
+        )
+
+    @classmethod
+    def _account_catalog_rows(
+        cls,
+        snapshot: FinancialAnalysisApplicationSnapshot,
+    ) -> tuple[FinancialAccountCatalogRow, ...]:
+        by_code: dict[str, list[FinancialStatementLine]] = {}
+        for line in snapshot.statement_lines:
+            code = line.account_code.strip().removesuffix(".0")
+            if code:
+                by_code.setdefault(code, []).append(line)
+
+        rows: list[FinancialAccountCatalogRow] = []
+        for entry in snapshot.account_catalog:
+            code = entry.account_code.strip().removesuffix(".0")
+            matches = by_code.get(code, [])
+            balance = "N/D"
+            currency = "-"
+            balance_status = "Sin saldo publicado"
+            history_code = ""
+
+            if len(matches) == 1:
+                line = matches[0]
+                balance = cls._statement_value(
+                    line.amount,
+                    line.statement_type.value,
+                    line.account_code,
+                )
+                currency = line.currency
+                balance_status = "Disponible"
+                history_code = (
+                    f"SUGEF::{line.statement_type.value}::{line.account_code}"
+                    if line.account_code
+                    else ""
+                )
+            elif len(matches) > 1:
+                distinct = {
+                    (line.statement_type.value, line.amount, line.currency) for line in matches
+                }
+                if len(distinct) == 1:
+                    line = matches[0]
+                    balance = cls._statement_value(
+                        line.amount,
+                        line.statement_type.value,
+                        line.account_code,
+                    )
+                    currency = line.currency
+                    balance_status = "Disponible"
+                    history_code = (
+                        f"SUGEF::{line.statement_type.value}::{line.account_code}"
+                        if line.account_code
+                        else ""
+                    )
+                else:
+                    balance_status = "Coincidencia múltiple"
+
+            rows.append(
+                FinancialAccountCatalogRow(
+                    account_code=entry.account_code,
+                    account_name=entry.account_name,
+                    catalog_type_code=entry.catalog_type_code,
+                    catalog_type_name=entry.catalog_type_name,
+                    level=("-" if entry.level is None else f"{entry.level.normalize()}"),
+                    parent_account_code=entry.parent_account_code or "-",
+                    sign=("-" if entry.sign is None else str(entry.sign)),
+                    balance=balance,
+                    currency=currency,
+                    balance_status=balance_status,
+                    history_code=history_code,
+                )
+            )
+
+        return tuple(
+            sorted(
+                rows,
+                key=lambda item: (
+                    item.catalog_type_code,
+                    item.account_code,
+                    item.account_name.casefold(),
+                ),
+            )
         )
 
     @classmethod

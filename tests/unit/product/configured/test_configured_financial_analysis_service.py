@@ -13,6 +13,10 @@ from aip.product.configured.configuration.configured_source_config import (
     SUGEFFinancialSourceConfig,
 )
 from aip.product.configured.context.valuation_date_context import ValuationDateContext
+from aip.product.configured.readers.sugef_account_catalog_reader import (
+    SUGEFAccountCatalogEntry,
+    SUGEFAccountCatalogReadResult,
+)
 from aip.product.configured.readers.sugef_financial_api_client import SUGEFApiReadResult
 from aip.product.configured.readers.sugef_financial_statement_reader import (
     SUGEFFinancialReadResult,
@@ -229,3 +233,70 @@ def test_selected_entity_history_enriches_missing_kpis_and_recalculates_roa() ->
     assert {"11101", "20000"}.issubset(current_codes)
     history_sources = {series.source_account for series in snapshot.statement_history}
     assert {"11101", "20000"}.issubset(history_sources)
+
+
+class _CatalogReader:
+    def __init__(self) -> None:
+        self.read_count = 0
+
+    def read(self) -> SUGEFAccountCatalogReadResult:
+        self.read_count += 1
+        return SUGEFAccountCatalogReadResult(
+            entries=(
+                SUGEFAccountCatalogEntry(
+                    account_code="10000",
+                    catalog_type_code="14",
+                    catalog_type_name="CATALOGO",
+                    parent_account_code=None,
+                    account_name="ACTIVO TOTAL",
+                    level=Decimal("1"),
+                    sign=1,
+                ),
+                SUGEFAccountCatalogEntry(
+                    account_code="11101",
+                    catalog_type_code="14",
+                    catalog_type_name="CATALOGO",
+                    parent_account_code="11000",
+                    account_name="CARTERA DE CREDITO",
+                    level=Decimal("3"),
+                    sign=1,
+                ),
+            ),
+            endpoint="https://sugef.example/catalog",
+            diagnostics=("Catálogo contable SUGEF: 2 cuentas normalizadas desde API oficial.",),
+        )
+
+
+def test_service_exposes_complete_account_catalog_and_caches_it() -> None:
+    reader = _Reader()
+    catalog = _CatalogReader()
+    service = ConfiguredFinancialAnalysisService(
+        SUGEFFinancialSourceConfig(enabled=True, api_enabled=True, cache_enabled=True),
+        ValuationDateContext(date(2026, 9, 30)),
+        reader=reader,  # type: ignore[arg-type]
+        account_catalog_reader=catalog,  # type: ignore[arg-type]
+    )
+
+    first = service.load()
+    second = service.load()
+
+    assert [item.account_code for item in first.account_catalog] == ["10000", "11101"]
+    assert second.account_catalog == first.account_catalog
+    assert catalog.read_count == 1
+    assert any("2 cuentas normalizadas" in item for item in first.diagnostics)
+
+
+def test_service_does_not_query_catalog_when_api_is_disabled() -> None:
+    catalog = _CatalogReader()
+    service = ConfiguredFinancialAnalysisService(
+        SUGEFFinancialSourceConfig(enabled=True, api_enabled=False),
+        ValuationDateContext(date(2026, 9, 30)),
+        reader=_Reader(),  # type: ignore[arg-type]
+        account_catalog_reader=catalog,  # type: ignore[arg-type]
+    )
+
+    snapshot = service.load()
+
+    assert snapshot.account_catalog == ()
+    assert catalog.read_count == 0
+    assert any("Catálogo contable SUGEF no consultado" in item for item in snapshot.diagnostics)
