@@ -9,6 +9,7 @@ from aip.product.configured.services.configured_financial_analysis_service impor
 )
 from aip.product.demo.bootstrap.application_factory import DemoApplicationFactory
 from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model import (
+    FinancialAccountCatalogRow,
     FinancialAnalysisViewModel,
     FinancialMetricHistoryPointView,
     FinancialMetricHistorySeriesView,
@@ -66,6 +67,7 @@ class FinancialAnalysisPresenter:
         )
         metric_history = tuple(cls._history_series(item) for item in snapshot.metric_history)
         statement_history = tuple(cls._history_series(item) for item in snapshot.statement_history)
+        account_catalog_rows = cls._account_catalog_rows(snapshot)
         statements = tuple(
             FinancialStatementRow(
                 statement=cls._statement_label(item.statement_type.value),
@@ -192,6 +194,7 @@ class FinancialAnalysisPresenter:
             metric_history=metric_history,
             statement_history=statement_history,
             statement_rows=statements,
+            account_catalog_rows=account_catalog_rows,
             peer_rows=peers,
             peer_chart_series=peer_chart_series,
             peer_rating_rows=tuple(peer_rating_rows),
@@ -212,6 +215,89 @@ class FinancialAnalysisPresenter:
             source_name=snapshot.source_name,
             source_url=snapshot.source_url,
             source_file_count=len(snapshot.source_files),
+        )
+
+    @classmethod
+    def _account_catalog_rows(
+        cls,
+        snapshot: FinancialAnalysisApplicationSnapshot,
+    ) -> tuple[FinancialAccountCatalogRow, ...]:
+        by_code: dict[str, list[object]] = {}
+        for line in snapshot.statement_lines:
+            code = line.account_code.strip().removesuffix(".0")
+            if code:
+                by_code.setdefault(code, []).append(line)
+
+        rows: list[FinancialAccountCatalogRow] = []
+        for entry in snapshot.account_catalog:
+            code = entry.account_code.strip().removesuffix(".0")
+            matches = by_code.get(code, [])
+            balance = "N/D"
+            currency = "-"
+            balance_status = "Sin saldo publicado"
+            history_code = ""
+
+            if len(matches) == 1:
+                line = matches[0]
+                balance = cls._statement_value(
+                    line.amount,
+                    line.statement_type.value,
+                    line.account_code,
+                )
+                currency = line.currency
+                balance_status = "Disponible"
+                history_code = (
+                    f"SUGEF::{line.statement_type.value}::{line.account_code}"
+                    if line.account_code
+                    else ""
+                )
+            elif len(matches) > 1:
+                distinct = {
+                    (line.statement_type.value, line.amount, line.currency)
+                    for line in matches
+                }
+                if len(distinct) == 1:
+                    line = matches[0]
+                    balance = cls._statement_value(
+                        line.amount,
+                        line.statement_type.value,
+                        line.account_code,
+                    )
+                    currency = line.currency
+                    balance_status = "Disponible"
+                    history_code = (
+                        f"SUGEF::{line.statement_type.value}::{line.account_code}"
+                        if line.account_code
+                        else ""
+                    )
+                else:
+                    balance_status = "Coincidencia múltiple"
+
+            rows.append(
+                FinancialAccountCatalogRow(
+                    account_code=entry.account_code,
+                    account_name=entry.account_name,
+                    catalog_type_code=entry.catalog_type_code,
+                    catalog_type_name=entry.catalog_type_name,
+                    level=("-" if entry.level is None else f"{entry.level.normalize()}"),
+                    parent_account_code=entry.parent_account_code or "-",
+                    sign=("-" if entry.sign is None else str(entry.sign)),
+                    balance=balance,
+                    currency=currency,
+                    balance_status=balance_status,
+                    history_code=history_code,
+                )
+            )
+
+        return tuple(
+            sorted(
+                rows,
+                key=lambda item: (
+                    item.catalog_type_code,
+                    item.account_code,
+                    item.account_name.casefold(),
+                ),
+            )
         )
 
     @classmethod
