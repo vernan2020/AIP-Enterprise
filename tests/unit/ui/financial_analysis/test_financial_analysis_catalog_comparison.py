@@ -202,8 +202,6 @@ def test_comparison_panel_enforces_five_checked_entities(qt_app) -> None:
 
 
 def test_presenter_requests_36_month_horizon_with_roa_support_window() -> None:
-    service = _ComparisonService()
-
     class _TrackingService(_ComparisonService):
         def __init__(self) -> None:
             super().__init__()
