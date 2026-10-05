@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import replace
 from datetime import date
 from decimal import Decimal
-import logging
 from threading import RLock
 from time import perf_counter
 
