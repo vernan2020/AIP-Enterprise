@@ -77,8 +77,7 @@ class FinancialAnalysisPresenter:
         try:
             service = self._factory.container.resolve(ConfiguredFinancialAnalysisService)
             snapshots = tuple(
-                service.load(selected_entity_id=entity_id)
-                for entity_id in unique_ids
+                service.load(selected_entity_id=entity_id) for entity_id in unique_ids
             )
         except Exception as exc:
             return FinancialEntityComparisonViewModel(
@@ -104,7 +103,9 @@ class FinancialAnalysisPresenter:
                 None,
             )
             if candidate is None:
-                diagnostics.append(f"{entity.name}: serie no disponible para el corte seleccionado.")
+                diagnostics.append(
+                    f"{entity.name}: serie no disponible para el corte seleccionado."
+                )
                 continue
 
             mapped = self._history_series(candidate)
@@ -337,8 +338,7 @@ class FinancialAnalysisPresenter:
                 )
             elif len(matches) > 1:
                 distinct = {
-                    (line.statement_type.value, line.amount, line.currency)
-                    for line in matches
+                    (line.statement_type.value, line.amount, line.currency) for line in matches
                 }
                 if len(distinct) == 1:
                     line = matches[0]
