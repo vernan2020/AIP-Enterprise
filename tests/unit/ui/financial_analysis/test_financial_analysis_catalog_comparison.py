@@ -84,7 +84,9 @@ class _ComparisonService:
             "E2": FinancialEntity("E2", "Entidad Dos"),
         }
 
-    def load(self, *, selected_entity_id: str | None = None, **_kwargs) -> FinancialAnalysisSnapshot:
+    def load(
+        self, *, selected_entity_id: str | None = None, **_kwargs
+    ) -> FinancialAnalysisSnapshot:
         assert selected_entity_id is not None
         entity = self.entities[selected_entity_id]
         offset = Decimal("0") if selected_entity_id == "E1" else Decimal("10")
