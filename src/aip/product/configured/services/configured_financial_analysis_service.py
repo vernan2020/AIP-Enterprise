@@ -119,31 +119,10 @@ class ConfiguredFinancialAnalysisService:
                 enriched_snapshot,
                 account_catalog=account_catalog,
             )
-            if lookback_months is None:
-                entity_dates = tuple(
-                    line.statement_date
-                    for line in history_result.lines
-                    if line.entity.entity_id == entity_id
-                    and line.statement_date <= snapshot.cutoff_date
-                )
-                if entity_dates:
-                    earliest = min(entity_dates)
-                    display_months = (
-                        (snapshot.cutoff_date.year - earliest.year) * 12
-                        + snapshot.cutoff_date.month
-                        - earliest.month
-                        + 1
-                    )
-                else:
-                    display_months = 1
-            else:
-                display_months = max(1, lookback_months - 11)
-
             raw_history = self._history.build(
                 combined_lines,
                 entity_id=entity_id,
                 cutoff_date=snapshot.cutoff_date,
-                months=display_months,
             )
             # El histórico de la entidad seleccionada completa KPI faltantes y
             # aporta la metodología institucional de ROA. El ROA calculado desde
@@ -249,10 +228,31 @@ class ConfiguredFinancialAnalysisService:
                 snapshots.append(snapshot)
                 continue
 
+            if lookback_months is None:
+                entity_dates = tuple(
+                    line.statement_date
+                    for line in history_result.lines
+                    if line.entity.entity_id == entity_id
+                    and line.statement_date <= snapshot.cutoff_date
+                )
+                if entity_dates:
+                    earliest = min(entity_dates)
+                    display_months = (
+                        (snapshot.cutoff_date.year - earliest.year) * 12
+                        + snapshot.cutoff_date.month
+                        - earliest.month
+                        + 1
+                    )
+                else:
+                    display_months = 1
+            else:
+                display_months = max(1, lookback_months - 11)
+
             raw_history = self._history.build(
                 combined_lines,
                 entity_id=entity_id,
                 cutoff_date=snapshot.cutoff_date,
+                months=display_months,
             )
             enriched_metrics = self._analysis.metrics_for_period(
                 combined_lines,
