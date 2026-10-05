@@ -13,8 +13,8 @@ from aip.product.configured.protocols import (
     SourceHealthProvider,
 )
 from aip.product.configured.readers.institutional_icl_reader import (
-    InstitutionalICLReadResult,
     InstitutionalICLReader,
+    InstitutionalICLReadResult,
 )
 from aip.product.demo.configuration.demo_config import DemoConfig
 
