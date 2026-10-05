@@ -334,6 +334,8 @@ class ConfiguredFinancialAnalysisService:
         *,
         force_refresh: bool,
     ) -> tuple[tuple[FinancialAccountCatalogEntry, ...], tuple[str, ...]]:
+        if not self._config.enabled or not self._config.api_enabled:
+            return (), ("Catálogo contable SUGEF no consultado: API pública deshabilitada.",)
         with self._lock:
             if (
                 force_refresh
