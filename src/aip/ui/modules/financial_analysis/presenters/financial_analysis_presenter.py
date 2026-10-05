@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from calendar import monthrange
+from dataclasses import replace
 from datetime import date
 from decimal import Decimal, DivisionByZero, InvalidOperation
 
@@ -91,6 +92,27 @@ class FinancialAnalysisPresenter:
                 cutoff_date=display_end,
                 lookback_months=lookback_months,
             )
+            if display_end is None:
+                effective_end = next(
+                    (snapshot.cutoff_date for snapshot in snapshots if snapshot.cutoff_date is not None),
+                    None,
+                )
+                if effective_end is not None:
+                    display_end = effective_end
+                    visible_months = {
+                        "12M": 12,
+                        "24M": 24,
+                        "36M": 36,
+                        "5Y": 60,
+                    }.get(horizon.strip().upper())
+                    if visible_months is not None:
+                        month_index = (
+                            effective_end.year * 12
+                            + effective_end.month
+                            - visible_months
+                        )
+                        start_year, zero_based_month = divmod(month_index, 12)
+                        display_start = date(start_year, zero_based_month + 1, 1)
         except Exception as exc:
             return FinancialEntityComparisonViewModel(
                 series_code=series_code,
