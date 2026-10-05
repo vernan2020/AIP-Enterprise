@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
 
 from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model import (
     FinancialAnalysisViewModel,
+    FinancialEntityComparisonSeriesView,
     FinancialEntityComparisonViewModel,
 )
 
@@ -231,7 +232,9 @@ class FinancialEntityComparisonPanel(QWidget):
 
         all_dates: list[QDateTime] = []
         all_values: list[float] = []
-        prepared: list[tuple[object, tuple[QDateTime, ...]]] = []
+        prepared: list[
+            tuple[FinancialEntityComparisonSeriesView, tuple[QDateTime, ...]]
+        ] = []
         for entity in view_model.entities:
             dates = tuple(
                 QDateTime.fromString(point.iso_date, Qt.DateFormat.ISODate)
