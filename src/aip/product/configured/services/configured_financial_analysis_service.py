@@ -103,9 +103,7 @@ class ConfiguredFinancialAnalysisService:
                 selected_entity_id=entity_id,
                 cutoff_date=snapshot.cutoff_date,
                 diagnostics=(
-                    result.diagnostics
-                    + history_result.diagnostics
-                    + account_catalog_diagnostics
+                    result.diagnostics + history_result.diagnostics + account_catalog_diagnostics
                 ),
                 source_files=result.source_files,
             )
