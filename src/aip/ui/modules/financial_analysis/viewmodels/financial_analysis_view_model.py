@@ -49,6 +49,26 @@ class FinancialAccountCatalogRow:
 
 
 @dataclass(frozen=True, slots=True)
+class FinancialEntityComparisonSeriesView:
+    entity_id: str
+    entity_name: str
+    unit: str
+    latest_value: str
+    available_points: int
+    total_points: int
+    points: tuple[FinancialMetricHistoryPointView, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True, slots=True)
+class FinancialEntityComparisonViewModel:
+    series_code: str = ""
+    label: str = ""
+    unit: str = ""
+    entities: tuple[FinancialEntityComparisonSeriesView, ...] = field(default_factory=tuple)
+    diagnostics: tuple[str, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True, slots=True)
 class FinancialStatementRow:
     statement: str
     account_code: str
