@@ -67,6 +67,5 @@ def test_invalid_exact_icl_uses_prior_valid_candidate_when_available(
     assert result.valuation_date == date(2026, 9, 29)
     assert result.source_file == prior.name
     assert errors == [
-        "ICL source rejected: ICL 30 SETIEMBRE_2026.xlsx: "
-        "Required ICL value is missing at AA10"
+        "ICL source rejected: ICL 30 SETIEMBRE_2026.xlsx: " "Required ICL value is missing at AA10"
     ]
