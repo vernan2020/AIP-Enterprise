@@ -29,8 +29,7 @@ def test_forecast_lab_exposes_governed_multimodel_controls(qt_app) -> None:
     assert panel._indicator_combo.count() == 24
     assert panel._indicator_combo.currentData() == "TPM"
     codes = {
-        panel._indicator_combo.itemData(index)
-        for index in range(panel._indicator_combo.count())
+        panel._indicator_combo.itemData(index) for index in range(panel._indicator_combo.count())
     }
     assert {"FX_BUY", "TRI_CRC_60M", "TRI_USD_60M"}.issubset(codes)
     assert panel._run_button.text() == "EJECUTAR MODELOS"
