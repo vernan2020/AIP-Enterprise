@@ -191,11 +191,28 @@ class MacroForecastLabPanel(QWidget):
     _INDICATORS = (
         ("TPM", "TPM"),
         ("TBP", "TBP"),
-        ("TRI_CRC_12M", "TRI CRC 12M"),
-        ("TRI_USD_12M", "TRI USD 12M"),
         ("INFLATION", "Inflación"),
         ("IMAE", "IMAE"),
-        ("FX_SELL", "USD / CRC"),
+        ("FX_SELL", "USD / CRC venta"),
+        ("FX_BUY", "USD / CRC compra"),
+        ("TRI_CRC_1W", "TRI CRC 1S"),
+        ("TRI_CRC_1M", "TRI CRC 1M"),
+        ("TRI_CRC_3M", "TRI CRC 3M"),
+        ("TRI_CRC_6M", "TRI CRC 6M"),
+        ("TRI_CRC_9M", "TRI CRC 9M"),
+        ("TRI_CRC_12M", "TRI CRC 12M"),
+        ("TRI_CRC_24M", "TRI CRC 24M"),
+        ("TRI_CRC_36M", "TRI CRC 36M"),
+        ("TRI_CRC_60M", "TRI CRC 60M"),
+        ("TRI_USD_1W", "TRI USD 1S"),
+        ("TRI_USD_1M", "TRI USD 1M"),
+        ("TRI_USD_3M", "TRI USD 3M"),
+        ("TRI_USD_6M", "TRI USD 6M"),
+        ("TRI_USD_9M", "TRI USD 9M"),
+        ("TRI_USD_12M", "TRI USD 12M"),
+        ("TRI_USD_24M", "TRI USD 24M"),
+        ("TRI_USD_36M", "TRI USD 36M"),
+        ("TRI_USD_60M", "TRI USD 60M"),
     )
 
     def __init__(
@@ -307,7 +324,8 @@ class MacroForecastLabPanel(QWidget):
             "Los pesos se derivan del desempeño multi-horizonte fuera de muestra. "
             "NAIVE permanece como benchmark y puede formar parte del ensemble. "
             "Ridge y ElasticNet usan únicamente información observable al origen. "
-            "Gradient Boosting se habilita solo si scikit-learn está disponible en el runtime."
+            "Gradient Boosting, Random Forest, Extra Trees e HistGradientBoosting compiten "
+            "con los modelos econométricos bajo el mismo backtesting rolling."
         )
         explanation.setWordWrap(True)
         explanation.setAlignment(Qt.AlignmentFlag.AlignTop)
