@@ -144,8 +144,8 @@ class PortfolioHistoryView(QWidget):
                 "Duración modificada",
                 "Sensibilidad agregada del portafolio a movimientos de tasas.",
                 lambda value: f"{value:,.2f}",
-                Decimal("3.00"),
-                "Objetivo institucional ≤ 3,00",
+                None,
+                None,
             ),
             (
                 "hqla",
