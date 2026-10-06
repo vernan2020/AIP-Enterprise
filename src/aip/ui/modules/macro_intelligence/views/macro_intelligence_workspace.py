@@ -350,11 +350,31 @@ class MacroIntelligenceWorkspace(QWidget):
     _DRIVER_LABELS = (
         ("TPM", "TPM"),
         ("TBP", "TBP"),
-        ("TRI_CRC_12M", "TRI CRC 12M"),
-        ("TRI_USD_12M", "TRI USD 12M"),
         ("INFLATION", "Inflación"),
         ("IMAE", "IMAE"),
-        ("FX_SELL", "USD/CRC"),
+        ("FX_SELL", "USD/CRC venta"),
+        ("FX_BUY", "USD/CRC compra"),
+        ("TRI_CRC_1W", "TRI CRC 1S"),
+        ("TRI_CRC_1M", "TRI CRC 1M"),
+        ("TRI_CRC_3M", "TRI CRC 3M"),
+        ("TRI_CRC_6M", "TRI CRC 6M"),
+        ("TRI_CRC_9M", "TRI CRC 9M"),
+        ("TRI_CRC_12M", "TRI CRC 12M"),
+        ("TRI_CRC_24M", "TRI CRC 24M"),
+        ("TRI_CRC_36M", "TRI CRC 36M"),
+        ("TRI_CRC_60M", "TRI CRC 60M"),
+        ("TRI_USD_1W", "TRI USD 1S"),
+        ("TRI_USD_1M", "TRI USD 1M"),
+        ("TRI_USD_3M", "TRI USD 3M"),
+        ("TRI_USD_6M", "TRI USD 6M"),
+        ("TRI_USD_9M", "TRI USD 9M"),
+        ("TRI_USD_12M", "TRI USD 12M"),
+        ("TRI_USD_24M", "TRI USD 24M"),
+        ("TRI_USD_36M", "TRI USD 36M"),
+        ("TRI_USD_60M", "TRI USD 60M"),
+    )
+    _INSTITUTIONAL_DRIVERS = frozenset(
+        {"TPM", "TBP", "TRI_CRC_12M", "TRI_USD_12M", "INFLATION", "IMAE", "FX_SELL"}
     )
 
     def __init__(
@@ -370,10 +390,14 @@ class MacroIntelligenceWorkspace(QWidget):
         self._snapshot_store = EconomicSnapshotStore()
         self._thread_pool = QThreadPool.globalInstance()
         self._active_worker: _EconomicLoadWorker | None = None
+        self._forecast_worker: _ForecastProjectionWorker | None = None
         self._loading = False
+        self._forecast_loading = False
+        self._pending_forecast_code: str | None = None
         self._refresh_pending = False
         self._snapshot: EconomicSnapshot | None = None
         self._projection = MacroProjectionViewModel(status="LOADING")
+        self._ml_projection = MacroForecastLabViewModel()
         self._cards: dict[str, _MacroMetricCard] = {}
         self._build_ui()
         self._apply_styles()
@@ -479,6 +503,12 @@ class MacroIntelligenceWorkspace(QWidget):
         layout = QVBoxLayout(page)
         layout.setContentsMargins(4, 8, 4, 4)
         selector = QHBoxLayout()
+        selector.addWidget(QLabel("Fuente:"))
+        self._projection_source_combo = QComboBox()
+        self._projection_source_combo.addItem("Ensemble ML · backtesting rolling", "ML")
+        self._projection_source_combo.addItem("Escenario institucional aprobado", "INSTITUTIONAL")
+        self._projection_source_combo.currentIndexChanged.connect(self._projection_source_changed)
+        selector.addWidget(self._projection_source_combo)
         selector.addWidget(QLabel("Variable proyectada:"))
         self._driver_combo = QComboBox()
         for code, label in self._DRIVER_LABELS:
@@ -491,7 +521,7 @@ class MacroIntelligenceWorkspace(QWidget):
         selector.addWidget(self._projection_range)
         layout.addLayout(selector)
 
-        group = QGroupBox("PROYECCIÓN MACROECONÓMICA INSTITUCIONAL")
+        group = QGroupBox("PROYECCIÓN MACROECONÓMICA · ENSEMBLE ML / ESCENARIO INSTITUCIONAL")
         group_layout = QVBoxLayout(group)
         self._projection_chart = _ProjectionChart()
         group_layout.addWidget(self._projection_chart)
@@ -630,10 +660,11 @@ class MacroIntelligenceWorkspace(QWidget):
             self._projection_range.setText(
                 f"{_format_period(projection.first_period)} → {_format_period(projection.last_period)}"
             )
-        self._projection_note.setText(
-            "Trayectoria gobernada consumida directamente del escenario institucional aprobado. "
-            "Los valores del gráfico no se recalculan en la interfaz."
-        )
+        if str(self._projection_source_combo.currentData() or "ML") == "INSTITUTIONAL":
+            self._projection_note.setText(
+                "Trayectoria gobernada consumida directamente del escenario institucional aprobado. "
+                "Los valores del gráfico no se recalculan en la interfaz."
+            )
         self._projection_table.setRowCount(len(projection.rows))
         for row_index, row in enumerate(projection.rows):
             values = (
@@ -656,9 +687,92 @@ class MacroIntelligenceWorkspace(QWidget):
         self._refresh_projection_chart()
 
     @Slot()
+    def _projection_source_changed(self) -> None:
+        source = str(self._projection_source_combo.currentData() or "ML")
+        code = str(self._driver_combo.currentData() or "TPM")
+        if source == "INSTITUTIONAL" and code not in self._INSTITUTIONAL_DRIVERS:
+            index = self._driver_combo.findData("TPM")
+            if index >= 0:
+                self._driver_combo.setCurrentIndex(index)
+                return
+        self._refresh_projection_chart()
+
+    @Slot()
     def _refresh_projection_chart(self) -> None:
         code = str(self._driver_combo.currentData() or "TPM")
+        source = str(self._projection_source_combo.currentData() or "ML")
+        if source == "ML":
+            self._load_ml_projection(code)
+            return
+        if code not in self._INSTITUTIONAL_DRIVERS:
+            self._projection_note.setText(
+                "Este indicador no forma parte del escenario institucional aprobado. "
+                "Seleccione Ensemble ML para proyectarlo."
+            )
+            return
         self._projection_chart.set_projection(self._projection, code)
+        self._projection_note.setText(
+            "Trayectoria gobernada consumida directamente del escenario institucional aprobado. "
+            "Los valores del gráfico no se recalculan en la interfaz."
+        )
+
+    def _load_ml_projection(self, code: str) -> None:
+        if self._forecast_loading:
+            self._pending_forecast_code = code
+            return
+        self._forecast_loading = True
+        self._pending_forecast_code = None
+        self._driver_combo.setEnabled(False)
+        self._projection_source_combo.setEnabled(False)
+        self._projection_note.setText(
+            f"Calculando ensemble ML para {self._driver_combo.currentText()} · "
+            "backtesting rolling 1/3/6/12M..."
+        )
+        worker = _ForecastProjectionWorker(self._presenter, code)
+        worker.signals.completed.connect(self._ml_projection_completed)
+        worker.signals.failed.connect(self._ml_projection_failed)
+        self._forecast_worker = worker
+        self._thread_pool.start(worker)
+
+    @Slot(object)
+    def _ml_projection_completed(self, result: object) -> None:
+        if not isinstance(result, MacroForecastLabViewModel):
+            self._ml_projection_failed("Resultado inesperado del motor ML")
+            return
+        self._ml_projection = result
+        if result.points:
+            self._projection_chart.set_ml_forecast(result)
+            origin = result.forecast_origin.strftime("%d/%m/%Y") if result.forecast_origin else "-"
+            self._projection_range.setText(
+                f"{_format_period(result.points[0].period)} → "
+                f"{_format_period(result.points[-1].period)}"
+            )
+            self._projection_note.setText(
+                f"Proyección analítica · Champion {result.champion_model} "
+                f"({result.champion_family}) · confianza {result.confidence_score} · "
+                f"origen {origin}. Bandas de incertidumbre 80% en el gráfico. "
+                "No sustituye el escenario institucional aprobado."
+            )
+        else:
+            self._projection_note.setText(
+                f"Proyección ML no disponible · {result.diagnostic or result.status}"
+            )
+        self._finish_ml_projection()
+
+    @Slot(str)
+    def _ml_projection_failed(self, message: str) -> None:
+        self._projection_note.setText(f"Proyección ML no disponible · {message}")
+        self._finish_ml_projection()
+
+    def _finish_ml_projection(self) -> None:
+        self._forecast_loading = False
+        self._forecast_worker = None
+        self._driver_combo.setEnabled(True)
+        self._projection_source_combo.setEnabled(True)
+        pending = self._pending_forecast_code
+        self._pending_forecast_code = None
+        if pending is not None:
+            QTimer.singleShot(0, lambda: self._load_ml_projection(pending))
 
     @Slot()
     def refresh(self) -> None:
