@@ -155,11 +155,14 @@ class RelativeValueView(QWidget):
         font.setBold(True)
         item.setFont(font)
         if classification == "COMPRA":
-            item.setForeground(QColor("#167A68"))
+            item.setForeground(QColor("#126B53"))
+            item.setBackground(QColor("#EAF7F2"))
         elif classification == "VENTA":
-            item.setForeground(QColor("#B42335"))
+            item.setForeground(QColor("#A93028"))
+            item.setBackground(QColor("#FFF0EE"))
         else:
             item.setForeground(QColor("#566D7C"))
+            item.setBackground(QColor("#F3F6F8"))
 
     def selected_source_index(self) -> int | None:
         row = self._table.currentRow()

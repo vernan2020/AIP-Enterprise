@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from PySide6.QtCore import QRectF, Qt
-from PySide6.QtGui import QColor, QFont, QPainter
+from PySide6.QtCore import QPointF, QRectF, Qt
+from PySide6.QtGui import QColor, QFont, QLinearGradient, QPainter, QPen
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QFrame,
@@ -58,9 +58,13 @@ class _LiquidityBarChart(QWidget):
             bar_width = min(54.0, slot * 0.55)
             bar_height = height * abs(value) / maximum
             rect = QRectF(center - bar_width / 2, top + height - bar_height, bar_width, bar_height)
+            fill = QColor("#2B6F9F") if value >= 0 else QColor("#B55A4A")
+            gradient = QLinearGradient(0, rect.top(), 0, rect.bottom())
+            gradient.setColorAt(0.0, fill.lighter(118))
+            gradient.setColorAt(1.0, fill)
             painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(QColor("#2B6F9F") if value >= 0 else QColor("#B55A4A"))
-            painter.drawRoundedRect(rect, 4, 4)
+            painter.setBrush(gradient)
+            painter.drawRoundedRect(rect, 6, 6)
             painter.setPen(QColor("#23384B"))
             painter.drawText(
                 QRectF(center - slot / 2, top + height + 7, slot, 18),
@@ -73,6 +77,127 @@ class _LiquidityBarChart(QWidget):
                 Qt.AlignmentFlag.AlignHCenter,
                 f"₡{value / 1_000_000:,.0f} MM",
             )
+
+
+class _LiquidityWaterfallChart(QWidget):
+    """Executive waterfall for 30-day liquidity bridge."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._points: tuple[tuple[str, float], ...] = ()
+        self.setMinimumHeight(250)
+
+    def set_data(self, points: tuple[tuple[str, float], ...]) -> None:
+        self._points = points
+        self.update()
+
+    def paintEvent(self, event) -> None:  # noqa: N802
+        del event
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        painter.fillRect(self.rect(), QColor("#FFFFFF"))
+        if len(self._points) < 4:
+            painter.setPen(QColor("#718096"))
+            painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "Sin datos disponibles")
+            return
+
+        values = [float(value) for _, value in self._points]
+        bridge = (
+            ("Fondo líquido", values[0], "total"),
+            ("Entradas 30d", values[1], "positive"),
+            ("Salidas 30d", -abs(values[2]), "negative"),
+            ("Salida neta", -abs(values[3]), "negative"),
+        )
+
+        left, right, top, bottom = 48.0, 18.0, 26.0, 54.0
+        width = max(60.0, self.width() - left - right)
+        height = max(60.0, self.height() - top - bottom)
+        slot = width / len(bridge)
+        running = bridge[0][1]
+        levels = [0.0, running]
+        for _, value, _ in bridge[1:]:
+            running += value
+            levels.append(running)
+        minimum = min(0.0, *levels)
+        maximum = max(*levels)
+        span = max(maximum - minimum, 1.0)
+
+        def y_coord(value: float) -> float:
+            return top + height - (value - minimum) / span * height
+
+        for index in range(5):
+            y = top + height * index / 4
+            painter.setPen(QPen(QColor("#EEF2F5"), 1))
+            painter.drawLine(QPointF(left, y), QPointF(left + width, y))
+
+        baseline_y = y_coord(0.0)
+        painter.setPen(QPen(QColor("#C9D4DD"), 1.2))
+        painter.drawLine(QPointF(left, baseline_y), QPointF(left + width, baseline_y))
+
+        running = 0.0
+        previous_end = 0.0
+        previous_center = None
+        for index, (label, value, kind) in enumerate(bridge):
+            center = left + slot * index + slot / 2
+            bar_width = min(72.0, slot * 0.50)
+
+            if index == 0:
+                start_level = 0.0
+                end_level = value
+                running = value
+            else:
+                start_level = running
+                end_level = running + value
+                running = end_level
+
+            top_value = max(start_level, end_level)
+            bottom_value = min(start_level, end_level)
+            rect_top = y_coord(top_value)
+            rect_bottom = y_coord(bottom_value)
+            rect_height = max(3.0, rect_bottom - rect_top)
+
+            if previous_center is not None:
+                connector_y = y_coord(previous_end)
+                painter.setPen(QPen(QColor("#AFC0CC"), 1, Qt.PenStyle.DashLine))
+                painter.drawLine(
+                    QPointF(previous_center + bar_width / 2, connector_y),
+                    QPointF(center - bar_width / 2, connector_y),
+                )
+
+            fill = (
+                QColor("#1C8A63")
+                if kind == "positive"
+                else QColor("#C84A3A") if kind == "negative" else QColor("#1F6F9F")
+            )
+            gradient = QLinearGradient(0, rect_top, 0, rect_top + rect_height)
+            gradient.setColorAt(0.0, fill.lighter(118))
+            gradient.setColorAt(1.0, fill)
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(gradient)
+            painter.drawRoundedRect(
+                QRectF(center - bar_width / 2, rect_top, bar_width, rect_height),
+                6,
+                6,
+            )
+
+            font = QFont(self.font())
+            font.setPointSize(8)
+            painter.setFont(font)
+            painter.setPen(QColor("#23384B"))
+            painter.drawText(
+                QRectF(center - slot / 2, top + height + 8, slot, 20),
+                Qt.AlignmentFlag.AlignHCenter,
+                label,
+            )
+            painter.setPen(fill.darker(118))
+            prefix = "+" if kind == "positive" else "−" if kind == "negative" else ""
+            painter.drawText(
+                QRectF(center - slot / 2, max(2.0, rect_top - 22), slot, 20),
+                Qt.AlignmentFlag.AlignHCenter,
+                f"{prefix}₡{abs(value) / 1_000_000:,.0f} MM",
+            )
+            previous_end = end_level
+            previous_center = center
 
 
 class LiquidityView(QWidget):
@@ -226,7 +351,7 @@ class LiquidityView(QWidget):
         flow_group = QGroupBox("ICL · fondos y flujos a 30 días")
         flow_group.setStyleSheet(self._group_style())
         flow_layout = QVBoxLayout(flow_group)
-        self._flow_chart = _LiquidityBarChart()
+        self._flow_chart = _LiquidityWaterfallChart()
         flow_layout.addWidget(self._flow_chart)
         layout.addWidget(flow_group, 1)
 

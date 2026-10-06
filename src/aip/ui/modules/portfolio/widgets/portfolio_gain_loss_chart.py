@@ -4,7 +4,7 @@ from collections.abc import Callable
 from decimal import Decimal
 
 from PySide6.QtCore import QRectF, Qt
-from PySide6.QtGui import QColor, QFont, QPainter, QPen
+from PySide6.QtGui import QColor, QFont, QLinearGradient, QPainter, QPen
 from PySide6.QtWidgets import QWidget
 
 from aip.ui.modules.portfolio.models.portfolio_valuation_comparison import (
@@ -84,9 +84,17 @@ class PortfolioGainLossBarChart(QWidget):
 
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(self._TRACK)
-            painter.drawRoundedRect(QRectF(left, bar_y, width, bar_height), 4, 4)
-            painter.setBrush(self._GAIN if point.value >= 0 else self._LOSS)
-            painter.drawRoundedRect(QRectF(left, bar_y, max(2.0, bar_width), bar_height), 4, 4)
+            painter.drawRoundedRect(QRectF(left, bar_y, width, bar_height), 6, 6)
+            fill = self._GAIN if point.value >= 0 else self._LOSS
+            gradient = QLinearGradient(left, 0, left + max(2.0, bar_width), 0)
+            gradient.setColorAt(0.0, fill)
+            gradient.setColorAt(1.0, fill.lighter(122))
+            painter.setBrush(gradient)
+            painter.drawRoundedRect(
+                QRectF(left, bar_y, max(2.0, bar_width), bar_height),
+                6,
+                6,
+            )
 
             painter.setFont(self._font(bold=True))
             painter.setPen(self._GAIN if point.value >= 0 else self._LOSS)
@@ -114,8 +122,15 @@ class PortfolioGainLossBarChart(QWidget):
             or 1.0
         )
 
-        painter.setPen(QPen(self._AXIS, 1))
+        painter.setPen(QPen(self._AXIS, 1.2))
         painter.drawLine(int(center), int(top), int(center), int(top + height))
+        painter.setPen(self._MUTED)
+        painter.setFont(self._font())
+        painter.drawText(
+            QRectF(left, 0, width, 16),
+            Qt.AlignmentFlag.AlignHCenter,
+            "Pérdidas  ←  0  →  Ganancias",
+        )
 
         for index, point in enumerate(self._points):
             y = top + row_height * index
@@ -133,18 +148,24 @@ class PortfolioGainLossBarChart(QWidget):
             )
             painter.setPen(Qt.PenStyle.NoPen)
             if loss_width > 0:
-                painter.setBrush(self._LOSS)
+                loss_gradient = QLinearGradient(center - loss_width, 0, center, 0)
+                loss_gradient.setColorAt(0.0, self._LOSS.lighter(118))
+                loss_gradient.setColorAt(1.0, self._LOSS)
+                painter.setBrush(loss_gradient)
                 painter.drawRoundedRect(
-                    QRectF(center - loss_width, mid_y - bar_height - 1, loss_width, bar_height),
-                    3,
-                    3,
+                    QRectF(center - loss_width, mid_y - bar_height / 2, loss_width, bar_height),
+                    5,
+                    5,
                 )
             if gain_width > 0:
-                painter.setBrush(self._GAIN)
+                gain_gradient = QLinearGradient(center, 0, center + gain_width, 0)
+                gain_gradient.setColorAt(0.0, self._GAIN)
+                gain_gradient.setColorAt(1.0, self._GAIN.lighter(118))
+                painter.setBrush(gain_gradient)
                 painter.drawRoundedRect(
-                    QRectF(center, mid_y + 1, gain_width, bar_height),
-                    3,
-                    3,
+                    QRectF(center, mid_y - bar_height / 2, gain_width, bar_height),
+                    5,
+                    5,
                 )
 
             painter.setFont(self._font(bold=True))

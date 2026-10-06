@@ -237,7 +237,10 @@ class PriceRiskView(QWidget):
         self._status_label = QLabel("-")
         self._diagnostic_label = QLabel("")
         self._diagnostic_label.setWordWrap(True)
-        self._diagnostic_label.setStyleSheet("color:#566D7C; font-size:8px;")
+        self._diagnostic_label.setStyleSheet(
+            "color:#566D7C; font-size:9px; padding:5px 8px; "
+            "background:#F7F9FB; border:1px solid #E2E8EE; border-radius:5px;"
+        )
         scenario_layout.addWidget(QLabel("Escenario"), 0, 0)
         scenario_layout.addWidget(self._scenario_label, 0, 1)
         scenario_layout.addWidget(QLabel("Ventana histórica"), 0, 2)
@@ -318,6 +321,13 @@ class PriceRiskView(QWidget):
         self._table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self._table.setAlternatingRowColors(True)
         self._table.setSortingEnabled(True)
+        self._table.setShowGrid(False)
+        self._table.setStyleSheet(
+            "QHeaderView::section {background:#F3F7FA; color:#17324D; border:none; "
+            "border-bottom:1px solid #D5E0E8; padding:7px 6px; font-weight:700;}"
+            "QTableWidget {selection-background-color:#DDEFFA; selection-color:#17324D; "
+            "alternate-background-color:#F8FAFC;}"
+        )
         self._table.verticalHeader().setVisible(False)
         self._table.verticalHeader().setDefaultSectionSize(25)
         header = self._table.horizontalHeader()
@@ -553,13 +563,40 @@ class PriceRiskView(QWidget):
             if vm.scenario_start_date != "-"
             else "-"
         )
-        self._status_label.setText(self._translate_status(vm.status))
+        translated_status = self._translate_status(vm.status)
+        self._status_label.setText(translated_status)
+        normalized_status = vm.status.strip().upper()
+        if normalized_status.startswith("CALCULATED"):
+            status_color = "#167A68"
+            status_background = "#EAF7F2"
+            status_border = "#B8E0D1"
+        elif normalized_status == "ERROR":
+            status_color = "#B42318"
+            status_background = "#FFF0EE"
+            status_border = "#F0C4BE"
+        else:
+            status_color = "#9A5A00"
+            status_background = "#FFF7E8"
+            status_border = "#EED7A6"
         self._status_label.setStyleSheet(
-            "color:#167A68; font-weight:700;"
-            if vm.status.startswith("CALCULATED")
-            else "color:#A95B00; font-weight:700;"
+            f"color:{status_color}; background:{status_background}; "
+            f"border:1px solid {status_border}; border-radius:5px; "
+            "font-weight:700; padding:4px 8px;"
         )
-        self._diagnostic_label.setText(vm.diagnostic or "")
+        diagnostic = vm.diagnostic or ""
+        self._diagnostic_label.setText(diagnostic)
+        self._diagnostic_label.setVisible(bool(diagnostic))
+        if diagnostic:
+            if normalized_status == "ERROR":
+                self._diagnostic_label.setStyleSheet(
+                    "color:#8D2C24; font-size:9px; padding:6px 9px; "
+                    "background:#FFF5F3; border:1px solid #F0C4BE; border-radius:5px;"
+                )
+            else:
+                self._diagnostic_label.setStyleSheet(
+                    "color:#566D7C; font-size:9px; padding:6px 9px; "
+                    "background:#F7F9FB; border:1px solid #E2E8EE; border-radius:5px;"
+                )
 
         self._contribution_chart.set_data(vm.var_contribution_points)
         self._pareto_chart.set_data(vm.var_pareto_points)

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from PySide6.QtCore import QPointF, QRectF, Qt
-from PySide6.QtGui import QColor, QFont, QPainter, QPen, QPolygonF
+from PySide6.QtGui import QColor, QFont, QLinearGradient, QPainter, QPen, QPolygonF
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QComboBox,
@@ -108,9 +108,22 @@ class _MarketCurveChart(QWidget):
                 f"{value:.2f}%",
             )
 
-        painter.setPen(QPen(QColor("#005EB8"), 2.6))
-        fitted = QPolygonF([map_point(point) for point in curve.fitted_points])
-        if fitted.size() >= 2:
+        fitted_points = [map_point(point) for point in curve.fitted_points]
+        fitted = QPolygonF(fitted_points)
+        if len(fitted_points) >= 2:
+            area_points = [
+                QPointF(fitted_points[0].x(), top + height),
+                *fitted_points,
+                QPointF(fitted_points[-1].x(), top + height),
+            ]
+            area_gradient = QLinearGradient(0, top, 0, top + height)
+            area_gradient.setColorAt(0.0, QColor(0, 94, 184, 40))
+            area_gradient.setColorAt(1.0, QColor(0, 94, 184, 4))
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(area_gradient)
+            painter.drawPolygon(QPolygonF(area_points))
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            painter.setPen(QPen(QColor("#005EB8"), 2.8))
             painter.drawPolyline(fitted)
 
         painter.setPen(QPen(QColor("#FFFFFF"), 1))
