@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 from pathlib import Path
+import warnings
 
 import openpyxl
 import xlwt
@@ -156,3 +157,34 @@ def test_configured_provider_returns_real_positions_without_demo_fallback(tmp_pa
     assert payload["portfolio_master"]["file_name"] == "29-07-2026.xlsx"
     assert "Acme Bank" not in str(payload)
     assert "Blue Ridge" not in str(payload)
+
+
+def test_portfolio_master_reader_ignores_openpyxl_missing_default_style_warning(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    path = tmp_path / "styleless.xlsx"
+    _write_xlsx(path)
+
+    real_load_workbook = openpyxl.load_workbook
+
+    def _warning_load_workbook(*args, **kwargs):
+        warnings.warn(
+            "Workbook contains no default style, apply openpyxl's default",
+            UserWarning,
+            stacklevel=2,
+        )
+        return real_load_workbook(*args, **kwargs)
+
+    monkeypatch.setattr(openpyxl, "load_workbook", _warning_load_workbook)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        result = PortfolioMasterReader().read(
+            path,
+            valuation_date_override=date(2026, 7, 29),
+        )
+
+    assert result.source_status == "HEALTHY"
+    assert result.normalized_positions
+    assert not any("no default style" in item.lower() for item in result.warnings)
