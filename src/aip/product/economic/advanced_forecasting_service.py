@@ -660,7 +660,19 @@ class AdvancedMacroForecastingService:
         origin: int,
         horizon: int,
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-        x_predict = self._feature_vector(frame, target, specification, origin)
+        feature_columns = self._direct_feature_columns(
+            frame,
+            target,
+            specification,
+            origin,
+        )
+        x_predict = self._feature_vector(
+            frame,
+            target,
+            specification,
+            origin,
+            feature_columns=feature_columns,
+        )
         training_x: list[np.ndarray] = []
         training_y: list[float] = []
         max_feature_lag = self._max_feature_lag(specification)
@@ -677,6 +689,7 @@ class AdvancedMacroForecastingService:
                     target,
                     specification,
                     feature_origin,
+                    feature_columns=feature_columns,
                 )
             except ValueError:
                 continue
@@ -698,6 +711,8 @@ class AdvancedMacroForecastingService:
         target: str,
         specification: MacroModelSpecification,
         position: int,
+        *,
+        feature_columns: tuple[str, ...] | None = None,
     ) -> np.ndarray:
         values: list[float] = []
 
@@ -708,17 +723,13 @@ class AdvancedMacroForecastingService:
                 for lag in self._ARDL_DRIVER_LAGS:
                     values.append(self._value_at(frame, driver, position - lag))
         else:
-            sugef_columns = tuple(
-                column
-                for column in self._SUGEF_FEATURE_COLUMNS
-                if column in frame.columns and frame[column].notna().any()
+            selected_columns = feature_columns or self._direct_feature_columns(
+                frame,
+                target,
+                specification,
+                position,
             )
-            feature_columns = (
-                (target,)
-                if specification.family == "KNN"
-                else (target, *self._TARGET_DRIVER_MAP[target], *sugef_columns)
-            )
-            for column in feature_columns:
+            for column in selected_columns:
                 for lag in self._FULL_FEATURE_LAGS:
                     values.append(self._value_at(frame, column, position - lag))
 
@@ -736,6 +747,38 @@ class AdvancedMacroForecastingService:
             )
         )
         return np.asarray(values, dtype=float)
+
+    def _direct_feature_columns(
+        self,
+        frame: pd.DataFrame,
+        target: str,
+        specification: MacroModelSpecification,
+        origin: int,
+    ) -> tuple[str, ...]:
+        if specification.family == "KNN":
+            return (target,)
+        base = (target, *self._TARGET_DRIVER_MAP[target])
+        if specification.family == "ARDL":
+            return base
+
+        available: list[str] = []
+        required_lags = self._FULL_FEATURE_LAGS
+        for column in self._SUGEF_FEATURE_COLUMNS:
+            if column not in frame.columns:
+                continue
+            history = frame[column].iloc[: origin + 1]
+            if len(history) <= max(required_lags):
+                continue
+            usable = history.iloc[max(required_lags) :]
+            if usable.empty or float(usable.notna().mean()) < 0.65:
+                continue
+            if any(
+                origin - lag < 0 or pd.isna(frame[column].iloc[origin - lag])
+                for lag in required_lags
+            ):
+                continue
+            available.append(column)
+        return (*base, *available)
 
     def _max_feature_lag(self, specification: MacroModelSpecification) -> int:
         if specification.family == "ARDL":
