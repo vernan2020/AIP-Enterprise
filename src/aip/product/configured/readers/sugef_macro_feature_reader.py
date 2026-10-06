@@ -54,7 +54,10 @@ class SUGEFMacroFeatureReader:
         if not self._config.enabled:
             return SUGEFMacroFeatureReadResult((), ("SUGEF macro features disabled.",))
         if not self._config.api_entity_codes:
-            return SUGEFMacroFeatureReadResult((), ("SUGEF macro features: entity not configured.",))
+            return SUGEFMacroFeatureReadResult(
+                (),
+                ("SUGEF macro features: entity not configured.",),
+            )
 
         entity_id = self._config.api_entity_codes[0]
         result = self._reader.read_entity_history_range(
