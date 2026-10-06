@@ -87,6 +87,7 @@ class AdvancedMacroForecastingService:
 
     _SUGEF_FEATURE_COLUMNS = (
         "SUGEF_MARGIN_INTERMEDIATION",
+        "SUGEF_ROA",
         "SUGEF_ROE",
         "SUGEF_CURRENT_PORTFOLIO",
         "SUGEF_COVERAGE_ARREARS",
