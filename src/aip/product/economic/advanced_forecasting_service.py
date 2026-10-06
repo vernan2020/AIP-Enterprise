@@ -620,6 +620,35 @@ class AdvancedMacroForecastingService:
             )
             model.fit(x_train, y_train)
             return float(model.predict(x_predict.reshape(1, -1))[0])
+        if specification.family == "KNN":
+            from sklearn.neighbors import KNeighborsRegressor
+
+            parameters = dict(specification.parameters)
+            model = KNeighborsRegressor(
+                n_neighbors=min(
+                    int(parameters.get("n_neighbors", "5")),
+                    max(1, len(y_train)),
+                ),
+                weights="distance",
+            )
+            model.fit(x_train, y_train)
+            return float(model.predict(x_predict.reshape(1, -1))[0])
+        if specification.family == "XGBOOST":
+            from xgboost import XGBRegressor
+
+            parameters = dict(specification.parameters)
+            model = XGBRegressor(
+                n_estimators=int(parameters.get("n_estimators", "300")),
+                max_depth=int(parameters.get("max_depth", "3")),
+                learning_rate=float(parameters.get("learning_rate", "0.03")),
+                subsample=0.8,
+                colsample_bytree=0.8,
+                objective="reg:squarederror",
+                random_state=0,
+                n_jobs=1,
+            )
+            model.fit(x_train, y_train)
+            return float(model.predict(x_predict.reshape(1, -1))[0])
         raise ValueError(f"Unsupported direct family: {specification.family}")
 
     def _direct_training_data(
@@ -683,7 +712,11 @@ class AdvancedMacroForecastingService:
                 for column in self._SUGEF_FEATURE_COLUMNS
                 if column in frame.columns and frame[column].notna().any()
             )
-            feature_columns = (target, *self._TARGET_DRIVER_MAP[target], *sugef_columns)
+            feature_columns = (
+                (target,)
+                if specification.family == "KNN"
+                else (target, *self._TARGET_DRIVER_MAP[target], *sugef_columns)
+            )
             for column in feature_columns:
                 for lag in self._FULL_FEATURE_LAGS:
                     values.append(self._value_at(frame, column, position - lag))
