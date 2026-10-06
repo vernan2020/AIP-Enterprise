@@ -9,10 +9,13 @@ from aip.product.economic.econometric_dataset_builder import EconometricDatasetB
 def test_sugef_macro_feature_aliases_cover_governed_financial_drivers() -> None:
     cases = {
         "Margen de Interm Financiera": "SUGEF_MARGIN_INTERMEDIATION",
+        "ROA": "SUGEF_ROA",
+        "ROE": "SUGEF_ROE",
         "Rentabilidad nominal sobre patrimonio promedio": "SUGEF_ROE",
         "Cartera de crédito al día": "SUGEF_CURRENT_PORTFOLIO",
         "Cobertura de cartera en atraso": "SUGEF_COVERAGE_ARREARS",
         "Morosidad >90d y cobro judicial / Cartera Directa": "SUGEF_DELINQUENCY_90",
+        "Eficiencia Operativa": "SUGEF_OPERATING_EFFICIENCY",
         "Gastos de Administración / Utilidad Operacional Bruta": "SUGEF_OPERATING_EFFICIENCY",
         "Gasto administrativo sobre activos": "SUGEF_ADMIN_EXPENSE_ASSETS",
         "Compromiso Patrimonial": "SUGEF_EQUITY_COMMITMENT",
