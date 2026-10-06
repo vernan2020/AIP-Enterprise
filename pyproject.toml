@@ -30,6 +30,8 @@ dependencies = [
   "pandas>=2.2",
   "pyarrow>=20.0",
   "statsmodels>=0.14",
+  "scikit-learn>=1.5",
+  "xgboost>=3.0",
 ]
 
 [project.optional-dependencies]

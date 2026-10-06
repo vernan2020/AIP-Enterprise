@@ -13,6 +13,11 @@ MacroModelFamily = Literal[
     "RIDGE",
     "ELASTIC_NET",
     "GRADIENT_BOOSTING",
+    "RANDOM_FOREST",
+    "EXTRA_TREES",
+    "HIST_GRADIENT_BOOSTING",
+    "KNN",
+    "XGBOOST",
 ]
 
 MacroModelMode = Literal["UNIVARIATE", "MULTIVARIATE_DIRECT"]
@@ -118,6 +123,49 @@ class MacroModelRegistry:
                 "GRADIENT_BOOSTING",
                 "MULTIVARIATE_DIRECT",
                 7,
-                parameters=(("n_estimators", "100"), ("max_depth", "2")),
+                parameters=(("n_estimators", "150"), ("max_depth", "2")),
+            ),
+            MacroModelSpecification(
+                "RANDOM_FOREST_DIRECT",
+                "RANDOM_FOREST",
+                "MULTIVARIATE_DIRECT",
+                7,
+                parameters=(("n_estimators", "300"), ("max_depth", "5"), ("min_samples_leaf", "3")),
+            ),
+            MacroModelSpecification(
+                "EXTRA_TREES_DIRECT",
+                "EXTRA_TREES",
+                "MULTIVARIATE_DIRECT",
+                7,
+                parameters=(("n_estimators", "300"), ("max_depth", "6"), ("min_samples_leaf", "2")),
+            ),
+            MacroModelSpecification(
+                "HIST_GRADIENT_BOOSTING_DIRECT",
+                "HIST_GRADIENT_BOOSTING",
+                "MULTIVARIATE_DIRECT",
+                8,
+                parameters=(
+                    ("max_iter", "200"),
+                    ("max_leaf_nodes", "15"),
+                    ("l2_regularization", "1.0"),
+                ),
+            ),
+            MacroModelSpecification(
+                "KNN_UNIVARIATE_DIRECT",
+                "KNN",
+                "MULTIVARIATE_DIRECT",
+                5,
+                parameters=(("n_neighbors", "5"),),
+            ),
+            MacroModelSpecification(
+                "XGBOOST_DIRECT",
+                "XGBOOST",
+                "MULTIVARIATE_DIRECT",
+                9,
+                parameters=(
+                    ("n_estimators", "300"),
+                    ("max_depth", "3"),
+                    ("learning_rate", "0.03"),
+                ),
             ),
         )

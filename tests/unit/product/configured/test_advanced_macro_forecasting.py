@@ -105,7 +105,14 @@ def test_registry_contains_statistical_econometric_and_machine_learning_candidat
     families = {item.family for item in MacroModelRegistry().enabled()}
 
     assert {"NAIVE", "ARIMA", "ETS", "ARDL", "RIDGE", "ELASTIC_NET"}.issubset(families)
-    assert "GRADIENT_BOOSTING" in families
+    assert {
+        "GRADIENT_BOOSTING",
+        "RANDOM_FOREST",
+        "EXTRA_TREES",
+        "HIST_GRADIENT_BOOSTING",
+        "KNN",
+        "XGBOOST",
+    }.issubset(families)
 
 
 def test_multimodel_engine_produces_governed_12_month_ensemble() -> None:

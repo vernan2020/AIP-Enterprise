@@ -45,6 +45,7 @@ from aip.ui.modules.macro_intelligence.presenters.macro_intelligence_presenter i
     MacroIntelligencePresenter,
 )
 from aip.ui.modules.macro_intelligence.viewmodels.macro_intelligence_view_model import (
+    MacroForecastLabViewModel,
     MacroProjectionViewModel,
 )
 
@@ -97,6 +98,27 @@ class _EconomicLoadWorker(QRunnable):
     def run(self) -> None:
         try:
             self.signals.completed.emit(self._viewmodel.load())
+        except Exception as exc:
+            self.signals.failed.emit(f"{type(exc).__name__}: {exc}")
+
+
+class _ForecastWorkerSignals(QObject):
+    completed = Signal(object)
+    failed = Signal(str)
+
+
+class _ForecastProjectionWorker(QRunnable):
+    def __init__(self, presenter: MacroIntelligencePresenter, indicator_code: str) -> None:
+        super().__init__()
+        self._presenter = presenter
+        self._indicator_code = indicator_code
+        self.signals = _ForecastWorkerSignals()
+        self.setAutoDelete(True)
+
+    @Slot()
+    def run(self) -> None:
+        try:
+            self.signals.completed.emit(self._presenter.build_forecast_lab(self._indicator_code))
         except Exception as exc:
             self.signals.failed.emit(f"{type(exc).__name__}: {exc}")
 
@@ -174,12 +196,19 @@ class _ProjectionChart(QWidget):
     def __init__(self) -> None:
         super().__init__()
         self._projection = MacroProjectionViewModel()
+        self._ml_forecast: MacroForecastLabViewModel | None = None
         self._driver_code = "TPM"
         self.setMinimumHeight(300)
 
     def set_projection(self, projection: MacroProjectionViewModel, driver_code: str) -> None:
         self._projection = projection
+        self._ml_forecast = None
         self._driver_code = driver_code
+        self.update()
+
+    def set_ml_forecast(self, forecast: MacroForecastLabViewModel) -> None:
+        self._ml_forecast = forecast
+        self._driver_code = forecast.indicator_code
         self.update()
 
     def paintEvent(self, event) -> None:  # noqa: N802
@@ -187,17 +216,44 @@ class _ProjectionChart(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         painter.fillRect(self.rect(), QColor("#FFFFFF"))
-        rows = self._projection.rows
-        if not rows:
-            painter.setPen(QColor("#718096"))
-            painter.drawText(
-                self.rect(), Qt.AlignmentFlag.AlignCenter, "Proyección institucional no disponible"
+        if self._ml_forecast is not None:
+            forecast_points = self._ml_forecast.points
+            if not forecast_points:
+                painter.setPen(QColor("#718096"))
+                painter.drawText(
+                    self.rect(),
+                    Qt.AlignmentFlag.AlignCenter,
+                    "Proyección ML no disponible para este indicador",
+                )
+                return
+            values = [point.forecast for point in forecast_points]
+            periods = [point.period for point in forecast_points]
+            lower_80 = [point.lower_80 for point in forecast_points]
+            upper_80 = [point.upper_80 for point in forecast_points]
+            source_title = (
+                f"Ensemble ML · {self._ml_forecast.indicator_label} · "
+                f"Champion {self._ml_forecast.champion_model}"
             )
-            return
-
-        values = [row.value_for(self._driver_code) for row in rows]
-        minimum = min(values)
-        maximum = max(values)
+        else:
+            rows = self._projection.rows
+            if not rows:
+                painter.setPen(QColor("#718096"))
+                painter.drawText(
+                    self.rect(),
+                    Qt.AlignmentFlag.AlignCenter,
+                    "Proyección institucional no disponible",
+                )
+                return
+            values = [row.value_for(self._driver_code) for row in rows]
+            periods = [row.period for row in rows]
+            lower_80 = [None for _ in rows]
+            upper_80 = [None for _ in rows]
+            source_title = self._LABELS.get(self._driver_code, self._driver_code)
+        scale_values = list(values)
+        scale_values.extend(float(value) for value in lower_80 if value is not None)
+        scale_values.extend(float(value) for value in upper_80 if value is not None)
+        minimum = min(scale_values)
+        maximum = max(scale_values)
         span = max(maximum - minimum, 0.01)
         minimum -= span * 0.12
         maximum += span * 0.12
@@ -216,7 +272,7 @@ class _ProjectionChart(QWidget):
             painter.drawLine(QPointF(left, y), QPointF(left + width, y))
             value = maximum - span * fraction
             painter.setPen(QColor("#637587"))
-            suffix = "" if self._driver_code == "FX_SELL" else "%"
+            suffix = "" if self._driver_code in {"FX_BUY", "FX_SELL"} else "%"
             painter.drawText(
                 QRectF(4, y - 9, left - 10, 18),
                 Qt.AlignmentFlag.AlignRight,
@@ -225,12 +281,30 @@ class _ProjectionChart(QWidget):
             painter.setPen(QPen(QColor("#E1E7EC"), 1))
 
         points: list[QPointF] = []
-        count = len(rows)
-        for index, row in enumerate(rows):
+        count = len(values)
+        for index, value in enumerate(values):
             x = left + (width * index / max(1, count - 1))
-            value = row.value_for(self._driver_code)
             y = top + height - ((value - minimum) / span) * height
             points.append(QPointF(x, y))
+
+        if all(value is not None for value in lower_80 + upper_80):
+            lower_points = [
+                QPointF(
+                    left + (width * index / max(1, count - 1)),
+                    top + height - ((float(value) - minimum) / span) * height,
+                )
+                for index, value in enumerate(lower_80)
+            ]
+            upper_points = [
+                QPointF(
+                    left + (width * index / max(1, count - 1)),
+                    top + height - ((float(value) - minimum) / span) * height,
+                )
+                for index, value in enumerate(upper_80)
+            ]
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor(31, 90, 138, 38))
+            painter.drawPolygon(QPolygonF(upper_points + list(reversed(lower_points))))
 
         if len(points) >= 2:
             painter.setPen(QPen(QColor("#1F5A8A"), 2.4))
@@ -243,12 +317,11 @@ class _ProjectionChart(QWidget):
         painter.setPen(QColor("#53697C"))
         indexes = sorted({0, count - 1, count // 3, (count * 2) // 3})
         for index in indexes:
-            row = rows[index]
             x = left + (width * index / max(1, count - 1))
             painter.drawText(
                 QRectF(x - 36, top + height + 8, 72, 20),
                 Qt.AlignmentFlag.AlignHCenter,
-                _format_period(row.period, include_year=False),
+                _format_period(periods[index], include_year=False),
             )
 
         title_font = QFont(self.font())
@@ -259,7 +332,7 @@ class _ProjectionChart(QWidget):
         painter.drawText(
             QRectF(left, 2, width, 20),
             Qt.AlignmentFlag.AlignLeft,
-            self._LABELS.get(self._driver_code, self._driver_code),
+            source_title,
         )
 
 
@@ -278,11 +351,31 @@ class MacroIntelligenceWorkspace(QWidget):
     _DRIVER_LABELS = (
         ("TPM", "TPM"),
         ("TBP", "TBP"),
-        ("TRI_CRC_12M", "TRI CRC 12M"),
-        ("TRI_USD_12M", "TRI USD 12M"),
         ("INFLATION", "Inflación"),
         ("IMAE", "IMAE"),
-        ("FX_SELL", "USD/CRC"),
+        ("FX_SELL", "USD/CRC venta"),
+        ("FX_BUY", "USD/CRC compra"),
+        ("TRI_CRC_1W", "TRI CRC 1S"),
+        ("TRI_CRC_1M", "TRI CRC 1M"),
+        ("TRI_CRC_3M", "TRI CRC 3M"),
+        ("TRI_CRC_6M", "TRI CRC 6M"),
+        ("TRI_CRC_9M", "TRI CRC 9M"),
+        ("TRI_CRC_12M", "TRI CRC 12M"),
+        ("TRI_CRC_24M", "TRI CRC 24M"),
+        ("TRI_CRC_36M", "TRI CRC 36M"),
+        ("TRI_CRC_60M", "TRI CRC 60M"),
+        ("TRI_USD_1W", "TRI USD 1S"),
+        ("TRI_USD_1M", "TRI USD 1M"),
+        ("TRI_USD_3M", "TRI USD 3M"),
+        ("TRI_USD_6M", "TRI USD 6M"),
+        ("TRI_USD_9M", "TRI USD 9M"),
+        ("TRI_USD_12M", "TRI USD 12M"),
+        ("TRI_USD_24M", "TRI USD 24M"),
+        ("TRI_USD_36M", "TRI USD 36M"),
+        ("TRI_USD_60M", "TRI USD 60M"),
+    )
+    _INSTITUTIONAL_DRIVERS = frozenset(
+        {"TPM", "TBP", "TRI_CRC_12M", "TRI_USD_12M", "INFLATION", "IMAE", "FX_SELL"}
     )
 
     def __init__(
@@ -298,10 +391,14 @@ class MacroIntelligenceWorkspace(QWidget):
         self._snapshot_store = EconomicSnapshotStore()
         self._thread_pool = QThreadPool.globalInstance()
         self._active_worker: _EconomicLoadWorker | None = None
+        self._forecast_worker: _ForecastProjectionWorker | None = None
         self._loading = False
+        self._forecast_loading = False
+        self._pending_forecast_code: str | None = None
         self._refresh_pending = False
         self._snapshot: EconomicSnapshot | None = None
         self._projection = MacroProjectionViewModel(status="LOADING")
+        self._ml_projection = MacroForecastLabViewModel()
         self._cards: dict[str, _MacroMetricCard] = {}
         self._build_ui()
         self._apply_styles()
@@ -407,11 +504,21 @@ class MacroIntelligenceWorkspace(QWidget):
         layout = QVBoxLayout(page)
         layout.setContentsMargins(4, 8, 4, 4)
         selector = QHBoxLayout()
+        selector.addWidget(QLabel("Fuente:"))
+        self._projection_source_combo = QComboBox()
+        self._projection_source_combo.addItem("Ensemble ML · backtesting rolling", "ML")
+        self._projection_source_combo.addItem("Escenario institucional aprobado", "INSTITUTIONAL")
+        self._projection_source_combo.currentIndexChanged.connect(
+            lambda _index: self._projection_source_changed()
+        )
+        selector.addWidget(self._projection_source_combo)
         selector.addWidget(QLabel("Variable proyectada:"))
         self._driver_combo = QComboBox()
         for code, label in self._DRIVER_LABELS:
             self._driver_combo.addItem(label, code)
-        self._driver_combo.currentIndexChanged.connect(self._refresh_projection_chart)
+        self._driver_combo.currentIndexChanged.connect(
+            lambda _index: self._refresh_projection_chart()
+        )
         selector.addWidget(self._driver_combo)
         selector.addStretch(1)
         self._projection_range = QLabel("-")
@@ -419,7 +526,7 @@ class MacroIntelligenceWorkspace(QWidget):
         selector.addWidget(self._projection_range)
         layout.addLayout(selector)
 
-        group = QGroupBox("PROYECCIÓN MACROECONÓMICA INSTITUCIONAL")
+        group = QGroupBox("PROYECCIÓN MACROECONÓMICA · ENSEMBLE ML / ESCENARIO INSTITUCIONAL")
         group_layout = QVBoxLayout(group)
         self._projection_chart = _ProjectionChart()
         group_layout.addWidget(self._projection_chart)
@@ -558,10 +665,11 @@ class MacroIntelligenceWorkspace(QWidget):
             self._projection_range.setText(
                 f"{_format_period(projection.first_period)} → {_format_period(projection.last_period)}"
             )
-        self._projection_note.setText(
-            "Trayectoria gobernada consumida directamente del escenario institucional aprobado. "
-            "Los valores del gráfico no se recalculan en la interfaz."
-        )
+        if str(self._projection_source_combo.currentData() or "ML") == "INSTITUTIONAL":
+            self._projection_note.setText(
+                "Trayectoria gobernada consumida directamente del escenario institucional aprobado. "
+                "Los valores del gráfico no se recalculan en la interfaz."
+            )
         self._projection_table.setRowCount(len(projection.rows))
         for row_index, row in enumerate(projection.rows):
             values = (
@@ -584,9 +692,92 @@ class MacroIntelligenceWorkspace(QWidget):
         self._refresh_projection_chart()
 
     @Slot()
+    def _projection_source_changed(self) -> None:
+        source = str(self._projection_source_combo.currentData() or "ML")
+        code = str(self._driver_combo.currentData() or "TPM")
+        if source == "INSTITUTIONAL" and code not in self._INSTITUTIONAL_DRIVERS:
+            index = self._driver_combo.findData("TPM")
+            if index >= 0:
+                self._driver_combo.setCurrentIndex(index)
+                return
+        self._refresh_projection_chart()
+
+    @Slot()
     def _refresh_projection_chart(self) -> None:
         code = str(self._driver_combo.currentData() or "TPM")
+        source = str(self._projection_source_combo.currentData() or "ML")
+        if source == "ML":
+            self._load_ml_projection(code)
+            return
+        if code not in self._INSTITUTIONAL_DRIVERS:
+            self._projection_note.setText(
+                "Este indicador no forma parte del escenario institucional aprobado. "
+                "Seleccione Ensemble ML para proyectarlo."
+            )
+            return
         self._projection_chart.set_projection(self._projection, code)
+        self._projection_note.setText(
+            "Trayectoria gobernada consumida directamente del escenario institucional aprobado. "
+            "Los valores del gráfico no se recalculan en la interfaz."
+        )
+
+    def _load_ml_projection(self, code: str) -> None:
+        if self._forecast_loading:
+            self._pending_forecast_code = code
+            return
+        self._forecast_loading = True
+        self._pending_forecast_code = None
+        self._driver_combo.setEnabled(False)
+        self._projection_source_combo.setEnabled(False)
+        self._projection_note.setText(
+            f"Calculando ensemble ML para {self._driver_combo.currentText()} · "
+            "backtesting rolling 1/3/6/12M..."
+        )
+        worker = _ForecastProjectionWorker(self._presenter, code)
+        worker.signals.completed.connect(self._ml_projection_completed)
+        worker.signals.failed.connect(self._ml_projection_failed)
+        self._forecast_worker = worker
+        self._thread_pool.start(worker)
+
+    @Slot(object)
+    def _ml_projection_completed(self, result: object) -> None:
+        if not isinstance(result, MacroForecastLabViewModel):
+            self._ml_projection_failed("Resultado inesperado del motor ML")
+            return
+        self._ml_projection = result
+        if result.points:
+            self._projection_chart.set_ml_forecast(result)
+            origin = result.forecast_origin.strftime("%d/%m/%Y") if result.forecast_origin else "-"
+            self._projection_range.setText(
+                f"{_format_period(result.points[0].period)} → "
+                f"{_format_period(result.points[-1].period)}"
+            )
+            self._projection_note.setText(
+                f"Proyección analítica · Champion {result.champion_model} "
+                f"({result.champion_family}) · confianza {result.confidence_score} · "
+                f"origen {origin}. Bandas de incertidumbre 80% en el gráfico. "
+                "No sustituye el escenario institucional aprobado."
+            )
+        else:
+            self._projection_note.setText(
+                f"Proyección ML no disponible · {result.diagnostic or result.status}"
+            )
+        self._finish_ml_projection()
+
+    @Slot(str)
+    def _ml_projection_failed(self, message: str) -> None:
+        self._projection_note.setText(f"Proyección ML no disponible · {message}")
+        self._finish_ml_projection()
+
+    def _finish_ml_projection(self) -> None:
+        self._forecast_loading = False
+        self._forecast_worker = None
+        self._driver_combo.setEnabled(True)
+        self._projection_source_combo.setEnabled(True)
+        pending = self._pending_forecast_code
+        self._pending_forecast_code = None
+        if pending is not None:
+            QTimer.singleShot(0, lambda: self._load_ml_projection(pending))
 
     @Slot()
     def refresh(self) -> None:
