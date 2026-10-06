@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 import re
 import unicodedata
+import warnings as python_warnings
 import zipfile
 from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta
@@ -120,6 +121,7 @@ class InstitutionalPortfolioMasterReader:
 
         valuation_date = valuation_date_override or self._infer_valuation_date(file_path)
         workbook_type = self._detect_workbook_type(file_path)
+        workbook_warnings: tuple[str, ...] = ()
         try:
             if workbook_type == "xls":
                 if xlrd is None:
@@ -128,10 +130,31 @@ class InstitutionalPortfolioMasterReader:
                 sheet_names = workbook.sheet_names()
                 sheet_rows = [self._read_xls_sheet(sheet) for sheet in workbook.sheets()]
             else:
-                workbook = openpyxl.load_workbook(file_path, read_only=True, data_only=True)
-                sheet_names = workbook.sheetnames
-                sheet_rows = [self._read_xlsx_sheet(sheet) for sheet in workbook.worksheets]
-                workbook.close()
+                with python_warnings.catch_warnings(record=True) as caught_warnings:
+                    python_warnings.simplefilter("always", UserWarning)
+                    python_warnings.filterwarnings(
+                        "ignore",
+                        message=r"Workbook contains no default style.*",
+                        category=UserWarning,
+                        module=r"openpyxl\.styles\.stylesheet",
+                    )
+                    workbook = openpyxl.load_workbook(
+                        file_path,
+                        read_only=True,
+                        data_only=True,
+                    )
+                    try:
+                        sheet_names = workbook.sheetnames
+                        sheet_rows = [
+                            self._read_xlsx_sheet(sheet) for sheet in workbook.worksheets
+                        ]
+                    finally:
+                        workbook.close()
+                workbook_warnings = tuple(
+                    str(item.message)
+                    for item in caught_warnings
+                    if "Workbook contains no default style" not in str(item.message)
+                )
         except (
             InvalidFileException,
             XLRDError,
@@ -174,7 +197,7 @@ class InstitutionalPortfolioMasterReader:
 
         rows = sheet_rows[sheet_index]
         positions: list[dict[str, Any]] = []
-        warnings: list[str] = []
+        warnings: list[str] = list(workbook_warnings)
         rejected_rows = 0
         accepted_field_diagnostics: list[dict[str, Any]] = []
         identities: set[str] = set()
