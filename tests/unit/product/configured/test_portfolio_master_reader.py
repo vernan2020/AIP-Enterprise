@@ -14,6 +14,9 @@ from aip.product.configured.configuration.configured_source_config import (
     ConfiguredSourceConfig,
     FolderWatchSourceConfig,
 )
+from aip.product.configured.readers.institutional_portfolio_master_reader import (
+    InstitutionalPortfolioMasterReader,
+)
 from aip.product.configured.readers.portfolio_master_reader import PortfolioMasterReader
 from aip.product.demo.configuration.demo_config import DemoConfig
 
@@ -186,5 +189,36 @@ def test_portfolio_master_reader_ignores_openpyxl_missing_default_style_warning(
         )
 
     assert result.source_status == "HEALTHY"
+    assert result.normalized_positions
+    assert not any("no default style" in item.lower() for item in result.warnings)
+
+
+def test_institutional_master_reader_ignores_openpyxl_missing_default_style_warning(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    path = tmp_path / "institutional_styleless.xlsx"
+    _write_xlsx(path)
+
+    real_load_workbook = openpyxl.load_workbook
+
+    def _warning_load_workbook(*args, **kwargs):
+        warnings.warn(
+            "Workbook contains no default style, apply openpyxl's default",
+            UserWarning,
+            stacklevel=2,
+        )
+        return real_load_workbook(*args, **kwargs)
+
+    monkeypatch.setattr(openpyxl, "load_workbook", _warning_load_workbook)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        result = InstitutionalPortfolioMasterReader().read(
+            path,
+            valuation_date_override=date(2026, 7, 29),
+        )
+
+    assert result.source_status in {"HEALTHY", "DEGRADED"}
     assert result.normalized_positions
     assert not any("no default style" in item.lower() for item in result.warnings)
