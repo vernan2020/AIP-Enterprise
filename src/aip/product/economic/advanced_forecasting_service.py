@@ -135,6 +135,7 @@ class AdvancedMacroForecastingService:
         minimum_material_improvement: float = 0.05,
         horizon_weights: tuple[tuple[int, float], ...] = DEFAULT_HORIZONS,
         maximum_ensemble_models: int = 5,
+        maximum_backtest_origins: int = 36,
     ) -> None:
         if minimum_training_observations < 24:
             raise ValueError("minimum_training_observations must be >= 24")
@@ -144,6 +145,10 @@ class AdvancedMacroForecastingService:
             raise ValueError("minimum_material_improvement must be in [0, 1)")
         if maximum_ensemble_models < 1:
             raise ValueError("maximum_ensemble_models must be positive")
+        if maximum_backtest_origins < minimum_backtest_observations:
+            raise ValueError(
+                "maximum_backtest_origins must be >= minimum_backtest_observations"
+            )
         if not math.isclose(sum(weight for _, weight in horizon_weights), 1.0, abs_tol=1e-9):
             raise ValueError("horizon_weights must sum to 1.0")
 
@@ -153,6 +158,7 @@ class AdvancedMacroForecastingService:
         self._minimum_material_improvement = minimum_material_improvement
         self._horizon_weights = horizon_weights
         self._maximum_ensemble_models = maximum_ensemble_models
+        self._maximum_backtest_origins = maximum_backtest_origins
 
     @property
     def registry(self) -> MacroModelRegistry:
@@ -397,6 +403,10 @@ class AdvancedMacroForecastingService:
         if last_origin < first_origin:
             return _BacktestMetric(horizon, 0, None, None, None, None, 0, 0)
 
+        first_origin = max(
+            first_origin,
+            last_origin - self._maximum_backtest_origins + 1,
+        )
         for origin in range(first_origin, last_origin + 1):
             origin_value = frame[target].iloc[origin]
             actual = frame[target].iloc[origin + horizon]
