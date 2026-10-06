@@ -106,8 +106,8 @@ class _ForecastPathChart(QWidget):
             painter.drawLine(QPointF(left, y), QPointF(left + width, y))
             value = maximum - span * fraction
             painter.setPen(QColor("#637587"))
-            suffix = "" if self._view_model.indicator_code == "FX_SELL" else "%"
-            prefix = "₡" if self._view_model.indicator_code == "FX_SELL" else ""
+            suffix = "" if self._view_model.indicator_code in {"FX_BUY", "FX_SELL"} else "%"
+            prefix = "₡" if self._view_model.indicator_code in {"FX_BUY", "FX_SELL"} else ""
             painter.drawText(
                 QRectF(4, y - 9, left - 10, 18),
                 Qt.AlignmentFlag.AlignRight,
@@ -509,7 +509,7 @@ class MacroForecastLabPanel(QWidget):
 
     @staticmethod
     def _value(code: str, value: float) -> str:
-        return f"₡{value:,.2f}" if code == "FX_SELL" else f"{value:,.2f}%"
+        return f"₡{value:,.2f}" if code in {"FX_BUY", "FX_SELL"} else f"{value:,.2f}%"
 
     @classmethod
     def _interval(
