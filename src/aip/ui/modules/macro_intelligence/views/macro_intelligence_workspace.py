@@ -118,9 +118,7 @@ class _ForecastProjectionWorker(QRunnable):
     @Slot()
     def run(self) -> None:
         try:
-            self.signals.completed.emit(
-                self._presenter.build_forecast_lab(self._indicator_code)
-            )
+            self.signals.completed.emit(self._presenter.build_forecast_lab(self._indicator_code))
         except Exception as exc:
             self.signals.failed.emit(f"{type(exc).__name__}: {exc}")
 
