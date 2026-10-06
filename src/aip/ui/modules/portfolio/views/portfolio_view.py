@@ -28,7 +28,10 @@ from aip.ui.modules.portfolio.views.portfolio_toolbar import PortfolioToolbar
 from aip.ui.modules.portfolio.views.portfolio_valuation_comparison_view import (
     PortfolioValuationComparisonView,
 )
-from aip.ui.modules.portfolio.widgets.portfolio_dashboard_chart import PortfolioDashboardBarChart
+from aip.ui.modules.portfolio.widgets.portfolio_dashboard_chart import (
+    PortfolioDashboardBarChart,
+    PortfolioDashboardDonutChart,
+)
 from aip.ui.modules.portfolio.widgets.portfolio_filter_panel import PortfolioFilterPanel
 from aip.ui.modules.portfolio.widgets.portfolio_status_badge import PortfolioStatusBadge
 
@@ -219,7 +222,7 @@ class PortfolioView(QWidget):
         duration_group = QGroupBox("Distribución por duración")
         duration_group.setStyleSheet(self._group_style())
         duration_layout = QVBoxLayout(duration_group)
-        self._duration_chart = PortfolioDashboardBarChart()
+        self._duration_chart = PortfolioDashboardDonutChart(center_label="Plazos")
         duration_layout.addWidget(self._duration_chart)
         layout.addWidget(duration_group, 0, 1)
 
@@ -235,7 +238,7 @@ class PortfolioView(QWidget):
         currency_group = QGroupBox("Asignación por moneda")
         currency_group.setStyleSheet(self._group_style())
         currency_layout = QVBoxLayout(currency_group)
-        self._currency_chart = PortfolioDashboardBarChart()
+        self._currency_chart = PortfolioDashboardDonutChart(center_label="Monedas")
         currency_layout.addWidget(self._currency_chart)
         layout.addWidget(currency_group, 1, 1)
 
@@ -290,7 +293,7 @@ class PortfolioView(QWidget):
         self._currency_chart.set_data(view_model.currency_points)
         self._valuation_comparison.bind(view_model.valuation_comparison, summary.valuation_date)
         self._dashboard_note.setText(
-            f"Calidad de datos: {view_model.data_quality_status} · "
+            f"Vista ejecutiva UX V2 · Calidad de datos: {view_model.data_quality_status} · "
             f"MIL elegible: {summary.mil_eligible_percent} · "
             f"DV01: {self._translate_status(view_model.dv01_status)}. "
             "El Indicador de Salud permanece N/D hasta certificar su metodología institucional."
