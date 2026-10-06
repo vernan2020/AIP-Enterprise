@@ -251,8 +251,11 @@ class _ProjectionChart(QWidget):
             lower_80 = [None for _ in rows]
             upper_80 = [None for _ in rows]
             source_title = self._LABELS.get(self._driver_code, self._driver_code)
-        minimum = min(values)
-        maximum = max(values)
+        scale_values = list(values)
+        scale_values.extend(float(value) for value in lower_80 if value is not None)
+        scale_values.extend(float(value) for value in upper_80 if value is not None)
+        minimum = min(scale_values)
+        maximum = max(scale_values)
         span = max(maximum - minimum, 0.01)
         minimum -= span * 0.12
         maximum += span * 0.12
@@ -271,7 +274,7 @@ class _ProjectionChart(QWidget):
             painter.drawLine(QPointF(left, y), QPointF(left + width, y))
             value = maximum - span * fraction
             painter.setPen(QColor("#637587"))
-            suffix = "" if self._driver_code == "FX_SELL" else "%"
+            suffix = "" if self._driver_code in {"FX_BUY", "FX_SELL"} else "%"
             painter.drawText(
                 QRectF(4, y - 9, left - 10, 18),
                 Qt.AlignmentFlag.AlignRight,
