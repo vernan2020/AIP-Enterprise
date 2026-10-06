@@ -110,6 +110,8 @@ def test_registry_contains_statistical_econometric_and_machine_learning_candidat
         "RANDOM_FOREST",
         "EXTRA_TREES",
         "HIST_GRADIENT_BOOSTING",
+        "KNN",
+        "XGBOOST",
     }.issubset(families)
 
 
