@@ -258,4 +258,4 @@ class MacroIntelligencePresenter:
         if value is None:
             return "-"
         numeric = float(value)
-        return f"₡{numeric:,.2f}" if code == "FX_SELL" else f"{numeric:,.2f}%"
+        return f"₡{numeric:,.2f}" if code in {"FX_BUY", "FX_SELL"} else f"{numeric:,.2f}%"
