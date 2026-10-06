@@ -34,6 +34,7 @@ class SUGEFMacroFeatureReader:
     LOOKBACK_MONTHS = 119
     FEATURE_CODES = (
         "SUGEF_MARGIN_INTERMEDIATION",
+        "SUGEF_ROA",
         "SUGEF_ROE",
         "SUGEF_CURRENT_PORTFOLIO",
         "SUGEF_COVERAGE_ARREARS",
@@ -97,10 +98,13 @@ class SUGEFMacroFeatureReader:
         name = cls._normalize(account_name)
         rules = (
             ("SUGEF_MARGIN_INTERMEDIATION", ("MARGEN DE INTERM", "FINANCIERA")),
+            ("SUGEF_ROA", ("ROA",)),
+            ("SUGEF_ROE", ("ROE",)),
             ("SUGEF_ROE", ("RENTABILIDAD", "PATRIMONIO")),
             ("SUGEF_CURRENT_PORTFOLIO", ("CARTERA DE CREDITO AL DIA",)),
             ("SUGEF_COVERAGE_ARREARS", ("COBERTURA", "CARTERA", "ATRASO")),
             ("SUGEF_DELINQUENCY_90", ("MOROSIDAD", "90", "CARTERA")),
+            ("SUGEF_OPERATING_EFFICIENCY", ("EFICIENCIA OPERATIVA",)),
             ("SUGEF_OPERATING_EFFICIENCY", ("GASTOS DE ADMINISTRACION", "UTILIDAD OPERACIONAL")),
             ("SUGEF_ADMIN_EXPENSE_ASSETS", ("GASTO", "ADMINISTR", "ACTIVOS")),
             ("SUGEF_EQUITY_COMMITMENT", ("COMPROMISO PATRIMONIAL",)),
