@@ -45,6 +45,7 @@ from aip.ui.modules.macro_intelligence.presenters.macro_intelligence_presenter i
     MacroIntelligencePresenter,
 )
 from aip.ui.modules.macro_intelligence.viewmodels.macro_intelligence_view_model import (
+    MacroForecastLabViewModel,
     MacroProjectionViewModel,
 )
 
@@ -97,6 +98,29 @@ class _EconomicLoadWorker(QRunnable):
     def run(self) -> None:
         try:
             self.signals.completed.emit(self._viewmodel.load())
+        except Exception as exc:
+            self.signals.failed.emit(f"{type(exc).__name__}: {exc}")
+
+
+class _ForecastWorkerSignals(QObject):
+    completed = Signal(object)
+    failed = Signal(str)
+
+
+class _ForecastProjectionWorker(QRunnable):
+    def __init__(self, presenter: MacroIntelligencePresenter, indicator_code: str) -> None:
+        super().__init__()
+        self._presenter = presenter
+        self._indicator_code = indicator_code
+        self.signals = _ForecastWorkerSignals()
+        self.setAutoDelete(True)
+
+    @Slot()
+    def run(self) -> None:
+        try:
+            self.signals.completed.emit(
+                self._presenter.build_forecast_lab(self._indicator_code)
+            )
         except Exception as exc:
             self.signals.failed.emit(f"{type(exc).__name__}: {exc}")
 
@@ -174,12 +198,19 @@ class _ProjectionChart(QWidget):
     def __init__(self) -> None:
         super().__init__()
         self._projection = MacroProjectionViewModel()
+        self._ml_forecast: MacroForecastLabViewModel | None = None
         self._driver_code = "TPM"
         self.setMinimumHeight(300)
 
     def set_projection(self, projection: MacroProjectionViewModel, driver_code: str) -> None:
         self._projection = projection
+        self._ml_forecast = None
         self._driver_code = driver_code
+        self.update()
+
+    def set_ml_forecast(self, forecast: MacroForecastLabViewModel) -> None:
+        self._ml_forecast = forecast
+        self._driver_code = forecast.indicator_code
         self.update()
 
     def paintEvent(self, event) -> None:  # noqa: N802
@@ -187,15 +218,39 @@ class _ProjectionChart(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         painter.fillRect(self.rect(), QColor("#FFFFFF"))
-        rows = self._projection.rows
-        if not rows:
-            painter.setPen(QColor("#718096"))
-            painter.drawText(
-                self.rect(), Qt.AlignmentFlag.AlignCenter, "Proyección institucional no disponible"
+        if self._ml_forecast is not None:
+            forecast_points = self._ml_forecast.points
+            if not forecast_points:
+                painter.setPen(QColor("#718096"))
+                painter.drawText(
+                    self.rect(),
+                    Qt.AlignmentFlag.AlignCenter,
+                    "Proyección ML no disponible para este indicador",
+                )
+                return
+            values = [point.forecast for point in forecast_points]
+            periods = [point.period for point in forecast_points]
+            lower_80 = [point.lower_80 for point in forecast_points]
+            upper_80 = [point.upper_80 for point in forecast_points]
+            source_title = (
+                f"Ensemble ML · {self._ml_forecast.indicator_label} · "
+                f"Champion {self._ml_forecast.champion_model}"
             )
-            return
-
-        values = [row.value_for(self._driver_code) for row in rows]
+        else:
+            rows = self._projection.rows
+            if not rows:
+                painter.setPen(QColor("#718096"))
+                painter.drawText(
+                    self.rect(),
+                    Qt.AlignmentFlag.AlignCenter,
+                    "Proyección institucional no disponible",
+                )
+                return
+            values = [row.value_for(self._driver_code) for row in rows]
+            periods = [row.period for row in rows]
+            lower_80 = [None for _ in rows]
+            upper_80 = [None for _ in rows]
+            source_title = self._LABELS.get(self._driver_code, self._driver_code)
         minimum = min(values)
         maximum = max(values)
         span = max(maximum - minimum, 0.01)
@@ -225,12 +280,30 @@ class _ProjectionChart(QWidget):
             painter.setPen(QPen(QColor("#E1E7EC"), 1))
 
         points: list[QPointF] = []
-        count = len(rows)
-        for index, row in enumerate(rows):
+        count = len(values)
+        for index, value in enumerate(values):
             x = left + (width * index / max(1, count - 1))
-            value = row.value_for(self._driver_code)
             y = top + height - ((value - minimum) / span) * height
             points.append(QPointF(x, y))
+
+        if all(value is not None for value in lower_80 + upper_80):
+            lower_points = [
+                QPointF(
+                    left + (width * index / max(1, count - 1)),
+                    top + height - ((float(value) - minimum) / span) * height,
+                )
+                for index, value in enumerate(lower_80)
+            ]
+            upper_points = [
+                QPointF(
+                    left + (width * index / max(1, count - 1)),
+                    top + height - ((float(value) - minimum) / span) * height,
+                )
+                for index, value in enumerate(upper_80)
+            ]
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor(31, 90, 138, 38))
+            painter.drawPolygon(QPolygonF(upper_points + list(reversed(lower_points))))
 
         if len(points) >= 2:
             painter.setPen(QPen(QColor("#1F5A8A"), 2.4))
@@ -243,12 +316,11 @@ class _ProjectionChart(QWidget):
         painter.setPen(QColor("#53697C"))
         indexes = sorted({0, count - 1, count // 3, (count * 2) // 3})
         for index in indexes:
-            row = rows[index]
             x = left + (width * index / max(1, count - 1))
             painter.drawText(
                 QRectF(x - 36, top + height + 8, 72, 20),
                 Qt.AlignmentFlag.AlignHCenter,
-                _format_period(row.period, include_year=False),
+                _format_period(periods[index], include_year=False),
             )
 
         title_font = QFont(self.font())
@@ -259,7 +331,7 @@ class _ProjectionChart(QWidget):
         painter.drawText(
             QRectF(left, 2, width, 20),
             Qt.AlignmentFlag.AlignLeft,
-            self._LABELS.get(self._driver_code, self._driver_code),
+            source_title,
         )
 
 
