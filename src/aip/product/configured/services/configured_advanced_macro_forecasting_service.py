@@ -35,7 +35,9 @@ class ConfiguredAdvancedMacroForecastingService:
         self._repository = repository or EconomicHistoricalRepository()
         self._dataset_builder = EconometricDatasetBuilder(self._repository)
         self._forecasting_service = forecasting_service
-        self._sugef_reader = SUGEFMacroFeatureReader(sugef_config) if sugef_config is not None else None
+        self._sugef_reader = (
+            SUGEFMacroFeatureReader(sugef_config) if sugef_config is not None else None
+        )
         self._cached_dataset: EconometricMonthlyDataset | None = None
         self._cached_signature: tuple[tuple[str, date | None], ...] | None = None
         self._result_cache: dict[
