@@ -97,7 +97,9 @@ class RiskBarChartWidget(QWidget):
                 painter.setBrush(self._TRACK)
                 painter.drawRoundedRect(QRectF(left, bar_y, width, bar_height), 5, 5)
 
-            fill = self._POSITIVE if numeric > 0 else self._NEGATIVE if numeric < 0 else self._NEUTRAL
+            fill = (
+                self._POSITIVE if numeric > 0 else self._NEGATIVE if numeric < 0 else self._NEUTRAL
+            )
             gradient = QLinearGradient(0, bar_y, 0, bar_y + bar_height)
             gradient.setColorAt(0.0, fill.lighter(112))
             gradient.setColorAt(1.0, fill)
