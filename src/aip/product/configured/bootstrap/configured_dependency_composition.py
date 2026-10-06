@@ -86,7 +86,9 @@ class ConfiguredDependencyComposition:
 
         health_provider = ConfiguredHealthProvider(self._source_config)
         macro_intelligence_service = ConfiguredMacroIntelligenceService()
-        advanced_macro_forecasting_service = ConfiguredAdvancedMacroForecastingService()
+        advanced_macro_forecasting_service = ConfiguredAdvancedMacroForecastingService(
+            sugef_config=self._source_config.sugef_financial,
+        )
 
         bccr_config = BCCRConfig(
             base_url=self._source_config.bccr.base_url or "https://apim.bccr.fi.cr",
