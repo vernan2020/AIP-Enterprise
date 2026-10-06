@@ -167,9 +167,7 @@ class _LiquidityWaterfallChart(QWidget):
             fill = (
                 QColor("#1C8A63")
                 if kind == "positive"
-                else QColor("#C84A3A")
-                if kind == "negative"
-                else QColor("#1F6F9F")
+                else QColor("#C84A3A") if kind == "negative" else QColor("#1F6F9F")
             )
             gradient = QLinearGradient(0, rect_top, 0, rect_top + rect_height)
             gradient.setColorAt(0.0, fill.lighter(118))
