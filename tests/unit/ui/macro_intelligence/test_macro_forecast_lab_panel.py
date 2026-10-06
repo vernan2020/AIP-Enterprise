@@ -26,8 +26,13 @@ class _Presenter:
 def test_forecast_lab_exposes_governed_multimodel_controls(qt_app) -> None:
     panel = MacroForecastLabPanel(_Presenter())  # type: ignore[arg-type]
 
-    assert panel._indicator_combo.count() == 7
+    assert panel._indicator_combo.count() == 24
     assert panel._indicator_combo.currentData() == "TPM"
+    codes = {
+        panel._indicator_combo.itemData(index)
+        for index in range(panel._indicator_combo.count())
+    }
+    assert {"FX_BUY", "TRI_CRC_60M", "TRI_USD_60M"}.issubset(codes)
     assert panel._run_button.text() == "EJECUTAR MODELOS"
     assert panel._model_table.columnCount() == 11
     assert panel._forecast_table.columnCount() == 5
