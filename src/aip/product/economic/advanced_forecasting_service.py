@@ -85,6 +85,19 @@ class AdvancedMacroForecastingService:
 
     COLUMN_MAPPING = {code: code for code in SUPPORTED_INDICATORS}
 
+    _SUGEF_FEATURE_COLUMNS = (
+        "SUGEF_MARGIN_INTERMEDIATION",
+        "SUGEF_ROE",
+        "SUGEF_CURRENT_PORTFOLIO",
+        "SUGEF_COVERAGE_ARREARS",
+        "SUGEF_DELINQUENCY_90",
+        "SUGEF_OPERATING_EFFICIENCY",
+        "SUGEF_ADMIN_EXPENSE_ASSETS",
+        "SUGEF_EQUITY_COMMITMENT",
+        "SUGEF_CAPITAL_ADEQUACY",
+        "SUGEF_LIQUIDITY_COVERAGE",
+    )
+
     DEFAULT_HORIZONS = ((1, 0.20), (3, 0.30), (6, 0.30), (12, 0.20))
     _FULL_FEATURE_LAGS = (0, 1, 3, 6, 12)
     _ARDL_TARGET_LAGS = (0, 1, 3, 6, 12)
@@ -665,7 +678,12 @@ class AdvancedMacroForecastingService:
                 for lag in self._ARDL_DRIVER_LAGS:
                     values.append(self._value_at(frame, driver, position - lag))
         else:
-            feature_columns = (target, *self._TARGET_DRIVER_MAP[target])
+            sugef_columns = tuple(
+                column
+                for column in self._SUGEF_FEATURE_COLUMNS
+                if column in frame.columns and frame[column].notna().any()
+            )
+            feature_columns = (target, *self._TARGET_DRIVER_MAP[target], *sugef_columns)
             for column in feature_columns:
                 for lag in self._FULL_FEATURE_LAGS:
                     values.append(self._value_at(frame, column, position - lag))
@@ -1029,7 +1047,8 @@ class AdvancedMacroForecastingService:
                     "VALUE": cls._float_or_nan(point.value),
                 }
                 for point in dataset.data_points
-                if point.indicator_code.strip().upper() in cls.COLUMN_MAPPING
+                if point.indicator_code.strip().upper()
+                in {*cls.COLUMN_MAPPING, *cls._SUGEF_FEATURE_COLUMNS}
             ]
             if records:
                 long_frame = pd.DataFrame.from_records(records)
@@ -1039,7 +1058,11 @@ class AdvancedMacroForecastingService:
                     values="VALUE",
                     aggfunc="last",
                 )
-                frame = frame.reindex(columns=tuple(cls.COLUMN_MAPPING.values())).sort_index()
+                ordered_columns = (
+                    *tuple(cls.COLUMN_MAPPING.values()),
+                    *cls._SUGEF_FEATURE_COLUMNS,
+                )
+                frame = frame.reindex(columns=ordered_columns).sort_index()
                 frame.index = pd.to_datetime(frame.index)
                 return frame.astype(float)
 
