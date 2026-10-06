@@ -146,9 +146,7 @@ class AdvancedMacroForecastingService:
         if maximum_ensemble_models < 1:
             raise ValueError("maximum_ensemble_models must be positive")
         if maximum_backtest_origins < minimum_backtest_observations:
-            raise ValueError(
-                "maximum_backtest_origins must be >= minimum_backtest_observations"
-            )
+            raise ValueError("maximum_backtest_origins must be >= minimum_backtest_observations")
         if not math.isclose(sum(weight for _, weight in horizon_weights), 1.0, abs_tol=1e-9):
             raise ValueError("horizon_weights must sum to 1.0")
 
