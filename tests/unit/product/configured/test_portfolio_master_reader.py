@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import warnings
 from datetime import date
 from pathlib import Path
-import warnings
 
 import openpyxl
 import xlwt
