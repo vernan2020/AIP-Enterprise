@@ -57,38 +57,60 @@ class AdvancedMacroForecastingService:
     """
 
     SUPPORTED_INDICATORS = (
+        "FX_BUY",
         "FX_SELL",
         "TPM",
         "TBP",
+        "TRI_CRC_1W",
+        "TRI_CRC_1M",
+        "TRI_CRC_3M",
+        "TRI_CRC_6M",
+        "TRI_CRC_9M",
         "TRI_CRC_12M",
+        "TRI_CRC_24M",
+        "TRI_CRC_36M",
+        "TRI_CRC_60M",
+        "TRI_USD_1W",
+        "TRI_USD_1M",
+        "TRI_USD_3M",
+        "TRI_USD_6M",
+        "TRI_USD_9M",
         "TRI_USD_12M",
+        "TRI_USD_24M",
+        "TRI_USD_36M",
+        "TRI_USD_60M",
         "INFLATION",
         "IMAE",
     )
 
-    COLUMN_MAPPING = {
-        "FX_SELL": "FX_SELL",
-        "TPM": "TPM",
-        "TBP": "TBP",
-        "TRI_CRC_12M": "TRI_CRC_12M",
-        "TRI_USD_12M": "TRI_USD_12M",
-        "INFLATION": "INFLATION",
-        "IMAE": "IMAE",
-    }
+    COLUMN_MAPPING = {code: code for code in SUPPORTED_INDICATORS}
 
     DEFAULT_HORIZONS = ((1, 0.20), (3, 0.30), (6, 0.30), (12, 0.20))
-    _FULL_FEATURE_LAGS = (0, 1, 3, 6)
-    _ARDL_TARGET_LAGS = (0, 1, 3, 6)
-    _ARDL_DRIVER_LAGS = (0, 1)
+    _FULL_FEATURE_LAGS = (0, 1, 3, 6, 12)
+    _ARDL_TARGET_LAGS = (0, 1, 3, 6, 12)
+    _ARDL_DRIVER_LAGS = (0, 1, 3)
     _TARGET_DRIVER_MAP = {
-        "FX_SELL": ("TPM", "INFLATION", "IMAE"),
-        "TPM": ("INFLATION", "IMAE", "FX_SELL"),
-        "TBP": ("TPM", "INFLATION", "IMAE"),
-        "TRI_CRC_12M": ("TPM", "TBP", "INFLATION"),
-        "TRI_USD_12M": ("FX_SELL", "TPM", "INFLATION"),
-        "INFLATION": ("FX_SELL", "IMAE", "TPM"),
-        "IMAE": ("TPM", "INFLATION", "FX_SELL"),
+        "FX_BUY": ("FX_SELL", "TPM", "INFLATION", "IMAE"),
+        "FX_SELL": ("FX_BUY", "TPM", "INFLATION", "IMAE"),
+        "TPM": ("INFLATION", "IMAE", "FX_SELL", "TRI_CRC_12M"),
+        "TBP": ("TPM", "INFLATION", "IMAE", "TRI_CRC_12M"),
+        "INFLATION": ("FX_SELL", "IMAE", "TPM", "TBP"),
+        "IMAE": ("TPM", "INFLATION", "FX_SELL", "TBP"),
     }
+    _TARGET_DRIVER_MAP.update(
+        {
+            code: ("TPM", "TBP", "INFLATION", "IMAE")
+            for code in SUPPORTED_INDICATORS
+            if code.startswith("TRI_CRC_")
+        }
+    )
+    _TARGET_DRIVER_MAP.update(
+        {
+            code: ("FX_SELL", "TPM", "INFLATION", "IMAE")
+            for code in SUPPORTED_INDICATORS
+            if code.startswith("TRI_USD_")
+        }
+    )
 
     def __init__(
         self,
@@ -532,16 +554,55 @@ class AdvancedMacroForecastingService:
                 l1_ratio=float(parameters.get("l1_ratio", "0.25")),
             )
         if specification.family == "GRADIENT_BOOSTING":
-            try:
-                from sklearn.ensemble import GradientBoostingRegressor
-            except ImportError as exc:
-                raise ImportError("scikit-learn is not installed") from exc
+            from sklearn.ensemble import GradientBoostingRegressor
+
             parameters = dict(specification.parameters)
             model = GradientBoostingRegressor(
-                n_estimators=int(parameters.get("n_estimators", "100")),
+                n_estimators=int(parameters.get("n_estimators", "150")),
                 max_depth=int(parameters.get("max_depth", "2")),
                 learning_rate=0.05,
                 loss="huber",
+                random_state=0,
+            )
+            model.fit(x_train, y_train)
+            return float(model.predict(x_predict.reshape(1, -1))[0])
+        if specification.family == "RANDOM_FOREST":
+            from sklearn.ensemble import RandomForestRegressor
+
+            parameters = dict(specification.parameters)
+            model = RandomForestRegressor(
+                n_estimators=int(parameters.get("n_estimators", "300")),
+                max_depth=int(parameters.get("max_depth", "5")),
+                min_samples_leaf=int(parameters.get("min_samples_leaf", "3")),
+                max_features="sqrt",
+                random_state=0,
+                n_jobs=1,
+            )
+            model.fit(x_train, y_train)
+            return float(model.predict(x_predict.reshape(1, -1))[0])
+        if specification.family == "EXTRA_TREES":
+            from sklearn.ensemble import ExtraTreesRegressor
+
+            parameters = dict(specification.parameters)
+            model = ExtraTreesRegressor(
+                n_estimators=int(parameters.get("n_estimators", "300")),
+                max_depth=int(parameters.get("max_depth", "6")),
+                min_samples_leaf=int(parameters.get("min_samples_leaf", "2")),
+                max_features="sqrt",
+                random_state=0,
+                n_jobs=1,
+            )
+            model.fit(x_train, y_train)
+            return float(model.predict(x_predict.reshape(1, -1))[0])
+        if specification.family == "HIST_GRADIENT_BOOSTING":
+            from sklearn.ensemble import HistGradientBoostingRegressor
+
+            parameters = dict(specification.parameters)
+            model = HistGradientBoostingRegressor(
+                max_iter=int(parameters.get("max_iter", "200")),
+                max_leaf_nodes=int(parameters.get("max_leaf_nodes", "15")),
+                l2_regularization=float(parameters.get("l2_regularization", "1.0")),
+                learning_rate=0.05,
                 random_state=0,
             )
             model.fit(x_train, y_train)
@@ -604,7 +665,8 @@ class AdvancedMacroForecastingService:
                 for lag in self._ARDL_DRIVER_LAGS:
                     values.append(self._value_at(frame, driver, position - lag))
         else:
-            for column in frame.columns:
+            feature_columns = (target, *self._TARGET_DRIVER_MAP[target])
+            for column in feature_columns:
                 for lag in self._FULL_FEATURE_LAGS:
                     values.append(self._value_at(frame, column, position - lag))
 
@@ -612,13 +674,21 @@ class AdvancedMacroForecastingService:
         lag_1 = self._value_at(frame, target, position - 1)
         lag_3 = self._value_at(frame, target, position - 3)
         lag_6 = self._value_at(frame, target, position - 6)
-        values.extend((current - lag_1, current - lag_3, current - lag_6))
+        lag_12 = self._value_at(frame, target, position - 12)
+        values.extend(
+            (
+                current - lag_1,
+                current - lag_3,
+                current - lag_6,
+                current - lag_12,
+            )
+        )
         return np.asarray(values, dtype=float)
 
     def _max_feature_lag(self, specification: MacroModelSpecification) -> int:
         if specification.family == "ARDL":
-            return max(max(self._ARDL_TARGET_LAGS), max(self._ARDL_DRIVER_LAGS), 6)
-        return max(max(self._FULL_FEATURE_LAGS), 6)
+            return max(max(self._ARDL_TARGET_LAGS), max(self._ARDL_DRIVER_LAGS), 12)
+        return max(max(self._FULL_FEATURE_LAGS), 12)
 
     @staticmethod
     def _value_at(frame: pd.DataFrame, column: str, position: int) -> float:
@@ -951,6 +1021,28 @@ class AdvancedMacroForecastingService:
 
     @classmethod
     def _frame(cls, dataset: EconometricMonthlyDataset) -> pd.DataFrame:
+        if dataset.data_points:
+            records = [
+                {
+                    "PERIOD": point.period,
+                    "INDICATOR": point.indicator_code.strip().upper(),
+                    "VALUE": cls._float_or_nan(point.value),
+                }
+                for point in dataset.data_points
+                if point.indicator_code.strip().upper() in cls.COLUMN_MAPPING
+            ]
+            if records:
+                long_frame = pd.DataFrame.from_records(records)
+                frame = long_frame.pivot_table(
+                    index="PERIOD",
+                    columns="INDICATOR",
+                    values="VALUE",
+                    aggfunc="last",
+                )
+                frame = frame.reindex(columns=tuple(cls.COLUMN_MAPPING.values())).sort_index()
+                frame.index = pd.to_datetime(frame.index)
+                return frame.astype(float)
+
         records = [
             {
                 "PERIOD": row.period,
@@ -967,6 +1059,7 @@ class AdvancedMacroForecastingService:
         if not records:
             return pd.DataFrame(columns=tuple(cls.COLUMN_MAPPING.values()), dtype=float)
         frame = pd.DataFrame.from_records(records).set_index("PERIOD").sort_index()
+        frame = frame.reindex(columns=tuple(cls.COLUMN_MAPPING.values()))
         frame.index = pd.to_datetime(frame.index)
         return frame.astype(float)
 
