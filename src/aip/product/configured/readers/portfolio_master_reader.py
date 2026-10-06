@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 import re
 import unicodedata
+import warnings as python_warnings
 import zipfile
 from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta
@@ -145,10 +146,30 @@ class PortfolioMasterReader:
                 sheet_data = [self._read_xls_sheet(sheet) for sheet in sheets]
                 sheet_names = [sheet.name for sheet in sheets]
             else:
-                workbook = openpyxl.load_workbook(file_path, read_only=True, data_only=True)
-                sheet_names = workbook.sheetnames
-                sheet_data = [self._read_xlsx_sheet(sheet) for sheet in workbook.worksheets]
-                workbook.close()
+                with python_warnings.catch_warnings(record=True) as caught_warnings:
+                    python_warnings.simplefilter("always", UserWarning)
+                    python_warnings.filterwarnings(
+                        "ignore",
+                        message=r"Workbook contains no default style.*",
+                        category=UserWarning,
+                    )
+                    workbook = openpyxl.load_workbook(
+                        file_path,
+                        read_only=True,
+                        data_only=True,
+                    )
+                    try:
+                        sheet_names = workbook.sheetnames
+                        sheet_data = [
+                            self._read_xlsx_sheet(sheet) for sheet in workbook.worksheets
+                        ]
+                    finally:
+                        workbook.close()
+                warnings.extend(
+                    str(item.message)
+                    for item in caught_warnings
+                    if "Workbook contains no default style" not in str(item.message)
+                )
         except (
             InvalidFileException,
             XLRDError,
