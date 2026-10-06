@@ -16,6 +16,8 @@ MacroModelFamily = Literal[
     "RANDOM_FOREST",
     "EXTRA_TREES",
     "HIST_GRADIENT_BOOSTING",
+    "KNN",
+    "XGBOOST",
 ]
 
 MacroModelMode = Literal["UNIVARIATE", "MULTIVARIATE_DIRECT"]
@@ -142,6 +144,28 @@ class MacroModelRegistry:
                 "HIST_GRADIENT_BOOSTING",
                 "MULTIVARIATE_DIRECT",
                 8,
-                parameters=(("max_iter", "200"), ("max_leaf_nodes", "15"), ("l2_regularization", "1.0")),
+                parameters=(
+                    ("max_iter", "200"),
+                    ("max_leaf_nodes", "15"),
+                    ("l2_regularization", "1.0"),
+                ),
+            ),
+            MacroModelSpecification(
+                "KNN_UNIVARIATE_DIRECT",
+                "KNN",
+                "MULTIVARIATE_DIRECT",
+                5,
+                parameters=(("n_neighbors", "5"),),
+            ),
+            MacroModelSpecification(
+                "XGBOOST_DIRECT",
+                "XGBOOST",
+                "MULTIVARIATE_DIRECT",
+                9,
+                parameters=(
+                    ("n_estimators", "300"),
+                    ("max_depth", "3"),
+                    ("learning_rate", "0.03"),
+                ),
             ),
         )
