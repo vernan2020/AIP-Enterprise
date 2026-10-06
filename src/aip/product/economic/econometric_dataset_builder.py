@@ -43,22 +43,56 @@ class EconometricDatasetBuilder:
     """
 
     MONTHLY_INDICATORS = (
+        "FX_BUY",
         "FX_SELL",
         "TPM",
         "TBP",
+        "TRI_CRC_1W",
+        "TRI_CRC_1M",
+        "TRI_CRC_3M",
+        "TRI_CRC_6M",
+        "TRI_CRC_9M",
         "TRI_CRC_12M",
+        "TRI_CRC_24M",
+        "TRI_CRC_36M",
+        "TRI_CRC_60M",
+        "TRI_USD_1W",
+        "TRI_USD_1M",
+        "TRI_USD_3M",
+        "TRI_USD_6M",
+        "TRI_USD_9M",
         "TRI_USD_12M",
+        "TRI_USD_24M",
+        "TRI_USD_36M",
+        "TRI_USD_60M",
         "INFLATION",
         "IMAE",
     )
 
     DAILY_TO_MONTH_END = frozenset(
         {
+            "FX_BUY",
             "FX_SELL",
             "TPM",
             "TBP",
+            "TRI_CRC_1W",
+            "TRI_CRC_1M",
+            "TRI_CRC_3M",
+            "TRI_CRC_6M",
+            "TRI_CRC_9M",
             "TRI_CRC_12M",
+            "TRI_CRC_24M",
+            "TRI_CRC_36M",
+            "TRI_CRC_60M",
+            "TRI_USD_1W",
+            "TRI_USD_1M",
+            "TRI_USD_3M",
+            "TRI_USD_6M",
+            "TRI_USD_9M",
             "TRI_USD_12M",
+            "TRI_USD_24M",
+            "TRI_USD_36M",
+            "TRI_USD_60M",
         }
     )
 
