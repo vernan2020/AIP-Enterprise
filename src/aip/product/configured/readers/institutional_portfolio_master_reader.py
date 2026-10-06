@@ -144,9 +144,7 @@ class InstitutionalPortfolioMasterReader:
                     )
                     try:
                         sheet_names = workbook.sheetnames
-                        sheet_rows = [
-                            self._read_xlsx_sheet(sheet) for sheet in workbook.worksheets
-                        ]
+                        sheet_rows = [self._read_xlsx_sheet(sheet) for sheet in workbook.worksheets]
                     finally:
                         workbook.close()
                 workbook_warnings = tuple(
