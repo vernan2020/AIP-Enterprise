@@ -136,7 +136,6 @@ class InstitutionalPortfolioMasterReader:
                         "ignore",
                         message=r"Workbook contains no default style.*",
                         category=UserWarning,
-                        module=r"openpyxl\.styles\.stylesheet",
                     )
                     workbook = openpyxl.load_workbook(
                         file_path,
