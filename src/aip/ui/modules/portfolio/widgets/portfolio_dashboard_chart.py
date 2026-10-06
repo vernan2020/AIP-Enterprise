@@ -4,7 +4,7 @@ from decimal import Decimal
 from typing import Callable
 
 from PySide6.QtCore import QPointF, QRectF, Qt
-from PySide6.QtGui import QColor, QFont, QLinearGradient, QPainter, QPen
+from PySide6.QtGui import QColor, QFont, QPainter, QPen
 from PySide6.QtWidgets import QWidget
 
 from aip.ui.modules.portfolio.models.portfolio_dashboard_point import PortfolioDashboardPoint
