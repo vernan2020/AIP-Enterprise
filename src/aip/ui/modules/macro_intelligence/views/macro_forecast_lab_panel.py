@@ -324,8 +324,8 @@ class MacroForecastLabPanel(QWidget):
             "Los pesos se derivan del desempeño multi-horizonte fuera de muestra. "
             "NAIVE permanece como benchmark y puede formar parte del ensemble. "
             "Ridge y ElasticNet usan únicamente información observable al origen. "
-            "Gradient Boosting, Random Forest, Extra Trees e HistGradientBoosting compiten "
-            "con los modelos econométricos bajo el mismo backtesting rolling."
+            "Gradient Boosting, Random Forest, Extra Trees, HistGradientBoosting, KNN y "
+            "XGBoost compiten con los modelos econométricos bajo el mismo backtesting rolling."
         )
         explanation.setWordWrap(True)
         explanation.setAlignment(Qt.AlignmentFlag.AlignTop)
