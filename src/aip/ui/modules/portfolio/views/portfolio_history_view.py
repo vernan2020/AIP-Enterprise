@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
+
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QComboBox,
