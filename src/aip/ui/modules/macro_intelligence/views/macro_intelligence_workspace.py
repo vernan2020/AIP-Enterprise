@@ -510,13 +510,17 @@ class MacroIntelligenceWorkspace(QWidget):
         self._projection_source_combo = QComboBox()
         self._projection_source_combo.addItem("Ensemble ML · backtesting rolling", "ML")
         self._projection_source_combo.addItem("Escenario institucional aprobado", "INSTITUTIONAL")
-        self._projection_source_combo.currentIndexChanged.connect(self._projection_source_changed)
+        self._projection_source_combo.currentIndexChanged.connect(
+            lambda _index: self._projection_source_changed()
+        )
         selector.addWidget(self._projection_source_combo)
         selector.addWidget(QLabel("Variable proyectada:"))
         self._driver_combo = QComboBox()
         for code, label in self._DRIVER_LABELS:
             self._driver_combo.addItem(label, code)
-        self._driver_combo.currentIndexChanged.connect(self._refresh_projection_chart)
+        self._driver_combo.currentIndexChanged.connect(
+            lambda _index: self._refresh_projection_chart()
+        )
         selector.addWidget(self._driver_combo)
         selector.addStretch(1)
         self._projection_range = QLabel("-")
