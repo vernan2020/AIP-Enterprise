@@ -309,9 +309,7 @@ class LiquidityView(QWidget):
         font.setPointSize(15)
         font.setBold(True)
         title.setFont(font)
-        subtitle = QLabel(
-            "UX V2 · ICL · HQLA · MIL · cupones y principal · capacidad de respuesta"
-        )
+        subtitle = QLabel("UX V2 · ICL · HQLA · MIL · cupones y principal · capacidad de respuesta")
         subtitle.setStyleSheet("color:#667788; font-size:10px;")
         title_box.addWidget(title)
         title_box.addWidget(subtitle)
