@@ -23,7 +23,7 @@ from aip.ui.modules.liquidity.viewmodels.liquidity_view_model import LiquidityVi
 
 
 class _LiquidityBarChart(QWidget):
-    """Gráfico de barras nativo para valores calculados por la capa de aplicación."""
+    """Horizontal capsule chart for contractual liquidity buckets."""
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -44,37 +44,55 @@ class _LiquidityBarChart(QWidget):
             painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "Sin datos disponibles")
             return
 
-        left, right, top, bottom = 32.0, 20.0, 20.0, 52.0
-        width = max(40.0, self.width() - left - right)
-        height = max(40.0, self.height() - top - bottom)
+        left, right, top, bottom = 132.0, 108.0, 18.0, 18.0
+        width = max(60.0, self.width() - left - right)
+        height = max(60.0, self.height() - top - bottom)
+        row_height = height / max(1, len(self._points))
         maximum = max((abs(value) for _, value in self._points), default=0.0) or 1.0
-        slot = width / max(1, len(self._points))
-        font = QFont(self.font())
-        font.setPointSize(8)
-        painter.setFont(font)
+
+        label_font = QFont(self.font())
+        label_font.setPointSize(8)
+        value_font = QFont(label_font)
+        value_font.setBold(True)
 
         for index, (label, value) in enumerate(self._points):
-            center = left + slot * index + slot / 2
-            bar_width = min(54.0, slot * 0.55)
-            bar_height = height * abs(value) / maximum
-            rect = QRectF(center - bar_width / 2, top + height - bar_height, bar_width, bar_height)
-            fill = QColor("#2B6F9F") if value >= 0 else QColor("#B55A4A")
-            gradient = QLinearGradient(0, rect.top(), 0, rect.bottom())
-            gradient.setColorAt(0.0, fill.lighter(118))
-            gradient.setColorAt(1.0, fill)
-            painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(gradient)
-            painter.drawRoundedRect(rect, 6, 6)
+            y = top + index * row_height
+            center_y = y + row_height / 2.0
+            bar_height = max(12.0, min(22.0, row_height * 0.42))
+            bar_width = width * abs(value) / maximum
+
+            painter.setFont(label_font)
             painter.setPen(QColor("#23384B"))
             painter.drawText(
-                QRectF(center - slot / 2, top + height + 7, slot, 18),
-                Qt.AlignmentFlag.AlignHCenter,
+                QRectF(8, y, left - 18, row_height),
+                Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
                 label,
             )
-            painter.setPen(QColor("#53697C"))
+
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor("#EEF3F7"))
+            painter.drawRoundedRect(
+                QRectF(left, center_y - bar_height / 2, width, bar_height),
+                bar_height / 2,
+                bar_height / 2,
+            )
+
+            fill = QColor("#2479A8")
+            gradient = QLinearGradient(left, 0, left + max(2.0, bar_width), 0)
+            gradient.setColorAt(0.0, QColor("#155F8E"))
+            gradient.setColorAt(1.0, QColor("#55A8C7"))
+            painter.setBrush(gradient)
+            painter.drawRoundedRect(
+                QRectF(left, center_y - bar_height / 2, max(3.0, bar_width), bar_height),
+                bar_height / 2,
+                bar_height / 2,
+            )
+
+            painter.setFont(value_font)
+            painter.setPen(fill.darker(120))
             painter.drawText(
-                QRectF(center - slot / 2, max(0.0, rect.top() - 22), slot, 20),
-                Qt.AlignmentFlag.AlignHCenter,
+                QRectF(left + width + 8, y, right - 12, row_height),
+                Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignRight,
                 f"₡{value / 1_000_000:,.0f} MM",
             )
 
@@ -291,9 +309,7 @@ class LiquidityView(QWidget):
         font.setPointSize(15)
         font.setBold(True)
         title.setFont(font)
-        subtitle = QLabel(
-            "ICL · HQLA · MIL · cupones y principal del portafolio · capacidad de respuesta"
-        )
+        subtitle = QLabel("UX V2 · ICL · HQLA · MIL · cupones y principal · capacidad de respuesta")
         subtitle.setStyleSheet("color:#667788; font-size:10px;")
         title_box.addWidget(title)
         title_box.addWidget(subtitle)
@@ -348,7 +364,7 @@ class LiquidityView(QWidget):
         layout.setContentsMargins(4, 8, 4, 4)
         layout.setSpacing(8)
 
-        flow_group = QGroupBox("ICL · fondos y flujos a 30 días")
+        flow_group = QGroupBox("Puente de liquidez · 30 días")
         flow_group.setStyleSheet(self._group_style())
         flow_layout = QVBoxLayout(flow_group)
         self._flow_chart = _LiquidityWaterfallChart()
