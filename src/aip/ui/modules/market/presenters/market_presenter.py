@@ -312,14 +312,29 @@ class MarketPresenter:
             ]
         )
 
+        average_yield = self._float(market.get("average_yield"))
+        average_duration = self._float(market.get("average_duration"))
+        average_spread = self._float(market.get("average_spread"))
+        fallback_rows = portfolio_rv or market_rv
+        if fallback_rows:
+            if average_yield == 0.0:
+                yields = [row.market_yield for row in fallback_rows if row.market_yield != 0.0]
+                average_yield = sum(yields) / len(yields) if yields else 0.0
+            if average_duration == 0.0:
+                tenors = [row.tenor for row in fallback_rows if row.tenor > 0.0]
+                average_duration = sum(tenors) / len(tenors) if tenors else 0.0
+            if average_spread == 0.0:
+                spreads = [row.spread_bp for row in fallback_rows if row.spread_bp != 0.0]
+                average_spread = sum(spreads) / len(spreads) if spreads else 0.0
+
         summary = SimpleNamespace(
             market_date=str(market.get("market_date") or "-"),
             curves_loaded=len(raw_curves),
             pricing_date=str(market.get("market_date") or "-"),
             relative_value_opportunities=int(market.get("relative_value_opportunities") or 0),
-            average_yield=f"{self._float(market.get('average_yield')):.2f}%",
-            average_duration=f"{self._float(market.get('average_duration')):.2f}",
-            average_spread=f"{self._float(market.get('average_spread')):.2f}",
+            average_yield=f"{average_yield:.2f}%",
+            average_duration=f"{average_duration:.2f}",
+            average_spread=f"{average_spread:.2f}",
             market_status=translate_status(market.get("market_status") or "UNAVAILABLE"),
             market_relative_value_count=int(market.get("market_relative_value_count") or 0),
             market_cheap_count=int(market.get("market_cheap_count") or 0),
