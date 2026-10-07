@@ -24,6 +24,7 @@ from aip.ui.modules.macro_intelligence.presenters.macro_intelligence_presenter i
 from aip.ui.modules.macro_intelligence.viewmodels.macro_intelligence_view_model import (
     MacroForecastLabViewModel,
 )
+from aip.ui.widgets.chart_tooltip import build_chart_tooltip, point_hit_rect, show_chart_tooltip
 
 
 class _ForecastLabSignals(QObject):
@@ -61,6 +62,8 @@ class _ForecastPathChart(QWidget):
     def __init__(self) -> None:
         super().__init__()
         self._view_model = MacroForecastLabViewModel()
+        self._tooltip_regions: list[tuple[QRectF, str]] = []
+        self.setMouseTracking(True)
         self.setMinimumHeight(280)
 
     def set_view_model(self, view_model: MacroForecastLabViewModel) -> None:
@@ -72,6 +75,7 @@ class _ForecastPathChart(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         painter.fillRect(self.rect(), QColor("#FFFFFF"))
+        self._tooltip_regions = []
         points = self._view_model.points
         if not points:
             painter.setPen(QColor("#718096"))
@@ -153,6 +157,32 @@ class _ForecastPathChart(QWidget):
             painter.drawPolygon(polygon)
 
         forecast_points = [coordinates(item.forecast, index) for index, item in enumerate(points)]
+        origin = (
+            self._view_model.forecast_origin.strftime("%d/%m/%Y")
+            if self._view_model.forecast_origin
+            else None
+        )
+        for item, screen_point in zip(points, forecast_points, strict=True):
+            tooltip = build_chart_tooltip(
+                self._view_model.indicator_label,
+                (
+                    ("Periodo", item.period.strftime("%m/%Y")),
+                    ("Horizonte", f"{item.horizon}M"),
+                    ("Forecast", self._format_value(item.forecast)),
+                    (
+                        "Banda 80%",
+                        self._format_interval(item.lower_80, item.upper_80),
+                    ),
+                    (
+                        "Banda 95%",
+                        self._format_interval(item.lower_95, item.upper_95),
+                    ),
+                    ("Champion", self._view_model.champion_model),
+                    ("Origen", origin),
+                ),
+                note="Proyección ensemble fuera de muestra; las bandas expresan incertidumbre.",
+            )
+            self._tooltip_regions.append((point_hit_rect(screen_point, 10.0), tooltip))
         painter.setBrush(Qt.BrushStyle.NoBrush)
         painter.setPen(QPen(QColor("#005EB8"), 2.5))
         painter.drawPolyline(QPolygonF(forecast_points))
@@ -183,6 +213,21 @@ class _ForecastPathChart(QWidget):
             Qt.AlignmentFlag.AlignLeft,
             f"Ensemble · {self._view_model.indicator_label} · bandas 80% / 95%",
         )
+
+
+    def mouseMoveEvent(self, event) -> None:  # noqa: N802
+        show_chart_tooltip(self, event, self._tooltip_regions)
+        super().mouseMoveEvent(event)
+
+    def _format_value(self, value: float) -> str:
+        if self._view_model.indicator_code in {"FX_BUY", "FX_SELL"}:
+            return f"₡{value:,.2f}"
+        return f"{value:,.2f}%"
+
+    def _format_interval(self, lower: float | None, upper: float | None) -> str | None:
+        if lower is None or upper is None:
+            return None
+        return f"{self._format_value(lower)} – {self._format_value(upper)}"
 
 
 class MacroForecastLabPanel(QWidget):
