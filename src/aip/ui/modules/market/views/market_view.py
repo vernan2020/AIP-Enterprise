@@ -38,7 +38,7 @@ class _MarketCurveChart(QWidget):
         super().__init__(parent)
         self._curve: MarketCurveViewData | None = None
         self._highlight: RelativeValueViewRow | None = None
-        self.setMinimumHeight(330)
+        self.setMinimumHeight(410)
 
     def set_curve(
         self,
@@ -177,9 +177,10 @@ class MarketView(QWidget):
     @staticmethod
     def _group_style() -> str:
         return (
-            "QGroupBox {border:1px solid #D5DEE3; border-radius:7px; margin-top:8px; "
-            "font-weight:700; color:#005EB8; background:#FFFFFF;}"
-            "QGroupBox::title {subcontrol-origin:margin; left:10px; padding:0 5px;}"
+            "QGroupBox {border:1px solid #C9DCE8; border-radius:12px; margin-top:10px; "
+            "font-weight:700; color:#00345F; background:#FFFFFF;}"
+            "QGroupBox::title {subcontrol-origin:margin; left:14px; padding:0 6px; "
+            "background:#FFFFFF;}"
         )
 
     @staticmethod
@@ -191,8 +192,21 @@ class MarketView(QWidget):
 
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
-        root.setContentsMargins(12, 8, 12, 10)
-        root.setSpacing(7)
+        root.setContentsMargins(16, 10, 16, 12)
+        root.setSpacing(9)
+        self.setStyleSheet(
+            "QWidget#marketWorkspace {background:qlineargradient(x1:0,y1:0,x2:0,y2:1,"
+            "stop:0 #F5FAFD,stop:1 #EEF5F9);}"
+            "QWidget#marketWorkspace QComboBox {background:#FFFFFF; border:1px solid #C9DCE8; "
+            "border-radius:6px; padding:5px 8px; color:#183247;}"
+            "QTabWidget#marketRelativeValueTabs::pane {border:1px solid #C9DCE8; "
+            "border-radius:10px; background:#FFFFFF; top:-1px;}"
+            "QTabWidget#marketRelativeValueTabs QTabBar::tab {background:#EEF6FA; "
+            "border:1px solid #D5E4EC; border-bottom:none; padding:8px 14px; "
+            "margin-right:3px; border-top-left-radius:8px; border-top-right-radius:8px;}"
+            "QTabWidget#marketRelativeValueTabs QTabBar::tab:selected {background:#FFFFFF; "
+            "color:#005EB8; border-top:3px solid #00A9E0;}"
+        )
 
         title_row = QHBoxLayout()
         title_box = QVBoxLayout()
@@ -204,7 +218,7 @@ class MarketView(QWidget):
         title.setFont(title_font)
         title.setStyleSheet("color:#00345F;")
         subtitle = QLabel(
-            "PiPCA · Nelson-Siegel · screener de valor relativo · universo de mercado · rotación"
+            "UX V4.1 · curva soberana · valor relativo · ranking de oportunidades · rotación"
         )
         subtitle.setStyleSheet("color:#566D7C; font-size:9px;")
         title_box.addWidget(title)
@@ -242,7 +256,7 @@ class MarketView(QWidget):
         curve_group = QGroupBox("Curva de rendimiento · observado vs modelo oficial")
         curve_group.setStyleSheet(self._group_style())
         curve_group_layout = QVBoxLayout(curve_group)
-        curve_group_layout.setContentsMargins(8, 9, 8, 6)
+        curve_group_layout.setContentsMargins(12, 12, 12, 8)
         self._curve_chart = _MarketCurveChart()
         curve_group_layout.addWidget(self._curve_chart, 1)
         legend = QLabel("● PiPCA observado     ━ Nelson-Siegel     ● Instrumento seleccionado")
@@ -255,8 +269,8 @@ class MarketView(QWidget):
         self._rv_tabs.setObjectName("marketRelativeValueTabs")
         self._rv_tabs.setDocumentMode(True)
         self._rv_tabs.setStyleSheet(
-            "QTabBar::tab {padding:7px 14px; font-weight:600;}"
-            "QTabBar::tab:selected {color:#005EB8; border-bottom:2px solid #00A9E0;}"
+            "QTabBar::tab {padding:8px 14px; font-weight:700;}"
+            "QTabBar::tab:selected {color:#005EB8;}"
         )
 
         self._relative_value_view = RelativeValueView(self._view_model.portfolio_relative_value)
@@ -349,14 +363,15 @@ class MarketView(QWidget):
         self._rv_tabs.addTab(rotation_tab, "Rotación")
 
         analytical.addWidget(self._rv_tabs)
-        analytical.setStretchFactor(0, 3)
-        analytical.setStretchFactor(1, 2)
-        analytical.setSizes([820, 610])
+        analytical.setStretchFactor(0, 13)
+        analytical.setStretchFactor(1, 7)
+        analytical.setSizes([1040, 560])
         root.addWidget(analytical, 1)
 
         detail_group = QGroupBox("Detalle del instrumento seleccionado")
         detail_group.setStyleSheet(self._group_style())
-        detail_group.setMaximumHeight(128)
+        detail_group.setMinimumHeight(118)
+        detail_group.setMaximumHeight(148)
         detail = QGridLayout(detail_group)
         detail.setContentsMargins(10, 10, 10, 7)
         detail.setHorizontalSpacing(10)
@@ -426,14 +441,16 @@ class MarketView(QWidget):
         table.setSortingEnabled(True)
         table.setShowGrid(False)
         table.verticalHeader().setVisible(False)
-        table.verticalHeader().setDefaultSectionSize(27)
+        table.verticalHeader().setDefaultSectionSize(29)
         header = table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         header.setStretchLastSection(True)
         table.setStyleSheet(
             "QHeaderView::section {background:#005EB8; color:#FFFFFF; border:none; "
             "border-right:1px solid #1675C5; padding:6px 5px; font-weight:700;}"
-            "QTableWidget {selection-background-color:#DDEFFA; selection-color:#00345F;}"
+            "QTableWidget {background:#FFFFFF; alternate-background-color:#F7FBFD; "
+            "selection-background-color:#DDEFFA; selection-color:#00345F; "
+            "border:1px solid #DCE7ED; border-radius:7px;}"
         )
         return table
 
