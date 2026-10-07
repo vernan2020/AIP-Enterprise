@@ -29,7 +29,11 @@ from aip.ui.modules.market.viewmodels.market_view_model import (
 )
 from aip.ui.modules.market.views.market_summary_view import MarketSummaryView
 from aip.ui.modules.market.views.relative_value_view import RelativeValueView
-from aip.ui.widgets.chart_tooltip import build_chart_tooltip, point_hit_rect, show_chart_tooltip
+from aip.ui.widgets.chart_tooltip import (
+    build_chart_tooltip,
+    point_hit_rect,
+    show_chart_tooltip,
+)
 
 
 class _MarketCurveChart(QWidget):
@@ -205,7 +209,6 @@ class _MarketCurveChart(QWidget):
                 Qt.AlignmentFlag.AlignHCenter,
                 f"{tenor:.1f}a",
             )
-
 
     def mouseMoveEvent(self, event) -> None:  # noqa: N802
         show_chart_tooltip(self, event, self._tooltip_regions)
