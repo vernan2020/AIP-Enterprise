@@ -5,7 +5,7 @@ from datetime import date
 
 from PySide6.QtCharts import QChart, QChartView, QDateTimeAxis, QLineSeries, QValueAxis
 from PySide6.QtCore import QDateTime, QMargins, Qt, Signal
-from PySide6.QtGui import QPainter
+from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtWidgets import (
     QComboBox,
     QHBoxLayout,
@@ -340,7 +340,8 @@ class FinancialEntityComparisonPanel(QWidget):
         chart.addAxis(axis_y, Qt.AlignmentFlag.AlignLeft)
 
         tooltip_lines: list[str] = []
-        for entity, dates in prepared:
+        palette = ("#005EB8", "#00A9E0", "#40C1AC", "#FF8200", "#7A6FD0")
+        for entity_index, (entity, dates) in enumerate(prepared):
             segment: QLineSeries | None = None
             segment_index = 0
             for point, point_date in zip(entity.points, dates, strict=True):
@@ -354,7 +355,11 @@ class FinancialEntityComparisonPanel(QWidget):
                     segment = QLineSeries()
                     segment.setName(entity.entity_name if segment_index == 0 else "")
                     segment.setPointsVisible(True)
-                    segment.setMarkerSize(5.0)
+                    segment.setMarkerSize(6.0)
+                    pen = QPen(QColor(palette[entity_index % len(palette)]), 2.6)
+                    pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+                    pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+                    segment.setPen(pen)
                     chart.addSeries(segment)
                     segment.attachAxis(axis_x)
                     segment.attachAxis(axis_y)
@@ -364,6 +369,9 @@ class FinancialEntityComparisonPanel(QWidget):
                     segment_index += 1
                 segment.append(float(point_date.toMSecsSinceEpoch()), point.value)
 
+        chart.setPlotAreaBackgroundVisible(True)
+        chart.setPlotAreaBackgroundBrush(QColor("#F8FBFD"))
+        chart.setPlotAreaBackgroundPen(QPen(QColor("#E1EAF0"), 1))
         view = QChartView(chart)
         view.setRenderHint(QPainter.RenderHint.Antialiasing)
         view.setMinimumHeight(430)
