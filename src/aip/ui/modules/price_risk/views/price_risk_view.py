@@ -235,7 +235,7 @@ class PriceRiskView(QWidget):
             quality_layout.addLayout(block)
         quality_layout.addStretch(1)
         quality_note = QLabel(
-            "UX V4.2 · calidad, horizonte y reconciliación integrados en una franja compacta."
+            "Calidad, horizonte y reconciliación integrados en una franja compacta."
         )
         quality_note.setStyleSheet(
             "color:#315468; font-size:8px; font-weight:600; padding:0 4px; border:none;"
