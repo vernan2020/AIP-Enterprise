@@ -132,17 +132,17 @@ class _MacroMetricCard(QFrame):
         layout.setContentsMargins(11, 8, 11, 8)
         layout.setSpacing(2)
         caption = QLabel(title)
-        caption.setStyleSheet("color:#667788; font-size:9px; border:none;")
+        caption.setStyleSheet("color:#DDF4FF; font-size:9px; font-weight:600; border:none;")
         self._value = QLabel("N/D")
         value_font = QFont()
         value_font.setPointSize(17)
         value_font.setBold(True)
         self._value.setFont(value_font)
-        self._value.setStyleSheet("color:#142E46; border:none;")
+        self._value.setStyleSheet("color:#FFFFFF; border:none;")
         self._change = QLabel("—")
-        self._change.setStyleSheet("color:#53697C; font-size:9px; border:none;")
+        self._change.setStyleSheet("color:#D9F4FC; font-size:9px; border:none;")
         self._date = QLabel("Sin dato")
-        self._date.setStyleSheet("color:#8A98A6; font-size:8px; border:none;")
+        self._date.setStyleSheet("color:#CBEAF8; font-size:8px; border:none;")
         layout.addWidget(caption)
         layout.addWidget(self._value)
         layout.addWidget(self._change)
@@ -899,8 +899,8 @@ class MacroIntelligenceWorkspace(QWidget):
             "stop:0 #EAF5FB, stop:0.6 #F7FBFD, stop:1 #EAF7F2); "
             "border:1px solid #BED8E6; border-radius:11px;}"
             "QFrame#macroMetricCard {background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
-            "stop:0 #FFFFFF, stop:1 #EDF7FC); border:1px solid #CFDEE7; "
-            "border-left:4px solid #00A9E0; border-radius:11px;}"
+            "stop:0 #00477F, stop:0.60 #005EB8, stop:1 #00A9E0); "
+            "border:1px solid #1675C5; border-radius:12px;}"
             "QFrame#macroGovernanceCard {background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
             "stop:0 #FFFFFF, stop:1 #EFF8F5); border:1px solid #CFE4DD; "
             "border-left:4px solid #40C1AC; border-radius:11px;}"
