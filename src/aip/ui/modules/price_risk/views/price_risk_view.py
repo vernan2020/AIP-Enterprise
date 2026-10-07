@@ -146,7 +146,7 @@ class PriceRiskView(QWidget):
         self._price_page = QWidget()
         self._simulator_page = PortfolioVaRSimulatorView(self._presenter)
         self._rate_page = QWidget()
-        self._tabs.addTab(self._price_page, "Riesgo de Precio · VeR")
+        self._tabs.addTab(self._price_page, "Resumen VeR")
         self._tabs.addTab(self._simulator_page, "Simulador · VeR")
         self._tabs.addTab(self._rate_page, "Riesgo de Tasa · DV01")
         self._build_price_page()
@@ -155,10 +155,22 @@ class PriceRiskView(QWidget):
     def _metric_card(self, key: str, caption: str, helper: str) -> QFrame:
         card = QFrame()
         card.setObjectName("riskMetricCard")
-        card.setMinimumHeight(76)
+        card.setMinimumHeight(94 if key == "var_crc" else 82)
+        accent = {
+            "var_crc": ("#E4002B", "#FFF1F3"),
+            "var_percent": ("#FF8200", "#FFF5E8"),
+            "calculated_vm": ("#005EB8", "#ECF5FB"),
+            "coverage": ("#40C1AC", "#EAF8F4"),
+            "titles": ("#00A9E0", "#EFF9FD"),
+            "scenarios": ("#005EB8", "#F0F7FC"),
+            "horizon": ("#40C1AC", "#EFF8F5"),
+            "reconciliation": ("#2B9E8B", "#EAF7F2"),
+        }.get(key, ("#00A9E0", "#F7FBFD"))
         card.setStyleSheet(
-            "QFrame#riskMetricCard {background:#FFFFFF; border:1px solid #D5DEE3; border-radius:8px;}"
-            "QFrame#riskMetricCard:hover {background:#F0F8FC; border-color:#73B3DD;}"
+            "QFrame#riskMetricCard {"
+            f"background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #FFFFFF,stop:1 {accent[1]}); "
+            f"border:1px solid #CFDEE7; border-left:4px solid {accent[0]}; border-radius:10px;"
+            "} QFrame#riskMetricCard:hover {border-color:#73B3DD;}"
         )
         layout = QVBoxLayout(card)
         layout.setContentsMargins(10, 7, 10, 7)
@@ -227,6 +239,13 @@ class PriceRiskView(QWidget):
             block.addWidget(value)
             quality_layout.addLayout(block)
         quality_layout.addStretch(1)
+        quality_note = QLabel(
+            "Lectura ejecutiva: cobertura, exclusiones y reconciliación explican la calidad del VeR."
+        )
+        quality_note.setStyleSheet(
+            "color:#315468; font-size:8px; font-weight:600; padding:0 4px; border:none;"
+        )
+        quality_layout.addWidget(quality_note)
         layout.addWidget(quality)
 
         scenario_group = QGroupBox("Escenario VeR seleccionado")
