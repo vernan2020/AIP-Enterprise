@@ -129,9 +129,11 @@ class RiskBarChartWidget(QWidget):
             tooltip_rows.append(
                 (
                     "Lectura",
-                    "Sensibilidad positiva"
-                    if numeric > 0
-                    else "Sensibilidad negativa" if numeric < 0 else "Sin variación",
+                    (
+                        "Sensibilidad positiva"
+                        if numeric > 0
+                        else "Sensibilidad negativa" if numeric < 0 else "Sin variación"
+                    ),
                 )
             )
             self._tooltip_regions.append(
@@ -253,9 +255,7 @@ class ParetoChartWidget(QWidget):
                 ),
                 note="La barra muestra contribución y la línea el acumulado del Pareto.",
             )
-            self._tooltip_regions.append(
-                (QRectF(left + slot * index, top, slot, height), tooltip)
-            )
+            self._tooltip_regions.append((QRectF(left + slot * index, top, slot, height), tooltip))
             self._tooltip_regions.append((point_hit_rect(line_point, 8.0), tooltip))
 
         if line_points:
