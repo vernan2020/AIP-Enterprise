@@ -48,6 +48,7 @@ from aip.ui.modules.macro_intelligence.viewmodels.macro_intelligence_view_model 
     MacroForecastLabViewModel,
     MacroProjectionViewModel,
 )
+from aip.ui.widgets.chart_tooltip import build_chart_tooltip, point_hit_rect, show_chart_tooltip
 
 _MONTHS = (
     "ene",
@@ -198,6 +199,8 @@ class _ProjectionChart(QWidget):
         self._projection = MacroProjectionViewModel()
         self._ml_forecast: MacroForecastLabViewModel | None = None
         self._driver_code = "TPM"
+        self._tooltip_regions: list[tuple[QRectF, str]] = []
+        self.setMouseTracking(True)
         self.setMinimumHeight(300)
 
     def set_projection(self, projection: MacroProjectionViewModel, driver_code: str) -> None:
@@ -216,6 +219,7 @@ class _ProjectionChart(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         painter.fillRect(self.rect(), QColor("#FFFFFF"))
+        self._tooltip_regions = []
         if self._ml_forecast is not None:
             forecast_points = self._ml_forecast.points
             if not forecast_points:
@@ -327,8 +331,44 @@ class _ProjectionChart(QWidget):
             painter.drawPolyline(QPolygonF(points))
         painter.setBrush(QColor("#C9892B"))
         painter.setPen(QPen(QColor("#FFFFFF"), 1))
-        for point in points:
+        for index, point in enumerate(points):
             painter.drawEllipse(point, 4.0, 4.0)
+            if self._ml_forecast is not None:
+                source_point = self._ml_forecast.points[index]
+                tooltip = build_chart_tooltip(
+                    self._ml_forecast.indicator_label,
+                    (
+                        ("Periodo", _format_period(periods[index])),
+                        ("Horizonte", f"{source_point.horizon}M"),
+                        ("Forecast", self._format_value(values[index])),
+                        (
+                            "Banda 80%",
+                            self._format_interval(source_point.lower_80, source_point.upper_80),
+                        ),
+                        ("Champion", self._ml_forecast.champion_model),
+                        (
+                            "Origen",
+                            self._ml_forecast.forecast_origin.strftime("%d/%m/%Y")
+                            if self._ml_forecast.forecast_origin
+                            else None,
+                        ),
+                    ),
+                    note="Trayectoria ensemble generada bajo backtesting gobernado.",
+                )
+            else:
+                tooltip = build_chart_tooltip(
+                    self._LABELS.get(self._driver_code, self._driver_code),
+                    (
+                        ("Periodo", _format_period(periods[index])),
+                        ("Valor", self._format_value(values[index])),
+                        ("Escenario", self._projection.scenario_id),
+                        ("Versión", self._projection.version),
+                        ("Tipo", self._projection.scenario_type),
+                        ("Estado", _translate_status(self._projection.scenario_status)),
+                    ),
+                    note="Valor del escenario institucional aprobado.",
+                )
+            self._tooltip_regions.append((point_hit_rect(point, 10.0), tooltip))
 
         painter.setPen(QColor("#53697C"))
         indexes = sorted({0, count - 1, count // 3, (count * 2) // 3})
@@ -350,6 +390,21 @@ class _ProjectionChart(QWidget):
             Qt.AlignmentFlag.AlignLeft,
             source_title,
         )
+
+
+    def mouseMoveEvent(self, event) -> None:  # noqa: N802
+        show_chart_tooltip(self, event, self._tooltip_regions)
+        super().mouseMoveEvent(event)
+
+    def _format_value(self, value: float) -> str:
+        if self._driver_code in {"FX_BUY", "FX_SELL"}:
+            return f"₡{value:,.2f}"
+        return f"{value:,.2f}%"
+
+    def _format_interval(self, lower: float | None, upper: float | None) -> str | None:
+        if lower is None or upper is None:
+            return None
+        return f"{self._format_value(lower)} – {self._format_value(upper)}"
 
 
 class MacroIntelligenceWorkspace(QWidget):
