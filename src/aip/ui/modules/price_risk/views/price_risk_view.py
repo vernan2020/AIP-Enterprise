@@ -78,6 +78,7 @@ class PriceRiskView(QWidget):
         self._kpi_labels: dict[str, QLabel] = {}
         self._quality_labels: dict[str, QLabel] = {}
         self._bucket_labels: dict[str, QLabel] = {}
+        self._rate_context_labels: dict[str, QLabel] = {}
         self._build_ui()
         self._setup_worker()
         self._set_loading_state(initial=True)
@@ -363,20 +364,44 @@ class PriceRiskView(QWidget):
             ("dv01_coverage", "Cobertura DV01", "VM con duración aplicable"),
             ("shock_coverage", "Cobertura shocks", "VM sensible a tasas"),
             ("worst_shock", "Shock más adverso", "Escenario de menor ΔEVE"),
-            ("worst_eve", "Peor ΔEVE aprox.", "Aproximación por duración"),
-            ("shock_status", "Estado sensibilidad", "Cálculo paralelo ±100/±200 pb"),
         )
         for index, definition in enumerate(definitions):
             card = self._metric_card(*definition)
-            if index < 6:
-                kpi_grid.addWidget(card, 0, index)
-            elif index == 6:
-                kpi_grid.addWidget(card, 1, 0, 1, 3)
-            else:
-                kpi_grid.addWidget(card, 1, 3, 1, 3)
+            kpi_grid.addWidget(card, 0, index)
         for column in range(6):
             kpi_grid.setColumnStretch(column, 1)
         layout.addLayout(kpi_grid)
+
+        context = QFrame()
+        context.setObjectName("rateRiskContextStrip")
+        context.setStyleSheet(
+            "QFrame#rateRiskContextStrip {background:#F5F9FC; border:1px solid #D7E4ED; "
+            "border-radius:8px;}"
+        )
+        context_layout = QHBoxLayout(context)
+        context_layout.setContentsMargins(12, 6, 12, 6)
+        context_layout.setSpacing(24)
+        for key, caption in (
+            ("worst_eve", "Peor ΔEVE aproximado"),
+            ("shock_status", "Estado sensibilidad"),
+        ):
+            block = QVBoxLayout()
+            label = QLabel(caption)
+            label.setStyleSheet("color:#6B7F8E; font-size:8px; border:none;")
+            value = QLabel("-")
+            value.setStyleSheet("color:#17324D; font-size:11px; font-weight:700; border:none;")
+            self._rate_context_labels[key] = value
+            block.addWidget(label)
+            block.addWidget(value)
+            context_layout.addLayout(block)
+        context_layout.addStretch(1)
+        method = QLabel("SENSIBILIDAD APROXIMADA · DURACIÓN MODIFICADA")
+        method.setStyleSheet(
+            "color:#176895; font-size:8px; font-weight:700; padding:4px 8px; "
+            "background:#EAF5FA; border:1px solid #CFE0EC; border-radius:6px;"
+        )
+        context_layout.addWidget(method)
+        layout.addWidget(context)
 
         charts = QGridLayout()
         charts.setHorizontalSpacing(7)
@@ -542,11 +567,14 @@ class PriceRiskView(QWidget):
             "dv01_coverage": vm.dv01_coverage_percent,
             "shock_coverage": vm.rate_shock_coverage_percent,
             "worst_shock": vm.worst_shock,
-            "worst_eve": vm.worst_delta_eve,
-            "shock_status": self._translate_status(vm.rate_shock_status),
         }
         for key, value in mapping.items():
             self._kpi_labels[key].setText(value)
+
+        self._rate_context_labels["worst_eve"].setText(vm.worst_delta_eve)
+        self._rate_context_labels["shock_status"].setText(
+            self._translate_status(vm.rate_shock_status)
+        )
 
         quality_mapping = {
             "eligible_vm": vm.eligible_market_value,
