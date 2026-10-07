@@ -6,7 +6,7 @@ from aip.ui.modules.market.widgets.market_metric_card import MarketMetricCard
 
 
 class MarketSummaryView(QWidget):
-    """Banda compacta de indicadores del diseño histórico de Mercado."""
+    """Banda ejecutiva UX V4 de indicadores de Mercado."""
 
     def __init__(self, summary: object) -> None:
         super().__init__()
@@ -20,7 +20,7 @@ class MarketSummaryView(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setHorizontalSpacing(8)
         layout.setVerticalSpacing(7)
-        for column in range(4):
+        for column in range(8):
             layout.setColumnStretch(column, 1)
 
         cards = (
@@ -52,7 +52,7 @@ class MarketSummaryView(QWidget):
                 status=self._status_from_value(value),
             )
             self._cards[key] = card
-            layout.addWidget(card, index // 4, index % 4)
+            layout.addWidget(card, 0, index)
 
     def bind_summary(self, summary: object) -> None:
         values = {

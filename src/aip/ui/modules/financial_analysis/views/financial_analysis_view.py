@@ -110,7 +110,7 @@ class FinancialAnalysisView(QWidget):
         title_font.setBold(True)
         self._title.setFont(title_font)
         self._subtitle = QLabel(
-            "UX V3 · Resumen ejecutivo, estados financieros y comparación de entidades SUGEF"
+            "UX V4 · Resumen ejecutivo, estados financieros y comparación de entidades SUGEF"
         )
         self._subtitle.setStyleSheet("color:#667788; font-size:9px;")
         title_box.addWidget(self._title)
@@ -528,31 +528,23 @@ class FinancialAnalysisView(QWidget):
     def _metric_card(self, code: str, label: str) -> QFrame:
         card = QFrame()
         card.setObjectName("financialMetricCard")
-        card.setMinimumHeight(78)
-        accent = {
-            "ASSETS": ("#005EB8", "#ECF5FB"),
-            "LOANS": ("#00A9E0", "#EDF9FD"),
-            "LIABILITIES": ("#FF8200", "#FFF5E8"),
-            "EQUITY": ("#40C1AC", "#EAF8F4"),
-            "NET_INCOME": ("#2B9E8B", "#ECF8F4"),
-            "ROA": ("#005EB8", "#F0F7FC"),
-            "ROE": ("#00A9E0", "#EFF9FD"),
-        }.get(code, ("#00A9E0", "#F7FBFD"))
+        card.setMinimumHeight(94)
         card.setStyleSheet(
             "QFrame#financialMetricCard {"
-            f"background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #FFFFFF,stop:1 {accent[1]}); "
-            f"border:1px solid #CFDEE7; border-left:4px solid {accent[0]}; border-radius:10px;"
-            "}"
+            "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
+            "stop:0 #00477F,stop:0.60 #005EB8,stop:1 #00A9E0); "
+            "border:1px solid #1675C5; border-radius:12px;"
+            "} QFrame#financialMetricCard:hover {border:1px solid #73B3DD;}"
         )
         layout = QVBoxLayout(card)
         layout.setContentsMargins(8, 5, 8, 5)
         layout.setSpacing(2)
         caption = QLabel(label)
-        caption.setStyleSheet("color:#667788; font-size:8px; border:none;")
+        caption.setStyleSheet("color:#DDF4FF; font-size:8px; font-weight:600; border:none;")
         value = QLabel("-")
-        value.setStyleSheet("color:#142E46; font-size:11px; font-weight:700; border:none;")
+        value.setStyleSheet("color:#FFFFFF; font-size:12px; font-weight:700; border:none;")
         change = QLabel("Sin datos")
-        change.setStyleSheet("color:#8393A3; font-size:7px; border:none;")
+        change.setStyleSheet("color:#CBEAF8; font-size:7px; border:none;")
         change.setWordWrap(True)
         layout.addWidget(caption)
         layout.addWidget(value)

@@ -255,13 +255,15 @@ class LightTheme:
             padding: 6px;
             font-weight: 700;
         }}
-        /* UX V3 · executive visual depth */
+        /* UX V4 · executive dashboard visual system · certification candidate */
         QWidget#portfolioWorkspace,
         QWidget#liquidityWorkspace,
         QWidget#priceRiskWorkspace,
         QWidget#marketWorkspace,
         QWidget#financialAnalysisWorkspace,
-        QWidget#macroIntelligenceWorkspace {{
+        QWidget#macroIntelligenceWorkspace,
+        QWidget#executiveWorkspace,
+        QWidget#treasuryWorkspace {{
             background: qlineargradient(
                 x1:0, y1:0, x2:1, y2:1,
                 stop:0 #F7FAFC,

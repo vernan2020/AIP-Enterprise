@@ -35,8 +35,8 @@ class Sidebar(QWidget):
     ) -> None:
         super().__init__()
         self.setObjectName("navigationSidebar")
-        self.setMinimumWidth(146)
-        self.setMaximumWidth(160)
+        self.setMinimumWidth(132)
+        self.setMaximumWidth(146)
         self._navigation = navigation
         self._application_factory = application_factory
         self._workspace: Workspace | None = None
@@ -69,15 +69,15 @@ class Sidebar(QWidget):
 
     def _apply_local_style(self) -> None:
         self.setStyleSheet(
-            "QWidget#navigationSidebar {background:#F7F9FA; border-right:1px solid #D5DEE3;}"
+            "QWidget#navigationSidebar {background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #F7FBFD,stop:1 #EDF4F8); border-right:1px solid #C9D9E4;}"
             "QLineEdit#moduleSearch {background:#FFFFFF; border:1px solid #D5DEE3; border-radius:5px; "
             "padding:6px 7px; color:#183247;}"
             "QLineEdit#moduleSearch:focus {border-color:#00A9E0;}"
             "QListWidget#moduleList {background:transparent; border:none; outline:none;}"
             "QListWidget#moduleList::item {padding:7px 8px; margin:1px 0; border-radius:5px; color:#566D7C;}"
             "QListWidget#moduleList::item:hover {background:#F0F8FC; color:#005EB8;}"
-            "QListWidget#moduleList::item:selected {background:#DDEFFA; color:#00345F; "
-            "font-weight:700; border-left:3px solid #00A9E0;}"
+            "QListWidget#moduleList::item:selected {background:#E1F2FB; color:#00345F; "
+            "font-weight:700; border-left:4px solid #005EB8;}"
         )
 
     def _apply_filter(self, value: str) -> None:

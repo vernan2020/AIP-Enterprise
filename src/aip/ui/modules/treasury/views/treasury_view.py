@@ -63,24 +63,27 @@ class TreasuryView(QWidget):
     def _metric_card(self, key: str, title: str, helper: str) -> QFrame:
         card = QFrame()
         card.setObjectName("treasuryMetricCard")
-        card.setMinimumHeight(78)
+        card.setMinimumHeight(94)
         card.setStyleSheet(
-            "QFrame#treasuryMetricCard {background:#FFFFFF; border:1px solid #D7E0E8; "
-            "border-radius:8px;} QFrame#treasuryMetricCard:hover {border-color:#8DB0CB;}"
+            "QFrame#treasuryMetricCard {"
+            "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
+            "stop:0 #00477F,stop:0.60 #005EB8,stop:1 #00A9E0); "
+            "border:1px solid #1675C5; border-radius:12px;"
+            "} QFrame#treasuryMetricCard:hover {border:1px solid #73B3DD;}"
         )
         layout = QVBoxLayout(card)
         layout.setContentsMargins(10, 7, 10, 7)
         layout.setSpacing(2)
         caption = QLabel(title)
-        caption.setStyleSheet("color:#667788; font-size:9px; border:none;")
+        caption.setStyleSheet("color:#DDF4FF; font-size:9px; font-weight:600; border:none;")
         value = QLabel("-")
         value_font = QFont()
         value_font.setPointSize(12)
         value_font.setBold(True)
         value.setFont(value_font)
-        value.setStyleSheet("color:#142E46; border:none;")
+        value.setStyleSheet("color:#FFFFFF; border:none;")
         hint = QLabel(helper)
-        hint.setStyleSheet("color:#8A98A6; font-size:8px; border:none;")
+        hint.setStyleSheet("color:#CBEAF8; font-size:8px; border:none;")
         layout.addWidget(caption)
         layout.addWidget(value)
         layout.addWidget(hint)
@@ -99,7 +102,9 @@ class TreasuryView(QWidget):
         font.setPointSize(15)
         font.setBold(True)
         self._title.setFont(font)
-        self._subtitle = QLabel("Liquidez, garantías y oportunidades de mercado")
+        self._subtitle = QLabel(
+            "UX V4 · liquidez, fondeo, garantías, vencimientos y oportunidades de mercado"
+        )
         self._subtitle.setStyleSheet("color:#667788; font-size:10px;")
         title_box.addWidget(self._title)
         title_box.addWidget(self._subtitle)
@@ -127,7 +132,15 @@ class TreasuryView(QWidget):
             ("policy", "Política / Estrés", "Estado de motores"),
         )
         for index, definition in enumerate(definitions):
-            kpis.addWidget(self._metric_card(*definition), index // 4, index % 4)
+            card = self._metric_card(*definition)
+            if index < 6:
+                kpis.addWidget(card, 0, index)
+            elif index == 6:
+                kpis.addWidget(card, 1, 0, 1, 3)
+            else:
+                kpis.addWidget(card, 1, 3, 1, 3)
+        for column in range(6):
+            kpis.setColumnStretch(column, 1)
         layout.addLayout(kpis)
 
         self._tabs = QTabWidget()
