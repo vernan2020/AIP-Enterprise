@@ -130,7 +130,6 @@ class PortfolioDashboardBarChart(QWidget):
                 self._formatter(point.value),
             )
 
-
     def mouseMoveEvent(self, event) -> None:  # noqa: N802
         show_chart_tooltip(self, event, self._tooltip_regions)
         super().mouseMoveEvent(event)
@@ -228,7 +227,6 @@ class PortfolioDashboardColumnChart(QWidget):
                 Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
                 point.label[:16],
             )
-
 
     def mouseMoveEvent(self, event) -> None:  # noqa: N802
         show_chart_tooltip(self, event, self._tooltip_regions)
