@@ -529,7 +529,7 @@ class FinancialAnalysisView(QWidget):
         card = QFrame()
         card.setObjectName("financialMetricCard")
         card.setMinimumHeight(94)
-                card.setStyleSheet(
+        card.setStyleSheet(
             "QFrame#financialMetricCard {"
             "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
             "stop:0 #00477F,stop:0.60 #005EB8,stop:1 #00A9E0); "
