@@ -255,7 +255,7 @@ class LightTheme:
             padding: 6px;
             font-weight: 700;
         }}
-        /* UX V4 · executive dashboard visual system */
+        /* UX V4 · executive dashboard visual system · certification candidate */
         QWidget#portfolioWorkspace,
         QWidget#liquidityWorkspace,
         QWidget#priceRiskWorkspace,
