@@ -312,7 +312,9 @@ class LiquidityView(QWidget):
         font.setPointSize(15)
         font.setBold(True)
         title.setFont(font)
-        subtitle = QLabel("UX V4 · ICL · HQLA · MIL · cupones y principal · capacidad de respuesta")
+        subtitle = QLabel(
+            "UX V4.1 · ICL · HQLA · MIL · flujos contractuales · visualización ejecutiva"
+        )
         subtitle.setStyleSheet("color:#667788; font-size:10px;")
         title_box.addWidget(title)
         title_box.addWidget(subtitle)
@@ -398,6 +400,14 @@ class LiquidityView(QWidget):
         table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         table.setAlternatingRowColors(True)
         table.setSortingEnabled(True)
+        table.setShowGrid(False)
+        table.setStyleSheet(
+            "QHeaderView::section {background:#005EB8; color:#FFFFFF; border:none; "
+            "border-right:1px solid #1675C5; padding:6px 5px; font-weight:700;}"
+            "QTableWidget {background:#FFFFFF; alternate-background-color:#F7FBFD; "
+            "selection-background-color:#DDEFFA; selection-color:#00345F; "
+            "border:1px solid #DCE7ED; border-radius:7px;}"
+        )
         table.verticalHeader().setVisible(False)
         table.verticalHeader().setDefaultSectionSize(26)
         header = table.horizontalHeader()
@@ -409,6 +419,17 @@ class LiquidityView(QWidget):
         page = QWidget()
         layout = QVBoxLayout(page)
         layout.setContentsMargins(4, 8, 4, 4)
+        layout.setSpacing(8)
+
+        chart_group = QGroupBox("Flujos por tramo · vista ejecutiva")
+        chart_group.setStyleSheet(self._group_style())
+        chart_layout = QVBoxLayout(chart_group)
+        self._cashflow_chart = _LiquidityBarChart()
+        self._cashflow_chart.setMinimumHeight(150)
+        self._cashflow_chart.setMaximumHeight(210)
+        chart_layout.addWidget(self._cashflow_chart)
+        layout.addWidget(chart_group)
+
         table = self._new_table(
             (
                 "Tipo",
@@ -432,6 +453,17 @@ class LiquidityView(QWidget):
         page = QWidget()
         layout = QVBoxLayout(page)
         layout.setContentsMargins(4, 8, 4, 4)
+        layout.setSpacing(8)
+
+        chart_group = QGroupBox("Escalera de vencimientos · principal contractual")
+        chart_group.setStyleSheet(self._group_style())
+        chart_layout = QVBoxLayout(chart_group)
+        self._maturity_bucket_chart = _LiquidityBarChart()
+        self._maturity_bucket_chart.setMinimumHeight(150)
+        self._maturity_bucket_chart.setMaximumHeight(210)
+        chart_layout.addWidget(self._maturity_bucket_chart)
+        layout.addWidget(chart_group)
+
         table = self._new_table(
             (
                 "Serie",
@@ -452,6 +484,21 @@ class LiquidityView(QWidget):
         page = QWidget()
         layout = QVBoxLayout(page)
         layout.setContentsMargins(4, 8, 4, 4)
+        layout.setSpacing(8)
+
+        chart_group = QGroupBox(f"{label} · capacidad por emisor")
+        chart_group.setStyleSheet(self._group_style())
+        chart_layout = QVBoxLayout(chart_group)
+        chart = _LiquidityBarChart()
+        chart.setMinimumHeight(150)
+        chart.setMaximumHeight(210)
+        chart_layout.addWidget(chart)
+        layout.addWidget(chart_group)
+        if label == "HQLA":
+            self._hqla_chart = chart
+        else:
+            self._mil_chart = chart
+
         table = self._new_table(
             (
                 "Serie",
@@ -492,6 +539,10 @@ class LiquidityView(QWidget):
         notice.setStyleSheet("color:#7A8794; padding:10px;")
         group_layout.addWidget(self._stress_status)
         group_layout.addWidget(self._policy_status)
+        self._stress_capacity_chart = _LiquidityBarChart()
+        self._stress_capacity_chart.setMinimumHeight(180)
+        self._stress_capacity_chart.setMaximumHeight(230)
+        group_layout.addWidget(self._stress_capacity_chart)
         group_layout.addWidget(notice)
         layout.addWidget(group)
         layout.addStretch(1)
@@ -573,6 +624,34 @@ class LiquidityView(QWidget):
                 self._set_item(table, row_index, column, value)
         table.setSortingEnabled(True)
 
+    @staticmethod
+    def _aggregate_by_bucket(
+        rows: tuple[LiquidityRow, ...],
+        *,
+        use_amount_crc: bool,
+    ) -> tuple[tuple[str, float], ...]:
+        totals: dict[str, float] = {}
+        for row in rows:
+            label = str(row.bucket or "Sin tramo")
+            raw_value = row.amount_crc if use_amount_crc else row.value
+            if raw_value is None:
+                continue
+            totals[label] = totals.get(label, 0.0) + float(raw_value)
+        return tuple(sorted(totals.items(), key=lambda item: abs(item[1]), reverse=True))
+
+    @staticmethod
+    def _aggregate_capacity_by_issuer(
+        rows: tuple[LiquidityRow, ...],
+        *,
+        limit: int = 8,
+    ) -> tuple[tuple[str, float], ...]:
+        totals: dict[str, float] = {}
+        for row in rows:
+            issuer = str(row.issuer or "Sin emisor")
+            totals[issuer] = totals.get(issuer, 0.0) + float(row.value)
+        ranked = sorted(totals.items(), key=lambda item: abs(item[1]), reverse=True)
+        return tuple(ranked[:limit])
+
     def refresh(self) -> None:
         self.bind_view_model(self._presenter.refresh())
 
@@ -607,6 +686,21 @@ class LiquidityView(QWidget):
                 ("Cupones ≤30d", getattr(summary, "coupon_inflows_30d_crc", 0.0)),
                 ("Principal ≤90d", getattr(summary, "principal_inflows_90d_crc", 0.0)),
                 ("Cupones ≤90d", getattr(summary, "coupon_inflows_90d_crc", 0.0)),
+            )
+        )
+        self._cashflow_chart.set_data(
+            self._aggregate_by_bucket(view_model.cashflow_rows, use_amount_crc=True)
+        )
+        self._maturity_bucket_chart.set_data(
+            self._aggregate_by_bucket(view_model.maturity_rows, use_amount_crc=False)
+        )
+        self._hqla_chart.set_data(self._aggregate_capacity_by_issuer(view_model.hqla_rows))
+        self._mil_chart.set_data(self._aggregate_capacity_by_issuer(view_model.mil_rows))
+        self._stress_capacity_chart.set_data(
+            (
+                ("Fondo líquido", getattr(summary, "liquid_asset_fund_total", 0.0)),
+                ("HQLA", getattr(summary, "hqla_capacity_value", 0.0)),
+                ("MIL", getattr(summary, "mil_capacity_value", 0.0)),
             )
         )
         self._populate_cashflows(view_model.cashflow_rows)
