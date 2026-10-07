@@ -3,9 +3,9 @@ from __future__ import annotations
 from PySide6.QtCharts import (
     QBarCategoryAxis,
     QBarSet,
-    QHorizontalBarSeries,
     QChart,
     QChartView,
+    QHorizontalBarSeries,
     QPieSeries,
     QValueAxis,
 )
