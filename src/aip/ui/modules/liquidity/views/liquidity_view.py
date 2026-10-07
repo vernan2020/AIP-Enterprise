@@ -238,6 +238,13 @@ class LiquidityView(QWidget):
         "CONTRACTUAL": "CONTRACTUAL",
         "PROJECTED_CURRENT_RATE": "PROYECTADO TASA VIGENTE",
         "FX_UNAVAILABLE": "TC NO DISPONIBLE",
+        "HQLA_100": "HQLA 100%",
+        "HQLA_90": "HQLA 90%",
+        "MIL_ELIGIBLE": "ELEGIBLE MIL",
+        "GOVERNMENT_COLLATERAL": "GARANTÍA GOBIERNO",
+        "BCCR_COLLATERAL": "GARANTÍA BCCR",
+        "GOVERNMENT": "GOBIERNO",
+        "BCCR_ICP": "ICP BCCR",
     }
 
     def __init__(self, presenter: LiquidityPresenter | None = None) -> None:
@@ -576,7 +583,7 @@ class LiquidityView(QWidget):
                 self._format_local(row.amount_local, row.currency),
                 crc_text,
                 self._translate(row.status),
-                row.policy_reference,
+                self._translate(row.policy_reference),
             )
             for column, value in enumerate(values):
                 self._set_item(table, row_index, column, value)
@@ -649,7 +656,11 @@ class LiquidityView(QWidget):
         for row in rows:
             issuer = str(row.issuer or "Sin emisor")
             totals[issuer] = totals.get(issuer, 0.0) + float(row.value)
-        ranked = sorted(totals.items(), key=lambda item: abs(item[1]), reverse=True)
+        ranked = sorted(
+            ((issuer, value) for issuer, value in totals.items() if abs(value) > 0.005),
+            key=lambda item: abs(item[1]),
+            reverse=True,
+        )
         return tuple(ranked[:limit])
 
     def refresh(self) -> None:
@@ -658,7 +669,9 @@ class LiquidityView(QWidget):
     def bind_view_model(self, view_model: LiquidityViewModel) -> None:
         self._view_model = view_model
         summary = view_model.summary
-        self._date_label.setText(f"Corte: {getattr(summary, 'liquidity_date', '-')}")
+        self._date_label.setText(
+            f"Fuente liquidez: {getattr(summary, 'liquidity_date', '-')}"
+        )
         values = {
             "icl_total": f"{getattr(summary, 'icl_total', 0.0):.2f}",
             "icl_mn": f"{getattr(summary, 'icl_mn', 0.0):.2f}",
@@ -716,7 +729,9 @@ class LiquidityView(QWidget):
         message = getattr(summary, "configuration_message", "") or (
             view_model.error or view_model.status
         )
-        self._status.setText(self._translate(message))
+        source_date = getattr(summary, "liquidity_date", "-")
+        prefix = f"Fuente de liquidez al {source_date}. " if source_date not in {"", "-"} else ""
+        self._status.setText(prefix + self._translate(message))
 
     def view_model(self) -> LiquidityViewModel:
         return self._view_model
