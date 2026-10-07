@@ -303,7 +303,7 @@ class PortfolioView(QWidget):
         self._currency_chart.set_data(view_model.currency_points)
         self._valuation_comparison.bind(view_model.valuation_comparison, summary.valuation_date)
         self._dashboard_note.setText(
-            f"Vista ejecutiva UX V2 · Calidad de datos: {view_model.data_quality_status} · "
+            f"Vista ejecutiva UX V3 · Calidad de datos: {view_model.data_quality_status} · "
             f"MIL elegible: {summary.mil_eligible_percent} · "
             f"DV01: {self._translate_status(view_model.dv01_status)}. "
             "El Indicador de Salud permanece N/D hasta certificar su metodología institucional."
