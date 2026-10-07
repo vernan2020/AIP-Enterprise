@@ -93,4 +93,3 @@ def show_series_tooltip(
         return
     key = min(tooltips_by_x, key=lambda candidate: abs(candidate - point.x()))
     QToolTip.showText(QCursor.pos(), tooltips_by_x[key])
-
