@@ -10,7 +10,7 @@ from PySide6.QtCharts import (
     QValueAxis,
 )
 from PySide6.QtCore import QMargins, Qt
-from PySide6.QtGui import QPainter
+from PySide6.QtGui import QColor, QPainter
 from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model import (
@@ -120,6 +120,8 @@ class FinancialPeerChartPanel(QWidget):
 
         bar_set = QBarSet(item.label)
         bar_set.append([point.value for point in points])
+        bar_set.setColor(QColor("#005EB8"))
+        bar_set.setBorderColor(QColor("#00345F"))
         series = QBarSeries()
         series.append(bar_set)
         chart.addSeries(series)
@@ -170,8 +172,10 @@ class FinancialPeerChartPanel(QWidget):
         chart.setMargins(QMargins(4, 2, 4, 2))
         chart.legend().setAlignment(Qt.AlignmentFlag.AlignRight)
         series = QPieSeries()
+        palette = ("#005EB8", "#00A9E0", "#40C1AC", "#FF8200", "#73B3DD", "#2B9E8B")
         for index, point in enumerate(item.points):
             slice_ = series.append(cls._short_name(point.entity_name), point.value)
+            slice_.setColor(QColor(palette[index % len(palette)]))
             if index < 10 or point.selected:
                 slice_.setLabel(f"{cls._short_name(point.entity_name)} {point.value:.1f}%")
                 slice_.setLabelVisible(True)
