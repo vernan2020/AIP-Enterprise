@@ -102,7 +102,9 @@ class TreasuryView(QWidget):
         font.setPointSize(15)
         font.setBold(True)
         self._title.setFont(font)
-        self._subtitle = QLabel("UX V4 · liquidez, fondeo, garantías, vencimientos y oportunidades de mercado")
+        self._subtitle = QLabel(
+            "UX V4 · liquidez, fondeo, garantías, vencimientos y oportunidades de mercado"
+        )
         self._subtitle.setStyleSheet("color:#667788; font-size:10px;")
         title_box.addWidget(self._title)
         title_box.addWidget(self._subtitle)
