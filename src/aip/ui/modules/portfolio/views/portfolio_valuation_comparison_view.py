@@ -51,7 +51,8 @@ class PortfolioValuationComparisonView(QWidget):
         self._note.setObjectName("portfolioValuationMethodology")
         self._note.setWordWrap(True)
         self._note.setStyleSheet(
-            "background:#EEF5FA; color:#355269; border:1px solid #D6E4EE; "
+            "background:qlineargradient(x1:0,y1:0,x2:1,y2:0,stop:0 #E8F5FB,stop:1 #EAF7F2); "
+            "color:#355269; border:1px solid #C9DFEA; "
             "border-radius:7px; padding:8px 10px;"
         )
         layout.addWidget(self._note)
@@ -174,8 +175,13 @@ class PortfolioValuationComparisonView(QWidget):
         for index, kpi in enumerate(kpis):
             card = QFrame()
             card.setObjectName(f"portfolioValuationKpi_{kpi.key}")
+            accent = self._tone_color(kpi.tone).name()
+            background = "#EAF8F4" if kpi.tone == "gain" else "#FFF1F3" if kpi.tone == "loss" else "#EEF7FC"
             card.setStyleSheet(
-                "QFrame {background:#FFFFFF; border:1px solid #DCE5EC; " "border-radius:8px;}"
+                "QFrame {"
+                f"background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #FFFFFF,stop:1 {background}); "
+                f"border:1px solid #D3E0E8; border-left:4px solid {accent}; border-radius:10px;"
+                "}"
             )
             card_layout = QVBoxLayout(card)
             card_layout.setContentsMargins(10, 7, 10, 7)
