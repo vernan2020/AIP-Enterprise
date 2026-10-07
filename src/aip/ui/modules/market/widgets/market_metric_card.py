@@ -65,7 +65,6 @@ class MarketMetricCard(QFrame):
             QFrame#marketMetricCard {
                 background:qlineargradient(x1:0,y1:0,x2:1,y2:1,
                     stop:0 #00477F, stop:0.58 #005EB8, stop:1 #00A9E0);
-                border:1px solid #C9DCE8;
                 border:1px solid #1675C5;
                 border-radius:12px;
             }
@@ -128,13 +127,13 @@ class MarketMetricCard(QFrame):
         self._status_label.setStyleSheet(f"color:{color}; font-weight:700;")
         self.setStyleSheet(
             "QFrame#marketMetricCard {"
-            "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #FFFFFF,stop:1 #EDF7FC); "
-            "border:1px solid #C9DCE8; "
-            f"border-left:4px solid {color}; border-radius:10px;"
-            "} QFrame#marketMetricCard:hover {background:#F0F8FC; border-color:#73B3DD;}"
+            "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
+            "stop:0 #00477F,stop:0.58 #005EB8,stop:1 #00A9E0); "
+            f"border:1px solid {color}; border-radius:12px;"
+            "} QFrame#marketMetricCard:hover {border:1px solid #73B3DD;}"
             "QFrame#marketMetricCard QLabel {background:transparent; border:none;}"
-            "QLabel#marketMetricTitle {color:#566D7C;}"
-            "QLabel#marketMetricValue {color:#00345F;}"
-            "QLabel#marketMetricHelper {color:#7B8D98;}"
+            "QLabel#marketMetricTitle {color:#DDF4FF;}"
+            "QLabel#marketMetricValue {color:#FFFFFF;}"
+            "QLabel#marketMetricHelper {color:#CBEAF8;}"
         )
         self._status_label.setToolTip(tooltip)
