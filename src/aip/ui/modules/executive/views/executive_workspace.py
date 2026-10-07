@@ -62,24 +62,27 @@ class ExecutiveWorkspace(QWidget):
     def _metric_card(self, key: str, title: str, helper: str) -> QFrame:
         card = QFrame()
         card.setObjectName("executiveMetricCard")
-        card.setMinimumHeight(78)
+        card.setMinimumHeight(94)
         card.setStyleSheet(
-            "QFrame#executiveMetricCard {background:#FFFFFF; border:1px solid #D7E0E8; "
-            "border-radius:8px;} QFrame#executiveMetricCard:hover {border-color:#8DB0CB;}"
+            "QFrame#executiveMetricCard {"
+            "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
+            "stop:0 #00477F,stop:0.60 #005EB8,stop:1 #00A9E0); "
+            "border:1px solid #1675C5; border-radius:12px;"
+            "} QFrame#executiveMetricCard:hover {border:1px solid #73B3DD;}"
         )
         layout = QVBoxLayout(card)
         layout.setContentsMargins(10, 7, 10, 7)
         layout.setSpacing(2)
         caption = QLabel(title)
-        caption.setStyleSheet("color:#667788; font-size:9px; border:none;")
+        caption.setStyleSheet("color:#DDF4FF; font-size:9px; font-weight:600; border:none;")
         value = QLabel("-")
         value_font = QFont()
         value_font.setPointSize(12)
         value_font.setBold(True)
         value.setFont(value_font)
-        value.setStyleSheet("color:#142E46; border:none;")
+        value.setStyleSheet("color:#FFFFFF; border:none;")
         hint = QLabel(helper)
-        hint.setStyleSheet("color:#8A98A6; font-size:8px; border:none;")
+        hint.setStyleSheet("color:#CBEAF8; font-size:8px; border:none;")
         layout.addWidget(caption)
         layout.addWidget(value)
         layout.addWidget(hint)
@@ -107,7 +110,7 @@ class ExecutiveWorkspace(QWidget):
         title_font.setPointSize(15)
         title_font.setBold(True)
         self._title.setFont(title_font)
-        self._subtitle = QLabel("Portafolio · Liquidez · Mercado · Inteligencia Macroeconómica")
+        self._subtitle = QLabel("UX V4 · Portafolio · Liquidez · Mercado · Inteligencia Macroeconómica")
         self._subtitle.setStyleSheet("color:#667788; font-size:10px;")
         title_box.addWidget(self._title)
         title_box.addWidget(self._subtitle)
