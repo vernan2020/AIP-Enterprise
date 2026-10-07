@@ -7,7 +7,6 @@ from PySide6.QtCore import QPointF, QRectF
 from PySide6.QtGui import QCursor, QMouseEvent
 from PySide6.QtWidgets import QToolTip, QWidget
 
-
 _MISSING_TOKENS = {"", "-", "N/A", "N/D", "NONE", "NULL"}
 
 
@@ -80,6 +79,7 @@ def show_chart_tooltip(
             return True
     QToolTip.hideText()
     return False
+
 
 def show_series_tooltip(
     point: QPointF,
