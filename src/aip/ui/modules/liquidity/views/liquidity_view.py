@@ -97,9 +97,7 @@ class _LiquidityBarChart(QWidget):
                 (("Capacidad / flujo", f"₡{value / 1_000_000:,.2f} MM"),),
                 note="Monto agregado mostrado por la vista ejecutiva.",
             )
-            self._tooltip_regions.append(
-                (QRectF(0, y, self.width(), row_height), tooltip)
-            )
+            self._tooltip_regions.append((QRectF(0, y, self.width(), row_height), tooltip))
             painter.setFont(value_font)
             painter.setPen(fill.darker(120))
             painter.drawText(
