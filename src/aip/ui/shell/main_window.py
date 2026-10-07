@@ -244,8 +244,8 @@ class MainWindow(QMainWindow):
     def _build_header(self) -> QWidget:
         frame = QFrame(self)
         frame.setObjectName("institutionalHeader")
-        frame.setMinimumHeight(62)
-        frame.setMaximumHeight(66)
+        frame.setMinimumHeight(56)
+        frame.setMaximumHeight(60)
         frame.setStyleSheet(
             "QFrame#institutionalHeader {background:qlineargradient(x1:0,y1:0,x2:1,y2:0,stop:0 #00477F,stop:0.48 #005EB8,stop:1 #0077C8); border:none;}"
             "QFrame#institutionalHeader QLabel {background:transparent; border:none; color:#FFFFFF;}"
