@@ -108,9 +108,7 @@ class PortfolioGainLossBarChart(QWidget):
                 ),
                 note="Resultado acumulado presentado por el motor de valorización.",
             )
-            self._tooltip_regions.append(
-                (QRectF(0, y, self.width(), row_height), tooltip)
-            )
+            self._tooltip_regions.append((QRectF(0, y, self.width(), row_height), tooltip))
             painter.setFont(self._font(bold=True))
             painter.setPen(self._GAIN if point.value >= 0 else self._LOSS)
             painter.drawText(
@@ -192,9 +190,7 @@ class PortfolioGainLossBarChart(QWidget):
                 ),
                 note="Descomposición del resultado acumulado por la dimensión mostrada.",
             )
-            self._tooltip_regions.append(
-                (QRectF(0, y, self.width(), row_height), tooltip)
-            )
+            self._tooltip_regions.append((QRectF(0, y, self.width(), row_height), tooltip))
             painter.setFont(self._font(bold=True))
             painter.setPen(self._GAIN if point.value >= 0 else self._LOSS)
             painter.drawText(
@@ -206,4 +202,3 @@ class PortfolioGainLossBarChart(QWidget):
     def mouseMoveEvent(self, event) -> None:  # noqa: N802
         show_chart_tooltip(self, event, self._tooltip_regions)
         super().mouseMoveEvent(event)
-
