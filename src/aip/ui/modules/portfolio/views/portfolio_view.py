@@ -30,6 +30,7 @@ from aip.ui.modules.portfolio.views.portfolio_valuation_comparison_view import (
 )
 from aip.ui.modules.portfolio.widgets.portfolio_dashboard_chart import (
     PortfolioDashboardBarChart,
+    PortfolioDashboardColumnChart,
     PortfolioDashboardDonutChart,
 )
 from aip.ui.modules.portfolio.widgets.portfolio_filter_panel import PortfolioFilterPanel
@@ -93,9 +94,10 @@ class PortfolioView(QWidget):
     @staticmethod
     def _group_style() -> str:
         return (
-            "QGroupBox {border:1px solid #D7E0E8; border-radius:8px; margin-top:8px; "
-            "font-weight:700; color:#22384C; background:#FFFFFF;}"
-            "QGroupBox::title {subcontrol-origin:margin; left:10px; padding:0 5px;}"
+            "QGroupBox {border:1px solid #D7E6EF; border-radius:14px; margin-top:10px; "
+            "font-weight:700; color:#173B6C; background:#FFFFFF;}"
+            "QGroupBox::title {subcontrol-origin:margin; left:14px; padding:0 6px; "
+            "background:#FFFFFF;}"
         )
 
     @staticmethod
@@ -112,27 +114,27 @@ class PortfolioView(QWidget):
     def _metric_card(self, key: str, title: str, helper: str) -> QFrame:
         card = QFrame()
         card.setObjectName("portfolioMetricCard")
-        card.setMinimumHeight(94)
+        card.setMinimumHeight(112)
         card.setStyleSheet(
             "QFrame#portfolioMetricCard {"
             "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
-            "stop:0 #00477F, stop:0.58 #005EB8, stop:1 #00A9E0); "
-            "border:1px solid #1675C5; border-radius:12px;"
+            "stop:0 #073F84, stop:0.52 #0A6ED1, stop:1 #12B7E7); "
+            "border:1px solid #2C8CE0; border-radius:14px;"
             "} QFrame#portfolioMetricCard:hover {border:1px solid #73B3DD;}"
         )
         layout = QVBoxLayout(card)
-        layout.setContentsMargins(10, 7, 10, 7)
+        layout.setContentsMargins(14, 10, 14, 10)
         layout.setSpacing(2)
         caption = QLabel(title)
-        caption.setStyleSheet("color:#DDF4FF; font-size:9px; font-weight:600; border:none;")
+        caption.setStyleSheet("color:#E8F6FF; font-size:10px; font-weight:700; border:none;")
         value = QLabel("-")
         value_font = QFont()
-        value_font.setPointSize(12)
+        value_font.setPointSize(16)
         value_font.setBold(True)
         value.setFont(value_font)
         value.setStyleSheet("color:#FFFFFF; border:none;")
         hint = QLabel(helper)
-        hint.setStyleSheet("color:#CBEAF8; font-size:8px; border:none;")
+        hint.setStyleSheet("color:#D1ECFA; font-size:8px; border:none;")
         layout.addWidget(caption)
         layout.addWidget(value)
         layout.addWidget(hint)
@@ -143,30 +145,38 @@ class PortfolioView(QWidget):
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
+        self.setStyleSheet(
+            "QWidget#portfolioWorkspace {background:qlineargradient(x1:0,y1:0,x2:0,y2:1,"
+            "stop:0 #F4FAFE,stop:1 #EEF5F9);}"
+            "QTabWidget::pane {border:0; background:transparent;}"
+            "QTabBar::tab {background:transparent; color:#506A84;}"
+            "QTabBar::tab:selected {color:#0B57B7;}"
+        )
 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
         content = QWidget()
         layout = QVBoxLayout(content)
-        layout.setContentsMargins(14, 10, 14, 14)
-        layout.setSpacing(8)
+        layout.setContentsMargins(18, 12, 18, 16)
+        layout.setSpacing(10)
         scroll.setWidget(content)
         root.addWidget(scroll)
 
         header = QHBoxLayout()
         title_box = QVBoxLayout()
-        title = QLabel("PORTAFOLIO DE INVERSIONES")
+        title = QLabel("Portafolio")
         title_font = QFont()
         title_font.setPointSize(15)
         title_font.setBold(True)
         title.setFont(title_font)
-        subtitle = QLabel(
-            "Valuación · rentabilidad · liquidez · sensibilidad · concentración · valor relativo"
-        )
-        subtitle.setStyleSheet("color:#667788; font-size:10px;")
+        subtitle = QLabel("Resumen ejecutivo")
+        subtitle.setStyleSheet("color:#244A7A; font-size:12px; font-weight:700;")
         title_box.addWidget(title)
         title_box.addWidget(subtitle)
+        vision = QLabel("Visión integral del portafolio de inversiones")
+        vision.setStyleSheet("color:#6B7F93; font-size:9px;")
+        title_box.addWidget(vision)
         header.addLayout(title_box)
         header.addStretch(1)
         self._date_label = QLabel("-")
@@ -181,23 +191,16 @@ class PortfolioView(QWidget):
         kpi_grid.setHorizontalSpacing(7)
         kpi_grid.setVerticalSpacing(7)
         definitions = (
-            ("health", "Indicador de Salud", "Pendiente metodología certificada"),
-            ("state", "Estado", "Gobierno del panel"),
-            ("market_value", "Valor", "Valor de mercado CRC"),
-            ("yield", "TIR", "Rendimiento ponderado"),
-            ("duration", "Duración", "Duración modificada"),
+            ("market_value", "Valor de mercado", "Valor de mercado CRC"),
+            ("yield", "TIR ponderada", "Rendimiento ponderado"),
+            ("duration", "Duración modificada", "Sensibilidad del portafolio"),
             ("hqla", "HQLA", "Capacidad líquida elegible"),
-            ("dv01", "DV01", "Sensibilidad por 1 pb"),
-            ("hhi", "HHI", "Concentración por emisor"),
+            ("issuer_count", "Emisores", "Activos en portafolio"),
+            ("hhi", "Concentración por emisor", "Índice Herfindahl"),
         )
         for index, definition in enumerate(definitions):
             card = self._metric_card(*definition)
-            if index < 6:
-                kpi_grid.addWidget(card, 0, index)
-            elif index == 6:
-                kpi_grid.addWidget(card, 1, 0, 1, 3)
-            else:
-                kpi_grid.addWidget(card, 1, 3, 1, 3)
+            kpi_grid.addWidget(card, 0, index)
         for column in range(6):
             kpi_grid.setColumnStretch(column, 1)
         layout.addLayout(kpi_grid)
@@ -228,14 +231,14 @@ class PortfolioView(QWidget):
         issuer_layout = QVBoxLayout(issuer_group)
         self._issuer_chart = PortfolioDashboardBarChart()
         issuer_layout.addWidget(self._issuer_chart)
-        layout.addWidget(issuer_group, 0, 0, 1, 2)
+        layout.addWidget(issuer_group, 0, 0)
 
         duration_group = QGroupBox("Distribución por duración")
         duration_group.setStyleSheet(self._group_style())
         duration_layout = QVBoxLayout(duration_group)
-        self._duration_chart = PortfolioDashboardBarChart()
+        self._duration_chart = PortfolioDashboardColumnChart()
         duration_layout.addWidget(self._duration_chart)
-        layout.addWidget(duration_group, 0, 2)
+        layout.addWidget(duration_group, 0, 1)
 
         opportunity_group = QGroupBox("Radar de oportunidades · diferencial vs curva")
         opportunity_group.setStyleSheet(self._group_style())
@@ -244,18 +247,17 @@ class PortfolioView(QWidget):
             value_formatter=lambda value: f"{value:+.1f} pb"
         )
         opportunity_layout.addWidget(self._opportunity_chart)
-        layout.addWidget(opportunity_group, 1, 0, 1, 2)
+        layout.addWidget(opportunity_group, 1, 0)
 
-        currency_group = QGroupBox("Asignación por moneda")
+        currency_group = QGroupBox("Distribución por moneda")
         currency_group.setStyleSheet(self._group_style())
         currency_layout = QVBoxLayout(currency_group)
-        self._currency_chart = PortfolioDashboardDonutChart(center_label="Monedas")
+        self._currency_chart = PortfolioDashboardDonutChart(center_label="Valor de mercado total")
         currency_layout.addWidget(self._currency_chart)
-        layout.addWidget(currency_group, 1, 2)
+        layout.addWidget(currency_group, 1, 1)
 
         layout.setColumnStretch(0, 1)
         layout.setColumnStretch(1, 1)
-        layout.setColumnStretch(2, 1)
 
         self._dashboard_note = QLabel("")
         self._dashboard_note.setWordWrap(True)
@@ -266,7 +268,7 @@ class PortfolioView(QWidget):
             "stop:0 #E8F5FB, stop:0.65 #F7FBFD, stop:1 #EAF7F2); "
             "border:1px solid #BFDDEB; border-radius:8px; font-weight:600;}"
         )
-        layout.addWidget(self._dashboard_note, 2, 0, 1, 3)
+        layout.addWidget(self._dashboard_note, 2, 0, 1, 2)
         self._tabs.addTab(page, "Resumen ejecutivo")
 
     def _build_positions_tab(self) -> None:
@@ -296,14 +298,20 @@ class PortfolioView(QWidget):
     def _bind_dashboard(self, view_model: PortfolioViewModel) -> None:
         summary = view_model.summary
         self._date_label.setText(f"Corte: {summary.valuation_date}")
+        issuer_count = len(
+            {
+                str(getattr(row, "issuer", "")).strip()
+                for row in view_model.rows
+                if str(getattr(row, "issuer", "")).strip()
+            }
+        )
+        market_value_display = self._market_value_mm(summary.market_value)
         values = {
-            "health": view_model.health_score,
-            "state": view_model.health_status,
-            "market_value": self._market_value_mm(summary.market_value),
+            "market_value": market_value_display,
             "yield": summary.weighted_yield,
             "duration": summary.modified_duration,
             "hqla": summary.hqla_percent,
-            "dv01": view_model.dv01_total,
+            "issuer_count": str(issuer_count),
             "hhi": view_model.hhi,
         }
         for key, value in values.items():
@@ -312,9 +320,10 @@ class PortfolioView(QWidget):
         self._duration_chart.set_data(view_model.duration_points)
         self._opportunity_chart.set_data(view_model.opportunity_points)
         self._currency_chart.set_data(view_model.currency_points)
+        self._currency_chart.set_center_value(market_value_display)
         self._valuation_comparison.bind(view_model.valuation_comparison, summary.valuation_date)
         self._dashboard_note.setText(
-            f"Vista ejecutiva UX V4 · Calidad de datos: {view_model.data_quality_status} · "
+            f"Vista ejecutiva UX V4.1 · Calidad de datos: {view_model.data_quality_status} · "
             f"MIL elegible: {summary.mil_eligible_percent} · "
             f"DV01: {self._translate_status(view_model.dv01_status)}. "
             "El Indicador de Salud permanece N/D hasta certificar su metodología institucional."
