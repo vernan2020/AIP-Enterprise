@@ -29,6 +29,7 @@ from aip.ui.modules.market.viewmodels.market_view_model import (
 )
 from aip.ui.modules.market.views.market_summary_view import MarketSummaryView
 from aip.ui.modules.market.views.relative_value_view import RelativeValueView
+from aip.ui.widgets.chart_tooltip import build_chart_tooltip, point_hit_rect, show_chart_tooltip
 
 
 class _MarketCurveChart(QWidget):
@@ -38,6 +39,8 @@ class _MarketCurveChart(QWidget):
         super().__init__(parent)
         self._curve: MarketCurveViewData | None = None
         self._highlight: RelativeValueViewRow | None = None
+        self._tooltip_regions: list[tuple[QRectF, str]] = []
+        self.setMouseTracking(True)
         self.setMinimumHeight(410)
 
     def set_curve(
@@ -62,6 +65,7 @@ class _MarketCurveChart(QWidget):
         background.setColorAt(0.46, QColor("#FFFFFF"))
         background.setColorAt(1.0, QColor("#F2F8FB"))
         painter.fillRect(self.rect(), background)
+        self._tooltip_regions = []
         curve = self._curve
         if curve is None or not curve.fitted_points:
             painter.setPen(QColor("#7B8D98"))
@@ -113,6 +117,19 @@ class _MarketCurveChart(QWidget):
             )
 
         fitted_points = [map_point(point) for point in curve.fitted_points]
+        for raw_point, screen_point in zip(curve.fitted_points, fitted_points, strict=True):
+            tooltip = build_chart_tooltip(
+                curve.label,
+                (
+                    ("Plazo", f"{raw_point[0]:.2f} años"),
+                    ("Rendimiento modelo", f"{raw_point[1]:.3f}%"),
+                    ("Modelo", curve.official_model),
+                    ("RMSE", f"{curve.rmse:.4f}"),
+                    ("R²", f"{curve.r_squared:.4f}"),
+                ),
+                note="Punto de la curva ajustada institucional.",
+            )
+            self._tooltip_regions.append((point_hit_rect(screen_point, 8.0), tooltip))
         fitted = QPolygonF(fitted_points)
         if len(fitted_points) >= 2:
             area_points = [
@@ -133,7 +150,18 @@ class _MarketCurveChart(QWidget):
         painter.setPen(QPen(QColor("#FFFFFF"), 1))
         painter.setBrush(QColor("#40C1AC"))
         for point in curve.observed_points:
-            painter.drawEllipse(map_point(point), 4.0, 4.0)
+            screen_point = map_point(point)
+            painter.drawEllipse(screen_point, 4.0, 4.0)
+            tooltip = build_chart_tooltip(
+                curve.label,
+                (
+                    ("Plazo", f"{point[0]:.2f} años"),
+                    ("Rendimiento observado", f"{point[1]:.3f}%"),
+                    ("Fuente", "PiPCA observado"),
+                ),
+                note="Observación de mercado utilizada en la curva.",
+            )
+            self._tooltip_regions.append((point_hit_rect(screen_point, 9.0), tooltip))
 
         if highlight is not None and highlight.curve_id == curve.curve_id:
             selected = map_point((highlight.tenor, highlight.market_yield))
@@ -146,6 +174,26 @@ class _MarketCurveChart(QWidget):
                 Qt.AlignmentFlag.AlignLeft,
                 f"{highlight.series} · {highlight.spread_bp:+.1f} pb",
             )
+            tooltip = build_chart_tooltip(
+                highlight.series,
+                (
+                    ("Emisor", highlight.issuer),
+                    ("Moneda", highlight.currency),
+                    ("Plazo", f"{highlight.tenor:.2f} años"),
+                    ("TIR mercado", f"{highlight.market_yield:.3f}%"),
+                    ("TIR curva", f"{highlight.curve_yield:.3f}%"),
+                    ("Diferencial", f"{highlight.spread_bp:+.1f} pb"),
+                    ("Clasificación", relative_value_classification_label(highlight.classification)),
+                    (
+                        "Valor de mercado",
+                        f"₡{highlight.market_value_crc / 1_000_000:,.2f} MM"
+                        if highlight.market_value_crc is not None
+                        else None,
+                    ),
+                ),
+                note="Valor relativo frente a la curva seleccionada.",
+            )
+            self._tooltip_regions.append((point_hit_rect(selected, 12.0), tooltip))
 
         painter.setPen(QColor("#566D7C"))
         for index in range(6):
@@ -157,6 +205,11 @@ class _MarketCurveChart(QWidget):
                 Qt.AlignmentFlag.AlignHCenter,
                 f"{tenor:.1f}a",
             )
+
+
+    def mouseMoveEvent(self, event) -> None:  # noqa: N802
+        show_chart_tooltip(self, event, self._tooltip_regions)
+        super().mouseMoveEvent(event)
 
 
 class MarketView(QWidget):
