@@ -218,7 +218,7 @@ class MarketView(QWidget):
         title.setFont(title_font)
         title.setStyleSheet("color:#00345F;")
         subtitle = QLabel(
-            "UX V4.1 · curva soberana · valor relativo · ranking de oportunidades · rotación"
+            "Curva soberana · valor relativo · ranking de oportunidades · rotación"
         )
         subtitle.setStyleSheet("color:#566D7C; font-size:9px;")
         title_box.addWidget(title)
