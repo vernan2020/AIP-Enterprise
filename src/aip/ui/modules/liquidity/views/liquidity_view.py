@@ -840,9 +840,7 @@ class LiquidityView(QWidget):
     def bind_view_model(self, view_model: LiquidityViewModel) -> None:
         self._view_model = view_model
         summary = view_model.summary
-        self._date_label.setText(
-            f"Fuente liquidez: {getattr(summary, 'liquidity_date', '-')}"
-        )
+        self._date_label.setText(f"Fuente liquidez: {getattr(summary, 'liquidity_date', '-')}")
         values = {
             "icl_total": f"{getattr(summary, 'icl_total', 0.0):.2f}",
             "icl_mn": f"{getattr(summary, 'icl_mn', 0.0):.2f}",
@@ -872,9 +870,7 @@ class LiquidityView(QWidget):
                 ("Cupones ≤90d", getattr(summary, "coupon_inflows_90d_crc", 0.0)),
             )
         )
-        self._cashflow_chart.set_data(
-            self._aggregate_flow_components(view_model.cashflow_rows)
-        )
+        self._cashflow_chart.set_data(self._aggregate_flow_components(view_model.cashflow_rows))
         self._maturity_bucket_chart.set_data(
             self._aggregate_by_bucket(view_model.maturity_rows, use_amount_crc=False)
         )
