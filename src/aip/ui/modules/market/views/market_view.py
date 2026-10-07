@@ -217,9 +217,7 @@ class MarketView(QWidget):
         title_font.setBold(True)
         title.setFont(title_font)
         title.setStyleSheet("color:#00345F;")
-        subtitle = QLabel(
-            "Curva soberana · valor relativo · ranking de oportunidades · rotación"
-        )
+        subtitle = QLabel("Curva soberana · valor relativo · ranking de oportunidades · rotación")
         subtitle.setStyleSheet("color:#566D7C; font-size:9px;")
         title_box.addWidget(title)
         title_box.addWidget(subtitle)
