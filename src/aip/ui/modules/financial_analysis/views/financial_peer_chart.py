@@ -7,6 +7,7 @@ from PySide6.QtCharts import (
     QChartView,
     QHorizontalBarSeries,
     QPieSeries,
+    QPieSlice,
     QValueAxis,
 )
 from PySide6.QtCore import QMargins, Qt
@@ -187,7 +188,7 @@ class FinancialPeerChartPanel(QWidget):
         chart.legend().setAlignment(Qt.AlignmentFlag.AlignRight)
         series = QPieSeries()
         palette = ("#005EB8", "#00A9E0", "#40C1AC", "#FF8200", "#73B3DD", "#2B9E8B")
-        slice_points: list[tuple[object, PeerChartPointView]] = []
+        slice_points: list[tuple[QPieSlice, PeerChartPointView]] = []
         for index, point in enumerate(item.points):
             slice_ = series.append(cls._short_name(point.entity_name), point.value)
             slice_.setColor(QColor(palette[index % len(palette)]))
