@@ -30,16 +30,16 @@ class PortfolioHistoryView(QWidget):
         self.setObjectName("portfolioHistoryWorkspace")
         self.setStyleSheet("""
             QWidget#portfolioHistoryWorkspace {
-                background: #F6F8FB;
+                background: qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #F7FBFD,stop:1 #EDF4F8);
             }
             QGroupBox[historyCard="true"] {
                 background: #FFFFFF;
-                border: 1px solid #E3EAF2;
-                border-radius: 12px;
+                border: 1px solid #C9DDE9;
+                border-radius: 14px;
                 margin-top: 18px;
                 padding-top: 12px;
                 font-weight: 700;
-                color: #17324D;
+                color: #00345F;
             }
             QGroupBox[historyCard="true"]::title {
                 subcontrol-origin: margin;
@@ -78,8 +78,9 @@ class PortfolioHistoryView(QWidget):
         root.setSpacing(10)
 
         controls = QHBoxLayout()
-        title = QLabel("EVOLUCIÓN HISTÓRICA DE KPIs")
+        title = QLabel("PORTAFOLIO · HISTÓRICO DE KPIs")
         title.setProperty("role", "sectionTitle")
+        title.setStyleSheet("font-size:15px; font-weight:800; color:#00345F;")
         controls.addWidget(title)
         controls.addStretch(1)
 
@@ -105,7 +106,7 @@ class PortfolioHistoryView(QWidget):
         root.addLayout(controls)
 
         subtitle = QLabel(
-            "Cada punto se recalcula desde el maestro institucional del corte; "
+            "UX V4 · Cada punto se recalcula desde el maestro institucional del corte; "
             "no se interpolan datos faltantes. Comparativos contra mes anterior y cierre 2025."
         )
         subtitle.setProperty("role", "historySubtitle")
