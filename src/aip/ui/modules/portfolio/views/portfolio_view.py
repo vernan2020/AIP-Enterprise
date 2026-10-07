@@ -112,24 +112,27 @@ class PortfolioView(QWidget):
     def _metric_card(self, key: str, title: str, helper: str) -> QFrame:
         card = QFrame()
         card.setObjectName("portfolioMetricCard")
-        card.setMinimumHeight(78)
+        card.setMinimumHeight(94)
         card.setStyleSheet(
-            "QFrame#portfolioMetricCard {background:#FFFFFF; border:1px solid #D7E0E8; "
-            "border-radius:8px;} QFrame#portfolioMetricCard:hover {border-color:#8DB0CB;}"
+            "QFrame#portfolioMetricCard {"
+            "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
+            "stop:0 #00477F, stop:0.58 #005EB8, stop:1 #00A9E0); "
+            "border:1px solid #1675C5; border-radius:12px;"
+            "} QFrame#portfolioMetricCard:hover {border:1px solid #73B3DD;}"
         )
         layout = QVBoxLayout(card)
         layout.setContentsMargins(10, 7, 10, 7)
         layout.setSpacing(2)
         caption = QLabel(title)
-        caption.setStyleSheet("color:#667788; font-size:9px; border:none;")
+        caption.setStyleSheet("color:#DDF4FF; font-size:9px; font-weight:600; border:none;")
         value = QLabel("-")
         value_font = QFont()
         value_font.setPointSize(12)
         value_font.setBold(True)
         value.setFont(value_font)
-        value.setStyleSheet("color:#142E46; border:none;")
+        value.setStyleSheet("color:#FFFFFF; border:none;")
         hint = QLabel(helper)
-        hint.setStyleSheet("color:#8A98A6; font-size:8px; border:none;")
+        hint.setStyleSheet("color:#CBEAF8; font-size:8px; border:none;")
         layout.addWidget(caption)
         layout.addWidget(value)
         layout.addWidget(hint)
@@ -188,7 +191,15 @@ class PortfolioView(QWidget):
             ("hhi", "HHI", "Concentración por emisor"),
         )
         for index, definition in enumerate(definitions):
-            kpi_grid.addWidget(self._metric_card(*definition), index // 4, index % 4)
+            card = self._metric_card(*definition)
+            if index < 6:
+                kpi_grid.addWidget(card, 0, index)
+            elif index == 6:
+                kpi_grid.addWidget(card, 1, 0, 1, 3)
+            else:
+                kpi_grid.addWidget(card, 1, 3, 1, 3)
+        for column in range(6):
+            kpi_grid.setColumnStretch(column, 1)
         layout.addLayout(kpi_grid)
 
         self._tabs = QTabWidget()
@@ -222,7 +233,7 @@ class PortfolioView(QWidget):
         duration_group = QGroupBox("Distribución por duración")
         duration_group.setStyleSheet(self._group_style())
         duration_layout = QVBoxLayout(duration_group)
-        self._duration_chart = PortfolioDashboardDonutChart(center_label="Plazos")
+        self._duration_chart = PortfolioDashboardBarChart()
         duration_layout.addWidget(self._duration_chart)
         layout.addWidget(duration_group, 0, 2)
 
@@ -303,7 +314,7 @@ class PortfolioView(QWidget):
         self._currency_chart.set_data(view_model.currency_points)
         self._valuation_comparison.bind(view_model.valuation_comparison, summary.valuation_date)
         self._dashboard_note.setText(
-            f"Vista ejecutiva UX V3 · Calidad de datos: {view_model.data_quality_status} · "
+            f"Vista ejecutiva UX V4 · Calidad de datos: {view_model.data_quality_status} · "
             f"MIL elegible: {summary.mil_eligible_percent} · "
             f"DV01: {self._translate_status(view_model.dv01_status)}. "
             "El Indicador de Salud permanece N/D hasta certificar su metodología institucional."
