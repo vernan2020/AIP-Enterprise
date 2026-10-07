@@ -24,7 +24,11 @@ from aip.ui.modules.macro_intelligence.presenters.macro_intelligence_presenter i
 from aip.ui.modules.macro_intelligence.viewmodels.macro_intelligence_view_model import (
     MacroForecastLabViewModel,
 )
-from aip.ui.widgets.chart_tooltip import build_chart_tooltip, point_hit_rect, show_chart_tooltip
+from aip.ui.widgets.chart_tooltip import (
+    build_chart_tooltip,
+    point_hit_rect,
+    show_chart_tooltip,
+)
 
 
 class _ForecastLabSignals(QObject):
@@ -213,7 +217,6 @@ class _ForecastPathChart(QWidget):
             Qt.AlignmentFlag.AlignLeft,
             f"Ensemble · {self._view_model.indicator_label} · bandas 80% / 95%",
         )
-
 
     def mouseMoveEvent(self, event) -> None:  # noqa: N802
         show_chart_tooltip(self, event, self._tooltip_regions)
