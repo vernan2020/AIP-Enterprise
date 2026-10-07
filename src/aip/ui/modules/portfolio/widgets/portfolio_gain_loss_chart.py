@@ -10,6 +10,7 @@ from PySide6.QtWidgets import QWidget
 from aip.ui.modules.portfolio.models.portfolio_valuation_comparison import (
     PortfolioValuationChartPoint,
 )
+from aip.ui.widgets.chart_tooltip import build_chart_tooltip, show_chart_tooltip
 
 
 class PortfolioGainLossBarChart(QWidget):
@@ -33,6 +34,8 @@ class PortfolioGainLossBarChart(QWidget):
         self._points: tuple[PortfolioValuationChartPoint, ...] = ()
         self._mode = mode
         self._formatter = value_formatter or (lambda value: f"{value:+,.2f}")
+        self._tooltip_regions: list[tuple[QRectF, str]] = []
+        self.setMouseTracking(True)
         self.setMinimumHeight(180)
 
     def set_data(self, points: tuple[PortfolioValuationChartPoint, ...]) -> None:
@@ -44,6 +47,7 @@ class PortfolioGainLossBarChart(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         painter.fillRect(self.rect(), QColor("#FFFFFF"))
+        self._tooltip_regions = []
 
         if not self._points:
             painter.setPen(self._MUTED)
@@ -96,6 +100,15 @@ class PortfolioGainLossBarChart(QWidget):
                 6,
             )
 
+            tooltip = build_chart_tooltip(
+                point.label,
+                (
+                    ("Ganancia / pérdida", self._formatter(point.value)),
+                    ("Resultado", "Ganancia" if point.value >= 0 else "Pérdida"),
+                ),
+                note="Resultado acumulado presentado por el motor de valorización.",
+            )
+            self._tooltip_regions.append((QRectF(0, y, self.width(), row_height), tooltip))
             painter.setFont(self._font(bold=True))
             painter.setPen(self._GAIN if point.value >= 0 else self._LOSS)
             painter.drawText(
@@ -168,6 +181,16 @@ class PortfolioGainLossBarChart(QWidget):
                     5,
                 )
 
+            tooltip = build_chart_tooltip(
+                point.label,
+                (
+                    ("Ganancias", self._formatter(point.positive)),
+                    ("Pérdidas", self._formatter(point.negative)),
+                    ("Neto", self._formatter(point.value)),
+                ),
+                note="Descomposición del resultado acumulado por la dimensión mostrada.",
+            )
+            self._tooltip_regions.append((QRectF(0, y, self.width(), row_height), tooltip))
             painter.setFont(self._font(bold=True))
             painter.setPen(self._GAIN if point.value >= 0 else self._LOSS)
             painter.drawText(
@@ -175,3 +198,7 @@ class PortfolioGainLossBarChart(QWidget):
                 Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignRight,
                 self._formatter(point.value),
             )
+
+    def mouseMoveEvent(self, event) -> None:  # noqa: N802
+        show_chart_tooltip(self, event, self._tooltip_regions)
+        super().mouseMoveEvent(event)

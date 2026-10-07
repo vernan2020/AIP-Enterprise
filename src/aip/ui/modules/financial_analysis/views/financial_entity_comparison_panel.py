@@ -24,6 +24,7 @@ from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model 
     FinancialEntityComparisonSeriesView,
     FinancialEntityComparisonViewModel,
 )
+from aip.ui.widgets.chart_tooltip import build_chart_tooltip, show_series_tooltip
 
 
 class FinancialEntityComparisonPanel(QWidget):
@@ -339,17 +340,15 @@ class FinancialEntityComparisonPanel(QWidget):
         chart.addAxis(axis_x, Qt.AlignmentFlag.AlignBottom)
         chart.addAxis(axis_y, Qt.AlignmentFlag.AlignLeft)
 
-        tooltip_lines: list[str] = []
         palette = ("#005EB8", "#00A9E0", "#40C1AC", "#FF8200", "#7A6FD0")
         for entity_index, (entity, dates) in enumerate(prepared):
             segment: QLineSeries | None = None
+            segment_tooltips: dict[int, str] | None = None
             segment_index = 0
             for point, point_date in zip(entity.points, dates, strict=True):
-                tooltip_lines.append(
-                    f"{entity.entity_name} · {point.date_label}: {point.display_value}"
-                )
                 if point.value is None:
                     segment = None
+                    segment_tooltips = None
                     continue
                 if segment is None:
                     segment = QLineSeries()
@@ -363,11 +362,29 @@ class FinancialEntityComparisonPanel(QWidget):
                     chart.addSeries(segment)
                     segment.attachAxis(axis_x)
                     segment.attachAxis(axis_y)
+                    segment_tooltips = {}
+                    segment.hovered.connect(
+                        lambda hovered_point, state, data=segment_tooltips: show_series_tooltip(
+                            hovered_point, state, data
+                        )
+                    )
                     if segment_index > 0:
                         for marker in chart.legend().markers(segment):
                             marker.setVisible(False)
                     segment_index += 1
-                segment.append(float(point_date.toMSecsSinceEpoch()), point.value)
+                timestamp = int(point_date.toMSecsSinceEpoch())
+                segment.append(float(timestamp), point.value)
+                assert segment_tooltips is not None
+                segment_tooltips[timestamp] = build_chart_tooltip(
+                    entity.entity_name,
+                    (
+                        ("Indicador", view_model.label),
+                        ("Periodo", point.date_label),
+                        ("Valor", point.display_value),
+                        ("Unidad", view_model.unit),
+                    ),
+                    note="Comparación temporal sobre la misma serie y escala.",
+                )
 
         chart.setPlotAreaBackgroundVisible(True)
         chart.setPlotAreaBackgroundBrush(QColor("#F8FBFD"))
@@ -375,5 +392,4 @@ class FinancialEntityComparisonPanel(QWidget):
         view = QChartView(chart)
         view.setRenderHint(QPainter.RenderHint.Antialiasing)
         view.setMinimumHeight(430)
-        view.setToolTip("\n".join(tooltip_lines))
         return view

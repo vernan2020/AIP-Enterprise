@@ -8,6 +8,11 @@ from PySide6.QtGui import QColor, QFont, QLinearGradient, QPainter, QPen, QPolyg
 from PySide6.QtWidgets import QWidget
 
 from aip.ui.modules.price_risk.models.price_risk_row import RiskChartPoint
+from aip.ui.widgets.chart_tooltip import (
+    build_chart_tooltip,
+    point_hit_rect,
+    show_chart_tooltip,
+)
 
 
 class RiskBarChartWidget(QWidget):
@@ -32,6 +37,8 @@ class RiskBarChartWidget(QWidget):
         self._points: tuple[RiskChartPoint, ...] = ()
         self._formatter = value_formatter or (lambda value: f"{value:,.2f}")
         self._show_secondary = show_secondary
+        self._tooltip_regions: list[tuple[QRectF, str]] = []
+        self.setMouseTracking(True)
         self.setMinimumHeight(210)
 
     def set_data(self, points: tuple[RiskChartPoint, ...]) -> None:
@@ -47,6 +54,7 @@ class RiskBarChartWidget(QWidget):
         background.setColorAt(0.55, QColor("#FFFFFF"))
         background.setColorAt(1.0, QColor("#F3F8FB"))
         painter.fillRect(self.rect(), background)
+        self._tooltip_regions = []
 
         if not self._points:
             self._draw_empty_state(painter)
@@ -115,6 +123,25 @@ class RiskBarChartWidget(QWidget):
             else:
                 rect = QRectF(center, bar_y, max(2.0, bar_width), bar_height)
             painter.drawRoundedRect(rect, 5, 5)
+            tooltip_rows: list[tuple[str, object]] = [("Valor", self._formatter(point.value))]
+            if self._show_secondary:
+                tooltip_rows.append(("Contribución", f"{point.secondary_value:.1f}%"))
+            tooltip_rows.append(
+                (
+                    "Lectura",
+                    (
+                        "Sensibilidad positiva"
+                        if numeric > 0
+                        else "Sensibilidad negativa" if numeric < 0 else "Sin variación"
+                    ),
+                )
+            )
+            self._tooltip_regions.append(
+                (
+                    QRectF(0, y, self.width(), row_height),
+                    build_chart_tooltip(point.label, tooltip_rows),
+                )
+            )
 
             painter.setFont(value_font)
             painter.setPen(fill.darker(118) if numeric else self._TEXT)
@@ -126,6 +153,10 @@ class RiskBarChartWidget(QWidget):
                 Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignRight,
                 text,
             )
+
+    def mouseMoveEvent(self, event) -> None:  # noqa: N802
+        show_chart_tooltip(self, event, self._tooltip_regions)
+        super().mouseMoveEvent(event)
 
     def _draw_empty_state(self, painter: QPainter) -> None:
         center = self.rect().center()
@@ -149,6 +180,8 @@ class ParetoChartWidget(QWidget):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._points: tuple[RiskChartPoint, ...] = ()
+        self._tooltip_regions: list[tuple[QRectF, str]] = []
+        self.setMouseTracking(True)
         self.setMinimumHeight(230)
 
     def set_data(self, points: tuple[RiskChartPoint, ...]) -> None:
@@ -164,6 +197,7 @@ class ParetoChartWidget(QWidget):
         background.setColorAt(0.55, QColor("#FFFFFF"))
         background.setColorAt(1.0, QColor("#F3F8FB"))
         painter.fillRect(self.rect(), background)
+        self._tooltip_regions = []
 
         if not self._points:
             painter.setPen(QColor("#718096"))
@@ -211,7 +245,18 @@ class ParetoChartWidget(QWidget):
             cumulative_y = top + height * (
                 1.0 - (float(point.secondary_value) - min_cumulative) / cumulative_span
             )
-            line_points.append(QPointF(center_x, cumulative_y))
+            line_point = QPointF(center_x, cumulative_y)
+            line_points.append(line_point)
+            tooltip = build_chart_tooltip(
+                point.label,
+                (
+                    ("Contribución", f"{point.value:,.2f}"),
+                    ("Acumulado", f"{point.secondary_value:,.1f}%"),
+                ),
+                note="La barra muestra contribución y la línea el acumulado del Pareto.",
+            )
+            self._tooltip_regions.append((QRectF(left + slot * index, top, slot, height), tooltip))
+            self._tooltip_regions.append((point_hit_rect(line_point, 8.0), tooltip))
 
         if line_points:
             area = [QPointF(line_points[0].x(), top + height), *line_points]
@@ -251,3 +296,7 @@ class ParetoChartWidget(QWidget):
                 Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
                 self._points[index].label[:12],
             )
+
+    def mouseMoveEvent(self, event) -> None:  # noqa: N802
+        show_chart_tooltip(self, event, self._tooltip_regions)
+        super().mouseMoveEvent(event)

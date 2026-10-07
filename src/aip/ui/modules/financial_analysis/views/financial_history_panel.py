@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model import (
     FinancialMetricHistorySeriesView,
 )
+from aip.ui.widgets.chart_tooltip import build_chart_tooltip, show_series_tooltip
 
 
 class FinancialHistoryPanel(QWidget):
@@ -192,11 +193,11 @@ class FinancialHistoryPanel(QWidget):
         chart.addAxis(axis_y, Qt.AlignmentFlag.AlignLeft)
 
         segment: QLineSeries | None = None
-        tooltip_lines: list[str] = []
+        segment_tooltips: dict[int, str] | None = None
         for point, point_date in zip(item.points, point_dates, strict=True):
-            tooltip_lines.append(f"{point.date_label}: {point.display_value}")
             if point.value is None:
                 segment = None
+                segment_tooltips = None
                 continue
             if segment is None:
                 segment = QLineSeries()
@@ -206,10 +207,27 @@ class FinancialHistoryPanel(QWidget):
                 chart.addSeries(segment)
                 segment.attachAxis(axis_x)
                 segment.attachAxis(axis_y)
-            segment.append(float(point_date.toMSecsSinceEpoch()), point.value)
+                segment_tooltips = {}
+                segment.hovered.connect(
+                    lambda hovered_point, state, data=segment_tooltips: show_series_tooltip(
+                        hovered_point, state, data
+                    )
+                )
+            timestamp = int(point_date.toMSecsSinceEpoch())
+            segment.append(float(timestamp), point.value)
+            assert segment_tooltips is not None
+            segment_tooltips[timestamp] = build_chart_tooltip(
+                item.label,
+                (
+                    ("Periodo", point.date_label),
+                    ("Valor", point.display_value),
+                    ("Unidad", item.unit),
+                    ("Fuente", item.source_account),
+                ),
+                note="Corte mensual oficial disponible para la entidad seleccionada.",
+            )
 
         view = QChartView(chart)
         view.setRenderHint(QPainter.RenderHint.Antialiasing)
         view.setMinimumHeight(185)
-        view.setToolTip("\n".join(tooltip_lines))
         return view

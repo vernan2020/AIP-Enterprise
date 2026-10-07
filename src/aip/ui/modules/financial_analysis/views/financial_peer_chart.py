@@ -7,16 +7,18 @@ from PySide6.QtCharts import (
     QChartView,
     QHorizontalBarSeries,
     QPieSeries,
+    QPieSlice,
     QValueAxis,
 )
 from PySide6.QtCore import QMargins, Qt
-from PySide6.QtGui import QColor, QPainter
-from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QVBoxLayout, QWidget
+from PySide6.QtGui import QColor, QCursor, QPainter
+from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QToolTip, QVBoxLayout, QWidget
 
 from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model import (
     PeerChartPointView,
     PeerChartSeriesView,
 )
+from aip.ui.widgets.chart_tooltip import build_chart_tooltip
 
 
 class FinancialPeerChartPanel(QWidget):
@@ -153,15 +155,28 @@ class FinancialPeerChartPanel(QWidget):
         series.attachAxis(categories)
         series.attachAxis(value_axis)
 
-        tooltip = "\n".join(
-            f"{point.entity_name}: {point.display_value}"
-            + (" · seleccionada" if point.selected else "")
-            for point in points
-        )
         view = QChartView(chart)
         view.setRenderHint(QPainter.RenderHint.Antialiasing)
         view.setMinimumHeight(285)
-        view.setToolTip(tooltip)
+
+        def show_bar_tooltip(status: bool, index: int) -> None:
+            if not status or not 0 <= index < len(points):
+                QToolTip.hideText()
+                return
+            point = points[index]
+            tooltip = build_chart_tooltip(
+                point.entity_name,
+                (
+                    ("Indicador", item.label),
+                    ("Valor", point.display_value),
+                    ("Unidad", item.unit),
+                    ("Entidad seleccionada", "Sí" if point.selected else "No"),
+                ),
+                note="Comparación relativa dentro del universo visible.",
+            )
+            QToolTip.showText(QCursor.pos(), tooltip, view)
+
+        bar_set.hovered.connect(show_bar_tooltip)
         return view
 
     @classmethod
@@ -173,9 +188,11 @@ class FinancialPeerChartPanel(QWidget):
         chart.legend().setAlignment(Qt.AlignmentFlag.AlignRight)
         series = QPieSeries()
         palette = ("#005EB8", "#00A9E0", "#40C1AC", "#FF8200", "#73B3DD", "#2B9E8B")
+        slice_points: list[tuple[QPieSlice, PeerChartPointView]] = []
         for index, point in enumerate(item.points):
             slice_ = series.append(cls._short_name(point.entity_name), point.value)
             slice_.setColor(QColor(palette[index % len(palette)]))
+            slice_points.append((slice_, point))
             if index < 10 or point.selected:
                 slice_.setLabel(f"{cls._short_name(point.entity_name)} {point.value:.1f}%")
                 slice_.setLabelVisible(True)
@@ -185,9 +202,22 @@ class FinancialPeerChartPanel(QWidget):
         view = QChartView(chart)
         view.setRenderHint(QPainter.RenderHint.Antialiasing)
         view.setMinimumHeight(245)
-        view.setToolTip(
-            "\n".join(f"{point.entity_name}: {point.display_value}" for point in item.points)
-        )
+
+        for slice_, point in slice_points:
+            tooltip = build_chart_tooltip(
+                point.entity_name,
+                (
+                    ("Indicador", item.label),
+                    ("Participación", point.display_value),
+                    ("Entidad seleccionada", "Sí" if point.selected else "No"),
+                ),
+                note="Composición del total mostrado.",
+            )
+            slice_.hovered.connect(
+                lambda state, text=tooltip: (
+                    QToolTip.showText(QCursor.pos(), text, view) if state else QToolTip.hideText()
+                )
+            )
         return view
 
     @staticmethod
