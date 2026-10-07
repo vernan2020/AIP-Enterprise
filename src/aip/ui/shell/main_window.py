@@ -243,7 +243,7 @@ class MainWindow(QMainWindow):
         frame.setMinimumHeight(62)
         frame.setMaximumHeight(66)
         frame.setStyleSheet(
-            "QFrame#institutionalHeader {background:#005EB8; border:none;}"
+            "QFrame#institutionalHeader {background:qlineargradient(x1:0,y1:0,x2:1,y2:0,stop:0 #00477F,stop:0.48 #005EB8,stop:1 #0077C8); border:none;}"
             "QFrame#institutionalHeader QLabel {background:transparent; border:none; color:#FFFFFF;}"
             "QLabel#headerMode {background:#00477F; border:1px solid #00A9E0; border-radius:10px; "
             "padding:4px 9px; color:#FFFFFF; font-size:9px; font-weight:700;}"
