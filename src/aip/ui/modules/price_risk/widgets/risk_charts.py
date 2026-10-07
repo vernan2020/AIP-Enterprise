@@ -8,7 +8,11 @@ from PySide6.QtGui import QColor, QFont, QLinearGradient, QPainter, QPen, QPolyg
 from PySide6.QtWidgets import QWidget
 
 from aip.ui.modules.price_risk.models.price_risk_row import RiskChartPoint
-from aip.ui.widgets.chart_tooltip import build_chart_tooltip, point_hit_rect, show_chart_tooltip
+from aip.ui.widgets.chart_tooltip import (
+    build_chart_tooltip,
+    point_hit_rect,
+    show_chart_tooltip,
+)
 
 
 class RiskBarChartWidget(QWidget):
@@ -296,4 +300,3 @@ class ParetoChartWidget(QWidget):
     def mouseMoveEvent(self, event) -> None:  # noqa: N802
         show_chart_tooltip(self, event, self._tooltip_regions)
         super().mouseMoveEvent(event)
-
