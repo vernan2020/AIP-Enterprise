@@ -20,7 +20,7 @@ class MarketSummaryView(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setHorizontalSpacing(8)
         layout.setVerticalSpacing(7)
-        for column in range(8):
+        for column in range(6):
             layout.setColumnStretch(column, 1)
 
         cards = (
@@ -52,7 +52,12 @@ class MarketSummaryView(QWidget):
                 status=self._status_from_value(value),
             )
             self._cards[key] = card
-            layout.addWidget(card, 0, index)
+            if index < 6:
+                layout.addWidget(card, 0, index)
+            elif index == 6:
+                layout.addWidget(card, 1, 0, 1, 3)
+            else:
+                layout.addWidget(card, 1, 3, 1, 3)
 
     def bind_summary(self, summary: object) -> None:
         values = {

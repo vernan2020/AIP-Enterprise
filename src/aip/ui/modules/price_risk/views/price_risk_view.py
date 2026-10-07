@@ -197,17 +197,10 @@ class PriceRiskView(QWidget):
             ("coverage", "Cobertura histórica", "Sobre universo elegible"),
             ("titles", "Títulos calculados", "Series incorporadas"),
             ("scenarios", "Escenarios", "Simulaciones históricas"),
-            ("horizon", "Horizonte", "Observaciones por escenario"),
-            ("reconciliation", "Reconciliación", "Suma de contribuciones"),
         )
         for index, definition in enumerate(definitions):
             card = self._metric_card(*definition)
-            if index < 6:
-                kpi_grid.addWidget(card, 0, index)
-            elif index == 6:
-                kpi_grid.addWidget(card, 1, 0, 1, 3)
-            else:
-                kpi_grid.addWidget(card, 1, 3, 1, 3)
+            kpi_grid.addWidget(card, 0, index)
         for column in range(6):
             kpi_grid.setColumnStretch(column, 1)
         layout.addLayout(kpi_grid)
@@ -225,8 +218,10 @@ class PriceRiskView(QWidget):
             ("policy_excluded_vm", "Excluido por política"),
             ("history_excluded_vm", "Sin historia utilizable"),
             ("eligible_positions", "Posiciones elegibles"),
-            ("policy_excluded_positions", "Posiciones fuera de política"),
-            ("history_excluded_titles", "Títulos sin historia"),
+            ("policy_excluded_positions", "Fuera de política"),
+            ("history_excluded_titles", "Sin historia"),
+            ("horizon", "Horizonte"),
+            ("reconciliation", "Reconciliación"),
         ):
             block = QVBoxLayout()
             label = QLabel(caption)
@@ -239,7 +234,7 @@ class PriceRiskView(QWidget):
             quality_layout.addLayout(block)
         quality_layout.addStretch(1)
         quality_note = QLabel(
-            "UX V4 · cobertura, exclusiones y reconciliación explican la calidad y uso ejecutivo del VeR."
+            "UX V4.2 · calidad, horizonte y reconciliación integrados en una franja compacta."
         )
         quality_note.setStyleSheet(
             "color:#315468; font-size:8px; font-weight:600; padding:0 4px; border:none;"
@@ -541,8 +536,6 @@ class PriceRiskView(QWidget):
             "coverage": vm.coverage_percent,
             "titles": str(vm.calculated_titles),
             "scenarios": str(vm.scenario_count),
-            "horizon": str(vm.horizon_observations),
-            "reconciliation": vm.contribution_reconciliation_percent,
             "dv01_total": vm.dv01_total,
             "dv01_crc": vm.dv01_crc,
             "dv01_usd": vm.dv01_usd,
@@ -562,6 +555,8 @@ class PriceRiskView(QWidget):
             "eligible_positions": str(vm.eligible_positions),
             "policy_excluded_positions": str(vm.policy_excluded_positions),
             "history_excluded_titles": str(vm.history_excluded_titles),
+            "horizon": f"{vm.horizon_observations} obs.",
+            "reconciliation": vm.contribution_reconciliation_percent,
         }
         for key, value in quality_mapping.items():
             self._quality_labels[key].setText(value)
