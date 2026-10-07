@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from PySide6.QtCharts import (
     QBarCategoryAxis,
-    QBarSeries,
     QBarSet,
+    QHorizontalBarSeries,
     QChart,
     QChartView,
     QPieSeries,
@@ -122,15 +122,15 @@ class FinancialPeerChartPanel(QWidget):
         bar_set.append([point.value for point in points])
         bar_set.setColor(QColor("#005EB8"))
         bar_set.setBorderColor(QColor("#00345F"))
-        series = QBarSeries()
+        series = QHorizontalBarSeries()
         series.append(bar_set)
+        series.setBarWidth(0.68)
         chart.addSeries(series)
 
         categories = QBarCategoryAxis()
         categories.append([cls._short_name(point.entity_name) for point in points])
-        categories.setLabelsAngle(-35)
         category_font = categories.labelsFont()
-        category_font.setPointSize(7)
+        category_font.setPointSize(8)
         categories.setLabelsFont(category_font)
 
         value_axis = QValueAxis()
@@ -148,8 +148,8 @@ class FinancialPeerChartPanel(QWidget):
             padding = max(span * 0.08, max(abs(minimum), abs(maximum), 1.0) * 0.05)
             value_axis.setRange(min(0.0, minimum - padding), max(0.0, maximum + padding))
 
-        chart.addAxis(categories, Qt.AlignmentFlag.AlignBottom)
-        chart.addAxis(value_axis, Qt.AlignmentFlag.AlignLeft)
+        chart.addAxis(categories, Qt.AlignmentFlag.AlignLeft)
+        chart.addAxis(value_axis, Qt.AlignmentFlag.AlignBottom)
         series.attachAxis(categories)
         series.attachAxis(value_axis)
 
@@ -160,7 +160,7 @@ class FinancialPeerChartPanel(QWidget):
         )
         view = QChartView(chart)
         view.setRenderHint(QPainter.RenderHint.Antialiasing)
-        view.setMinimumHeight(245)
+        view.setMinimumHeight(285)
         view.setToolTip(tooltip)
         return view
 
