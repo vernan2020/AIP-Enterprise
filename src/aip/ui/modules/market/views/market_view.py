@@ -57,7 +57,11 @@ class _MarketCurveChart(QWidget):
         del event
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-        painter.fillRect(self.rect(), QColor("#FFFFFF"))
+        background = QLinearGradient(0, 0, 0, self.height())
+        background.setColorAt(0.0, QColor("#F7FCFE"))
+        background.setColorAt(0.46, QColor("#FFFFFF"))
+        background.setColorAt(1.0, QColor("#F2F8FB"))
+        painter.fillRect(self.rect(), background)
         curve = self._curve
         if curve is None or not curve.fitted_points:
             painter.setPen(QColor("#7B8D98"))
@@ -259,7 +263,7 @@ class MarketView(QWidget):
         self._relative_value_view.table().currentCellChanged.connect(
             self._on_portfolio_selection_changed
         )
-        self._rv_tabs.addTab(self._relative_value_view, "RV Portafolio")
+        self._rv_tabs.addTab(self._relative_value_view, "Valor relativo · Portafolio")
 
         market_tab = QWidget()
         market_layout = QVBoxLayout(market_tab)
@@ -299,7 +303,7 @@ class MarketView(QWidget):
         self._market_table.setObjectName("marketRelativeValueTable")
         self._market_table.currentCellChanged.connect(self._on_market_selection_changed)
         market_layout.addWidget(self._market_table, 1)
-        self._rv_tabs.addTab(market_tab, "RV Mercado")
+        self._rv_tabs.addTab(market_tab, "Valor relativo · Mercado")
 
         rotation_tab = QWidget()
         rotation_layout = QVBoxLayout(rotation_tab)
