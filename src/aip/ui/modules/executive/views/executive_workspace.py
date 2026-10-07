@@ -110,7 +110,9 @@ class ExecutiveWorkspace(QWidget):
         title_font.setPointSize(15)
         title_font.setBold(True)
         self._title.setFont(title_font)
-        self._subtitle = QLabel("UX V4 · Portafolio · Liquidez · Mercado · Inteligencia Macroeconómica")
+        self._subtitle = QLabel(
+            "UX V4 · Portafolio · Liquidez · Mercado · Inteligencia Macroeconómica"
+        )
         self._subtitle.setStyleSheet("color:#667788; font-size:10px;")
         title_box.addWidget(self._title)
         title_box.addWidget(self._subtitle)
