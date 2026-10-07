@@ -262,7 +262,9 @@ class TreasuryView(QWidget):
             self._kpis[key].setText(value)
 
         high_alerts = sum(
-            1 for row in view_model.alerts if self._translate_status(row.severity).casefold() == "alta"
+            1
+            for row in view_model.alerts
+            if self._translate_status(row.severity).casefold() == "alta"
         )
         self._context_labels["rotation"].setText(str(view_model.rotation_candidate_count))
         self._context_labels["policy"].setText(
