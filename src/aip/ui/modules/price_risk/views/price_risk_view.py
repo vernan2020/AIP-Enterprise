@@ -156,16 +156,6 @@ class PriceRiskView(QWidget):
         card = QFrame()
         card.setObjectName("riskMetricCard")
         card.setMinimumHeight(94)
-        accent = {
-            "var_crc": ("#E4002B", "#FFF1F3"),
-            "var_percent": ("#FF8200", "#FFF5E8"),
-            "calculated_vm": ("#005EB8", "#ECF5FB"),
-            "coverage": ("#40C1AC", "#EAF8F4"),
-            "titles": ("#00A9E0", "#EFF9FD"),
-            "scenarios": ("#005EB8", "#F0F7FC"),
-            "horizon": ("#40C1AC", "#EFF8F5"),
-            "reconciliation": ("#2B9E8B", "#EAF7F2"),
-        }.get(key, ("#00A9E0", "#F7FBFD"))
         card.setStyleSheet(
             "QFrame#riskMetricCard {"
             "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
