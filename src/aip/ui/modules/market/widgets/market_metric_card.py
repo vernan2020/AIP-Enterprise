@@ -18,8 +18,8 @@ class MarketMetricCard(QFrame):
     ) -> None:
         super().__init__()
         self.setObjectName("marketMetricCard")
-        self.setMinimumHeight(88)
-        self.setMaximumHeight(104)
+        self.setMinimumHeight(96)
+        self.setMaximumHeight(118)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         self._title = str(title)
         self._value = str(value)
@@ -64,20 +64,18 @@ class MarketMetricCard(QFrame):
         self.setStyleSheet("""
             QFrame#marketMetricCard {
                 background:qlineargradient(x1:0,y1:0,x2:1,y2:1,
-                    stop:0 #FFFFFF, stop:1 #EDF7FC);
+                    stop:0 #00477F, stop:0.58 #005EB8, stop:1 #00A9E0);
                 border:1px solid #C9DCE8;
-                border-left:4px solid #00A9E0;
-                border-radius:10px;
+                border:1px solid #1675C5;
+                border-radius:12px;
             }
             QFrame#marketMetricCard:hover {
-                background:qlineargradient(x1:0,y1:0,x2:1,y2:0,
-                    stop:0 #F3FBFE, stop:1 #E4F5FB);
                 border-color:#73B3DD;
             }
             QFrame#marketMetricCard QLabel { background: transparent; border: none; }
-            QLabel#marketMetricTitle { color: #566D7C; }
-            QLabel#marketMetricValue { color: #00345F; }
-            QLabel#marketMetricHelper { color: #7B8D98; }
+            QLabel#marketMetricTitle { color: #DDF4FF; }
+            QLabel#marketMetricValue { color: #FFFFFF; }
+            QLabel#marketMetricHelper { color: #CBEAF8; }
             """)
         self._apply_status(status, self._value)
 
