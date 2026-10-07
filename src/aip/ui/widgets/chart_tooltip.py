@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from html import escape
 
 from PySide6.QtCore import QPointF, QRectF
-from PySide6.QtGui import QMouseEvent
+from PySide6.QtGui import QCursor, QMouseEvent
 from PySide6.QtWidgets import QToolTip, QWidget
 
 
@@ -80,3 +80,17 @@ def show_chart_tooltip(
             return True
     QToolTip.hideText()
     return False
+
+def show_series_tooltip(
+    point: QPointF,
+    state: bool,
+    tooltips_by_x: Mapping[int, str],
+) -> None:
+    """Show rich hover text for a QtCharts XY-series point."""
+
+    if not state or not tooltips_by_x:
+        QToolTip.hideText()
+        return
+    key = min(tooltips_by_x, key=lambda candidate: abs(candidate - point.x()))
+    QToolTip.showText(QCursor.pos(), tooltips_by_x[key])
+
