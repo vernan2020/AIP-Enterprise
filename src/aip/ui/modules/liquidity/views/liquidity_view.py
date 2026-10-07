@@ -108,7 +108,6 @@ class _LiquidityBarChart(QWidget):
                 f"₡{value / 1_000_000:,.0f} MM",
             )
 
-
     def mouseMoveEvent(self, event) -> None:  # noqa: N802
         show_chart_tooltip(self, event, self._tooltip_regions)
         super().mouseMoveEvent(event)
@@ -211,7 +210,6 @@ class _LiquidityStackedFlowChart(QWidget):
         painter.setPen(QColor("#40AFA0"))
         painter.drawText(QRectF(left + 94, self.height() - 22, 90, 18), "■ Cupón")
 
-
     def mouseMoveEvent(self, event) -> None:  # noqa: N802
         show_chart_tooltip(self, event, self._tooltip_regions)
         super().mouseMoveEvent(event)
@@ -293,7 +291,6 @@ class _LiquidityColumnChart(QWidget):
                 Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
                 label,
             )
-
 
     def mouseMoveEvent(self, event) -> None:  # noqa: N802
         show_chart_tooltip(self, event, self._tooltip_regions)
@@ -431,7 +428,6 @@ class _LiquidityWaterfallChart(QWidget):
             )
             previous_end = end_level
             previous_center = center
-
 
     def mouseMoveEvent(self, event) -> None:  # noqa: N802
         show_chart_tooltip(self, event, self._tooltip_regions)
