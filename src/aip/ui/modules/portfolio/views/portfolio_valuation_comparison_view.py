@@ -176,7 +176,9 @@ class PortfolioValuationComparisonView(QWidget):
             card = QFrame()
             card.setObjectName(f"portfolioValuationKpi_{kpi.key}")
             accent = self._tone_color(kpi.tone).name()
-            background = "#EAF8F4" if kpi.tone == "gain" else "#FFF1F3" if kpi.tone == "loss" else "#EEF7FC"
+            background = (
+                "#EAF8F4" if kpi.tone == "gain" else "#FFF1F3" if kpi.tone == "loss" else "#EEF7FC"
+            )
             card.setStyleSheet(
                 "QFrame {"
                 f"background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #FFFFFF,stop:1 {background}); "
