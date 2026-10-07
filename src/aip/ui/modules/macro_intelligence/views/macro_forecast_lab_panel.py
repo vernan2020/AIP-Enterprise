@@ -270,7 +270,8 @@ class MacroForecastLabPanel(QWidget):
             ("p12", "Proyección 12M", "Ensemble"),
         )
         for index, definition in enumerate(definitions):
-            kpis.addWidget(self._metric_card(*definition), index // 3, index % 3)
+            kpis.addWidget(self._metric_card(*definition), 0, index)
+            kpis.setColumnStretch(index, 1)
         root.addLayout(kpis)
 
         self._status = QLabel("Seleccione un indicador y ejecute los modelos.")
@@ -339,16 +340,17 @@ class MacroForecastLabPanel(QWidget):
     def _metric_card(self, key: str, caption: str, helper: str) -> QFrame:
         card = QFrame()
         card.setObjectName("forecastLabMetricCard")
+        card.setMinimumHeight(76)
         card.setStyleSheet(
-            "QFrame#forecastLabMetricCard {background:#FFFFFF; border:1px solid #D7E0E8; "
-            "border-radius:8px;}"
+            "QFrame#forecastLabMetricCard {background:#F8FBFD; border:1px solid #CFE0EC; "
+            "border-radius:10px;} QFrame#forecastLabMetricCard:hover {border:1px solid #73B3DD;}"
         )
         layout = QVBoxLayout(card)
         layout.setContentsMargins(10, 7, 10, 7)
         title = QLabel(caption)
         title.setStyleSheet("color:#667788; font-size:8px; border:none;")
         value = QLabel("-")
-        value.setStyleSheet("color:#17324D; font-size:13px; font-weight:700; border:none;")
+        value.setStyleSheet("color:#005EB8; font-size:13px; font-weight:700; border:none;")
         hint = QLabel(helper)
         hint.setStyleSheet("color:#93A0AC; font-size:8px; border:none;")
         layout.addWidget(title)
