@@ -185,7 +185,11 @@ class MainWindow(QMainWindow):
         self._content_splitter.addWidget(self._workspace)
         self._content_splitter.setStretchFactor(0, 0)
         self._content_splitter.setStretchFactor(1, 1)
-        self._content_splitter.setSizes([168, 1432])
+        # UX V4.1: the top ribbon is the primary navigation surface. Keep the
+        # legacy/search sidebar instantiated for compatibility, but hidden by
+        # default so analytical dashboards use the full desktop width.
+        self._sidebar.hide()
+        self._content_splitter.setSizes([0, 1600])
 
         container = QWidget(self)
         layout = QVBoxLayout(container)
