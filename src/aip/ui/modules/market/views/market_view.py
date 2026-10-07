@@ -187,12 +187,17 @@ class _MarketCurveChart(QWidget):
                     ("TIR mercado", f"{highlight.market_yield:.3f}%"),
                     ("TIR curva", f"{highlight.curve_yield:.3f}%"),
                     ("Diferencial", f"{highlight.spread_bp:+.1f} pb"),
-                    ("Clasificación", relative_value_classification_label(highlight.classification)),
+                    (
+                        "Clasificación",
+                        relative_value_classification_label(highlight.classification),
+                    ),
                     (
                         "Valor de mercado",
-                        f"₡{highlight.market_value_crc / 1_000_000:,.2f} MM"
-                        if highlight.market_value_crc is not None
-                        else None,
+                        (
+                            f"₡{highlight.market_value_crc / 1_000_000:,.2f} MM"
+                            if highlight.market_value_crc is not None
+                            else None
+                        ),
                     ),
                 ),
                 note="Valor relativo frente a la curva seleccionada.",
