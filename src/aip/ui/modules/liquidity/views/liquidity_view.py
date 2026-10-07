@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
 from aip.ui.modules.liquidity.models.liquidity_row import LiquidityRow
 from aip.ui.modules.liquidity.presenters.liquidity_presenter import LiquidityPresenter
 from aip.ui.modules.liquidity.viewmodels.liquidity_view_model import LiquidityViewModel
+from aip.ui.widgets.chart_tooltip import build_chart_tooltip, show_chart_tooltip
 
 
 class _LiquidityBarChart(QWidget):
@@ -28,6 +29,8 @@ class _LiquidityBarChart(QWidget):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._points: tuple[tuple[str, float], ...] = ()
+        self._tooltip_regions: list[tuple[QRectF, str]] = []
+        self.setMouseTracking(True)
         self.setMinimumHeight(250)
 
     def set_data(self, points: tuple[tuple[str, float], ...]) -> None:
@@ -39,6 +42,7 @@ class _LiquidityBarChart(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         painter.fillRect(self.rect(), QColor("#FFFFFF"))
+        self._tooltip_regions = []
         if not self._points:
             painter.setPen(QColor("#718096"))
             painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "Sin datos disponibles")
@@ -88,6 +92,14 @@ class _LiquidityBarChart(QWidget):
                 bar_height / 2,
             )
 
+            tooltip = build_chart_tooltip(
+                label,
+                (("Capacidad / flujo", f"₡{value / 1_000_000:,.2f} MM"),),
+                note="Monto agregado mostrado por la vista ejecutiva.",
+            )
+            self._tooltip_regions.append(
+                (QRectF(0, y, self.width(), row_height), tooltip)
+            )
             painter.setFont(value_font)
             painter.setPen(fill.darker(120))
             painter.drawText(
@@ -97,12 +109,19 @@ class _LiquidityBarChart(QWidget):
             )
 
 
+    def mouseMoveEvent(self, event) -> None:  # noqa: N802
+        show_chart_tooltip(self, event, self._tooltip_regions)
+        super().mouseMoveEvent(event)
+
+
 class _LiquidityStackedFlowChart(QWidget):
     """Stacked executive view of principal and coupon flows by bucket."""
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._points: tuple[tuple[str, float, float], ...] = ()
+        self._tooltip_regions: list[tuple[QRectF, str]] = []
+        self.setMouseTracking(True)
         self.setMinimumHeight(170)
 
     def set_data(self, points: tuple[tuple[str, float, float], ...]) -> None:
@@ -114,6 +133,7 @@ class _LiquidityStackedFlowChart(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         painter.fillRect(self.rect(), QColor("#FFFFFF"))
+        self._tooltip_regions = []
         if not self._points:
             painter.setPen(QColor("#718096"))
             painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "Sin datos disponibles")
@@ -164,9 +184,21 @@ class _LiquidityStackedFlowChart(QWidget):
                     4,
                     4,
                 )
+            total = principal + coupon
+            tooltip = build_chart_tooltip(
+                label,
+                (
+                    ("Principal", f"₡{principal / 1_000_000:,.2f} MM"),
+                    ("Cupón", f"₡{coupon / 1_000_000:,.2f} MM"),
+                    ("Flujo total", f"₡{total / 1_000_000:,.2f} MM"),
+                ),
+                note="Composición contractual del flujo agregado del tramo.",
+            )
+            self._tooltip_regions.append(
+                (QRectF(0, y - row_height / 2, self.width(), row_height), tooltip)
+            )
             painter.setFont(value_font)
             painter.setPen(QColor("#17324D"))
-            total = principal + coupon
             painter.drawText(
                 QRectF(left + width + 8, y - row_height / 2, right - 12, row_height),
                 Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignRight,
@@ -180,12 +212,19 @@ class _LiquidityStackedFlowChart(QWidget):
         painter.drawText(QRectF(left + 94, self.height() - 22, 90, 18), "■ Cupón")
 
 
+    def mouseMoveEvent(self, event) -> None:  # noqa: N802
+        show_chart_tooltip(self, event, self._tooltip_regions)
+        super().mouseMoveEvent(event)
+
+
 class _LiquidityColumnChart(QWidget):
     """Vertical maturity ladder for contractual principal buckets."""
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._points: tuple[tuple[str, float], ...] = ()
+        self._tooltip_regions: list[tuple[QRectF, str]] = []
+        self.setMouseTracking(True)
         self.setMinimumHeight(170)
 
     def set_data(self, points: tuple[tuple[str, float], ...]) -> None:
@@ -197,6 +236,7 @@ class _LiquidityColumnChart(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         painter.fillRect(self.rect(), QColor("#FFFFFF"))
+        self._tooltip_regions = []
         if not self._points:
             painter.setPen(QColor("#718096"))
             painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "Sin datos disponibles")
@@ -232,6 +272,14 @@ class _LiquidityColumnChart(QWidget):
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(palette[index % len(palette)])
             painter.drawRoundedRect(QRectF(x, y, bar_w, max(3.0, h)), 5, 5)
+            tooltip = build_chart_tooltip(
+                label,
+                (("Principal contractual", f"₡{value / 1_000_000:,.2f} MM"),),
+                note="Vencimiento agregado del bucket seleccionado.",
+            )
+            self._tooltip_regions.append(
+                (QRectF(left + slot * index, top, slot, height + bottom), tooltip)
+            )
             painter.setFont(value_font)
             painter.setPen(QColor("#17324D"))
             painter.drawText(
@@ -247,12 +295,19 @@ class _LiquidityColumnChart(QWidget):
             )
 
 
+    def mouseMoveEvent(self, event) -> None:  # noqa: N802
+        show_chart_tooltip(self, event, self._tooltip_regions)
+        super().mouseMoveEvent(event)
+
+
 class _LiquidityWaterfallChart(QWidget):
     """Executive waterfall for 30-day liquidity bridge."""
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._points: tuple[tuple[str, float], ...] = ()
+        self._tooltip_regions: list[tuple[QRectF, str]] = []
+        self.setMouseTracking(True)
         self.setMinimumHeight(250)
 
     def set_data(self, points: tuple[tuple[str, float], ...]) -> None:
@@ -264,6 +319,7 @@ class _LiquidityWaterfallChart(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         painter.fillRect(self.rect(), QColor("#FFFFFF"))
+        self._tooltip_regions = []
         if len(self._points) < 4:
             painter.setPen(QColor("#718096"))
             painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "Sin datos disponibles")
@@ -342,10 +398,19 @@ class _LiquidityWaterfallChart(QWidget):
             gradient.setColorAt(1.0, fill)
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(gradient)
-            painter.drawRoundedRect(
-                QRectF(center - bar_width / 2, rect_top, bar_width, rect_height),
-                6,
-                6,
+            bar_rect = QRectF(center - bar_width / 2, rect_top, bar_width, rect_height)
+            painter.drawRoundedRect(bar_rect, 6, 6)
+            movement = value if index > 0 else end_level
+            tooltip = build_chart_tooltip(
+                label,
+                (
+                    ("Movimiento", f"{movement / 1_000_000:+,.2f} MM CRC"),
+                    ("Saldo después del paso", f"₡{end_level / 1_000_000:,.2f} MM"),
+                ),
+                note="Puente visual de liquidez; no altera la metodología del motor.",
+            )
+            self._tooltip_regions.append(
+                (QRectF(center - slot / 2, top, slot, height + bottom), tooltip)
             )
 
             font = QFont(self.font())
@@ -366,6 +431,11 @@ class _LiquidityWaterfallChart(QWidget):
             )
             previous_end = end_level
             previous_center = center
+
+
+    def mouseMoveEvent(self, event) -> None:  # noqa: N802
+        show_chart_tooltip(self, event, self._tooltip_regions)
+        super().mouseMoveEvent(event)
 
 
 class LiquidityView(QWidget):
