@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from math import atan2, degrees, hypot
 from typing import Callable
 
 from PySide6.QtCore import QPointF, QRectF, Qt
 from PySide6.QtGui import QColor, QFont, QPainter, QPen
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QToolTip, QWidget
 
 from aip.ui.modules.portfolio.models.portfolio_dashboard_point import PortfolioDashboardPoint
+from aip.ui.widgets.chart_tooltip import build_chart_tooltip, show_chart_tooltip
 
 
 class PortfolioDashboardBarChart(QWidget):
@@ -40,6 +42,8 @@ class PortfolioDashboardBarChart(QWidget):
         super().__init__(parent)
         self._points: tuple[PortfolioDashboardPoint, ...] = ()
         self._formatter = value_formatter or (lambda value: f"{value:,.1f}%")
+        self._tooltip_regions: list[tuple[QRectF, str]] = []
+        self.setMouseTracking(True)
         self.setMinimumHeight(220)
 
     def set_data(self, points: tuple[PortfolioDashboardPoint, ...]) -> None:
@@ -51,6 +55,7 @@ class PortfolioDashboardBarChart(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         painter.fillRect(self.rect(), QColor("#FFFFFF"))
+        self._tooltip_regions = []
 
         if not self._points:
             painter.setPen(self._MUTED)
@@ -106,6 +111,16 @@ class PortfolioDashboardBarChart(QWidget):
                 4,
                 4,
             )
+            tooltip_rows: list[tuple[str, object]] = [("Valor", self._formatter(point.value))]
+            if point.secondary_value:
+                tooltip_rows.append(("Dato adicional", f"{point.secondary_value:,.2f}"))
+            tooltip_rows.append(("Detalle", point.detail))
+            self._tooltip_regions.append(
+                (
+                    QRectF(0, y - row_height / 2, self.width(), row_height),
+                    build_chart_tooltip(point.label, tooltip_rows),
+                )
+            )
 
             painter.setFont(value_font)
             painter.setPen(self._TEXT)
@@ -114,6 +129,11 @@ class PortfolioDashboardBarChart(QWidget):
                 Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignRight,
                 self._formatter(point.value),
             )
+
+
+    def mouseMoveEvent(self, event) -> None:  # noqa: N802
+        show_chart_tooltip(self, event, self._tooltip_regions)
+        super().mouseMoveEvent(event)
 
 
 class PortfolioDashboardColumnChart(QWidget):
@@ -140,6 +160,8 @@ class PortfolioDashboardColumnChart(QWidget):
         super().__init__(parent)
         self._points: tuple[PortfolioDashboardPoint, ...] = ()
         self._formatter = value_formatter or (lambda value: f"{value:,.1f}%")
+        self._tooltip_regions: list[tuple[QRectF, str]] = []
+        self.setMouseTracking(True)
         self.setMinimumHeight(240)
 
     def set_data(self, points: tuple[PortfolioDashboardPoint, ...]) -> None:
@@ -151,6 +173,7 @@ class PortfolioDashboardColumnChart(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         painter.fillRect(self.rect(), QColor("#FFFFFF"))
+        self._tooltip_regions = []
         if not self._points:
             painter.setPen(self._MUTED)
             painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "Sin datos disponibles")
@@ -181,6 +204,16 @@ class PortfolioDashboardColumnChart(QWidget):
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(self._PALETTE[index % len(self._PALETTE)])
             painter.drawRoundedRect(QRectF(x, y, bar_width, max(3.0, h)), 5, 5)
+            tooltip_rows: list[tuple[str, object]] = [("Valor", self._formatter(point.value))]
+            if point.secondary_value:
+                tooltip_rows.append(("Dato adicional", f"{point.secondary_value:,.2f}"))
+            tooltip_rows.append(("Detalle", point.detail))
+            self._tooltip_regions.append(
+                (
+                    QRectF(left + slot * index, top, slot, height + bottom),
+                    build_chart_tooltip(point.label, tooltip_rows),
+                )
+            )
 
             painter.setFont(value_font)
             painter.setPen(self._TEXT)
@@ -195,6 +228,11 @@ class PortfolioDashboardColumnChart(QWidget):
                 Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
                 point.label[:16],
             )
+
+
+    def mouseMoveEvent(self, event) -> None:  # noqa: N802
+        show_chart_tooltip(self, event, self._tooltip_regions)
+        super().mouseMoveEvent(event)
 
 
 class PortfolioDashboardDonutChart(QWidget):
@@ -223,6 +261,12 @@ class PortfolioDashboardDonutChart(QWidget):
         self._formatter = value_formatter or (lambda value: f"{value:,.1f}%")
         self._center_label = center_label
         self._center_value = "100%"
+        self._tooltip_regions: list[tuple[QRectF, str]] = []
+        self._segment_tooltips: list[tuple[float, float, str]] = []
+        self._ring_center = QPointF()
+        self._ring_inner_radius = 0.0
+        self._ring_outer_radius = 0.0
+        self.setMouseTracking(True)
         self.setMinimumHeight(220)
 
     def set_data(self, points: tuple[PortfolioDashboardPoint, ...]) -> None:
@@ -238,6 +282,8 @@ class PortfolioDashboardDonutChart(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         painter.fillRect(self.rect(), QColor("#FFFFFF"))
+        self._tooltip_regions = []
+        self._segment_tooltips = []
 
         if not self._points:
             painter.setPen(self._MUTED)
@@ -256,22 +302,36 @@ class PortfolioDashboardDonutChart(QWidget):
         top = (self.height() - diameter) / 2.0
         ring = QRectF(left, top, diameter, diameter)
 
-        pen = QPen(self._TRACK, max(14.0, diameter * 0.12))
+        ring_width = max(14.0, diameter * 0.12)
+        pen = QPen(self._TRACK, ring_width)
         pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         painter.setPen(pen)
         painter.setBrush(Qt.BrushStyle.NoBrush)
         painter.drawArc(ring, 0, 360 * 16)
 
+        self._ring_center = ring.center()
+        self._ring_inner_radius = max(0.0, diameter / 2.0 - ring_width / 2.0 - 4.0)
+        self._ring_outer_radius = diameter / 2.0 + ring_width / 2.0 + 4.0
+
         start_angle = 90 * 16
+        clockwise_start = 0.0
         for index, point in enumerate(self._points):
-            span = -int(round((float(point.value) / total) * 360.0 * 16.0))
+            share = float(point.value) / total
+            span = -int(round(share * 360.0 * 16.0))
             segment_pen = QPen(
                 self._PALETTE[index % len(self._PALETTE)],
-                max(14.0, diameter * 0.12),
+                ring_width,
             )
             segment_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
             painter.setPen(segment_pen)
             painter.drawArc(ring, start_angle, span)
+            tooltip = build_chart_tooltip(
+                point.label,
+                (("Participación", self._formatter(point.value)), ("Detalle", point.detail)),
+            )
+            clockwise_end = clockwise_start + share * 360.0
+            self._segment_tooltips.append((clockwise_start, clockwise_end, tooltip))
+            clockwise_start = clockwise_end
             start_angle += span
 
         center = ring.center()
@@ -308,6 +368,13 @@ class PortfolioDashboardDonutChart(QWidget):
             painter.setBrush(self._PALETTE[index % len(self._PALETTE)])
             painter.drawEllipse(QPointF(legend_left + 6, y + row_height / 2), 5, 5)
 
+            tooltip = build_chart_tooltip(
+                point.label,
+                (("Participación", self._formatter(point.value)), ("Detalle", point.detail)),
+            )
+            self._tooltip_regions.append(
+                (QRectF(legend_left, y, legend_width, row_height), tooltip)
+            )
             painter.setFont(label_font)
             painter.setPen(self._TEXT)
             painter.drawText(
@@ -326,3 +393,18 @@ class PortfolioDashboardDonutChart(QWidget):
                 Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignRight,
                 self._formatter(point.value),
             )
+
+    def mouseMoveEvent(self, event) -> None:  # noqa: N802
+        position = event.position()
+        dx = position.x() - self._ring_center.x()
+        dy = position.y() - self._ring_center.y()
+        radius = hypot(dx, dy)
+        if self._ring_inner_radius <= radius <= self._ring_outer_radius:
+            clockwise = (degrees(atan2(dx, -dy)) + 360.0) % 360.0
+            for start, end, tooltip in self._segment_tooltips:
+                if start <= clockwise < end:
+                    QToolTip.showText(event.globalPosition().toPoint(), tooltip, self)
+                    super().mouseMoveEvent(event)
+                    return
+        show_chart_tooltip(self, event, self._tooltip_regions)
+        super().mouseMoveEvent(event)
