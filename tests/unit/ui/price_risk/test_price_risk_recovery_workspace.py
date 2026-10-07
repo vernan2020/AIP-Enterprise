@@ -101,7 +101,7 @@ def test_price_risk_workspace_restores_price_simulator_and_rate_tabs(qt_app) -> 
         tabs = view.findChild(QTabWidget)
         assert tabs is not None
         assert tabs.count() == 3
-        assert tabs.tabText(0) == "Riesgo de Precio · VeR"
+        assert tabs.tabText(0) == "Resumen VeR"
         assert tabs.tabText(1) == "Simulador · VeR"
         assert tabs.tabText(2) == "Riesgo de Tasa · DV01"
         assert view.view_model.status == "CALCULATED"
