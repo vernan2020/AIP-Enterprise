@@ -63,13 +63,16 @@ class MarketMetricCard(QFrame):
 
         self.setStyleSheet("""
             QFrame#marketMetricCard {
-                background-color: #FFFFFF;
-                border: 1px solid #D5DEE3;
-                border-radius: 8px;
+                background:qlineargradient(x1:0,y1:0,x2:1,y2:1,
+                    stop:0 #FFFFFF, stop:1 #EDF7FC);
+                border:1px solid #C9DCE8;
+                border-left:4px solid #00A9E0;
+                border-radius:10px;
             }
             QFrame#marketMetricCard:hover {
-                background-color: #F0F8FC;
-                border-color: #73B3DD;
+                background:qlineargradient(x1:0,y1:0,x2:1,y2:0,
+                    stop:0 #F3FBFE, stop:1 #E4F5FB);
+                border-color:#73B3DD;
             }
             QFrame#marketMetricCard QLabel { background: transparent; border: none; }
             QLabel#marketMetricTitle { color: #566D7C; }
@@ -125,4 +128,15 @@ class MarketMetricCard(QFrame):
             color = "#00A9E0"
             tooltip = "Indicador de mercado"
         self._status_label.setStyleSheet(f"color:{color}; font-weight:700;")
+        self.setStyleSheet(
+            "QFrame#marketMetricCard {"
+            "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #FFFFFF,stop:1 #EDF7FC); "
+            "border:1px solid #C9DCE8; "
+            f"border-left:4px solid {color}; border-radius:10px;"
+            "} QFrame#marketMetricCard:hover {background:#F0F8FC; border-color:#73B3DD;}"
+            "QFrame#marketMetricCard QLabel {background:transparent; border:none;}"
+            "QLabel#marketMetricTitle {color:#566D7C;}"
+            "QLabel#marketMetricValue {color:#00345F;}"
+            "QLabel#marketMetricHelper {color:#7B8D98;}"
+        )
         self._status_label.setToolTip(tooltip)
