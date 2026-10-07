@@ -77,8 +77,10 @@ class FinancialHistoryPanel(QWidget):
         root.addWidget(scroll, 1)
 
         self.setStyleSheet(
-            "QFrame#historyMetricCard {background:#FFFFFF; border:1px solid #D7E0E8; "
-            "border-radius:9px;}"
+            "QFrame#historyMetricCard {"
+            "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #FFFFFF,stop:1 #F1F8FC); "
+            "border:1px solid #CFDEE7; border-left:4px solid #00A9E0; border-radius:11px;"
+            "}"
         )
 
     def bind_history(self, series: tuple[FinancialMetricHistorySeriesView, ...]) -> None:
@@ -146,7 +148,9 @@ class FinancialHistoryPanel(QWidget):
         chart.legend().hide()
         chart.setBackgroundVisible(False)
         chart.setMargins(QMargins(2, 2, 2, 2))
-        chart.setPlotAreaBackgroundVisible(False)
+        chart.setPlotAreaBackgroundVisible(True)
+        chart.setPlotAreaBackgroundBrush(QColor("#F8FBFD"))
+        chart.setPlotAreaBackgroundPen(QPen(QColor("#E5EDF2"), 1))
 
         point_dates = tuple(
             QDateTime.fromString(point.iso_date, Qt.DateFormat.ISODate) for point in item.points
@@ -196,9 +200,9 @@ class FinancialHistoryPanel(QWidget):
                 continue
             if segment is None:
                 segment = QLineSeries()
-                segment.setPen(QPen(QColor("#005EB8"), 2.2))
+                segment.setPen(QPen(QColor("#005EB8"), 2.6))
                 segment.setPointsVisible(True)
-                segment.setMarkerSize(5.0)
+                segment.setMarkerSize(6.0)
                 chart.addSeries(segment)
                 segment.attachAxis(axis_x)
                 segment.attachAxis(axis_y)
