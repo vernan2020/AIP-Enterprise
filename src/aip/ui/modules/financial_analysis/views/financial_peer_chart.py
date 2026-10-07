@@ -215,9 +215,7 @@ class FinancialPeerChartPanel(QWidget):
             )
             slice_.hovered.connect(
                 lambda state, text=tooltip: (
-                    QToolTip.showText(QCursor.pos(), text, view)
-                    if state
-                    else QToolTip.hideText()
+                    QToolTip.showText(QCursor.pos(), text, view) if state else QToolTip.hideText()
                 )
             )
         return view
