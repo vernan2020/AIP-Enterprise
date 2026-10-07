@@ -97,6 +97,156 @@ class _LiquidityBarChart(QWidget):
             )
 
 
+class _LiquidityStackedFlowChart(QWidget):
+    """Stacked executive view of principal and coupon flows by bucket."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._points: tuple[tuple[str, float, float], ...] = ()
+        self.setMinimumHeight(170)
+
+    def set_data(self, points: tuple[tuple[str, float, float], ...]) -> None:
+        self._points = points
+        self.update()
+
+    def paintEvent(self, event) -> None:  # noqa: N802
+        del event
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        painter.fillRect(self.rect(), QColor("#FFFFFF"))
+        if not self._points:
+            painter.setPen(QColor("#718096"))
+            painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "Sin datos disponibles")
+            return
+
+        left, right, top, bottom = 92.0, 118.0, 18.0, 26.0
+        width = max(80.0, self.width() - left - right)
+        height = max(70.0, self.height() - top - bottom)
+        row_height = height / max(1, len(self._points))
+        maximum = max((principal + coupon for _, principal, coupon in self._points), default=1.0)
+        maximum = maximum or 1.0
+
+        label_font = QFont(self.font())
+        label_font.setPointSize(8)
+        value_font = QFont(label_font)
+        value_font.setBold(True)
+
+        for index, (label, principal, coupon) in enumerate(self._points):
+            y = top + index * row_height + row_height / 2
+            bar_h = max(12.0, min(22.0, row_height * 0.44))
+            principal_w = width * principal / maximum
+            coupon_w = width * coupon / maximum
+
+            painter.setFont(label_font)
+            painter.setPen(QColor("#23384B"))
+            painter.drawText(
+                QRectF(6, y - row_height / 2, left - 12, row_height),
+                Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
+                label,
+            )
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor("#EDF3F7"))
+            painter.drawRoundedRect(
+                QRectF(left, y - bar_h / 2, width, bar_h),
+                bar_h / 2,
+                bar_h / 2,
+            )
+            painter.setBrush(QColor("#176895"))
+            painter.drawRoundedRect(
+                QRectF(left, y - bar_h / 2, max(2.0, principal_w), bar_h),
+                4,
+                4,
+            )
+            if coupon > 0:
+                painter.setBrush(QColor("#40C1AC"))
+                painter.drawRoundedRect(
+                    QRectF(left + principal_w, y - bar_h / 2, max(2.0, coupon_w), bar_h),
+                    4,
+                    4,
+                )
+            painter.setFont(value_font)
+            painter.setPen(QColor("#17324D"))
+            total = principal + coupon
+            painter.drawText(
+                QRectF(left + width + 8, y - row_height / 2, right - 12, row_height),
+                Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignRight,
+                f"₡{total / 1_000_000:,.0f} MM",
+            )
+
+        painter.setFont(label_font)
+        painter.setPen(QColor("#176895"))
+        painter.drawText(QRectF(left, self.height() - 22, 100, 18), "■ Principal")
+        painter.setPen(QColor("#40AFA0"))
+        painter.drawText(QRectF(left + 94, self.height() - 22, 90, 18), "■ Cupón")
+
+
+class _LiquidityColumnChart(QWidget):
+    """Vertical maturity ladder for contractual principal buckets."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._points: tuple[tuple[str, float], ...] = ()
+        self.setMinimumHeight(170)
+
+    def set_data(self, points: tuple[tuple[str, float], ...]) -> None:
+        self._points = points
+        self.update()
+
+    def paintEvent(self, event) -> None:  # noqa: N802
+        del event
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        painter.fillRect(self.rect(), QColor("#FFFFFF"))
+        if not self._points:
+            painter.setPen(QColor("#718096"))
+            painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "Sin datos disponibles")
+            return
+
+        left, right, top, bottom = 50.0, 18.0, 28.0, 44.0
+        width = max(80.0, self.width() - left - right)
+        height = max(70.0, self.height() - top - bottom)
+        maximum = max((abs(v) for _, v in self._points), default=1.0) or 1.0
+        slot = width / max(1, len(self._points))
+        bar_w = min(72.0, slot * 0.56)
+        palette = (
+            QColor("#0B5BC4"),
+            QColor("#1EA7E1"),
+            QColor("#11B8B0"),
+            QColor("#30C77B"),
+            QColor("#FF8A18"),
+        )
+        label_font = QFont(self.font())
+        label_font.setPointSize(8)
+        value_font = QFont(label_font)
+        value_font.setBold(True)
+
+        for fraction in (0.25, 0.50, 0.75, 1.0):
+            y = top + height * (1.0 - fraction)
+            painter.setPen(QPen(QColor("#E7EEF3"), 1))
+            painter.drawLine(QPointF(left, y), QPointF(left + width, y))
+
+        for index, (label, value) in enumerate(self._points):
+            h = height * abs(value) / maximum
+            x = left + slot * index + (slot - bar_w) / 2
+            y = top + height - h
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(palette[index % len(palette)])
+            painter.drawRoundedRect(QRectF(x, y, bar_w, max(3.0, h)), 5, 5)
+            painter.setFont(value_font)
+            painter.setPen(QColor("#17324D"))
+            painter.drawText(
+                QRectF(x - 18, max(3.0, y - 23), bar_w + 36, 20),
+                Qt.AlignmentFlag.AlignCenter,
+                f"₡{value / 1_000_000:,.0f} MM",
+            )
+            painter.setFont(label_font)
+            painter.drawText(
+                QRectF(left + slot * index, top + height + 7, slot, 30),
+                Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
+                label,
+            )
+
+
 class _LiquidityWaterfallChart(QWidget):
     """Executive waterfall for 30-day liquidity bridge."""
 
@@ -431,7 +581,7 @@ class LiquidityView(QWidget):
         chart_group = QGroupBox("Flujos por tramo · vista ejecutiva")
         chart_group.setStyleSheet(self._group_style())
         chart_layout = QVBoxLayout(chart_group)
-        self._cashflow_chart = _LiquidityBarChart()
+        self._cashflow_chart = _LiquidityStackedFlowChart()
         self._cashflow_chart.setMinimumHeight(150)
         self._cashflow_chart.setMaximumHeight(210)
         chart_layout.addWidget(self._cashflow_chart)
@@ -465,7 +615,7 @@ class LiquidityView(QWidget):
         chart_group = QGroupBox("Escalera de vencimientos · principal contractual")
         chart_group.setStyleSheet(self._group_style())
         chart_layout = QVBoxLayout(chart_group)
-        self._maturity_bucket_chart = _LiquidityBarChart()
+        self._maturity_bucket_chart = _LiquidityColumnChart()
         self._maturity_bucket_chart.setMinimumHeight(150)
         self._maturity_bucket_chart.setMaximumHeight(210)
         chart_layout.addWidget(self._maturity_bucket_chart)
@@ -632,6 +782,27 @@ class LiquidityView(QWidget):
         table.setSortingEnabled(True)
 
     @staticmethod
+    def _aggregate_flow_components(
+        rows: tuple[LiquidityRow, ...],
+    ) -> tuple[tuple[str, float, float], ...]:
+        totals: dict[str, list[float]] = {}
+        for row in rows:
+            bucket = str(row.bucket or "Sin tramo")
+            amount = float(row.amount_crc or 0.0)
+            slot = totals.setdefault(bucket, [0.0, 0.0])
+            token = str(row.flow_type or "").strip().upper()
+            if token in {"COUPON", "CUPÓN"}:
+                slot[1] += amount
+            else:
+                slot[0] += amount
+        ranked = sorted(
+            ((bucket, values[0], values[1]) for bucket, values in totals.items()),
+            key=lambda item: item[1] + item[2],
+            reverse=True,
+        )
+        return tuple(ranked)
+
+    @staticmethod
     def _aggregate_by_bucket(
         rows: tuple[LiquidityRow, ...],
         *,
@@ -702,7 +873,7 @@ class LiquidityView(QWidget):
             )
         )
         self._cashflow_chart.set_data(
-            self._aggregate_by_bucket(view_model.cashflow_rows, use_amount_crc=True)
+            self._aggregate_flow_components(view_model.cashflow_rows)
         )
         self._maturity_bucket_chart.set_data(
             self._aggregate_by_bucket(view_model.maturity_rows, use_amount_crc=False)
