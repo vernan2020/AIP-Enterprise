@@ -155,7 +155,7 @@ class PriceRiskView(QWidget):
     def _metric_card(self, key: str, caption: str, helper: str) -> QFrame:
         card = QFrame()
         card.setObjectName("riskMetricCard")
-        card.setMinimumHeight(94 if key == "var_crc" else 82)
+        card.setMinimumHeight(94)
         accent = {
             "var_crc": ("#E4002B", "#FFF1F3"),
             "var_percent": ("#FF8200", "#FFF5E8"),
@@ -168,23 +168,24 @@ class PriceRiskView(QWidget):
         }.get(key, ("#00A9E0", "#F7FBFD"))
         card.setStyleSheet(
             "QFrame#riskMetricCard {"
-            f"background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #FFFFFF,stop:1 {accent[1]}); "
-            f"border:1px solid #CFDEE7; border-left:4px solid {accent[0]}; border-radius:10px;"
-            "} QFrame#riskMetricCard:hover {border-color:#73B3DD;}"
+            "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
+            "stop:0 #00477F,stop:0.60 #005EB8,stop:1 #00A9E0); "
+            "border:1px solid #1675C5; border-radius:12px;"
+            "} QFrame#riskMetricCard:hover {border:1px solid #73B3DD;}"
         )
         layout = QVBoxLayout(card)
         layout.setContentsMargins(10, 7, 10, 7)
         layout.setSpacing(2)
         title = QLabel(caption)
-        title.setStyleSheet("color:#566D7C; font-size:8px; border:none;")
+        title.setStyleSheet("color:#DDF4FF; font-size:8px; font-weight:600; border:none;")
         value = QLabel("-")
         value_font = QFont()
         value_font.setPointSize(12)
         value_font.setBold(True)
         value.setFont(value_font)
-        value.setStyleSheet("color:#00345F; border:none;")
+        value.setStyleSheet("color:#FFFFFF; border:none;")
         hint = QLabel(helper)
-        hint.setStyleSheet("color:#7B8D98; font-size:8px; border:none;")
+        hint.setStyleSheet("color:#CBEAF8; font-size:8px; border:none;")
         layout.addWidget(title)
         layout.addWidget(value)
         layout.addWidget(hint)
@@ -210,7 +211,15 @@ class PriceRiskView(QWidget):
             ("reconciliation", "Reconciliación", "Suma de contribuciones"),
         )
         for index, definition in enumerate(definitions):
-            kpi_grid.addWidget(self._metric_card(*definition), index // 4, index % 4)
+            card = self._metric_card(*definition)
+            if index < 6:
+                kpi_grid.addWidget(card, 0, index)
+            elif index == 6:
+                kpi_grid.addWidget(card, 1, 0, 1, 3)
+            else:
+                kpi_grid.addWidget(card, 1, 3, 1, 3)
+        for column in range(6):
+            kpi_grid.setColumnStretch(column, 1)
         layout.addLayout(kpi_grid)
 
         quality = QFrame()
@@ -240,7 +249,7 @@ class PriceRiskView(QWidget):
             quality_layout.addLayout(block)
         quality_layout.addStretch(1)
         quality_note = QLabel(
-            "Lectura ejecutiva: cobertura, exclusiones y reconciliación explican la calidad del VeR."
+            "UX V4 · cobertura, exclusiones y reconciliación explican la calidad y uso ejecutivo del VeR."
         )
         quality_note.setStyleSheet(
             "color:#315468; font-size:8px; font-weight:600; padding:0 4px; border:none;"
@@ -373,7 +382,15 @@ class PriceRiskView(QWidget):
             ("shock_status", "Estado sensibilidad", "Cálculo paralelo ±100/±200 pb"),
         )
         for index, definition in enumerate(definitions):
-            kpi_grid.addWidget(self._metric_card(*definition), index // 4, index % 4)
+            card = self._metric_card(*definition)
+            if index < 6:
+                kpi_grid.addWidget(card, 0, index)
+            elif index == 6:
+                kpi_grid.addWidget(card, 1, 0, 1, 3)
+            else:
+                kpi_grid.addWidget(card, 1, 3, 1, 3)
+        for column in range(6):
+            kpi_grid.setColumnStretch(column, 1)
         layout.addLayout(kpi_grid)
 
         charts = QGridLayout()
