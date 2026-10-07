@@ -261,21 +261,21 @@ class LightTheme:
         QWidget#priceRiskWorkspace,
         QWidget#marketWorkspace,
         QWidget#financialAnalysisWorkspace,
-        QWidget#macroIntelligenceWorkspace {
+        QWidget#macroIntelligenceWorkspace {{
             background: qlineargradient(
                 x1:0, y1:0, x2:1, y2:1,
                 stop:0 #F7FAFC,
                 stop:0.55 #F1F6F9,
                 stop:1 #EAF3F8
             );
-        }
+        }}
         QFrame#portfolioMetricCard,
         QFrame#liquidityMetricCard,
         QFrame#riskMetricCard,
         QFrame#financialMetricCard,
         QFrame#macroMetricCard,
         QFrame#macroGovernanceCard,
-        QFrame#marketMetricCard {
+        QFrame#marketMetricCard {{
             background: qlineargradient(
                 x1:0, y1:0, x2:1, y2:1,
                 stop:0 #FFFFFF,
@@ -285,14 +285,14 @@ class LightTheme:
             border: 1px solid #C9DDE9;
             border-left: 4px solid #00A9E0;
             border-radius: 11px;
-        }
+        }}
         QFrame#portfolioMetricCard:hover,
         QFrame#liquidityMetricCard:hover,
         QFrame#riskMetricCard:hover,
         QFrame#financialMetricCard:hover,
         QFrame#macroMetricCard:hover,
         QFrame#macroGovernanceCard:hover,
-        QFrame#marketMetricCard:hover {
+        QFrame#marketMetricCard:hover {{
             background: qlineargradient(
                 x1:0, y1:0, x2:1, y2:0,
                 stop:0 #F4FBFE,
@@ -300,10 +300,10 @@ class LightTheme:
             );
             border-color: #73B3DD;
             border-left-color: #005EB8;
-        }
+        }}
         QFrame#varQualityStrip,
         QFrame#sugefSourcePanel,
-        QFrame#macroHeader {
+        QFrame#macroHeader {{
             background: qlineargradient(
                 x1:0, y1:0, x2:1, y2:0,
                 stop:0 #EAF5FB,
@@ -312,8 +312,8 @@ class LightTheme:
             );
             border: 1px solid #BED8E6;
             border-radius: 10px;
-        }
-        QGroupBox {
+        }}
+        QGroupBox {{
             border: 1px solid #CFDDE6;
             border-radius: 11px;
             margin-top: 12px;
@@ -323,30 +323,30 @@ class LightTheme:
                 stop:0 #FFFFFF,
                 stop:1 #FAFCFD
             );
-        }
-        QGroupBox::title {
+        }}
+        QGroupBox::title {{
             color: #00477F;
             font-weight: 700;
             left: 12px;
             padding: 0 7px;
-        }
-        QTabWidget::pane {
+        }}
+        QTabWidget::pane {{
             border: 1px solid #C9D9E4;
             border-radius: 10px;
             background: #FFFFFF;
             top: -1px;
-        }
-        QTabBar::tab {
+        }}
+        QTabBar::tab {{
             min-height: 24px;
             padding: 7px 15px;
             border-radius: 6px 6px 0 0;
-        }
-        QTabBar::tab:selected {
+        }}
+        QTabBar::tab:selected {{
             color: #00345F;
             background: #E8F5FB;
             border-bottom: 3px solid #00A9E0;
-        }
-        QHeaderView::section {
+        }}
+        QHeaderView::section {{
             background: qlineargradient(
                 x1:0, y1:0, x2:0, y2:1,
                 stop:0 #005EB8,
@@ -357,11 +357,11 @@ class LightTheme:
             border-right: 1px solid #1675C5;
             border-bottom: 1px solid #00345F;
             padding: 7px 8px;
-        }
-        QPushButton {
+        }}
+        QPushButton {{
             border-radius: 7px;
-        }
-        QPushButton:hover {
+        }}
+        QPushButton:hover {{
             background: #E4F4FB;
-        }
+        }}
         """
