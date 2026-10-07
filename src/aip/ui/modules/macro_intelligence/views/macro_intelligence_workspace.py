@@ -352,9 +352,11 @@ class _ProjectionChart(QWidget):
                         ("Champion", self._ml_forecast.champion_model),
                         (
                             "Origen",
-                            self._ml_forecast.forecast_origin.strftime("%d/%m/%Y")
-                            if self._ml_forecast.forecast_origin
-                            else None,
+                            (
+                                self._ml_forecast.forecast_origin.strftime("%d/%m/%Y")
+                                if self._ml_forecast.forecast_origin
+                                else None
+                            ),
                         ),
                     ),
                     note="Trayectoria ensemble generada bajo backtesting gobernado.",
