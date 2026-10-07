@@ -127,7 +127,7 @@ class _MacroMetricCard(QFrame):
     def __init__(self, title: str) -> None:
         super().__init__()
         self.setObjectName("macroMetricCard")
-        self.setMinimumHeight(104)
+        self.setMinimumHeight(88)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(11, 8, 11, 8)
         layout.setSpacing(2)
@@ -135,7 +135,7 @@ class _MacroMetricCard(QFrame):
         caption.setStyleSheet("color:#DDF4FF; font-size:9px; font-weight:600; border:none;")
         self._value = QLabel("N/D")
         value_font = QFont()
-        value_font.setPointSize(17)
+        value_font.setPointSize(14)
         value_font.setBold(True)
         self._value.setFont(value_font)
         self._value.setStyleSheet("color:#FFFFFF; border:none;")
@@ -471,7 +471,9 @@ class MacroIntelligenceWorkspace(QWidget):
         for index, (code, label) in enumerate(self._CARD_DEFINITIONS):
             card = _MacroMetricCard(label)
             self._cards[code] = card
-            metric_grid.addWidget(card, index // 4, index % 4)
+            metric_grid.addWidget(card, 0, index)
+        for column in range(len(self._CARD_DEFINITIONS)):
+            metric_grid.setColumnStretch(column, 1)
         root.addLayout(metric_grid)
 
         governance_grid = QGridLayout()
@@ -500,15 +502,15 @@ class MacroIntelligenceWorkspace(QWidget):
             self._governance_labels: dict[str, QLabel] = {}
         card = QFrame()
         card.setObjectName("macroGovernanceCard")
-        card.setMinimumHeight(70)
+        card.setMinimumHeight(54)
         layout = QVBoxLayout(card)
-        layout.setContentsMargins(10, 6, 10, 6)
+        layout.setContentsMargins(10, 5, 10, 5)
         title = QLabel(caption)
         title.setStyleSheet("color:#667788; font-size:8px; border:none;")
         value = QLabel("-")
         value.setStyleSheet("color:#17324D; font-weight:700; font-size:11px; border:none;")
         hint = QLabel(helper)
-        hint.setStyleSheet("color:#93A0AC; font-size:8px; border:none;")
+        hint.setStyleSheet("color:#93A0AC; font-size:7px; border:none;")
         layout.addWidget(title)
         layout.addWidget(value)
         layout.addWidget(hint)

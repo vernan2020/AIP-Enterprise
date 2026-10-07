@@ -110,7 +110,7 @@ class FinancialAnalysisView(QWidget):
         title_font.setBold(True)
         self._title.setFont(title_font)
         self._subtitle = QLabel(
-            "UX V4 · Resumen ejecutivo, estados financieros y comparación de entidades SUGEF"
+            "Resumen ejecutivo, estados financieros, benchmarking y trazabilidad SUGEF"
         )
         self._subtitle.setStyleSheet("color:#667788; font-size:9px;")
         title_box.addWidget(self._title)
@@ -182,7 +182,7 @@ class FinancialAnalysisView(QWidget):
 
         self.setStyleSheet(
             "QFrame#financialMetricCard {background:#FFFFFF; border:1px solid #D7E0E8; "
-            "border-radius:8px;} QFrame#sugefSourcePanel {background:#F3F8FB; "
+            "border-radius:10px;} QFrame#sugefSourcePanel {background:#F3F8FB; "
             "border:1px solid #CFE0EC; border-radius:7px;}"
             "QComboBox, QPushButton, QLineEdit {padding:5px 8px;}"
             "QTabBar::tab {padding:6px 14px; font-weight:600;}"
@@ -335,7 +335,7 @@ class FinancialAnalysisView(QWidget):
                 "ROE",
             ]
         )
-        self._peer_table.setMinimumHeight(175)
+        self._peer_table.setMinimumHeight(135)
         peer_header = self._peer_table.horizontalHeader()
         peer_header.setStretchLastSection(False)
         peer_header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
@@ -348,9 +348,9 @@ class FinancialAnalysisView(QWidget):
         self._peer_splitter.setHandleWidth(4)
         self._peer_splitter.addWidget(self._peer_chart_panel)
         self._peer_splitter.addWidget(self._peer_table)
-        self._peer_splitter.setStretchFactor(0, 3)
-        self._peer_splitter.setStretchFactor(1, 2)
-        self._peer_splitter.setSizes([350, 235])
+        self._peer_splitter.setStretchFactor(0, 4)
+        self._peer_splitter.setStretchFactor(1, 1)
+        self._peer_splitter.setSizes([430, 150])
         layout.addWidget(self._peer_splitter, 1)
         return panel
 

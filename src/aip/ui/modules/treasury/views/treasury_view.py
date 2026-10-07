@@ -45,6 +45,7 @@ class TreasuryView(QWidget):
         self._view_model = self._presenter.build_view_model()
         self._status_badge = TreasuryStatusBadge("Listo")
         self._kpis: dict[str, QLabel] = {}
+        self._context_labels: dict[str, QLabel] = {}
         self._build_ui()
         self.bind_view_model(self._view_model)
 
@@ -103,7 +104,7 @@ class TreasuryView(QWidget):
         font.setBold(True)
         self._title.setFont(font)
         self._subtitle = QLabel(
-            "UX V4 · liquidez, fondeo, garantías, vencimientos y oportunidades de mercado"
+            "Liquidez, fondeo, garantías, vencimientos, alertas y oportunidades de mercado"
         )
         self._subtitle.setStyleSheet("color:#667788; font-size:10px;")
         title_box.addWidget(self._title)
@@ -128,20 +129,46 @@ class TreasuryView(QWidget):
             ("mil", "MIL", "Garantía elegible"),
             ("maturity", "Vence ≤30 días", "Vencimientos contractuales"),
             ("icl", "ICL Total", "Indicador institucional"),
-            ("rotation", "Rotaciones de valor relativo", "Candidatos preliminares"),
-            ("policy", "Política / Estrés", "Estado de motores"),
         )
         for index, definition in enumerate(definitions):
             card = self._metric_card(*definition)
-            if index < 6:
-                kpis.addWidget(card, 0, index)
-            elif index == 6:
-                kpis.addWidget(card, 1, 0, 1, 3)
-            else:
-                kpis.addWidget(card, 1, 3, 1, 3)
+            kpis.addWidget(card, 0, index)
         for column in range(6):
             kpis.setColumnStretch(column, 1)
         layout.addLayout(kpis)
+
+        context = QFrame()
+        context.setObjectName("treasuryContextStrip")
+        context.setStyleSheet(
+            "QFrame#treasuryContextStrip {background:#F5F9FC; border:1px solid #D7E4ED; "
+            "border-radius:8px;}"
+        )
+        context_layout = QHBoxLayout(context)
+        context_layout.setContentsMargins(12, 6, 12, 6)
+        context_layout.setSpacing(24)
+        for key, caption in (
+            ("rotation", "Rotaciones RV"),
+            ("policy", "Política / Estrés"),
+            ("alerts", "Alertas"),
+            ("high_alerts", "Severidad alta"),
+        ):
+            block = QVBoxLayout()
+            label = QLabel(caption)
+            label.setStyleSheet("color:#6B7F8E; font-size:8px; border:none;")
+            value = QLabel("-")
+            value.setStyleSheet("color:#17324D; font-size:11px; font-weight:700; border:none;")
+            self._context_labels[key] = value
+            block.addWidget(label)
+            block.addWidget(value)
+            context_layout.addLayout(block)
+        context_layout.addStretch(1)
+        governance_badge = QLabel("APOYO A DECISIÓN · SIN EJECUCIÓN AUTOMÁTICA")
+        governance_badge.setStyleSheet(
+            "color:#176895; font-size:8px; font-weight:700; padding:4px 8px; "
+            "background:#EAF5FA; border:1px solid #CFE0EC; border-radius:6px;"
+        )
+        context_layout.addWidget(governance_badge)
+        layout.addWidget(context)
 
         self._tabs = QTabWidget()
         self._tabs.setDocumentMode(True)
@@ -205,6 +232,13 @@ class TreasuryView(QWidget):
                     item.setTextAlignment(
                         Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignVCenter
                     )
+                if column == 2:
+                    severity = cls._translate_status(row.severity).casefold()
+                    if severity == "alta":
+                        item.setForeground(Qt.GlobalColor.red)
+                        font = item.font()
+                        font.setBold(True)
+                        item.setFont(font)
                 table.setItem(row_index, column, item)
 
     def refresh(self) -> None:
@@ -215,7 +249,7 @@ class TreasuryView(QWidget):
         self._view_model = view_model
         self._title.setText(view_model.title)
         self._subtitle.setText(view_model.subtitle)
-        self._date_label.setText(f"Corte: {view_model.valuation_date}")
+        self._date_label.setText(f"Fuente Tesorería: {view_model.valuation_date}")
         values = {
             "cash": view_model.cash_position,
             "gap": view_model.liquidity_gap,
@@ -223,14 +257,22 @@ class TreasuryView(QWidget):
             "mil": view_model.mil_capacity,
             "maturity": view_model.maturity_30d,
             "icl": view_model.icl_total,
-            "rotation": str(view_model.rotation_candidate_count),
-            "policy": (
-                f"{self._translate_status(view_model.policy_status)} / "
-                f"{self._translate_status(view_model.stress_status)}"
-            ),
         }
         for key, value in values.items():
             self._kpis[key].setText(value)
+
+        high_alerts = sum(
+            1
+            for row in view_model.alerts
+            if self._translate_status(row.severity).casefold() == "alta"
+        )
+        self._context_labels["rotation"].setText(str(view_model.rotation_candidate_count))
+        self._context_labels["policy"].setText(
+            f"{self._translate_status(view_model.policy_status)} / "
+            f"{self._translate_status(view_model.stress_status)}"
+        )
+        self._context_labels["alerts"].setText(str(len(view_model.alerts)))
+        self._context_labels["high_alerts"].setText(str(high_alerts))
         self._populate_table(self._alerts_table, view_model.alerts)
         self._populate_table(self._observations_table, view_model.recommendations)
         self._populate_table(self._opportunities_table, view_model.opportunities)
