@@ -110,7 +110,7 @@ class FinancialAnalysisView(QWidget):
         title_font.setBold(True)
         self._title.setFont(title_font)
         self._subtitle = QLabel(
-            "Estados financieros y comparación de entidades supervisadas por SUGEF"
+            "UX V3 · Resumen ejecutivo, estados financieros y comparación de entidades SUGEF"
         )
         self._subtitle.setStyleSheet("color:#667788; font-size:9px;")
         title_box.addWidget(self._title)
@@ -160,7 +160,7 @@ class FinancialAnalysisView(QWidget):
         self._comparison_panel.compareRequested.connect(self._run_entity_comparison)
         self._rating_panel = self._build_rating_panel()
         self._diagnostics = QListWidget()
-        self._tabs.addTab(self._build_statement_panel(), "Estados financieros")
+        self._tabs.addTab(self._build_statement_panel(), "Estados y cuentas")
         self._tabs.addTab(self._build_peer_panel(), "Comparativo de entidades")
         self._tabs.addTab(self._history_panel, "KPIs históricos")
         self._tabs.addTab(self._comparison_panel, "Comparativo gráfico")
@@ -528,7 +528,22 @@ class FinancialAnalysisView(QWidget):
     def _metric_card(self, code: str, label: str) -> QFrame:
         card = QFrame()
         card.setObjectName("financialMetricCard")
-        card.setMinimumHeight(68)
+        card.setMinimumHeight(78)
+        accent = {
+            "ASSETS": ("#005EB8", "#ECF5FB"),
+            "LOANS": ("#00A9E0", "#EDF9FD"),
+            "LIABILITIES": ("#FF8200", "#FFF5E8"),
+            "EQUITY": ("#40C1AC", "#EAF8F4"),
+            "NET_INCOME": ("#2B9E8B", "#ECF8F4"),
+            "ROA": ("#005EB8", "#F0F7FC"),
+            "ROE": ("#00A9E0", "#EFF9FD"),
+        }.get(code, ("#00A9E0", "#F7FBFD"))
+        card.setStyleSheet(
+            "QFrame#financialMetricCard {"
+            f"background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #FFFFFF,stop:1 {accent[1]}); "
+            f"border:1px solid #CFDEE7; border-left:4px solid {accent[0]}; border-radius:10px;"
+            "}"
+        )
         layout = QVBoxLayout(card)
         layout.setContentsMargins(8, 5, 8, 5)
         layout.setSpacing(2)

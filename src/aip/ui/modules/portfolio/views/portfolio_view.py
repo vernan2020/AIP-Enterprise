@@ -217,14 +217,14 @@ class PortfolioView(QWidget):
         issuer_layout = QVBoxLayout(issuer_group)
         self._issuer_chart = PortfolioDashboardBarChart()
         issuer_layout.addWidget(self._issuer_chart)
-        layout.addWidget(issuer_group, 0, 0)
+        layout.addWidget(issuer_group, 0, 0, 1, 2)
 
         duration_group = QGroupBox("Distribución por duración")
         duration_group.setStyleSheet(self._group_style())
         duration_layout = QVBoxLayout(duration_group)
         self._duration_chart = PortfolioDashboardDonutChart(center_label="Plazos")
         duration_layout.addWidget(self._duration_chart)
-        layout.addWidget(duration_group, 0, 1)
+        layout.addWidget(duration_group, 0, 2)
 
         opportunity_group = QGroupBox("Radar de oportunidades · diferencial vs curva")
         opportunity_group.setStyleSheet(self._group_style())
@@ -233,20 +233,30 @@ class PortfolioView(QWidget):
             value_formatter=lambda value: f"{value:+.1f} pb"
         )
         opportunity_layout.addWidget(self._opportunity_chart)
-        layout.addWidget(opportunity_group, 1, 0)
+        layout.addWidget(opportunity_group, 1, 0, 1, 2)
 
         currency_group = QGroupBox("Asignación por moneda")
         currency_group.setStyleSheet(self._group_style())
         currency_layout = QVBoxLayout(currency_group)
         self._currency_chart = PortfolioDashboardDonutChart(center_label="Monedas")
         currency_layout.addWidget(self._currency_chart)
-        layout.addWidget(currency_group, 1, 1)
+        layout.addWidget(currency_group, 1, 2)
+
+        layout.setColumnStretch(0, 1)
+        layout.setColumnStretch(1, 1)
+        layout.setColumnStretch(2, 1)
 
         self._dashboard_note = QLabel("")
         self._dashboard_note.setWordWrap(True)
-        self._dashboard_note.setStyleSheet("color:#617386; padding:4px 2px;")
-        layout.addWidget(self._dashboard_note, 2, 0, 1, 2)
-        self._tabs.addTab(page, "Panel")
+        self._dashboard_note.setObjectName("portfolioInsightBanner")
+        self._dashboard_note.setStyleSheet(
+            "QLabel#portfolioInsightBanner {color:#315468; padding:8px 12px; "
+            "background:qlineargradient(x1:0,y1:0,x2:1,y2:0,"
+            "stop:0 #E8F5FB, stop:0.65 #F7FBFD, stop:1 #EAF7F2); "
+            "border:1px solid #BFDDEB; border-radius:8px; font-weight:600;}"
+        )
+        layout.addWidget(self._dashboard_note, 2, 0, 1, 3)
+        self._tabs.addTab(page, "Resumen ejecutivo")
 
     def _build_positions_tab(self) -> None:
         page = QWidget()
@@ -293,7 +303,7 @@ class PortfolioView(QWidget):
         self._currency_chart.set_data(view_model.currency_points)
         self._valuation_comparison.bind(view_model.valuation_comparison, summary.valuation_date)
         self._dashboard_note.setText(
-            f"Vista ejecutiva UX V2 · Calidad de datos: {view_model.data_quality_status} · "
+            f"Vista ejecutiva UX V3 · Calidad de datos: {view_model.data_quality_status} · "
             f"MIL elegible: {summary.mil_eligible_percent} · "
             f"DV01: {self._translate_status(view_model.dv01_status)}. "
             "El Indicador de Salud permanece N/D hasta certificar su metodología institucional."

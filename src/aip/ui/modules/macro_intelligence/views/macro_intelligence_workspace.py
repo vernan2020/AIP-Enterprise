@@ -14,7 +14,7 @@ from PySide6.QtCore import (
     Signal,
     Slot,
 )
-from PySide6.QtGui import QColor, QFont, QPainter, QPen, QPolygonF
+from PySide6.QtGui import QColor, QFont, QLinearGradient, QPainter, QPen, QPolygonF
 from PySide6.QtWidgets import (
     QComboBox,
     QFrame,
@@ -307,7 +307,23 @@ class _ProjectionChart(QWidget):
             painter.drawPolygon(QPolygonF(upper_points + list(reversed(lower_points))))
 
         if len(points) >= 2:
-            painter.setPen(QPen(QColor("#1F5A8A"), 2.4))
+            area = [
+                QPointF(points[0].x(), top + height),
+                *points,
+                QPointF(points[-1].x(), top + height),
+            ]
+            area_gradient = QLinearGradient(0, top, 0, top + height)
+            area_gradient.setColorAt(0.0, QColor(0, 169, 224, 54))
+            area_gradient.setColorAt(0.55, QColor(0, 94, 184, 20))
+            area_gradient.setColorAt(1.0, QColor(0, 94, 184, 0))
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(area_gradient)
+            painter.drawPolygon(QPolygonF(area))
+            line_pen = QPen(QColor("#005EB8"), 2.8)
+            line_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+            line_pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+            painter.setPen(line_pen)
+            painter.setBrush(Qt.BrushStyle.NoBrush)
             painter.drawPolyline(QPolygonF(points))
         painter.setBrush(QColor("#C9892B"))
         painter.setPen(QPen(QColor("#FFFFFF"), 1))
@@ -535,7 +551,7 @@ class MacroIntelligenceWorkspace(QWidget):
         self._projection_note.setStyleSheet("color:#617386; padding:3px 8px;")
         group_layout.addWidget(self._projection_note)
         layout.addWidget(group, 1)
-        self._tabs.addTab(page, "Proyección 12 meses")
+        self._tabs.addTab(page, "Forecast ejecutivo")
 
     def _build_projection_table_tab(self) -> None:
         page = QWidget()
@@ -552,7 +568,7 @@ class MacroIntelligenceWorkspace(QWidget):
         self._projection_table.setAlternatingRowColors(True)
         self._projection_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         layout.addWidget(self._projection_table)
-        self._tabs.addTab(page, "Matriz de Variables")
+        self._tabs.addTab(page, "Matriz macro")
 
     def _build_market_curves_tab(self) -> None:
         page = QWidget()
@@ -879,8 +895,18 @@ class MacroIntelligenceWorkspace(QWidget):
 
     def _apply_styles(self) -> None:
         self.setStyleSheet(
-            "QFrame#macroHeader, QFrame#macroMetricCard, QFrame#macroGovernanceCard, "
-            "QFrame#macroTransmissionCard {background:#FFFFFF; border:1px solid #D7E0E8; border-radius:8px;}"
+            "QFrame#macroHeader {background:qlineargradient(x1:0,y1:0,x2:1,y2:0,"
+            "stop:0 #EAF5FB, stop:0.6 #F7FBFD, stop:1 #EAF7F2); "
+            "border:1px solid #BED8E6; border-radius:11px;}"
+            "QFrame#macroMetricCard {background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
+            "stop:0 #FFFFFF, stop:1 #EDF7FC); border:1px solid #CFDEE7; "
+            "border-left:4px solid #00A9E0; border-radius:11px;}"
+            "QFrame#macroGovernanceCard {background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
+            "stop:0 #FFFFFF, stop:1 #EFF8F5); border:1px solid #CFE4DD; "
+            "border-left:4px solid #40C1AC; border-radius:11px;}"
+            "QFrame#macroTransmissionCard {background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
+            "stop:0 #FFFFFF, stop:1 #F0F7FC); border:1px solid #CFDEE7; "
+            "border-top:4px solid #005EB8; border-radius:11px;}"
             "QLabel#macroScenarioBadge {padding:7px 11px; background:#EEF4F8; border:1px solid #C8D9E6; "
             "border-radius:6px; color:#174E78; font-weight:700;}"
             "QGroupBox {border:1px solid #D7E0E8; border-radius:8px; margin-top:8px; font-weight:700; "

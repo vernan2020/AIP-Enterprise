@@ -42,7 +42,11 @@ class RiskBarChartWidget(QWidget):
         del event
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-        painter.fillRect(self.rect(), QColor("#FFFFFF"))
+        background = QLinearGradient(0, 0, 0, self.height())
+        background.setColorAt(0.0, QColor("#F7FCFE"))
+        background.setColorAt(0.55, QColor("#FFFFFF"))
+        background.setColorAt(1.0, QColor("#F3F8FB"))
+        painter.fillRect(self.rect(), background)
 
         if not self._points:
             self._draw_empty_state(painter)
@@ -155,7 +159,11 @@ class ParetoChartWidget(QWidget):
         del event
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-        painter.fillRect(self.rect(), QColor("#FFFFFF"))
+        background = QLinearGradient(0, 0, 0, self.height())
+        background.setColorAt(0.0, QColor("#F7FCFE"))
+        background.setColorAt(0.55, QColor("#FFFFFF"))
+        background.setColorAt(1.0, QColor("#F3F8FB"))
+        painter.fillRect(self.rect(), background)
 
         if not self._points:
             painter.setPen(QColor("#718096"))
