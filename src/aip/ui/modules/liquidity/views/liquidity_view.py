@@ -274,16 +274,6 @@ class LiquidityView(QWidget):
         card = QFrame()
         card.setObjectName("liquidityMetricCard")
         card.setMinimumHeight(76)
-        accent = {
-            "icl_total": ("#005EB8", "#EAF5FB"),
-            "icl_mn": ("#00A9E0", "#EDF9FD"),
-            "icl_me": ("#40C1AC", "#EAF7F2"),
-            "liquid_fund": ("#005EB8", "#F0F8FC"),
-            "hqla": ("#40C1AC", "#ECF8F4"),
-            "mil": ("#00A9E0", "#EDF8FC"),
-            "maturity30": ("#FF8200", "#FFF5E9"),
-            "coupon30": ("#2B9E8B", "#ECF8F4"),
-        }.get(key, ("#00A9E0", "#F7FBFD"))
         card.setStyleSheet(
             "QFrame#liquidityMetricCard {"
             "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
