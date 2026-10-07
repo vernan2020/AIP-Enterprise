@@ -286,23 +286,24 @@ class LiquidityView(QWidget):
         }.get(key, ("#00A9E0", "#F7FBFD"))
         card.setStyleSheet(
             "QFrame#liquidityMetricCard {"
-            f"background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #FFFFFF,stop:1 {accent[1]}); "
-            f"border:1px solid #D0DEE7; border-left:4px solid {accent[0]}; border-radius:10px;"
-            "} QFrame#liquidityMetricCard:hover {border-color:#73B3DD;}"
+            "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
+            "stop:0 #00477F,stop:0.60 #005EB8,stop:1 #00A9E0); "
+            "border:1px solid #1675C5; border-radius:12px;"
+            "} QFrame#liquidityMetricCard:hover {border:1px solid #73B3DD;}"
         )
         layout = QVBoxLayout(card)
         layout.setContentsMargins(10, 7, 10, 7)
         layout.setSpacing(2)
         caption = QLabel(title)
-        caption.setStyleSheet("color:#667788; font-size:9px; border:none;")
+        caption.setStyleSheet("color:#DDF4FF; font-size:9px; font-weight:600; border:none;")
         value = QLabel("-")
         font = QFont()
         font.setPointSize(12)
         font.setBold(True)
         value.setFont(font)
-        value.setStyleSheet("color:#142E46; border:none;")
+        value.setStyleSheet("color:#FFFFFF; border:none;")
         hint = QLabel(helper)
-        hint.setStyleSheet("color:#8A98A6; font-size:8px; border:none;")
+        hint.setStyleSheet("color:#CBEAF8; font-size:8px; border:none;")
         layout.addWidget(caption)
         layout.addWidget(value)
         layout.addWidget(hint)
@@ -321,7 +322,7 @@ class LiquidityView(QWidget):
         font.setPointSize(15)
         font.setBold(True)
         title.setFont(font)
-        subtitle = QLabel("UX V3 · ICL · HQLA · MIL · cupones y principal · capacidad de respuesta")
+        subtitle = QLabel("UX V4 · ICL · HQLA · MIL · cupones y principal · capacidad de respuesta")
         subtitle.setStyleSheet("color:#667788; font-size:10px;")
         title_box.addWidget(title)
         title_box.addWidget(subtitle)
@@ -348,7 +349,15 @@ class LiquidityView(QWidget):
             ("coupon30", "Cupones ≤30 días", "Ingreso contractual/proyectado"),
         )
         for index, definition in enumerate(definitions):
-            kpis.addWidget(self._metric_card(*definition), index // 4, index % 4)
+            card = self._metric_card(*definition)
+            if index < 6:
+                kpis.addWidget(card, 0, index)
+            elif index == 6:
+                kpis.addWidget(card, 1, 0, 1, 3)
+            else:
+                kpis.addWidget(card, 1, 3, 1, 3)
+        for column in range(6):
+            kpis.setColumnStretch(column, 1)
         root.addLayout(kpis)
 
         self._tabs = QTabWidget()
