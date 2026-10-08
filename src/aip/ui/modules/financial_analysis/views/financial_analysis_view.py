@@ -950,6 +950,10 @@ class FinancialAnalysisView(QWidget):
             self._pending_request = None
             self._request_load(entity, refresh)
             return
+        current_entity = self._entity_selector.currentData()
+        if entity_id is not None and str(current_entity) != str(entity_id):
+            self._request_load(current_entity, False)
+            return
         if isinstance(model, FinancialAnalysisViewModel):
             self.bind_view_model(model)
 
@@ -1007,7 +1011,10 @@ class FinancialAnalysisView(QWidget):
     def closeEvent(self, event: object) -> None:
         self._closing = True
         self._load_thread.quit()
-        self._load_thread.wait()
+        if not self._load_thread.wait(5000):
+            self._load_thread.requestInterruption()
+            event.ignore()
+            return
         super().closeEvent(event)
 
     def _open_source(self) -> None:
