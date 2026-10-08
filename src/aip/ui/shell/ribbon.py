@@ -35,7 +35,7 @@ class Ribbon(QToolBar):
         self.setObjectName("aipRibbon")
         self.setMovable(False)
         self.setFloatable(False)
-        self.setMinimumHeight(56)
+        self.setMinimumHeight(52)
         self.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
         self._actions: dict[str, QAction] = {}
 
@@ -57,9 +57,9 @@ class Ribbon(QToolBar):
 
         self.setStyleSheet(
             "QToolBar#aipRibbon {background:#FFFFFF; border:none; "
-            "border-bottom:1px solid #D5DEE3; spacing:2px; padding:4px 10px;}"
+            "border-bottom:1px solid #D5DEE3; spacing:1px; padding:3px 8px;}"
             "QToolBar#aipRibbon QToolButton {background:transparent; border:none; "
-            "border-radius:5px; padding:7px 8px; color:#354B5E; font-size:9px; font-weight:600;}"
+            "border-radius:6px; padding:6px 7px; color:#354B5E; font-size:8.5px; font-weight:600;}"
             "QToolBar#aipRibbon QToolButton:hover {background:#F0F8FC; color:#005EB8;}"
             "QToolBar#aipRibbon QToolButton:pressed {background:#DDEFFA; color:#00345F;}"
             "QToolBar#aipRibbon::separator {background:#D5DEE3; width:1px; margin:7px 6px;}"
@@ -70,7 +70,7 @@ class Ribbon(QToolBar):
     def _build_brand_logo() -> QLabel:
         label = QLabel()
         label.setObjectName("coopealianzaHeaderLogo")
-        label.setFixedSize(224, 46)
+        label.setFixedSize(204, 42)
         label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         label.setToolTip("Coopealianza R.L.")
 
@@ -79,8 +79,8 @@ class Ribbon(QToolBar):
         if pixmap.loadFromData(payload):
             label.setPixmap(
                 pixmap.scaled(
-                    214,
-                    42,
+                    194,
+                    38,
                     Qt.AspectRatioMode.KeepAspectRatio,
                     Qt.TransformationMode.SmoothTransformation,
                 )
