@@ -80,8 +80,8 @@ class InstitutionalPiPCAVectorReader:
         accepted_records: list[dict[str, Any]] = []
         line_diagnostics: list[dict[str, Any]] = []
         for line_number, raw_line in enumerate(lines, start=1):
-            line_diagnostic = self._build_line_diagnostic(raw_line, source_line=line_number)
             if diagnostic_mode:
+                line_diagnostic = self._build_line_diagnostic(raw_line, source_line=line_number)
                 line_diagnostics.append(line_diagnostic)
             try:
                 record = self._parse_line(
