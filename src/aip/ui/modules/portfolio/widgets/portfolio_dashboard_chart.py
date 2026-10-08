@@ -5,7 +5,7 @@ from math import atan2, degrees, hypot
 from typing import Callable
 
 from PySide6.QtCore import QPointF, QRectF, Qt
-from PySide6.QtGui import QColor, QFont, QPainter, QPen
+from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter, QPen
 from PySide6.QtWidgets import QToolTip, QWidget
 
 from aip.ui.modules.portfolio.models.portfolio_dashboard_point import PortfolioDashboardPoint
@@ -337,9 +337,11 @@ class PortfolioDashboardDonutChart(QWidget):
         title_font.setPointSize(8)
         painter.setFont(title_font)
         painter.setPen(self._MUTED)
+        # Two-line center label avoids clipping long institutional descriptions.
+        label_rect = QRectF(center.x() - diameter * 0.30, center.y() - 32, diameter * 0.60, 35)
         painter.drawText(
-            QRectF(center.x() - 54, center.y() - 22, 108, 18),
-            Qt.AlignmentFlag.AlignCenter,
+            label_rect,
+            Qt.AlignmentFlag.AlignCenter | Qt.TextFlag.TextWordWrap,
             self._center_label,
         )
         value_font = QFont(self.font())
@@ -347,11 +349,19 @@ class PortfolioDashboardDonutChart(QWidget):
         value_font.setBold(True)
         painter.setFont(value_font)
         painter.setPen(self._TEXT)
-        painter.drawText(
-            QRectF(center.x() - 60, center.y() - 3, 120, 28),
-            Qt.AlignmentFlag.AlignCenter,
+        center_width = diameter * 0.72
+        center_value = QFontMetrics(value_font).elidedText(
             self._center_value,
+            Qt.TextElideMode.ElideRight,
+            int(center_width),
         )
+        painter.drawText(
+            QRectF(center.x() - center_width / 2, center.y() + 6, center_width, 28),
+            Qt.AlignmentFlag.AlignCenter,
+            center_value,
+        )
+        # Full non-truncated value remains available even in compact layouts.
+        self.setToolTip(f"{self._center_label}: {self._center_value}")
 
         legend_left = left + diameter + 34.0
         legend_width = max(120.0, self.width() - legend_left - 12.0)
@@ -361,7 +371,7 @@ class PortfolioDashboardDonutChart(QWidget):
         value_font = QFont(label_font)
         value_font.setBold(True)
         for index, point in enumerate(self._points):
-            y = 12.0 + row_height * index
+            y = max(12.0, (self.height() - row_height * len(self._points)) / 2) + row_height * index
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(self._PALETTE[index % len(self._PALETTE)])
             painter.drawEllipse(QPointF(legend_left + 6, y + row_height / 2), 5, 5)
