@@ -169,7 +169,7 @@ class ExecutiveWorkspace(QWidget):
             caption_label = QLabel(caption)
             caption_label.setStyleSheet("color:#718096; font-size:8px; border:none;")
             value_label = QLabel("-")
-            value_label.setStyleSheet("color:#17324D; font-size:10px; font-weight:700; border:none;")
+            value_label.setStyleSheet(\n                "color:#17324D; font-size:10px; font-weight:700; border:none;"\n            )
             self._context_labels[key] = value_label
             cell = QWidget()
             cell_layout = QVBoxLayout(cell)
