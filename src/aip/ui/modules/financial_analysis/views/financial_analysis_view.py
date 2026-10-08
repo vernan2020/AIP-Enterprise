@@ -95,7 +95,8 @@ class _FinancialLoadWorker(QRunnable):
         self._entity_id = entity_id
         self._force_refresh = force_refresh
         self.signals = _FinancialLoadSignals()
-        self.setAutoDelete(True)
+        # Release the runnable and its Qt signal object on the UI thread.
+        self.setAutoDelete(False)
 
     @Slot()
     def run(self) -> None:

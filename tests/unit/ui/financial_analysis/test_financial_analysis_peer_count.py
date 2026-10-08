@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import time
-
 from decimal import Decimal
 
 from aip.ui.modules.financial_analysis.presenters.financial_analysis_presenter import (
