@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date
 
 from PySide6.QtCore import QObject, Qt, QThread, QTimer, Signal, Slot
-from PySide6.QtGui import QDesktopServices, QFont
+from PySide6.QtGui import QCloseEvent, QDesktopServices, QFont
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QComboBox,
@@ -1010,7 +1010,7 @@ class FinancialAnalysisView(QWidget):
     def _refresh(self) -> None:
         self._request_load(self._entity_selector.currentData(), True)
 
-    def closeEvent(self, event: object) -> None:
+    def closeEvent(self, event: QCloseEvent) -> None:
         self._closing = True
         self._load_thread.quit()
         if not self._load_thread.wait(5000):
