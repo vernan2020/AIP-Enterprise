@@ -31,9 +31,21 @@ def test_shell_components_construct(qt_app) -> None:
     qt_app.processEvents()
 
 
-def test_cutoff_change_updates_factory_and_shared_context(qt_app) -> None:
+def test_cutoff_change_updates_factory_and_shared_context(qt_app, monkeypatch) -> None:
     window = MainWindow()
     target = window._valuation_context.valuation_date - timedelta(days=1)
+    monkeypatch.setattr(
+        window,
+        "refresh_all",
+        lambda: {
+            "status": "completed",
+            "correlation_id": "test-cutoff",
+            "valuation_date": target.isoformat(),
+            "refreshed_workspaces": 0,
+            "workspace_errors": (),
+            "timestamp": "test",
+        },
+    )
 
     window._handle_qdate_changed(QDate(target.year, target.month, target.day))
 
