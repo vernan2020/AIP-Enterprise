@@ -556,7 +556,9 @@ class ConfiguredPortfolioVaRService:
 
         started = perf_counter()
         try:
-            available_dates = historical_repository.available_vector_dates(cutoff_date=(effective_date))
+            available_dates = historical_repository.available_vector_dates(
+                cutoff_date=(effective_date)
+            )
         finally:
             record_stage_duration("var_vector_discovery", started)
 
