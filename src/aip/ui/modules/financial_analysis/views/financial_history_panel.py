@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import date
+
 from PySide6.QtCharts import QChart, QChartView, QDateTimeAxis, QLineSeries, QValueAxis
 from PySide6.QtCore import QDateTime, QMargins, Qt
 from PySide6.QtGui import QColor, QPainter, QPen
@@ -8,6 +10,9 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QHBoxLayout,
     QLabel,
+    QFileDialog,
+    QMessageBox,
+    QPushButton,
     QScrollArea,
     QVBoxLayout,
     QWidget,
@@ -16,6 +21,7 @@ from PySide6.QtWidgets import (
 from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model import (
     FinancialMetricHistorySeriesView,
 )
+from aip.ui.services.export_service import ExcelSheet, TableExportService
 from aip.ui.widgets.chart_tooltip import build_chart_tooltip, show_series_tooltip
 
 
@@ -26,6 +32,9 @@ class FinancialHistoryPanel(QWidget):
         super().__init__()
         self.setObjectName("financialHistoryPanel")
         self._grid = QGridLayout()
+        self._series: tuple[FinancialMetricHistorySeriesView, ...] = ()
+        self._entity = ""
+        self._cutoff = ""
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -51,6 +60,11 @@ class FinancialHistoryPanel(QWidget):
             "border-radius:6px; color:#314A5E; font-weight:600;"
         )
         heading.addWidget(source)
+        self._export_all = QPushButton("Exportar históricos a Excel")
+        self._export_all.setObjectName("financialExportAllHistoryExcel")
+        self._export_all.setToolTip("Descargar cada KPI, con datos numéricos y gráficos editables")
+        self._export_all.clicked.connect(self._export_all_history)
+        heading.addWidget(self._export_all)
         root.addLayout(heading)
 
         note = QLabel(
@@ -84,7 +98,17 @@ class FinancialHistoryPanel(QWidget):
             "}"
         )
 
-    def bind_history(self, series: tuple[FinancialMetricHistorySeriesView, ...]) -> None:
+    def bind_history(
+        self,
+        series: tuple[FinancialMetricHistorySeriesView, ...],
+        *,
+        entity_name: str = "",
+        cutoff_date: str = "",
+    ) -> None:
+        self._series = series
+        self._entity = entity_name
+        self._cutoff = cutoff_date
+        self._export_all.setEnabled(bool(series))
         self._clear_grid()
         if not series:
             empty = QLabel(
@@ -123,6 +147,12 @@ class FinancialHistoryPanel(QWidget):
         coverage = QLabel(f"{item.available_points}/{item.total_points} cortes")
         coverage.setStyleSheet("color:#667788; font-size:8px; border:none;")
         top.addWidget(coverage)
+        export = QPushButton("Excel")
+        export.setObjectName(f"financialExportHistory_{item.code}")
+        export.setToolTip(f"Descargar {item.label} con la serie y su fuente")
+        export.clicked.connect(lambda _checked=False, selected=item: self._export_series((selected,)))
+        export.setEnabled(bool(item.points))
+        top.addWidget(export)
         layout.addLayout(top)
 
         metrics = QHBoxLayout()
@@ -144,6 +174,60 @@ class FinancialHistoryPanel(QWidget):
         layout.addWidget(source)
         return card
 
+    @staticmethod
+    def _excel_sheet(item: FinancialMetricHistorySeriesView) -> ExcelSheet:
+        rows: list[tuple[object, ...]] = []
+        for point in item.points:
+            try:
+                period: object = date.fromisoformat(point.iso_date)
+            except ValueError:
+                period = point.iso_date
+            rows.append(
+                (
+                    period,
+                    point.value,
+                    "Disponible" if point.value is not None else "N/D",
+                    item.unit,
+                    item.source_account,
+                )
+            )
+        return ExcelSheet(
+            title=item.label,
+            headers=("Fecha", f"Valor ({item.unit})", "Estado", "Unidad", "Fuente / cuenta"),
+            rows=tuple(rows),
+            chart_title=item.label,
+            unit=item.unit,
+        )
+
+    def _export_all_history(self) -> None:
+        self._export_series(self._series)
+
+    def _export_series(self, series: tuple[FinancialMetricHistorySeriesView, ...]) -> None:
+        if not series:
+            return
+        target, _filter = QFileDialog.getSaveFileName(
+            self,
+            "Exportar KPIs históricos SUGEF",
+            "AIP_Historico_KPIs.xlsx",
+            "Excel (*.xlsx)",
+        )
+        if not target:
+            return
+        try:
+            TableExportService().export_workbook(
+                target,
+                sheets=tuple(self._excel_sheet(item) for item in series),
+                metadata={
+                    "Módulo": "Análisis Financiero · KPIs históricos",
+                    "Entidad": self._entity,
+                    "Corte SUGEF": self._cutoff,
+                    "Fuente": "SUGEF",
+                    "Regla faltantes": "N/D se exporta en blanco; cero es un valor real.",
+                },
+            )
+        except (OSError, ValueError, PermissionError) as exc:
+            QMessageBox.warning(self, "No se pudo exportar", str(exc))
+
     def _chart_view(self, item: FinancialMetricHistorySeriesView) -> QChartView:
         chart = QChart()
         chart.legend().hide()
@@ -160,9 +244,12 @@ class FinancialHistoryPanel(QWidget):
 
         axis_x = QDateTimeAxis()
         axis_x.setFormat("MMM-yy")
-        axis_x.setLabelsAngle(-35)
-        axis_x.setTickCount(min(6, max(2, len(item.points))))
+        axis_x.setLabelsAngle(0)
+        axis_x.setTickCount(min(5, max(2, len(item.points))))
         axis_x.setGridLineVisible(False)
+        x_font = axis_x.labelsFont()
+        x_font.setPointSize(8)
+        axis_x.setLabelsFont(x_font)
 
         if point_dates:
             start = point_dates[0]
@@ -178,6 +265,9 @@ class FinancialHistoryPanel(QWidget):
         axis_y.setTickCount(5)
         axis_y.setGridLineVisible(True)
         axis_y.setMinorGridLineVisible(False)
+        y_font = axis_y.labelsFont()
+        y_font.setPointSize(8)
+        axis_y.setLabelsFont(y_font)
 
         if available_values:
             minimum = min(available_values)

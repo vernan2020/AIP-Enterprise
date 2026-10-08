@@ -4,11 +4,13 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QAbstractItemView,
+    QFileDialog,
     QFrame,
     QGridLayout,
     QGroupBox,
     QHeaderView,
     QLabel,
+    QMessageBox,
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
@@ -19,11 +21,13 @@ from PySide6.QtWidgets import (
 from aip.ui.modules.portfolio.models.portfolio_valuation_comparison import (
     PortfolioValuationComparisonDisplay,
     PortfolioValuationComparisonDisplayRow,
+    PortfolioValuationChartPoint,
     PortfolioValuationKpi,
 )
 from aip.ui.modules.portfolio.widgets.portfolio_gain_loss_chart import (
     PortfolioGainLossBarChart,
 )
+from aip.ui.services.export_service import ExcelSheet, TableExportService
 
 
 class PortfolioValuationComparisonView(QWidget):
@@ -38,6 +42,7 @@ class PortfolioValuationComparisonView(QWidget):
         self.setObjectName("portfolioValuationComparison")
         self._model = PortfolioValuationComparisonDisplay()
         self._show_all = False
+        self._valuation_date = ""
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(4, 8, 4, 4)
@@ -72,15 +77,19 @@ class PortfolioValuationComparisonView(QWidget):
         self._currency = PortfolioGainLossBarChart(mode="diverging")
         self._issuers = PortfolioGainLossBarChart(mode="diverging")
 
-        charts.addWidget(self._chart_group("Top 5 ganancias", self._top_gains), 0, 0)
-        charts.addWidget(self._chart_group("Top 5 pérdidas", self._top_losses), 0, 1)
         charts.addWidget(
-            self._chart_group("Ganancia / pérdida por moneda", self._currency),
+            self._chart_group("Top 5 ganancias", self._top_gains, "gains"), 0, 0
+        )
+        charts.addWidget(
+            self._chart_group("Top 5 pérdidas", self._top_losses, "losses"), 0, 1
+        )
+        charts.addWidget(
+            self._chart_group("Ganancia / pérdida por moneda", self._currency, "currency"),
             1,
             0,
         )
         charts.addWidget(
-            self._chart_group("Ganancia / pérdida por emisor · Top 5", self._issuers),
+            self._chart_group("Ganancia / pérdida por emisor · Top 5", self._issuers, "issuers"),
             1,
             1,
         )
@@ -101,6 +110,10 @@ class PortfolioValuationComparisonView(QWidget):
         )
         self._toggle.clicked.connect(self._toggle_positions)
         detail_header.addWidget(self._toggle, 0, 1)
+        export_visible = QPushButton("Exportar tabla · Excel")
+        export_visible.setObjectName("portfolioGainLossPositionsExcel")
+        export_visible.clicked.connect(self._export_visible_positions)
+        detail_header.addWidget(export_visible, 0, 2)
         detail_header.setColumnStretch(0, 1)
         layout.addLayout(detail_header)
 
@@ -118,8 +131,7 @@ class PortfolioValuationComparisonView(QWidget):
         self._positions.setMinimumHeight(180)
         layout.addWidget(self._positions, 1)
 
-    @staticmethod
-    def _chart_group(title: str, chart: QWidget) -> QGroupBox:
+    def _chart_group(self, title: str, chart: QWidget, key: str) -> QGroupBox:
         group = QGroupBox(title)
         group.setStyleSheet(
             "QGroupBox {font-weight:700; color:#17324D; background:#FFFFFF; "
@@ -129,6 +141,10 @@ class PortfolioValuationComparisonView(QWidget):
         inner = QVBoxLayout(group)
         inner.setContentsMargins(8, 14, 8, 6)
         inner.addWidget(chart)
+        control = QPushButton("Exportar datos · Excel")
+        control.setObjectName(f"portfolioGainLossExcel_{key}")
+        control.clicked.connect(lambda _checked=False, category=key: self._export_chart(category))
+        inner.addWidget(control, 0, Qt.AlignmentFlag.AlignRight)
         return group
 
     @staticmethod
@@ -146,6 +162,7 @@ class PortfolioValuationComparisonView(QWidget):
 
     def bind(self, model: PortfolioValuationComparisonDisplay, valuation_date: str) -> None:
         self._model = model
+        self._valuation_date = valuation_date
         self._show_all = False
         self._toggle.setText("Ver todas las posiciones")
         self._note.setText(
@@ -199,6 +216,78 @@ class PortfolioValuationComparisonView(QWidget):
             card_layout.addWidget(value)
             self._kpi_values[kpi.key] = value
             self._kpi_grid.addWidget(card, 0, index)
+
+    def _excel_metadata(self) -> dict[str, str]:
+        return {
+            "Módulo": "Portafolio · Ganancia / pérdida",
+            "Corte": self._valuation_date,
+            "Fuente": "Valuación acumulada · Maestro de Inversiones",
+            "Moneda consolidada": self._model.reporting_currency,
+            "TC venta BCCR": self._model.fx_sell_rate,
+            "Fecha TC BCCR": self._model.fx_rate_date,
+            "Regla USD sin TC": "N/D si falta el TC exacto; nunca cero por sustitución.",
+        }
+
+    @staticmethod
+    def _chart_sheet(
+        title: str, points: tuple[PortfolioValuationChartPoint, ...]
+    ) -> ExcelSheet:
+        return ExcelSheet(
+            title=title,
+            chart_title=title,
+            chart_type="bar",
+            unit="CRC",
+            headers=("Instrumento / grupo", "Neto CRC", "Ganancia CRC", "Pérdida CRC"),
+            rows=tuple(
+                (point.label, point.value, point.positive, point.negative)
+                for point in points
+            ),
+        )
+
+    def _save_excel(self, title: str, sheets: tuple[ExcelSheet, ...]) -> None:
+        destination, _filter = QFileDialog.getSaveFileName(
+            self, title, "AIP_Ganancia_Perdida.xlsx", "Excel (*.xlsx)"
+        )
+        if not destination:
+            return
+        try:
+            TableExportService().export_workbook(
+                destination, sheets=sheets, metadata=self._excel_metadata()
+            )
+        except (OSError, ValueError) as exc:
+            QMessageBox.warning(self, "Exportación fallida", str(exc))
+
+    def _export_chart(self, category: str) -> None:
+        definitions = {
+            "gains": ("Top 5 ganancias", self._model.top_gains),
+            "losses": ("Top 5 pérdidas", self._model.top_losses),
+            "currency": ("Ganancia / pérdida por moneda", self._model.currency_points),
+            "issuers": ("Ganancia / pérdida por emisor", self._model.issuer_points),
+        }
+        title, points = definitions[category]
+        if not points:
+            QMessageBox.information(self, "Sin datos", "Este gráfico no tiene datos disponibles.")
+            return
+        self._save_excel(title, (self._chart_sheet(title, points),))
+
+    def _export_visible_positions(self) -> None:
+        rows = self._model.all_positions if self._show_all else self._model.positions
+        if not rows:
+            QMessageBox.information(self, "Sin datos", "No hay posiciones para exportar.")
+            return
+        headers = (
+            "Posición / ISIN",
+            "Emisor",
+            "Moneda",
+            "Valuación acumulada original (texto fuente)",
+            "Ganancia / pérdida CRC (texto fuente)",
+        )
+        sheet = ExcelSheet(
+            title="Posiciones visibles",
+            headers=headers,
+            rows=tuple(tuple(row.cells[:5]) for row in rows),
+        )
+        self._save_excel("Exportar posiciones visibles", (sheet,))
 
     def _toggle_positions(self) -> None:
         self._show_all = not self._show_all

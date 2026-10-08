@@ -589,7 +589,11 @@ class FinancialAnalysisView(QWidget):
         self._bind_peers(view_model)
         self._statement_history_panel.bind_history(view_model.statement_history)
         self._peer_chart_panel.bind_series(view_model.peer_chart_series)
-        self._history_panel.bind_history(view_model.metric_history)
+        self._history_panel.bind_history(
+            view_model.metric_history,
+            entity_name=view_model.selected_entity_name,
+            cutoff_date=view_model.cutoff_date,
+        )
         self._comparison_panel.bind_context(view_model)
         self._bind_rating(view_model)
         self._diagnostics.clear()
