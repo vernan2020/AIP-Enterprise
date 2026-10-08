@@ -117,7 +117,9 @@ class FinancialAnalysisView(QWidget):
         self._load_worker = _FinancialLoadWorker(self._presenter)
         self._load_worker.moveToThread(self._load_thread)
         self.load_requested.connect(self._load_worker.load, Qt.ConnectionType.QueuedConnection)
-        self._load_worker.completed.connect(self._load_completed, Qt.ConnectionType.QueuedConnection)
+        self._load_worker.completed.connect(
+            self._load_completed, Qt.ConnectionType.QueuedConnection
+        )
         self._load_thread.finished.connect(self._load_worker.deleteLater)
         self._load_thread.start()
         QTimer.singleShot(0, lambda: self._request_load(None, False))
