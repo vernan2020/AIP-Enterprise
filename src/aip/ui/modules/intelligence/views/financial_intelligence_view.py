@@ -126,7 +126,7 @@ class FinancialIntelligenceView(QWidget):
             self._provider_card,
         )
         for index, card in enumerate(cards):
-            metrics.addWidget(card, index // 3, index % 3)
+            metrics.addWidget(card, 0, index)
         root.addLayout(metrics)
 
         splitter = QSplitter()
@@ -189,7 +189,7 @@ class FinancialIntelligenceView(QWidget):
             quick_row.addWidget(button)
         analysis_layout.addLayout(quick_row)
         splitter.addWidget(analysis_box)
-        splitter.setSizes([760, 760])
+        splitter.setSizes([620, 900])
         root.addWidget(splitter, 1)
 
         self._status = QLabel(
@@ -203,8 +203,9 @@ class FinancialIntelligenceView(QWidget):
     def _metric_card(label: str, value: str) -> QFrame:
         frame = QFrame()
         frame.setObjectName("intelligenceMetricCard")
+        frame.setMinimumHeight(68)
         layout = QVBoxLayout(frame)
-        layout.setContentsMargins(10, 8, 10, 8)
+        layout.setContentsMargins(9, 7, 9, 7)
         layout.setSpacing(2)
         label_widget = QLabel(label)
         label_widget.setObjectName("metricLabel")
@@ -397,7 +398,8 @@ class FinancialIntelligenceView(QWidget):
             "QLabel#intelligenceTitle {font-size:16px; font-weight:800; color:#00345F;}"
             "QLabel#intelligenceSubtitle {font-size:10px; color:#657D8C;}"
             "QFrame#intelligenceMetricCard {background:#FFFFFF; border:1px solid #D5DEE3; "
-            "border-radius:7px;}"
+            "border-radius:9px;} QFrame#intelligenceMetricCard:hover {background:#F7FBFE; "
+            "border-color:#73B3DD;}"
             "QLabel#metricLabel {font-size:9px; color:#657D8C;}"
             "QLabel#metricValue {font-size:13px; font-weight:700; color:#00345F;}"
             "QGroupBox {font-weight:700; color:#005EB8; border:1px solid #D5DEE3; "
@@ -412,5 +414,5 @@ class FinancialIntelligenceView(QWidget):
             "QTextEdit, QTableWidget {background:#FFFFFF; border:1px solid #D5DEE3; "
             "border-radius:5px; color:#183247;}"
             "QLabel#intelligenceGuardrail {background:#F5FAFD; border:1px solid #CFE4F2; "
-            "border-radius:5px; padding:7px; color:#49697E;}"
+            "border-radius:6px; padding:5px 8px; color:#49697E; font-size:9px;}"
         )
