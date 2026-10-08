@@ -28,9 +28,7 @@ def _sample_record() -> InstitutionalVectorRecord:
     )
 
 
-def test_normal_vector_read_skips_expensive_line_diagnostics(
-    tmp_path, monkeypatch
-) -> None:
+def test_normal_read_skips_diagnostics(tmp_path, monkeypatch) -> None:
     path = tmp_path / "VectorPiPCA_20261002.txt"
     path.write_text("sample vector row\n", encoding="utf-8")
     reader = InstitutionalPiPCAVectorReader()
@@ -48,9 +46,7 @@ def test_normal_vector_read_skips_expensive_line_diagnostics(
     assert "trace" not in result.diagnostics
 
 
-def test_explicit_diagnostic_vector_read_still_builds_trace(
-    tmp_path, monkeypatch
-) -> None:
+def test_explicit_diagnostic_read_preserves_trace(tmp_path, monkeypatch) -> None:
     path = tmp_path / "VectorPiPCA_20261002.txt"
     path.write_text("sample vector row\n", encoding="utf-8")
     reader = InstitutionalPiPCAVectorReader()
