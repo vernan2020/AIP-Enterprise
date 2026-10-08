@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 from collections import defaultdict
 from datetime import date, datetime
 from decimal import Decimal
@@ -38,9 +37,9 @@ from aip.ui.modules.price_risk.models.price_risk_simulation import (
     PriceRiskSimulationSecurityOption,
     PriceRiskSimulationViewModel,
 )
+from aip.ui.modules.price_risk.performance_log import record_stage_duration
 from aip.ui.modules.price_risk.viewmodels.price_risk_view_model import PriceRiskViewModel
 
-logger = logging.getLogger(__name__)
 
 
 class PriceRiskPresenter:
@@ -342,7 +341,7 @@ class PriceRiskPresenter:
             try:
                 portfolio = portfolio_provider.get_portfolio()
             finally:
-                logger.info("price_risk_perf stage=portfolio_load duration_ms=%.1f", (perf_counter() - started) * 1000)
+                record_stage_duration("portfolio_load", started)
             var_service = self._application_factory.container.resolve(ConfiguredPortfolioVaRService)
             started = perf_counter()
             try:
@@ -351,7 +350,7 @@ class PriceRiskPresenter:
                     force_refresh=force_refresh,
                 )
             finally:
-                logger.info("price_risk_perf stage=var_calculation duration_ms=%.1f", (perf_counter() - started) * 1000)
+                record_stage_duration("var_calculation", started)
         except Exception as exc:
             return PriceRiskViewModel(status="ERROR", diagnostic=str(exc))
 
@@ -362,7 +361,7 @@ class PriceRiskPresenter:
             try:
                 simulation_securities = self._simulation_security_options(portfolio)
             finally:
-                logger.info("price_risk_perf stage=simulator_options duration_ms=%.1f", (perf_counter() - started) * 1000)
+                record_stage_duration("simulator_options", started)
         except Exception as exc:
             simulation_diagnostic = str(exc)
 
@@ -376,7 +375,7 @@ class PriceRiskPresenter:
             try:
                 dv01_result = dv01_service.calculate(portfolio=portfolio)
             finally:
-                logger.info("price_risk_perf stage=dv01_calculation duration_ms=%.1f", (perf_counter() - started) * 1000)
+                record_stage_duration("dv01_calculation", started)
         except Exception as exc:
             dv01_diagnostic = str(exc)
 
@@ -390,7 +389,7 @@ class PriceRiskPresenter:
             try:
                 rate_shock_result = rate_shock_service.calculate(portfolio=portfolio)
             finally:
-                logger.info("price_risk_perf stage=rate_shock_calculation duration_ms=%.1f", (perf_counter() - started) * 1000)
+                record_stage_duration("rate_shock_calculation", started)
         except Exception as exc:
             rate_shock_diagnostic = str(exc)
 
