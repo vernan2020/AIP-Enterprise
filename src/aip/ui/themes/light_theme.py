@@ -255,7 +255,7 @@ class LightTheme:
             padding: 6px;
             font-weight: 700;
         }}
-        /* UX V4 · executive dashboard visual system · certification candidate */
+        /* Executive analytics visual system */
         QWidget#portfolioWorkspace,
         QWidget#liquidityWorkspace,
         QWidget#priceRiskWorkspace,
@@ -263,7 +263,9 @@ class LightTheme:
         QWidget#financialAnalysisWorkspace,
         QWidget#macroIntelligenceWorkspace,
         QWidget#executiveWorkspace,
-        QWidget#treasuryWorkspace {{
+        QWidget#treasuryWorkspace,
+        QWidget#rateRiskWorkspace,
+        QWidget#homeWorkspace {{
             background: qlineargradient(
                 x1:0, y1:0, x2:1, y2:1,
                 stop:0 #F7FAFC,
@@ -277,7 +279,10 @@ class LightTheme:
         QFrame#financialMetricCard,
         QFrame#macroMetricCard,
         QFrame#macroGovernanceCard,
-        QFrame#marketMetricCard {{
+        QFrame#marketMetricCard,
+        QFrame#executiveMetricCard,
+        QFrame#intelligenceMetricCard,
+        QFrame#rateRiskMetricCard {{
             background: qlineargradient(
                 x1:0, y1:0, x2:1, y2:1,
                 stop:0 #FFFFFF,
@@ -294,7 +299,10 @@ class LightTheme:
         QFrame#financialMetricCard:hover,
         QFrame#macroMetricCard:hover,
         QFrame#macroGovernanceCard:hover,
-        QFrame#marketMetricCard:hover {{
+        QFrame#marketMetricCard:hover,
+        QFrame#executiveMetricCard:hover,
+        QFrame#intelligenceMetricCard:hover,
+        QFrame#rateRiskMetricCard:hover {{
             background: qlineargradient(
                 x1:0, y1:0, x2:1, y2:0,
                 stop:0 #F4FBFE,
