@@ -40,7 +40,6 @@ from aip.ui.modules.price_risk.models.price_risk_simulation import (
 )
 from aip.ui.modules.price_risk.viewmodels.price_risk_view_model import PriceRiskViewModel
 
-
 logger = logging.getLogger(__name__)
 
 
