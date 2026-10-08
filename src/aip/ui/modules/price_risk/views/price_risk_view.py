@@ -647,13 +647,22 @@ class PriceRiskView(QWidget):
                     "background:#F7F9FB; border:1px solid #E2E8EE; border-radius:5px;"
                 )
 
-        self._contribution_chart.set_data(vm.var_contribution_points)
-        self._pareto_chart.set_data(vm.var_pareto_points)
-        self._issuer_chart.set_data(vm.issuer_contribution_points)
-        self._var_currency_chart.set_data(vm.currency_market_value_points)
-        self._bucket_chart.set_data(vm.dv01_bucket_points)
-        self._currency_chart.set_data(vm.dv01_currency_points)
-        self._shock_chart.set_data(vm.rate_shock_points)
+        # Keep unchanged chart payloads intact on refresh to avoid redundant paint work.
+        chart_payloads = (
+            ("var_contribution", self._contribution_chart, vm.var_contribution_points),
+            ("var_pareto", self._pareto_chart, vm.var_pareto_points),
+            ("issuer_contribution", self._issuer_chart, vm.issuer_contribution_points),
+            ("currency_market_value", self._var_currency_chart, vm.currency_market_value_points),
+            ("dv01_bucket", self._bucket_chart, vm.dv01_bucket_points),
+            ("dv01_currency", self._currency_chart, vm.dv01_currency_points),
+            ("rate_shock", self._shock_chart, vm.rate_shock_points),
+        )
+        if not hasattr(self, "_last_chart_payloads"):
+            self._last_chart_payloads = {}
+        for key, chart, points in chart_payloads:
+            if key not in self._last_chart_payloads or self._last_chart_payloads[key] != points:
+                chart.set_data(points)
+                self._last_chart_payloads[key] = points
         self._simulator_page.bind_securities(vm.simulation_securities)
 
         self._populate_var_table(vm)
