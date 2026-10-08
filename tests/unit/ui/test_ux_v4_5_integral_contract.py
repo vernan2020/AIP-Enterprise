@@ -37,6 +37,5 @@ def test_rate_risk_is_data_ready_without_simulated_results(qt_app) -> None:
         "quality",
     }
     assert all(
-        "Sin cálculo disponible" in label.text()
-        for label in view._empty_state_labels.values()
+        "Sin cálculo disponible" in label.text() for label in view._empty_state_labels.values()
     )
