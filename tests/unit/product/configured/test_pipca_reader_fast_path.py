@@ -57,3 +57,43 @@ def test_explicit_diagnostic_read_preserves_trace(tmp_path, monkeypatch) -> None
     assert result.accepted_count == 1
     assert result.diagnostics["trace"]["records_valid"] == 1
     assert len(result.diagnostics["trace"]["line_diagnostics"]) == 1
+
+
+def test_vector_is_read_only_once(tmp_path, monkeypatch) -> None:
+    path = tmp_path / "VectorPiPCA_20261002.txt"
+    path.write_bytes(b"first line\r\nsecond line\r\n")
+    reader = InstitutionalPiPCAVectorReader()
+    record = _sample_record()
+    parsed: list[str] = []
+
+    def parse_line(line, **kwargs):
+        parsed.append(line)
+        return record
+
+    monkeypatch.setattr(reader, "_parse_line", parse_line)
+    original_read_bytes = type(path).read_bytes
+    reads = []
+
+    def tracked_read_bytes(candidate):
+        reads.append(candidate)
+        return original_read_bytes(candidate)
+
+    monkeypatch.setattr(type(path), "read_bytes", tracked_read_bytes)
+    result = reader.read(path, source_cutoff=date(2026, 10, 2))
+    assert reads == [path]
+    assert parsed == ["first line", "second line"]
+    assert result.accepted_count == 2
+
+
+def test_vector_encoding_detection_preserves_original_precedence() -> None:
+    reader = InstitutionalPiPCAVectorReader()
+    cases = (
+        (b"abc", "utf-8-sig", "abc"),
+        (b"\xef\xbb\xbfabc", "utf-8-sig", "abc"),
+        (b"caf\xe9", "cp1252", "café"),
+        (b"caf\x81", "latin-1", "caf\x81"),
+    )
+    for raw, expected_encoding, expected_content in cases:
+        encoding, content = reader._decode_vector_bytes(raw)
+        assert encoding == expected_encoding
+        assert content == expected_content
