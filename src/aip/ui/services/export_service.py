@@ -20,6 +20,7 @@ class ExcelSheet:
     headers: tuple[str, ...]
     rows: tuple[tuple[Any, ...], ...]
     chart_title: str | None = None
+    chart_type: str = "line"
     category_column: int = 1
     value_column: int = 2
     unit: str = ""
@@ -63,7 +64,7 @@ class TableExportService:
         target = Path(path)
         if export_format == "csv":
             target = target.with_suffix(".csv")
-            with target.open("w", newline="", encoding="utf-8-sig") as handle:
+            with target.open("w", newline="", encoding="utf-8") as handle:
                 writer = csv.writer(handle)
                 writer.writerow(headers)
                 writer.writerows(rows)
@@ -108,7 +109,7 @@ class TableExportService:
                 raise ValueError(f"Inconsistent row width for {sheet.title}")
 
         from openpyxl import Workbook
-        from openpyxl.chart import LineChart, Reference
+        from openpyxl.chart import BarChart, LineChart, Reference
         from openpyxl.styles import Alignment, Font, PatternFill
         from openpyxl.utils import get_column_letter
 
@@ -159,7 +160,13 @@ class TableExportService:
                     raise ValueError("Invalid chart category column")
                 if not (1 <= specification.value_column <= len(specification.headers)):
                     raise ValueError("Invalid chart value column")
-                chart = LineChart()
+                if specification.chart_type == "line":
+                    chart = LineChart()
+                elif specification.chart_type in {"bar", "column"}:
+                    chart = BarChart()
+                    chart.type = "bar" if specification.chart_type == "bar" else "col"
+                else:
+                    raise ValueError(f"Unsupported Excel chart type: {specification.chart_type}")
                 chart.title = specification.chart_title
                 chart.y_axis.title = specification.unit
                 chart.style = 13

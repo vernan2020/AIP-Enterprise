@@ -234,6 +234,9 @@ class PortfolioValuationComparisonView(QWidget):
     ) -> ExcelSheet:
         return ExcelSheet(
             title=title,
+            chart_title=title,
+            chart_type="bar",
+            unit="CRC",
             headers=("Instrumento / grupo", "Neto CRC", "Ganancia CRC", "Pérdida CRC"),
             rows=tuple(
                 (point.label, point.value, point.positive, point.negative)

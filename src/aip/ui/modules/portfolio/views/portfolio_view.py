@@ -298,6 +298,9 @@ class PortfolioView(QWidget):
     ) -> ExcelSheet:
         return ExcelSheet(
             title=title,
+            chart_title=title,
+            chart_type="bar",
+            unit=unit,
             headers=("Categoría / instrumento", f"Valor ({unit})", "Dato adicional", "Detalle"),
             rows=tuple(
                 (item.label, item.value, item.secondary_value, item.detail)
