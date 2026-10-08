@@ -658,7 +658,7 @@ class PriceRiskView(QWidget):
             ("rate_shock", self._shock_chart, vm.rate_shock_points),
         )
         if not hasattr(self, "_last_chart_payloads"):
-            self._last_chart_payloads = {}
+            self._last_chart_payloads: dict[str, object] = {}
         for key, chart, points in chart_payloads:
             if key not in self._last_chart_payloads or self._last_chart_payloads[key] != points:
                 chart.set_data(points)
