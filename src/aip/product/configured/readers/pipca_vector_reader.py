@@ -70,8 +70,8 @@ class InstitutionalPiPCAVectorReader:
         if not file_path.exists():
             raise FileNotFoundError(f"PiPCA vector file does not exist: {file_path}")
 
-        encoding = self._detect_encoding(file_path)
-        content = file_path.read_text(encoding=encoding)
+        raw = file_path.read_bytes()
+        encoding, content = self._decode_vector_bytes(raw)
         lines = [line.rstrip("\n") for line in content.splitlines() if line.strip()]
         records: list[InstitutionalVectorRecord] = []
         rejected_count = 0
@@ -239,6 +239,15 @@ class InstitutionalPiPCAVectorReader:
 
     def _mask_text(self, text: str) -> str:
         return "".join(ch if ch.isspace() else "*" for ch in text)
+
+    @staticmethod
+    def _decode_vector_bytes(raw: bytes) -> tuple[str, str]:
+        for encoding in ("utf-8-sig", "cp1252", "latin-1"):
+            try:
+                return encoding, raw.decode(encoding)
+            except UnicodeDecodeError:
+                continue
+        return "utf-8", raw.decode("utf-8")
 
     def _detect_encoding(self, path: Path) -> str:
         for encoding in ("utf-8-sig", "cp1252", "latin-1"):
