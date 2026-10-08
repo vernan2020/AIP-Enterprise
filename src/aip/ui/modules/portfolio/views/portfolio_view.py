@@ -236,6 +236,11 @@ class PortfolioView(QWidget):
         issuer_layout = QVBoxLayout(issuer_group)
         self._issuer_chart = PortfolioDashboardBarChart()
         issuer_layout.addWidget(self._issuer_chart)
+        self._issuer_concentration = QLabel("Concentración Top 3 / Top 5: N/D")
+        self._issuer_concentration.setStyleSheet(
+            "color:#315468; font-size:10px; font-weight:600;"
+        )
+        issuer_layout.addWidget(self._issuer_concentration)
         self._add_excel_action(issuer_layout, "issuer", "Concentración por emisor")
         layout.addWidget(issuer_group, 0, 0)
 
@@ -385,6 +390,15 @@ class PortfolioView(QWidget):
         for key, value in values.items():
             self._kpis[key].setText(value)
         self._issuer_chart.set_data(view_model.top_issuer_points)
+        top_issuers = tuple(view_model.top_issuer_points)
+        if top_issuers:
+            top3 = sum((point.value for point in top_issuers[:3]), Decimal("0"))
+            top5 = sum((point.value for point in top_issuers[:5]), Decimal("0"))
+            self._issuer_concentration.setText(
+                f"Concentración Top 3: {top3:,.1f}% · Top 5: {top5:,.1f}%"
+            )
+        else:
+            self._issuer_concentration.setText("Concentración Top 3 / Top 5: N/D")
         self._duration_chart.set_data(view_model.duration_points)
         self._opportunity_chart.set_data(view_model.opportunity_points)
         self._currency_chart.set_data(view_model.currency_points)

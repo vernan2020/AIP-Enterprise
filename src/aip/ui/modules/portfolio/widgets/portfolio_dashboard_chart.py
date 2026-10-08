@@ -273,6 +273,7 @@ class PortfolioDashboardDonutChart(QWidget):
 
     def set_center_value(self, value: str) -> None:
         self._center_value = value
+        self.setToolTip(f"{self._center_label}: {value}")
         self.update()
 
     def paintEvent(self, event) -> None:  # noqa: N802
@@ -360,8 +361,7 @@ class PortfolioDashboardDonutChart(QWidget):
             Qt.AlignmentFlag.AlignCenter,
             center_value,
         )
-        # Full non-truncated value remains available even in compact layouts.
-        self.setToolTip(f"{self._center_label}: {self._center_value}")
+        # Full non-truncated value remains available in the widget tooltip.
 
         legend_left = left + diameter + 34.0
         legend_width = max(120.0, self.width() - legend_left - 12.0)
