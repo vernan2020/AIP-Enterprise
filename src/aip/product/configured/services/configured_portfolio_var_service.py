@@ -4,8 +4,10 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
+from time import perf_counter
 from typing import Any
 
+from aip.core.price_risk_performance import record_stage_duration
 from aip.domain.portfolio.risk.historical_price_series_service import (
     HistoricalPriceSeriesService,
 )
@@ -552,7 +554,11 @@ class ConfiguredPortfolioVaRService:
         # historical market window.
         # ========================================================
 
-        available_dates = historical_repository.available_vector_dates(cutoff_date=(effective_date))
+        started = perf_counter()
+        try:
+            available_dates = historical_repository.available_vector_dates(cutoff_date=(effective_date))
+        finally:
+            record_stage_duration("var_vector_discovery", started)
 
         if len(available_dates) < self.REQUIRED_PRICES:
 
@@ -910,7 +916,11 @@ class ConfiguredPortfolioVaRService:
         # CONSOLIDATED HISTORICAL VER
         # ========================================================
 
-        portfolio_var = PortfolioHistoricalVaRService.calculate(positions=tuple(var_positions))
+        started = perf_counter()
+        try:
+            portfolio_var = PortfolioHistoricalVaRService.calculate(positions=tuple(var_positions))
+        finally:
+            record_stage_duration("var_domain_math", started)
 
         # ========================================================
         # STATUS
