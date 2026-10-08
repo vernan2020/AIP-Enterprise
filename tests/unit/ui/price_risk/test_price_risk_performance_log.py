@@ -13,9 +13,7 @@ def test_price_risk_profile_is_opt_in(monkeypatch, tmp_path) -> None:
     assert not (tmp_path / "logs" / "price_risk_performance.log").exists()
 
 
-def test_price_risk_profile_writes_timings_without_financial_data(
-    monkeypatch, tmp_path
-) -> None:
+def test_price_risk_profile_writes_timings_without_financial_data(monkeypatch, tmp_path) -> None:
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("AIP_PRICE_RISK_PROFILE", "1")
     logger = logging.getLogger("aip.price_risk.performance")
