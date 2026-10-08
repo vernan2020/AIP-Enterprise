@@ -3,6 +3,8 @@ from __future__ import annotations
 from collections import defaultdict
 from datetime import date, datetime
 from decimal import Decimal
+import logging
+from time import perf_counter
 
 from aip.domain.portfolio.risk.portfolio_historical_var_service import (
     PortfolioVaRPosition,
@@ -37,6 +39,9 @@ from aip.ui.modules.price_risk.models.price_risk_simulation import (
     PriceRiskSimulationViewModel,
 )
 from aip.ui.modules.price_risk.viewmodels.price_risk_view_model import PriceRiskViewModel
+
+
+logger = logging.getLogger(__name__)
 
 
 class PriceRiskPresenter:
@@ -334,19 +339,31 @@ class PriceRiskPresenter:
             portfolio_provider = self._application_factory.container.resolve(
                 ConfiguredPortfolioProvider
             )
-            portfolio = portfolio_provider.get_portfolio()
+            started = perf_counter()
+            try:
+                portfolio = portfolio_provider.get_portfolio()
+            finally:
+                logger.info("price_risk_perf stage=portfolio_load duration_ms=%.1f", (perf_counter() - started) * 1000)
             var_service = self._application_factory.container.resolve(ConfiguredPortfolioVaRService)
-            var_result = var_service.calculate(
-                portfolio=portfolio,
-                force_refresh=force_refresh,
-            )
+            started = perf_counter()
+            try:
+                var_result = var_service.calculate(
+                    portfolio=portfolio,
+                    force_refresh=force_refresh,
+                )
+            finally:
+                logger.info("price_risk_perf stage=var_calculation duration_ms=%.1f", (perf_counter() - started) * 1000)
         except Exception as exc:
             return PriceRiskViewModel(status="ERROR", diagnostic=str(exc))
 
         simulation_securities: tuple[PriceRiskSimulationSecurityOption, ...] = ()
         simulation_diagnostic: str | None = None
         try:
-            simulation_securities = self._simulation_security_options(portfolio)
+            started = perf_counter()
+            try:
+                simulation_securities = self._simulation_security_options(portfolio)
+            finally:
+                logger.info("price_risk_perf stage=simulator_options duration_ms=%.1f", (perf_counter() - started) * 1000)
         except Exception as exc:
             simulation_diagnostic = str(exc)
 
@@ -356,7 +373,11 @@ class PriceRiskPresenter:
             dv01_service = self._application_factory.container.resolve(
                 ConfiguredPortfolioDV01Service
             )
-            dv01_result = dv01_service.calculate(portfolio=portfolio)
+            started = perf_counter()
+            try:
+                dv01_result = dv01_service.calculate(portfolio=portfolio)
+            finally:
+                logger.info("price_risk_perf stage=dv01_calculation duration_ms=%.1f", (perf_counter() - started) * 1000)
         except Exception as exc:
             dv01_diagnostic = str(exc)
 
@@ -366,7 +387,11 @@ class PriceRiskPresenter:
             rate_shock_service = self._application_factory.container.resolve(
                 ConfiguredPortfolioRateShockService
             )
-            rate_shock_result = rate_shock_service.calculate(portfolio=portfolio)
+            started = perf_counter()
+            try:
+                rate_shock_result = rate_shock_service.calculate(portfolio=portfolio)
+            finally:
+                logger.info("price_risk_perf stage=rate_shock_calculation duration_ms=%.1f", (perf_counter() - started) * 1000)
         except Exception as exc:
             rate_shock_diagnostic = str(exc)
 
