@@ -41,7 +41,6 @@ from aip.ui.modules.price_risk.performance_log import record_stage_duration
 from aip.ui.modules.price_risk.viewmodels.price_risk_view_model import PriceRiskViewModel
 
 
-
 class PriceRiskPresenter:
     """Adapta resultados certificados de VeR, DV01 y sensibilidad para la UI."""
 
