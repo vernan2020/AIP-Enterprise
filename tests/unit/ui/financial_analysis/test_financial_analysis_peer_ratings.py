@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import time
+
 from datetime import date
 from decimal import Decimal
 
@@ -97,10 +99,21 @@ def test_rating_view_binds_all_entity_table(qt_app) -> None:
     view_model = FinancialAnalysisPresenter._from_snapshot(_snapshot())
     view = FinancialAnalysisView(presenter=_Presenter(view_model))  # type: ignore[arg-type]
 
-    assert view._peer_rating_table.rowCount() == 3
-    assert view._peer_rating_table.item(0, 0).text() == "1"
-    assert view._peer_rating_table.item(0, 1).text() == "Coopealianza R.L."
-    assert view._peer_rating_table.item(0, 4).text() == "AA"
-    assert view._peer_rating_table.item(2, 0).text() == "N/D"
-    assert view._peer_rating_table.item(2, 4).text() == "Sin emitir"
-    assert view._peer_rating_summary.text() == "2 emitidas · 3 entidades"
+    try:
+        deadline = time.monotonic() + 5.0
+        while time.monotonic() < deadline:
+            qt_app.processEvents()
+            if view._peer_rating_table.rowCount() == 3:
+                break
+            time.sleep(0.01)
+
+        assert view._peer_rating_table.rowCount() == 3
+        assert view._peer_rating_table.item(0, 0).text() == "1"
+        assert view._peer_rating_table.item(0, 1).text() == "Coopealianza R.L."
+        assert view._peer_rating_table.item(0, 4).text() == "AA"
+        assert view._peer_rating_table.item(2, 0).text() == "N/D"
+        assert view._peer_rating_table.item(2, 4).text() == "Sin emitir"
+        assert view._peer_rating_summary.text() == "2 emitidas · 3 entidades"
+    finally:
+        view.close()
+        qt_app.processEvents()

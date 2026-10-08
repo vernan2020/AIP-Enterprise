@@ -106,9 +106,7 @@ class _FinancialLoadWorker(QRunnable):
             )
             self.signals.completed.emit(self._entity_id, model)
         except Exception as exc:
-            self.signals.failed.emit(
-                self._entity_id, f"{type(exc).__name__}: {exc}"
-            )
+            self.signals.failed.emit(self._entity_id, f"{type(exc).__name__}: {exc}")
 
 
 class FinancialAnalysisView(QWidget):
@@ -950,12 +948,8 @@ class FinancialAnalysisView(QWidget):
         self._loading = True
         self._refresh_button.setEnabled(False)
         worker = _FinancialLoadWorker(self._presenter, entity_id, force_refresh)
-        worker.signals.completed.connect(
-            self._load_completed, Qt.ConnectionType.QueuedConnection
-        )
-        worker.signals.failed.connect(
-            self._load_failed, Qt.ConnectionType.QueuedConnection
-        )
+        worker.signals.completed.connect(self._load_completed, Qt.ConnectionType.QueuedConnection)
+        worker.signals.failed.connect(self._load_failed, Qt.ConnectionType.QueuedConnection)
         self._active_load_worker = worker
         self._load_pool.start(worker)
 
