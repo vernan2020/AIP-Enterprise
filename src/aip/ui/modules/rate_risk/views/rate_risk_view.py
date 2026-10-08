@@ -51,6 +51,7 @@ class RateRiskView(QWidget):
         self.setObjectName("rateRiskWorkspace")
         self._read_model = read_model
         self._kpi_values: dict[str, QLabel] = {}
+        self._empty_state_labels: dict[str, QLabel] = {}
         self._build_ui()
         self.set_read_model(read_model)
 
@@ -180,7 +181,7 @@ class RateRiskView(QWidget):
             ("CALCULATED_POSITIONS", "Posiciones calculadas", "Perímetro incluido en VEP"),
         )
         for index, (key, caption, helper) in enumerate(definitions):
-            cards.addWidget(self._metric_card(key, caption, helper), index // 3, index % 3)
+            cards.addWidget(self._metric_card(key, caption, helper), 0, index)
         layout.addLayout(cards)
 
         readiness = QGroupBox("Preparación del cálculo")
@@ -201,10 +202,9 @@ class RateRiskView(QWidget):
             value = QLabel("-")
             value.setStyleSheet("color:#00345F; font-weight:800; font-size:13px;")
             self._readiness_labels[key] = value
-            row = index // 3
-            col = (index % 3) * 2
-            readiness_layout.addWidget(caption_label, row, col)
-            readiness_layout.addWidget(value, row, col + 1)
+            col = index * 2
+            readiness_layout.addWidget(caption_label, 0, col)
+            readiness_layout.addWidget(value, 0, col + 1)
         layout.addWidget(readiness)
         layout.addStretch(1)
 
@@ -240,6 +240,8 @@ class RateRiskView(QWidget):
     def _build_scenario_page(self) -> None:
         layout = QVBoxLayout(self._scenario_page)
         layout.setContentsMargins(8, 8, 8, 8)
+        layout.setSpacing(8)
+        layout.addWidget(self._empty_state("scenarios", "Escenarios VEP"))
         self._scenario_table = self._table()
         self._scenario_table.setColumnCount(8)
         self._scenario_table.setHorizontalHeaderLabels(
@@ -260,6 +262,7 @@ class RateRiskView(QWidget):
         layout = QVBoxLayout(self._gap_page)
         layout.setContentsMargins(8, 8, 8, 8)
         layout.setSpacing(8)
+        layout.addWidget(self._empty_state("gap", "GAP SUGEF · 19 bandas"))
         bucket_box = QGroupBox("Totales por banda")
         bucket_box.setStyleSheet(self._group_style())
         bucket_layout = QVBoxLayout(bucket_box)
@@ -283,6 +286,8 @@ class RateRiskView(QWidget):
     def _build_curve_page(self) -> None:
         layout = QVBoxLayout(self._curve_page)
         layout.setContentsMargins(8, 8, 8, 8)
+        layout.setSpacing(8)
+        layout.addWidget(self._empty_state("curves", "Curvas RTILB"))
         self._curve_table = self._table()
         self._curve_table.setColumnCount(7)
         self._curve_table.setHorizontalHeaderLabels(
@@ -293,6 +298,8 @@ class RateRiskView(QWidget):
     def _build_drilldown_page(self) -> None:
         layout = QVBoxLayout(self._drilldown_page)
         layout.setContentsMargins(8, 8, 8, 8)
+        layout.setSpacing(8)
+        layout.addWidget(self._empty_state("flows", "Drill-down de flujos"))
         self._flow_table = self._table()
         self._flow_table.setColumnCount(13)
         self._flow_table.setHorizontalHeaderLabels(
@@ -318,6 +325,7 @@ class RateRiskView(QWidget):
         layout = QVBoxLayout(self._quality_page)
         layout.setContentsMargins(8, 8, 8, 8)
         layout.setSpacing(8)
+        layout.addWidget(self._empty_state("quality", "Calidad de datos"))
 
         quality_box = QGroupBox("Estado por posición")
         quality_box.setStyleSheet(self._group_style())
@@ -361,10 +369,44 @@ class RateRiskView(QWidget):
         mapping_layout.addWidget(self._mapping_table)
         layout.addWidget(mapping_box)
 
+    def _empty_state(self, key: str, title: str) -> QLabel:
+        label = QLabel(
+            f"{title} · Sin cálculo disponible. "
+            "La visualización se habilitará cuando exista un read-model certificado."
+        )
+        label.setWordWrap(True)
+        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        label.setStyleSheet(
+            "padding:18px 14px; background:#F7FAFC; color:#607487; "
+            "border:1px dashed #B9C9D5; border-radius:8px; font-size:9px;"
+        )
+        self._empty_state_labels[key] = label
+        return label
+
+    def _bind_empty_states(self, read_model: RateRiskReadModel | None) -> None:
+        availability = {
+            "scenarios": bool(read_model and read_model.scenario_rows),
+            "gap": bool(read_model and (read_model.gap_bucket_rows or read_model.gap_matrix_cells)),
+            "curves": bool(read_model and read_model.curve_rows),
+            "flows": bool(read_model and read_model.valuation_flow_rows),
+            "quality": bool(
+                read_model
+                and (
+                    read_model.position_quality_rows
+                    or read_model.data_issue_rows
+                    or read_model.mapping_rows
+                    or read_model.gap_coverage_issue_rows
+                )
+            ),
+        }
+        for key, label in self._empty_state_labels.items():
+            label.setVisible(not availability.get(key, False))
+
     def set_read_model(self, read_model: RateRiskReadModel | None) -> None:
         """Render a certified read-model or an explicit unconfigured state."""
         self._read_model = read_model
         self._clear_tables()
+        self._bind_empty_states(read_model)
         if read_model is None:
             self._set_unconfigured_state()
             return

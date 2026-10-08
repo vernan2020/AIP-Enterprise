@@ -33,3 +33,16 @@ def test_point_hit_rect_centers_on_chart_point() -> None:
     assert rect.right() == 108.0
     assert rect.bottom() == 58.0
     assert rect.contains(QPointF(100.0, 50.0))
+
+
+def test_chart_tooltip_uses_high_contrast_dark_theme_markup() -> None:
+    tooltip = build_chart_tooltip(
+        "Curva BCCR",
+        (("Plazo", "2.40 años"), ("Rendimiento", "5.286%")),
+        note="Observación de mercado.",
+    )
+
+    assert "color:#FFFFFF" in tooltip
+    assert "color:#C6E5F4" in tooltip
+    assert "color:#A9D8EC" in tooltip
+    assert "min-width:220px" in tooltip

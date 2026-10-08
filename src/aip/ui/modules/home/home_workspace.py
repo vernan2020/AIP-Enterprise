@@ -50,8 +50,8 @@ class HomeWorkspace(QWidget):
 
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
-        root.setContentsMargins(22, 18, 22, 20)
-        root.setSpacing(14)
+        root.setContentsMargins(22, 16, 22, 18)
+        root.setSpacing(12)
 
         hero = QFrame()
         hero.setObjectName("homeHero")
@@ -99,10 +99,10 @@ class HomeWorkspace(QWidget):
         root.addWidget(section)
 
         modules = QGridLayout()
-        modules.setHorizontalSpacing(10)
-        modules.setVerticalSpacing(10)
+        modules.setHorizontalSpacing(12)
+        modules.setVerticalSpacing(12)
         for index, (module_title, detail, route) in enumerate(self._MODULES):
-            modules.addWidget(self._module_card(module_title, detail, route), index // 4, index % 4)
+            modules.addWidget(self._module_card(module_title, detail, route), index // 3, index % 3)
         root.addLayout(modules)
         root.addStretch(1)
 
@@ -117,13 +117,13 @@ class HomeWorkspace(QWidget):
         self.setStyleSheet(
             "QFrame#homeHero {background:#173F63; border:1px solid #173F63; border-radius:10px;}"
             "QFrame#homeContextCard, QFrame#homeModuleCard {background:#FFFFFF; border:1px solid #D7E0E8; "
-            "border-radius:8px;} QFrame#homeModuleCard:hover {border-color:#7FA6C3; background:#F9FBFD;}"
+            "border-radius:10px;} QFrame#homeModuleCard:hover {border-color:#5F8EAF; background:#F7FBFE;}"
         )
 
     def _context_card(self, key: str, caption: str) -> QFrame:
         card = QFrame()
         card.setObjectName("homeContextCard")
-        card.setMinimumHeight(72)
+        card.setMinimumHeight(66)
         layout = QVBoxLayout(card)
         layout.setContentsMargins(11, 8, 11, 8)
         title = QLabel(caption)
@@ -138,7 +138,7 @@ class HomeWorkspace(QWidget):
     def _module_card(self, title: str, detail: str, route: str) -> QFrame:
         card = QFrame()
         card.setObjectName("homeModuleCard")
-        card.setMinimumHeight(124)
+        card.setMinimumHeight(108)
         layout = QVBoxLayout(card)
         layout.setContentsMargins(12, 10, 12, 10)
         name = QLabel(title)

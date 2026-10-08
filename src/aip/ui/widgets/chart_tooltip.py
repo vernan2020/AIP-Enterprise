@@ -30,8 +30,8 @@ def build_chart_tooltip(
             continue
         body.append(
             "<tr>"
-            f"<td style='padding-right:12px;color:#5E7183;'>{escape(str(label))}</td>"
-            f"<td style='font-weight:600;color:#17324D;'>{escape(value)}</td>"
+            f"<td style='padding-right:14px;color:#C6E5F4;'>{escape(str(label))}</td>"
+            f"<td style='font-weight:700;color:#FFFFFF;'>{escape(value)}</td>"
             "</tr>"
         )
 
@@ -46,14 +46,14 @@ def build_chart_tooltip(
     note_html = ""
     if note and note.strip():
         note_html = (
-            "<div style='margin-top:5px;color:#6F8090;font-size:9px;'>"
+            "<div style='margin-top:6px;color:#A9D8EC;font-size:10px;'>"
             f"{escape(note.strip())}"
             "</div>"
         )
 
     return (
-        "<div style='min-width:190px;'>"
-        f"<div style='font-weight:700;color:#00345F;'>{escape(title)}</div>"
+        "<div style='min-width:220px;color:#FFFFFF;font-size:11px;'>"
+        f"<div style='font-weight:800;color:#FFFFFF;margin-bottom:3px;'>{escape(title)}</div>"
         f"{table}{note_html}"
         "</div>"
     )

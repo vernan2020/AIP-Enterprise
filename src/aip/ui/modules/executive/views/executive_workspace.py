@@ -43,6 +43,7 @@ class ExecutiveWorkspace(QWidget):
         self._view_model = self._presenter.build_view_model()
         self._status_card = ExecutiveStatusCard("Listo")
         self._kpis: dict[str, QLabel] = {}
+        self._context_labels: dict[str, QLabel] = {}
         self._panel_labels: dict[str, QLabel] = {}
         self._build_ui()
         self.bind_view_model(self._view_model)
@@ -62,7 +63,7 @@ class ExecutiveWorkspace(QWidget):
     def _metric_card(self, key: str, title: str, helper: str) -> QFrame:
         card = QFrame()
         card.setObjectName("executiveMetricCard")
-        card.setMinimumHeight(94)
+        card.setMinimumHeight(82)
         card.setStyleSheet(
             "QFrame#executiveMetricCard {"
             "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
@@ -111,7 +112,7 @@ class ExecutiveWorkspace(QWidget):
         title_font.setBold(True)
         self._title.setFont(title_font)
         self._subtitle = QLabel(
-            "UX V4 · Portafolio · Liquidez · Mercado · Inteligencia Macroeconómica"
+            "Visión integrada de Portafolio · Liquidez · Mercado · Riesgo · Macroeconomía"
         )
         self._subtitle.setStyleSheet("color:#667788; font-size:10px;")
         title_box.addWidget(self._title)
@@ -140,14 +141,46 @@ class ExecutiveWorkspace(QWidget):
             ("yield", "TIR", "Rendimiento ponderado"),
             ("duration", "Duración", "Duración modificada"),
             ("hqla", "HQLA", "Elegibilidad del portafolio"),
-            ("mil", "MIL", "Elegibilidad de garantía"),
             ("gap", "Brecha de Liquidez", "Posición institucional"),
             ("icl", "ICL Total", "Cobertura 30 días"),
-            ("rv", "Valor Relativo / Rotación", "Universo de mercado y candidatos"),
         )
         for index, definition in enumerate(definitions):
-            kpis.addWidget(self._metric_card(*definition), index // 4, index % 4)
+            kpis.addWidget(self._metric_card(*definition), 0, index)
         root.addLayout(kpis)
+
+        context_strip = QFrame()
+        context_strip.setObjectName("executiveContextStrip")
+        context_strip.setStyleSheet(
+            "QFrame#executiveContextStrip {background:#F7FAFC; border:1px solid #D7E0E8; "
+            "border-radius:9px;}"
+        )
+        context_layout = QGridLayout(context_strip)
+        context_layout.setContentsMargins(10, 6, 10, 6)
+        context_layout.setHorizontalSpacing(18)
+        for index, (key, caption) in enumerate(
+            (
+                ("mil", "MIL elegible"),
+                ("rv", "Valor relativo / Rotación"),
+                ("quality", "Calidad de datos"),
+                ("macro", "Escenario macro"),
+                ("horizon", "Horizonte macro"),
+            )
+        ):
+            caption_label = QLabel(caption)
+            caption_label.setStyleSheet("color:#718096; font-size:8px; border:none;")
+            value_label = QLabel("-")
+            value_label.setStyleSheet(
+                "color:#17324D; font-size:10px; font-weight:700; border:none;"
+            )
+            self._context_labels[key] = value_label
+            cell = QWidget()
+            cell_layout = QVBoxLayout(cell)
+            cell_layout.setContentsMargins(0, 0, 0, 0)
+            cell_layout.setSpacing(1)
+            cell_layout.addWidget(caption_label)
+            cell_layout.addWidget(value_label)
+            context_layout.addWidget(cell, 0, index)
+        root.addWidget(context_strip)
 
         panels = QGridLayout()
         panels.setHorizontalSpacing(8)
@@ -230,7 +263,7 @@ class ExecutiveWorkspace(QWidget):
         header.setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
         header.setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
         header.setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents)
-        table.setMinimumHeight(210)
+        table.setMinimumHeight(170)
         return table
 
     @classmethod
@@ -271,13 +304,18 @@ class ExecutiveWorkspace(QWidget):
             "yield": view_model.weighted_yield,
             "duration": view_model.modified_duration,
             "hqla": view_model.hqla_percent,
-            "mil": view_model.mil_percent,
             "gap": view_model.liquidity_gap,
             "icl": view_model.icl_total,
-            "rv": f"{view_model.relative_value_count} / {view_model.rotation_candidate_count}",
         }
         for key, value in values.items():
             self._kpis[key].setText(value)
+        self._context_labels["mil"].setText(view_model.mil_percent)
+        self._context_labels["rv"].setText(
+            f"{view_model.relative_value_count} / {view_model.rotation_candidate_count}"
+        )
+        self._context_labels["quality"].setText(view_model.data_quality_status)
+        self._context_labels["macro"].setText(view_model.macro_scenario)
+        self._context_labels["horizon"].setText(view_model.macro_horizon)
         self._panel_labels["portfolio_panel"].setText(self._lines(view_model.portfolio))
         self._panel_labels["liquidity_panel"].setText(self._lines(view_model.liquidity))
         self._panel_labels["market_panel"].setText(self._lines(view_model.market))
