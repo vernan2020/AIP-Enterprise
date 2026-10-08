@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from PySide6.QtCore import QObject, Qt, QThread, QTimer, Signal, Slot
+from PySide6.QtCore import QObject, QRunnable, Qt, QThread, QThreadPool, QTimer, Signal, Slot
 from PySide6.QtGui import QCloseEvent, QDesktopServices, QFont
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -76,26 +76,43 @@ class _ComparisonWorker(QObject):
         self.finished.emit(comparison)
 
 
-class _FinancialLoadWorker(QObject):
+class _FinancialLoadSignals(QObject):
     completed = Signal(object, object)
+    failed = Signal(object, str)
 
-    def __init__(self, presenter: FinancialAnalysisPresenter) -> None:
+
+class _FinancialLoadWorker(QRunnable):
+    """One-shot data task; no QThread owned by the financial workspace."""
+
+    def __init__(
+        self,
+        presenter: FinancialAnalysisPresenter,
+        entity_id: object,
+        force_refresh: bool,
+    ) -> None:
         super().__init__()
         self._presenter = presenter
+        self._entity_id = entity_id
+        self._force_refresh = force_refresh
+        self.signals = _FinancialLoadSignals()
+        self.setAutoDelete(True)
 
-    @Slot(object, bool)
-    def load(self, entity_id: object, force_refresh: bool) -> None:
-        model = self._presenter.build_view_model(
-            selected_entity_id=str(entity_id) if entity_id else None,
-            force_refresh=force_refresh,
-        )
-        self.completed.emit(entity_id, model)
+    @Slot()
+    def run(self) -> None:
+        try:
+            model = self._presenter.build_view_model(
+                selected_entity_id=str(self._entity_id) if self._entity_id else None,
+                force_refresh=self._force_refresh,
+            )
+            self.signals.completed.emit(self._entity_id, model)
+        except Exception as exc:
+            self.signals.failed.emit(
+                self._entity_id, f"{type(exc).__name__}: {exc}"
+            )
 
 
 class FinancialAnalysisView(QWidget):
     """Workspace comparativo de estados financieros publicados por SUGEF."""
-
-    load_requested = Signal(object, bool)
 
     _KPI_ORDER = ("ASSETS", "LOANS", "LIABILITIES", "EQUITY", "NET_INCOME", "ROA", "ROE")
 
@@ -112,16 +129,9 @@ class FinancialAnalysisView(QWidget):
         self._loading = False
         self._pending_request: tuple[object, bool] | None = None
         self._closing = False
+        self._load_pool = QThreadPool.globalInstance()
+        self._active_load_worker: _FinancialLoadWorker | None = None
         self._build_ui()
-        self._load_thread = QThread(self)
-        self._load_worker = _FinancialLoadWorker(self._presenter)
-        self._load_worker.moveToThread(self._load_thread)
-        self.load_requested.connect(self._load_worker.load, Qt.ConnectionType.QueuedConnection)
-        self._load_worker.completed.connect(
-            self._load_completed, Qt.ConnectionType.QueuedConnection
-        )
-        self._load_thread.finished.connect(self._load_worker.deleteLater)
-        self._load_thread.start()
         QTimer.singleShot(0, lambda: self._request_load(None, False))
 
     def _build_ui(self) -> None:
@@ -939,10 +949,19 @@ class FinancialAnalysisView(QWidget):
             return
         self._loading = True
         self._refresh_button.setEnabled(False)
-        self.load_requested.emit(entity_id, force_refresh)
+        worker = _FinancialLoadWorker(self._presenter, entity_id, force_refresh)
+        worker.signals.completed.connect(
+            self._load_completed, Qt.ConnectionType.QueuedConnection
+        )
+        worker.signals.failed.connect(
+            self._load_failed, Qt.ConnectionType.QueuedConnection
+        )
+        self._active_load_worker = worker
+        self._load_pool.start(worker)
 
     @Slot(object, object)
     def _load_completed(self, entity_id: object, model: object) -> None:
+        self._active_load_worker = None
         if self._closing:
             return
         self._loading = False
@@ -958,6 +977,13 @@ class FinancialAnalysisView(QWidget):
             return
         if isinstance(model, FinancialAnalysisViewModel):
             self.bind_view_model(model)
+
+    @Slot(object, str)
+    def _load_failed(self, entity_id: object, message: str) -> None:
+        self._load_completed(
+            entity_id,
+            FinancialAnalysisViewModel(diagnostics=(f"Carga SUGEF no disponible: {message}",)),
+        )
 
     def _entity_changed(self, _index: int) -> None:
         if self._building_entity_selector:
@@ -1012,11 +1038,7 @@ class FinancialAnalysisView(QWidget):
 
     def closeEvent(self, event: QCloseEvent) -> None:
         self._closing = True
-        self._load_thread.quit()
-        if not self._load_thread.wait(5000):
-            self._load_thread.requestInterruption()
-            event.ignore()
-            return
+        self._pending_request = None
         super().closeEvent(event)
 
     def _open_source(self) -> None:
