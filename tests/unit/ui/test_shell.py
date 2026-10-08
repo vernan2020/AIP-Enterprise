@@ -23,6 +23,13 @@ def test_shell_components_construct(qt_app) -> None:
     loading = LoadingWidget("Loading")
     assert loading.text() == "Loading"
 
+    loading.deleteLater()
+    status_bar.deleteLater()
+    workspace.deleteLater()
+    window.close()
+    window.deleteLater()
+    qt_app.processEvents()
+
 
 def test_cutoff_change_updates_factory_and_shared_context(qt_app) -> None:
     window = MainWindow()
@@ -34,3 +41,5 @@ def test_cutoff_change_updates_factory_and_shared_context(qt_app) -> None:
     assert window._valuation_context.valuation_date == target
     assert window._date_edit.isEnabled()
     window.close()
+    window.deleteLater()
+    qt_app.processEvents()
