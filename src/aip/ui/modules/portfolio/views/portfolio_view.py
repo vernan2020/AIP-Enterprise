@@ -5,11 +5,14 @@ from decimal import Decimal
 from PySide6.QtCore import QObject, Qt, QThread, Signal, Slot
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
+    QFileDialog,
     QFrame,
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
     QLabel,
+    QMessageBox,
+    QPushButton,
     QScrollArea,
     QSplitter,
     QTabWidget,
@@ -17,6 +20,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from aip.ui.modules.portfolio.models.portfolio_dashboard_point import PortfolioDashboardPoint
 from aip.ui.modules.portfolio.models.portfolio_history_point import PortfolioHistorySeries
 from aip.ui.modules.portfolio.presenters.portfolio_presenter import PortfolioPresenter
 from aip.ui.modules.portfolio.viewmodels.portfolio_view_model import PortfolioViewModel
@@ -35,6 +39,7 @@ from aip.ui.modules.portfolio.widgets.portfolio_dashboard_chart import (
 )
 from aip.ui.modules.portfolio.widgets.portfolio_filter_panel import PortfolioFilterPanel
 from aip.ui.modules.portfolio.widgets.portfolio_status_badge import PortfolioStatusBadge
+from aip.ui.services.export_service import ExcelSheet, TableExportService
 
 
 class _PortfolioHistoryWorker(QObject):
@@ -231,6 +236,7 @@ class PortfolioView(QWidget):
         issuer_layout = QVBoxLayout(issuer_group)
         self._issuer_chart = PortfolioDashboardBarChart()
         issuer_layout.addWidget(self._issuer_chart)
+        self._add_excel_action(issuer_layout, "issuer", "Concentración por emisor")
         layout.addWidget(issuer_group, 0, 0)
 
         duration_group = QGroupBox("Distribución por duración")
@@ -238,6 +244,7 @@ class PortfolioView(QWidget):
         duration_layout = QVBoxLayout(duration_group)
         self._duration_chart = PortfolioDashboardColumnChart()
         duration_layout.addWidget(self._duration_chart)
+        self._add_excel_action(duration_layout, "duration", "Distribución por duración")
         layout.addWidget(duration_group, 0, 1)
 
         opportunity_group = QGroupBox("Radar de oportunidades · diferencial vs curva")
@@ -247,6 +254,7 @@ class PortfolioView(QWidget):
             value_formatter=lambda value: f"{value:+.1f} pb"
         )
         opportunity_layout.addWidget(self._opportunity_chart)
+        self._add_excel_action(opportunity_layout, "opportunity", "Diferencial frente a curva")
         layout.addWidget(opportunity_group, 1, 0)
 
         currency_group = QGroupBox("Distribución por moneda")
@@ -254,6 +262,7 @@ class PortfolioView(QWidget):
         currency_layout = QVBoxLayout(currency_group)
         self._currency_chart = PortfolioDashboardDonutChart(center_label="Valor de mercado total")
         currency_layout.addWidget(self._currency_chart)
+        self._add_excel_action(currency_layout, "currency", "Distribución por moneda")
         layout.addWidget(currency_group, 1, 1)
 
         layout.setColumnStretch(0, 1)
@@ -270,6 +279,62 @@ class PortfolioView(QWidget):
         )
         layout.addWidget(self._dashboard_note, 2, 0, 1, 2)
         self._tabs.addTab(page, "Resumen ejecutivo")
+
+    def _add_excel_action(self, layout: QVBoxLayout, key: str, label: str) -> None:
+        action_row = QHBoxLayout()
+        action_row.addStretch(1)
+        action = QPushButton("Exportar datos · Excel")
+        action.setObjectName(f"portfolioExcel_{key}")
+        action.setToolTip(f"Descargar los datos originales de {label}")
+        action.clicked.connect(
+            lambda _checked=False, metric=key, title=label: self._export_chart_data(metric, title)
+        )
+        action_row.addWidget(action)
+        layout.addLayout(action_row)
+
+    @staticmethod
+    def _chart_data_sheet(
+        title: str, points: tuple[PortfolioDashboardPoint, ...], unit: str
+    ) -> ExcelSheet:
+        return ExcelSheet(
+            title=title,
+            headers=("Categoría / instrumento", f"Valor ({unit})", "Dato adicional", "Detalle"),
+            rows=tuple(
+                (item.label, item.value, item.secondary_value, item.detail)
+                for item in points
+            ),
+        )
+
+    def _export_chart_data(self, key: str, title: str) -> None:
+        sources = {
+            "issuer": (self._view_model.top_issuer_points, "%"),
+            "duration": (self._view_model.duration_points, "%"),
+            "opportunity": (self._view_model.opportunity_points, "pb"),
+            "currency": (self._view_model.currency_points, "%"),
+        }
+        points, unit = sources[key]
+        if not points:
+            QMessageBox.information(self, "Sin datos", "Este gráfico no tiene datos disponibles.")
+            return
+        destination, _filter = QFileDialog.getSaveFileName(
+            self, f"Exportar {title}", f"AIP_{key}.xlsx", "Excel (*.xlsx)"
+        )
+        if not destination:
+            return
+        try:
+            TableExportService().export_workbook(
+                destination,
+                sheets=(self._chart_data_sheet(title, points, unit),),
+                metadata={
+                    "Módulo": "Portafolio · Resumen ejecutivo",
+                    "Gráfico": title,
+                    "Corte": str(self._view_model.summary.valuation_date),
+                    "Fuente": "Maestro institucional de inversiones",
+                    "Regla": "Los datos son valores de presentación, sin recálculo de metodología.",
+                },
+            )
+        except (OSError, ValueError) as exc:
+            QMessageBox.warning(self, "Exportación fallida", str(exc))
 
     def _build_positions_tab(self) -> None:
         page = QWidget()
