@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from PySide6.QtCore import QObject, Qt, QThread, Signal, Slot
+from PySide6.QtCore import QObject, Qt, QThread, QTimer, Signal, Slot
 from PySide6.QtGui import QDesktopServices, QFont
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -76,8 +76,26 @@ class _ComparisonWorker(QObject):
         self.finished.emit(comparison)
 
 
+class _FinancialLoadWorker(QObject):
+    completed = Signal(object, object)
+
+    def __init__(self, presenter: FinancialAnalysisPresenter) -> None:
+        super().__init__()
+        self._presenter = presenter
+
+    @Slot(object, bool)
+    def load(self, entity_id: object, force_refresh: bool) -> None:
+        model = self._presenter.build_view_model(
+            selected_entity_id=str(entity_id) if entity_id else None,
+            force_refresh=force_refresh,
+        )
+        self.completed.emit(entity_id, model)
+
+
 class FinancialAnalysisView(QWidget):
     """Workspace comparativo de estados financieros publicados por SUGEF."""
+
+    load_requested = Signal(object, bool)
 
     _KPI_ORDER = ("ASSETS", "LOANS", "LIABILITIES", "EQUITY", "NET_INCOME", "ROA", "ROE")
 
@@ -91,8 +109,18 @@ class FinancialAnalysisView(QWidget):
         self._building_entity_selector = False
         self._comparison_thread: QThread | None = None
         self._comparison_worker: _ComparisonWorker | None = None
+        self._loading = False
+        self._pending_request: tuple[object, bool] | None = None
+        self._closing = False
         self._build_ui()
-        self.bind_view_model(self._presenter.build_view_model())
+        self._load_thread = QThread(self)
+        self._load_worker = _FinancialLoadWorker(self._presenter)
+        self._load_worker.moveToThread(self._load_thread)
+        self.load_requested.connect(self._load_worker.load, Qt.ConnectionType.QueuedConnection)
+        self._load_worker.completed.connect(self._load_completed, Qt.ConnectionType.QueuedConnection)
+        self._load_thread.finished.connect(self._load_worker.deleteLater)
+        self._load_thread.start()
+        QTimer.singleShot(0, lambda: self._request_load(None, False))
 
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
@@ -897,14 +925,40 @@ class FinancialAnalysisView(QWidget):
         if selected >= 0:
             self._entity_selector.setCurrentIndex(selected)
 
+    def _request_load(self, entity_id: object, force_refresh: bool) -> None:
+        if self._closing:
+            return
+        if self._loading:
+            previous = self._pending_request
+            self._pending_request = (
+                entity_id,
+                force_refresh or (previous is not None and previous[1]),
+            )
+            return
+        self._loading = True
+        self._refresh_button.setEnabled(False)
+        self.load_requested.emit(entity_id, force_refresh)
+
+    @Slot(object, object)
+    def _load_completed(self, entity_id: object, model: object) -> None:
+        if self._closing:
+            return
+        self._loading = False
+        self._refresh_button.setEnabled(True)
+        if self._pending_request is not None:
+            entity, refresh = self._pending_request
+            self._pending_request = None
+            self._request_load(entity, refresh)
+            return
+        if isinstance(model, FinancialAnalysisViewModel):
+            self.bind_view_model(model)
+
     def _entity_changed(self, _index: int) -> None:
         if self._building_entity_selector:
             return
         entity_id = self._entity_selector.currentData()
         if entity_id:
-            self.bind_view_model(
-                self._presenter.build_view_model(selected_entity_id=str(entity_id))
-            )
+            self._request_load(str(entity_id), False)
 
     def _run_entity_comparison(
         self,
@@ -948,13 +1002,13 @@ class FinancialAnalysisView(QWidget):
         self._comparison_worker = None
 
     def _refresh(self) -> None:
-        entity_id = self._entity_selector.currentData()
-        self.bind_view_model(
-            self._presenter.build_view_model(
-                selected_entity_id=str(entity_id) if entity_id else None,
-                force_refresh=True,
-            )
-        )
+        self._request_load(self._entity_selector.currentData(), True)
+
+    def closeEvent(self, event: object) -> None:
+        self._closing = True
+        self._load_thread.quit()
+        self._load_thread.wait()
+        super().closeEvent(event)
 
     def _open_source(self) -> None:
         from PySide6.QtCore import QUrl
