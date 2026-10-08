@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import logging
 from collections import defaultdict
 from datetime import date, datetime
 from decimal import Decimal
-import logging
 from time import perf_counter
 
 from aip.domain.portfolio.risk.portfolio_historical_var_service import (
