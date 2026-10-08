@@ -24,25 +24,31 @@ class _Presenter:
 
 def test_main_window_opens_financial_analysis_workspace(qt_app) -> None:
     window = MainWindow()
-    window.open_workspace("financial_analysis")
-
-    titles = [window.workspace.tabText(index) for index in range(window.workspace.count())]
-    assert "Análisis Financiero" in titles
+    try:
+        window.open_workspace("financial_analysis")
+        titles = [window.workspace.tabText(index) for index in range(window.workspace.count())]
+        assert "Análisis Financiero" in titles
+    finally:
+        window.close()
+        qt_app.processEvents()
 
 
 def test_financial_analysis_is_available_in_ribbon_and_sidebar(qt_app) -> None:
     window = MainWindow()
-
-    assert window._ribbon.action("Análisis Financiero").text() == "Análisis Financiero"
-    labels = [
-        window._sidebar._tree.item(index).text() for index in range(window._sidebar._tree.count())
-    ]
-    assert "Análisis Financiero" in labels
+    try:
+        assert window._ribbon.action("Análisis Financiero").text() == "Análisis Financiero"
+        labels = [
+            window._sidebar._tree.item(index).text()
+            for index in range(window._sidebar._tree.count())
+        ]
+        assert "Análisis Financiero" in labels
+    finally:
+        window.close()
+        qt_app.processEvents()
 
 
 def test_financial_analysis_exposes_methodology_rating_tab(qt_app) -> None:
     view = FinancialAnalysisView(presenter=_Presenter())  # type: ignore[arg-type]
-
     titles = [view._tabs.tabText(index) for index in range(view._tabs.count())]
     rating_titles = [
         view._rating_content_tabs.tabText(index)
@@ -68,6 +74,8 @@ def test_financial_analysis_exposes_methodology_rating_tab(qt_app) -> None:
     assert "Calificación oficial" not in view._rating_heading.text()
     assert view._cutoff.text().startswith("Corte SUGEF:")
     assert "corte general de AIP" in view._cutoff.toolTip()
+    view.close()
+    qt_app.processEvents()
 
 
 def test_presenter_does_not_show_requested_date_as_sugef_cutoff_without_data() -> None:

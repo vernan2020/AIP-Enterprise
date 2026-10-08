@@ -87,6 +87,26 @@ def _translate_status(value: object) -> str:
     }.get(text.strip().upper(), text)
 
 
+class _ProjectionWorkerSignals(QObject):
+    completed = Signal(object)
+    failed = Signal(str)
+
+
+class _InstitutionalProjectionWorker(QRunnable):
+    def __init__(self, presenter: MacroIntelligencePresenter) -> None:
+        super().__init__()
+        self._presenter = presenter
+        self.signals = _ProjectionWorkerSignals()
+        self.setAutoDelete(True)
+
+    @Slot()
+    def run(self) -> None:
+        try:
+            self.signals.completed.emit(self._presenter.build_projection())
+        except Exception as exc:
+            self.signals.failed.emit(f"{type(exc).__name__}: {exc}")
+
+
 class _EconomicWorkerSignals(QObject):
     completed = Signal(object)
     failed = Signal(str)
@@ -468,6 +488,7 @@ class MacroIntelligenceWorkspace(QWidget):
         self._thread_pool = QThreadPool.globalInstance()
         self._active_worker: _EconomicLoadWorker | None = None
         self._forecast_worker: _ForecastProjectionWorker | None = None
+        self._institutional_worker: _InstitutionalProjectionWorker | None = None
         self._loading = False
         self._forecast_loading = False
         self._pending_forecast_code: str | None = None
@@ -710,8 +731,27 @@ class MacroIntelligenceWorkspace(QWidget):
             self._apply_snapshot(snapshot, persisted=True)
 
     def _load_projection(self) -> None:
-        self._projection = self._presenter.build_projection()
+        if self._institutional_worker is not None:
+            return
+        worker = _InstitutionalProjectionWorker(self._presenter)
+        worker.signals.completed.connect(self._institutional_projection_completed)
+        worker.signals.failed.connect(self._institutional_projection_failed)
+        self._institutional_worker = worker
+        self._thread_pool.start(worker)
+
+    @Slot(object)
+    def _institutional_projection_completed(self, projection: object) -> None:
+        self._institutional_worker = None
+        if not isinstance(projection, MacroProjectionViewModel):
+            self._institutional_projection_failed("Resultado de escenario inválido")
+            return
+        self._projection = projection
         self._bind_projection()
+
+    @Slot(str)
+    def _institutional_projection_failed(self, message: str) -> None:
+        self._institutional_worker = None
+        self._projection_note.setText(f"Escenario institucional no disponible · {message}")
 
     def _bind_projection(self) -> None:
         projection = self._projection

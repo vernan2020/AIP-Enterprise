@@ -7,7 +7,9 @@ from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
+from time import perf_counter
 
+from aip.core.price_risk_performance import record_stage_duration
 from aip.domain.portfolio.risk.historical_price_series import HistoricalPriceObservation
 from aip.product.configured.readers.pipca_vector_reader import (
     InstitutionalPiPCAVectorReader,
@@ -136,6 +138,13 @@ class PiPCAHistoricalPriceRepository:
         )
 
     def _preload_recent_records(self, *, dates: tuple[date, ...], limit: int) -> None:
+        started = perf_counter()
+        try:
+            self._preload_recent_records_impl(dates=dates, limit=limit)
+        finally:
+            record_stage_duration("var_vector_preload", started)
+
+    def _preload_recent_records_impl(self, *, dates: tuple[date, ...], limit: int) -> None:
         """Read the most likely historical window concurrently on cold start."""
 
         recent_dates = dates[-limit:]
