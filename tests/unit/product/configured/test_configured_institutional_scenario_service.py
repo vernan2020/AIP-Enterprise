@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
@@ -182,3 +182,56 @@ def test_untrusted_source_filename_is_rejected(tmp_path: Path, filename: str) ->
             cutoff=CUTOFF,
             policy=_policy(),
         )
+
+
+def test_configured_service_propagates_explicit_approved_fx_to_reader(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    rate = VerifiedScenarioFXRate(
+        currency="USD",
+        cutoff=CUTOFF,
+        effective_date=CUTOFF,
+        crc_per_unit=Decimal("450"),
+        rate_type="BCCR_SELL",
+        source_reference="BCCR-SELL-2026-10-02",
+    )
+    checked: list[dict[str, VerifiedScenarioFXRate]] = []
+
+    def fake_read(cls, master_file, positions, row_ids, *, cutoff, fx_rates_by_currency):
+        assert cutoff == CUTOFF
+        assert positions[1].fx_translation_source == rate.source_reference
+        checked.append(dict(fx_rates_by_currency))
+        return InstitutionalScenarioMarketEvidence(
+            cutoff=CUTOFF,
+            master_file=str(master_file),
+            sheet_name="Master",
+            market_risks=_market(),
+            total_market_value_crc=Decimal("200"),
+        )
+
+    monkeypatch.setattr(
+        "aip.product.configured.services.configured_institutional_scenario_service."
+        "InstitutionalMasterScenarioRiskAdapter.read_file",
+        classmethod(fake_read),
+    )
+    base_positions = _capital()
+    positions = (
+        base_positions[0],
+        replace(
+            base_positions[1],
+            currency="USD",
+            fx_translation_source=rate.source_reference,
+        ),
+    )
+    output = ConfiguredInstitutionalScenarioService(
+        _Provider(_snapshot(str(tmp_path)))
+    ).evaluate(
+        positions,
+        {"A": 17, "B": 19},
+        {"A": Decimal("0.6"), "B": Decimal("0.4")},
+        cutoff=CUTOFF,
+        policy=_policy(),
+        fx_rates_by_currency={"USD": rate},
+    )
+    assert checked == [{"USD": rate}]
+    assert output.comparison.current.status == "INCOMPLETE"
