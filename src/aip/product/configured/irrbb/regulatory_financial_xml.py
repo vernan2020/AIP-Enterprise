@@ -236,6 +236,8 @@ class RegulatoryFinancialXMLReader:
                 raise ValueError("El Periodo del XML no coincide con el mes de corte.")
             checksum = self._monthly.sha256(path)
             rows, totals = self._parse(path, spec)
+            if self._monthly.sha256(path) != checksum:
+                raise ValueError("El XML cambió durante la lectura; vuelva a validar el corte.")
             issues = self._reconcile(rows, totals)
             return RegulatoryXMLFileResult(
                 key=spec.key,
