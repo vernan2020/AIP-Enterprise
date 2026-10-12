@@ -6,6 +6,7 @@ from datetime import date
 
 from aip.product.configured.configuration.institutional_paths import expand_environment_path
 from aip.product.configured.irrbb.regulatory_financial_xml import RegulatoryFinancialXMLReader
+from aip.product.configured.irrbb.regulatory_gap_six_band import build_regulatory_gap
 from aip.product.demo.configuration.environment_loader import EnvironmentLoader
 
 
@@ -37,17 +38,26 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     snapshot = RegulatoryFinancialXMLReader(resolved).load(cutoff_date=cutoff)
+    gap = build_regulatory_gap(snapshot)
     print(
         json.dumps(
             {
                 "cutoff": cutoff.isoformat(),
                 "status": "VALIDATED" if snapshot.is_valid else "BLOCKED",
+                "six_band_gap": {
+                    "status": gap.status,
+                    "bucket_count": len(gap.rows),
+                    "issues": list(gap.issues),
+                    "cumulative_gap_crc": str(gap.rows[-1].cumulative_gap_crc)
+                    if gap.is_ready else None,
+                },
                 "files": [
                     {
                         "filename": item.filename,
                         "status": item.status,
                         "period": item.period.isoformat() if item.period else None,
                         "entity_id": item.entity_id,
+                        "load_type": item.load_type,
                         "rows": len(item.rows) if item.is_valid else None,
                         "account_totals": len(item.account_totals) if item.is_valid else None,
                         "sha256": item.source_sha256,
@@ -60,7 +70,7 @@ def main(argv: list[str] | None = None) -> int:
             ensure_ascii=False,
         )
     )
-    return 0 if snapshot.is_valid else 2
+    return 0 if snapshot.is_valid and gap.is_ready else 2
 
 
 if __name__ == "__main__":
