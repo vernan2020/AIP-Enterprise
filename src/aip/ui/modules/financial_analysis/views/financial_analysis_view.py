@@ -7,6 +7,7 @@ from PySide6.QtGui import QDesktopServices, QFont
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QComboBox,
+    QFileDialog,
     QFrame,
     QGridLayout,
     QHBoxLayout,
@@ -14,6 +15,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QListWidget,
+    QMessageBox,
     QPushButton,
     QSplitter,
     QTableWidget,
@@ -41,6 +43,7 @@ from aip.ui.modules.financial_analysis.views.financial_peer_chart import (
 from aip.ui.modules.financial_analysis.views.financial_statement_history_panel import (
     FinancialStatementHistoryPanel,
 )
+from aip.ui.services.export_service import ExcelSheet, TableExportService
 
 
 class _ComparisonWorker(QObject):
@@ -125,6 +128,25 @@ class FinancialAnalysisView(QWidget):
         self._refresh_button = QPushButton("Actualizar fuente")
         self._refresh_button.clicked.connect(self._refresh)
         header.addWidget(self._refresh_button)
+        self._export_table_selector = QComboBox()
+        self._export_table_selector.setObjectName("financialExcelTableSelector")
+        for label, key in (
+            ("Todas las tablas", "all"),
+            ("Estados y cuentas", "statement"),
+            ("Catálogo de cuentas", "catalog"),
+            ("Comparativo entidades", "peer"),
+            ("Ranking calificaciones", "peer_rating"),
+            ("Dimensiones", "dimension"),
+            ("Indicadores", "indicator"),
+            ("Reconciliación", "reconciliation"),
+        ):
+            self._export_table_selector.addItem(label, key)
+        self._export_table_selector.setToolTip("Seleccione una tabla o exporte todas")
+        header.addWidget(self._export_table_selector)
+        export_button = QPushButton("Tablas · Excel")
+        export_button.setObjectName("financialExcelTables")
+        export_button.clicked.connect(self._export_financial_tables)
+        header.addWidget(export_button)
         self._cutoff = QLabel("Corte SUGEF: -")
         self._cutoff.setToolTip(
             "Último corte oficial SUGEF disponible que no excede el corte general de AIP."
@@ -605,6 +627,66 @@ class FinancialAnalysisView(QWidget):
         self._source_status.setText(
             f"{view_model.source_name} · {status} · {view_model.source_file_count} fuente(s) procesada(s)"
         )
+
+    def _financial_table_sources(self) -> dict[str, tuple[str, QTableWidget]]:
+        return {
+            "statement": ("Estados y cuentas", self._statement_table),
+            "catalog": ("Catálogo cuentas", self._catalog_table),
+            "peer": ("Comparativo entidades", self._peer_table),
+            "peer_rating": ("Ranking calificaciones", self._peer_rating_table),
+            "dimension": ("Dimensiones", self._rating_dimension_table),
+            "indicator": ("Indicadores", self._rating_indicator_table),
+            "reconciliation": ("Reconciliación", self._reconciliation_table),
+        }
+
+    @staticmethod
+    def _visible_financial_table(title: str, table: QTableWidget) -> ExcelSheet:
+        columns = tuple(index for index in range(table.columnCount()) if not table.isColumnHidden(index))
+        rows = tuple(
+            tuple(
+                table.item(row, column).text() if table.item(row, column) else ""
+                for column in columns
+            )
+            for row in range(table.rowCount())
+            if not table.isRowHidden(row)
+        )
+        headers = tuple(
+            table.horizontalHeaderItem(column).text() if table.horizontalHeaderItem(column) else ""
+            for column in columns
+        )
+        return ExcelSheet(title=title, headers=headers, rows=rows)
+
+    def _export_financial_tables(self) -> None:
+        selection = str(self._export_table_selector.currentData() or "all")
+        definitions = self._financial_table_sources()
+        selected = definitions.items() if selection == "all" else ((selection, definitions[selection]),)
+        sheets = tuple(
+            self._visible_financial_table(title, table)
+            for _key, (title, table) in selected
+        )
+        if not any(sheet.rows for sheet in sheets):
+            QMessageBox.information(self, "Sin datos", "No hay registros para exportar.")
+            return
+        destination, _filter = QFileDialog.getSaveFileName(
+            self, "Exportar tablas SUGEF", "AIP_Analisis_Financiero.xlsx", "Excel (*.xlsx)"
+        )
+        if not destination:
+            return
+        try:
+            TableExportService().export_workbook(
+                destination,
+                sheets=sheets,
+                metadata={
+                    "Módulo": "Análisis Financiero",
+                    "Entidad": self._view_model.selected_entity_name,
+                    "Corte SUGEF": self._view_model.cutoff_date,
+                    "Fuente": self._view_model.source_name,
+                    "Alcance": "Registros y columnas visibles en las tablas seleccionadas.",
+                    "Regla N/D": "Los estados no disponibles no representan cero.",
+                },
+            )
+        except (OSError, ValueError) as exc:
+            QMessageBox.warning(self, "Exportación fallida", str(exc))
 
     def _bind_entities(self, view_model: FinancialAnalysisViewModel) -> None:
         self._building_entity_selector = True
