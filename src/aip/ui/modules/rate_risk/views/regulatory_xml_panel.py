@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import date
+
 from PySide6.QtWidgets import (
     QComboBox,
     QLabel,
@@ -27,6 +29,10 @@ class RegulatoryXMLPanel(QWidget):
         self._headline.setObjectName("rateRiskRegulatoryXMLStatus")
         self._headline.setStyleSheet("color:#00345F; font-size:13px; font-weight:800;")
         layout.addWidget(self._headline)
+        self._period_label = QLabel("Último corte XML: pendiente")
+        self._period_label.setObjectName("rateRiskRegulatoryXMLSelectedPeriod")
+        self._period_label.setWordWrap(True)
+        layout.addWidget(self._period_label)
 
         note = QLabel(
             "Brechas (catálogo 5) y Calce (catálogo 4): información por cuenta y "
@@ -103,6 +109,7 @@ class RegulatoryXMLPanel(QWidget):
     def set_unconfigured(self) -> None:
         self._snapshot = None
         self._headline.setText("XML Brechas y Calce: fuente no configurada")
+        self._period_label.setText("Último corte XML: no disponible")
         self._files.setRowCount(0)
         self._rows.setRowCount(0)
         self._account_selector.clear()
@@ -113,7 +120,26 @@ class RegulatoryXMLPanel(QWidget):
             "No hay datos regulatorios cargados; no se asumen valores cero."
         )
 
-    def set_snapshot(self, snapshot: RegulatoryXMLPairResult) -> None:
+    def set_snapshot(
+        self,
+        snapshot: RegulatoryXMLPairResult,
+        *,
+        valuation_cutoff: date | None = None,
+    ) -> None:
+        report_month = snapshot.cutoff_date.strftime("%m/%Y")
+        target = valuation_cutoff or snapshot.cutoff_date
+        target_month = target.strftime("%m/%Y")
+        matches_cutoff = (
+            snapshot.cutoff_date.year, snapshot.cutoff_date.month
+        ) == (target.year, target.month)
+        message = (
+            f"Último mes con XML: {report_month}. Corte AIP: {target_month}."
+            if matches_cutoff
+            else f"Último mes con XML: {report_month}. Corte AIP: {target_month}. "
+            "DESFASE: datos regulatorios de otro corte; no usar para el cálculo "
+            "RTILB del corte AIP."
+        )
+        self._period_label.setText(message)
         self._files.setRowCount(len(snapshot.files))
         for index, item in enumerate(snapshot.files):
             issue = "; ".join(item.issues) if item.issues else item.source_sha256 or ""
