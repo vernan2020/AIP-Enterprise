@@ -66,3 +66,11 @@ def test_exposure_basis_may_differ_from_investment_amount() -> None:
         )
     )
     assert result.annual_equity_charge_rate == Decimal("0.0072")
+
+
+def test_usd_sovereigns_use_75pct_in_equivalent_yield() -> None:
+    for classification in (ExposureClass.GOVERNMENT_USD, ExposureClass.BCCR_USD):
+        result = calculate(classification)
+        assert result.risk_weight == Decimal("0.75")
+        assert result.required_capital_crc == Decimal("12000000.0000")
+        assert result.equivalent_yield_at_reference_risk_weight == Decimal("0.0656")
