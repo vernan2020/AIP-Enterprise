@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
@@ -42,6 +43,9 @@ class InstitutionalMasterScenarioRiskAdapter:
     Regulatory capital remains an independently verified input.
     """
 
+    _DATED_FILENAME = re.compile(
+        r"(?<!\\d)(?P<day>\\d{1,2})[-_.]?(?P<month>\\d{1,2})[-_.]?(?P<year>\\d{4})(?!\\d)"
+    )
     _REQUIRED_NATIVE_COLUMNS = frozenset(
         {"market_value_crc", "currency", "issuer", "isin", "classification", "product_code"}
     )
@@ -55,8 +59,27 @@ class InstitutionalMasterScenarioRiskAdapter:
         *,
         cutoff: date,
     ) -> InstitutionalScenarioMarketEvidence:
-        """Read an existing local source without overriding its recorded cutoff."""
-        reader_result = InstitutionalPortfolioMasterReader().read(master_file)
+        """Use explicit cutoff override only after checking the native filename date."""
+        file_name = Path(master_file).stem
+        candidates: list[date] = []
+        for match in cls._DATED_FILENAME.finditer(file_name):
+            try:
+                candidates.append(
+                    date(
+                        int(match.group("year")),
+                        int(match.group("month")),
+                        int(match.group("day")),
+                    )
+                )
+            except ValueError as exc:
+                raise ValueError("Master filename contains an invalid date") from exc
+        if len(candidates) != 1:
+            raise ValueError("Institutional master filename needs one DD-MM-YYYY cutoff")
+        if candidates[0] != cutoff:
+            raise ValueError("Institutional master filename cutoff does not match selection")
+        reader_result = InstitutionalPortfolioMasterReader().read(
+            master_file, valuation_date_override=cutoff
+        )
         return cls.adapt(
             reader_result,
             capital_positions,

@@ -183,8 +183,46 @@ def test_native_currency_requires_verified_not_reader_default() -> None:
 def test_missing_physical_master_path_has_no_demo_fallback(tmp_path) -> None:
     with pytest.raises(ValueError, match="unverified"):
         InstitutionalMasterScenarioRiskAdapter.read_file(
-            tmp_path / "not-found.xlsx",
+            tmp_path / "02-10-2026.xlsx",
             _positions(),
             {"A": 17, "B": 19},
             cutoff=CUTOFF,
         )
+
+
+def test_read_file_requires_a_dated_unambiguous_name(monkeypatch) -> None:
+    calls: list[date | None] = []
+
+    def read_fake(self, path, *, valuation_date_override=None, diagnostic_mode=False):
+        calls.append(valuation_date_override)
+        return _master()
+
+    monkeypatch.setattr(
+        "aip.product.configured.adapters.institutional_portfolio_scenario_adapter."
+        "InstitutionalPortfolioMasterReader.read",
+        read_fake,
+    )
+    result = InstitutionalMasterScenarioRiskAdapter.read_file(
+        "master-02-10-2026.xlsx",
+        _positions(),
+        {"A": 17, "B": 19},
+        cutoff=CUTOFF,
+    )
+    assert result.total_market_value_crc == Decimal("1000")
+    assert calls == [CUTOFF]
+
+    with pytest.raises(ValueError, match="filename"):
+        InstitutionalMasterScenarioRiskAdapter.read_file(
+            "master-not-dated.xlsx",
+            _positions(),
+            {"A": 17, "B": 19},
+            cutoff=CUTOFF,
+        )
+    with pytest.raises(ValueError, match="filename cutoff"):
+        InstitutionalMasterScenarioRiskAdapter.read_file(
+            "master-03-10-2026.xlsx",
+            _positions(),
+            {"A": 17, "B": 19},
+            cutoff=CUTOFF,
+        )
+    assert calls == [CUTOFF]
