@@ -101,22 +101,84 @@ class RegulatoryFinancialXMLReader:
 
     def __init__(self, root: str) -> None:
         self._monthly = XMLConfiaMonthlySourceReader(root)
+        self._root = Path(root)
+
+    def latest_month(self) -> tuple[date, Path] | None:
+        """Return the most recent reported month containing EITHER expected XML.
+
+        Never silently fall back to a past complete pair when the newest
+        reported month has just one file or contains a malformed submission.
+        Month, not filesystem mtime, establishes reporting recency.
+        """
+        if not self._root.is_dir():
+            return None
+
+        expected_names = {spec.filename.casefold() for spec in REGULATORY_XML_SPECS}
+        candidates: list[tuple[date, Path]] = []
+        for year_dir in self._root.iterdir():
+            if not year_dir.is_dir() or len(year_dir.name) != 4 or not year_dir.name.isdigit():
+                continue
+            year = int(year_dir.name)
+            if not 1900 <= year <= 9999:
+                continue
+            for month_dir in year_dir.iterdir():
+                if not month_dir.is_dir():
+                    continue
+                month_string, separator, suffix = month_dir.name.partition("-")
+                if separator != "-" or len(month_string) != 2 or not suffix:
+                    continue
+                if not month_string.isdigit() or not 1 <= int(month_string) <= 12:
+                    continue
+                if any(
+                    path.is_file() and path.name.casefold() in expected_names
+                    for path in month_dir.iterdir()
+                ):
+                    candidates.append((date(year, int(month_string), 1), month_dir))
+
+        return max(candidates, key=lambda candidate: candidate[0]) if candidates else None
+
+    def load_latest(self, *, reference_cutoff: date) -> RegulatoryXMLPairResult:
+        """Read latest existing month, preserving incomplete-month failure visibility."""
+        try:
+            latest = self.latest_month()
+        except OSError as exc:
+            return self._missing(reference_cutoff, f"No se pudo consultar raíz XML: {exc}")
+        if latest is None:
+            return self._missing(
+                reference_cutoff,
+                "No hay XML Brechas o Calce en carpetas institucionales año/mes.",
+            )
+        month, directory = latest
+        return self._load_directory(
+            directory,
+            date(month.year, month.month, 1),
+        )
+
+    @staticmethod
+    def _missing(cutoff: date, message: str) -> RegulatoryXMLPairResult:
+        return RegulatoryXMLPairResult(
+            cutoff,
+            tuple(
+                RegulatoryXMLFileResult(
+                    key=spec.key,
+                    filename=spec.filename,
+                    status="MISSING",
+                    issues=(message,),
+                )
+                for spec in REGULATORY_XML_SPECS
+            ),
+        )
 
     def load(self, *, cutoff_date: date) -> RegulatoryXMLPairResult:
         try:
             directory = self._monthly.resolve_month_directory(cutoff_date)
         except (OSError, ValueError) as exc:
-            files = tuple(
-                RegulatoryXMLFileResult(
-                    key=spec.key,
-                    filename=spec.filename,
-                    status="MISSING",
-                    issues=(str(exc),),
-                )
-                for spec in REGULATORY_XML_SPECS
-            )
-            return RegulatoryXMLPairResult(cutoff_date, files)
+            return self._missing(cutoff_date, str(exc))
+        return self._load_directory(directory, cutoff_date)
 
+    def _load_directory(
+        self, directory: Path, cutoff_date: date
+    ) -> RegulatoryXMLPairResult:
         files = tuple(self._load_one(directory, spec, cutoff_date) for spec in REGULATORY_XML_SPECS)
         if all(item.is_valid for item in files):
             first, second = files
