@@ -39,6 +39,7 @@ def test_portfolio_view_exposes_historical_kpi_tab_between_panel_and_positions(
         "Histórico KPIs",
         "Ganancia / pérdida",
         "Tasa equivalente y capital",
+        "Optimización Markowitz",
         "Posiciones",
     ]
 
