@@ -7,6 +7,8 @@ from dataclasses import replace
 from datetime import date
 from pathlib import Path
 
+import openpyxl
+
 from aip.product.configured.readers.institutional_portfolio_master_reader import (
     InstitutionalPortfolioMasterReadResult,
 )
@@ -183,3 +185,59 @@ def test_changed_bytes_during_inspection_fail_closed(tmp_path: Path) -> None:
     ) == 2
     assert stdout.getvalue() == ""
     assert "failed" in stderr.getvalue()
+
+
+def test_native_xlsx_reader_drives_structural_readiness(tmp_path: Path) -> None:
+    path = tmp_path / "02-10-2026.xlsx"
+    workbook = openpyxl.Workbook()
+    sheet = workbook.active
+    sheet.title = "Maestro"
+    sheet.append(
+        [
+            "#",
+            "Emisor",
+            "Número Contrato",
+            "Moneda",
+            "Código Producto",
+            "Clasificación",
+            "Valor Mercado Colonizado",
+            "ISIN",
+            "Saldo Principal",
+            "Saldo Valor Mercado",
+            "Saldo Valor Compra",
+            "Tasa Nominal",
+            "Periodicidad",
+            "TIR",
+            "Fecha Vencimiento",
+        ]
+    )
+    sheet.append(
+        [
+            1,
+            "G",
+            "CONTRACT-A",
+            "CRC",
+            "BONO",
+            "D.V GOBIERNO",
+            600,
+            "TEST-A",
+            600,
+            600,
+            580,
+            5,
+            "semestral",
+            5.5,
+            date(2028, 10, 2),
+        ]
+    )
+    workbook.save(path)
+    workbook.close()
+
+    report = inspect(path, cutoff=CUTOFF)
+    assert report["source_structural_ready"] is True
+    assert report["accepted_position_count"] == 1
+    assert report["currencies_present"] == ["CRC"]
+    assert report["master_sha256"] == hashlib.sha256(path.read_bytes()).hexdigest()
+    assert report["scenario_ready"] is False
+    assert "CONTRACT-A" not in json.dumps(report)
+    assert "TEST-A" not in json.dumps(report)
