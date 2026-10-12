@@ -51,3 +51,16 @@ Integrar a la aplicación de escritorio PySide6 un conjunto de herramientas de d
 
 ## Separación de desarrollo
 Esta rama es independiente del PR #343 `feature/ux-v4-5-1-performance-responsiveness`. No integrar cambios de UI avanzada ni su motor en `release/core-v1.0` mientras el desempeño actual no esté estabilizado y certificado.
+
+
+## Herramienta adicional — Consumo de capital del portafolio (SUGEF 3-06 v75)
+
+- Fuente pública: SUGEF 3-06, versión 75 (26-jun-2026), Capítulo III, artículos 41 a 48.
+- Motor inicial: `PortfolioCapitalConsumptionService` calcula **APR de riesgo de crédito de inversiones**, posición a posición, mediante `exposición regulatoria aprobada × ponderador`.
+- Ponderaciones referenciales: BCCR/Gobierno CRC 0%; calificaciones 0-6: 0%, 10%, 25%, 50%, 75%, 90%, 100%; no calificado: 100%; recompra (pacto de reventa) 75%.
+- La exposición regulatoria debe proceder de la cuenta/valuación normativa aprobada; **no presumir que equivale al precio de mercado**.
+- Coocique es el emisor sin calificación reportado en el portafolio actual: **dato declarado por el usuario, a corroborar en el maestro institucional por corte**. No tratarlo como lista permanente/exhaustiva.
+- El usuario indicó para soberanos USD '75% o 100%'. La versión 75 muestra derogada la regla histórica de 10% para soberanos USD; la clasificación exacta requiere instrumento, calificación aplicable y versión normativa. **No fijar automáticamente ninguno de esos porcentajes.**
+- El APR de crédito de inversiones es solo una parte del denominador de suficiencia patrimonial; no equivale por sí solo al capital mínimo requerido, ni cubre riesgo de precio, tipo de cambio u operacional.
+- Módulo UI previsto: detalle por ISIN/serie/emisor/calificación/moneda/ponderador/APR; clasificación auditada, totales, antes/después de transacciones y restricción de consumo de capital para Markowitz/rotaciones.
+- Fase siguiente: adaptador de datos reales, selector de versión normativa y reglas de rating/emisor, parámetros de capital base y denominador institucional; control de calidad y comparación con SUGEF antes de activar reportes regulatorios.
