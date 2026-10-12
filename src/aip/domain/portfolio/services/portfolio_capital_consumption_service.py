@@ -7,7 +7,9 @@ from enum import StrEnum
 
 class ExposureClass(StrEnum):
     BCCR_CRC = "BCCR_CRC"
+    BCCR_USD = "BCCR_USD"
     GOVERNMENT_CRC = "GOVERNMENT_CRC"
+    GOVERNMENT_USD = "GOVERNMENT_USD"
     RATED_0 = "RATED_0"
     RATED_1 = "RATED_1"
     RATED_2 = "RATED_2"
@@ -21,7 +23,9 @@ class ExposureClass(StrEnum):
 
 REGULATORY_WEIGHTS: dict[ExposureClass, Decimal] = {
     ExposureClass.BCCR_CRC: Decimal("0"),
+    ExposureClass.BCCR_USD: Decimal("0.75"),
     ExposureClass.GOVERNMENT_CRC: Decimal("0"),
+    ExposureClass.GOVERNMENT_USD: Decimal("0.75"),
     ExposureClass.RATED_0: Decimal("0"),
     ExposureClass.RATED_1: Decimal("0.10"),
     ExposureClass.RATED_2: Decimal("0.25"),
@@ -88,6 +92,11 @@ class PortfolioCapitalConsumptionService:
                 ExposureClass.GOVERNMENT_CRC,
             }:
                 raise ValueError("CRC sovereign zero-weight classification requires CRC currency")
+            if position.currency.upper() != "USD" and position.exposure_class in {
+                ExposureClass.BCCR_USD,
+                ExposureClass.GOVERNMENT_USD,
+            }:
+                raise ValueError("USD sovereign classification requires USD currency")
             try:
                 weight = REGULATORY_WEIGHTS[position.exposure_class]
             except KeyError as exc:
