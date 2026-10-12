@@ -17,8 +17,8 @@ from aip.domain.portfolio.services.portfolio_scenario_evidence_bridge import (
     VerifiedPositionMarketRisk,
 )
 from aip.product.configured.readers.institutional_portfolio_master_reader import (
-    InstitutionalPortfolioMasterReadResult,
     InstitutionalPortfolioMasterReader,
+    InstitutionalPortfolioMasterReadResult,
 )
 
 
