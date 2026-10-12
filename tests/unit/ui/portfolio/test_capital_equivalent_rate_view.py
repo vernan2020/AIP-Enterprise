@@ -12,6 +12,9 @@ def test_equity_cost_is_empty_and_editable(qt_app: QApplication) -> None:
     assert view._equity_cost.text() == ""
     assert not view._equity_cost.isReadOnly()
     assert view._target.text() == "16,00 %"
+    view._invested.setText("100")
+    view._exposure.setText("100")
+    view._yield.setText("8")
     view._calculate_equivalent()
     assert "costo anual del patrimonio" in view._result.text()
 
