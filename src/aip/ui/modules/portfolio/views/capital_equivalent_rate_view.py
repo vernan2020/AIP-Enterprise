@@ -151,8 +151,22 @@ class CapitalEquivalentRateView(QWidget):
 
     def _calculate_equivalent(self) -> None:
         try:
-            if self._classification.currentData() is None:
+            exposure_class = self._classification.currentData()
+            if exposure_class is None:
                 raise ValueError("Debe seleccionar y verificar el ponderador regulatorio")
+            selected = self._position.currentData()
+            if selected is not None:
+                currency = selected.currency.strip().upper()
+                if exposure_class in {
+                    ExposureClass.BCCR_CRC,
+                    ExposureClass.GOVERNMENT_CRC,
+                } and currency != "CRC":
+                    raise ValueError("El 0% soberano CRC no corresponde a esta moneda")
+                if exposure_class in {
+                    ExposureClass.BCCR_USD,
+                    ExposureClass.GOVERNMENT_USD,
+                } and currency != "USD":
+                    raise ValueError("La categoría soberana USD exige moneda USD")
             item = CapitalEquivalentRateInput(
                 invested_amount_crc=self._decimal(self._invested.text(), "monto invertido"),
                 regulatory_exposure_crc=self._decimal(
@@ -163,7 +177,7 @@ class CapitalEquivalentRateView(QWidget):
                     self._equity_cost.text(), "costo anual del patrimonio"
                 )
                 / 100,
-                exposure_class=self._classification.currentData(),
+                exposure_class=exposure_class,
             )
             result = CapitalEquivalentRateService.calculate(item)
         except (ValueError, TypeError) as exc:
