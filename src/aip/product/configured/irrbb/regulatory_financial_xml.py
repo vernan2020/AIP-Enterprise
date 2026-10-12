@@ -83,6 +83,7 @@ class RegulatoryXMLFileResult:
 class RegulatoryXMLPairResult:
     cutoff_date: date
     files: tuple[RegulatoryXMLFileResult, ...]
+    source_month_found: bool = True
 
     @property
     def is_valid(self) -> bool:
@@ -167,6 +168,7 @@ class RegulatoryFinancialXMLReader:
                 )
                 for spec in REGULATORY_XML_SPECS
             ),
+            source_month_found=False,
         )
 
     def load(self, *, cutoff_date: date) -> RegulatoryXMLPairResult:
@@ -195,7 +197,12 @@ class RegulatoryFinancialXMLReader:
                     self._block(item, "TipoMoneda del encabezado no coincide entre archivos.")
                     for item in files
                 )
-        return RegulatoryXMLPairResult(cutoff_date, files)
+        source_names = {spec.filename.casefold() for spec in REGULATORY_XML_SPECS}
+        month_found = any(
+            entry.is_file() and entry.name.casefold() in source_names
+            for entry in directory.iterdir()
+        )
+        return RegulatoryXMLPairResult(cutoff_date, files, source_month_found=month_found)
 
     @staticmethod
     def _block(item: RegulatoryXMLFileResult, reason: str) -> RegulatoryXMLFileResult:
