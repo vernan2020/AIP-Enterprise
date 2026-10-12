@@ -269,9 +269,7 @@ class PriceRiskView(QWidget):
         self._quality_columns = columns
 
     @staticmethod
-    def _reflow_chart_grid(
-        grid: QGridLayout, groups: tuple[QGroupBox, ...], columns: int
-    ) -> None:
+    def _reflow_chart_grid(grid: QGridLayout, groups: tuple[QGroupBox, ...], columns: int) -> None:
         for group in groups:
             grid.removeWidget(group)
         for index, group in enumerate(groups):
