@@ -46,3 +46,17 @@ def test_chart_tooltip_uses_high_contrast_dark_theme_markup() -> None:
     assert "color:#C6E5F4" in tooltip
     assert "color:#A9D8EC" in tooltip
     assert "min-width:220px" in tooltip
+
+
+def test_chart_tooltip_has_visible_dark_background_on_light_desktop_themes() -> None:
+    """White plot text must never rely on the user's native tooltip palette."""
+    tooltip = build_chart_tooltip(
+        "Riesgo por emisor", (("DV01", "₡19,200"), ("Cobertura", "96.4%"))
+    )
+
+    assert "bgcolor='#102D47'" in tooltip
+    assert "background-color:#102D47" in tooltip
+    assert "color:#FFFFFF" in tooltip
+    assert "DV01" in tooltip
+    assert "96.4%" in tooltip
+    assert tooltip.count("<table") == tooltip.count("</table>")
