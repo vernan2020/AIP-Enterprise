@@ -165,8 +165,17 @@ class FinancialHistoryPanel(QWidget):
         metrics.addWidget(change)
         layout.addLayout(metrics)
 
-        chart_view = self._chart_view(item)
+        readout = QLabel("Pase el cursor sobre un punto para ver su periodo y valor.")
+        readout.setObjectName("financialHistoryHoverReadout")
+        readout.setTextFormat(Qt.TextFormat.PlainText)
+        readout.setWordWrap(True)
+        readout.setStyleSheet(
+            "color:#17324D; background:#EAF4FC; border:1px solid #C7DDEB; "
+            "border-radius:6px; padding:5px 8px; font-size:9px; font-weight:600;"
+        )
+        chart_view = self._chart_view(item, detail_label=readout)
         layout.addWidget(chart_view, 1)
+        layout.addWidget(readout)
 
         source = QLabel(f"Cuenta/fuente: {item.source_account}")
         source.setWordWrap(True)
@@ -174,7 +183,9 @@ class FinancialHistoryPanel(QWidget):
         layout.addWidget(source)
         return card
 
-    def _chart_view(self, item: FinancialMetricHistorySeriesView) -> QChartView:
+    def _chart_view(
+        self, item: FinancialMetricHistorySeriesView, *, detail_label: QLabel | None = None
+    ) -> QChartView:
         chart = QChart()
         chart.legend().hide()
         chart.setBackgroundVisible(False)
@@ -224,6 +235,7 @@ class FinancialHistoryPanel(QWidget):
 
         segment: QLineSeries | None = None
         segment_tooltips: dict[int, str] | None = None
+        readouts: dict[int, str] = {}
         for point, point_date in zip(item.points, point_dates, strict=True):
             if point.value is None:
                 segment = None
@@ -243,9 +255,20 @@ class FinancialHistoryPanel(QWidget):
                         hovered_point, state, data
                     )
                 )
+                if detail_label is not None:
+                    segment.hovered.connect(
+                        lambda hovered_point, state, label=detail_label, data=segment_tooltips: (
+                            label.setText(
+                                readouts.get(int(hovered_point.x()), "")
+                                if state
+                                else "Pase el cursor sobre un punto para ver su periodo y valor."
+                            )
+                        )
+                    )
             timestamp = int(point_date.toMSecsSinceEpoch())
             segment.append(float(timestamp), point.value)
             assert segment_tooltips is not None
+            readouts[timestamp] = f"{item.label} · {point.date_label} · {point.display_value}"
             segment_tooltips[timestamp] = build_chart_tooltip(
                 item.label,
                 (
