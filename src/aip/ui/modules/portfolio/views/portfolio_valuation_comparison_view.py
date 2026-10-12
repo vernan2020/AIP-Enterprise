@@ -19,9 +19,9 @@ from PySide6.QtWidgets import (
 )
 
 from aip.ui.modules.portfolio.models.portfolio_valuation_comparison import (
+    PortfolioValuationChartPoint,
     PortfolioValuationComparisonDisplay,
     PortfolioValuationComparisonDisplayRow,
-    PortfolioValuationChartPoint,
     PortfolioValuationKpi,
 )
 from aip.ui.modules.portfolio.widgets.portfolio_gain_loss_chart import (
