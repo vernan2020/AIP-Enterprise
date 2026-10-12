@@ -5,7 +5,16 @@ from math import isfinite
 from typing import Sequence
 
 import numpy as np
-from scipy.optimize import minimize
+from scipy.optimize import linprog, minimize
+
+
+@dataclass(frozen=True)
+class MarkowitzGroupLimit:
+    """Maximum combined weight of a named issuer, category or policy group."""
+
+    name: str
+    asset_indices: tuple[int, ...]
+    maximum_weight: float
 
 
 @dataclass(frozen=True)
@@ -14,6 +23,7 @@ class MarkowitzConstraints:
 
     minimum_weights: tuple[float, ...]
     maximum_weights: tuple[float, ...]
+    group_limits: tuple[MarkowitzGroupLimit, ...] = ()
 
     def validate(self, asset_count: int) -> None:
         if len(self.minimum_weights) != asset_count or len(self.maximum_weights) != asset_count:
@@ -25,6 +35,17 @@ class MarkowitzConstraints:
             raise ValueError("Invalid long-only weight bounds")
         if sum(self.minimum_weights) > 1 + 1e-9 or sum(self.maximum_weights) < 1 - 1e-9:
             raise ValueError("Weight limits do not permit a fully invested portfolio")
+        for group in self.group_limits:
+            if (
+                not group.name.strip()
+                or not group.asset_indices
+                or len(set(group.asset_indices)) != len(group.asset_indices)
+                or any(index < 0 or index >= asset_count for index in group.asset_indices)
+                or not isfinite(group.maximum_weight)
+                or group.maximum_weight < 0
+                or group.maximum_weight > 1
+            ):
+                raise ValueError("Invalid issuer or category group limit")
 
 
 @dataclass(frozen=True)
@@ -77,20 +98,36 @@ class MarkowitzOptimizer:
         covariance = np.cov(data, rowvar=False, ddof=1) * periods_per_year
         covariance = (covariance + covariance.T) / 2
         bounds = list(zip(constraints.minimum_weights, constraints.maximum_weights, strict=True))
-        start = np.asarray(constraints.minimum_weights, dtype=float)
-        remaining = 1.0 - float(start.sum())
-        for index, (_, high) in enumerate(bounds):
-            increase = min(remaining, high - start[index])
-            start[index] += increase
-            remaining -= increase
-        if remaining > 1e-8:
-            raise ValueError("No feasible starting portfolio")
+        group_rows = []
+        group_caps = []
+        for group in constraints.group_limits:
+            row = np.zeros(len(names))
+            row[list(group.asset_indices)] = 1.0
+            group_rows.append(row)
+            group_caps.append(group.maximum_weight)
+        allocation = [{"type": "eq", "fun": lambda w: float(w.sum() - 1)}]
+        allocation.extend(
+            {"type": "ineq", "fun": lambda w, row=row, cap=cap: float(cap - row @ w)}
+            for row, cap in zip(group_rows, group_caps, strict=True)
+        )
+        linear = {
+            "A_ub": np.asarray(group_rows) if group_rows else None,
+            "b_ub": np.asarray(group_caps) if group_caps else None,
+            "A_eq": np.ones((1, len(names))),
+            "b_eq": np.array([1.0]),
+            "bounds": bounds,
+            "method": "highs",
+        }
+        feasible = linprog(np.zeros(len(names)), **linear)
+        if not feasible.success:
+            raise ValueError("Investment-policy bounds are infeasible")
+        start = np.asarray(feasible.x, dtype=float)
 
         def risk(weights: np.ndarray) -> float:
             return float(weights @ covariance @ weights)
 
         def solve(target: float | None = None) -> MarkowitzPortfolio:
-            conditions = [{"type": "eq", "fun": lambda w: float(w.sum() - 1)}]
+            conditions = list(allocation)
             if target is not None:
                 conditions.append(
                     {"type": "eq", "fun": lambda w, goal=target: float(w @ expected - goal)}
@@ -110,6 +147,7 @@ class MarkowitzOptimizer:
                 abs(weights.sum() - 1) > 1e-6
                 or np.any(weights < np.asarray(constraints.minimum_weights) - 1e-6)
                 or np.any(weights > np.asarray(constraints.maximum_weights) + 1e-6)
+                or any(row @ weights > cap + 1e-6 for row, cap in zip(group_rows, group_caps, strict=True))
                 or (target is not None and abs(weights @ expected - target) > 1e-5)
             ):
                 raise ValueError("Optimized weights violate allocation constraints")
@@ -120,14 +158,7 @@ class MarkowitzOptimizer:
             )
 
         minimum = solve()
-        highest = minimize(
-            lambda w: -float(w @ expected),
-            start,
-            method="SLSQP",
-            bounds=bounds,
-            constraints=[{"type": "eq", "fun": lambda w: float(w.sum() - 1)}],
-            options={"maxiter": 2000, "ftol": 1e-12},
-        )
+        highest = linprog(-expected, **linear)
         if not highest.success:
             raise ValueError("Unable to determine feasible maximum return")
         upper = float(highest.x @ expected)
