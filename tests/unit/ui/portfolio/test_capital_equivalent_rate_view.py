@@ -58,6 +58,27 @@ def test_equivalent_rate_recalculates_after_edit(calculator: CapitalEquivalentRa
     assert "5.6000 %" in view._result.text()
 
 
+def test_equity_cost_auto_recalculates_after_initial_valid_scenario(
+    calculator: CapitalEquivalentRateView,
+) -> None:
+    view = calculator
+    view._invested.setText("100")
+    view._exposure.setText("100")
+    view._yield.setText("8")
+    view._classification.setCurrentIndex(view._classification.findText("Gobierno USD · 75%"))
+    view._equity_cost.setText("10")
+    view._calculate_equivalent()
+    assert "6.8000 %" in view._result.text()
+
+    # No second click: the editable cost is a true live scenario parameter.
+    view._equity_cost.setText("20")
+    assert "5.6000 %" in view._result.text()
+    view._equity_cost.clear()
+    assert "costo anual del patrimonio" in view._result.text()
+    view._equity_cost.setText("5")
+    assert "7.4000 %" in view._result.text()
+
+
 def _sample_row(isin: str = "CRTEST000001") -> PortfolioRow:
     return PortfolioRow(
         isin=isin,
