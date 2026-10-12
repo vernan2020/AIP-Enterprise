@@ -90,7 +90,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [unit-core, unit-ui, integration]
+        suite: [unit-core, unit-ui, unit-monolithic, integration]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -116,6 +116,11 @@ jobs:
       - name: Run Qt unit tests in separate process
         if: matrix.suite == 'unit-ui'
         run: pytest tests/unit/ui -q -W error -o faulthandler_timeout=300
+      # Release gating: catch dangling native Qt objects after all unit tests
+      # share a single interpreter (the original 139 regression).
+      - name: Full unit suite native-teardown regression
+        if: matrix.suite == 'unit-monolithic'
+        run: pytest tests/unit -q -W error -o faulthandler_timeout=300
       - name: Run integration tests
         if: matrix.suite == 'integration'
         run: pytest tests/integration -q -W error -o faulthandler_timeout=300
