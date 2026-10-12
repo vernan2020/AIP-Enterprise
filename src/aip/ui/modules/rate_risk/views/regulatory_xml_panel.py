@@ -128,6 +128,10 @@ class RegulatoryXMLPanel(QWidget):
         *,
         valuation_cutoff: date | None = None,
     ) -> None:
+        if not snapshot.source_month_found:
+            self._period_label.setText(
+                "No se encontró un mes con XML Brechas / Calce en la ruta configurada."
+            )
         report_month = snapshot.cutoff_date.strftime("%m/%Y")
         target = valuation_cutoff or snapshot.cutoff_date
         target_month = target.strftime("%m/%Y")
@@ -142,7 +146,8 @@ class RegulatoryXMLPanel(QWidget):
             "DESFASE: datos regulatorios de otro corte; no usar para el cálculo "
             "RTILB del corte AIP."
         )
-        self._period_label.setText(message)
+        if snapshot.source_month_found:
+            self._period_label.setText(message)
         self._files.setRowCount(len(snapshot.files))
         for index, item in enumerate(snapshot.files):
             issue = "; ".join(item.issues) if item.issues else item.source_sha256 or ""
