@@ -647,9 +647,7 @@ class MacroIntelligenceWorkspace(QWidget):
         if self._governance_grid is not None:
             governance_columns = 2 if width < 980 else 4
             if governance_columns != self._governance_columns:
-                self._reflow_grid(
-                    self._governance_grid, self._governance_cards, governance_columns
-                )
+                self._reflow_grid(self._governance_grid, self._governance_cards, governance_columns)
                 self._governance_columns = governance_columns
 
     def resizeEvent(self, event) -> None:  # noqa: N802
