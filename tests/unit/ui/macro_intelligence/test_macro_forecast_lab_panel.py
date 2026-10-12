@@ -36,3 +36,19 @@ def test_forecast_lab_exposes_governed_multimodel_controls(qt_app) -> None:
     assert panel._model_table.columnCount() == 11
     assert panel._forecast_table.columnCount() == 5
     assert panel._ensemble_table.columnCount() == 3
+
+
+def test_forecast_lab_persistent_hover_details_do_not_require_os_tooltip(qt_app) -> None:
+    panel = MacroForecastLabPanel(_Presenter())  # type: ignore[arg-type]
+    try:
+        assert panel._hover_readout.objectName() == "macroForecastHoverReadout"
+        assert "Pase el cursor" in panel._hover_readout.text()
+        panel._chart.hover_readout_changed.emit(
+            "TPM · 10/2026 · 3.25% · Banda 80%: 3.10% – 3.40%"
+        )
+        assert "Banda 80%" in panel._hover_readout.text()
+        panel._chart.hover_readout_changed.emit("")
+        assert "Pase el cursor" in panel._hover_readout.text()
+    finally:
+        panel.close()
+        qt_app.processEvents()
