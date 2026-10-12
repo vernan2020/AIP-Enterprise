@@ -64,7 +64,9 @@ class HomeWorkspace(QWidget):
         title_font.setBold(True)
         title.setFont(title_font)
         title.setStyleSheet("color:#FFFFFF; border:none; background:transparent;")
-        subtitle = QLabel("Visión integral · Riesgos · Portafolio · Liquidez · Inteligencia financiera")
+        subtitle = QLabel(
+            "Visión integral · Riesgos · Portafolio · Liquidez · Inteligencia financiera"
+        )
         subtitle.setStyleSheet(
             "color:#DCE9F5; font-size:10px; border:none; background:transparent;"
         )

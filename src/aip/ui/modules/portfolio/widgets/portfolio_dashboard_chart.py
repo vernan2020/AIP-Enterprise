@@ -21,16 +21,16 @@ class PortfolioDashboardBarChart(QWidget):
     _ACCENT = QColor("#176895")
     _ACCENT_LIGHT = QColor("#77B7D2")
     _BAR_PALETTE = (
-        QColor("#0B5BC4"),
-        QColor("#1EA7E1"),
-        QColor("#11B8B0"),
-        QColor("#30C77B"),
-        QColor("#FF8A18"),
-        QColor("#7C5CE6"),
-        QColor("#E55391"),
-        QColor("#5A78D6"),
-        QColor("#27A2D8"),
-        QColor("#9CAFC2"),
+        QColor("#005EB8"),
+        QColor("#00A9E0"),
+        QColor("#1675C5"),
+        QColor("#40C1AC"),
+        QColor("#2B9E8B"),
+        QColor("#73B3DD"),
+        QColor("#0088B5"),
+        QColor("#5A98C9"),
+        QColor("#84CDBF"),
+        QColor("#B5C5CE"),
     )
 
     def __init__(
@@ -142,12 +142,12 @@ class PortfolioDashboardColumnChart(QWidget):
     _MUTED = QColor("#6F8090")
     _GRID = QColor("#E7EEF3")
     _PALETTE = (
-        QColor("#0B5BC4"),
-        QColor("#1EA7E1"),
-        QColor("#11B8B0"),
-        QColor("#30C77B"),
-        QColor("#FF8A18"),
-        QColor("#7C5CE6"),
+        QColor("#005EB8"),
+        QColor("#00A9E0"),
+        QColor("#1675C5"),
+        QColor("#40C1AC"),
+        QColor("#2B9E8B"),
+        QColor("#73B3DD"),
     )
 
     def __init__(

@@ -160,9 +160,10 @@ class FinancialHistoryPanel(QWidget):
 
         axis_x = QDateTimeAxis()
         axis_x.setFormat("MMM-yy")
-        axis_x.setLabelsAngle(-35)
-        axis_x.setTickCount(min(6, max(2, len(item.points))))
+        axis_x.setLabelsAngle(0)
+        axis_x.setTickCount(min(5, max(2, len(item.points))))
         axis_x.setGridLineVisible(False)
+        axis_x.setLabelsColor(QColor("#566D7C"))
 
         if point_dates:
             start = point_dates[0]
@@ -178,6 +179,8 @@ class FinancialHistoryPanel(QWidget):
         axis_y.setTickCount(5)
         axis_y.setGridLineVisible(True)
         axis_y.setMinorGridLineVisible(False)
+        axis_y.setLabelsColor(QColor("#566D7C"))
+        axis_y.setGridLineColor(QColor("#E3E9EC"))
 
         if available_values:
             minimum = min(available_values)
