@@ -274,3 +274,28 @@ def test_rate_context_reflows_without_losing_eve_or_status(qt_app) -> None:
     finally:
         view.close()
         qt_app.processEvents()
+
+
+def test_var_scenario_fields_reflow_and_keep_period_and_status(qt_app) -> None:
+    view = PriceRiskView(_StubPresenter())  # type: ignore[arg-type]
+    try:
+        view._bind_view_model(_view_model())
+        grid = view._scenario_grid
+        fields = view._scenario_fields
+        assert grid is not None
+        assert len(fields) == 3
+        original_period = view._scenario_period.text()
+        original_status = view._status_label.text()
+        for width, columns in ((1200, 3), (650, 1), (1200, 3)):
+            view._arrange_scenario_fields(width)
+            assert view._scenario_columns == columns
+            for index, field in enumerate(fields):
+                item = grid.itemAtPosition(index // columns, index % columns)
+                assert item is not None
+                assert item.widget() is field
+            assert view._scenario_period.text() == original_period
+            assert view._status_label.text() == original_status
+        assert view._diagnostic_label.wordWrap()
+    finally:
+        view.close()
+        qt_app.processEvents()
