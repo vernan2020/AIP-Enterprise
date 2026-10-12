@@ -6,8 +6,8 @@ from decimal import Decimal
 
 import pytest
 
-from aip.domain.portfolio.services.portfolio_capital_consumption_service import ExposureClass
 from aip.domain.portfolio.services.portfolio_capital_evidence_service import (
+    ExposureClass,
     PortfolioCapitalEvidenceService,
     VerifiedCapitalPosition,
 )
