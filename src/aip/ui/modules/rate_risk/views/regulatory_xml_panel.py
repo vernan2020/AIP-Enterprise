@@ -32,7 +32,15 @@ class RegulatoryXMLPanel(QWidget):
         layout.addWidget(note)
 
         self._files = self._table(
-            ("Archivo", "Estado", "Período", "Entidad", "Detalles", "Totales", "SHA-256 / incidencia")
+            (
+                "Archivo",
+                "Estado",
+                "Período",
+                "Entidad",
+                "Detalles",
+                "Totales",
+                "SHA-256 / incidencia",
+            )
         )
         self._files.setObjectName("rateRiskRegulatoryXMLFileStatus")
         layout.addWidget(self._files)
@@ -75,14 +83,12 @@ class RegulatoryXMLPanel(QWidget):
                 self._cell(self._files, index, column, value)
 
         self._headline.setText(
-            "XML regulatorios conciliados" if snapshot.is_valid
+            "XML regulatorios conciliados"
+            if snapshot.is_valid
             else "XML regulatorios pendientes o bloqueados"
         )
         visible = [
-            (item.key, row)
-            for item in snapshot.files
-            if item.is_valid
-            for row in item.rows
+            (item.key, row) for item in snapshot.files if item.is_valid for row in item.rows
         ][: self._MAX_VISIBLE_ROWS]
         self._rows.setRowCount(len(visible))
         for index, (source, row) in enumerate(visible):
