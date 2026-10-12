@@ -14,7 +14,9 @@ def main(argv: list[str] | None = None) -> int:
     """Inspect the configured institutional XML sources without modifying them."""
     parser = argparse.ArgumentParser(description="Diagnóstico XML Brechas / Calce RTILB")
     parser.add_argument("--cutoff", help="Fecha de cierre YYYY-MM-DD (modo histórico)")
-    parser.add_argument("--latest", action="store_true", help="Último mes guardado (predeterminado)")
+    parser.add_argument(
+        "--latest", action="store_true", help="Último mes guardado (predeterminado)"
+    )
     args = parser.parse_args(argv)
     if args.cutoff and args.latest:
         parser.error("Use --cutoff o --latest, pero no ambos.")
@@ -53,15 +55,19 @@ def main(argv: list[str] | None = None) -> int:
         json.dumps(
             {
                 "mode": "FIXED_CUTOFF" if cutoff is not None else "LATEST_SAVED",
-                "source_month": snapshot.cutoff_date.strftime("%Y-%m")
-                if any(item.period for item in snapshot.files) else None,
+                "source_month": (
+                    snapshot.cutoff_date.strftime("%Y-%m")
+                    if any(item.period for item in snapshot.files)
+                    else None
+                ),
                 "status": "VALIDATED" if snapshot.is_valid else "BLOCKED",
                 "six_band_gap": {
                     "status": gap.status,
                     "bucket_count": len(gap.rows),
                     "issues": list(gap.issues),
-                    "cumulative_gap_crc": str(gap.rows[-1].cumulative_gap_crc)
-                    if gap.is_ready else None,
+                    "cumulative_gap_crc": (
+                        str(gap.rows[-1].cumulative_gap_crc) if gap.is_ready else None
+                    ),
                 },
                 "files": [
                     {
