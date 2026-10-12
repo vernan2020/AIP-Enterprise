@@ -167,3 +167,48 @@ def test_configured_scenario_can_be_bound_without_using_demo_risk_data(
             policy=policy,
         )
     assert evaluations == [observed_date]
+
+
+def test_invalid_new_evidence_clears_previous_scenario_display(
+    portfolio_view: PortfolioView, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    cutoff = str(portfolio_view.view_model().summary.valuation_date)
+    observed_date = date.fromisoformat(cutoff)
+    policy = ScenarioRiskPolicy(
+        cutoff=observed_date,
+        effective_date=observed_date,
+        policy_version="APPROVED-POLICY-FIXTURE",
+        approval_reference="signed policy fixture",
+        max_modified_duration_years=Decimal("3"),
+    )
+    portfolio_view.evaluate_and_bind_verified_scenario(
+        _positions(observed_date),
+        _risks(observed_date),
+        {"A": Decimal("0.2"), "B": Decimal("0.8")},
+        cutoff=cutoff,
+        portfolio_market_value_crc=Decimal("1000"),
+        portfolio_valuation_source="prior audited fixture",
+        policy=policy,
+    )
+    assert portfolio_view._markowitz.scenario_risk is not None
+
+    def reject_evidence(self, *args, **kwargs):
+        raise ValueError("La fuente del maestro está degradada")
+
+    monkeypatch.setattr(
+        "aip.ui.modules.portfolio.views.portfolio_view."
+        "ConfiguredInstitutionalScenarioService.evaluate",
+        reject_evidence,
+    )
+    with pytest.raises(ValueError, match="degradada"):
+        portfolio_view.evaluate_and_bind_configured_scenario(
+            provider=object(),
+            positions=_positions(observed_date),
+            source_row_by_position={"A": 17, "B": 19},
+            proposed_weights={"A": Decimal("0.2"), "B": Decimal("0.8")},
+            cutoff=cutoff,
+            policy=policy,
+        )
+    assert portfolio_view._markowitz.scenario_risk is None
+    assert portfolio_view._markowitz._scenario_risk_status.text() == "NO VERIFICABLE"
+    assert "fuente del maestro" in portfolio_view._markowitz._scenario_risk_detail.text()

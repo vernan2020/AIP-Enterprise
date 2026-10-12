@@ -119,6 +119,17 @@ class PortfolioMarkowitzView(QWidget):
             else "No se permite optimizar hasta corregir los insumos señalados."
         )
 
+    def invalidate_risk_evidence(self, *, cutoff: str, reason: str) -> None:
+        """Discard stale risk results and show the blocker for the active cutoff."""
+        if not self._cutoff or cutoff != self._cutoff:
+            raise ValueError("Scenario failure cutoff does not match active portfolio")
+        self._scenario_risk = None
+        self._scenario_risk_status.setText("NO VERIFICABLE")
+        self._scenario_risk_detail.setText(
+            f"Comparación deshabilitada: {reason}\n"
+            "Falta corregir y volver a validar la evidencia antes de presentar riesgos."
+        )
+
     def bind_risk_comparison(self, result: ScenarioRiskComparison, *, cutoff: str) -> None:
         """Read-only view of externally audited scenario risk; no invented inputs."""
         if not self._cutoff or cutoff != self._cutoff or result.cutoff.isoformat() != cutoff:

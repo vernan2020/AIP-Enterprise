@@ -483,14 +483,18 @@ class PortfolioView(QWidget):
         """Use the already configured institutional master, without demo fallback."""
         if cutoff != str(self._view_model.summary.valuation_date):
             raise ValueError("Configured scenario cutoff must match active portfolio")
-        scenario = ConfiguredInstitutionalScenarioService(provider).evaluate(
-            positions,
-            source_row_by_position,
-            proposed_weights,
-            cutoff=date.fromisoformat(cutoff),
-            policy=policy,
-            fx_rates_by_currency=fx_rates_by_currency,
-        )
+        try:
+            scenario = ConfiguredInstitutionalScenarioService(provider).evaluate(
+                positions,
+                source_row_by_position,
+                proposed_weights,
+                cutoff=date.fromisoformat(cutoff),
+                policy=policy,
+                fx_rates_by_currency=fx_rates_by_currency,
+            )
+        except ValueError as exc:
+            self._markowitz.invalidate_risk_evidence(cutoff=cutoff, reason=str(exc))
+            raise
         self.bind_verified_scenario_risk(scenario.comparison, cutoff=cutoff)
         return scenario
 
@@ -508,15 +512,19 @@ class PortfolioView(QWidget):
         """Render only a reconciled lot-level scenario for the selected cutoff."""
         if cutoff != str(self._view_model.summary.valuation_date):
             raise ValueError("Scenario evidence cutoff must match active portfolio")
-        evaluated = PortfolioScenarioEvidenceBridge.compare(
-            positions,
-            risks,
-            proposed_weights,
-            cutoff=date.fromisoformat(cutoff),
-            portfolio_market_value_crc=portfolio_market_value_crc,
-            portfolio_valuation_source=portfolio_valuation_source,
-            policy=policy,
-        )
+        try:
+            evaluated = PortfolioScenarioEvidenceBridge.compare(
+                positions,
+                risks,
+                proposed_weights,
+                cutoff=date.fromisoformat(cutoff),
+                portfolio_market_value_crc=portfolio_market_value_crc,
+                portfolio_valuation_source=portfolio_valuation_source,
+                policy=policy,
+            )
+        except ValueError as exc:
+            self._markowitz.invalidate_risk_evidence(cutoff=cutoff, reason=str(exc))
+            raise
         self.bind_verified_scenario_risk(evaluated.comparison, cutoff=cutoff)
         return evaluated
 
