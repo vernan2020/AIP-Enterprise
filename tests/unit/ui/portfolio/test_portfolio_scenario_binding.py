@@ -12,6 +12,7 @@ from aip.domain.portfolio.services.portfolio_capital_evidence_service import (
     VerifiedCapitalPosition,
 )
 from aip.domain.portfolio.services.portfolio_scenario_evidence_bridge import (
+    PortfolioScenarioEvidenceBridge,
     VerifiedPositionMarketRisk,
 )
 from aip.domain.portfolio.services.portfolio_scenario_risk_service import ScenarioRiskPolicy
@@ -108,3 +109,58 @@ def test_scenario_bridge_updates_portfolio_ui_only_with_matching_cutoff(
             policy=policy,
         )
     assert portfolio_view._markowitz.scenario_risk is review.comparison
+
+
+def test_configured_scenario_can_be_bound_without_using_demo_risk_data(
+    portfolio_view: PortfolioView, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    cutoff = str(portfolio_view.view_model().summary.valuation_date)
+    observed_date = date.fromisoformat(cutoff)
+    policy = ScenarioRiskPolicy(
+        cutoff=observed_date,
+        effective_date=observed_date,
+        policy_version="APPROVED-POLICY-FIXTURE",
+        approval_reference="signed policy fixture",
+        max_modified_duration_years=Decimal("3"),
+    )
+    evaluations: list[date] = []
+
+    def evaluate_fake(self, positions, row_map, allocation, *, cutoff, policy):
+        evaluations.append(cutoff)
+        assert row_map == {"A": 17, "B": 19}
+        return PortfolioScenarioEvidenceBridge.compare(
+            positions,
+            _risks(cutoff),
+            allocation,
+            cutoff=cutoff,
+            portfolio_market_value_crc=Decimal("1000"),
+            portfolio_valuation_source="configured master fixture",
+            policy=policy,
+        )
+
+    monkeypatch.setattr(
+        "aip.ui.modules.portfolio.views.portfolio_view."
+        "ConfiguredInstitutionalScenarioService.evaluate",
+        evaluate_fake,
+    )
+    review = portfolio_view.evaluate_and_bind_configured_scenario(
+        provider=object(),
+        positions=_positions(observed_date),
+        source_row_by_position={"A": 17, "B": 19},
+        proposed_weights={"A": Decimal("0.2"), "B": Decimal("0.8")},
+        cutoff=cutoff,
+        policy=policy,
+    )
+    assert evaluations == [observed_date]
+    assert portfolio_view._markowitz.scenario_risk is review.comparison
+    assert review.comparison.proposed.status == "BREACH"
+    with pytest.raises(ValueError, match="cutoff"):
+        portfolio_view.evaluate_and_bind_configured_scenario(
+            provider=object(),
+            positions=_positions(observed_date),
+            source_row_by_position={"A": 17, "B": 19},
+            proposed_weights={"A": Decimal("0.2"), "B": Decimal("0.8")},
+            cutoff="2035-01-01",
+            policy=policy,
+        )
+    assert evaluations == [observed_date]

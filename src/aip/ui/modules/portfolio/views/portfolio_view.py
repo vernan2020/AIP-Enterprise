@@ -32,6 +32,10 @@ from aip.domain.portfolio.services.portfolio_scenario_risk_service import (
     ScenarioRiskComparison,
     ScenarioRiskPolicy,
 )
+from aip.product.configured.services.configured_institutional_scenario_service import (
+    ConfiguredInstitutionalScenarioService,
+    ConfiguredPortfolioSnapshot,
+)
 from aip.ui.modules.portfolio.models.portfolio_history_point import PortfolioHistorySeries
 from aip.ui.modules.portfolio.presenters.portfolio_presenter import PortfolioPresenter
 from aip.ui.modules.portfolio.viewmodels.portfolio_view_model import PortfolioViewModel
@@ -461,6 +465,29 @@ class PortfolioView(QWidget):
 
         if cutoff == self._view_model.summary.valuation_date:
             self._history.set_error(message or f"No fue posible calcular la frecuencia {sampling}")
+
+    def evaluate_and_bind_configured_scenario(
+        self,
+        provider: ConfiguredPortfolioSnapshot,
+        positions: Sequence[VerifiedCapitalPosition],
+        source_row_by_position: Mapping[str, int],
+        proposed_weights: Mapping[str, Decimal],
+        *,
+        cutoff: str,
+        policy: ScenarioRiskPolicy,
+    ) -> AuditedPortfolioScenario:
+        """Use the already configured institutional master, without demo fallback."""
+        if cutoff != str(self._view_model.summary.valuation_date):
+            raise ValueError("Configured scenario cutoff must match active portfolio")
+        scenario = ConfiguredInstitutionalScenarioService(provider).evaluate(
+            positions,
+            source_row_by_position,
+            proposed_weights,
+            cutoff=date.fromisoformat(cutoff),
+            policy=policy,
+        )
+        self.bind_verified_scenario_risk(scenario.comparison, cutoff=cutoff)
+        return scenario
 
     def evaluate_and_bind_verified_scenario(
         self,
