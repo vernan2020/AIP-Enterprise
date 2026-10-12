@@ -44,7 +44,7 @@ class InstitutionalMasterScenarioRiskAdapter:
     """
 
     _DATED_FILENAME = re.compile(
-        r"(?<!\\d)(?P<day>\\d{1,2})[-_.]?(?P<month>\\d{1,2})[-_.]?(?P<year>\\d{4})(?!\\d)"
+        r"(?<!\d)(?P<day>\d{1,2})[-_.]?(?P<month>\d{1,2})[-_.]?(?P<year>\d{4})(?!\d)"
     )
     _REQUIRED_NATIVE_COLUMNS = frozenset(
         {"market_value_crc", "currency", "issuer", "isin", "classification", "product_code"}
