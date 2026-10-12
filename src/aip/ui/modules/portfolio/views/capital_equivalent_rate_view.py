@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from decimal import Decimal, InvalidOperation
 from typing import Sequence
 
@@ -20,6 +21,10 @@ from aip.domain.portfolio.services.capital_equivalent_rate_service import (
     CapitalEquivalentRateService,
 )
 from aip.domain.portfolio.services.portfolio_capital_consumption_service import ExposureClass
+from aip.domain.portfolio.services.portfolio_capital_evidence_service import (
+    PortfolioCapitalEvidenceService,
+    VerifiedCapitalPosition,
+)
 from aip.ui.modules.portfolio.models.portfolio_row import PortfolioRow
 
 
@@ -56,6 +61,7 @@ class CapitalEquivalentRateView(QWidget):
         layout.addWidget(guidance)
 
         self._cutoff = ""
+        self._verified_evidence: tuple[VerifiedCapitalPosition, ...] = ()
         self._position = QComboBox()
         self._position.setObjectName("portfolioCapitalPositionSelector")
         self._position.addItem("Escenario manual (sin posición)", None)
@@ -110,6 +116,8 @@ class CapitalEquivalentRateView(QWidget):
 
     def bind_positions(self, rows: Sequence[PortfolioRow], *, cutoff: str) -> None:
         """Load identity only: never infer regulatory exposure or credit rating."""
+        # A view-model refresh invalidates all previously attached evidence.
+        self._verified_evidence = ()
         self._cutoff = cutoff
         self._position.blockSignals(True)
         try:
@@ -123,6 +131,18 @@ class CapitalEquivalentRateView(QWidget):
             self._position.setCurrentIndex(0)
         finally:
             self._position.blockSignals(False)
+        self._on_position_selected()
+
+    def bind_verified_evidence(
+        self, records: Sequence[VerifiedCapitalPosition], *, cutoff: str
+    ) -> None:
+        """Attach a separate audited feed; never derive inputs from PortfolioRow."""
+        if cutoff != self._cutoff:
+            raise ValueError("Audited evidence cutoff differs from active portfolio cutoff")
+        verified = PortfolioCapitalEvidenceService.validate(
+            records, cutoff=date.fromisoformat(cutoff[:10])
+        )
+        self._verified_evidence = verified
         self._on_position_selected()
 
     def _on_position_selected(self, _index: int = 0) -> None:
@@ -148,6 +168,50 @@ class CapitalEquivalentRateView(QWidget):
             "El valor de mercado, la TIR y la clasificación descriptiva NO se "
             "utilizan automáticamente como exposición, rendimiento neto o ponderador. "
             "Complete las cuatro variables del escenario después de verificarlas."
+        )
+        matches = tuple(
+            evidence
+            for evidence in self._verified_evidence
+            if (
+                evidence.isin == row.isin
+                and evidence.issuer == row.issuer
+                and evidence.currency.upper() == row.currency.upper()
+            )
+        )
+        matching_rows = sum(
+            1
+            for index in range(1, self._position.count())
+            if (
+                (candidate := self._position.itemData(index)) is not None
+                and candidate.isin == row.isin
+                and candidate.issuer == row.issuer
+                and candidate.currency.upper() == row.currency.upper()
+            )
+        )
+        if not matches:
+            return
+        if len(matches) != 1 or matching_rows != 1:
+            self._position_note.setText(
+                "Posiciones con ISIN/emisor/moneda duplicados: no se puede vincular "
+                "la evidencia regulatoria por lote sin identificador único."
+            )
+            return
+        evidence = matches[0]
+        self._invested.setText(str(evidence.invested_amount_crc))
+        self._exposure.setText(str(evidence.regulatory_exposure_crc))
+        self._yield.setText(str(evidence.annual_net_yield * 100))
+        self._classification.setCurrentIndex(
+            self._classification.findData(evidence.exposure_class)
+        )
+        self._position_note.setText(
+            f"Corte auditado {self._cutoff} · ISIN {row.isin} · "
+            f"Clasificación vigente desde {evidence.classification_effective_date} · "
+            f"Fuentes: inversión [{evidence.invested_amount_source}], "
+            f"APR [{evidence.regulatory_exposure_source}], "
+            f"tasa neta [{evidence.net_yield_source}], "
+            f"ponderador [{evidence.classification_source}], "
+            f"conversión FX [{evidence.fx_translation_source or 'no aplica'}]. "
+            "Costo de patrimonio editable, sin tasa predeterminada."
         )
 
     @staticmethod
