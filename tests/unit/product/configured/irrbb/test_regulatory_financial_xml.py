@@ -142,3 +142,31 @@ def test_catalog_code_invalid_actions_and_unsafe_declarations_fail_closed(
     result = reader.load(cutoff_date=date(2026, 9, 30))
     assert result.files[0].status == "BLOCKED"
     assert "DTD/ENTITY" in result.files[0].issues[0]
+
+
+def test_regulatory_header_rejects_non_crc_currency_and_wrong_data_class(
+    tmp_path: Path,
+) -> None:
+    month = _month(tmp_path)
+    _write_pair(month)
+    spec = REGULATORY_XML_SPECS[0]
+    path = month / spec.filename
+    path.write_text(
+        _document(spec).replace(
+            "<TipoMoneda>1</TipoMoneda>", "<TipoMoneda>2</TipoMoneda>"
+        ),
+        encoding="utf-8",
+    )
+    reader = RegulatoryFinancialXMLReader(str(tmp_path))
+    result = reader.load(cutoff_date=date(2026, 9, 30))
+    assert not result.is_valid
+    assert result.files[0].status == "BLOCKED"
+    assert "TipoMoneda inválido" in result.files[0].issues[0]
+
+    path.write_text(
+        _document(spec).replace("<ClaseDato>22</ClaseDato>", "<ClaseDato>17</ClaseDato>"),
+        encoding="utf-8",
+    )
+    result = reader.load(cutoff_date=date(2026, 9, 30))
+    assert result.files[0].status == "BLOCKED"
+    assert "ClaseDato diferente" in result.files[0].issues[0]
