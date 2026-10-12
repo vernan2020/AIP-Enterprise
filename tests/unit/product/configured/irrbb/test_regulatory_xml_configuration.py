@@ -34,7 +34,6 @@ def test_regulatory_readiness_cli_requires_existing_config(monkeypatch, capsys) 
     assert '"UNCONFIGURED"' in capsys.readouterr().out
 
 
-
 def test_configured_xml_only_source_activates_non_demo_mode(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("AIP_XML_CONFIA_ROOT", str(tmp_path))
     monkeypatch.setenv("AIP_XML_CONFIA_ENABLED", "true")
