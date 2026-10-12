@@ -607,9 +607,9 @@ class MacroIntelligenceWorkspace(QWidget):
                 ("horizon", "Horizonte", "Trayectoria mensual"),
             )
         ):
-            card = self._governance_card(key, title_text, helper)
-            governance_cards.append(card)
-            governance_grid.addWidget(card, 0, index)
+            governance_card = self._governance_card(key, title_text, helper)
+            governance_cards.append(governance_card)
+            governance_grid.addWidget(governance_card, 0, index)
         self._governance_grid = governance_grid
         self._governance_cards = tuple(governance_cards)
         root.addLayout(governance_grid)
