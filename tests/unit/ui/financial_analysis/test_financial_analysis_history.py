@@ -183,6 +183,11 @@ def test_history_chart_readout_shows_real_monthly_values_and_clears(qt_app) -> N
         labels = panel.findChildren(QLabel, "financialHistoryHoverReadout")
         assert len(labels) == 1
         readout = labels[0]
+        heading = next(
+            label for label in panel._history_cards[0].findChildren(QLabel) if label.text() == "ROA"
+        )
+        assert heading.wordWrap()
+        assert heading.toolTip() == "ROA"
         assert "Pase el cursor" in readout.text()
         charts = panel.findChildren(QChartView)
         assert len(charts) == 1
