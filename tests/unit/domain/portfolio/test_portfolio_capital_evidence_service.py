@@ -1,10 +1,14 @@
+from __future__ import annotations
+
 from dataclasses import replace
 from datetime import date
 from decimal import Decimal
 
 import pytest
 
-from aip.domain.portfolio.services.portfolio_capital_consumption_service import ExposureClass
+from aip.domain.portfolio.services.portfolio_capital_consumption_service import (
+    ExposureClass,
+)
 from aip.domain.portfolio.services.portfolio_capital_evidence_service import (
     PortfolioCapitalEvidenceService,
     VerifiedCapitalPosition,
