@@ -74,6 +74,7 @@ class PortfolioView(QWidget):
         )
         self._history = PortfolioHistoryView()
         self._valuation_comparison = PortfolioValuationComparisonView()
+        self._capital_calculator = CapitalEquivalentRateView()
         self._status_bar = PortfolioStatusBadge("Portafolio listo")
         self._content_splitter: QSplitter | None = None
         self._positions_page: QWidget | None = None
@@ -216,7 +217,7 @@ class PortfolioView(QWidget):
         self._build_dashboard_tab()
         self._tabs.addTab(self._history, "Histórico KPIs")
         self._tabs.addTab(self._valuation_comparison, "Ganancia / pérdida")
-        self._tabs.addTab(CapitalEquivalentRateView(), "Tasa equivalente y capital")
+        self._tabs.addTab(self._capital_calculator, "Tasa equivalente y capital")
         self._build_positions_tab()
 
         layout.addWidget(self._status_bar)
@@ -324,6 +325,9 @@ class PortfolioView(QWidget):
         self._currency_chart.set_data(view_model.currency_points)
         self._currency_chart.set_center_value(market_value_display)
         self._valuation_comparison.bind(view_model.valuation_comparison, summary.valuation_date)
+        self._capital_calculator.bind_positions(
+            view_model.rows, cutoff=str(summary.valuation_date)
+        )
         self._dashboard_note.setText(
             f"Vista ejecutiva · Calidad de datos: {view_model.data_quality_status} · "
             f"MIL elegible: {summary.mil_eligible_percent} · "
