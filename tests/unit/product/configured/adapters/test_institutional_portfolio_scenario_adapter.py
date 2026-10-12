@@ -302,7 +302,7 @@ def test_foreign_master_needs_approved_matching_historical_fx() -> None:
     usd = replace(
         positions[1],
         currency="USD",
-        exposure_class=ExposureClass.GOVERNMENT_USD,
+        exposure_class=ExposureClass.UNRATED,
         fx_translation_source="BCCR-SELL-2026-10-02",
     )
     master = _master()

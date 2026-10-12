@@ -125,7 +125,10 @@ def test_configured_scenario_can_be_bound_without_using_demo_risk_data(
     )
     evaluations: list[date] = []
 
-    def evaluate_fake(self, positions, row_map, allocation, *, cutoff, policy):
+    def evaluate_fake(
+        self, positions, row_map, allocation, *, cutoff, policy, fx_rates_by_currency
+    ):
+        assert fx_rates_by_currency is None
         evaluations.append(cutoff)
         assert row_map == {"A": 17, "B": 19}
         return PortfolioScenarioEvidenceBridge.compare(
