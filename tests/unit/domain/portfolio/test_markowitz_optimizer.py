@@ -27,9 +27,7 @@ def test_markowitz_frontier_respects_bounds_and_return_order() -> None:
         minimum_weights=(0.10, 0.0, 0.0),
         maximum_weights=(0.70, 0.65, 0.60),
     )
-    result = MarkowitzOptimizer.optimize(
-        ("A", "B", "C"), _returns(), limits, frontier_points=5
-    )
+    result = MarkowitzOptimizer.optimize(("A", "B", "C"), _returns(), limits, frontier_points=5)
     assert result.observation_count == 90
     assert len(result.efficient_frontier) == 5
     expected_returns = [point.expected_return for point in result.efficient_frontier]
@@ -51,9 +49,7 @@ def test_markowitz_rejects_missing_prices_or_unaligned_returns() -> None:
     with pytest.raises(ValueError, match="Insufficient"):
         MarkowitzOptimizer.optimize(("A", "B"), [[0.02, 0.01]], limits)
     with pytest.raises(ValueError, match="non-finite"):
-        MarkowitzOptimizer.optimize(
-            ("A", "B"), [[0.02, float("nan")]] * 30, limits
-        )
+        MarkowitzOptimizer.optimize(("A", "B"), [[0.02, float("nan")]] * 30, limits)
 
 
 def test_markowitz_rejects_infeasible_policy_bounds() -> None:
