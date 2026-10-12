@@ -222,6 +222,7 @@ def test_newest_partial_month_never_falls_back_to_an_older_valid_pair(
         reference_cutoff=date(2026, 10, 12)
     )
     assert snapshot.cutoff_date == date(2026, 10, 1)
+    assert snapshot.source_month_found is True
     assert not snapshot.is_valid
     assert snapshot.files[0].status == "VALIDATED"
     assert snapshot.files[1].status == "BLOCKED"
@@ -257,6 +258,7 @@ def test_latest_without_any_regulatory_files_is_missing_not_zero(tmp_path: Path)
         reference_cutoff=date(2026, 10, 12)
     )
     assert snapshot.cutoff_date == date(2026, 10, 12)
+    assert snapshot.source_month_found is False
     assert all(item.status == "MISSING" for item in snapshot.files)
     assert not snapshot.is_valid
 
