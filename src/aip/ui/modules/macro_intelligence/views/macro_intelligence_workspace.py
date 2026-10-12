@@ -235,11 +235,17 @@ class _ProjectionChart(QWidget):
         self._projection = projection
         self._ml_forecast = None
         self._driver_code = driver_code
+        self._readout_regions = []
+        self._last_readout = ""
+        self.hover_readout_changed.emit("")
         self.update()
 
     def set_ml_forecast(self, forecast: MacroForecastLabViewModel) -> None:
         self._ml_forecast = forecast
         self._driver_code = forecast.indicator_code
+        self._readout_regions = []
+        self._last_readout = ""
+        self.hover_readout_changed.emit("")
         self.update()
 
     def paintEvent(self, event) -> None:  # noqa: N802
