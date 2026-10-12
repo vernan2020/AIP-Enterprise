@@ -152,9 +152,7 @@ def test_regulatory_header_rejects_non_crc_currency_and_wrong_data_class(
     spec = REGULATORY_XML_SPECS[0]
     path = month / spec.filename
     path.write_text(
-        _document(spec).replace(
-            "<TipoMoneda>1</TipoMoneda>", "<TipoMoneda>2</TipoMoneda>"
-        ),
+        _document(spec).replace("<TipoMoneda>1</TipoMoneda>", "<TipoMoneda>2</TipoMoneda>"),
         encoding="utf-8",
     )
     reader = RegulatoryFinancialXMLReader(str(tmp_path))
