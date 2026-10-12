@@ -32,10 +32,8 @@ class RateRiskWorkspace(QWidget):
         self._controller = controller
         self._view = RateRiskView()
         self._regulatory_xml_reader = regulatory_xml_reader
-        self._regulatory_xml_panel: RegulatoryXMLPanel | None = None
-        if regulatory_xml_reader is not None:
-            self._regulatory_xml_panel = RegulatoryXMLPanel()
-            self._view._tabs.addTab(self._regulatory_xml_panel, "XML Brechas / Calce")
+        self._regulatory_xml_panel = RegulatoryXMLPanel()
+        self._view._tabs.addTab(self._regulatory_xml_panel, "XML Brechas / Calce")
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -54,7 +52,9 @@ class RateRiskWorkspace(QWidget):
 
     def refresh(self) -> None:
         cutoff_date = self._valuation_date_provider()
-        if self._regulatory_xml_reader is not None and self._regulatory_xml_panel is not None:
+        if self._regulatory_xml_reader is None:
+            self._regulatory_xml_panel.set_unconfigured()
+        else:
             snapshot = self._regulatory_xml_reader.load(cutoff_date=cutoff_date)
             self._regulatory_xml_panel.set_snapshot(snapshot)
         controller = self._controller
