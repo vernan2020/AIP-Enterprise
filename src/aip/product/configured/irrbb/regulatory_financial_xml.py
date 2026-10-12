@@ -23,12 +23,22 @@ class RegulatoryXMLSpec:
 
 REGULATORY_XML_SPECS = (
     RegulatoryXMLSpec(
-        "BRECHAS", "Contable_Brecha.xml", "CuentaBrecha", "RangoBrecha",
-        "MontoBrecha", "MontoTotalBrecha", "5",
+        "BRECHAS",
+        "Contable_Brecha.xml",
+        "CuentaBrecha",
+        "RangoBrecha",
+        "MontoBrecha",
+        "MontoTotalBrecha",
+        "5",
     ),
     RegulatoryXMLSpec(
-        "CALCE", "Contable_CalcePlazo.xml", "CuentaCalcePlazo",
-        "RangoCalcePlazo", "MontoCalcePlazo", "MontoTotalCuenta", "4",
+        "CALCE",
+        "Contable_CalcePlazo.xml",
+        "CuentaCalcePlazo",
+        "RangoCalcePlazo",
+        "MontoCalcePlazo",
+        "MontoTotalCuenta",
+        "4",
     ),
 )
 
@@ -139,7 +149,8 @@ class RegulatoryFinancialXMLReader:
     ) -> RegulatoryXMLFileResult:
         try:
             matches = [
-                path for path in directory.iterdir()
+                path
+                for path in directory.iterdir()
                 if path.is_file() and path.name.casefold() == spec.filename.casefold()
             ]
             if len(matches) != 1:
@@ -149,9 +160,7 @@ class RegulatoryFinancialXMLReader:
             path = matches[0]
             self._reject_unsafe_declarations(path)
             header = self._monthly.read_header(path)
-            if (header.periodo.year, header.periodo.month) != (
-                cutoff_date.year, cutoff_date.month
-            ):
+            if (header.periodo.year, header.periodo.month) != (cutoff_date.year, cutoff_date.month):
                 raise ValueError("El Periodo del XML no coincide con el mes de corte.")
             checksum = self._monthly.sha256(path)
             rows, totals = self._parse(path, spec)
