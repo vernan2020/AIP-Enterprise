@@ -103,3 +103,46 @@ def test_rtib_xml_tab_shows_unconfigured_state_without_data() -> None:
     assert workspace.view._analysis_status_label.text() == "Estado: Sin cálculo"
     window.close()
     app.processEvents()
+
+
+
+def test_workspace_uses_latest_saved_xml_and_discloses_cutoff_mismatch(
+    tmp_path: Path,
+) -> None:
+    september = tmp_path / "2026" / "09-SEPTIEMBRE"
+    september.mkdir(parents=True)
+    october = tmp_path / "2026" / "10-OCTUBRE"
+    october.mkdir()
+    for spec in REGULATORY_XML_SPECS:
+        (september / spec.filename).write_text(_xml(spec), encoding="utf-8")
+        (october / spec.filename).write_text(
+            _xml(spec).replace("01/09/2026", "01/10/2026"),
+            encoding="utf-8",
+        )
+
+    app = QApplication.instance() or QApplication([])
+    factory = DemoApplicationFactory(
+        DemoConfig(
+            execution_mode="CONFIGURED",
+            demo_mode_enabled=False,
+            data_cutoff_date=date(2026, 9, 30),
+        ),
+        source_config=ConfiguredSourceConfig(
+            xml_confia=XMLConfiaSourceConfig(enabled=True, root=str(tmp_path))
+        ),
+    )
+    window = FinancialIntelligenceMainWindow(demo_factory=factory)
+    window.open_workspace("rate_risk")
+    workspace = window.workspace.currentWidget()
+    assert isinstance(workspace, RateRiskWorkspace)
+    panel = workspace._regulatory_xml_panel
+
+    assert panel._snapshot.cutoff_date == date(2026, 10, 1)
+    assert panel._headline.text() == "XML regulatorios conciliados"
+    assert "10/2026" in panel._period_label.text()
+    assert "09/2026" in panel._period_label.text()
+    assert "DESFASE" in panel._period_label.text()
+    assert workspace.view._analysis_status_label.text() == "Estado: Sin cálculo"
+
+    window.close()
+    app.processEvents()
