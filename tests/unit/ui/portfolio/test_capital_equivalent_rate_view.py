@@ -3,7 +3,6 @@ from __future__ import annotations
 from PySide6.QtWidgets import QApplication
 
 from aip.ui.modules.portfolio.models.portfolio_row import PortfolioRow
-
 from aip.ui.modules.portfolio.views.capital_equivalent_rate_view import (
     CapitalEquivalentRateView,
 )
