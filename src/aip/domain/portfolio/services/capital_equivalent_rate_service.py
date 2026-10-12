@@ -4,8 +4,8 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from aip.domain.portfolio.services.portfolio_capital_consumption_service import (
-    ExposureClass,
     REGULATORY_WEIGHTS,
+    ExposureClass,
 )
 
 
