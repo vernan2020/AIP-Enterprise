@@ -30,6 +30,21 @@ class Ribbon(QToolBar):
         "Ayuda",
     )
 
+    _NAVIGATION_LABELS = frozenset(
+        {
+            "Inicio",
+            "Ejecutivo",
+            "Portafolio",
+            "Mercado",
+            "Riesgo de Precio",
+            "Inteligencia Macroeconómica",
+            "Liquidez",
+            "Tesorería",
+            "Análisis Financiero",
+            "Reportes",
+        }
+    )
+
     def __init__(self) -> None:
         super().__init__("Navegación")
         self.setObjectName("aipRibbon")
@@ -47,6 +62,8 @@ class Ribbon(QToolBar):
             if index in {4, 11, 12}:
                 self.addSeparator()
             action = QAction(label, self)
+            if label in self._NAVIGATION_LABELS:
+                action.setCheckable(True)
             self.addAction(action)
             self._actions[label] = action
 
@@ -57,14 +74,22 @@ class Ribbon(QToolBar):
 
         self.setStyleSheet(
             "QToolBar#aipRibbon {background:#FFFFFF; border:none; "
-            "border-bottom:1px solid #D5DEE3; spacing:1px; padding:3px 8px;}"
+            "border-bottom:1px solid #DCE7EF; spacing:2px; padding:4px 8px;}"
             "QToolBar#aipRibbon QToolButton {background:transparent; border:none; "
-            "border-radius:6px; padding:6px 7px; color:#354B5E; font-size:8.5px; font-weight:600;}"
+            "border-radius:7px; padding:7px 8px; color:#174E78; font-size:9px; font-weight:600;}"
             "QToolBar#aipRibbon QToolButton:hover {background:#F0F8FC; color:#005EB8;}"
+            "QToolBar#aipRibbon QToolButton:checked {background:#005EB8; color:#FFFFFF; "
+            "border:1px solid #005EB8;}"
             "QToolBar#aipRibbon QToolButton:pressed {background:#DDEFFA; color:#00345F;}"
             "QToolBar#aipRibbon::separator {background:#D5DEE3; width:1px; margin:7px 6px;}"
             "QLabel#coopealianzaHeaderLogo {background:transparent; border:none; margin:0 8px 0 2px;}"
         )
+
+    def set_active_module(self, label: str) -> None:
+        """Synchronize active navigation without activating unrelated actions."""
+        for name in self._NAVIGATION_LABELS:
+            action = self._actions[name]
+            action.setChecked(name == label)
 
     @staticmethod
     def _build_brand_logo() -> QLabel:
