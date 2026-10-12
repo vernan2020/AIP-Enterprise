@@ -19,12 +19,16 @@ from PySide6.QtWidgets import (
 )
 
 from aip.domain.portfolio.services.portfolio_capital_evidence_service import VerifiedCapitalPosition
+from aip.domain.portfolio.services.portfolio_optimization_preflight_service import (
+    OptimizationPreflightResult,
+)
 from aip.ui.modules.portfolio.models.portfolio_history_point import PortfolioHistorySeries
 from aip.ui.modules.portfolio.presenters.portfolio_presenter import PortfolioPresenter
 from aip.ui.modules.portfolio.viewmodels.portfolio_view_model import PortfolioViewModel
 from aip.ui.modules.portfolio.views.capital_equivalent_rate_view import CapitalEquivalentRateView
 from aip.ui.modules.portfolio.views.portfolio_details_view import PortfolioDetailsView
 from aip.ui.modules.portfolio.views.portfolio_history_view import PortfolioHistoryView
+from aip.ui.modules.portfolio.views.portfolio_markowitz_view import PortfolioMarkowitzView
 from aip.ui.modules.portfolio.views.portfolio_positions_view import PortfolioPositionsView
 from aip.ui.modules.portfolio.views.portfolio_summary_view import PortfolioSummaryView
 from aip.ui.modules.portfolio.views.portfolio_toolbar import PortfolioToolbar
@@ -77,6 +81,7 @@ class PortfolioView(QWidget):
         self._history = PortfolioHistoryView()
         self._valuation_comparison = PortfolioValuationComparisonView()
         self._capital_calculator = CapitalEquivalentRateView()
+        self._markowitz = PortfolioMarkowitzView()
         self._status_bar = PortfolioStatusBadge("Portafolio listo")
         self._content_splitter: QSplitter | None = None
         self._positions_page: QWidget | None = None
@@ -220,6 +225,7 @@ class PortfolioView(QWidget):
         self._tabs.addTab(self._history, "Histórico KPIs")
         self._tabs.addTab(self._valuation_comparison, "Ganancia / pérdida")
         self._tabs.addTab(self._capital_calculator, "Tasa equivalente y capital")
+        self._tabs.addTab(self._markowitz, "Optimización Markowitz")
         self._build_positions_tab()
 
         layout.addWidget(self._status_bar)
@@ -328,6 +334,7 @@ class PortfolioView(QWidget):
         self._currency_chart.set_center_value(market_value_display)
         self._valuation_comparison.bind(view_model.valuation_comparison, summary.valuation_date)
         self._capital_calculator.bind_positions(view_model.rows, cutoff=str(summary.valuation_date))
+        self._markowitz.bind_portfolio_cutoff(str(summary.valuation_date))
         self._dashboard_note.setText(
             f"Vista ejecutiva · Calidad de datos: {view_model.data_quality_status} · "
             f"MIL elegible: {summary.mil_eligible_percent} · "
@@ -444,6 +451,14 @@ class PortfolioView(QWidget):
 
         if cutoff == self._view_model.summary.valuation_date:
             self._history.set_error(message or f"No fue posible calcular la frecuencia {sampling}")
+
+    def bind_optimization_preflight(
+        self, result: OptimizationPreflightResult, *, cutoff: str
+    ) -> None:
+        """Receive only externally verified, cutoff-scoped total-return inputs."""
+        if cutoff != str(self._view_model.summary.valuation_date):
+            raise ValueError("Historical optimization cutoff must match active portfolio")
+        self._markowitz.bind_preflight(result, cutoff=cutoff)
 
     def bind_verified_capital_evidence(
         self, records: Sequence[VerifiedCapitalPosition], *, cutoff: str
