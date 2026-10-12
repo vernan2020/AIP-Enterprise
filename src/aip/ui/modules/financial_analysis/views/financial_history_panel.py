@@ -159,12 +159,15 @@ class FinancialHistoryPanel(QWidget):
 
         metrics = QHBoxLayout()
         latest = QLabel(item.latest_value)
+        latest.setObjectName("financialHistoryLatestValue")
+        latest.setWordWrap(True)
         latest.setStyleSheet("font-size:15px; font-weight:700; color:#005EB8; border:none;")
-        metrics.addWidget(latest)
-        metrics.addStretch(1)
+        metrics.addWidget(latest, 1)
         change = QLabel(item.period_change)
+        change.setObjectName("financialHistoryPeriodChange")
+        change.setWordWrap(True)
         change.setStyleSheet("font-size:8px; font-weight:600; color:#52687A; border:none;")
-        metrics.addWidget(change)
+        metrics.addWidget(change, 1)
         layout.addLayout(metrics)
 
         readout = QLabel("Pase el cursor sobre un punto para ver su periodo y valor.")
