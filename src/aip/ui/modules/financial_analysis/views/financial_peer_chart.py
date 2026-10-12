@@ -62,7 +62,9 @@ class FinancialPeerChartPanel(QWidget):
         selector_row.addWidget(QLabel("Gráfico:"))
         self._selector = QComboBox()
         self._selector.setMinimumWidth(160)
-        self._selector.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+        self._selector.setSizeAdjustPolicy(
+            QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon
+        )
         self._selector.setMinimumContentsLength(20)
         self._selector.currentIndexChanged.connect(self._selection_changed)
         selector_row.addWidget(self._selector)
