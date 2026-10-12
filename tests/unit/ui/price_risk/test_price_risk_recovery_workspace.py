@@ -140,9 +140,7 @@ def test_price_risk_kpis_reflow_without_losing_cards(qt_app) -> None:
             assert view._kpi_columns == expected_columns
             assert grid.itemAtPosition(0, 0).widget() is cards[0]
             for index, card in enumerate(cards):
-                item = grid.itemAtPosition(
-                    index // expected_columns, index % expected_columns
-                )
+                item = grid.itemAtPosition(index // expected_columns, index % expected_columns)
                 assert item is not None
                 assert item.widget() is card
     finally:
