@@ -1,6 +1,13 @@
 from __future__ import annotations
 
-from PySide6.QtWidgets import QComboBox, QLabel, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QComboBox,
+    QLabel,
+    QTableWidget,
+    QTableWidgetItem,
+    QVBoxLayout,
+    QWidget,
+)
 
 from aip.product.configured.irrbb.regulatory_financial_xml import RegulatoryXMLPairResult
 
