@@ -105,7 +105,6 @@ def test_rtib_xml_tab_shows_unconfigured_state_without_data() -> None:
     app.processEvents()
 
 
-
 def test_workspace_uses_latest_saved_xml_and_discloses_cutoff_mismatch(
     tmp_path: Path,
 ) -> None:
