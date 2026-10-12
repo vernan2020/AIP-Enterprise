@@ -16,9 +16,7 @@ from aip.domain.portfolio.services.portfolio_capital_consumption_service import 
 
 
 def _optimization() -> MarkowitzResult:
-    point = MarkowitzPortfolio(
-        weights=(0.5, 0.5), expected_return=0.08, volatility=0.11
-    )
+    point = MarkowitzPortfolio(weights=(0.5, 0.5), expected_return=0.08, volatility=0.11)
     return MarkowitzResult(
         minimum_variance=point,
         efficient_frontier=(point,),
@@ -69,9 +67,7 @@ def test_capital_impact_rejects_unverified_classification_and_order() -> None:
             _optimization(), reversed(_assumptions()), annual_cost_of_equity=Decimal("0.12")
         )
     unverified = (
-        AssetCapitalAssumption(
-            "Gov CRC", "CRC", Decimal("1"), ExposureClass.GOVERNMENT_CRC, ""
-        ),
+        AssetCapitalAssumption("Gov CRC", "CRC", Decimal("1"), ExposureClass.GOVERNMENT_CRC, ""),
         _assumptions()[1],
     )
     with pytest.raises(ValueError, match="verified source"):
