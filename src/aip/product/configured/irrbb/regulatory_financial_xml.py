@@ -176,9 +176,7 @@ class RegulatoryFinancialXMLReader:
             return self._missing(cutoff_date, str(exc))
         return self._load_directory(directory, cutoff_date)
 
-    def _load_directory(
-        self, directory: Path, cutoff_date: date
-    ) -> RegulatoryXMLPairResult:
+    def _load_directory(self, directory: Path, cutoff_date: date) -> RegulatoryXMLPairResult:
         files = tuple(self._load_one(directory, spec, cutoff_date) for spec in REGULATORY_XML_SPECS)
         if all(item.is_valid for item in files):
             first, second = files
@@ -226,7 +224,11 @@ class RegulatoryFinancialXMLReader:
             header = self._monthly.read_header(path)
             if header.clase_dato != "22":
                 raise ValueError("ClaseDato diferente de 22 (Información Financiera).")
-            if not header.tipo_carga.isascii() or not header.tipo_carga.isdigit() or len(header.tipo_carga) > 2:
+            if (
+                not header.tipo_carga.isascii()
+                or not header.tipo_carga.isdigit()
+                or len(header.tipo_carga) > 2
+            ):
                 raise ValueError("TipoCarga regulatorio debe ser un código numérico.")
             if header.tipo_moneda != "1":
                 raise ValueError("TipoMoneda inválido: Brechas y Calce deben reportar colones.")
