@@ -138,3 +138,27 @@ def test_peer_chart_heading_and_summary_wrap_at_compact_width(qt_app) -> None:
     finally:
         panel.close()
         qt_app.processEvents()
+
+
+def test_peer_selector_exposes_complete_indicator_name_in_tooltip(qt_app) -> None:
+    panel = FinancialPeerChartPanel()
+    label = "Indicador financiero comparativo con denominación institucional extensa"
+    try:
+        panel.bind_series(
+            (
+                PeerChartSeriesView(
+                    code="LONG_METRIC",
+                    label=label,
+                    unit="%",
+                    chart_type="BAR",
+                    points=(),
+                ),
+            )
+        )
+        assert panel._selector.itemData(0, Qt.ItemDataRole.ToolTipRole) == label
+        assert panel._selector.toolTip() == label
+        panel.bind_series(())
+        assert panel._selector.toolTip() == ""
+    finally:
+        panel.close()
+        qt_app.processEvents()
