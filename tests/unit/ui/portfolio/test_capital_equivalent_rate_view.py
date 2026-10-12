@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from datetime import date
+from decimal import Decimal
 
 import pytest
 from PySide6.QtCore import QCoreApplication, QEvent
@@ -8,6 +10,9 @@ from PySide6.QtWidgets import QApplication
 
 from aip.domain.portfolio.services.portfolio_capital_consumption_service import (
     ExposureClass,
+)
+from aip.domain.portfolio.services.portfolio_capital_evidence_service import (
+    VerifiedCapitalPosition,
 )
 from aip.ui.modules.portfolio.models.portfolio_row import PortfolioRow
 from aip.ui.modules.portfolio.views.capital_equivalent_rate_view import (
@@ -174,3 +179,61 @@ def test_all_defined_capital_weight_categories_can_be_selected(
         if view._classification.itemData(index) is not None
     }
     assert actual == set(ExposureClass)
+
+
+def _audited() -> VerifiedCapitalPosition:
+    return VerifiedCapitalPosition(
+        position_key="lot-1",
+        isin="CRTEST000001",
+        issuer="Gobierno",
+        currency="USD",
+        cutoff=date(2026, 10, 2),
+        invested_amount_crc=Decimal("100"),
+        regulatory_exposure_crc=Decimal("120"),
+        annual_net_yield=Decimal("0.08"),
+        exposure_class=ExposureClass.GOVERNMENT_USD,
+        classification_effective_date=date(2026, 9, 30),
+        invested_amount_source="verified book lot-1",
+        regulatory_exposure_source="verified regulatory amount",
+        net_yield_source="verified net yield",
+        classification_source="master rating at cutoff",
+        fx_translation_source="BCCR rate 2026-10-02",
+    )
+
+
+def test_bind_verified_evidence_populates_only_audited_inputs(
+    calculator: CapitalEquivalentRateView,
+) -> None:
+    view = calculator
+    view.bind_positions((_sample_row(),), cutoff="2026-10-02")
+    view._position.setCurrentIndex(1)
+    view.bind_verified_evidence((_audited(),), cutoff="2026-10-02")
+    assert view._invested.text() == "100"
+    assert view._exposure.text() == "120"
+    assert view._yield.text() == "8.00"
+    assert view._classification.currentData() == ExposureClass.GOVERNMENT_USD
+    assert view._equity_cost.text() == ""
+    assert "master rating at cutoff" in view._position_note.text()
+    view._equity_cost.setText("12")
+    view._calculate_equivalent()
+    assert "6.2720 %" in view._result.text()
+
+
+def test_audited_evidence_rejects_stale_cutoff_and_duplicate_lots(
+    calculator: CapitalEquivalentRateView,
+) -> None:
+    view = calculator
+    view.bind_positions((_sample_row(), _sample_row()), cutoff="2026-10-02")
+    view._position.setCurrentIndex(1)
+    with pytest.raises(ValueError, match="cutoff"):
+        view.bind_verified_evidence((_audited(),), cutoff="2026-10-03")
+    assert view._invested.text() == ""
+
+    view.bind_verified_evidence((_audited(),), cutoff="2026-10-02")
+    assert "duplicados" in view._position_note.text()
+    assert view._exposure.text() == ""
+
+    view.bind_positions((_sample_row(),), cutoff="2026-10-03")
+    view._position.setCurrentIndex(1)
+    assert view._exposure.text() == ""
+    assert view._classification.currentData() is None
