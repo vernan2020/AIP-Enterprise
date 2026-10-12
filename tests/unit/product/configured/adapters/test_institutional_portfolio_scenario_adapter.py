@@ -447,3 +447,72 @@ def test_master_mutation_during_reader_is_rejected(
         InstitutionalMasterScenarioRiskAdapter.read_file(
             path, _positions(), {"A": 17, "B": 19}, cutoff=CUTOFF
         )
+
+
+def test_explicit_mapping_must_not_swap_contracts_with_same_isin_and_issuer() -> None:
+    master = _master()
+    positions = _positions()
+    rows = [
+        {
+            **row,
+            "isin": "DUPLICATED-ISIN",
+            "issuer": "SAME ISSUER",
+            "contract_number": "C-A" if row["source_row"] == 17 else "C-B",
+        }
+        for row in master.normalized_positions
+    ]
+    capital = (
+        replace(
+            positions[0],
+            position_key="contract:C-A|isin:DUPLICATED-ISIN",
+            isin="DUPLICATED-ISIN",
+            issuer="SAME ISSUER",
+        ),
+        replace(
+            positions[1],
+            position_key="contract:C-B|isin:DUPLICATED-ISIN",
+            isin="DUPLICATED-ISIN",
+            issuer="SAME ISSUER",
+        ),
+    )
+    audited = replace(
+        master,
+        normalized_positions=rows,
+        detected_column_mapping={
+            **master.detected_column_mapping,
+            "contract_number": "NÚMERO CONTRATO",
+        },
+    )
+    with pytest.raises(ValueError, match="contractual lot key"):
+        InstitutionalMasterScenarioRiskAdapter.adapt(
+            audited,
+            capital,
+            {
+                "contract:C-A|isin:DUPLICATED-ISIN": 19,
+                "contract:C-B|isin:DUPLICATED-ISIN": 17,
+            },
+            cutoff=CUTOFF,
+        )
+    evidence = InstitutionalMasterScenarioRiskAdapter.adapt(
+        audited,
+        capital,
+        {
+            "contract:C-A|isin:DUPLICATED-ISIN": 17,
+            "contract:C-B|isin:DUPLICATED-ISIN": 19,
+        },
+        cutoff=CUTOFF,
+    )
+    assert evidence.total_market_value_crc == Decimal("1000")
+    with pytest.raises(ValueError, match="native contract column"):
+        InstitutionalMasterScenarioRiskAdapter.adapt(
+            replace(
+                audited,
+                detected_column_mapping=master.detected_column_mapping,
+            ),
+            capital,
+            {
+                "contract:C-A|isin:DUPLICATED-ISIN": 17,
+                "contract:C-B|isin:DUPLICATED-ISIN": 19,
+            },
+            cutoff=CUTOFF,
+        )

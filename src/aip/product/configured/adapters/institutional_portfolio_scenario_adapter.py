@@ -262,6 +262,16 @@ class InstitutionalMasterScenarioRiskAdapter:
                 != capital.issuer.strip().casefold()
             ):
                 raise ValueError("Native ISIN or issuer does not match approved capital identity")
+            if capital.position_key.startswith("contract:"):
+                if "contract_number" not in result.detected_column_mapping:
+                    raise ValueError("Contract-based lot identity needs native contract column")
+                native_key = InvestmentMasterSourceRules.stable_position_id(
+                    contract_number=row.get("contract_number"),
+                    isin=row.get("isin"),
+                    series=row.get("series"),
+                )
+                if native_key != capital.position_key:
+                    raise ValueError("Mapped row does not match approved contractual lot key")
             if (
                 not str(row.get("classification") or "").strip()
                 or not str(row.get("product_code") or "").strip()
