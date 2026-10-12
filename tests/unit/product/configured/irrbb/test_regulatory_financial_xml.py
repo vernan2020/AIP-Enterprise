@@ -181,12 +181,9 @@ def test_regulatory_file_accepts_resend_type_without_losing_audit_metadata(tmp_p
             ),
             encoding="utf-8",
         )
-    snapshot = RegulatoryFinancialXMLReader(str(tmp_path)).load(
-        cutoff_date=date(2026, 9, 30)
-    )
+    snapshot = RegulatoryFinancialXMLReader(str(tmp_path)).load(cutoff_date=date(2026, 9, 30))
     assert snapshot.is_valid
     assert all(item.load_type == "2" for item in snapshot.files)
-
 
 
 def test_latest_prefers_newest_reported_month_not_filesystem_timestamp(tmp_path: Path) -> None:
