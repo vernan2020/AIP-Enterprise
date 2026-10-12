@@ -3,6 +3,7 @@ from __future__ import annotations
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QFormLayout, QGroupBox, QLabel, QVBoxLayout, QWidget
 
+from aip.domain.portfolio.services.portfolio_scenario_risk_service import ScenarioRiskComparison
 from aip.domain.portfolio.services.portfolio_optimization_preflight_service import (
     HistoryReadiness,
     OptimizationPreflightResult,
@@ -21,6 +22,7 @@ class PortfolioMarkowitzView(QWidget):
         self.setObjectName("portfolioMarkowitzView")
         self._cutoff = ""
         self._preflight: OptimizationPreflightResult | None = None
+        self._scenario_risk: ScenarioRiskComparison | None = None
         root = QVBoxLayout(self)
         heading = QLabel("Optimización de portafolio — Markowitz")
         heading.setStyleSheet("color:#173B6C; font-size:16px; font-weight:700")
@@ -65,12 +67,30 @@ class PortfolioMarkowitzView(QWidget):
             "color:#894A00; background:#FFF8EB; padding:10px; border-radius:8px;"
         )
         root.addWidget(self._warning)
+        risk_group = QGroupBox("Riesgo y cumplimiento — antes / después")
+        risk_layout = QVBoxLayout(risk_group)
+        self._scenario_risk_status = QLabel("SIN DATOS AUDITADOS")
+        self._scenario_risk_status.setObjectName("portfolioScenarioRiskStatus")
+        self._scenario_risk_detail = QLabel(
+            "No se ha recibido una comparación con duración, DV01, HQLA y APR verificados."
+        )
+        self._scenario_risk_detail.setObjectName("portfolioScenarioRiskDetail")
+        self._scenario_risk_detail.setWordWrap(True)
+        self._scenario_risk_detail.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse
+        )
+        risk_layout.addWidget(self._scenario_risk_status)
+        risk_layout.addWidget(self._scenario_risk_detail)
+        root.addWidget(risk_group)
         root.addStretch(1)
 
     def bind_portfolio_cutoff(self, cutoff: str) -> None:
         """Invalidate stale history evidence when portfolio identity changes."""
         self._cutoff = cutoff
         self._preflight = None
+        self._scenario_risk = None
+        self._scenario_risk_status.setText("SIN DATOS AUDITADOS")
+        self._scenario_risk_detail.setText("Comparación invalidada por nuevo corte del portafolio.")
         self._cutoff_label.setText(cutoff)
         self._status.setText(HistoryReadiness.MISSING_RETURNS.value)
         self._asset_count.setText("0")
@@ -99,6 +119,35 @@ class PortfolioMarkowitzView(QWidget):
             else "No se permite optimizar hasta corregir los insumos señalados."
         )
 
+    def bind_risk_comparison(
+        self, result: ScenarioRiskComparison, *, cutoff: str
+    ) -> None:
+        """Read-only view of externally audited scenario risk; no invented inputs."""
+        if not self._cutoff or cutoff != self._cutoff or result.cutoff.isoformat() != cutoff:
+            raise ValueError("Scenario risk cutoff does not match active portfolio")
+        self._scenario_risk = result
+        self._scenario_risk_status.setText(
+            f"Actual: {result.current.status} · Propuesta: {result.proposed.status}"
+        )
+        self._scenario_risk_detail.setText(
+            f"Política: {result.policy_version} · Base CRC {result.portfolio_value_crc:,.2f}\n"
+            f"Duración modificada: {result.current.modified_duration_years:.3f} "
+            f"→ {result.proposed.modified_duration_years:.3f} años\n"
+            f"DV01: {result.current.dv01_crc:,.2f} "
+            f"→ {result.proposed.dv01_crc:,.2f} CRC\n"
+            f"HQLA: {result.current.hqla_fraction * 100:.2f} "
+            f"→ {result.proposed.hqla_fraction * 100:.2f} %\n"
+            f"APR crédito: {result.current.credit_rwa_crc:,.2f} "
+            f"→ {result.proposed.credit_rwa_crc:,.2f} CRC\n"
+            f"Incumplimientos propuesta: {', '.join(result.proposed.breached_limits) or 'Ninguno'}\n"
+            f"Límites sin verificar: {', '.join(result.missing_limits) or 'Ninguno'}\n"
+            "Diagnóstico parcial; no certifica cumplimiento integral ni ejecuta operaciones."
+        )
+
     @property
     def preflight(self) -> OptimizationPreflightResult | None:
         return self._preflight
+
+    @property
+    def scenario_risk(self) -> ScenarioRiskComparison | None:
+        return self._scenario_risk

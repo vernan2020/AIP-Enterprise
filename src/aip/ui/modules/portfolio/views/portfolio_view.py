@@ -22,6 +22,7 @@ from aip.domain.portfolio.services.portfolio_capital_evidence_service import Ver
 from aip.domain.portfolio.services.portfolio_optimization_preflight_service import (
     OptimizationPreflightResult,
 )
+from aip.domain.portfolio.services.portfolio_scenario_risk_service import ScenarioRiskComparison
 from aip.ui.modules.portfolio.models.portfolio_history_point import PortfolioHistorySeries
 from aip.ui.modules.portfolio.presenters.portfolio_presenter import PortfolioPresenter
 from aip.ui.modules.portfolio.viewmodels.portfolio_view_model import PortfolioViewModel
@@ -451,6 +452,14 @@ class PortfolioView(QWidget):
 
         if cutoff == self._view_model.summary.valuation_date:
             self._history.set_error(message or f"No fue posible calcular la frecuencia {sampling}")
+
+    def bind_verified_scenario_risk(
+        self, result: ScenarioRiskComparison, *, cutoff: str
+    ) -> None:
+        """Only accept approved snapshot results, never descriptive portfolio rows."""
+        if cutoff != str(self._view_model.summary.valuation_date):
+            raise ValueError("Scenario risk cutoff must match active portfolio")
+        self._markowitz.bind_risk_comparison(result, cutoff=cutoff)
 
     def bind_optimization_preflight(
         self, result: OptimizationPreflightResult, *, cutoff: str
