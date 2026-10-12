@@ -3,11 +3,11 @@ from __future__ import annotations
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QFormLayout, QGroupBox, QLabel, QVBoxLayout, QWidget
 
-from aip.domain.portfolio.services.portfolio_scenario_risk_service import ScenarioRiskComparison
 from aip.domain.portfolio.services.portfolio_optimization_preflight_service import (
     HistoryReadiness,
     OptimizationPreflightResult,
 )
+from aip.domain.portfolio.services.portfolio_scenario_risk_service import ScenarioRiskComparison
 
 
 class PortfolioMarkowitzView(QWidget):
@@ -119,11 +119,13 @@ class PortfolioMarkowitzView(QWidget):
             else "No se permite optimizar hasta corregir los insumos señalados."
         )
 
-    def bind_risk_comparison(
-        self, result: ScenarioRiskComparison, *, cutoff: str
-    ) -> None:
+    def bind_risk_comparison(self, result: ScenarioRiskComparison, *, cutoff: str) -> None:
         """Read-only view of externally audited scenario risk; no invented inputs."""
-        if not self._cutoff or cutoff != self._cutoff or result.cutoff.isoformat() != cutoff:
+        if (
+            not self._cutoff
+            or cutoff != self._cutoff
+            or result.cutoff.isoformat() != cutoff
+        ):
             raise ValueError("Scenario risk cutoff does not match active portfolio")
         self._scenario_risk = result
         self._scenario_risk_status.setText(
