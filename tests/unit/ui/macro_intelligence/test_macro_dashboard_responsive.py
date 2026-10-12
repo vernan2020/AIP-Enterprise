@@ -4,6 +4,7 @@ from PySide6.QtWidgets import QFrame, QGridLayout, QWidget
 
 from aip.ui.modules.macro_intelligence.views.macro_intelligence_workspace import (
     MacroIntelligenceWorkspace,
+    _ProjectionChart,
 )
 
 
@@ -41,4 +42,17 @@ def test_macro_governance_cards_can_reflow_without_replacing_values(qt_app) -> N
         assert cards[0].property("approvedScenario") == "BASE-2026-10"
     finally:
         parent.close()
+        qt_app.processEvents()
+
+
+def test_institutional_macro_chart_has_visible_readout_signal(qt_app) -> None:
+    chart = _ProjectionChart()
+    received: list[str] = []
+    chart.hover_readout_changed.connect(received.append)
+    try:
+        chart.hover_readout_changed.emit("TPM · oct-2026 · 3.25%")
+        assert received == ["TPM · oct-2026 · 3.25%"]
+        assert chart._readout_regions == []
+    finally:
+        chart.close()
         qt_app.processEvents()
