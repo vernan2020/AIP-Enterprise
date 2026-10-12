@@ -88,3 +88,27 @@ def test_presenter_does_not_show_requested_date_as_sugef_cutoff_without_data() -
     view_model = FinancialAnalysisPresenter._from_snapshot(snapshot)
 
     assert view_model.cutoff_date == "No disponible"
+
+
+def test_financial_kpis_reflow_without_losing_sugef_values(qt_app) -> None:
+    view = FinancialAnalysisView(presenter=_Presenter())  # type: ignore[arg-type]
+    try:
+        grid = view._kpi_grid
+        assert grid is not None
+        cards = view._kpi_cards
+        assert len(cards) == 7
+        tracked = view._kpi_values["ROA"]
+        tracked.setText("1.23%")
+
+        for width, columns in ((1400, 7), (960, 4), (650, 2), (1400, 7)):
+            view._arrange_kpi_cards(width)
+            assert view._kpi_columns == columns
+            for index, card in enumerate(cards):
+                item = grid.itemAtPosition(index // columns, index % columns)
+                assert item is not None
+                assert item.widget() is card
+            assert view._kpi_values["ROA"] is tracked
+            assert tracked.text() == "1.23%"
+    finally:
+        view.close()
+        qt_app.processEvents()
