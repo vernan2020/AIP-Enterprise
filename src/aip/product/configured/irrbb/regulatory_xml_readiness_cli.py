@@ -57,7 +57,7 @@ def main(argv: list[str] | None = None) -> int:
                 "mode": "FIXED_CUTOFF" if cutoff is not None else "LATEST_SAVED",
                 "source_month": (
                     snapshot.cutoff_date.strftime("%Y-%m")
-                    if any(item.period for item in snapshot.files)
+                    if snapshot.source_month_found
                     else None
                 ),
                 "status": "VALIDATED" if snapshot.is_valid else "BLOCKED",
