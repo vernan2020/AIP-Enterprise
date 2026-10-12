@@ -211,3 +211,35 @@ def test_history_chart_readout_shows_real_monthly_values_and_clears(qt_app) -> N
     finally:
         panel.close()
         qt_app.processEvents()
+
+
+def test_history_card_long_kpi_values_wrap_without_truncating(qt_app) -> None:
+    item = FinancialMetricHistorySeriesView(
+        code="ASSETS",
+        label="Activos",
+        unit="₡ MM",
+        latest_value="₡1,234,567.89 MM",
+        period_change="+12.34% en la ventana",
+        source_account="10000",
+        available_points=0,
+        total_points=0,
+        points=(),
+    )
+    panel = FinancialHistoryPanel()
+    try:
+        panel.bind_history((item,))
+        card = panel._history_cards[0]
+        latest = card.findChild(QLabel, "financialHistoryLatestValue")
+        change = card.findChild(QLabel, "financialHistoryPeriodChange")
+        assert latest is not None
+        assert change is not None
+        assert latest.wordWrap()
+        assert change.wordWrap()
+        assert latest.text() == "₡1,234,567.89 MM"
+        assert change.text() == "+12.34% en la ventana"
+        panel._reflow_history_cards(720)
+        assert latest.text() == item.latest_value
+        assert change.text() == item.period_change
+    finally:
+        panel.close()
+        qt_app.processEvents()
