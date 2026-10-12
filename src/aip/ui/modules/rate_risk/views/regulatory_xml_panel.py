@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from PySide6.QtWidgets import QLabel, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QComboBox, QLabel, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget
 
 from aip.product.configured.irrbb.regulatory_financial_xml import RegulatoryXMLPairResult
 
@@ -45,6 +45,15 @@ class RegulatoryXMLPanel(QWidget):
         self._files.setObjectName("rateRiskRegulatoryXMLFileStatus")
         layout.addWidget(self._files)
 
+        self._snapshot: RegulatoryXMLPairResult | None = None
+        self._account_selector = QComboBox()
+        self._account_selector.setObjectName("rateRiskRegulatoryXMLAccountSelector")
+        self._account_selector.setToolTip(
+            "Filtre una cuenta regulatoria para no sumar categorías jerárquicas."
+        )
+        self._account_selector.currentIndexChanged.connect(self._populate_rows)
+        layout.addWidget(self._account_selector)
+
         self._detail_note = QLabel("Detalle XML: pendiente de validación")
         self._detail_note.setStyleSheet("color:#566D7C; font-weight:700;")
         layout.addWidget(self._detail_note)
@@ -87,8 +96,32 @@ class RegulatoryXMLPanel(QWidget):
             if snapshot.is_valid
             else "XML regulatorios pendientes o bloqueados"
         )
+        self._snapshot = snapshot
+        self._account_selector.blockSignals(True)
+        self._account_selector.clear()
+        self._account_selector.addItem("Todas las cuentas (sin consolidar)", None)
+        for item in snapshot.files:
+            if not item.is_valid:
+                continue
+            accounts = sorted({row.account_code for row in item.rows}, key=int)
+            for account in accounts:
+                self._account_selector.addItem(
+                    f"{item.key} · cuenta {account}", (item.key, account)
+                )
+        self._account_selector.blockSignals(False)
+        self._populate_rows()
+
+    def _populate_rows(self, _index: int = -1) -> None:
+        snapshot = self._snapshot
+        if snapshot is None:
+            return
+        selected = self._account_selector.currentData()
         visible = [
-            (item.key, row) for item in snapshot.files if item.is_valid for row in item.rows
+            (item.key, row)
+            for item in snapshot.files
+            if item.is_valid
+            for row in item.rows
+            if selected is None or selected == (item.key, row.account_code)
         ][: self._MAX_VISIBLE_ROWS]
         self._rows.setRowCount(len(visible))
         for index, (source, row) in enumerate(visible):
@@ -97,9 +130,19 @@ class RegulatoryXMLPanel(QWidget):
             ):
                 self._cell(self._rows, index, column, value)
 
-        available = sum(len(item.rows) for item in snapshot.files if item.is_valid)
+        available = sum(
+            1
+            for item in snapshot.files
+            if item.is_valid
+            for row in item.rows
+            if selected is None or selected == (item.key, row.account_code)
+        )
+        label = (
+            f"Cuenta seleccionada: {selected[0]} / {selected[1]}."
+            if selected is not None
+            else "Sin consolidación entre cuentas jerárquicas."
+        )
         self._detail_note.setText(
-            f"Detalle de archivos válidos: {available} filas; "
-            f"se muestran hasta {self._MAX_VISIBLE_ROWS}. "
-            "No incorpora totales como registros adicionales."
+            f"Detalle: {available} filas; se muestran hasta {self._MAX_VISIBLE_ROWS}. "
+            f"{label} Los registros totales no se duplican."
         )
