@@ -124,3 +124,27 @@ def test_price_risk_workspace_shows_rate_sensitivity_without_fabricating_nii(qt_
     finally:
         view.close()
         qt_app.processEvents()
+
+
+def test_price_risk_kpis_reflow_without_losing_cards(qt_app) -> None:
+    """Six certified KPI values remain present at compact and desktop widths."""
+    view = PriceRiskView(_StubPresenter())  # type: ignore[arg-type]
+    try:
+        grid = view._kpi_grid
+        assert grid is not None
+        cards = view._kpi_cards
+        assert len(cards) == 6
+
+        for width, expected_columns in ((1280, 6), (900, 3), (620, 2), (1280, 6)):
+            view._arrange_kpi_cards(width)
+            assert view._kpi_columns == expected_columns
+            assert grid.itemAtPosition(0, 0).widget() is cards[0]
+            for index, card in enumerate(cards):
+                item = grid.itemAtPosition(
+                    index // expected_columns, index % expected_columns
+                )
+                assert item is not None
+                assert item.widget() is card
+    finally:
+        view.close()
+        qt_app.processEvents()
