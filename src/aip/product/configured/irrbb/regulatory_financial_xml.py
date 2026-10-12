@@ -332,7 +332,8 @@ class RegulatoryFinancialXMLReader:
             amount = Decimal(raw)
         except InvalidOperation as exc:
             raise ValueError(f"Monto numérico requerido inválido: {field}") from exc
-        if not amount.is_finite() or amount.as_tuple().exponent < -2:
+        exponent = amount.as_tuple().exponent
+        if not amount.is_finite() or not isinstance(exponent, int) or exponent < -2:
             raise ValueError(f"Monto inválido o de más de dos decimales: {field}")
         return amount
 
