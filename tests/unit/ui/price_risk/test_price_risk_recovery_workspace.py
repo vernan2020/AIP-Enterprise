@@ -191,3 +191,32 @@ def test_rate_risk_kpi_cards_reflow_without_losing_values(qt_app) -> None:
     finally:
         view.close()
         qt_app.processEvents()
+
+
+def test_var_quality_strip_reflows_all_eight_metrics_without_changing_values(qt_app) -> None:
+    view = PriceRiskView(_StubPresenter())  # type: ignore[arg-type]
+    try:
+        grid = view._quality_grid
+        cards = view._quality_cards
+        note = view._quality_note
+        assert grid is not None
+        assert note is not None
+        assert len(cards) == 8
+        assert len(view._quality_labels) == 8
+
+        view._quality_labels["reconciliation"].setText("100.0000%")
+        for width, columns in ((1440, 8), (980, 4), (680, 2), (1440, 8)):
+            view._arrange_quality_cards(width)
+            assert view._quality_columns == columns
+            for index, card in enumerate(cards):
+                item = grid.itemAtPosition(index // columns, index % columns)
+                assert item is not None
+                assert item.widget() is card
+            note_row = len(cards) // columns
+            note_item = grid.itemAtPosition(note_row, 0)
+            assert note_item is not None
+            assert note_item.widget() is note
+            assert view._quality_labels["reconciliation"].text() == "100.0000%"
+    finally:
+        view.close()
+        qt_app.processEvents()
