@@ -278,9 +278,7 @@ def test_sicveca_padded_xml_tag_names_match_real_institutional_export(
         content = content.replace(f"</{field}>", f"</{field} >")
     path.write_text(content, encoding="utf-8")
 
-    result = RegulatoryFinancialXMLReader(str(tmp_path)).load(
-        cutoff_date=date(2026, 9, 30)
-    )
+    result = RegulatoryFinancialXMLReader(str(tmp_path)).load(cutoff_date=date(2026, 9, 30))
     assert result.is_valid
     assert len(result.files[0].rows) == 2
     assert result.files[0].account_totals[0].amount == sum(
