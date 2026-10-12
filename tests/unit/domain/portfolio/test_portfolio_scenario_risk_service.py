@@ -29,6 +29,7 @@ def _assets() -> tuple[VerifiedScenarioRiskAsset, ...]:
             hqla_source="approved HQLA master on cutoff",
             capital_source="approved regulatory exposure and weight on cutoff",
         )
+
     return (row("A", "1", "0.0001", "1", "0"), row("B", "5", "0.0005", "0.8", "0.75"))
 
 
@@ -72,7 +73,10 @@ def test_rebalance_compares_all_four_risks_without_repricing_bonds() -> None:
     assert result.proposed.credit_rwa_crc == Decimal("600000.000")
     assert result.proposed.status == "BREACH"
     assert set(result.proposed.breached_limits) == {
-        "modified_duration", "hqla", "dv01", "credit_rwa"
+        "modified_duration",
+        "hqla",
+        "dv01",
+        "credit_rwa",
     }
 
 

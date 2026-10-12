@@ -148,27 +148,45 @@ class PortfolioScenarioRiskService:
 
         def snapshot(weights: tuple[Decimal, ...]) -> ScenarioRiskSnapshot:
             duration = sum(
-                (weight * asset.modified_duration_years for weight, asset in zip(weights, rows, strict=True)),
+                (
+                    weight * asset.modified_duration_years
+                    for weight, asset in zip(weights, rows, strict=True)
+                ),
                 Decimal("0"),
             )
             dv01 = portfolio_value_crc * sum(
-                (weight * asset.dv01_crc_per_invested_crc for weight, asset in zip(weights, rows, strict=True)),
+                (
+                    weight * asset.dv01_crc_per_invested_crc
+                    for weight, asset in zip(weights, rows, strict=True)
+                ),
                 Decimal("0"),
             )
             hqla = sum(
-                (weight * asset.hqla_eligible_fraction for weight, asset in zip(weights, rows, strict=True)),
+                (
+                    weight * asset.hqla_eligible_fraction
+                    for weight, asset in zip(weights, rows, strict=True)
+                ),
                 Decimal("0"),
             )
             rwa = portfolio_value_crc * sum(
-                (weight * asset.credit_rwa_crc_per_invested_crc for weight, asset in zip(weights, rows, strict=True)),
+                (
+                    weight * asset.credit_rwa_crc_per_invested_crc
+                    for weight, asset in zip(weights, rows, strict=True)
+                ),
                 Decimal("0"),
             )
             breaches: list[str] = []
-            if policy.max_modified_duration_years is not None and duration > policy.max_modified_duration_years:
+            if (
+                policy.max_modified_duration_years is not None
+                and duration > policy.max_modified_duration_years
+            ):
                 breaches.append("modified_duration")
             if policy.min_hqla_fraction is not None and hqla < policy.min_hqla_fraction:
                 breaches.append("hqla")
-            if policy.max_absolute_dv01_crc is not None and abs(dv01) > policy.max_absolute_dv01_crc:
+            if (
+                policy.max_absolute_dv01_crc is not None
+                and abs(dv01) > policy.max_absolute_dv01_crc
+            ):
                 breaches.append("dv01")
             if policy.max_credit_rwa_crc is not None and rwa > policy.max_credit_rwa_crc:
                 breaches.append("credit_rwa")
