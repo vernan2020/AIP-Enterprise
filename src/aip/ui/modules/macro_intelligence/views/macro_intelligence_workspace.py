@@ -208,6 +208,8 @@ class _MacroMetricCard(QFrame):
 class _ProjectionChart(QWidget):
     """Gráfico de presentación para una trayectoria macroeconómica aprobada."""
 
+    hover_readout_changed = Signal(str)
+
     _LABELS = {
         "FX_SELL": "USD/CRC",
         "TPM": "TPM",
@@ -224,6 +226,8 @@ class _ProjectionChart(QWidget):
         self._ml_forecast: MacroForecastLabViewModel | None = None
         self._driver_code = "TPM"
         self._tooltip_regions: list[tuple[QRectF, str]] = []
+        self._readout_regions: list[tuple[QRectF, str]] = []
+        self._last_readout = ""
         self.setMouseTracking(True)
         self.setMinimumHeight(300)
 
@@ -244,6 +248,7 @@ class _ProjectionChart(QWidget):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         painter.fillRect(self.rect(), QColor("#FFFFFF"))
         self._tooltip_regions = []
+        self._readout_regions = []
         if self._ml_forecast is not None:
             forecast_points = self._ml_forecast.points
             if not forecast_points:
@@ -394,7 +399,15 @@ class _ProjectionChart(QWidget):
                     ),
                     note="Valor del escenario institucional aprobado.",
                 )
-            self._tooltip_regions.append((point_hit_rect(point, 10.0), tooltip))
+            region = point_hit_rect(point, 10.0)
+            self._tooltip_regions.append((region, tooltip))
+            self._readout_regions.append(
+                (
+                    region,
+                    f"{source_title} · {_format_period(periods[index])} · "
+                    f"{self._format_value(values[index])}",
+                )
+            )
 
         painter.setPen(QColor("#53697C"))
         indexes = sorted({0, count - 1, count // 3, (count * 2) // 3})
@@ -419,7 +432,21 @@ class _ProjectionChart(QWidget):
 
     def mouseMoveEvent(self, event) -> None:  # noqa: N802
         show_chart_tooltip(self, event, self._tooltip_regions)
+        position = event.position()
+        readout = next(
+            (text for region, text in reversed(self._readout_regions) if region.contains(position)),
+            "",
+        )
+        if readout != self._last_readout:
+            self._last_readout = readout
+            self.hover_readout_changed.emit(readout)
         super().mouseMoveEvent(event)
+
+    def leaveEvent(self, event) -> None:  # noqa: N802
+        if self._last_readout:
+            self._last_readout = ""
+            self.hover_readout_changed.emit("")
+        super().leaveEvent(event)
 
     def _format_value(self, value: float) -> str:
         if self._driver_code in {"FX_BUY", "FX_SELL"}:
@@ -680,6 +707,22 @@ class MacroIntelligenceWorkspace(QWidget):
         group_layout = QVBoxLayout(group)
         self._projection_chart = _ProjectionChart()
         group_layout.addWidget(self._projection_chart)
+        self._projection_readout = QLabel(
+            "Pase el cursor sobre un punto para consultar el período y valor."
+        )
+        self._projection_readout.setObjectName("macroProjectionHoverReadout")
+        self._projection_readout.setTextFormat(Qt.TextFormat.PlainText)
+        self._projection_readout.setWordWrap(True)
+        self._projection_readout.setStyleSheet(
+            "color:#17324D; background:#EAF4FC; border:1px solid #C7DDEB; "
+            "border-radius:6px; padding:6px 9px; font-weight:600;"
+        )
+        self._projection_chart.hover_readout_changed.connect(
+            lambda value: self._projection_readout.setText(
+                value or "Pase el cursor sobre un punto para consultar el período y valor."
+            )
+        )
+        group_layout.addWidget(self._projection_readout)
         self._projection_note = QLabel("")
         self._projection_note.setWordWrap(True)
         self._projection_note.setStyleSheet("color:#617386; padding:3px 8px;")
