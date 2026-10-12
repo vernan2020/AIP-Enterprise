@@ -122,6 +122,9 @@ class FinancialAnalysisView(QWidget):
         self._view_model = FinancialAnalysisViewModel()
         self._kpi_values: dict[str, QLabel] = {}
         self._kpi_changes: dict[str, QLabel] = {}
+        self._kpi_grid: QGridLayout | None = None
+        self._kpi_cards: tuple[QFrame, ...] = ()
+        self._kpi_columns = 7
         self._building_entity_selector = False
         self._comparison_thread: QThread | None = None
         self._comparison_worker: _ComparisonWorker | None = None
@@ -156,14 +159,20 @@ class FinancialAnalysisView(QWidget):
         title_box.addWidget(self._subtitle)
         header.addLayout(title_box)
         header.addStretch(1)
-        header.addWidget(QLabel("Entidad:"))
+        root.addLayout(header)
+
+        # Keep the entity selector and refresh controls out of the heading row:
+        # otherwise a long institutional name can force every KPI to clip.
+        controls = QHBoxLayout()
+        controls.setSpacing(7)
+        controls.addWidget(QLabel("Entidad:"))
         self._entity_selector = QComboBox()
-        self._entity_selector.setMinimumWidth(360)
+        self._entity_selector.setMinimumWidth(210)
         self._entity_selector.currentIndexChanged.connect(self._entity_changed)
-        header.addWidget(self._entity_selector)
+        controls.addWidget(self._entity_selector, 1)
         self._refresh_button = QPushButton("Actualizar fuente")
         self._refresh_button.clicked.connect(self._refresh)
-        header.addWidget(self._refresh_button)
+        controls.addWidget(self._refresh_button)
         self._cutoff = QLabel("Corte SUGEF: -")
         self._cutoff.setToolTip(
             "Último corte oficial SUGEF disponible que no excede el corte general de AIP."
@@ -172,12 +181,13 @@ class FinancialAnalysisView(QWidget):
             "padding:6px 10px; background:#F3F6F9; border:1px solid #D7E0E8; "
             "border-radius:6px; font-weight:600;"
         )
-        header.addWidget(self._cutoff)
-        root.addLayout(header)
+        controls.addWidget(self._cutoff)
+        root.addLayout(controls)
 
         kpis = QGridLayout()
         kpis.setHorizontalSpacing(6)
         kpis.setVerticalSpacing(0)
+        cards: list[QFrame] = []
         for index, definition in enumerate(
             (
                 ("ASSETS", "Activos"),
@@ -189,7 +199,11 @@ class FinancialAnalysisView(QWidget):
                 ("ROE", "ROE"),
             )
         ):
-            kpis.addWidget(self._metric_card(*definition), 0, index)
+            card = self._metric_card(*definition)
+            cards.append(card)
+            kpis.addWidget(card, 0, index)
+        self._kpi_grid = kpis
+        self._kpi_cards = tuple(cards)
         root.addLayout(kpis)
 
         self._tabs = QTabWidget()
@@ -564,6 +578,34 @@ class FinancialAnalysisView(QWidget):
         layout.addWidget(self._rating_notes)
         return panel
 
+    @staticmethod
+    def _kpi_columns_for_width(width: int) -> int:
+        """Keep all seven SUGEF KPI cards legible on compact workspaces."""
+        if width < 760:
+            return 2
+        if width < 1200:
+            return 4
+        return 7
+
+    def _arrange_kpi_cards(self, width: int) -> None:
+        grid = self._kpi_grid
+        if grid is None or not self._kpi_cards:
+            return
+        columns = self._kpi_columns_for_width(width)
+        if columns == self._kpi_columns:
+            return
+        for card in self._kpi_cards:
+            grid.removeWidget(card)
+        for index, card in enumerate(self._kpi_cards):
+            grid.addWidget(card, index // columns, index % columns)
+        for column in range(7):
+            grid.setColumnStretch(column, 1 if column < columns else 0)
+        self._kpi_columns = columns
+
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        self._arrange_kpi_cards(event.size().width())
+
     def _metric_card(self, code: str, label: str) -> QFrame:
         card = QFrame()
         card.setObjectName("financialMetricCard")
@@ -582,6 +624,7 @@ class FinancialAnalysisView(QWidget):
         caption.setStyleSheet("color:#DDF4FF; font-size:8px; font-weight:600; border:none;")
         value = QLabel("-")
         value.setStyleSheet("color:#FFFFFF; font-size:12px; font-weight:700; border:none;")
+        value.setWordWrap(True)
         change = QLabel("Sin datos")
         change.setStyleSheet("color:#CBEAF8; font-size:7px; border:none;")
         change.setWordWrap(True)
