@@ -68,6 +68,7 @@ class RegulatoryXMLFileResult:
     period: date | None = None
     entity_id: str | None = None
     reporting_currency_code: str | None = None
+    load_type: str | None = None
     source_sha256: str | None = None
     rows: tuple[RegulatoryXMLRow, ...] = ()
     account_totals: tuple[RegulatoryXMLAccountTotal, ...] = ()
@@ -140,6 +141,7 @@ class RegulatoryFinancialXMLReader:
             period=item.period,
             entity_id=item.entity_id,
             reporting_currency_code=item.reporting_currency_code,
+            load_type=item.load_type,
             source_sha256=item.source_sha256,
             issues=item.issues + (reason,),
         )
@@ -162,8 +164,8 @@ class RegulatoryFinancialXMLReader:
             header = self._monthly.read_header(path)
             if header.clase_dato != "22":
                 raise ValueError("ClaseDato diferente de 22 (Información Financiera).")
-            if header.tipo_carga != "1":
-                raise ValueError("TipoCarga regulatorio no soportado: se requiere 1.")
+            if not header.tipo_carga.isascii() or not header.tipo_carga.isdigit() or len(header.tipo_carga) > 2:
+                raise ValueError("TipoCarga regulatorio debe ser un código numérico.")
             if header.tipo_moneda != "1":
                 raise ValueError("TipoMoneda inválido: Brechas y Calce deben reportar colones.")
             if (header.periodo.year, header.periodo.month) != (cutoff_date.year, cutoff_date.month):
@@ -178,6 +180,7 @@ class RegulatoryFinancialXMLReader:
                 period=header.periodo,
                 entity_id=header.id_entidad,
                 reporting_currency_code=header.tipo_moneda,
+                load_type=header.tipo_carga,
                 source_sha256=checksum,
                 rows=rows if not issues else (),
                 account_totals=totals if not issues else (),
