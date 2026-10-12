@@ -70,9 +70,10 @@ class MarkowitzCapitalImpactService:
         ):
             raise ValueError("Invalid editable cost of equity or target capital adequacy")
         assumptions = tuple(assets)
-        if len(assumptions) != len(result.asset_names) or tuple(
-            asset.asset_name for asset in assumptions
-        ) != result.asset_names:
+        if (
+            len(assumptions) != len(result.asset_names)
+            or tuple(asset.asset_name for asset in assumptions) != result.asset_names
+        ):
             raise ValueError("Verified capital assumptions must match optimizer asset order")
         for asset in assumptions:
             if not asset.classification_source.strip():
@@ -81,21 +82,31 @@ class MarkowitzCapitalImpactService:
             if not ratio.is_finite() or ratio < 0:
                 raise ValueError("Exposure-to-investment ratio must be finite and non-negative")
             currency = asset.currency.strip().upper()
-            if asset.exposure_class in (
-                ExposureClass.GOVERNMENT_CRC,
-                ExposureClass.BCCR_CRC,
-            ) and currency != "CRC":
+            if (
+                asset.exposure_class
+                in (
+                    ExposureClass.GOVERNMENT_CRC,
+                    ExposureClass.BCCR_CRC,
+                )
+                and currency != "CRC"
+            ):
                 raise ValueError("Zero-weight sovereign CRC requires CRC exposure")
-            if asset.exposure_class in (
-                ExposureClass.GOVERNMENT_USD,
-                ExposureClass.BCCR_USD,
-            ) and currency != "USD":
+            if (
+                asset.exposure_class
+                in (
+                    ExposureClass.GOVERNMENT_USD,
+                    ExposureClass.BCCR_USD,
+                )
+                and currency != "USD"
+            ):
                 raise ValueError("USD sovereign risk class requires USD exposure")
 
         def evaluate_point(point: MarkowitzPortfolio) -> CapitalAdjustedMarkowitzPoint:
-            if len(point.weights) != len(assumptions) or not all(
-                isfinite(w) and 0 <= w <= 1 for w in point.weights
-            ) or abs(sum(point.weights) - 1) > 1e-6:
+            if (
+                len(point.weights) != len(assumptions)
+                or not all(isfinite(w) and 0 <= w <= 1 for w in point.weights)
+                or abs(sum(point.weights) - 1) > 1e-6
+            ):
                 raise ValueError("Invalid long-only allocation weights")
             if not isfinite(point.expected_return) or not isfinite(point.volatility):
                 raise ValueError("Invalid optimized return or volatility")
