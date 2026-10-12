@@ -97,6 +97,8 @@ class MarkowitzOptimizer:
         expected = data.mean(axis=0) * periods_per_year
         covariance = np.cov(data, rowvar=False, ddof=1) * periods_per_year
         covariance = (covariance + covariance.T) / 2
+        if not np.isfinite(expected).all() or not np.isfinite(covariance).all():
+            raise ValueError("Annualized returns or covariance overflowed to non-finite values")
         bounds = list(zip(constraints.minimum_weights, constraints.maximum_weights, strict=True))
         group_rows = []
         group_caps = []
@@ -126,7 +128,9 @@ class MarkowitzOptimizer:
         def risk(weights: np.ndarray) -> float:
             return float(weights @ covariance @ weights)
 
-        def solve(target: float | None = None) -> MarkowitzPortfolio:
+        def solve(
+            target: float | None = None, *, initial: np.ndarray | None = None
+        ) -> MarkowitzPortfolio:
             conditions = list(allocation)
             if target is not None:
                 conditions.append(
@@ -134,7 +138,7 @@ class MarkowitzOptimizer:
                 )
             result = minimize(
                 risk,
-                start,
+                start if initial is None else initial,
                 method="SLSQP",
                 bounds=bounds,
                 constraints=conditions,
@@ -165,8 +169,37 @@ class MarkowitzOptimizer:
         if not highest.success:
             raise ValueError("Unable to determine feasible maximum return")
         upper = float(highest.x @ expected)
-        goals = np.linspace(minimum.expected_return, upper, frontier_points)
-        frontier = tuple(solve(float(goal)) for goal in goals)
+        if upper < minimum.expected_return - 1e-8:
+            raise ValueError("Feasible return bounds are inconsistent")
+        if upper - minimum.expected_return <= 1e-10:
+            # Identical expected returns: do not impose numerically redundant
+            # equality constraints on a singular historical covariance matrix.
+            frontier = (minimum,) * frontier_points
+        else:
+            goals = np.linspace(minimum.expected_return, upper, frontier_points)
+            points: list[MarkowitzPortfolio] = []
+            for index, target in enumerate(goals):
+                if index == 0:
+                    points.append(minimum)
+                    continue
+                if index == frontier_points - 1:
+                    # Linear programming gives the highest feasible return,
+                    # often at a corner where SLSQP's equalities are singular.
+                    weights = np.asarray(highest.x, dtype=float)
+                    points.append(
+                        MarkowitzPortfolio(
+                            weights=tuple(float(w) for w in weights),
+                            expected_return=float(weights @ expected),
+                            volatility=float(np.sqrt(max(risk(weights), 0.0))),
+                        )
+                    )
+                    continue
+                mix = (float(target) - minimum.expected_return) / (
+                    upper - minimum.expected_return
+                )
+                initial = (1 - mix) * np.asarray(minimum.weights) + mix * highest.x
+                points.append(solve(float(target), initial=initial))
+            frontier = tuple(points)
         return MarkowitzResult(
             minimum_variance=minimum,
             efficient_frontier=frontier,
