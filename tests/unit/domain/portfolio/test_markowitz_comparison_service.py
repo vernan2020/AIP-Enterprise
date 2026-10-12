@@ -79,7 +79,7 @@ def test_current_breaches_are_reported_not_silently_reoptimized() -> None:
         ({"current_weights": (0.2, float("nan"), 0.8)}, "finite"),
         ({"cutoff": date(2026, 7, 1)}, "cutoff"),
         ({"observation_dates": (date(2026, 7, 1),) * 60}, "strictly increasing"),
-        ({"observation_dates": (date(2026, 7, 1),)}, "one verified"),
+        ({"observation_dates": (date(2026, 7, 1),)}, "One verified"),
     ],
 )
 def test_comparison_rejects_unverified_or_invalid_input(changes: dict, message: str) -> None:
@@ -92,6 +92,4 @@ def test_comparison_rejects_nonfinite_historical_returns() -> None:
     history = list(spec.aligned_total_returns)
     history[20] = (0.001, float("nan"), 0.004)
     with pytest.raises(ValueError, match="non-finite"):
-        MarkowitzComparisonService.compare(
-            replace(spec, aligned_total_returns=tuple(history))
-        )
+        MarkowitzComparisonService.compare(replace(spec, aligned_total_returns=tuple(history)))
