@@ -286,9 +286,9 @@ def test_sicveca_padded_xml_tag_names_match_real_institutional_export(
     )
 
 
-
 def test_reader_blocks_xml_modified_during_import(
-    tmp_path: Path, monkeypatch,
+    tmp_path: Path,
+    monkeypatch,
 ) -> None:
     month = _month(tmp_path)
     _write_pair(month)
@@ -311,7 +311,6 @@ def test_reader_blocks_xml_modified_during_import(
     assert "cambió durante la lectura" in result.files[0].issues[0]
 
 
-
 def test_pair_rejects_different_dates_inside_same_reporting_month(tmp_path: Path) -> None:
     month = _month(tmp_path)
     _write_pair(month)
@@ -322,9 +321,7 @@ def test_pair_rejects_different_dates_inside_same_reporting_month(tmp_path: Path
         encoding="utf-8",
     )
 
-    result = RegulatoryFinancialXMLReader(str(tmp_path)).load(
-        cutoff_date=date(2026, 9, 30)
-    )
+    result = RegulatoryFinancialXMLReader(str(tmp_path)).load(cutoff_date=date(2026, 9, 30))
 
     assert not result.is_valid
     assert all(item.status == "BLOCKED" for item in result.files)
