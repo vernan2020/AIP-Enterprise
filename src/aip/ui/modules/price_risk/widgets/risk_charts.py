@@ -3,7 +3,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Callable
 
-from PySide6.QtCore import QPointF, QRectF, Qt
+from PySide6.QtCore import QPointF, QRectF, Qt, Signal
 from PySide6.QtGui import QColor, QFont, QLinearGradient, QPainter, QPen, QPolygonF
 from PySide6.QtWidgets import QWidget
 
@@ -17,6 +17,8 @@ from aip.ui.widgets.chart_tooltip import (
 
 class RiskBarChartWidget(QWidget):
     """Professional horizontal risk bars with automatic zero-centred mode."""
+
+    hover_readout_changed = Signal(str)
 
     _TEXT = QColor("#17324D")
     _MUTED = QColor("#718096")
@@ -38,11 +40,17 @@ class RiskBarChartWidget(QWidget):
         self._formatter = value_formatter or (lambda value: f"{value:,.2f}")
         self._show_secondary = show_secondary
         self._tooltip_regions: list[tuple[QRectF, str]] = []
+        self._readout_regions: list[tuple[QRectF, str]] = []
+        self._last_readout = ""
         self.setMouseTracking(True)
         self.setMinimumHeight(210)
 
     def set_data(self, points: tuple[RiskChartPoint, ...]) -> None:
         self._points = tuple(points)
+        self._tooltip_regions = []
+        self._readout_regions = []
+        self._last_readout = ""
+        self.hover_readout_changed.emit("")
         self.update()
 
     def paintEvent(self, event) -> None:  # noqa: N802
@@ -55,6 +63,7 @@ class RiskBarChartWidget(QWidget):
         background.setColorAt(1.0, QColor("#F3F8FB"))
         painter.fillRect(self.rect(), background)
         self._tooltip_regions = []
+        self._readout_regions = []
 
         if not self._points:
             self._draw_empty_state(painter)
@@ -136,12 +145,14 @@ class RiskBarChartWidget(QWidget):
                     ),
                 )
             )
+            region = QRectF(0, y, self.width(), row_height)
             self._tooltip_regions.append(
-                (
-                    QRectF(0, y, self.width(), row_height),
-                    build_chart_tooltip(point.label, tooltip_rows),
-                )
+                (region, build_chart_tooltip(point.label, tooltip_rows))
             )
+            value_text = self._formatter(point.value)
+            if self._show_secondary:
+                value_text += f" · Participación: {point.secondary_value:.1f}%"
+            self._readout_regions.append((region, f"{point.label} · {value_text}"))
 
             painter.setFont(value_font)
             painter.setPen(fill.darker(118) if numeric else self._TEXT)
@@ -156,7 +167,24 @@ class RiskBarChartWidget(QWidget):
 
     def mouseMoveEvent(self, event) -> None:  # noqa: N802
         show_chart_tooltip(self, event, self._tooltip_regions)
+        value = next(
+            (
+                text
+                for region, text in reversed(self._readout_regions)
+                if region.contains(event.position())
+            ),
+            "",
+        )
+        if value != self._last_readout:
+            self._last_readout = value
+            self.hover_readout_changed.emit(value)
         super().mouseMoveEvent(event)
+
+    def leaveEvent(self, event) -> None:  # noqa: N802
+        if self._last_readout:
+            self._last_readout = ""
+            self.hover_readout_changed.emit("")
+        super().leaveEvent(event)
 
     def _draw_empty_state(self, painter: QPainter) -> None:
         center = self.rect().center()
@@ -177,15 +205,23 @@ class RiskBarChartWidget(QWidget):
 class ParetoChartWidget(QWidget):
     """Pareto moderno: barras de contribución + línea acumulada y referencia 100%."""
 
+    hover_readout_changed = Signal(str)
+
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._points: tuple[RiskChartPoint, ...] = ()
         self._tooltip_regions: list[tuple[QRectF, str]] = []
+        self._readout_regions: list[tuple[QRectF, str]] = []
+        self._last_readout = ""
         self.setMouseTracking(True)
         self.setMinimumHeight(230)
 
     def set_data(self, points: tuple[RiskChartPoint, ...]) -> None:
         self._points = tuple(points)
+        self._tooltip_regions = []
+        self._readout_regions = []
+        self._last_readout = ""
+        self.hover_readout_changed.emit("")
         self.update()
 
     def paintEvent(self, event) -> None:  # noqa: N802
@@ -198,6 +234,7 @@ class ParetoChartWidget(QWidget):
         background.setColorAt(1.0, QColor("#F3F8FB"))
         painter.fillRect(self.rect(), background)
         self._tooltip_regions = []
+        self._readout_regions = []
 
         if not self._points:
             painter.setPen(QColor("#718096"))
@@ -255,8 +292,16 @@ class ParetoChartWidget(QWidget):
                 ),
                 note="La barra muestra contribución y la línea el acumulado del Pareto.",
             )
-            self._tooltip_regions.append((QRectF(left + slot * index, top, slot, height), tooltip))
-            self._tooltip_regions.append((point_hit_rect(line_point, 8.0), tooltip))
+            readout = (
+                f"{point.label} · Contribución: {point.value:,.2f}"
+                f" · Acumulado: {point.secondary_value:,.1f}%"
+            )
+            slot_region = QRectF(left + slot * index, top, slot, height)
+            point_region = point_hit_rect(line_point, 8.0)
+            self._tooltip_regions.append((slot_region, tooltip))
+            self._tooltip_regions.append((point_region, tooltip))
+            self._readout_regions.append((slot_region, readout))
+            self._readout_regions.append((point_region, readout))
 
         if line_points:
             area = [QPointF(line_points[0].x(), top + height), *line_points]
@@ -299,4 +344,21 @@ class ParetoChartWidget(QWidget):
 
     def mouseMoveEvent(self, event) -> None:  # noqa: N802
         show_chart_tooltip(self, event, self._tooltip_regions)
+        value = next(
+            (
+                text
+                for region, text in reversed(self._readout_regions)
+                if region.contains(event.position())
+            ),
+            "",
+        )
+        if value != self._last_readout:
+            self._last_readout = value
+            self.hover_readout_changed.emit(value)
         super().mouseMoveEvent(event)
+
+    def leaveEvent(self, event) -> None:  # noqa: N802
+        if self._last_readout:
+            self._last_readout = ""
+            self.hover_readout_changed.emit("")
+        super().leaveEvent(event)
