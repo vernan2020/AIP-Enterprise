@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from datetime import date
 from decimal import Decimal
-from typing import Sequence
+from typing import Mapping, Sequence
 
 from PySide6.QtCore import QObject, Qt, QThread, Signal, Slot
 from PySide6.QtGui import QFont
@@ -22,7 +23,15 @@ from aip.domain.portfolio.services.portfolio_capital_evidence_service import Ver
 from aip.domain.portfolio.services.portfolio_optimization_preflight_service import (
     OptimizationPreflightResult,
 )
-from aip.domain.portfolio.services.portfolio_scenario_risk_service import ScenarioRiskComparison
+from aip.domain.portfolio.services.portfolio_scenario_evidence_bridge import (
+    AuditedPortfolioScenario,
+    PortfolioScenarioEvidenceBridge,
+    VerifiedPositionMarketRisk,
+)
+from aip.domain.portfolio.services.portfolio_scenario_risk_service import (
+    ScenarioRiskComparison,
+    ScenarioRiskPolicy,
+)
 from aip.ui.modules.portfolio.models.portfolio_history_point import PortfolioHistorySeries
 from aip.ui.modules.portfolio.presenters.portfolio_presenter import PortfolioPresenter
 from aip.ui.modules.portfolio.viewmodels.portfolio_view_model import PortfolioViewModel
@@ -452,6 +461,32 @@ class PortfolioView(QWidget):
 
         if cutoff == self._view_model.summary.valuation_date:
             self._history.set_error(message or f"No fue posible calcular la frecuencia {sampling}")
+
+    def evaluate_and_bind_verified_scenario(
+        self,
+        positions: Sequence[VerifiedCapitalPosition],
+        risks: Sequence[VerifiedPositionMarketRisk],
+        proposed_weights: Mapping[str, Decimal],
+        *,
+        cutoff: str,
+        portfolio_market_value_crc: Decimal,
+        portfolio_valuation_source: str,
+        policy: ScenarioRiskPolicy,
+    ) -> AuditedPortfolioScenario:
+        """Render only a reconciled lot-level scenario for the selected cutoff."""
+        if cutoff != str(self._view_model.summary.valuation_date):
+            raise ValueError("Scenario evidence cutoff must match active portfolio")
+        evaluated = PortfolioScenarioEvidenceBridge.compare(
+            positions,
+            risks,
+            proposed_weights,
+            cutoff=date.fromisoformat(cutoff),
+            portfolio_market_value_crc=portfolio_market_value_crc,
+            portfolio_valuation_source=portfolio_valuation_source,
+            policy=policy,
+        )
+        self.bind_verified_scenario_risk(evaluated.comparison, cutoff=cutoff)
+        return evaluated
 
     def bind_verified_scenario_risk(self, result: ScenarioRiskComparison, *, cutoff: str) -> None:
         """Only accept approved snapshot results, never descriptive portfolio rows."""
