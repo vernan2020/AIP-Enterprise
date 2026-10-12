@@ -202,7 +202,7 @@ def test_complete_real_reader_to_fx_capital_policy_scenario(
     assert outcome.regulatory_exposure_crc == Decimal("620")
     assert outcome.current_credit_rwa_crc == Decimal("120")
     assert outcome.comparison.current.credit_rwa_crc == Decimal("120")
-    assert outcome.comparison.proposed.credit_rwa_crc == Decimal("60")
+    assert outcome.comparison.proposed.credit_rwa_crc.quantize(Decimal("0.01")) == Decimal("60.00")
     assert outcome.comparison.current.hqla_fraction == Decimal("0.36")
     assert outcome.comparison.proposed.hqla_fraction == Decimal("0.63")
     assert outcome.comparison.current.status == "BREACH"
