@@ -100,6 +100,12 @@ class CapitalEquivalentRateView(QWidget):
         self._result.setObjectName("portfolioCapitalEquivalentResult")
         self._result.setWordWrap(True)
         layout.addWidget(self._result)
+        # A successful explicit calculation enables live scenario updates.
+        # No financial parameters or equity costs are ever assumed.
+        self._auto_recalculate_enabled = False
+        for field in (self._invested, self._exposure, self._yield, self._equity_cost):
+            field.textChanged.connect(self._recalculate_after_edit)
+        self._classification.currentIndexChanged.connect(self._recalculate_after_edit)
         layout.addStretch(1)
 
     def bind_positions(self, rows: Sequence[PortfolioRow], *, cutoff: str) -> None:
@@ -120,6 +126,8 @@ class CapitalEquivalentRateView(QWidget):
         self._on_position_selected()
 
     def _on_position_selected(self, _index: int = 0) -> None:
+        # A new holding or cutoff must never inherit a calculated scenario.
+        self._auto_recalculate_enabled = False
         row = self._position.currentData()
         # Never carry verified-looking numeric inputs or a weight to another title.
         for field in (self._invested, self._exposure, self._yield):
@@ -154,6 +162,10 @@ class CapitalEquivalentRateView(QWidget):
         if not parsed.is_finite():
             raise ValueError(f"Valor no finito: {label}")
         return parsed
+
+    def _recalculate_after_edit(self, *_args: object) -> None:
+        if self._auto_recalculate_enabled:
+            self._calculate_equivalent()
 
     def _calculate_equivalent(self) -> None:
         try:
@@ -198,6 +210,7 @@ class CapitalEquivalentRateView(QWidget):
             self._result.setText(str(exc))
             return
 
+        self._auto_recalculate_enabled = True
         self._result.setText(
             f"APR de crédito ponderado: {item.regulatory_exposure_crc * result.risk_weight:,.2f} CRC\n"
             f"Capital objetivo asignado: {result.required_capital_crc:,.2f} CRC\n"
