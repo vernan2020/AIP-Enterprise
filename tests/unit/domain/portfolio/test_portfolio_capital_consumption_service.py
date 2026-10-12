@@ -62,3 +62,21 @@ def test_negative_or_nonfinite_exposure_is_rejected() -> None:
             PortfolioCapitalConsumptionService.evaluate(
                 (exposure("C1", "Coocique", "CRC", value, ExposureClass.UNRATED),)
             )
+
+
+def test_usd_government_and_bccr_are_weighted_75_percent() -> None:
+    result = PortfolioCapitalConsumptionService.evaluate(
+        (
+            exposure("GUSD", "Gobierno", "USD", "100", ExposureClass.GOVERNMENT_USD),
+            exposure("BUSD", "BCCR", "USD", "200", ExposureClass.BCCR_USD),
+        )
+    )
+    assert result.total_credit_rwa_crc == Decimal("225")
+    assert all(item.risk_weight == Decimal("0.75") for item in result.items)
+
+
+def test_usd_sovereign_classification_rejects_crc_currency() -> None:
+    with pytest.raises(ValueError, match="requires USD"):
+        PortfolioCapitalConsumptionService.evaluate(
+            (exposure("G1", "Gobierno", "CRC", "100", ExposureClass.GOVERNMENT_USD),)
+        )
