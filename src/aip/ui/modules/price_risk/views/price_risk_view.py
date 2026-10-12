@@ -317,8 +317,11 @@ class PriceRiskView(QWidget):
             return
         for field in self._scenario_fields:
             grid.removeWidget(field)
+        grid.removeWidget(self._diagnostic_label)
         for index, field in enumerate(self._scenario_fields):
             grid.addWidget(field, index // columns, index % columns)
+        note_row = (len(self._scenario_fields) + columns - 1) // columns
+        grid.addWidget(self._diagnostic_label, note_row, 0, 1, columns)
         for column in range(3):
             grid.setColumnStretch(column, 1 if column < columns else 0)
         self._scenario_columns = columns
