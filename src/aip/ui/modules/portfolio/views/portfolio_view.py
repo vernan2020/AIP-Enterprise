@@ -496,8 +496,10 @@ class PortfolioView(QWidget):
                 master_attestation=master_attestation,
             )
         except Exception as exc:
-            reason = str(exc) if isinstance(exc, ValueError) else (
-                f"Error de lectura o procesamiento: {type(exc).__name__}"
+            reason = (
+                str(exc)
+                if isinstance(exc, ValueError)
+                else (f"Error de lectura o procesamiento: {type(exc).__name__}")
             )
             self._markowitz.invalidate_risk_evidence(cutoff=cutoff, reason=reason)
             raise
@@ -532,8 +534,10 @@ class PortfolioView(QWidget):
                 policy=policy,
             )
         except Exception as exc:
-            reason = str(exc) if isinstance(exc, ValueError) else (
-                f"Error de lectura o procesamiento: {type(exc).__name__}"
+            reason = (
+                str(exc)
+                if isinstance(exc, ValueError)
+                else (f"Error de lectura o procesamiento: {type(exc).__name__}")
             )
             self._markowitz.invalidate_risk_evidence(cutoff=cutoff, reason=reason)
             raise
