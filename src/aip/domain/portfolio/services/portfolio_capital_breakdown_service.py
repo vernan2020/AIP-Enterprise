@@ -92,9 +92,7 @@ class PortfolioCapitalBreakdownService:
             groups: list[CapitalBreakdownGroup] = []
             for label, indices in sorted(buckets.items()):
                 base = sum((records[i].invested_amount_crc for i in indices), Decimal("0"))
-                exposure = sum(
-                    (records[i].regulatory_exposure_crc for i in indices), Decimal("0")
-                )
+                exposure = sum((records[i].regulatory_exposure_crc for i in indices), Decimal("0"))
                 rwa = sum(
                     (evaluated.portfolio.items[i].credit_rwa_crc for i in indices), Decimal("0")
                 )
@@ -140,9 +138,8 @@ class PortfolioCapitalBreakdownService:
             target_equity_crc=evaluated.portfolio.total_credit_rwa_crc * target_capital_adequacy,
             annual_equity_charge_crc=evaluated.annual_equity_charge_crc,
             weighted_net_yield_before_equity_cost=before / invested,
-            weighted_net_yield_after_equity_cost=(
-                before - evaluated.annual_equity_charge_crc
-            ) / invested,
+            weighted_net_yield_after_equity_cost=(before - evaluated.annual_equity_charge_crc)
+            / invested,
             by_issuer=group_by("issuer"),
             by_currency=group_by("currency"),
             by_exposure_class=group_by("exposure_class"),

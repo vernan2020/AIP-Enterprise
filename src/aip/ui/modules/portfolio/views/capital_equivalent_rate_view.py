@@ -200,9 +200,7 @@ class CapitalEquivalentRateView(QWidget):
         self._invested.setText(str(evidence.invested_amount_crc))
         self._exposure.setText(str(evidence.regulatory_exposure_crc))
         self._yield.setText(str(evidence.annual_net_yield * 100))
-        self._classification.setCurrentIndex(
-            self._classification.findData(evidence.exposure_class)
-        )
+        self._classification.setCurrentIndex(self._classification.findData(evidence.exposure_class))
         self._position_note.setText(
             f"Corte auditado {self._cutoff} · ISIN {row.isin} · "
             f"Clasificación vigente desde {evidence.classification_effective_date} · "

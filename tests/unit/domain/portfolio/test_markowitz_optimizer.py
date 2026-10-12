@@ -93,8 +93,7 @@ def test_markowitz_flat_returns_have_stable_degenerate_frontier() -> None:
     )
     assert len(result.efficient_frontier) == 8
     assert all(
-        point.weights == result.minimum_variance.weights
-        for point in result.efficient_frontier
+        point.weights == result.minimum_variance.weights for point in result.efficient_frontier
     )
     assert all(point.volatility == pytest.approx(0.0) for point in result.efficient_frontier)
 
@@ -105,9 +104,7 @@ def test_markowitz_frontier_ends_at_feasible_maximum_return() -> None:
         maximum_weights=(0.7, 0.7, 0.7),
         group_limits=(MarkowitzGroupLimit("Issuer A", (0, 1), 0.5),),
     )
-    result = MarkowitzOptimizer.optimize(
-        ("A", "B", "C"), _returns(), limits, frontier_points=7
-    )
+    result = MarkowitzOptimizer.optimize(("A", "B", "C"), _returns(), limits, frontier_points=7)
     highest = result.efficient_frontier[-1]
     assert sum(highest.weights) == pytest.approx(1.0, abs=1e-8)
     assert highest.weights[0] + highest.weights[1] <= 0.500001

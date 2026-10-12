@@ -101,9 +101,7 @@ def test_editable_equity_cost_and_separate_regulatory_exposure() -> None:
     assert low.target_equity_crc == Decimal("28.800")
     assert low.annual_equity_charge_crc == Decimal("2.88000")
     assert high.annual_equity_charge_crc == Decimal("5.76000")
-    assert high.weighted_net_yield_after_equity_cost < (
-        low.weighted_net_yield_after_equity_cost
-    )
+    assert high.weighted_net_yield_after_equity_cost < (low.weighted_net_yield_after_equity_cost)
 
 
 @pytest.mark.parametrize(

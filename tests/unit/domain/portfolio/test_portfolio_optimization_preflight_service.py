@@ -62,9 +62,7 @@ def test_no_policy_no_output() -> None:
 
 
 def test_insufficient_overlap_rejects_even_when_each_history_has_thirty_points() -> None:
-    second = _series(
-        "B", dates=DATES[15:], returns=tuple(Decimal("0.001") for _ in DATES[15:])
-    )
+    second = _series("B", dates=DATES[15:], returns=tuple(Decimal("0.001") for _ in DATES[15:]))
     result = _evaluate(_series("A"), second)
     assert result.status is HistoryReadiness.INSUFFICIENT_HISTORY
     assert result.aligned_returns == ()

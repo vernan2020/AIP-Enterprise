@@ -194,9 +194,7 @@ class MarkowitzOptimizer:
                         )
                     )
                     continue
-                mix = (float(target) - minimum.expected_return) / (
-                    upper - minimum.expected_return
-                )
+                mix = (float(target) - minimum.expected_return) / (upper - minimum.expected_return)
                 initial = (1 - mix) * np.asarray(minimum.weights) + mix * highest.x
                 points.append(solve(float(target), initial=initial))
             frontier = tuple(points)

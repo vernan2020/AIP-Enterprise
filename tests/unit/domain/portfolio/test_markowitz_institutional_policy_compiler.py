@@ -68,9 +68,7 @@ def test_compiled_infeasible_policy_is_detected_before_mean_variance() -> None:
         _holding("P2", "Empresa B", "private", "over-five-years"),
     )
     limits = MarkowitzInstitutionalPolicyCompiler.compile(assets, _policy(), cutoff=CUTOFF)
-    historical = np.column_stack(
-        (np.full(40, 0.001), np.full(40, 0.002), np.full(40, 0.003))
-    )
+    historical = np.column_stack((np.full(40, 0.001), np.full(40, 0.002), np.full(40, 0.003)))
     with pytest.raises(ValueError, match="infeasible"):
         MarkowitzOptimizer.optimize(("G1", "P1", "P2"), historical, limits)
 
@@ -78,10 +76,18 @@ def test_compiled_infeasible_policy_is_detected_before_mean_variance() -> None:
 @pytest.mark.parametrize(
     ("holdings", "policy_changes", "message"),
     [
-        (( _holding("A", "Issuer", "unrecognized"), _holding("B", "X", "private")), {}, "tags"),
-        (( _holding("A", "Issuer", "private"), _holding("A", "X", "private")), {}, "Duplicate"),
-        (( _holding("A", "Issuer", "private"), _holding("B", "X", "private")), {"approval_reference": ""}, "approval"),
-        (( _holding("A", "Issuer", "private"), _holding("B", "X", "private")), {"effective_date": date(2026, 10, 3)}, "cutoff"),
+        ((_holding("A", "Issuer", "unrecognized"), _holding("B", "X", "private")), {}, "tags"),
+        ((_holding("A", "Issuer", "private"), _holding("A", "X", "private")), {}, "Duplicate"),
+        (
+            (_holding("A", "Issuer", "private"), _holding("B", "X", "private")),
+            {"approval_reference": ""},
+            "approval",
+        ),
+        (
+            (_holding("A", "Issuer", "private"), _holding("B", "X", "private")),
+            {"effective_date": date(2026, 10, 3)},
+            "cutoff",
+        ),
     ],
 )
 def test_policy_compiler_rejects_unverified_or_ambiguous_inputs(

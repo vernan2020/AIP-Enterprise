@@ -79,9 +79,8 @@ class MarkowitzInstitutionalPolicyCompiler:
                 raise ValueError("Invalid approved issuer concentration cap")
 
         security_keys = tuple(asset.security_key for asset in records)
-        if (
-            any(not key.strip() for key in security_keys)
-            or len(set(security_keys)) != len(security_keys)
+        if any(not key.strip() for key in security_keys) or len(set(security_keys)) != len(
+            security_keys
         ):
             raise ValueError("Duplicate or missing security keys in policy universe")
         for asset in records:
