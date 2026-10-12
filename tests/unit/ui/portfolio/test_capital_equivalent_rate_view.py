@@ -76,7 +76,9 @@ def _sample_row(isin: str = "CRTEST000001") -> PortfolioRow:
     )
 
 
-def test_portfolio_identity_does_not_infer_financial_inputs(calculator: CapitalEquivalentRateView) -> None:
+def test_portfolio_identity_does_not_infer_financial_inputs(
+    calculator: CapitalEquivalentRateView,
+) -> None:
     view = calculator
     view._equity_cost.setText("13.5")
     view.bind_positions((_sample_row(),), cutoff="2026-10-02")
@@ -92,7 +94,9 @@ def test_portfolio_identity_does_not_infer_financial_inputs(calculator: CapitalE
     assert view._equity_cost.text() == "13.5"
 
 
-def test_switching_holding_invalidates_prior_capital_scenario(calculator: CapitalEquivalentRateView) -> None:
+def test_switching_holding_invalidates_prior_capital_scenario(
+    calculator: CapitalEquivalentRateView,
+) -> None:
     view = calculator
     view.bind_positions((_sample_row(), _sample_row("CRTEST000002")), cutoff="2026-10-02")
     view._position.setCurrentIndex(1)
@@ -134,9 +138,7 @@ def test_selected_usd_holding_cannot_use_crc_sovereign_zero_weight(
     view._exposure.setText("100")
     view._yield.setText("8")
     view._equity_cost.setText("12")
-    view._classification.setCurrentIndex(
-        view._classification.findText("Gobierno CRC · 0%")
-    )
+    view._classification.setCurrentIndex(view._classification.findText("Gobierno CRC · 0%"))
     view._calculate_equivalent()
     assert "0% soberano CRC" in view._result.text()
 
