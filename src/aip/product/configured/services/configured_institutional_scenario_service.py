@@ -39,7 +39,7 @@ class ConfiguredInstitutionalScenarioService:
     def evaluate(
         self,
         capital_positions: Sequence[VerifiedCapitalPosition],
-        source_row_by_position: Mapping[str, int],
+        source_row_by_position: Mapping[str, int] | None,
         proposed_weights: Mapping[str, Decimal],
         *,
         cutoff: date,

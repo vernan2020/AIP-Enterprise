@@ -358,3 +358,72 @@ def test_crc_positions_reject_hidden_currency_conversion() -> None:
     rows[0] = {**rows[0], "market_value": Decimal("200")}
     with pytest.raises(ValueError, match="reconciled"):
         _adapt(master=replace(master, normalized_positions=rows))
+
+
+def test_native_contract_isin_can_resolve_lots_without_manual_row_selection() -> None:
+    master = _master()
+    rows = [
+        {
+            **row,
+            "contract_number": "CONTRACT-A" if row["isin"] == "TEST-A" else "CONTRACT-B",
+        }
+        for row in master.normalized_positions
+    ]
+    capital = tuple(
+        replace(
+            position,
+            position_key=(
+                "contract:CONTRACT-A|isin:TEST-A"
+                if position.isin == "TEST-A"
+                else "contract:CONTRACT-B|isin:TEST-B"
+            ),
+        )
+        for position in _positions()
+    )
+    audited = replace(
+        master,
+        normalized_positions=rows,
+        detected_column_mapping={
+            **master.detected_column_mapping,
+            "contract_number": "NÚMERO CONTRATO",
+        },
+    )
+    mapping = InstitutionalMasterScenarioRiskAdapter.resolve_native_position_rows(
+        audited, capital, cutoff=CUTOFF
+    )
+    assert mapping == {
+        "contract:CONTRACT-A|isin:TEST-A": 17,
+        "contract:CONTRACT-B|isin:TEST-B": 19,
+    }
+    evidence = InstitutionalMasterScenarioRiskAdapter.adapt(
+        audited, capital, None, cutoff=CUTOFF
+    )
+    assert tuple(row.position_key for row in evidence.market_risks) == tuple(mapping)
+
+    missing_native = replace(
+        audited,
+        detected_column_mapping={
+            key: value
+            for key, value in audited.detected_column_mapping.items()
+            if key != "contract_number"
+        },
+    )
+    with pytest.raises(ValueError, match="contract and ISIN columns"):
+        InstitutionalMasterScenarioRiskAdapter.adapt(
+            missing_native, capital, None, cutoff=CUTOFF
+        )
+    with pytest.raises(ValueError, match="duplicate or ambiguous"):
+        duplicate = [
+            {**row, "contract_number": "CONTRACT-A", "isin": "TEST-A"}
+            for row in rows
+        ]
+        InstitutionalMasterScenarioRiskAdapter.adapt(
+            replace(audited, normalized_positions=duplicate),
+            capital,
+            None,
+            cutoff=CUTOFF,
+        )
+    with pytest.raises(ValueError, match="do not match"):
+        InstitutionalMasterScenarioRiskAdapter.adapt(
+            audited, _positions(), None, cutoff=CUTOFF
+        )

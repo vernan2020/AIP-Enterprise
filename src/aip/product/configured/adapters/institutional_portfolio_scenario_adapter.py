@@ -17,6 +17,7 @@ from aip.domain.portfolio.services.portfolio_hqla_service import PortfolioHQLASe
 from aip.domain.portfolio.services.portfolio_scenario_evidence_bridge import (
     VerifiedPositionMarketRisk,
 )
+from aip.product.configured.irrbb.investment_source_rules import InvestmentMasterSourceRules
 from aip.product.configured.readers.institutional_portfolio_master_reader import (
     InstitutionalPortfolioMasterReader,
     InstitutionalPortfolioMasterReadResult,
@@ -75,7 +76,7 @@ class InstitutionalMasterScenarioRiskAdapter:
         cls,
         master_file: str | Path,
         capital_positions: Sequence[VerifiedCapitalPosition],
-        source_row_by_position: Mapping[str, int],
+        source_row_by_position: Mapping[str, int] | None,
         *,
         cutoff: date,
         fx_rates_by_currency: Mapping[str, VerifiedScenarioFXRate] | None = None,
@@ -109,17 +110,61 @@ class InstitutionalMasterScenarioRiskAdapter:
             fx_rates_by_currency=fx_rates_by_currency,
         )
 
+    @staticmethod
+    def resolve_native_position_rows(
+        result: InstitutionalPortfolioMasterReadResult,
+        capital_positions: Sequence[VerifiedCapitalPosition],
+        *,
+        cutoff: date,
+    ) -> dict[str, int]:
+        """Join approved lot IDs by native contract+ISIN, never by display order.
+
+        Missing or duplicated contractual identity requires explicit audited
+        source-row binding. An ISIN alone is never a sufficient lot identifier.
+        """
+        positions = PortfolioCapitalEvidenceService.validate(
+            capital_positions, cutoff=cutoff
+        )
+        if result.valuation_date != cutoff or result.source_status != "HEALTHY":
+            raise ValueError("Native lot identity source and cutoff are not verified")
+        if not {"contract_number", "isin"}.issubset(result.detected_column_mapping):
+            raise ValueError("Native contract and ISIN columns are required for automatic lot mapping")
+        rows: dict[str, int] = {}
+        used_numbers: set[int] = set()
+        for item in result.normalized_positions:
+            number = item.get("source_row")
+            contract = str(item.get("contract_number") or "").strip()
+            isin = str(item.get("isin") or "").strip()
+            if type(number) is not int or number <= 0 or not contract or not isin:
+                raise ValueError("Automatic lot mapping needs positive source row, contract and ISIN")
+            key = InvestmentMasterSourceRules.stable_position_id(
+                contract_number=contract,
+                isin=isin,
+                series=item.get("series"),
+            )
+            if key is None or key in rows or number in used_numbers:
+                raise ValueError("Institutional lot identity is duplicate or ambiguous")
+            rows[key] = number
+            used_numbers.add(number)
+        if set(rows) != {item.position_key for item in positions}:
+            raise ValueError("Audited capital lot keys do not match native contract and ISIN")
+        return rows
+
     @classmethod
     def adapt(
         cls,
         result: InstitutionalPortfolioMasterReadResult,
         capital_positions: Sequence[VerifiedCapitalPosition],
-        source_row_by_position: Mapping[str, int],
+        source_row_by_position: Mapping[str, int] | None,
         *,
         cutoff: date,
         fx_rates_by_currency: Mapping[str, VerifiedScenarioFXRate] | None = None,
     ) -> InstitutionalScenarioMarketEvidence:
         positions = PortfolioCapitalEvidenceService.validate(capital_positions, cutoff=cutoff)
+        if source_row_by_position is None:
+            source_row_by_position = cls.resolve_native_position_rows(
+                result, positions, cutoff=cutoff
+            )
         approved_fx = fx_rates_by_currency or {}
         foreign_currencies = {
             position.currency.strip().upper()
