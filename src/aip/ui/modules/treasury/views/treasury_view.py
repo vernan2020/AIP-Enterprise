@@ -22,6 +22,7 @@ from aip.ui.modules.treasury.presenters.treasury_presenter import TreasuryPresen
 from aip.ui.modules.treasury.viewmodels.treasury_view_model import TreasuryViewModel
 from aip.ui.modules.treasury.widgets.treasury_status_badge import TreasuryStatusBadge
 
+from aip.ui.themes.institutional_white import InstitutionalWhiteDesign
 
 class TreasuryView(QWidget):
     """Espacio de apoyo a decisiones de tesorería con datos certificados."""
@@ -65,26 +66,20 @@ class TreasuryView(QWidget):
         card = QFrame()
         card.setObjectName("treasuryMetricCard")
         card.setMinimumHeight(94)
-        card.setStyleSheet(
-            "QFrame#treasuryMetricCard {"
-            "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
-            "stop:0 #00477F,stop:0.60 #005EB8,stop:1 #00A9E0); "
-            "border:1px solid #1675C5; border-radius:12px;"
-            "} QFrame#treasuryMetricCard:hover {border:1px solid #73B3DD;}"
-        )
+        card.setStyleSheet(InstitutionalWhiteDesign.kpi_card_style("treasuryMetricCard"))
         layout = QVBoxLayout(card)
         layout.setContentsMargins(10, 7, 10, 7)
         layout.setSpacing(2)
         caption = QLabel(title)
-        caption.setStyleSheet("color:#DDF4FF; font-size:9px; font-weight:600; border:none;")
+        caption.setStyleSheet(InstitutionalWhiteDesign.KPI_TITLE)
         value = QLabel("-")
         value_font = QFont()
         value_font.setPointSize(12)
         value_font.setBold(True)
         value.setFont(value_font)
-        value.setStyleSheet("color:#FFFFFF; border:none;")
+        value.setStyleSheet(InstitutionalWhiteDesign.KPI_VALUE)
         hint = QLabel(helper)
-        hint.setStyleSheet("color:#CBEAF8; font-size:8px; border:none;")
+        hint.setStyleSheet(InstitutionalWhiteDesign.KPI_NOTE)
         layout.addWidget(caption)
         layout.addWidget(value)
         layout.addWidget(hint)

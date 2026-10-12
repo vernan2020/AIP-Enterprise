@@ -22,6 +22,7 @@ from aip.ui.modules.liquidity.presenters.liquidity_presenter import LiquidityPre
 from aip.ui.modules.liquidity.viewmodels.liquidity_view_model import LiquidityViewModel
 from aip.ui.widgets.chart_tooltip import build_chart_tooltip, show_chart_tooltip
 
+from aip.ui.themes.institutional_white import InstitutionalWhiteDesign
 
 class _LiquidityBarChart(QWidget):
     """Horizontal capsule chart for contractual liquidity buckets."""
@@ -495,26 +496,20 @@ class LiquidityView(QWidget):
         card = QFrame()
         card.setObjectName("liquidityMetricCard")
         card.setMinimumHeight(76)
-        card.setStyleSheet(
-            "QFrame#liquidityMetricCard {"
-            "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
-            "stop:0 #00477F,stop:0.60 #005EB8,stop:1 #00A9E0); "
-            "border:1px solid #1675C5; border-radius:12px;"
-            "} QFrame#liquidityMetricCard:hover {border:1px solid #73B3DD;}"
-        )
+        card.setStyleSheet(InstitutionalWhiteDesign.kpi_card_style("liquidityMetricCard"))
         layout = QVBoxLayout(card)
         layout.setContentsMargins(10, 7, 10, 7)
         layout.setSpacing(2)
         caption = QLabel(title)
-        caption.setStyleSheet("color:#DDF4FF; font-size:9px; font-weight:600; border:none;")
+        caption.setStyleSheet(InstitutionalWhiteDesign.KPI_TITLE)
         value = QLabel("-")
         font = QFont()
         font.setPointSize(12)
         font.setBold(True)
         value.setFont(font)
-        value.setStyleSheet("color:#FFFFFF; border:none;")
+        value.setStyleSheet(InstitutionalWhiteDesign.KPI_VALUE)
         hint = QLabel(helper)
-        hint.setStyleSheet("color:#CBEAF8; font-size:8px; border:none;")
+        hint.setStyleSheet(InstitutionalWhiteDesign.KPI_NOTE)
         layout.addWidget(caption)
         layout.addWidget(value)
         layout.addWidget(hint)

@@ -28,6 +28,7 @@ from aip.ui.modules.price_risk.views.portfolio_var_simulator_view import (
 )
 from aip.ui.modules.price_risk.widgets.risk_charts import ParetoChartWidget, RiskBarChartWidget
 
+from aip.ui.themes.institutional_white import InstitutionalWhiteDesign
 
 class _PriceRiskWorker(QObject):
     result_ready = Signal(object)
@@ -157,26 +158,20 @@ class PriceRiskView(QWidget):
         card = QFrame()
         card.setObjectName("riskMetricCard")
         card.setMinimumHeight(94)
-        card.setStyleSheet(
-            "QFrame#riskMetricCard {"
-            "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
-            "stop:0 #00477F,stop:0.60 #005EB8,stop:1 #00A9E0); "
-            "border:1px solid #1675C5; border-radius:12px;"
-            "} QFrame#riskMetricCard:hover {border:1px solid #73B3DD;}"
-        )
+        card.setStyleSheet(InstitutionalWhiteDesign.kpi_card_style("riskMetricCard"))
         layout = QVBoxLayout(card)
         layout.setContentsMargins(10, 7, 10, 7)
         layout.setSpacing(2)
         title = QLabel(caption)
-        title.setStyleSheet("color:#DDF4FF; font-size:8px; font-weight:600; border:none;")
+        title.setStyleSheet(InstitutionalWhiteDesign.KPI_TITLE)
         value = QLabel("-")
         value_font = QFont()
         value_font.setPointSize(12)
         value_font.setBold(True)
         value.setFont(value_font)
-        value.setStyleSheet("color:#FFFFFF; border:none;")
+        value.setStyleSheet(InstitutionalWhiteDesign.KPI_VALUE)
         hint = QLabel(helper)
-        hint.setStyleSheet("color:#CBEAF8; font-size:8px; border:none;")
+        hint.setStyleSheet(InstitutionalWhiteDesign.KPI_NOTE)
         layout.addWidget(title)
         layout.addWidget(value)
         layout.addWidget(hint)
