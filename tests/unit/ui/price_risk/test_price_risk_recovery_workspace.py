@@ -146,3 +146,26 @@ def test_price_risk_kpis_reflow_without_losing_cards(qt_app) -> None:
     finally:
         view.close()
         qt_app.processEvents()
+
+
+def test_price_and_rate_chart_readout_do_not_require_windows_tooltip(qt_app) -> None:
+    view = PriceRiskView(_StubPresenter())  # type: ignore[arg-type]
+    try:
+        assert view._price_hover_readout.objectName() == "priceRiskHoverReadout"
+        assert view._rate_hover_readout.objectName() == "rateRiskHoverReadout"
+        view._contribution_chart.hover_readout_changed.emit("Serie CRG001 · +16.50%")
+        assert "CRG001" in view._price_hover_readout.text()
+        view._pareto_chart.hover_readout_changed.emit("Acumulado: 28.9%")
+        assert "28.9%" in view._price_hover_readout.text()
+        view._contribution_chart.hover_readout_changed.emit("")
+        assert "Pase el cursor" in view._price_hover_readout.text()
+
+        view._bucket_chart.hover_readout_changed.emit("< 1 año · ₡4.00 MM")
+        assert "₡4.00 MM" in view._rate_hover_readout.text()
+        view._shock_chart.hover_readout_changed.emit("-200 pb · ₡84.00 MM")
+        assert "-200 pb" in view._rate_hover_readout.text()
+        view._shock_chart.hover_readout_changed.emit("")
+        assert "Pase el cursor" in view._rate_hover_readout.text()
+    finally:
+        view.close()
+        qt_app.processEvents()
