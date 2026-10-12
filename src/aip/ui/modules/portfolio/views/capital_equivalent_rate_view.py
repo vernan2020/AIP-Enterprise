@@ -163,15 +163,23 @@ class CapitalEquivalentRateView(QWidget):
             selected = self._position.currentData()
             if selected is not None:
                 currency = selected.currency.strip().upper()
-                if exposure_class in {
-                    ExposureClass.BCCR_CRC,
-                    ExposureClass.GOVERNMENT_CRC,
-                } and currency != "CRC":
+                if (
+                    exposure_class
+                    in {
+                        ExposureClass.BCCR_CRC,
+                        ExposureClass.GOVERNMENT_CRC,
+                    }
+                    and currency != "CRC"
+                ):
                     raise ValueError("El 0% soberano CRC no corresponde a esta moneda")
-                if exposure_class in {
-                    ExposureClass.BCCR_USD,
-                    ExposureClass.GOVERNMENT_USD,
-                } and currency != "USD":
+                if (
+                    exposure_class
+                    in {
+                        ExposureClass.BCCR_USD,
+                        ExposureClass.GOVERNMENT_USD,
+                    }
+                    and currency != "USD"
+                ):
                     raise ValueError("La categoría soberana USD exige moneda USD")
             item = CapitalEquivalentRateInput(
                 invested_amount_crc=self._decimal(self._invested.text(), "monto invertido"),
