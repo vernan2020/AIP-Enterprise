@@ -186,7 +186,9 @@ def test_history_chart_readout_shows_real_monthly_values_and_clears(qt_app) -> N
         assert "Pase el cursor" in readout.text()
         charts = panel.findChildren(QChartView)
         assert len(charts) == 1
-        lines = tuple(series for series in charts[0].chart().series() if isinstance(series, QLineSeries))
+        lines = tuple(
+            series for series in charts[0].chart().series() if isinstance(series, QLineSeries)
+        )
         assert len(lines) == 2
 
         point = lines[0].at(0)
