@@ -106,3 +106,15 @@ def test_peer_hover_readout_uses_complete_name_and_resets_on_selection(qt_app) -
     finally:
         panel.close()
         qt_app.processEvents()
+
+
+def test_peer_selector_remains_usable_in_compact_window(qt_app) -> None:
+    panel = FinancialPeerChartPanel()
+    try:
+        panel.resize(400, 380)
+        assert panel._selector.minimumWidth() <= 160
+        assert panel._selector.minimumContentsLength() == 20
+        assert panel._selector.isEnabled()
+    finally:
+        panel.close()
+        qt_app.processEvents()
