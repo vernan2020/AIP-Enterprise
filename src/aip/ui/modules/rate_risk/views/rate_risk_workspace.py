@@ -56,9 +56,7 @@ class RateRiskWorkspace(QWidget):
             self._regulatory_xml_panel.set_unconfigured()
         else:
             snapshot = self._regulatory_xml_reader.load_latest(reference_cutoff=cutoff_date)
-            self._regulatory_xml_panel.set_snapshot(
-                snapshot, valuation_cutoff=cutoff_date
-            )
+            self._regulatory_xml_panel.set_snapshot(snapshot, valuation_cutoff=cutoff_date)
         controller = self._controller
         if controller is None:
             self._view.set_read_model(None)
