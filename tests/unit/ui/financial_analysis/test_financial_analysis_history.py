@@ -3,6 +3,10 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
+from PySide6.QtCharts import QChartView, QLineSeries
+from PySide6.QtCore import QPointF
+from PySide6.QtWidgets import QLabel
+
 from aip.domain.financial_analysis.models import (
     FinancialAnalysisSnapshot,
     FinancialEntity,
@@ -137,6 +141,66 @@ def test_historical_kpi_charts_reflow_without_recreating_data(qt_app) -> None:
                 assert cell is not None
                 assert cell.widget() is card
         assert panel._history_cards == cards
+    finally:
+        panel.close()
+        qt_app.processEvents()
+
+
+def test_history_chart_readout_shows_real_monthly_values_and_clears(qt_app) -> None:
+    item = FinancialMetricHistorySeriesView(
+        code="ROA",
+        label="ROA",
+        unit="%",
+        latest_value="1.25%",
+        period_change="+0.15 pp",
+        source_account="81000",
+        available_points=2,
+        total_points=3,
+        points=(
+            FinancialMetricHistoryPointView(
+                iso_date="2026-07-31",
+                date_label="07/2026",
+                value=1.10,
+                display_value="1.10%",
+            ),
+            FinancialMetricHistoryPointView(
+                iso_date="2026-08-31",
+                date_label="08/2026",
+                value=None,
+                display_value="-",
+            ),
+            FinancialMetricHistoryPointView(
+                iso_date="2026-09-30",
+                date_label="09/2026",
+                value=1.25,
+                display_value="1.25%",
+            ),
+        ),
+    )
+    panel = FinancialHistoryPanel()
+    try:
+        panel.bind_history((item,))
+        labels = panel.findChildren(QLabel, "financialHistoryHoverReadout")
+        assert len(labels) == 1
+        readout = labels[0]
+        assert "Pase el cursor" in readout.text()
+        charts = panel.findChildren(QChartView)
+        assert len(charts) == 1
+        lines = tuple(series for series in charts[0].chart().series() if isinstance(series, QLineSeries))
+        assert len(lines) == 2
+
+        point = lines[0].at(0)
+        lines[0].hovered.emit(QPointF(point.x(), point.y()), True)
+        assert "ROA" in readout.text()
+        assert "07/2026" in readout.text()
+        assert "1.10%" in readout.text()
+
+        second_point = lines[1].at(0)
+        lines[1].hovered.emit(QPointF(second_point.x(), second_point.y()), True)
+        assert "09/2026" in readout.text()
+        assert "1.25%" in readout.text()
+        lines[1].hovered.emit(QPointF(second_point.x(), second_point.y()), False)
+        assert "Pase el cursor" in readout.text()
     finally:
         panel.close()
         qt_app.processEvents()
