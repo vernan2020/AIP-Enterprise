@@ -297,7 +297,7 @@ class RegulatoryFinancialXMLReader:
                 raise ValueError(
                     f"Acción XML {action or '(vacía)'} no soportada sin conciliación incremental."
                 )
-            values = {child.tag: (child.text or "").strip() for child in element}
+            values = {child.tag.strip(): (child.text or "").strip() for child in element}
             account_key = spec.account_field
             catalog = cls._digits(values, "TipoCatalogoSUGEF")
             if catalog != spec.catalog_code:
