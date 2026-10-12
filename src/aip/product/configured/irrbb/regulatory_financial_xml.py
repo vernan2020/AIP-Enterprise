@@ -147,6 +147,7 @@ class RegulatoryFinancialXMLReader:
                     f"Se esperaba un solo {spec.filename}; encontrados: {len(matches)}"
                 )
             path = matches[0]
+            self._reject_unsafe_declarations(path)
             header = self._monthly.read_header(path)
             if (header.periodo.year, header.periodo.month) != (
                 cutoff_date.year, cutoff_date.month
@@ -167,7 +168,7 @@ class RegulatoryFinancialXMLReader:
                 account_totals=totals if not issues else (),
                 issues=tuple(issues),
             )
-        except (OSError, ValueError, ElementTree.ParseError) as exc:
+        except (OSError, ValueError, StopIteration, ElementTree.ParseError) as exc:
             return RegulatoryXMLFileResult(
                 key=spec.key,
                 filename=spec.filename,
