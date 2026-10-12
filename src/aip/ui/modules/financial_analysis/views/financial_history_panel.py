@@ -26,6 +26,8 @@ class FinancialHistoryPanel(QWidget):
         super().__init__()
         self.setObjectName("financialHistoryPanel")
         self._grid = QGridLayout()
+        self._history_cards: tuple[QFrame, ...] = ()
+        self._history_columns = 2
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -84,7 +86,30 @@ class FinancialHistoryPanel(QWidget):
             "}"
         )
 
+    @staticmethod
+    def _columns_for_width(width: int) -> int:
+        return 1 if width < 980 else 2
+
+    def _reflow_history_cards(self, width: int) -> None:
+        if not self._history_cards:
+            return
+        columns = self._columns_for_width(width)
+        if columns == self._history_columns:
+            return
+        for card in self._history_cards:
+            self._grid.removeWidget(card)
+        for index, card in enumerate(self._history_cards):
+            self._grid.addWidget(card, index // columns, index % columns)
+        self._grid.setColumnStretch(0, 1)
+        self._grid.setColumnStretch(1, 1 if columns == 2 else 0)
+        self._history_columns = columns
+
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        self._reflow_history_cards(event.size().width())
+
     def bind_history(self, series: tuple[FinancialMetricHistorySeriesView, ...]) -> None:
+        self._history_cards = ()
         self._clear_grid()
         if not series:
             empty = QLabel(
@@ -95,8 +120,13 @@ class FinancialHistoryPanel(QWidget):
             self._grid.addWidget(empty, 0, 0, 1, 2)
             return
 
-        for index, item in enumerate(series):
-            self._grid.addWidget(self._history_card(item), index // 2, index % 2)
+        self._history_cards = tuple(self._history_card(item) for item in series)
+        self._history_columns = self._columns_for_width(self.width())
+        for index, card in enumerate(self._history_cards):
+            self._grid.addWidget(
+                card, index // self._history_columns, index % self._history_columns
+            )
+        self._grid.setColumnStretch(1, 1 if self._history_columns == 2 else 0)
 
     def _clear_grid(self) -> None:
         while self._grid.count():
