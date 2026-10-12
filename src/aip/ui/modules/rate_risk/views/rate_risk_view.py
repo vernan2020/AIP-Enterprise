@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
 )
 
 from aip.ui.modules.rate_risk.models import RateRiskKpi, RateRiskReadModel
+from aip.ui.themes.institutional_white import InstitutionalWhiteDesign
 
 
 class RateRiskView(QWidget):
@@ -212,11 +213,7 @@ class RateRiskView(QWidget):
         card = QFrame()
         card.setObjectName("rateRiskMetricCard")
         card.setMinimumHeight(82)
-        card.setStyleSheet(
-            "QFrame#rateRiskMetricCard {background:#FFFFFF; border:1px solid #D5DEE3; "
-            "border-radius:8px;}"
-            "QFrame#rateRiskMetricCard:hover {background:#F0F8FC; border-color:#73B3DD;}"
-        )
+        card.setStyleSheet(InstitutionalWhiteDesign.kpi_card_style("rateRiskMetricCard"))
         layout = QVBoxLayout(card)
         layout.setContentsMargins(10, 7, 10, 7)
         layout.setSpacing(2)
