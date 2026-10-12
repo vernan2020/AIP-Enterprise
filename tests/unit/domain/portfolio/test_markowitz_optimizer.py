@@ -7,6 +7,7 @@ import pytest
 
 from aip.domain.portfolio.services.markowitz_optimizer import (
     MarkowitzConstraints,
+    MarkowitzGroupLimit,
     MarkowitzOptimizer,
 )
 
@@ -56,3 +57,28 @@ def test_markowitz_rejects_infeasible_policy_bounds() -> None:
     limits = MarkowitzConstraints((0.8, 0.8), (1.0, 1.0))
     with pytest.raises(ValueError, match="fully invested"):
         MarkowitzOptimizer.optimize(("A", "B"), [[0.02, 0.01]] * 30, limits)
+
+
+def test_markowitz_enforces_issuer_group_limit() -> None:
+    limits = MarkowitzConstraints(
+        minimum_weights=(0.0, 0.0, 0.0),
+        maximum_weights=(1.0, 1.0, 1.0),
+        group_limits=(MarkowitzGroupLimit("Gobierno", (0, 1), 0.40),),
+    )
+    result = MarkowitzOptimizer.optimize(("Bono A", "Bono B", "Bono C"), _returns(), limits, frontier_points=4)
+    for point in (result.minimum_variance, *result.efficient_frontier):
+        assert sum(point.weights[:2]) <= 0.400001
+        assert point.weights[2] >= 0.599999
+
+
+def test_markowitz_rejects_infeasible_group_limits() -> None:
+    limits = MarkowitzConstraints(
+        minimum_weights=(0.0, 0.0),
+        maximum_weights=(1.0, 1.0),
+        group_limits=(
+            MarkowitzGroupLimit("Grupo A", (0,), 0.30),
+            MarkowitzGroupLimit("Grupo B", (1,), 0.30),
+        ),
+    )
+    with pytest.raises(ValueError, match="infeasible"):
+        MarkowitzOptimizer.optimize(("A", "B"), _returns()[:, :2], limits)
