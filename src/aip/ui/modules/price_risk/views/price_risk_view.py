@@ -82,6 +82,9 @@ class PriceRiskView(QWidget):
         self._kpi_grid: QGridLayout | None = None
         self._kpi_cards: tuple[QFrame, ...] = ()
         self._kpi_columns = 6
+        self._rate_kpi_grid: QGridLayout | None = None
+        self._rate_kpi_cards: tuple[QFrame, ...] = ()
+        self._rate_kpi_columns = 6
         self._build_ui()
         self._setup_worker()
         self._set_loading_state(initial=True)
@@ -210,9 +213,25 @@ class PriceRiskView(QWidget):
             grid.setColumnStretch(column, 1 if column < columns else 0)
         self._kpi_columns = columns
 
+    def _arrange_rate_kpis(self, width: int) -> None:
+        grid = self._rate_kpi_grid
+        if grid is None or not self._rate_kpi_cards:
+            return
+        columns = self._kpi_columns_for_width(width)
+        if columns == self._rate_kpi_columns:
+            return
+        for card in self._rate_kpi_cards:
+            grid.removeWidget(card)
+        for index, card in enumerate(self._rate_kpi_cards):
+            grid.addWidget(card, index // columns, index % columns)
+        for column in range(6):
+            grid.setColumnStretch(column, 1 if column < columns else 0)
+        self._rate_kpi_columns = columns
+
     def resizeEvent(self, event) -> None:  # noqa: N802
         super().resizeEvent(event)
         self._arrange_kpi_cards(event.size().width())
+        self._arrange_rate_kpis(event.size().width())
 
     @staticmethod
     def _new_chart_readout(object_name: str) -> QLabel:
@@ -431,11 +450,15 @@ class PriceRiskView(QWidget):
             ("shock_coverage", "Cobertura shocks", "VM sensible a tasas"),
             ("worst_shock", "Shock más adverso", "Escenario de menor ΔEVE"),
         )
+        rate_cards: list[QFrame] = []
         for index, definition in enumerate(definitions):
             card = self._metric_card(*definition)
             kpi_grid.addWidget(card, 0, index)
+            rate_cards.append(card)
         for column in range(6):
             kpi_grid.setColumnStretch(column, 1)
+        self._rate_kpi_grid = kpi_grid
+        self._rate_kpi_cards = tuple(rate_cards)
         layout.addLayout(kpi_grid)
 
         context = QFrame()
