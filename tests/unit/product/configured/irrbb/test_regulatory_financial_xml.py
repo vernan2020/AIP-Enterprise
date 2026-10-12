@@ -168,3 +168,21 @@ def test_regulatory_header_rejects_non_crc_currency_and_wrong_data_class(
     result = reader.load(cutoff_date=date(2026, 9, 30))
     assert result.files[0].status == "BLOCKED"
     assert "ClaseDato diferente" in result.files[0].issues[0]
+
+
+def test_regulatory_file_accepts_resend_type_without_losing_audit_metadata(tmp_path: Path):
+    month = _month(tmp_path)
+    _write_pair(month)
+    for spec in REGULATORY_XML_SPECS:
+        path = month / spec.filename
+        path.write_text(
+            path.read_text(encoding="utf-8").replace(
+                "<TipoCarga>1</TipoCarga>", "<TipoCarga>2</TipoCarga>"
+            ),
+            encoding="utf-8",
+        )
+    snapshot = RegulatoryFinancialXMLReader(str(tmp_path)).load(
+        cutoff_date=date(2026, 9, 30)
+    )
+    assert snapshot.is_valid
+    assert all(item.load_type == "2" for item in snapshot.files)
