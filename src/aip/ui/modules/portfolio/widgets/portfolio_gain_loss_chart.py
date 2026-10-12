@@ -4,7 +4,7 @@ from collections.abc import Callable
 from decimal import Decimal
 
 from PySide6.QtCore import QRectF, Qt
-from PySide6.QtGui import QColor, QFont, QLinearGradient, QPainter, QPen
+from PySide6.QtGui import QColor, QFont, QFontMetrics, QLinearGradient, QPainter, QPen
 from PySide6.QtWidgets import QWidget
 
 from aip.ui.modules.portfolio.models.portfolio_valuation_comparison import (
@@ -65,8 +65,16 @@ class PortfolioGainLossBarChart(QWidget):
         font.setBold(bold)
         return font
 
+    def _value_column_width(self) -> float:
+        font = QFontMetrics(self._font(bold=True))
+        needed = max(
+            (font.horizontalAdvance(self._formatter(point.value)) for point in self._points),
+            default=96,
+        )
+        return float(min(max(needed + 18, 110), max(110, self.width() * 0.38)))
+
     def _paint_values(self, painter: QPainter) -> None:
-        left, right, top, bottom = 132.0, 108.0, 10.0, 10.0
+        left, right, top, bottom = 132.0, self._value_column_width(), 10.0, 10.0
         width = max(30.0, self.width() - left - right)
         height = max(30.0, self.height() - top - bottom)
         row_height = height / max(1, len(self._points))
@@ -118,7 +126,7 @@ class PortfolioGainLossBarChart(QWidget):
             )
 
     def _paint_diverging(self, painter: QPainter) -> None:
-        left, right, top, bottom = 118.0, 96.0, 10.0, 10.0
+        left, right, top, bottom = 118.0, self._value_column_width(), 27.0, 10.0
         width = max(60.0, self.width() - left - right)
         half = width / 2.0
         center = left + half
@@ -140,8 +148,8 @@ class PortfolioGainLossBarChart(QWidget):
         painter.setPen(self._MUTED)
         painter.setFont(self._font())
         painter.drawText(
-            QRectF(left, 0, width, 16),
-            Qt.AlignmentFlag.AlignHCenter,
+            QRectF(left, 2, width, 20),
+            Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter,
             "Pérdidas  ←  0  →  Ganancias",
         )
 
