@@ -146,6 +146,8 @@ class EnvironmentLoader:
             configured_source_indicator or configured_source_env_present
         ):
             execution_mode = "CONFIGURED"
+            if os.getenv("AIP_DEMO_MODE_ENABLED") is None:
+                demo_mode_enabled = False
         if execution_mode == "DEMO":
             demo_mode_enabled = True
         environment_name = os.getenv("AIP_ENVIRONMENT") or os.getenv("AIP_DEMO_ENVIRONMENT", "demo")
