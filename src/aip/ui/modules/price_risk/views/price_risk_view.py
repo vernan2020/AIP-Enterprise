@@ -85,6 +85,10 @@ class PriceRiskView(QWidget):
         self._rate_kpi_grid: QGridLayout | None = None
         self._rate_kpi_cards: tuple[QFrame, ...] = ()
         self._rate_kpi_columns = 6
+        self._quality_grid: QGridLayout | None = None
+        self._quality_cards: tuple[QWidget, ...] = ()
+        self._quality_note: QLabel | None = None
+        self._quality_columns = 8
         self._build_ui()
         self._setup_worker()
         self._set_loading_state(initial=True)
@@ -228,10 +232,42 @@ class PriceRiskView(QWidget):
             grid.setColumnStretch(column, 1 if column < columns else 0)
         self._rate_kpi_columns = columns
 
+    @staticmethod
+    def _quality_columns_for_width(width: int) -> int:
+        if width < 760:
+            return 2
+        if width < 1280:
+            return 4
+        return 8
+
+    def _arrange_quality_cards(self, width: int) -> None:
+        grid = self._quality_grid
+        if grid is None or not self._quality_cards or self._quality_note is None:
+            return
+        columns = self._quality_columns_for_width(width)
+        if columns == self._quality_columns:
+            return
+        for card in self._quality_cards:
+            grid.removeWidget(card)
+        grid.removeWidget(self._quality_note)
+        for index, card in enumerate(self._quality_cards):
+            grid.addWidget(card, index // columns, index % columns)
+        grid.addWidget(
+            self._quality_note,
+            (len(self._quality_cards) + columns - 1) // columns,
+            0,
+            1,
+            columns,
+        )
+        for column in range(8):
+            grid.setColumnStretch(column, 1 if column < columns else 0)
+        self._quality_columns = columns
+
     def resizeEvent(self, event) -> None:  # noqa: N802
         super().resizeEvent(event)
         self._arrange_kpi_cards(event.size().width())
         self._arrange_rate_kpis(event.size().width())
+        self._arrange_quality_cards(event.size().width())
 
     @staticmethod
     def _new_chart_readout(object_name: str) -> QLabel:
@@ -281,9 +317,11 @@ class PriceRiskView(QWidget):
         quality.setStyleSheet(
             "QFrame#varQualityStrip {background:#F7F9FA; border:1px solid #D5DEE3; border-radius:7px;}"
         )
-        quality_layout = QHBoxLayout(quality)
+        quality_layout = QGridLayout(quality)
         quality_layout.setContentsMargins(10, 6, 10, 6)
-        quality_layout.setSpacing(18)
+        quality_layout.setHorizontalSpacing(12)
+        quality_layout.setVerticalSpacing(6)
+        quality_cards: list[QWidget] = []
         for key, caption in (
             ("eligible_vm", "Universo elegible"),
             ("policy_excluded_vm", "Excluido por política"),
@@ -294,23 +332,34 @@ class PriceRiskView(QWidget):
             ("horizon", "Horizonte"),
             ("reconciliation", "Reconciliación"),
         ):
-            block = QVBoxLayout()
+            card = QWidget()
+            block = QVBoxLayout(card)
+            block.setContentsMargins(1, 1, 1, 1)
+            block.setSpacing(2)
             label = QLabel(caption)
             label.setStyleSheet("color:#7B8D98; font-size:8px;")
+            label.setWordWrap(True)
             value = QLabel("-")
             value.setStyleSheet("color:#183247; font-weight:700; font-size:9px;")
+            value.setWordWrap(True)
             self._quality_labels[key] = value
             block.addWidget(label)
             block.addWidget(value)
-            quality_layout.addLayout(block)
-        quality_layout.addStretch(1)
+            quality_layout.addWidget(card, 0, len(quality_cards))
+            quality_cards.append(card)
         quality_note = QLabel(
             "Calidad, horizonte y reconciliación integrados en una franja compacta."
         )
+        quality_note.setWordWrap(True)
         quality_note.setStyleSheet(
             "color:#315468; font-size:8px; font-weight:600; padding:0 4px; border:none;"
         )
-        quality_layout.addWidget(quality_note)
+        quality_layout.addWidget(quality_note, 1, 0, 1, 8)
+        for column in range(8):
+            quality_layout.setColumnStretch(column, 1)
+        self._quality_grid = quality_layout
+        self._quality_cards = tuple(quality_cards)
+        self._quality_note = quality_note
         layout.addWidget(quality)
 
         scenario_group = QGroupBox("Escenario VeR seleccionado")
