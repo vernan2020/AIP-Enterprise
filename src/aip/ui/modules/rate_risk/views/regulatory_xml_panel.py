@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
 )
 
 from aip.product.configured.irrbb.regulatory_financial_xml import RegulatoryXMLPairResult
+from aip.product.configured.irrbb.regulatory_gap_six_band import build_regulatory_gap
 
 
 class RegulatoryXMLPanel(QWidget):
@@ -44,6 +45,7 @@ class RegulatoryXMLPanel(QWidget):
                 "Estado",
                 "Período",
                 "Entidad",
+                "Tipo carga",
                 "Detalles",
                 "Totales",
                 "SHA-256 / incidencia",
@@ -51,6 +53,22 @@ class RegulatoryXMLPanel(QWidget):
         )
         self._files.setObjectName("rateRiskRegulatoryXMLFileStatus")
         layout.addWidget(self._files)
+
+        self._gap_title = QLabel("GAP regulatorio · 6 bandas SICVECA (CRC)")
+        self._gap_title.setStyleSheet("color:#00345F; font-weight:800;")
+        layout.addWidget(self._gap_title)
+        self._gap_notice = QLabel("GAP regulatorio no calculado")
+        self._gap_notice.setWordWrap(True)
+        layout.addWidget(self._gap_notice)
+        self._gap_table = self._table((
+            "Banda",
+            "Activos sensibles CRC",
+            "Pasivos sensibles CRC",
+            "GAP simple CRC",
+            "GAP acumulado CRC",
+        ))
+        self._gap_table.setObjectName("rateRiskRegulatorySixBandGap")
+        layout.addWidget(self._gap_table)
 
         self._snapshot: RegulatoryXMLPairResult | None = None
         self._account_selector = QComboBox()
@@ -88,6 +106,8 @@ class RegulatoryXMLPanel(QWidget):
         self._files.setRowCount(0)
         self._rows.setRowCount(0)
         self._account_selector.clear()
+        self._gap_table.setRowCount(0)
+        self._gap_notice.setText("No disponible: fuente XML no configurada.")
         self._detail_note.setText(
             "Revise la fuente XML CONFÍA ya documentada en AIP. "
             "No hay datos regulatorios cargados; no se asumen valores cero."
@@ -102,6 +122,7 @@ class RegulatoryXMLPanel(QWidget):
                 item.status,
                 item.period.isoformat() if item.period else "—",
                 item.entity_id or "—",
+                item.load_type or "—",
                 str(len(item.rows)) if item.is_valid else "—",
                 str(len(item.account_totals)) if item.is_valid else "—",
                 issue,
@@ -115,6 +136,23 @@ class RegulatoryXMLPanel(QWidget):
             else "XML regulatorios pendientes o bloqueados"
         )
         self._snapshot = snapshot
+        gap = build_regulatory_gap(snapshot)
+        self._gap_table.setRowCount(len(gap.rows))
+        for index, row in enumerate(gap.rows):
+            for column, value in enumerate((
+                row.bucket_label,
+                str(row.assets_crc),
+                str(row.liabilities_crc),
+                str(row.gap_crc),
+                str(row.cumulative_gap_crc),
+            )):
+                self._cell(self._gap_table, index, column, value)
+        self._gap_notice.setText(
+            "Conciliado: 22310 = 22110 + 22210, 22320 = 22120 + 22220; "
+            "GAP = activos - pasivos. No es delta NII ni delta VEP."
+            if gap.is_ready
+            else "No disponible: " + " ".join(gap.issues[:4])
+        )
         self._account_selector.blockSignals(True)
         self._account_selector.clear()
         self._account_selector.addItem("Todas las cuentas (sin consolidar)", None)
