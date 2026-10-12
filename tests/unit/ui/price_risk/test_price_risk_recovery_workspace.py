@@ -169,3 +169,25 @@ def test_price_and_rate_chart_readout_do_not_require_windows_tooltip(qt_app) -> 
     finally:
         view.close()
         qt_app.processEvents()
+
+
+def test_rate_risk_kpi_cards_reflow_without_losing_values(qt_app) -> None:
+    view = PriceRiskView(_StubPresenter())  # type: ignore[arg-type]
+    try:
+        grid = view._rate_kpi_grid
+        assert grid is not None
+        cards = view._rate_kpi_cards
+        assert len(cards) == 6
+        view._kpi_labels["dv01_total"].setText("₡42.00 MM")
+
+        for width, columns in ((1400, 6), (900, 3), (630, 2), (1400, 6)):
+            view._arrange_rate_kpis(width)
+            assert view._rate_kpi_columns == columns
+            for index, card in enumerate(cards):
+                item = grid.itemAtPosition(index // columns, index % columns)
+                assert item is not None
+                assert item.widget() is card
+            assert view._kpi_labels["dv01_total"].text() == "₡42.00 MM"
+    finally:
+        view.close()
+        qt_app.processEvents()
