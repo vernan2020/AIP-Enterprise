@@ -19,7 +19,7 @@ def test_equity_cost_is_empty_and_editable(qt_app: QApplication) -> None:
     assert "costo anual del patrimonio" in view._result.text()
 
 
-def test_equivalent_rate_recalculates_after_edit(qapp: QApplication) -> None:
+def test_equivalent_rate_recalculates_after_edit(qt_app: QApplication) -> None:
     view = CapitalEquivalentRateView()
     view._invested.setText("100")
     view._exposure.setText("100")
