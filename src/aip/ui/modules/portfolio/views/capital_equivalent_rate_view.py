@@ -75,9 +75,6 @@ class CapitalEquivalentRateView(QWidget):
         self._result = QLabel("Ingrese los parámetros; no se utilizan tasas supuestas.")
         self._result.setObjectName("portfolioCapitalEquivalentResult")
         self._result.setWordWrap(True)
-        self._result.setTextInteractionFlags(
-            self._result.textInteractionFlags()
-        )
         layout.addWidget(self._result)
         layout.addStretch(1)
 
