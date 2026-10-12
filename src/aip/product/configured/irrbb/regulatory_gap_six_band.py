@@ -15,8 +15,8 @@ REGULATORY_BRECHA_BUCKETS: tuple[tuple[str, str], ...] = (
     ("6", "Más de 720 días"),
 )
 # Regulatory mother rows: assets 22310 = 22110 (MN) + 22210 (ME);
-# liabilities 22320 = 22120 (MN) + 22220 (ME).
-REGULATORY_GAP_ACCOUNTS = ("22110", "22210", "22310", "22120", "22220", "22320")
+# liabilities 22320 = 22120 (MN) + 22220 (ME); 22300 = assets - liabilities.
+REGULATORY_GAP_ACCOUNTS = ("22110", "22210", "22310", "22120", "22220", "22320", "22300")
 
 
 @dataclass(frozen=True, slots=True)
@@ -75,11 +75,13 @@ def build_regulatory_gap(snapshot: RegulatoryXMLPairResult) -> RegulatoryGapResu
             source[("22220", band)],
             source[("22320", band)],
         )
-        if assets_mn + assets_me != assets:
+        if abs(assets_mn + assets_me - assets) > Decimal("0.01"):
             issues.append(f"Banda {band}: activos MN+ME no concilian con 22310.")
-        if liabilities_mn + liabilities_me != liabilities:
+        if abs(liabilities_mn + liabilities_me - liabilities) > Decimal("0.01"):
             issues.append(f"Banda {band}: pasivos MN+ME no concilian con 22320.")
         delta = assets - liabilities
+        if abs(source[("22300", band)] - delta) > Decimal("0.01"):
+            issues.append(f"Banda {band}: 22300 no concilia con 22310 menos 22320.")
         cumulative += delta
         derived.append(RegulatoryGapBucket(band, label, assets, liabilities, delta, cumulative))
 
