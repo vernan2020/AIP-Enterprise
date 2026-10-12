@@ -265,6 +265,7 @@ def test_declared_master_manifest_must_match_file_digest_and_sheet(
         approval_reference="approved-external-register-fixture",
     )
     service = ConfiguredInstitutionalScenarioService(_Provider(_snapshot(str(tmp_path))))
+
     def evaluate(attestation):
         return service.evaluate(
             _capital(),
