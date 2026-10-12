@@ -146,9 +146,7 @@ class RiskBarChartWidget(QWidget):
                 )
             )
             region = QRectF(0, y, self.width(), row_height)
-            self._tooltip_regions.append(
-                (region, build_chart_tooltip(point.label, tooltip_rows))
-            )
+            self._tooltip_regions.append((region, build_chart_tooltip(point.label, tooltip_rows)))
             value_text = self._formatter(point.value)
             if self._show_secondary:
                 value_text += f" · Participación: {point.secondary_value:.1f}%"
