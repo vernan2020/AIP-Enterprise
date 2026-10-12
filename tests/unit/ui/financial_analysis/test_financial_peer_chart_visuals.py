@@ -44,8 +44,7 @@ def test_peer_chart_keeps_selected_entity_and_readable_scroll_height(qt_app) -> 
         assert panel._chart_view.minimumHeight() >= 75 + 32 * 15
         assert panel._hover_detail.objectName() == "financialPeerHoverDetail"
         assert panel._point_readout(points[-1], panel._series[0]) == (
-            "Entidad supervisada 19 · Rentabilidad sobre activos: 1.00%"
-            " · Entidad seleccionada"
+            "Entidad supervisada 19 · Rentabilidad sobre activos: 1.00%" " · Entidad seleccionada"
         )
     finally:
         panel.close()
@@ -87,8 +86,11 @@ def test_peer_hover_readout_uses_complete_name_and_resets_on_selection(qt_app) -
         chart_type="BAR",
         points=(
             PeerChartPointView(
-                "1", "Entidad supervisada con nombre institucional extenso",
-                1.45, "1.45%", selected=True,
+                "1",
+                "Entidad supervisada con nombre institucional extenso",
+                1.45,
+                "1.45%",
+                selected=True,
             ),
         ),
     )
