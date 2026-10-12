@@ -32,3 +32,17 @@ def test_regulatory_readiness_cli_requires_existing_config(monkeypatch, capsys) 
         monkeypatch.delenv(key, raising=False)
     assert main(["--cutoff", "2026-09-30"]) == 2
     assert '"UNCONFIGURED"' in capsys.readouterr().out
+
+
+
+def test_configured_xml_only_source_activates_non_demo_mode(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("AIP_XML_CONFIA_ROOT", str(tmp_path))
+    monkeypatch.setenv("AIP_XML_CONFIA_ENABLED", "true")
+    monkeypatch.delenv("AIP_EXECUTION_MODE", raising=False)
+    monkeypatch.delenv("AIP_DEMO_EXECUTION_MODE", raising=False)
+    monkeypatch.delenv("AIP_DEMO_MODE_ENABLED", raising=False)
+
+    runtime = EnvironmentLoader().load()
+
+    assert runtime.execution_mode == "CONFIGURED"
+    assert not runtime.demo_mode_enabled
