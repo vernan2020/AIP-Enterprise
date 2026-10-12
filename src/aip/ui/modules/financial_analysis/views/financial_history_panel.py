@@ -147,6 +147,8 @@ class FinancialHistoryPanel(QWidget):
 
         top = QHBoxLayout()
         title = QLabel(item.label)
+        title.setWordWrap(True)
+        title.setToolTip(item.label)
         title.setStyleSheet("font-size:11px; font-weight:700; color:#142E46; border:none;")
         top.addWidget(title)
         top.addStretch(1)
