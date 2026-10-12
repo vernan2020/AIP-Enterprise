@@ -52,6 +52,9 @@ def test_institutional_macro_chart_has_visible_readout_signal(qt_app) -> None:
     try:
         chart.hover_readout_changed.emit("TPM · oct-2026 · 3.25%")
         assert received == ["TPM · oct-2026 · 3.25%"]
+        chart.set_projection(chart._projection, "TBP")
+        assert received[-1] == ""
+        assert chart._last_readout == ""
         assert chart._readout_regions == []
     finally:
         chart.close()
