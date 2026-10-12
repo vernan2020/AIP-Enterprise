@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from typing import Sequence
 
 from PySide6.QtCore import QObject, Qt, QThread, Signal, Slot
 from PySide6.QtGui import QFont
@@ -17,6 +18,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from aip.domain.portfolio.services.portfolio_capital_evidence_service import VerifiedCapitalPosition
 from aip.ui.modules.portfolio.models.portfolio_history_point import PortfolioHistorySeries
 from aip.ui.modules.portfolio.presenters.portfolio_presenter import PortfolioPresenter
 from aip.ui.modules.portfolio.viewmodels.portfolio_view_model import PortfolioViewModel
@@ -442,6 +444,14 @@ class PortfolioView(QWidget):
 
         if cutoff == self._view_model.summary.valuation_date:
             self._history.set_error(message or f"No fue posible calcular la frecuencia {sampling}")
+
+    def bind_verified_capital_evidence(
+        self, records: Sequence[VerifiedCapitalPosition], *, cutoff: str
+    ) -> None:
+        """Explicit injection point for an audited institutional capital adapter."""
+        if cutoff != str(self._view_model.summary.valuation_date):
+            raise ValueError("Capital evidence cutoff must match active portfolio")
+        self._capital_calculator.bind_verified_evidence(records, cutoff=cutoff)
 
     def refresh(self) -> None:
         self._view_model = self._presenter.refresh()
