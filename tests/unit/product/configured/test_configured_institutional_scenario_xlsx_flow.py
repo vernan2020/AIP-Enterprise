@@ -200,6 +200,7 @@ def test_complete_real_reader_to_fx_capital_policy_scenario(
     )
     assert outcome.portfolio_valuation_source == (
         f"{master}|sha256:{hashlib.sha256(master.read_bytes()).hexdigest()}"
+        "|manifest-not-supplied"
     )
     assert outcome.comparison.portfolio_value_crc == Decimal("1500")
     assert outcome.regulatory_exposure_crc == Decimal("620")

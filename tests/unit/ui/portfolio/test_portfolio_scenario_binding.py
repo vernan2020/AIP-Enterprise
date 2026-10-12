@@ -126,9 +126,18 @@ def test_configured_scenario_can_be_bound_without_using_demo_risk_data(
     evaluations: list[date] = []
 
     def evaluate_fake(
-        self, positions, row_map, allocation, *, cutoff, policy, fx_rates_by_currency
+        self,
+        positions,
+        row_map,
+        allocation,
+        *,
+        cutoff,
+        policy,
+        fx_rates_by_currency,
+        master_attestation,
     ):
         assert fx_rates_by_currency is None
+        assert master_attestation is None
         evaluations.append(cutoff)
         assert row_map == {"A": 17, "B": 19}
         return PortfolioScenarioEvidenceBridge.compare(
@@ -157,6 +166,7 @@ def test_configured_scenario_can_be_bound_without_using_demo_risk_data(
     assert evaluations == [observed_date]
     assert portfolio_view._markowitz.scenario_risk is review.comparison
     assert review.comparison.proposed.status == "BREACH"
+    assert "indicativo" in portfolio_view._markowitz._source_attestation_status.text()
     with pytest.raises(ValueError, match="cutoff"):
         portfolio_view.evaluate_and_bind_configured_scenario(
             provider=object(),

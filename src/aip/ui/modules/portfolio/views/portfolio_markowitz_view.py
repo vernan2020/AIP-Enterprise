@@ -79,6 +79,10 @@ class PortfolioMarkowitzView(QWidget):
         self._scenario_risk_detail.setTextInteractionFlags(
             Qt.TextInteractionFlag.TextSelectableByMouse
         )
+        self._source_attestation_status = QLabel("Origen: sin manifiesto de fuente aprobado")
+        self._source_attestation_status.setObjectName("portfolioScenarioSourceAttestation")
+        self._source_attestation_status.setWordWrap(True)
+        risk_layout.addWidget(self._source_attestation_status)
         risk_layout.addWidget(self._scenario_risk_status)
         risk_layout.addWidget(self._scenario_risk_detail)
         root.addWidget(risk_group)
@@ -90,6 +94,7 @@ class PortfolioMarkowitzView(QWidget):
         self._preflight = None
         self._scenario_risk = None
         self._scenario_risk_status.setText("SIN DATOS AUDITADOS")
+        self._source_attestation_status.setText("Origen: sin manifiesto de fuente aprobado")
         self._scenario_risk_detail.setText("Comparación invalidada por nuevo corte del portafolio.")
         self._cutoff_label.setText(cutoff)
         self._status.setText(HistoryReadiness.MISSING_RETURNS.value)
@@ -124,10 +129,21 @@ class PortfolioMarkowitzView(QWidget):
         if not self._cutoff or cutoff != self._cutoff:
             raise ValueError("Scenario failure cutoff does not match active portfolio")
         self._scenario_risk = None
+        self._source_attestation_status.setText("Origen: evidencia rechazada")
         self._scenario_risk_status.setText("NO VERIFICABLE")
         self._scenario_risk_detail.setText(
             f"Comparación deshabilitada: {reason}\n"
             "Falta corregir y volver a validar la evidencia antes de presentar riesgos."
+        )
+
+    def bind_source_attestation(self, *, cutoff: str, manifest_matched: bool) -> None:
+        if not self._cutoff or cutoff != self._cutoff:
+            raise ValueError("Master attestation cutoff differs from active portfolio")
+        self._source_attestation_status.setText(
+            "Origen: huella y hoja coinciden con manifiesto declarado; "
+            "aprobación institucional aún requiere verificación externa."
+            if manifest_matched
+            else "Origen: manifiesto documental no suministrado; análisis indicativo."
         )
 
     def bind_risk_comparison(self, result: ScenarioRiskComparison, *, cutoff: str) -> None:

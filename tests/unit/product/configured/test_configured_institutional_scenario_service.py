@@ -23,6 +23,7 @@ from aip.product.configured.adapters.institutional_portfolio_scenario_adapter im
     VerifiedScenarioFXRate,
 )
 from aip.product.configured.services.configured_institutional_scenario_service import (
+    ApprovedMasterAttestation,
     ConfiguredInstitutionalScenarioService,
 )
 
@@ -233,3 +234,61 @@ def test_configured_service_propagates_explicit_approved_fx_to_reader(
     )
     assert checked == [{"USD": rate}]
     assert output.comparison.current.status == "INCOMPLETE"
+
+
+def test_declared_master_manifest_must_match_file_digest_and_sheet(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    digest = "a" * 64
+
+    def read_fixture(cls, master_file, positions, row_ids, *, cutoff, fx_rates_by_currency):
+        return InstitutionalScenarioMarketEvidence(
+            cutoff=CUTOFF,
+            master_file=str(master_file),
+            sheet_name="Cartera",
+            market_risks=_market(),
+            total_market_value_crc=Decimal("200"),
+            master_sha256=digest,
+        )
+
+    monkeypatch.setattr(
+        "aip.product.configured.services.configured_institutional_scenario_service."
+        "InstitutionalMasterScenarioRiskAdapter.read_file",
+        classmethod(read_fixture),
+    )
+    path = tmp_path / "02-10-2026.xlsx"
+    approved = ApprovedMasterAttestation(
+        cutoff=CUTOFF,
+        master_file=str(path),
+        sheet_name="Cartera",
+        sha256=digest,
+        approval_reference="approved-external-register-fixture",
+    )
+    service = ConfiguredInstitutionalScenarioService(_Provider(_snapshot(str(tmp_path))))
+    def evaluate(attestation):
+        return service.evaluate(
+            _capital(),
+            {"A": 17, "B": 19},
+            {"A": Decimal("0.6"), "B": Decimal("0.4")},
+            cutoff=CUTOFF,
+            policy=_policy(),
+            master_attestation=attestation,
+        )
+
+    result = evaluate(approved)
+    assert "|manifest-match:approved-external-register-fixture" in (
+        result.portfolio_valuation_source
+    )
+    assert evaluate(None).portfolio_valuation_source.endswith("|manifest-not-supplied")
+    with pytest.raises(ValueError, match="digest or sheet"):
+        evaluate(replace(approved, sha256="b" * 64))
+    with pytest.raises(ValueError, match="digest or sheet"):
+        evaluate(replace(approved, sheet_name="Otra hoja"))
+    with pytest.raises(ValueError, match="invalid"):
+        evaluate(replace(approved, cutoff=date(2026, 10, 1)))
+    with pytest.raises(ValueError, match="invalid"):
+        evaluate(replace(approved, master_file=str(tmp_path / "other.xlsx")))
+    with pytest.raises(ValueError, match="invalid"):
+        evaluate(replace(approved, sha256="non-hex-or-short"))
+    with pytest.raises(ValueError, match="invalid"):
+        evaluate(replace(approved, approval_reference=""))

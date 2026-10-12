@@ -36,6 +36,7 @@ from aip.product.configured.adapters.institutional_portfolio_scenario_adapter im
     VerifiedScenarioFXRate,
 )
 from aip.product.configured.services.configured_institutional_scenario_service import (
+    ApprovedMasterAttestation,
     ConfiguredInstitutionalScenarioService,
     ConfiguredPortfolioSnapshot,
 )
@@ -479,6 +480,7 @@ class PortfolioView(QWidget):
         cutoff: str,
         policy: ScenarioRiskPolicy,
         fx_rates_by_currency: Mapping[str, VerifiedScenarioFXRate] | None = None,
+        master_attestation: ApprovedMasterAttestation | None = None,
     ) -> AuditedPortfolioScenario:
         """Use the already configured institutional master, without demo fallback."""
         if cutoff != str(self._view_model.summary.valuation_date):
@@ -491,11 +493,15 @@ class PortfolioView(QWidget):
                 cutoff=date.fromisoformat(cutoff),
                 policy=policy,
                 fx_rates_by_currency=fx_rates_by_currency,
+                master_attestation=master_attestation,
             )
         except ValueError as exc:
             self._markowitz.invalidate_risk_evidence(cutoff=cutoff, reason=str(exc))
             raise
         self.bind_verified_scenario_risk(scenario.comparison, cutoff=cutoff)
+        self._markowitz.bind_source_attestation(
+            cutoff=cutoff, manifest_matched=master_attestation is not None
+        )
         return scenario
 
     def evaluate_and_bind_verified_scenario(
@@ -526,6 +532,7 @@ class PortfolioView(QWidget):
             self._markowitz.invalidate_risk_evidence(cutoff=cutoff, reason=str(exc))
             raise
         self.bind_verified_scenario_risk(evaluated.comparison, cutoff=cutoff)
+        self._markowitz.bind_source_attestation(cutoff=cutoff, manifest_matched=False)
         return evaluated
 
     def bind_verified_scenario_risk(self, result: ScenarioRiskComparison, *, cutoff: str) -> None:
