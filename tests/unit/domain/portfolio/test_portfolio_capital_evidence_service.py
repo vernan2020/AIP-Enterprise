@@ -12,7 +12,6 @@ from aip.domain.portfolio.services.portfolio_capital_evidence_service import (
     VerifiedCapitalPosition,
 )
 
-
 CUTOFF = date(2026, 10, 2)
 
 
