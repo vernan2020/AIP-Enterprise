@@ -398,7 +398,9 @@ def test_native_contract_isin_can_resolve_lots_without_manual_row_selection() ->
     evidence = InstitutionalMasterScenarioRiskAdapter.adapt(
         audited, capital, None, cutoff=CUTOFF
     )
-    assert tuple(row.position_key for row in evidence.market_risks) == tuple(mapping)
+    assert tuple(row.position_key for row in evidence.market_risks) == tuple(
+        position.position_key for position in capital
+    )
 
     missing_native = replace(
         audited,
