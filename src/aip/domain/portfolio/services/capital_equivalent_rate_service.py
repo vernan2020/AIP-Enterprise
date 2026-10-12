@@ -53,7 +53,9 @@ class CapitalEquivalentRateService:
     def calculate(item: CapitalEquivalentRateInput) -> CapitalEquivalentRateResult:
         money = (item.invested_amount_crc, item.regulatory_exposure_crc)
         if any(not value.is_finite() for value in money) or money[0] <= 0 or money[1] < 0:
-            raise ValueError("Invested amount must be positive and regulatory exposure non-negative")
+            raise ValueError(
+                "Invested amount must be positive and regulatory exposure non-negative"
+            )
         rates = (
             item.annual_net_yield,
             item.annual_cost_of_equity,
