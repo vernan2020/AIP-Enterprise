@@ -102,3 +102,20 @@ def test_unverified_risk_weight_is_rejected(qt_app: QApplication) -> None:
     view._equity_cost.setText("12")
     view._calculate_equivalent()
     assert "ponderador regulatorio" in view._result.text()
+
+
+def test_selected_usd_holding_cannot_use_crc_sovereign_zero_weight(
+    qt_app: QApplication,
+) -> None:
+    view = CapitalEquivalentRateView()
+    view.bind_positions((_sample_row(),), cutoff="2026-10-02")
+    view._position.setCurrentIndex(1)
+    view._invested.setText("100")
+    view._exposure.setText("100")
+    view._yield.setText("8")
+    view._equity_cost.setText("12")
+    view._classification.setCurrentIndex(
+        view._classification.findText("Gobierno CRC · 0%")
+    )
+    view._calculate_equivalent()
+    assert "0% soberano CRC" in view._result.text()
