@@ -180,7 +180,12 @@ class RegulatoryFinancialXMLReader:
         files = tuple(self._load_one(directory, spec, cutoff_date) for spec in REGULATORY_XML_SPECS)
         if all(item.is_valid for item in files):
             first, second = files
-            if first.entity_id != second.entity_id:
+            if first.period != second.period:
+                files = tuple(
+                    self._block(item, "Las fechas de período no coinciden entre Brechas y Calce.")
+                    for item in files
+                )
+            elif first.entity_id != second.entity_id:
                 files = tuple(
                     self._block(item, "Los XML corresponden a entidades diferentes.")
                     for item in files
