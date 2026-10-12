@@ -24,7 +24,7 @@ class RegulatoryXMLPanel(QWidget):
             "Brechas (catálogo 5) y Calce (catálogo 4): información por cuenta y "
             "banda según archivo SICVECA. Los totales se usan solo para conciliar; "
             "no son flujos contractuales ni resultados ΔNII/ΔVEP. Las cifras "
-            "se mantienen en la unidad de reporte del XML, sin inferir moneda "
+            "se reportan en colones equivalentes (CRC), sin inferir moneda "
             "contractual de cada posición."
         )
         note.setWordWrap(True)
@@ -48,7 +48,7 @@ class RegulatoryXMLPanel(QWidget):
         self._detail_note = QLabel("Detalle XML: pendiente de validación")
         self._detail_note.setStyleSheet("color:#566D7C; font-weight:700;")
         layout.addWidget(self._detail_note)
-        self._rows = self._table(("Fuente", "Cuenta SUGEF", "Catálogo", "Banda", "Monto reportado"))
+        self._rows = self._table(("Fuente", "Cuenta SUGEF", "Catálogo", "Banda", "Monto (CRC)"))
         self._rows.setObjectName("rateRiskRegulatoryXMLRows")
         layout.addWidget(self._rows, 1)
 
