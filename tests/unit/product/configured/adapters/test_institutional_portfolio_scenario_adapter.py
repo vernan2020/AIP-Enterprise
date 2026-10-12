@@ -175,9 +175,7 @@ def test_source_cutoff_row_mapping_and_native_crc_header_are_mandatory() -> None
 def test_native_currency_requires_verified_not_reader_default() -> None:
     master = _master()
     positions = _positions()
-    usd = replace(
-        positions[0], currency="USD", fx_translation_source="verified fx source"
-    )
+    usd = replace(positions[0], currency="USD", fx_translation_source="verified fx source")
     with pytest.raises(ValueError, match="currency"):
         _adapt(positions=(usd, positions[1]), master=master)
 

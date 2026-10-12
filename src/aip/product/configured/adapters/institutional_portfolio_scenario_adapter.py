@@ -106,9 +106,7 @@ class InstitutionalMasterScenarioRiskAdapter:
             or not result.sheet_selected.strip()
         ):
             raise ValueError("Institutional master cutoff, completeness or source is unverified")
-        missing_columns = cls._REQUIRED_NATIVE_COLUMNS.difference(
-            result.detected_column_mapping
-        )
+        missing_columns = cls._REQUIRED_NATIVE_COLUMNS.difference(result.detected_column_mapping)
         if missing_columns:
             raise ValueError(
                 "Native institutional columns missing: " + ", ".join(sorted(missing_columns))
@@ -117,10 +115,9 @@ class InstitutionalMasterScenarioRiskAdapter:
         if set(source_row_by_position) != set(keys):
             raise ValueError("Approved row mapping must cover every audited capital lot")
         mapped_rows = tuple(source_row_by_position[key] for key in keys)
-        if (
-            any(type(row_number) is not int or row_number <= 0 for row_number in mapped_rows)
-            or len(set(mapped_rows)) != len(mapped_rows)
-        ):
+        if any(type(row_number) is not int or row_number <= 0 for row_number in mapped_rows) or len(
+            set(mapped_rows)
+        ) != len(mapped_rows):
             raise ValueError("Approved physical source row numbers must be unique integers")
 
         raw = tuple(result.normalized_positions)
