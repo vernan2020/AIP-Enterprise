@@ -72,6 +72,13 @@ def test_configured_shell_reads_regulatory_xml_without_enabling_eve(
     assert panel._headline.text() == "XML regulatorios conciliados"
     assert panel._files.rowCount() == 2
     assert panel._rows.rowCount() == 2
+    assert panel._account_selector.count() == 3
+    panel._account_selector.setCurrentIndex(1)
+    assert panel._rows.rowCount() == 1
+    assert panel._rows.item(0, 0).text() == "BRECHAS"
+    panel._account_selector.setCurrentIndex(2)
+    assert panel._rows.rowCount() == 1
+    assert panel._rows.item(0, 0).text() == "CALCE"
     assert workspace.view._analysis_status_label.text() == "Estado: Sin cálculo"
     assert all(value.text() == "N/D" for value in workspace.view._kpi_values.values())
 
