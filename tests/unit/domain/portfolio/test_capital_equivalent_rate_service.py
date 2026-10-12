@@ -36,7 +36,10 @@ def test_unrated_coocique_100pct_weight_versus_category_four() -> None:
     assert unrated.risk_weight == Decimal("1")
     assert unrated.required_capital_crc == Decimal("16000000.00")
     assert unrated.equivalent_yield_at_reference_risk_weight == Decimal("0.0608")
-    assert category_four.equivalent_yield_at_reference_risk_weight > unrated.equivalent_yield_at_reference_risk_weight
+    assert (
+        category_four.equivalent_yield_at_reference_risk_weight
+        > unrated.equivalent_yield_at_reference_risk_weight
+    )
 
 
 def test_sovereign_crc_has_no_credit_equity_charge() -> None:
