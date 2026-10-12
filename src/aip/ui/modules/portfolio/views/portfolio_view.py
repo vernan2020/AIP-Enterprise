@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
 from aip.ui.modules.portfolio.models.portfolio_history_point import PortfolioHistorySeries
 from aip.ui.modules.portfolio.presenters.portfolio_presenter import PortfolioPresenter
 from aip.ui.modules.portfolio.viewmodels.portfolio_view_model import PortfolioViewModel
+from aip.ui.modules.portfolio.views.capital_equivalent_rate_view import CapitalEquivalentRateView
 from aip.ui.modules.portfolio.views.portfolio_details_view import PortfolioDetailsView
 from aip.ui.modules.portfolio.views.portfolio_history_view import PortfolioHistoryView
 from aip.ui.modules.portfolio.views.portfolio_positions_view import PortfolioPositionsView
@@ -215,6 +216,7 @@ class PortfolioView(QWidget):
         self._build_dashboard_tab()
         self._tabs.addTab(self._history, "Histórico KPIs")
         self._tabs.addTab(self._valuation_comparison, "Ganancia / pérdida")
+        self._tabs.addTab(CapitalEquivalentRateView(), "Tasa equivalente y capital")
         self._build_positions_tab()
 
         layout.addWidget(self._status_bar)
