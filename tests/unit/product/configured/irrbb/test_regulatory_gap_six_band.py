@@ -93,7 +93,6 @@ def test_blocked_input_does_not_create_an_aggregate_gap():
     assert result.rows == ()
 
 
-
 def test_reported_22300_mismatch_blocks_six_band_gap():
     snapshot = _snapshot()
     brechas = snapshot.files[0]
@@ -103,8 +102,7 @@ def test_reported_22300_mismatch_blocks_six_band_gap():
             row.account_code,
             row.catalog_code,
             row.bucket_code,
-            Decimal("55") if row.account_code == "22300" and row.bucket_code == "3"
-            else row.amount,
+            Decimal("55") if row.account_code == "22300" and row.bucket_code == "3" else row.amount,
         )
         for row in brechas.rows
     )
