@@ -223,9 +223,7 @@ def test_configured_service_propagates_explicit_approved_fx_to_reader(
             fx_translation_source=rate.source_reference,
         ),
     )
-    output = ConfiguredInstitutionalScenarioService(
-        _Provider(_snapshot(str(tmp_path)))
-    ).evaluate(
+    output = ConfiguredInstitutionalScenarioService(_Provider(_snapshot(str(tmp_path)))).evaluate(
         positions,
         {"A": 17, "B": 19},
         {"A": Decimal("0.6"), "B": Decimal("0.4")},

@@ -122,13 +122,13 @@ class InstitutionalMasterScenarioRiskAdapter:
         Missing or duplicated contractual identity requires explicit audited
         source-row binding. An ISIN alone is never a sufficient lot identifier.
         """
-        positions = PortfolioCapitalEvidenceService.validate(
-            capital_positions, cutoff=cutoff
-        )
+        positions = PortfolioCapitalEvidenceService.validate(capital_positions, cutoff=cutoff)
         if result.valuation_date != cutoff or result.source_status != "HEALTHY":
             raise ValueError("Native lot identity source and cutoff are not verified")
         if not {"contract_number", "isin"}.issubset(result.detected_column_mapping):
-            raise ValueError("Native contract and ISIN columns are required for automatic lot mapping")
+            raise ValueError(
+                "Native contract and ISIN columns are required for automatic lot mapping"
+            )
         rows: dict[str, int] = {}
         used_numbers: set[int] = set()
         for item in result.normalized_positions:
@@ -136,7 +136,9 @@ class InstitutionalMasterScenarioRiskAdapter:
             contract = str(item.get("contract_number") or "").strip()
             isin = str(item.get("isin") or "").strip()
             if type(number) is not int or number <= 0 or not contract or not isin:
-                raise ValueError("Automatic lot mapping needs positive source row, contract and ISIN")
+                raise ValueError(
+                    "Automatic lot mapping needs positive source row, contract and ISIN"
+                )
             key = InvestmentMasterSourceRules.stable_position_id(
                 contract_number=contract,
                 isin=isin,
