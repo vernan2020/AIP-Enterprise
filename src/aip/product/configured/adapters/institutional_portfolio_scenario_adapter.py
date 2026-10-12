@@ -24,6 +24,18 @@ from aip.product.configured.readers.institutional_portfolio_master_reader import
 
 
 @dataclass(frozen=True, slots=True)
+class VerifiedScenarioFXRate:
+    """Explicit historical FX conversion evidence; never a fallback spot quote."""
+
+    currency: str
+    cutoff: date
+    effective_date: date
+    crc_per_unit: Decimal
+    rate_type: str
+    source_reference: str
+
+
+@dataclass(frozen=True, slots=True)
 class InstitutionalScenarioMarketEvidence:
     """Dated source and auditable sensitivity rows; never regulatory classification."""
 
@@ -47,7 +59,15 @@ class InstitutionalMasterScenarioRiskAdapter:
         r"(?<!\d)(?P<day>\d{1,2})[-_.]?(?P<month>\d{1,2})[-_.]?(?P<year>\d{4})(?!\d)"
     )
     _REQUIRED_NATIVE_COLUMNS = frozenset(
-        {"market_value_crc", "currency", "issuer", "isin", "classification", "product_code"}
+        {
+            "market_value_crc",
+            "market_value",
+            "currency",
+            "issuer",
+            "isin",
+            "classification",
+            "product_code",
+        }
     )
 
     @classmethod
@@ -58,6 +78,7 @@ class InstitutionalMasterScenarioRiskAdapter:
         source_row_by_position: Mapping[str, int],
         *,
         cutoff: date,
+        fx_rates_by_currency: Mapping[str, VerifiedScenarioFXRate] | None = None,
     ) -> InstitutionalScenarioMarketEvidence:
         """Use explicit cutoff override only after checking the native filename date."""
         file_name = Path(master_file).stem
@@ -85,6 +106,7 @@ class InstitutionalMasterScenarioRiskAdapter:
             capital_positions,
             source_row_by_position,
             cutoff=cutoff,
+            fx_rates_by_currency=fx_rates_by_currency,
         )
 
     @classmethod
@@ -95,8 +117,29 @@ class InstitutionalMasterScenarioRiskAdapter:
         source_row_by_position: Mapping[str, int],
         *,
         cutoff: date,
+        fx_rates_by_currency: Mapping[str, VerifiedScenarioFXRate] | None = None,
     ) -> InstitutionalScenarioMarketEvidence:
         positions = PortfolioCapitalEvidenceService.validate(capital_positions, cutoff=cutoff)
+        approved_fx = fx_rates_by_currency or {}
+        foreign_currencies = {
+            position.currency.strip().upper()
+            for position in positions
+            if position.currency.strip().upper() != "CRC"
+        }
+        if set(approved_fx) != foreign_currencies:
+            raise ValueError("Foreign positions need one explicit approved FX rate per currency")
+        for currency, rate in approved_fx.items():
+            if (
+                rate.currency != currency
+                or rate.cutoff != cutoff
+                or rate.effective_date > cutoff
+                or not rate.rate_type.strip()
+                or not rate.source_reference.strip()
+                or not isinstance(rate.crc_per_unit, Decimal)
+                or not rate.crc_per_unit.is_finite()
+                or rate.crc_per_unit <= 0
+            ):
+                raise ValueError("Foreign FX rate date, currency or provenance is invalid")
         if (
             result.valuation_date != cutoff
             or result.source_status != "HEALTHY"
@@ -161,8 +204,23 @@ class InstitutionalMasterScenarioRiskAdapter:
                 raise ValueError("Native instrument classification and product are required")
 
             market = finite(row.get("market_value_crc"))
-            if market <= 0:
-                raise ValueError("Native market value CRC must be positive")
+            local_market = finite(row.get("market_value"))
+            if market <= 0 or local_market <= 0:
+                raise ValueError("Native local and CRC market values must be positive")
+            if original_currency == "CRC":
+                expected_crc = local_market
+                fx_reference = "native CRC"
+            else:
+                fx = approved_fx[original_currency]
+                if capital.fx_translation_source.strip() != fx.source_reference:
+                    raise ValueError("FX reference must match capital audit provenance")
+                expected_crc = local_market * fx.crc_per_unit
+                fx_reference = (
+                    f"{fx.source_reference}|rate:{fx.rate_type}"
+                    f"|effective:{fx.effective_date.isoformat()}"
+                )
+            if abs(expected_crc - market) > Decimal("0.01"):
+                raise ValueError("Native market valuation is not reconciled to approved FX")
 
             engine_row = dict(row)
             principal = row.get("principal_balance")
@@ -200,6 +258,7 @@ class InstitutionalMasterScenarioRiskAdapter:
                     eligible_hqla_value_crc=hqla.hqla_value_crc,
                     market_value_source=(
                         f"{source}|column:{result.detected_column_mapping['market_value_crc']}"
+                        f"|fx:{fx_reference}"
                     ),
                     duration_source=f"{source}|duration:{duration.method}|{duration.source}",
                     dv01_source=f"{source}|dv01:{dv01.method}|{dv01.source}",

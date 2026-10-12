@@ -32,6 +32,9 @@ from aip.domain.portfolio.services.portfolio_scenario_risk_service import (
     ScenarioRiskComparison,
     ScenarioRiskPolicy,
 )
+from aip.product.configured.adapters.institutional_portfolio_scenario_adapter import (
+    VerifiedScenarioFXRate,
+)
 from aip.product.configured.services.configured_institutional_scenario_service import (
     ConfiguredInstitutionalScenarioService,
     ConfiguredPortfolioSnapshot,
@@ -475,6 +478,7 @@ class PortfolioView(QWidget):
         *,
         cutoff: str,
         policy: ScenarioRiskPolicy,
+        fx_rates_by_currency: Mapping[str, VerifiedScenarioFXRate] | None = None,
     ) -> AuditedPortfolioScenario:
         """Use the already configured institutional master, without demo fallback."""
         if cutoff != str(self._view_model.summary.valuation_date):
@@ -485,6 +489,7 @@ class PortfolioView(QWidget):
             proposed_weights,
             cutoff=date.fromisoformat(cutoff),
             policy=policy,
+            fx_rates_by_currency=fx_rates_by_currency,
         )
         self.bind_verified_scenario_risk(scenario.comparison, cutoff=cutoff)
         return scenario

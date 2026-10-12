@@ -20,6 +20,7 @@ from aip.domain.portfolio.services.portfolio_scenario_evidence_bridge import (
 from aip.domain.portfolio.services.portfolio_scenario_risk_service import ScenarioRiskPolicy
 from aip.product.configured.adapters.institutional_portfolio_scenario_adapter import (
     InstitutionalScenarioMarketEvidence,
+    VerifiedScenarioFXRate,
 )
 from aip.product.configured.services.configured_institutional_scenario_service import (
     ConfiguredInstitutionalScenarioService,
@@ -106,11 +107,12 @@ def test_uses_exact_configured_master_and_reconciles_before_comparison(
 ) -> None:
     invoked: list[Path] = []
 
-    def fake_read(cls, master_file, positions, row_ids, *, cutoff):
+    def fake_read(cls, master_file, positions, row_ids, *, cutoff, fx_rates_by_currency):
         invoked.append(Path(master_file))
         assert tuple(row.position_key for row in positions) == ("A", "B")
         assert row_ids == {"A": 17, "B": 19}
         assert cutoff == CUTOFF
+        assert fx_rates_by_currency is None
         return InstitutionalScenarioMarketEvidence(
             cutoff=CUTOFF,
             master_file=str(master_file),

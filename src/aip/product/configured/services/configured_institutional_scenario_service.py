@@ -15,6 +15,7 @@ from aip.domain.portfolio.services.portfolio_scenario_evidence_bridge import (
 from aip.domain.portfolio.services.portfolio_scenario_risk_service import ScenarioRiskPolicy
 from aip.product.configured.adapters.institutional_portfolio_scenario_adapter import (
     InstitutionalMasterScenarioRiskAdapter,
+    VerifiedScenarioFXRate,
 )
 
 
@@ -43,6 +44,7 @@ class ConfiguredInstitutionalScenarioService:
         *,
         cutoff: date,
         policy: ScenarioRiskPolicy,
+        fx_rates_by_currency: Mapping[str, VerifiedScenarioFXRate] | None = None,
     ) -> AuditedPortfolioScenario:
         snapshot = self._provider.get_portfolio()
         if snapshot.get("data_quality_status") != "HEALTHY":
@@ -69,7 +71,11 @@ class ConfiguredInstitutionalScenarioService:
             raise ValueError("Selected institutional master filename is invalid")
         path = Path(directory) / filename
         market = InstitutionalMasterScenarioRiskAdapter.read_file(
-            path, capital_positions, source_row_by_position, cutoff=cutoff
+            path,
+            capital_positions,
+            source_row_by_position,
+            cutoff=cutoff,
+            fx_rates_by_currency=fx_rates_by_currency,
         )
         return PortfolioScenarioEvidenceBridge.compare(
             capital_positions,

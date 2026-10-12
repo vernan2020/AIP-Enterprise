@@ -20,6 +20,7 @@ from aip.domain.portfolio.services.portfolio_scenario_evidence_bridge import (
 from aip.domain.portfolio.services.portfolio_scenario_risk_service import ScenarioRiskPolicy
 from aip.product.configured.adapters.institutional_portfolio_scenario_adapter import (
     InstitutionalMasterScenarioRiskAdapter,
+    VerifiedScenarioFXRate,
 )
 from aip.product.configured.readers.institutional_portfolio_master_reader import (
     InstitutionalPortfolioMasterReadResult,
@@ -64,6 +65,7 @@ def _master() -> InstitutionalPortfolioMasterReadResult:
             "classification": classification,
             "product_code": "BONO",
             "market_value_crc": value,
+            "market_value": value,
             "principal_balance": value,
             "nominal_rate": 0.05,
             "portfolio_yield": 0.055,
@@ -86,6 +88,7 @@ def _master() -> InstitutionalPortfolioMasterReadResult:
             key: key.upper()
             for key in (
                 "market_value_crc",
+                "market_value",
                 "currency",
                 "issuer",
                 "isin",
@@ -97,12 +100,13 @@ def _master() -> InstitutionalPortfolioMasterReadResult:
     )
 
 
-def _adapt(master=None, positions=None, mapping=None):
+def _adapt(master=None, positions=None, mapping=None, fx=None):
     return InstitutionalMasterScenarioRiskAdapter.adapt(
         _master() if master is None else master,
         _positions() if positions is None else positions,
         {"A": 17, "B": 19} if mapping is None else mapping,
         cutoff=CUTOFF,
+        fx_rates_by_currency=fx,
     )
 
 
@@ -141,6 +145,8 @@ def test_reader_to_institutional_engines_to_audited_scenario_bridge() -> None:
     ("field", "value", "message"),
     [
         ("market_value_crc", None, "unavailable"),
+        ("market_value", None, "unavailable"),
+        ("market_value", 900, "reconciled"),
         ("market_value_crc", Decimal("NaN"), "finite"),
         ("source_currency", "", "currency"),
         ("classification", "", "classification"),
@@ -289,3 +295,66 @@ def test_real_xlsx_reader_boundary_supplies_dated_native_risk_inputs(
     assert evidence.market_risks[0].eligible_hqla_value_crc == Decimal("540.00")
     assert evidence.market_risks[1].dv01_crc > 0
     assert "row:2" in evidence.market_risks[0].market_value_source
+
+
+def test_foreign_master_needs_approved_matching_historical_fx() -> None:
+    positions = _positions()
+    usd = replace(
+        positions[1],
+        currency="USD",
+        exposure_class=ExposureClass.GOVERNMENT_USD,
+        fx_translation_source="BCCR-SELL-2026-10-02",
+    )
+    master = _master()
+    rows = list(master.normalized_positions)
+    rows[0] = {
+        **rows[0],
+        "source_currency": "USD",
+        "currency": "USD",
+        "market_value": Decimal("2"),
+        "market_value_crc": Decimal("900"),
+    }
+    fx = VerifiedScenarioFXRate(
+        currency="USD",
+        cutoff=CUTOFF,
+        effective_date=CUTOFF,
+        crc_per_unit=Decimal("450"),
+        rate_type="BCCR_SELL",
+        source_reference="BCCR-SELL-2026-10-02",
+    )
+    audited_rows = (positions[0], usd)
+    with pytest.raises(ValueError, match="explicit approved FX"):
+        _adapt(master=replace(master, normalized_positions=rows), positions=audited_rows)
+    result = _adapt(
+        master=replace(master, normalized_positions=rows),
+        positions=audited_rows,
+        fx={"USD": fx},
+    )
+    assert result.total_market_value_crc == Decimal("1500")
+    assert "BCCR-SELL-2026-10-02" in result.market_risks[1].market_value_source
+    with pytest.raises(ValueError, match="reconciled"):
+        _adapt(
+            master=replace(master, normalized_positions=rows),
+            positions=audited_rows,
+            fx={"USD": replace(fx, crc_per_unit=Decimal("449"))},
+        )
+    with pytest.raises(ValueError, match="provenance"):
+        _adapt(
+            master=replace(master, normalized_positions=rows),
+            positions=audited_rows,
+            fx={"USD": replace(fx, source_reference="OTHER-APPROVED-RATE")},
+        )
+    with pytest.raises(ValueError, match="provenance"):
+        _adapt(
+            master=replace(master, normalized_positions=rows),
+            positions=audited_rows,
+            fx={"USD": replace(fx, effective_date=date(2026, 10, 3))},
+        )
+
+
+def test_crc_positions_reject_hidden_currency_conversion() -> None:
+    master = _master()
+    rows = list(master.normalized_positions)
+    rows[0] = {**rows[0], "market_value": Decimal("200")}
+    with pytest.raises(ValueError, match="reconciled"):
+        _adapt(master=replace(master, normalized_positions=rows))
