@@ -161,12 +161,17 @@ class MainWindow(QMainWindow):
             self._ribbon.action(label).triggered.connect(
                 lambda _checked=False, route=route_id: self.open_workspace(route)
             )
+        for label in ("Riesgo de Tasas · RTILB", "Agente IA", "Administración", "Ayuda"):
+            action = self._ribbon.action(label)
+            action.setEnabled(False)
+            action.setToolTip("Ruta en integración; aún no disponible en este shell")
         self._ribbon.action("Actualizar Todo").triggered.connect(self._handle_refresh_all)
         self.addToolBar(Qt.ToolBarArea.TopToolBarArea, self._ribbon)
         self._add_operational_menu_actions()
 
         self._sidebar = Sidebar(self._navigation, self._demo_factory)
         self._workspace = Workspace()
+        self._workspace.currentChanged.connect(self._sync_active_navigation)
         self._sidebar.set_workspace(self._workspace)
         self._sidebar.route_requested.connect(self.open_workspace)
 
@@ -235,6 +240,24 @@ class MainWindow(QMainWindow):
         self._status_bar.set_message("SISTEMA LISTO")
         self._refresh_status_panel()
         self.open_workspace("executive")
+
+    def _sync_active_navigation(self, index: int) -> None:
+        if self._workspace is None or index < 0:
+            return
+        title = self._workspace.tabText(index)
+        labels = {
+            "Inicio",
+            "Ejecutivo",
+            "Portafolio",
+            "Mercado",
+            "Riesgo de Precio",
+            "Inteligencia Macroeconómica",
+            "Liquidez",
+            "Tesorería",
+            "Análisis Financiero",
+            "Reportes",
+        }
+        self._ribbon.set_active_module(title if title in labels else "")
 
     def _create_home_workspace(self) -> HomeWorkspace:
         home = HomeWorkspace(self._demo_factory)
