@@ -66,13 +66,15 @@ class RegulatoryXMLPanel(QWidget):
         self._gap_notice = QLabel("GAP regulatorio no calculado")
         self._gap_notice.setWordWrap(True)
         layout.addWidget(self._gap_notice)
-        self._gap_table = self._table((
-            "Banda",
-            "Activos sensibles CRC",
-            "Pasivos sensibles CRC",
-            "GAP simple CRC",
-            "GAP acumulado CRC",
-        ))
+        self._gap_table = self._table(
+            (
+                "Banda",
+                "Activos sensibles CRC",
+                "Pasivos sensibles CRC",
+                "GAP simple CRC",
+                "GAP acumulado CRC",
+            )
+        )
         self._gap_table.setObjectName("rateRiskRegulatorySixBandGap")
         layout.addWidget(self._gap_table)
 
@@ -129,9 +131,10 @@ class RegulatoryXMLPanel(QWidget):
         report_month = snapshot.cutoff_date.strftime("%m/%Y")
         target = valuation_cutoff or snapshot.cutoff_date
         target_month = target.strftime("%m/%Y")
-        matches_cutoff = (
-            snapshot.cutoff_date.year, snapshot.cutoff_date.month
-        ) == (target.year, target.month)
+        matches_cutoff = (snapshot.cutoff_date.year, snapshot.cutoff_date.month) == (
+            target.year,
+            target.month,
+        )
         message = (
             f"Último mes con XML: {report_month}. Corte AIP: {target_month}."
             if matches_cutoff
@@ -165,13 +168,15 @@ class RegulatoryXMLPanel(QWidget):
         gap = build_regulatory_gap(snapshot)
         self._gap_table.setRowCount(len(gap.rows))
         for index, row in enumerate(gap.rows):
-            for column, value in enumerate((
-                row.bucket_label,
-                str(row.assets_crc),
-                str(row.liabilities_crc),
-                str(row.gap_crc),
-                str(row.cumulative_gap_crc),
-            )):
+            for column, value in enumerate(
+                (
+                    row.bucket_label,
+                    str(row.assets_crc),
+                    str(row.liabilities_crc),
+                    str(row.gap_crc),
+                    str(row.cumulative_gap_crc),
+                )
+            ):
                 self._cell(self._gap_table, index, column, value)
         self._gap_notice.setText(
             "Conciliado: 22310 = 22110 + 22210, 22320 = 22120 + 22220; "
