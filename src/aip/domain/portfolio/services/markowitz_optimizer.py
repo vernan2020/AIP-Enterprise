@@ -147,7 +147,10 @@ class MarkowitzOptimizer:
                 abs(weights.sum() - 1) > 1e-6
                 or np.any(weights < np.asarray(constraints.minimum_weights) - 1e-6)
                 or np.any(weights > np.asarray(constraints.maximum_weights) + 1e-6)
-                or any(row @ weights > cap + 1e-6 for row, cap in zip(group_rows, group_caps, strict=True))
+                or any(
+                    row @ weights > cap + 1e-6
+                    for row, cap in zip(group_rows, group_caps, strict=True)
+                )
                 or (target is not None and abs(weights @ expected - target) > 1e-5)
             ):
                 raise ValueError("Optimized weights violate allocation constraints")
