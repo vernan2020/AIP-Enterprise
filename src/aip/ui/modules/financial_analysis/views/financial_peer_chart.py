@@ -72,6 +72,18 @@ class FinancialPeerChartPanel(QWidget):
         self._chart_context.setStyleSheet("color:#52687A; font-size:9px; padding:4px 0;")
         root.addWidget(self._chart_context)
 
+        self._hover_detail = QLabel(
+            "Detalle al pasar el cursor: seleccione una barra o un sector."
+        )
+        self._hover_detail.setObjectName("financialPeerHoverDetail")
+        self._hover_detail.setTextFormat(Qt.TextFormat.PlainText)
+        self._hover_detail.setWordWrap(True)
+        self._hover_detail.setStyleSheet(
+            "color:#17324D; background:#EAF4FC; border:1px solid #C7DDEB; "
+            "border-radius:6px; padding:6px 9px; font-weight:600;"
+        )
+        root.addWidget(self._hover_detail)
+
         # Preserve legibility of up to 15 entity labels rather than compress
         # every chart into a fixed-height panel when the workspace is resized.
         self._chart_scroll = QScrollArea()
@@ -105,6 +117,9 @@ class FinancialPeerChartPanel(QWidget):
 
     def _render_current(self) -> None:
         self._clear_chart()
+        self._hover_detail.setText(
+            "Detalle al pasar el cursor: seleccione una barra o un sector."
+        )
         index = self._selector.currentIndex()
         if index < 0 or index >= len(self._series):
             self._summary.setText("Sin datos comparables")
@@ -131,7 +146,9 @@ class FinancialPeerChartPanel(QWidget):
                 + sign_note
             )
         self._chart_view = (
-            self._pie_chart(item) if item.chart_type == "PIE" else self._bar_chart(item)
+            self._pie_chart(item, detail_label=self._hover_detail)
+            if item.chart_type == "PIE"
+            else self._bar_chart(item, detail_label=self._hover_detail)
         )
         self._chart_host.addWidget(self._chart_view)
 
@@ -150,8 +167,15 @@ class FinancialPeerChartPanel(QWidget):
             visible[-1] = selected
         return tuple(visible)
 
+    @staticmethod
+    def _point_readout(point: PeerChartPointView, item: PeerChartSeriesView) -> str:
+        selected = " · Entidad seleccionada" if point.selected else ""
+        return f"{point.entity_name} · {item.label}: {point.display_value}{selected}"
+
     @classmethod
-    def _bar_chart(cls, item: PeerChartSeriesView) -> QChartView:
+    def _bar_chart(
+        cls, item: PeerChartSeriesView, *, detail_label: QLabel | None = None
+    ) -> QChartView:
         points = cls._bar_points(item)
         chart = QChart()
         chart.setTitle(item.label)
@@ -209,6 +233,8 @@ class FinancialPeerChartPanel(QWidget):
                 QToolTip.hideText()
                 return
             point = points[index]
+            if detail_label is not None:
+                detail_label.setText(cls._point_readout(point, item))
             tooltip = build_chart_tooltip(
                 point.entity_name,
                 (
@@ -225,7 +251,9 @@ class FinancialPeerChartPanel(QWidget):
         return view
 
     @classmethod
-    def _pie_chart(cls, item: PeerChartSeriesView) -> QChartView:
+    def _pie_chart(
+        cls, item: PeerChartSeriesView, *, detail_label: QLabel | None = None
+    ) -> QChartView:
         chart = QChart()
         chart.setTitle(item.label)
         chart.setBackgroundVisible(False)
@@ -258,11 +286,20 @@ class FinancialPeerChartPanel(QWidget):
                 ),
                 note="Composición del total mostrado.",
             )
-            slice_.hovered.connect(
-                lambda state, text=tooltip: (
-                    QToolTip.showText(QCursor.pos(), text, view) if state else QToolTip.hideText()
-                )
-            )
+            def on_hover(
+                state: bool,
+                *,
+                text: str = tooltip,
+                source_point: PeerChartPointView = point,
+            ) -> None:
+                if not state:
+                    QToolTip.hideText()
+                    return
+                if detail_label is not None:
+                    detail_label.setText(cls._point_readout(source_point, item))
+                QToolTip.showText(QCursor.pos(), text, view)
+
+            slice_.hovered.connect(on_hover)
         return view
 
     @staticmethod
