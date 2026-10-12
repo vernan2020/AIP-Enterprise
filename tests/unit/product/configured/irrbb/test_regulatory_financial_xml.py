@@ -59,17 +59,13 @@ def _document(
 
 def _write_pair(month: Path, **overrides) -> None:
     for spec in REGULATORY_XML_SPECS:
-        (month / spec.filename).write_text(
-            _document(spec, **overrides), encoding="utf-8"
-        )
+        (month / spec.filename).write_text(_document(spec, **overrides), encoding="utf-8")
 
 
 def test_reads_existing_year_month_folder_and_reconciles_regulatory_totals(tmp_path: Path) -> None:
     month = _month(tmp_path)
     _write_pair(month)
-    result = RegulatoryFinancialXMLReader(str(tmp_path)).load(
-        cutoff_date=date(2026, 9, 30)
-    )
+    result = RegulatoryFinancialXMLReader(str(tmp_path)).load(cutoff_date=date(2026, 9, 30))
     assert result.is_valid
     assert {item.key for item in result.files} == {"BRECHAS", "CALCE"}
     for item in result.files:
@@ -85,9 +81,7 @@ def test_reads_existing_year_month_folder_and_reconciles_regulatory_totals(tmp_p
 def test_totals_are_not_double_counted_and_a_mismatch_fails_closed(tmp_path: Path) -> None:
     month = _month(tmp_path)
     _write_pair(month, total="151.00")
-    result = RegulatoryFinancialXMLReader(str(tmp_path)).load(
-        cutoff_date=date(2026, 9, 30)
-    )
+    result = RegulatoryFinancialXMLReader(str(tmp_path)).load(cutoff_date=date(2026, 9, 30))
     assert not result.is_valid
     assert all(item.status == "BLOCKED" for item in result.files)
     assert all("no concilia" in item.issues[0] for item in result.files)
@@ -111,12 +105,8 @@ def test_different_entities_in_same_month_block_the_pair(tmp_path: Path) -> None
     month = _month(tmp_path)
     _write_pair(month)
     calce = REGULATORY_XML_SPECS[1]
-    (month / calce.filename).write_text(
-        _document(calce, entity="OTHER"), encoding="utf-8"
-    )
-    result = RegulatoryFinancialXMLReader(str(tmp_path)).load(
-        cutoff_date=date(2026, 9, 30)
-    )
+    (month / calce.filename).write_text(_document(calce, entity="OTHER"), encoding="utf-8")
+    result = RegulatoryFinancialXMLReader(str(tmp_path)).load(cutoff_date=date(2026, 9, 30))
     assert not result.is_valid
     assert all(item.status == "BLOCKED" for item in result.files)
     assert all("entidades diferentes" in item.issues[0] for item in result.files)
@@ -133,7 +123,8 @@ def test_catalog_code_invalid_actions_and_unsafe_declarations_fail_closed(
         _document(spec).replace(
             "<TipoCatalogoSUGEF>5</TipoCatalogoSUGEF>",
             "<TipoCatalogoSUGEF>4</TipoCatalogoSUGEF>",
-        ), encoding="utf-8",
+        ),
+        encoding="utf-8",
     )
     reader = RegulatoryFinancialXMLReader(str(tmp_path))
     result = reader.load(cutoff_date=date(2026, 9, 30))
