@@ -332,8 +332,8 @@ class PriceRiskView(QWidget):
             ("horizon", "Horizonte"),
             ("reconciliation", "Reconciliación"),
         ):
-            card = QWidget()
-            block = QVBoxLayout(card)
+            quality_card = QWidget()
+            block = QVBoxLayout(quality_card)
             block.setContentsMargins(1, 1, 1, 1)
             block.setSpacing(2)
             label = QLabel(caption)
@@ -345,8 +345,8 @@ class PriceRiskView(QWidget):
             self._quality_labels[key] = value
             block.addWidget(label)
             block.addWidget(value)
-            quality_layout.addWidget(card, 0, len(quality_cards))
-            quality_cards.append(card)
+            quality_layout.addWidget(quality_card, 0, len(quality_cards))
+            quality_cards.append(quality_card)
         quality_note = QLabel(
             "Calidad, horizonte y reconciliación integrados en una franja compacta."
         )
