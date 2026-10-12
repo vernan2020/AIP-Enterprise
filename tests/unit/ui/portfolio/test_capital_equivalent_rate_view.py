@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
+
+import pytest
+from PySide6.QtCore import QCoreApplication, QEvent
 from PySide6.QtWidgets import QApplication
 
 from aip.domain.portfolio.services.portfolio_capital_consumption_service import (
@@ -11,8 +15,21 @@ from aip.ui.modules.portfolio.views.capital_equivalent_rate_view import (
 )
 
 
-def test_equity_cost_is_empty_and_editable(qt_app: QApplication) -> None:
+@pytest.fixture
+def calculator(qt_app: QApplication) -> Iterator[CapitalEquivalentRateView]:
+    """Release all widgets created for this test before QApplication teardown."""
     view = CapitalEquivalentRateView()
+    try:
+        yield view
+    finally:
+        view.close()
+        view.deleteLater()
+        QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+        qt_app.processEvents()
+
+
+def test_equity_cost_is_empty_and_editable(calculator: CapitalEquivalentRateView) -> None:
+    view = calculator
     assert view._equity_cost.text() == ""
     assert not view._equity_cost.isReadOnly()
     assert view._target.text() == "16,00 %"
@@ -24,8 +41,8 @@ def test_equity_cost_is_empty_and_editable(qt_app: QApplication) -> None:
     assert "costo anual del patrimonio" in view._result.text()
 
 
-def test_equivalent_rate_recalculates_after_edit(qt_app: QApplication) -> None:
-    view = CapitalEquivalentRateView()
+def test_equivalent_rate_recalculates_after_edit(calculator: CapitalEquivalentRateView) -> None:
+    view = calculator
     view._invested.setText("100")
     view._exposure.setText("100")
     view._yield.setText("8")
@@ -59,8 +76,8 @@ def _sample_row(isin: str = "CRTEST000001") -> PortfolioRow:
     )
 
 
-def test_portfolio_identity_does_not_infer_financial_inputs(qt_app: QApplication) -> None:
-    view = CapitalEquivalentRateView()
+def test_portfolio_identity_does_not_infer_financial_inputs(calculator: CapitalEquivalentRateView) -> None:
+    view = calculator
     view._equity_cost.setText("13.5")
     view.bind_positions((_sample_row(),), cutoff="2026-10-02")
     assert view._position.count() == 2
@@ -75,8 +92,8 @@ def test_portfolio_identity_does_not_infer_financial_inputs(qt_app: QApplication
     assert view._equity_cost.text() == "13.5"
 
 
-def test_switching_holding_invalidates_prior_capital_scenario(qt_app: QApplication) -> None:
-    view = CapitalEquivalentRateView()
+def test_switching_holding_invalidates_prior_capital_scenario(calculator: CapitalEquivalentRateView) -> None:
+    view = calculator
     view.bind_positions((_sample_row(), _sample_row("CRTEST000002")), cutoff="2026-10-02")
     view._position.setCurrentIndex(1)
     view._invested.setText("100")
@@ -97,8 +114,8 @@ def test_switching_holding_invalidates_prior_capital_scenario(qt_app: QApplicati
     assert "Tasa equivalente" not in view._result.text()
 
 
-def test_unverified_risk_weight_is_rejected(qt_app: QApplication) -> None:
-    view = CapitalEquivalentRateView()
+def test_unverified_risk_weight_is_rejected(calculator: CapitalEquivalentRateView) -> None:
+    view = calculator
     view._invested.setText("100")
     view._exposure.setText("100")
     view._yield.setText("8")
@@ -108,9 +125,9 @@ def test_unverified_risk_weight_is_rejected(qt_app: QApplication) -> None:
 
 
 def test_selected_usd_holding_cannot_use_crc_sovereign_zero_weight(
-    qt_app: QApplication,
+    calculator: CapitalEquivalentRateView,
 ) -> None:
-    view = CapitalEquivalentRateView()
+    view = calculator
     view.bind_positions((_sample_row(),), cutoff="2026-10-02")
     view._position.setCurrentIndex(1)
     view._invested.setText("100")
@@ -125,9 +142,9 @@ def test_selected_usd_holding_cannot_use_crc_sovereign_zero_weight(
 
 
 def test_all_defined_capital_weight_categories_can_be_selected(
-    qt_app: QApplication,
+    calculator: CapitalEquivalentRateView,
 ) -> None:
-    view = CapitalEquivalentRateView()
+    view = calculator
     actual = {
         view._classification.itemData(index)
         for index in range(view._classification.count())
