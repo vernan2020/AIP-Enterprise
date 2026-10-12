@@ -12,7 +12,16 @@ from PySide6.QtCharts import (
 )
 from PySide6.QtCore import QMargins, Qt
 from PySide6.QtGui import QColor, QCursor, QPainter
-from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QToolTip, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QComboBox,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QScrollArea,
+    QToolTip,
+    QVBoxLayout,
+    QWidget,
+)
 
 from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model import (
     PeerChartPointView,
@@ -58,10 +67,22 @@ class FinancialPeerChartPanel(QWidget):
         selector_row.addStretch(1)
         root.addLayout(selector_row)
 
-        self._chart_host = QVBoxLayout()
+        self._chart_context = QLabel("Seleccione un indicador para comparar entidades.")
+        self._chart_context.setWordWrap(True)
+        self._chart_context.setStyleSheet("color:#52687A; font-size:9px; padding:4px 0;")
+        root.addWidget(self._chart_context)
+
+        # Preserve legibility of up to 15 entity labels rather than compress
+        # every chart into a fixed-height panel when the workspace is resized.
+        self._chart_scroll = QScrollArea()
+        self._chart_scroll.setWidgetResizable(True)
+        self._chart_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        chart_container = QWidget()
+        self._chart_host = QVBoxLayout(chart_container)
         self._chart_host.setContentsMargins(0, 0, 0, 0)
         self._chart_host.setSpacing(0)
-        root.addLayout(self._chart_host, 1)
+        self._chart_scroll.setWidget(chart_container)
+        root.addWidget(self._chart_scroll, 1)
 
     def bind_series(self, series: tuple[PeerChartSeriesView, ...]) -> None:
         current_code = self._selector.currentData()
@@ -87,9 +108,28 @@ class FinancialPeerChartPanel(QWidget):
         index = self._selector.currentIndex()
         if index < 0 or index >= len(self._series):
             self._summary.setText("Sin datos comparables")
+            self._chart_context.setText("No hay información comparable para este corte.")
             return
         item = self._series[index]
-        self._summary.setText(f"{len(item.points)} entidades · {item.unit}")
+        if item.chart_type == "PIE":
+            self._summary.setText(f"{len(item.points)} entidades · {item.unit}")
+            self._chart_context.setText(
+                "Composición del universo publicado. Pase el cursor para ver "
+                "la entidad y el valor completo sin abreviaturas."
+            )
+        else:
+            visible = min(len(item.points), self._MAX_BAR_ENTITIES)
+            self._summary.setText(f"{visible}/{len(item.points)} entidades · {item.unit}")
+            sign_note = (
+                " Los valores negativos mantienen su signo."
+                if any(point.value < 0 for point in item.points)
+                else ""
+            )
+            self._chart_context.setText(
+                "Orden descendente por magnitud; máximo 15 entidades. "
+                "La entidad seleccionada siempre se incluye y se identifica con ●."
+                + sign_note
+            )
         self._chart_view = (
             self._pie_chart(item) if item.chart_type == "PIE" else self._bar_chart(item)
         )
@@ -130,7 +170,12 @@ class FinancialPeerChartPanel(QWidget):
         chart.addSeries(series)
 
         categories = QBarCategoryAxis()
-        categories.append([cls._short_name(point.entity_name) for point in points])
+        categories.append(
+            [
+                ("● " if point.selected else "") + cls._short_name(point.entity_name)
+                for point in points
+            ]
+        )
         category_font = categories.labelsFont()
         category_font.setPointSize(8)
         categories.setLabelsFont(category_font)
@@ -157,7 +202,7 @@ class FinancialPeerChartPanel(QWidget):
 
         view = QChartView(chart)
         view.setRenderHint(QPainter.RenderHint.Antialiasing)
-        view.setMinimumHeight(285)
+        view.setMinimumHeight(max(285, 75 + 32 * len(points)))
 
         def show_bar_tooltip(status: bool, index: int) -> None:
             if not status or not 0 <= index < len(points):
