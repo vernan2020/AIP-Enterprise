@@ -259,3 +259,30 @@ def test_latest_without_any_regulatory_files_is_missing_not_zero(tmp_path: Path)
     assert snapshot.cutoff_date == date(2026, 10, 12)
     assert all(item.status == "MISSING" for item in snapshot.files)
     assert not snapshot.is_valid
+
+
+def test_sicveca_padded_xml_tag_names_match_real_institutional_export(
+    tmp_path: Path,
+) -> None:
+    month = _month(tmp_path)
+    _write_pair(month)
+    spec = REGULATORY_XML_SPECS[0]
+    path = month / spec.filename
+    content = _document(spec)
+    for field in (
+        "CuentaBrecha",
+        "RangoBrecha",
+        "MontoBrecha",
+    ):
+        content = content.replace(f"<{field}>", f"<{field} >")
+        content = content.replace(f"</{field}>", f"</{field} >")
+    path.write_text(content, encoding="utf-8")
+
+    result = RegulatoryFinancialXMLReader(str(tmp_path)).load(
+        cutoff_date=date(2026, 9, 30)
+    )
+    assert result.is_valid
+    assert len(result.files[0].rows) == 2
+    assert result.files[0].account_totals[0].amount == sum(
+        row.amount for row in result.files[0].rows
+    )
