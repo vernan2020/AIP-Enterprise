@@ -84,3 +84,22 @@ def test_configured_shell_reads_regulatory_xml_without_enabling_eve(
 
     window.close()
     app.processEvents()
+
+
+def test_rtib_xml_tab_shows_unconfigured_state_without_data() -> None:
+    app = QApplication.instance() or QApplication([])
+    factory = DemoApplicationFactory(
+        DemoConfig(execution_mode="CONFIGURED", demo_mode_enabled=False),
+        source_config=ConfiguredSourceConfig(),
+    )
+    window = FinancialIntelligenceMainWindow(demo_factory=factory)
+    window.open_workspace("rate_risk")
+    workspace = window.workspace.currentWidget()
+    assert isinstance(workspace, RateRiskWorkspace)
+    panel = workspace._regulatory_xml_panel
+    assert workspace.view._tabs.tabText(6) == "XML Brechas / Calce"
+    assert "no configurada" in panel._headline.text()
+    assert panel._rows.rowCount() == 0
+    assert workspace.view._analysis_status_label.text() == "Estado: Sin cálculo"
+    window.close()
+    app.processEvents()
