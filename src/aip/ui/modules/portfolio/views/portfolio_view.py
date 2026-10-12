@@ -495,8 +495,11 @@ class PortfolioView(QWidget):
                 fx_rates_by_currency=fx_rates_by_currency,
                 master_attestation=master_attestation,
             )
-        except ValueError as exc:
-            self._markowitz.invalidate_risk_evidence(cutoff=cutoff, reason=str(exc))
+        except Exception as exc:
+            reason = str(exc) if isinstance(exc, ValueError) else (
+                f"Error de lectura o procesamiento: {type(exc).__name__}"
+            )
+            self._markowitz.invalidate_risk_evidence(cutoff=cutoff, reason=reason)
             raise
         self.bind_verified_scenario_risk(scenario.comparison, cutoff=cutoff)
         self._markowitz.bind_source_attestation(
@@ -528,8 +531,11 @@ class PortfolioView(QWidget):
                 portfolio_valuation_source=portfolio_valuation_source,
                 policy=policy,
             )
-        except ValueError as exc:
-            self._markowitz.invalidate_risk_evidence(cutoff=cutoff, reason=str(exc))
+        except Exception as exc:
+            reason = str(exc) if isinstance(exc, ValueError) else (
+                f"Error de lectura o procesamiento: {type(exc).__name__}"
+            )
+            self._markowitz.invalidate_risk_evidence(cutoff=cutoff, reason=reason)
             raise
         self.bind_verified_scenario_risk(evaluated.comparison, cutoff=cutoff)
         self._markowitz.bind_source_attestation(cutoff=cutoff, manifest_matched=False)

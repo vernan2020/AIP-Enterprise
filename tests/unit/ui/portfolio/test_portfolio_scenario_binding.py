@@ -179,8 +179,18 @@ def test_configured_scenario_can_be_bound_without_using_demo_risk_data(
     assert evaluations == [observed_date]
 
 
+@pytest.mark.parametrize(
+    ("failure", "expected_message"),
+    [
+        (ValueError("La fuente del maestro está degradada"), "fuente del maestro"),
+        (OSError("Private Windows source path denied"), "OSError"),
+    ],
+)
 def test_invalid_new_evidence_clears_previous_scenario_display(
-    portfolio_view: PortfolioView, monkeypatch: pytest.MonkeyPatch
+    portfolio_view: PortfolioView,
+    monkeypatch: pytest.MonkeyPatch,
+    failure: Exception,
+    expected_message: str,
 ) -> None:
     cutoff = str(portfolio_view.view_model().summary.valuation_date)
     observed_date = date.fromisoformat(cutoff)
@@ -203,14 +213,14 @@ def test_invalid_new_evidence_clears_previous_scenario_display(
     assert portfolio_view._markowitz.scenario_risk is not None
 
     def reject_evidence(self, *args, **kwargs):
-        raise ValueError("La fuente del maestro está degradada")
+        raise failure
 
     monkeypatch.setattr(
         "aip.ui.modules.portfolio.views.portfolio_view."
         "ConfiguredInstitutionalScenarioService.evaluate",
         reject_evidence,
     )
-    with pytest.raises(ValueError, match="degradada"):
+    with pytest.raises(type(failure)):
         portfolio_view.evaluate_and_bind_configured_scenario(
             provider=object(),
             positions=_positions(observed_date),
@@ -221,4 +231,7 @@ def test_invalid_new_evidence_clears_previous_scenario_display(
         )
     assert portfolio_view._markowitz.scenario_risk is None
     assert portfolio_view._markowitz._scenario_risk_status.text() == "NO VERIFICABLE"
-    assert "fuente del maestro" in portfolio_view._markowitz._scenario_risk_detail.text()
+    assert expected_message in portfolio_view._markowitz._scenario_risk_detail.text()
+    assert "Private Windows source path denied" not in (
+        portfolio_view._markowitz._scenario_risk_detail.text()
+    )

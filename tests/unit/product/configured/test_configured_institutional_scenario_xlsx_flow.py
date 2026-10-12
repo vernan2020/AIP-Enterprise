@@ -15,6 +15,7 @@ from aip.product.configured.adapters.institutional_portfolio_scenario_adapter im
     VerifiedScenarioFXRate,
 )
 from aip.product.configured.services.configured_institutional_scenario_service import (
+    ApprovedMasterAttestation,
     ConfiguredInstitutionalScenarioService,
 )
 
@@ -229,4 +230,51 @@ def test_actual_xlsx_conversion_must_match_approved_rate(
             cutoff=CUTOFF,
             policy=_policy(),
             fx_rates_by_currency=_fx("451"),
+        )
+
+
+def test_approved_manifest_matches_actual_xlsx_bytes_and_sheet(tmp_path: Path) -> None:
+    master = _write_master(tmp_path)
+    digest = hashlib.sha256(master.read_bytes()).hexdigest()
+    attestation = ApprovedMasterAttestation(
+        cutoff=CUTOFF,
+        master_file=str(master),
+        sheet_name="Maestro",
+        sha256=digest,
+        approval_reference="approved-manifest-test-register",
+    )
+    service = ConfiguredInstitutionalScenarioService(_Source(tmp_path))
+    proposed = {
+        "contract:CTR-A|isin:TEST-A": Decimal("0.7"),
+        "contract:CTR-B|isin:TEST-B": Decimal("0.3"),
+    }
+    scenario = service.evaluate(
+        _capital(),
+        None,
+        proposed,
+        cutoff=CUTOFF,
+        policy=_policy(),
+        fx_rates_by_currency=_fx(),
+        master_attestation=attestation,
+    )
+    assert scenario.portfolio_valuation_source.endswith(
+        "|manifest-match:approved-manifest-test-register"
+    )
+    assert f"sha256:{digest}" in scenario.portfolio_valuation_source
+
+    with pytest.raises(ValueError, match="digest or sheet"):
+        service.evaluate(
+            _capital(),
+            None,
+            proposed,
+            cutoff=CUTOFF,
+            policy=_policy(),
+            fx_rates_by_currency=_fx(),
+            master_attestation=ApprovedMasterAttestation(
+                cutoff=CUTOFF,
+                master_file=str(master),
+                sheet_name="Maestro",
+                sha256="0" * 64,
+                approval_reference="approved-manifest-test-register",
+            ),
         )
