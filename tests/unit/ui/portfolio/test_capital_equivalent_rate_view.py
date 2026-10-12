@@ -7,7 +7,7 @@ from aip.ui.modules.portfolio.views.capital_equivalent_rate_view import (
 )
 
 
-def test_equity_cost_is_empty_and_editable(qapp: QApplication) -> None:
+def test_equity_cost_is_empty_and_editable(qt_app: QApplication) -> None:
     view = CapitalEquivalentRateView()
     assert view._equity_cost.text() == ""
     assert not view._equity_cost.isReadOnly()
