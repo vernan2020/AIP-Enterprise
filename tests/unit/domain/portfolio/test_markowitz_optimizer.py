@@ -65,7 +65,9 @@ def test_markowitz_enforces_issuer_group_limit() -> None:
         maximum_weights=(1.0, 1.0, 1.0),
         group_limits=(MarkowitzGroupLimit("Gobierno", (0, 1), 0.40),),
     )
-    result = MarkowitzOptimizer.optimize(("Bono A", "Bono B", "Bono C"), _returns(), limits, frontier_points=4)
+    result = MarkowitzOptimizer.optimize(
+        ("Bono A", "Bono B", "Bono C"), _returns(), limits, frontier_points=4
+    )
     for point in (result.minimum_variance, *result.efficient_frontier):
         assert sum(point.weights[:2]) <= 0.400001
         assert point.weights[2] >= 0.599999
