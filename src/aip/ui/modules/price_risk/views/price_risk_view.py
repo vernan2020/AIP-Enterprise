@@ -89,6 +89,11 @@ class PriceRiskView(QWidget):
         self._quality_cards: tuple[QWidget, ...] = ()
         self._quality_note: QLabel | None = None
         self._quality_columns = 8
+        self._var_chart_grid: QGridLayout | None = None
+        self._var_chart_groups: tuple[QGroupBox, ...] = ()
+        self._rate_chart_grid: QGridLayout | None = None
+        self._rate_chart_groups: tuple[QGroupBox, ...] = ()
+        self._chart_columns = 2
         self._build_ui()
         self._setup_worker()
         self._set_loading_state(initial=True)
@@ -263,11 +268,34 @@ class PriceRiskView(QWidget):
             grid.setColumnStretch(column, 1 if column < columns else 0)
         self._quality_columns = columns
 
+    @staticmethod
+    def _reflow_chart_grid(
+        grid: QGridLayout, groups: tuple[QGroupBox, ...], columns: int
+    ) -> None:
+        for group in groups:
+            grid.removeWidget(group)
+        for index, group in enumerate(groups):
+            grid.addWidget(group, index // columns, index % columns)
+        for column in range(2):
+            grid.setColumnStretch(column, 1 if column < columns else 0)
+
+    def _arrange_visual_grids(self, width: int) -> None:
+        columns = 1 if width < 980 else 2
+        if columns == self._chart_columns:
+            return
+        if self._var_chart_grid is not None and self._var_chart_groups:
+            self._reflow_chart_grid(self._var_chart_grid, self._var_chart_groups, columns)
+        if self._rate_chart_grid is not None and self._rate_chart_groups:
+            self._reflow_chart_grid(self._rate_chart_grid, self._rate_chart_groups, columns)
+        self._chart_columns = columns
+
     def resizeEvent(self, event) -> None:  # noqa: N802
         super().resizeEvent(event)
-        self._arrange_kpi_cards(event.size().width())
-        self._arrange_rate_kpis(event.size().width())
-        self._arrange_quality_cards(event.size().width())
+        width = event.size().width()
+        self._arrange_kpi_cards(width)
+        self._arrange_rate_kpis(width)
+        self._arrange_quality_cards(width)
+        self._arrange_visual_grids(width)
 
     @staticmethod
     def _new_chart_readout(object_name: str) -> QLabel:
@@ -421,6 +449,8 @@ class PriceRiskView(QWidget):
         analytics.addWidget(currency_group, 1, 1)
         analytics.setColumnStretch(0, 1)
         analytics.setColumnStretch(1, 1)
+        self._var_chart_grid = analytics
+        self._var_chart_groups = (top_group, pareto_group, issuer_group, currency_group)
         layout.addLayout(analytics)
         self._price_hover_readout = self._new_chart_readout("priceRiskHoverReadout")
         for chart in (
@@ -582,6 +612,15 @@ class PriceRiskView(QWidget):
         self._shock_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         shock_table_layout.addWidget(self._shock_table)
         charts.addWidget(shock_table_group, 1, 1)
+        charts.setColumnStretch(0, 1)
+        charts.setColumnStretch(1, 1)
+        self._rate_chart_grid = charts
+        self._rate_chart_groups = (
+            bucket_group,
+            currency_group,
+            shock_group,
+            shock_table_group,
+        )
         layout.addLayout(charts)
         self._rate_hover_readout = self._new_chart_readout("rateRiskHoverReadout")
         for chart in (self._bucket_chart, self._currency_chart, self._shock_chart):
