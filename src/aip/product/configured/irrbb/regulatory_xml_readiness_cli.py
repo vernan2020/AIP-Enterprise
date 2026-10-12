@@ -20,10 +20,15 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--cutoff requiere YYYY-MM-DD")
     config = EnvironmentLoader().load_source_config().xml_confia
     if not config.enabled or not config.root:
-        print(json.dumps({
-            "status": "UNCONFIGURED",
-            "detail": "XML CONFIA no habilitado o sin raíz de origen.",
-        }, ensure_ascii=False))
+        print(
+            json.dumps(
+                {
+                    "status": "UNCONFIGURED",
+                    "detail": "XML CONFIA no habilitado o sin raíz de origen.",
+                },
+                ensure_ascii=False,
+            )
+        )
         return 2
 
     resolved = expand_environment_path(config.root)
@@ -32,23 +37,29 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     snapshot = RegulatoryFinancialXMLReader(resolved).load(cutoff_date=cutoff)
-    print(json.dumps({
-        "cutoff": cutoff.isoformat(),
-        "status": "VALIDATED" if snapshot.is_valid else "BLOCKED",
-        "files": [
+    print(
+        json.dumps(
             {
-                "filename": item.filename,
-                "status": item.status,
-                "period": item.period.isoformat() if item.period else None,
-                "entity_id": item.entity_id,
-                "rows": len(item.rows) if item.is_valid else None,
-                "account_totals": len(item.account_totals) if item.is_valid else None,
-                "sha256": item.source_sha256,
-                "issues": list(item.issues),
-            }
-            for item in snapshot.files
-        ],
-    }, indent=2, ensure_ascii=False))
+                "cutoff": cutoff.isoformat(),
+                "status": "VALIDATED" if snapshot.is_valid else "BLOCKED",
+                "files": [
+                    {
+                        "filename": item.filename,
+                        "status": item.status,
+                        "period": item.period.isoformat() if item.period else None,
+                        "entity_id": item.entity_id,
+                        "rows": len(item.rows) if item.is_valid else None,
+                        "account_totals": len(item.account_totals) if item.is_valid else None,
+                        "sha256": item.source_sha256,
+                        "issues": list(item.issues),
+                    }
+                    for item in snapshot.files
+                ],
+            },
+            indent=2,
+            ensure_ascii=False,
+        )
+    )
     return 0 if snapshot.is_valid else 2
 
 
