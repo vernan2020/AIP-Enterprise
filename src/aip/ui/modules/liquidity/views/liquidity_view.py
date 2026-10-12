@@ -20,8 +20,8 @@ from PySide6.QtWidgets import (
 from aip.ui.modules.liquidity.models.liquidity_row import LiquidityRow
 from aip.ui.modules.liquidity.presenters.liquidity_presenter import LiquidityPresenter
 from aip.ui.modules.liquidity.viewmodels.liquidity_view_model import LiquidityViewModel
-from aip.ui.widgets.chart_tooltip import build_chart_tooltip, show_chart_tooltip
 from aip.ui.themes.institutional_white import InstitutionalWhiteDesign
+from aip.ui.widgets.chart_tooltip import build_chart_tooltip, show_chart_tooltip
 
 
 class _LiquidityBarChart(QWidget):
