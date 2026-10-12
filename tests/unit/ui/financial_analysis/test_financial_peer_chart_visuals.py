@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QLabel
+
 from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model import (
     PeerChartPointView,
     PeerChartSeriesView,
@@ -115,6 +118,23 @@ def test_peer_selector_remains_usable_in_compact_window(qt_app) -> None:
         assert panel._selector.minimumWidth() <= 160
         assert panel._selector.minimumContentsLength() == 20
         assert panel._selector.isEnabled()
+    finally:
+        panel.close()
+        qt_app.processEvents()
+
+
+def test_peer_chart_heading_and_summary_wrap_at_compact_width(qt_app) -> None:
+    panel = FinancialPeerChartPanel()
+    try:
+        panel.resize(420, 360)
+        title = panel.findChild(QLabel, "financialPeerChartTitle")
+        assert title is not None
+        assert title.wordWrap()
+        assert title.text() == "Comparación y composición del mercado"
+        assert panel._summary.wordWrap()
+        assert panel._summary.alignment() & Qt.AlignmentFlag.AlignRight
+        panel._summary.setText("15/21 entidades · CRC")
+        assert panel._summary.text() == "15/21 entidades · CRC"
     finally:
         panel.close()
         qt_app.processEvents()
