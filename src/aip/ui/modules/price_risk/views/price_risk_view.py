@@ -79,6 +79,9 @@ class PriceRiskView(QWidget):
         self._quality_labels: dict[str, QLabel] = {}
         self._bucket_labels: dict[str, QLabel] = {}
         self._rate_context_labels: dict[str, QLabel] = {}
+        self._kpi_grid: QGridLayout | None = None
+        self._kpi_cards: tuple[QFrame, ...] = ()
+        self._kpi_columns = 6
         self._build_ui()
         self._setup_worker()
         self._set_loading_state(initial=True)
@@ -183,6 +186,34 @@ class PriceRiskView(QWidget):
         self._kpi_labels[key] = value
         return card
 
+    @staticmethod
+    def _kpi_columns_for_width(width: int) -> int:
+        """Preserve six KPIs at full width without clipping in narrow windows."""
+        if width < 730:
+            return 2
+        if width < 1140:
+            return 3
+        return 6
+
+    def _arrange_kpi_cards(self, width: int) -> None:
+        grid = self._kpi_grid
+        if grid is None or not self._kpi_cards:
+            return
+        columns = self._kpi_columns_for_width(width)
+        if columns == self._kpi_columns:
+            return
+        for card in self._kpi_cards:
+            grid.removeWidget(card)
+        for index, card in enumerate(self._kpi_cards):
+            grid.addWidget(card, index // columns, index % columns)
+        for column in range(6):
+            grid.setColumnStretch(column, 1 if column < columns else 0)
+        self._kpi_columns = columns
+
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        self._arrange_kpi_cards(event.size().width())
+
     def _build_price_page(self) -> None:
         layout = QVBoxLayout(self._price_page)
         layout.setContentsMargins(3, 6, 3, 3)
@@ -199,11 +230,15 @@ class PriceRiskView(QWidget):
             ("titles", "Títulos calculados", "Series incorporadas"),
             ("scenarios", "Escenarios", "Simulaciones históricas"),
         )
+        cards: list[QFrame] = []
         for index, definition in enumerate(definitions):
             card = self._metric_card(*definition)
             kpi_grid.addWidget(card, 0, index)
+            cards.append(card)
         for column in range(6):
             kpi_grid.setColumnStretch(column, 1)
+        self._kpi_cards = tuple(cards)
+        self._kpi_grid = kpi_grid
         layout.addLayout(kpi_grid)
 
         quality = QFrame()
