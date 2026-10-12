@@ -10,6 +10,14 @@ from aip.domain.financial_analysis.models import (
     FinancialMetricHistorySeries,
 )
 
+from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model import (
+    FinancialMetricHistoryPointView,
+    FinancialMetricHistorySeriesView,
+)
+from aip.ui.modules.financial_analysis.views.financial_history_panel import (
+    FinancialHistoryPanel,
+)
+
 ENTITY = FinancialEntity("3004045138", "COOPEALIANZA R.L.")
 
 
@@ -85,3 +93,51 @@ def test_presenter_maps_percent_history_change_in_percentage_points() -> None:
     assert series.total_points == 3
     assert series.points[1].value is None
     assert series.points[1].display_value == "-"
+
+
+def test_historical_kpi_charts_reflow_without_recreating_data(qt_app) -> None:
+    series = tuple(
+        FinancialMetricHistorySeriesView(
+            code=code,
+            label=label,
+            unit="%",
+            latest_value="1.25%",
+            period_change="+0.15 pp",
+            source_account="SUGEF 81000",
+            available_points=2,
+            total_points=2,
+            points=(
+                FinancialMetricHistoryPointView(
+                    iso_date="2026-08-31",
+                    date_label="08/2026",
+                    value=1.10,
+                    display_value="1.10%",
+                ),
+                FinancialMetricHistoryPointView(
+                    iso_date="2026-09-30",
+                    date_label="09/2026",
+                    value=1.25,
+                    display_value="1.25%",
+                ),
+            ),
+        )
+        for code, label in (("ROA", "ROA"), ("ROE", "ROE"), ("SP", "Suficiencia"))
+    )
+    panel = FinancialHistoryPanel()
+    try:
+        panel.bind_history(series)
+        cards = panel._history_cards
+        assert len(cards) == 3
+        assert len({id(card) for card in cards}) == 3
+
+        for width, columns in ((1200, 2), (700, 1), (1200, 2)):
+            panel._reflow_history_cards(width)
+            assert panel._history_columns == columns
+            for index, card in enumerate(cards):
+                cell = panel._grid.itemAtPosition(index // columns, index % columns)
+                assert cell is not None
+                assert cell.widget() is card
+        assert panel._history_cards == cards
+    finally:
+        panel.close()
+        qt_app.processEvents()
