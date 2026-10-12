@@ -11,6 +11,20 @@ class InstitutionalWhiteDesign:
     """
 
     @staticmethod
+    def kpi_card_style(object_name: str) -> str:
+        """One reusable white KPI surface across financial workspaces."""
+        return (
+            f"QFrame#{object_name} {{background:#FFFFFF; border:1px solid #D8E6EF; "
+            "border-radius:11px;}"
+            f"QFrame#{object_name}:hover {{background:#F8FCFF; "
+            "border:1px solid #90C8E7;}"
+        )
+
+    KPI_TITLE = "color:#42617A; font-size:9px; font-weight:600; border:none;"
+    KPI_VALUE = "color:#00345F; font-weight:700; border:none;"
+    KPI_NOTE = "color:#617B8C; font-size:8px; border:none;"
+
+    @staticmethod
     def stylesheet() -> str:
         p = ThemePalette()
         return f"""
