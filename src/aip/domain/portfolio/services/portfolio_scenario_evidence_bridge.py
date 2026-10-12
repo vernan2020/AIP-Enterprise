@@ -140,12 +140,8 @@ class PortfolioScenarioEvidenceBridge:
             for row in positions
         )
         evaluated_capital = PortfolioCapitalConsumptionService.evaluate(exposures)
-        current_weights = tuple(
-            risk.market_value_crc / summed_market for risk in ordered_risks
-        )
-        proposed_weights = tuple(
-            proposed_weights_by_position[key] for key in position_keys
-        )
+        current_weights = tuple(risk.market_value_crc / summed_market for risk in ordered_risks)
+        proposed_weights = tuple(proposed_weights_by_position[key] for key in position_keys)
         factors = tuple(
             VerifiedScenarioRiskAsset(
                 security_key=risk.position_key,
