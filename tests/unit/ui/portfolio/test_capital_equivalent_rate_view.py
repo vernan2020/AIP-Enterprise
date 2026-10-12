@@ -2,6 +2,10 @@ from __future__ import annotations
 
 from PySide6.QtWidgets import QApplication
 
+from aip.domain.portfolio.services.portfolio_capital_consumption_service import (
+    ExposureClass,
+)
+
 from aip.ui.modules.portfolio.models.portfolio_row import PortfolioRow
 from aip.ui.modules.portfolio.views.capital_equivalent_rate_view import (
     CapitalEquivalentRateView,
@@ -119,3 +123,15 @@ def test_selected_usd_holding_cannot_use_crc_sovereign_zero_weight(
     )
     view._calculate_equivalent()
     assert "0% soberano CRC" in view._result.text()
+
+
+def test_all_defined_capital_weight_categories_can_be_selected(
+    qt_app: QApplication,
+) -> None:
+    view = CapitalEquivalentRateView()
+    actual = {
+        view._classification.itemData(index)
+        for index in range(view._classification.count())
+        if view._classification.itemData(index) is not None
+    }
+    assert actual == set(ExposureClass)
