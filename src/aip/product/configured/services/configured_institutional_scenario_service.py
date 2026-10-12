@@ -88,6 +88,8 @@ class ConfiguredInstitutionalScenarioService:
         ):
             raise ValueError("Selected institutional master filename is invalid")
         path = Path(directory) / filename
+        if path.is_symlink() or path.resolve().parent != Path(directory).resolve():
+            raise ValueError("Selected master must be a regular file inside its configured directory")
         if master_attestation is not None:
             attestation = master_attestation
             if (

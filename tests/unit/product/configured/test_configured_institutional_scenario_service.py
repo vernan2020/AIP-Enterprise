@@ -293,3 +293,22 @@ def test_declared_master_manifest_must_match_file_digest_and_sheet(
         evaluate(replace(approved, sha256="non-hex-or-short"))
     with pytest.raises(ValueError, match="invalid"):
         evaluate(replace(approved, approval_reference=""))
+
+
+def test_selected_master_cannot_escape_configured_folder_via_symlink(
+    tmp_path: Path,
+) -> None:
+    allowed = tmp_path / "approved"
+    allowed.mkdir()
+    outside = tmp_path / "outside.xlsx"
+    outside.write_bytes(b"unapproved master")
+    (allowed / "02-10-2026.xlsx").symlink_to(outside)
+    service = ConfiguredInstitutionalScenarioService(_Provider(_snapshot(str(allowed))))
+    with pytest.raises(ValueError, match="regular file inside"):
+        service.evaluate(
+            _capital(),
+            {"A": 17, "B": 19},
+            {"A": Decimal("0.5"), "B": Decimal("0.5")},
+            cutoff=CUTOFF,
+            policy=_policy(),
+        )
