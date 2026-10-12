@@ -41,6 +41,7 @@ from aip.ui.modules.financial_analysis.views.financial_peer_chart import (
 from aip.ui.modules.financial_analysis.views.financial_statement_history_panel import (
     FinancialStatementHistoryPanel,
 )
+from aip.ui.themes.institutional_white import InstitutionalWhiteDesign
 
 
 class _ComparisonWorker(QObject):
@@ -529,22 +530,16 @@ class FinancialAnalysisView(QWidget):
         card = QFrame()
         card.setObjectName("financialMetricCard")
         card.setMinimumHeight(94)
-        card.setStyleSheet(
-            "QFrame#financialMetricCard {"
-            "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
-            "stop:0 #00477F,stop:0.60 #005EB8,stop:1 #00A9E0); "
-            "border:1px solid #1675C5; border-radius:12px;"
-            "} QFrame#financialMetricCard:hover {border:1px solid #73B3DD;}"
-        )
+        card.setStyleSheet(InstitutionalWhiteDesign.kpi_card_style("financialMetricCard"))
         layout = QVBoxLayout(card)
         layout.setContentsMargins(8, 5, 8, 5)
         layout.setSpacing(2)
         caption = QLabel(label)
-        caption.setStyleSheet("color:#DDF4FF; font-size:8px; font-weight:600; border:none;")
+        caption.setStyleSheet(InstitutionalWhiteDesign.KPI_TITLE)
         value = QLabel("-")
-        value.setStyleSheet("color:#FFFFFF; font-size:12px; font-weight:700; border:none;")
+        value.setStyleSheet(InstitutionalWhiteDesign.KPI_VALUE)
         change = QLabel("Sin datos")
-        change.setStyleSheet("color:#CBEAF8; font-size:7px; border:none;")
+        change.setStyleSheet(InstitutionalWhiteDesign.KPI_NOTE)
         change.setWordWrap(True)
         layout.addWidget(caption)
         layout.addWidget(value)

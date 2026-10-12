@@ -16,7 +16,7 @@ from aip.product.demo.bootstrap.application_factory import DemoApplicationFactor
 
 
 class HomeWorkspace(QWidget):
-    """Pantalla inicial para navegación y contexto operativo de AIP Hybrid."""
+    """Pantalla inicial institucional de AIP Enterprise."""
 
     route_requested = Signal(str)
 
@@ -50,21 +50,23 @@ class HomeWorkspace(QWidget):
 
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
-        root.setContentsMargins(22, 16, 22, 18)
-        root.setSpacing(12)
+        root.setContentsMargins(18, 14, 18, 18)
+        root.setSpacing(11)
 
         hero = QFrame()
         hero.setObjectName("homeHero")
         hero_layout = QHBoxLayout(hero)
-        hero_layout.setContentsMargins(20, 16, 20, 16)
+        hero_layout.setContentsMargins(24, 18, 24, 18)
         title_box = QVBoxLayout()
-        title = QLabel("AIP HYBRID")
+        title = QLabel("AIP ENTERPRISE 2.0")
         title_font = QFont()
-        title_font.setPointSize(22)
+        title_font.setPointSize(20)
         title_font.setBold(True)
         title.setFont(title_font)
         title.setStyleSheet("color:#FFFFFF; border:none; background:transparent;")
-        subtitle = QLabel("Inteligencia Financiera · Portafolio · ALM · Liquidez · Mercado")
+        subtitle = QLabel(
+            "Visión integral · Riesgos · Portafolio · Liquidez · Inteligencia financiera"
+        )
         subtitle.setStyleSheet(
             "color:#DCE9F5; font-size:10px; border:none; background:transparent;"
         )
@@ -74,7 +76,7 @@ class HomeWorkspace(QWidget):
         hero_layout.addStretch(1)
         self._hero_status = QLabel("SISTEMA LISTO")
         self._hero_status.setStyleSheet(
-            "color:#FFFFFF; background:#2B6F9F; border:1px solid #6FA2C6; "
+            "color:#FFFFFF; background:#176A9B; border:1px solid #73B3DD; "
             "border-radius:12px; padding:6px 12px; font-weight:700;"
         )
         hero_layout.addWidget(self._hero_status)
@@ -115,15 +117,17 @@ class HomeWorkspace(QWidget):
         root.addWidget(note)
 
         self.setStyleSheet(
-            "QFrame#homeHero {background:#173F63; border:1px solid #173F63; border-radius:10px;}"
-            "QFrame#homeContextCard, QFrame#homeModuleCard {background:#FFFFFF; border:1px solid #D7E0E8; "
-            "border-radius:10px;} QFrame#homeModuleCard:hover {border-color:#5F8EAF; background:#F7FBFE;}"
+            "QFrame#homeHero {background:qlineargradient(x1:0,y1:0,x2:1,y2:0,"
+            "stop:0 #00345F,stop:0.62 #005EB8,stop:1 #168AC7); "
+            "border:1px solid #2C85BC; border-radius:12px;}"
+            "QFrame#homeContextCard, QFrame#homeModuleCard {background:#FFFFFF; border:1px solid #D8E5EE; "
+            "border-radius:11px;} QFrame#homeModuleCard:hover {border-color:#90C8E7; background:#F7FCFF;}"
         )
 
     def _context_card(self, key: str, caption: str) -> QFrame:
         card = QFrame()
         card.setObjectName("homeContextCard")
-        card.setMinimumHeight(66)
+        card.setMinimumHeight(76)
         layout = QVBoxLayout(card)
         layout.setContentsMargins(11, 8, 11, 8)
         title = QLabel(caption)
@@ -138,7 +142,7 @@ class HomeWorkspace(QWidget):
     def _module_card(self, title: str, detail: str, route: str) -> QFrame:
         card = QFrame()
         card.setObjectName("homeModuleCard")
-        card.setMinimumHeight(108)
+        card.setMinimumHeight(112)
         layout = QVBoxLayout(card)
         layout.setContentsMargins(12, 10, 12, 10)
         name = QLabel(title)
@@ -146,13 +150,13 @@ class HomeWorkspace(QWidget):
         description = QLabel(detail)
         description.setWordWrap(True)
         description.setStyleSheet("font-size:9px; color:#667788; border:none;")
-        button = QPushButton("ABRIR")
+        button = QPushButton("Abrir módulo  →")
         button.setCursor(Qt.CursorShape.PointingHandCursor)
         button.clicked.connect(lambda _checked=False, value=route: self.route_requested.emit(value))
         button.setStyleSheet(
-            "QPushButton {background:#EEF4F8; border:1px solid #C8D9E6; border-radius:5px; "
-            "padding:5px 10px; color:#174E78; font-weight:700;}"
-            "QPushButton:hover {background:#DCE9F5;}"
+            "QPushButton {background:#F0F8FC; border:1px solid #C6E0EF; border-radius:7px; "
+            "padding:7px 11px; color:#005EB8; font-weight:700;}"
+            "QPushButton:hover {background:#DDEFFA; border-color:#73B3DD;}"
         )
         layout.addWidget(name)
         layout.addWidget(description, 1)

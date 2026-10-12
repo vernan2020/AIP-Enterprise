@@ -35,6 +35,7 @@ from aip.ui.modules.portfolio.widgets.portfolio_dashboard_chart import (
 )
 from aip.ui.modules.portfolio.widgets.portfolio_filter_panel import PortfolioFilterPanel
 from aip.ui.modules.portfolio.widgets.portfolio_status_badge import PortfolioStatusBadge
+from aip.ui.themes.institutional_white import InstitutionalWhiteDesign
 
 
 class _PortfolioHistoryWorker(QObject):
@@ -115,26 +116,20 @@ class PortfolioView(QWidget):
         card = QFrame()
         card.setObjectName("portfolioMetricCard")
         card.setMinimumHeight(112)
-        card.setStyleSheet(
-            "QFrame#portfolioMetricCard {"
-            "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
-            "stop:0 #073F84, stop:0.52 #0A6ED1, stop:1 #12B7E7); "
-            "border:1px solid #2C8CE0; border-radius:14px;"
-            "} QFrame#portfolioMetricCard:hover {border:1px solid #73B3DD;}"
-        )
+        card.setStyleSheet(InstitutionalWhiteDesign.kpi_card_style("portfolioMetricCard"))
         layout = QVBoxLayout(card)
         layout.setContentsMargins(14, 10, 14, 10)
         layout.setSpacing(2)
         caption = QLabel(title)
-        caption.setStyleSheet("color:#E8F6FF; font-size:10px; font-weight:700; border:none;")
+        caption.setStyleSheet(InstitutionalWhiteDesign.KPI_TITLE)
         value = QLabel("-")
         value_font = QFont()
         value_font.setPointSize(16)
         value_font.setBold(True)
         value.setFont(value_font)
-        value.setStyleSheet("color:#FFFFFF; border:none;")
+        value.setStyleSheet(InstitutionalWhiteDesign.KPI_VALUE)
         hint = QLabel(helper)
-        hint.setStyleSheet("color:#D1ECFA; font-size:8px; border:none;")
+        hint.setStyleSheet(InstitutionalWhiteDesign.KPI_NOTE)
         layout.addWidget(caption)
         layout.addWidget(value)
         layout.addWidget(hint)

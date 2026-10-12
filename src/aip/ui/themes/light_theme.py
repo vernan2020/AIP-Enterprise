@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from aip.ui.themes.institutional_white import InstitutionalWhiteDesign
 from aip.ui.themes.palette import ThemePalette
 
 
@@ -374,4 +375,4 @@ class LightTheme:
         QPushButton:hover {{
             background: #E4F4FB;
         }}
-        """
+        """ + InstitutionalWhiteDesign.stylesheet()

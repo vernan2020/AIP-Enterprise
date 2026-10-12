@@ -61,21 +61,6 @@ class MarketMetricCard(QFrame):
         self._helper_label.setWordWrap(True)
         layout.addWidget(self._helper_label)
 
-        self.setStyleSheet("""
-            QFrame#marketMetricCard {
-                background:qlineargradient(x1:0,y1:0,x2:1,y2:1,
-                    stop:0 #00477F, stop:0.58 #005EB8, stop:1 #00A9E0);
-                border:1px solid #1675C5;
-                border-radius:12px;
-            }
-            QFrame#marketMetricCard:hover {
-                border-color:#73B3DD;
-            }
-            QFrame#marketMetricCard QLabel { background: transparent; border: none; }
-            QLabel#marketMetricTitle { color: #DDF4FF; }
-            QLabel#marketMetricValue { color: #FFFFFF; }
-            QLabel#marketMetricHelper { color: #CBEAF8; }
-            """)
         self._apply_status(status, self._value)
 
     def text(self) -> str:
@@ -126,14 +111,13 @@ class MarketMetricCard(QFrame):
             tooltip = "Indicador de mercado"
         self._status_label.setStyleSheet(f"color:{color}; font-weight:700;")
         self.setStyleSheet(
-            "QFrame#marketMetricCard {"
-            "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
-            "stop:0 #00477F,stop:0.58 #005EB8,stop:1 #00A9E0); "
-            f"border:1px solid {color}; border-radius:12px;"
-            "} QFrame#marketMetricCard:hover {border:1px solid #73B3DD;}"
+            "QFrame#marketMetricCard {background:#FFFFFF; "
+            f"border:1px solid {color}; border-radius:11px;"
+            "} QFrame#marketMetricCard:hover {background:#F8FCFF; "
+            "border:1px solid #73B3DD;}"
             "QFrame#marketMetricCard QLabel {background:transparent; border:none;}"
-            "QLabel#marketMetricTitle {color:#DDF4FF;}"
-            "QLabel#marketMetricValue {color:#FFFFFF;}"
-            "QLabel#marketMetricHelper {color:#CBEAF8;}"
+            "QLabel#marketMetricTitle {color:#42617A;}"
+            "QLabel#marketMetricValue {color:#00345F;}"
+            "QLabel#marketMetricHelper {color:#617B8C;}"
         )
         self._status_label.setToolTip(tooltip)

@@ -153,7 +153,7 @@ class PortfolioHistoryLineChart(QWidget):
         painter.setBrush(gradient)
         painter.drawPath(area_path)
 
-        line_pen = QPen(QColor("#1F5A8A"))
+        line_pen = QPen(QColor("#005EB8"))
         line_pen.setWidthF(2.4)
         line_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         line_pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
@@ -162,7 +162,7 @@ class PortfolioHistoryLineChart(QWidget):
         painter.drawPath(path)
 
         painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(QColor("#1F5A8A"))
+        painter.setBrush(QColor("#005EB8"))
         marker_step = max(1, len(coordinates) // 12)
         for index, coordinate in enumerate(coordinates[:-1]):
             if index % marker_step == 0:
@@ -183,7 +183,7 @@ class PortfolioHistoryLineChart(QWidget):
             painter.drawEllipse(active_point, 7.5, 7.5)
             painter.setBrush(QColor("#FFFFFF"))
             painter.drawEllipse(active_point, 4.8, 4.8)
-            painter.setBrush(QColor("#1F5A8A"))
+            painter.setBrush(QColor("#005EB8"))
             painter.drawEllipse(active_point, 3.0, 3.0)
             self._draw_hover_card(
                 painter,
@@ -199,7 +199,7 @@ class PortfolioHistoryLineChart(QWidget):
         painter.drawEllipse(latest_coordinate, 7.0, 7.0)
         painter.setBrush(QColor("#FFFFFF"))
         painter.drawEllipse(latest_coordinate, 4.5, 4.5)
-        painter.setBrush(QColor("#1F5A8A"))
+        painter.setBrush(QColor("#005EB8"))
         painter.drawEllipse(latest_coordinate, 2.8, 2.8)
 
         latest = valid[-1][1]
@@ -306,7 +306,7 @@ class PortfolioHistoryLineChart(QWidget):
         rect = QRectF(x, y, width, height)
 
         painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(QColor("#1F5A8A"))
+        painter.setBrush(QColor("#005EB8"))
         painter.drawRoundedRect(rect, 7.0, 7.0)
         painter.setPen(QColor("#FFFFFF"))
         painter.drawText(

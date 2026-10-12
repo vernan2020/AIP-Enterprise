@@ -48,6 +48,7 @@ from aip.ui.modules.macro_intelligence.viewmodels.macro_intelligence_view_model 
     MacroForecastLabViewModel,
     MacroProjectionViewModel,
 )
+from aip.ui.themes.institutional_white import InstitutionalWhiteDesign
 from aip.ui.widgets.chart_tooltip import (
     build_chart_tooltip,
     point_hit_rect,
@@ -133,21 +134,22 @@ class _MacroMetricCard(QFrame):
         super().__init__()
         self.setObjectName("macroMetricCard")
         self.setMinimumHeight(88)
+        self.setStyleSheet(InstitutionalWhiteDesign.kpi_card_style("macroMetricCard"))
         layout = QVBoxLayout(self)
         layout.setContentsMargins(11, 8, 11, 8)
         layout.setSpacing(2)
         caption = QLabel(title)
-        caption.setStyleSheet("color:#DDF4FF; font-size:9px; font-weight:600; border:none;")
+        caption.setStyleSheet(InstitutionalWhiteDesign.KPI_TITLE)
         self._value = QLabel("N/D")
         value_font = QFont()
         value_font.setPointSize(14)
         value_font.setBold(True)
         self._value.setFont(value_font)
-        self._value.setStyleSheet("color:#FFFFFF; border:none;")
+        self._value.setStyleSheet(InstitutionalWhiteDesign.KPI_VALUE)
         self._change = QLabel("—")
-        self._change.setStyleSheet("color:#D9F4FC; font-size:9px; border:none;")
+        self._change.setStyleSheet(InstitutionalWhiteDesign.KPI_NOTE)
         self._date = QLabel("Sin dato")
-        self._date.setStyleSheet("color:#CBEAF8; font-size:8px; border:none;")
+        self._date.setStyleSheet(InstitutionalWhiteDesign.KPI_NOTE)
         layout.addWidget(caption)
         layout.addWidget(self._value)
         layout.addWidget(self._change)
@@ -960,9 +962,8 @@ class MacroIntelligenceWorkspace(QWidget):
             "QFrame#macroHeader {background:qlineargradient(x1:0,y1:0,x2:1,y2:0,"
             "stop:0 #EAF5FB, stop:0.6 #F7FBFD, stop:1 #EAF7F2); "
             "border:1px solid #BED8E6; border-radius:11px;}"
-            "QFrame#macroMetricCard {background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
-            "stop:0 #00477F, stop:0.60 #005EB8, stop:1 #00A9E0); "
-            "border:1px solid #1675C5; border-radius:12px;}"
+            "QFrame#macroMetricCard {background:#FFFFFF; "
+            "border:1px solid #D8E6EF; border-radius:11px;}"
             "QFrame#macroGovernanceCard {background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
             "stop:0 #FFFFFF, stop:1 #EFF8F5); border:1px solid #CFE4DD; "
             "border-left:4px solid #40C1AC; border-radius:11px;}"

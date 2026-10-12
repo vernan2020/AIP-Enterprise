@@ -21,6 +21,7 @@ from aip.ui.modules.executive.models.executive_row import ExecutiveRow
 from aip.ui.modules.executive.presenters.executive_presenter import ExecutivePresenter
 from aip.ui.modules.executive.viewmodels.executive_view_model import ExecutiveViewModel
 from aip.ui.modules.executive.widgets.executive_status_card import ExecutiveStatusCard
+from aip.ui.themes.institutional_white import InstitutionalWhiteDesign
 
 
 class ExecutiveWorkspace(QWidget):
@@ -64,26 +65,20 @@ class ExecutiveWorkspace(QWidget):
         card = QFrame()
         card.setObjectName("executiveMetricCard")
         card.setMinimumHeight(82)
-        card.setStyleSheet(
-            "QFrame#executiveMetricCard {"
-            "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
-            "stop:0 #00477F,stop:0.60 #005EB8,stop:1 #00A9E0); "
-            "border:1px solid #1675C5; border-radius:12px;"
-            "} QFrame#executiveMetricCard:hover {border:1px solid #73B3DD;}"
-        )
+        card.setStyleSheet(InstitutionalWhiteDesign.kpi_card_style("executiveMetricCard"))
         layout = QVBoxLayout(card)
         layout.setContentsMargins(10, 7, 10, 7)
         layout.setSpacing(2)
         caption = QLabel(title)
-        caption.setStyleSheet("color:#DDF4FF; font-size:9px; font-weight:600; border:none;")
+        caption.setStyleSheet(InstitutionalWhiteDesign.KPI_TITLE)
         value = QLabel("-")
         value_font = QFont()
         value_font.setPointSize(12)
         value_font.setBold(True)
         value.setFont(value_font)
-        value.setStyleSheet("color:#FFFFFF; border:none;")
+        value.setStyleSheet(InstitutionalWhiteDesign.KPI_VALUE)
         hint = QLabel(helper)
-        hint.setStyleSheet("color:#CBEAF8; font-size:8px; border:none;")
+        hint.setStyleSheet(InstitutionalWhiteDesign.KPI_NOTE)
         layout.addWidget(caption)
         layout.addWidget(value)
         layout.addWidget(hint)
