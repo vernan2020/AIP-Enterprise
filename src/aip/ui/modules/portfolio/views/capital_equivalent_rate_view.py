@@ -34,6 +34,12 @@ class CapitalEquivalentRateView(QWidget):
         ("Calificación categoría 4 · 75%", ExposureClass.RATED_4),
         ("Calificación categoría 5 · 90%", ExposureClass.RATED_5),
         ("Sin calificación · 100%", ExposureClass.UNRATED),
+        ("Calificación categoría 0 · 0%", ExposureClass.RATED_0),
+        ("Calificación categoría 1 · 10%", ExposureClass.RATED_1),
+        ("Calificación categoría 2 · 25%", ExposureClass.RATED_2),
+        ("Calificación categoría 3 · 50%", ExposureClass.RATED_3),
+        ("Calificación categoría 6 · 100%", ExposureClass.RATED_6),
+        ("Pacto de reventa · 75%", ExposureClass.REPURCHASE),
     )
 
     def __init__(self, parent: QWidget | None = None) -> None:
