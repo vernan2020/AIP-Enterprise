@@ -220,3 +220,35 @@ def test_var_quality_strip_reflows_all_eight_metrics_without_changing_values(qt_
     finally:
         view.close()
         qt_app.processEvents()
+
+
+def test_price_risk_chart_groups_stack_at_compact_width(qt_app) -> None:
+    view = PriceRiskView(_StubPresenter())  # type: ignore[arg-type]
+    try:
+        view._bind_view_model(_view_model())
+        price_grid = view._var_chart_grid
+        rate_grid = view._rate_chart_grid
+        assert price_grid is not None
+        assert rate_grid is not None
+        price_groups = view._var_chart_groups
+        rate_groups = view._rate_chart_groups
+        assert len(price_groups) == 4
+        assert len(rate_groups) == 4
+        expected_var = view.view_model.var_crc
+        expected_dv01 = view.view_model.dv01_total
+
+        for width, columns in ((1300, 2), (820, 1), (1300, 2)):
+            view._arrange_visual_grids(width)
+            assert view._chart_columns == columns
+            for grid, groups in ((price_grid, price_groups), (rate_grid, rate_groups)):
+                for index, group in enumerate(groups):
+                    item = grid.itemAtPosition(index // columns, index % columns)
+                    assert item is not None
+                    assert item.widget() is group
+            assert view.view_model.var_crc == expected_var
+            assert view.view_model.dv01_total == expected_dv01
+        assert view._price_hover_readout.objectName() == "priceRiskHoverReadout"
+        assert view._rate_hover_readout.objectName() == "rateRiskHoverReadout"
+    finally:
+        view.close()
+        qt_app.processEvents()
