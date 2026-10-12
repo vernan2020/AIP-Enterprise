@@ -214,6 +214,24 @@ class PriceRiskView(QWidget):
         super().resizeEvent(event)
         self._arrange_kpi_cards(event.size().width())
 
+    @staticmethod
+    def _new_chart_readout(object_name: str) -> QLabel:
+        label = QLabel("Pase el cursor sobre un gráfico para consultar el valor completo.")
+        label.setObjectName(object_name)
+        label.setTextFormat(Qt.TextFormat.PlainText)
+        label.setWordWrap(True)
+        label.setStyleSheet(
+            "color:#17324D; background:#EAF4FC; border:1px solid #C7DDEB; "
+            "border-radius:6px; padding:7px 10px; font-weight:600;"
+        )
+        return label
+
+    @staticmethod
+    def _update_chart_readout(label: QLabel, value: str) -> None:
+        label.setText(
+            value or "Pase el cursor sobre un gráfico para consultar el valor completo."
+        )
+
     def _build_price_page(self) -> None:
         layout = QVBoxLayout(self._price_page)
         layout.setContentsMargins(3, 6, 3, 3)
@@ -338,6 +356,19 @@ class PriceRiskView(QWidget):
         analytics.setColumnStretch(0, 1)
         analytics.setColumnStretch(1, 1)
         layout.addLayout(analytics)
+        self._price_hover_readout = self._new_chart_readout("priceRiskHoverReadout")
+        for chart in (
+            self._contribution_chart,
+            self._pareto_chart,
+            self._issuer_chart,
+            self._var_currency_chart,
+        ):
+            chart.hover_readout_changed.connect(
+                lambda value, label=self._price_hover_readout: self._update_chart_readout(
+                    label, value
+                )
+            )
+        layout.addWidget(self._price_hover_readout)
 
         table_group = QGroupBox("Contribución por título al escenario VeR")
         table_group.setStyleSheet(self._group_style())
@@ -482,6 +513,14 @@ class PriceRiskView(QWidget):
         shock_table_layout.addWidget(self._shock_table)
         charts.addWidget(shock_table_group, 1, 1)
         layout.addLayout(charts)
+        self._rate_hover_readout = self._new_chart_readout("rateRiskHoverReadout")
+        for chart in (self._bucket_chart, self._currency_chart, self._shock_chart):
+            chart.hover_readout_changed.connect(
+                lambda value, label=self._rate_hover_readout: self._update_chart_readout(
+                    label, value
+                )
+            )
+        layout.addWidget(self._rate_hover_readout)
 
         bucket_detail = QGroupBox("Sensibilidad DV01 por tramo")
         bucket_detail.setStyleSheet(self._group_style())
