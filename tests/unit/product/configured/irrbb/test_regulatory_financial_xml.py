@@ -284,3 +284,28 @@ def test_sicveca_padded_xml_tag_names_match_real_institutional_export(
     assert result.files[0].account_totals[0].amount == sum(
         row.amount for row in result.files[0].rows
     )
+
+
+
+def test_reader_blocks_xml_modified_during_import(
+    tmp_path: Path, monkeypatch,
+) -> None:
+    month = _month(tmp_path)
+    _write_pair(month)
+    reader = RegulatoryFinancialXMLReader(str(tmp_path))
+    real_checksum = reader._monthly.sha256
+    calls: dict[str, int] = {}
+
+    def unstable_checksum(path: Path) -> str:
+        count = calls.get(path.name, 0) + 1
+        calls[path.name] = count
+        if path.name == REGULATORY_XML_SPECS[0].filename and count == 2:
+            return "0" * 64
+        return real_checksum(path)
+
+    monkeypatch.setattr(reader._monthly, "sha256", unstable_checksum)
+    result = reader.load(cutoff_date=date(2026, 9, 30))
+
+    assert not result.is_valid
+    assert result.files[0].status == "BLOCKED"
+    assert "cambió durante la lectura" in result.files[0].issues[0]
