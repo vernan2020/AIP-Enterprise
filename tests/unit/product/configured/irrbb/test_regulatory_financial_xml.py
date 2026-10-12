@@ -186,3 +186,79 @@ def test_regulatory_file_accepts_resend_type_without_losing_audit_metadata(tmp_p
     )
     assert snapshot.is_valid
     assert all(item.load_type == "2" for item in snapshot.files)
+
+
+
+def test_latest_prefers_newest_reported_month_not_filesystem_timestamp(tmp_path: Path) -> None:
+    september = _month(tmp_path)
+    _write_pair(september)
+    october = tmp_path / "2026" / "10-OCTUBRE"
+    october.mkdir()
+    for spec in REGULATORY_XML_SPECS:
+        (october / spec.filename).write_text(
+            _document(spec, period="01/10/2026"),
+            encoding="utf-8",
+        )
+
+    snapshot = RegulatoryFinancialXMLReader(str(tmp_path)).load_latest(
+        reference_cutoff=date(2026, 9, 30)
+    )
+    assert snapshot.is_valid
+    assert snapshot.cutoff_date == date(2026, 10, 1)
+    assert all(item.period == date(2026, 10, 1) for item in snapshot.files)
+
+
+def test_newest_partial_month_never_falls_back_to_an_older_valid_pair(
+    tmp_path: Path,
+) -> None:
+    september = _month(tmp_path)
+    _write_pair(september)
+    october = tmp_path / "2026" / "10-OCTUBRE"
+    october.mkdir()
+    spec = REGULATORY_XML_SPECS[0]
+    (october / spec.filename).write_text(
+        _document(spec, period="01/10/2026"),
+        encoding="utf-8",
+    )
+
+    snapshot = RegulatoryFinancialXMLReader(str(tmp_path)).load_latest(
+        reference_cutoff=date(2026, 10, 12)
+    )
+    assert snapshot.cutoff_date == date(2026, 10, 1)
+    assert not snapshot.is_valid
+    assert snapshot.files[0].status == "VALIDATED"
+    assert snapshot.files[1].status == "BLOCKED"
+    assert "encontrados: 0" in snapshot.files[1].issues[0]
+
+
+def test_latest_fails_closed_if_newest_reported_period_is_wrong(
+    tmp_path: Path,
+) -> None:
+    september = _month(tmp_path)
+    _write_pair(september)
+    october = tmp_path / "2026" / "10-OCTUBRE"
+    october.mkdir()
+    for spec in REGULATORY_XML_SPECS:
+        (october / spec.filename).write_text(
+            _document(spec, period="01/09/2026"),
+            encoding="utf-8",
+        )
+
+    snapshot = RegulatoryFinancialXMLReader(str(tmp_path)).load_latest(
+        reference_cutoff=date(2026, 10, 12)
+    )
+    assert snapshot.cutoff_date == date(2026, 10, 1)
+    assert all(item.status == "BLOCKED" for item in snapshot.files)
+    assert all("Periodo" in item.issues[0] for item in snapshot.files)
+
+
+def test_latest_without_any_regulatory_files_is_missing_not_zero(tmp_path: Path) -> None:
+    month = _month(tmp_path)
+    (month / "Other_Contable.xml").write_text("<ignored/>", encoding="utf-8")
+
+    snapshot = RegulatoryFinancialXMLReader(str(tmp_path)).load_latest(
+        reference_cutoff=date(2026, 10, 12)
+    )
+    assert snapshot.cutoff_date == date(2026, 10, 12)
+    assert all(item.status == "MISSING" for item in snapshot.files)
+    assert not snapshot.is_valid
