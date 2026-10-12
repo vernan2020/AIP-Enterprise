@@ -497,6 +497,11 @@ class MacroIntelligenceWorkspace(QWidget):
         self._projection = MacroProjectionViewModel(status="LOADING")
         self._ml_projection = MacroForecastLabViewModel()
         self._cards: dict[str, _MacroMetricCard] = {}
+        self._metric_grid: QGridLayout | None = None
+        self._metric_columns = 7
+        self._governance_grid: QGridLayout | None = None
+        self._governance_cards: tuple[QFrame, ...] = ()
+        self._governance_columns = 4
         self._build_ui()
         self._apply_styles()
         self._load_persisted_snapshot()
@@ -555,10 +560,12 @@ class MacroIntelligenceWorkspace(QWidget):
             metric_grid.addWidget(card, 0, index)
         for column in range(len(self._CARD_DEFINITIONS)):
             metric_grid.setColumnStretch(column, 1)
+        self._metric_grid = metric_grid
         root.addLayout(metric_grid)
 
         governance_grid = QGridLayout()
         governance_grid.setHorizontalSpacing(7)
+        governance_cards: list[QFrame] = []
         for index, (key, title_text, helper) in enumerate(
             (
                 ("scenario", "Escenario", "Identificador gobernado"),
@@ -567,7 +574,11 @@ class MacroIntelligenceWorkspace(QWidget):
                 ("horizon", "Horizonte", "Trayectoria mensual"),
             )
         ):
-            governance_grid.addWidget(self._governance_card(key, title_text, helper), 0, index)
+            card = self._governance_card(key, title_text, helper)
+            governance_cards.append(card)
+            governance_grid.addWidget(card, 0, index)
+        self._governance_grid = governance_grid
+        self._governance_cards = tuple(governance_cards)
         root.addLayout(governance_grid)
 
         self._tabs = QTabWidget()
@@ -577,6 +588,46 @@ class MacroIntelligenceWorkspace(QWidget):
         self._build_projection_table_tab()
         self._build_market_curves_tab()
         self._build_transmission_tab()
+
+    @staticmethod
+    def _metric_columns_for_width(width: int) -> int:
+        if width < 780:
+            return 2
+        if width < 1250:
+            return 4
+        return 7
+
+    @staticmethod
+    def _reflow_grid(grid: QGridLayout, cards: tuple[QWidget, ...], columns: int) -> None:
+        """Reposition existing KPI widgets; never fetch or recompute financial data."""
+        for card in cards:
+            grid.removeWidget(card)
+        for index, card in enumerate(cards):
+            grid.addWidget(card, index // columns, index % columns)
+        for column in range(len(cards)):
+            grid.setColumnStretch(column, 1 if column < columns else 0)
+
+    def _reflow_dashboard(self, width: int) -> None:
+        if self._metric_grid is not None:
+            metric_columns = self._metric_columns_for_width(width)
+            if metric_columns != self._metric_columns:
+                self._reflow_grid(
+                    self._metric_grid,
+                    tuple(self._cards[code] for code, _ in self._CARD_DEFINITIONS),
+                    metric_columns,
+                )
+                self._metric_columns = metric_columns
+        if self._governance_grid is not None:
+            governance_columns = 2 if width < 980 else 4
+            if governance_columns != self._governance_columns:
+                self._reflow_grid(
+                    self._governance_grid, self._governance_cards, governance_columns
+                )
+                self._governance_columns = governance_columns
+
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        self._reflow_dashboard(event.size().width())
 
     def _governance_card(self, key: str, caption: str, helper: str) -> QFrame:
         if not hasattr(self, "_governance_labels"):
