@@ -252,3 +252,25 @@ def test_price_risk_chart_groups_stack_at_compact_width(qt_app) -> None:
     finally:
         view.close()
         qt_app.processEvents()
+
+
+def test_rate_context_reflows_without_losing_eve_or_status(qt_app) -> None:
+    view = PriceRiskView(_StubPresenter())  # type: ignore[arg-type]
+    try:
+        view._bind_view_model(_view_model())
+        grid = view._rate_context_grid
+        blocks = view._rate_context_blocks
+        assert grid is not None
+        assert len(blocks) == 3
+        for width, columns in ((1280, 3), (650, 1), (1280, 3)):
+            view._arrange_rate_context(width)
+            assert view._rate_context_columns == columns
+            for index, block in enumerate(blocks):
+                item = grid.itemAtPosition(index // columns, index % columns)
+                assert item is not None
+                assert item.widget() is block
+            assert view._rate_context_labels["worst_eve"].text() == "-₡84.00 MM"
+            assert view._rate_context_labels["shock_status"].text() == "CALCULADO"
+    finally:
+        view.close()
+        qt_app.processEvents()
