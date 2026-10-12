@@ -85,7 +85,7 @@ class PortfolioCapitalConsumptionService:
                 raise ValueError("Security and issuer are required")
             if not position.classification_source.strip():
                 raise ValueError("Classification source or approved decision is required")
-            if position.regulatory_exposure_crc < 0 or not position.regulatory_exposure_crc.is_finite():
+            if not position.regulatory_exposure_crc.is_finite() or position.regulatory_exposure_crc < 0:
                 raise ValueError("Regulatory exposure must be finite and non-negative")
             if position.currency.upper() != "CRC" and position.exposure_class in {
                 ExposureClass.BCCR_CRC,
