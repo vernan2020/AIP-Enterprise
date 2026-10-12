@@ -72,9 +72,7 @@ class FinancialPeerChartPanel(QWidget):
         self._chart_context.setStyleSheet("color:#52687A; font-size:9px; padding:4px 0;")
         root.addWidget(self._chart_context)
 
-        self._hover_detail = QLabel(
-            "Detalle al pasar el cursor: seleccione una barra o un sector."
-        )
+        self._hover_detail = QLabel("Detalle al pasar el cursor: seleccione una barra o un sector.")
         self._hover_detail.setObjectName("financialPeerHoverDetail")
         self._hover_detail.setTextFormat(Qt.TextFormat.PlainText)
         self._hover_detail.setWordWrap(True)
@@ -117,9 +115,7 @@ class FinancialPeerChartPanel(QWidget):
 
     def _render_current(self) -> None:
         self._clear_chart()
-        self._hover_detail.setText(
-            "Detalle al pasar el cursor: seleccione una barra o un sector."
-        )
+        self._hover_detail.setText("Detalle al pasar el cursor: seleccione una barra o un sector.")
         index = self._selector.currentIndex()
         if index < 0 or index >= len(self._series):
             self._summary.setText("Sin datos comparables")
@@ -142,8 +138,7 @@ class FinancialPeerChartPanel(QWidget):
             )
             self._chart_context.setText(
                 "Orden descendente por magnitud; máximo 15 entidades. "
-                "La entidad seleccionada siempre se incluye y se identifica con ●."
-                + sign_note
+                "La entidad seleccionada siempre se incluye y se identifica con ●." + sign_note
             )
         self._chart_view = (
             self._pie_chart(item, detail_label=self._hover_detail)
@@ -286,6 +281,7 @@ class FinancialPeerChartPanel(QWidget):
                 ),
                 note="Composición del total mostrado.",
             )
+
             def on_hover(
                 state: bool,
                 *,
