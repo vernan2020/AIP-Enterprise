@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 from dataclasses import replace
 from datetime import date
 from decimal import Decimal
@@ -196,8 +197,10 @@ def test_missing_physical_master_path_has_no_demo_fallback(tmp_path) -> None:
         )
 
 
-def test_read_file_requires_a_dated_unambiguous_name(monkeypatch) -> None:
+def test_read_file_requires_a_dated_unambiguous_name(monkeypatch, tmp_path: Path) -> None:
     calls: list[date | None] = []
+    source_path = tmp_path / "master-02-10-2026.xlsx"
+    source_path.write_bytes(b"known test fixture")
 
     def read_fake(self, path, *, valuation_date_override=None, diagnostic_mode=False):
         calls.append(valuation_date_override)
@@ -209,13 +212,14 @@ def test_read_file_requires_a_dated_unambiguous_name(monkeypatch) -> None:
         read_fake,
     )
     result = InstitutionalMasterScenarioRiskAdapter.read_file(
-        "master-02-10-2026.xlsx",
+        source_path,
         _positions(),
         {"A": 17, "B": 19},
         cutoff=CUTOFF,
     )
     assert result.total_market_value_crc == Decimal("1000")
     assert calls == [CUTOFF]
+    assert result.master_sha256 == hashlib.sha256(source_path.read_bytes()).hexdigest()
 
     with pytest.raises(ValueError, match="filename"):
         InstitutionalMasterScenarioRiskAdapter.read_file(
@@ -295,6 +299,8 @@ def test_real_xlsx_reader_boundary_supplies_dated_native_risk_inputs(
     assert evidence.market_risks[0].eligible_hqla_value_crc == Decimal("540.00")
     assert evidence.market_risks[1].dv01_crc > 0
     assert "row:2" in evidence.market_risks[0].market_value_source
+    assert evidence.master_sha256 == hashlib.sha256(path.read_bytes()).hexdigest()
+    assert f"sha256:{evidence.master_sha256}" in evidence.market_risks[0].market_value_source
 
 
 def test_foreign_master_needs_approved_matching_historical_fx() -> None:
@@ -420,3 +426,24 @@ def test_native_contract_isin_can_resolve_lots_without_manual_row_selection() ->
         )
     with pytest.raises(ValueError, match="do not match"):
         InstitutionalMasterScenarioRiskAdapter.adapt(audited, _positions(), None, cutoff=CUTOFF)
+
+
+def test_master_mutation_during_reader_is_rejected(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "02-10-2026.xlsx"
+    path.write_bytes(b"source before read")
+
+    def changing_reader(self, file_path, *, valuation_date_override=None, diagnostic_mode=False):
+        Path(file_path).write_bytes(b"tampered while parsing")
+        return _master()
+
+    monkeypatch.setattr(
+        "aip.product.configured.adapters.institutional_portfolio_scenario_adapter."
+        "InstitutionalPortfolioMasterReader.read",
+        changing_reader,
+    )
+    with pytest.raises(ValueError, match="changed during source reading"):
+        InstitutionalMasterScenarioRiskAdapter.read_file(
+            path, _positions(), {"A": 17, "B": 19}, cutoff=CUTOFF
+        )

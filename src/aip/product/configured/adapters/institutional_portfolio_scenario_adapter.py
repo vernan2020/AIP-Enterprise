@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import re
 from dataclasses import dataclass
 from datetime import date
@@ -45,6 +46,7 @@ class InstitutionalScenarioMarketEvidence:
     sheet_name: str
     market_risks: tuple[VerifiedPositionMarketRisk, ...]
     total_market_value_crc: Decimal
+    master_sha256: str = ""
 
 
 class InstitutionalMasterScenarioRiskAdapter:
@@ -70,6 +72,16 @@ class InstitutionalMasterScenarioRiskAdapter:
             "product_code",
         }
     )
+
+    @staticmethod
+    def _file_sha256(master_file: Path) -> str:
+        if not master_file.is_file():
+            raise ValueError("Institutional master file is unverified or unavailable")
+        digest = hashlib.sha256()
+        with master_file.open("rb") as stream:
+            while block := stream.read(1024 * 1024):
+                digest.update(block)
+        return digest.hexdigest()
 
     @classmethod
     def read_file(
@@ -99,15 +111,20 @@ class InstitutionalMasterScenarioRiskAdapter:
             raise ValueError("Institutional master filename needs one DD-MM-YYYY cutoff")
         if candidates[0] != cutoff:
             raise ValueError("Institutional master filename cutoff does not match selection")
+        path = Path(master_file)
+        before_digest = cls._file_sha256(path)
         reader_result = InstitutionalPortfolioMasterReader().read(
-            master_file, valuation_date_override=cutoff
+            path, valuation_date_override=cutoff
         )
+        if cls._file_sha256(path) != before_digest:
+            raise ValueError("Institutional master changed during source reading")
         return cls.adapt(
             reader_result,
             capital_positions,
             source_row_by_position,
             cutoff=cutoff,
             fx_rates_by_currency=fx_rates_by_currency,
+            master_sha256=before_digest,
         )
 
     @staticmethod
@@ -161,6 +178,7 @@ class InstitutionalMasterScenarioRiskAdapter:
         *,
         cutoff: date,
         fx_rates_by_currency: Mapping[str, VerifiedScenarioFXRate] | None = None,
+        master_sha256: str = "",
     ) -> InstitutionalScenarioMarketEvidence:
         positions = PortfolioCapitalEvidenceService.validate(capital_positions, cutoff=cutoff)
         if source_row_by_position is None:
@@ -295,6 +313,8 @@ class InstitutionalMasterScenarioRiskAdapter:
                 f"{result.source_file}|{result.sheet_selected}|row:{row_number}"
                 f"|cutoff:{cutoff.isoformat()}"
             )
+            if master_sha256:
+                source += f"|sha256:{master_sha256}"
             market_risks.append(
                 VerifiedPositionMarketRisk(
                     position_key=capital.position_key,
@@ -321,4 +341,5 @@ class InstitutionalMasterScenarioRiskAdapter:
             total_market_value_crc=sum(
                 (row.market_value_crc for row in market_risks), Decimal("0")
             ),
+            master_sha256=master_sha256,
         )

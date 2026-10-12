@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
@@ -197,7 +198,9 @@ def test_complete_real_reader_to_fx_capital_policy_scenario(
         "contract:CTR-A|isin:TEST-A",
         "contract:CTR-B|isin:TEST-B",
     )
-    assert outcome.portfolio_valuation_source == str(master)
+    assert outcome.portfolio_valuation_source == (
+        f"{master}|sha256:{hashlib.sha256(master.read_bytes()).hexdigest()}"
+    )
     assert outcome.comparison.portfolio_value_crc == Decimal("1500")
     assert outcome.regulatory_exposure_crc == Decimal("620")
     assert outcome.current_credit_rwa_crc == Decimal("120")

@@ -83,6 +83,10 @@ class ConfiguredInstitutionalScenarioService:
             proposed_weights,
             cutoff=cutoff,
             portfolio_market_value_crc=market.total_market_value_crc,
-            portfolio_valuation_source=market.master_file,
+            portfolio_valuation_source=(
+                f"{market.master_file}|sha256:{market.master_sha256}"
+                if market.master_sha256
+                else market.master_file
+            ),
             policy=policy,
         )
