@@ -221,6 +221,7 @@ class RegulatoryFinancialXMLReader:
                 )
             path = matches[0]
             self._reject_unsafe_declarations(path)
+            checksum = self._monthly.sha256(path)
             header = self._monthly.read_header(path)
             if header.clase_dato != "22":
                 raise ValueError("ClaseDato diferente de 22 (Información Financiera).")
@@ -234,7 +235,6 @@ class RegulatoryFinancialXMLReader:
                 raise ValueError("TipoMoneda inválido: Brechas y Calce deben reportar colones.")
             if (header.periodo.year, header.periodo.month) != (cutoff_date.year, cutoff_date.month):
                 raise ValueError("El Periodo del XML no coincide con el mes de corte.")
-            checksum = self._monthly.sha256(path)
             rows, totals = self._parse(path, spec)
             if self._monthly.sha256(path) != checksum:
                 raise ValueError("El XML cambió durante la lectura; vuelva a validar el corte.")
