@@ -1,0 +1,239 @@
+from __future__ import annotations
+
+from collections.abc import Iterator
+from datetime import date
+from decimal import Decimal
+
+import pytest
+from PySide6.QtCore import QCoreApplication, QEvent
+from PySide6.QtWidgets import QApplication
+
+from aip.domain.portfolio.services.portfolio_capital_consumption_service import (
+    ExposureClass,
+)
+from aip.domain.portfolio.services.portfolio_capital_evidence_service import (
+    VerifiedCapitalPosition,
+)
+from aip.ui.modules.portfolio.models.portfolio_row import PortfolioRow
+from aip.ui.modules.portfolio.views.capital_equivalent_rate_view import (
+    CapitalEquivalentRateView,
+)
+
+
+@pytest.fixture
+def calculator(qt_app: QApplication) -> Iterator[CapitalEquivalentRateView]:
+    """Release all widgets created for this test before QApplication teardown."""
+    view = CapitalEquivalentRateView()
+    try:
+        yield view
+    finally:
+        view.close()
+        view.deleteLater()
+        QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+        qt_app.processEvents()
+
+
+def test_equity_cost_is_empty_and_editable(calculator: CapitalEquivalentRateView) -> None:
+    view = calculator
+    assert view._equity_cost.text() == ""
+    assert not view._equity_cost.isReadOnly()
+    assert view._target.text() == "16,00 %"
+    view._invested.setText("100")
+    view._exposure.setText("100")
+    view._yield.setText("8")
+    view._classification.setCurrentIndex(1)
+    view._calculate_equivalent()
+    assert "costo anual del patrimonio" in view._result.text()
+
+
+def test_equivalent_rate_recalculates_after_edit(calculator: CapitalEquivalentRateView) -> None:
+    view = calculator
+    view._invested.setText("100")
+    view._exposure.setText("100")
+    view._yield.setText("8")
+    index = view._classification.findText("Gobierno USD · 75%")
+    view._classification.setCurrentIndex(index)
+
+    view._equity_cost.setText("10")
+    view._calculate_equivalent()
+    assert "6.8000 %" in view._result.text()
+
+    view._equity_cost.setText("20")
+    view._calculate_equivalent()
+    assert "5.6000 %" in view._result.text()
+
+
+def test_equity_cost_auto_recalculates_after_initial_valid_scenario(
+    calculator: CapitalEquivalentRateView,
+) -> None:
+    view = calculator
+    view._invested.setText("100")
+    view._exposure.setText("100")
+    view._yield.setText("8")
+    view._classification.setCurrentIndex(view._classification.findText("Gobierno USD · 75%"))
+    view._equity_cost.setText("10")
+    view._calculate_equivalent()
+    assert "6.8000 %" in view._result.text()
+
+    # No second click: the editable cost is a true live scenario parameter.
+    view._equity_cost.setText("20")
+    assert "5.6000 %" in view._result.text()
+    view._equity_cost.clear()
+    assert "costo anual del patrimonio" in view._result.text()
+    view._equity_cost.setText("5")
+    assert "7.4000 %" in view._result.text()
+
+
+def _sample_row(isin: str = "CRTEST000001") -> PortfolioRow:
+    return PortfolioRow(
+        isin=isin,
+        issuer="Gobierno",
+        instrument="Bono",
+        currency="USD",
+        nominal="200000",
+        market_value="198000",
+        book_value="194000",
+        yield_value="8.75",
+        modified_duration="3.5",
+        classification="government",
+        hqla_status="eligible",
+        mil_status="available",
+        recommendation="hold",
+    )
+
+
+def test_portfolio_identity_does_not_infer_financial_inputs(
+    calculator: CapitalEquivalentRateView,
+) -> None:
+    view = calculator
+    view._equity_cost.setText("13.5")
+    view.bind_positions((_sample_row(),), cutoff="2026-10-02")
+    assert view._position.count() == 2
+    view._position.setCurrentIndex(1)
+    assert "CRTEST000001" in view._position_note.text()
+    assert "2026-10-02" in view._position_note.text()
+    assert "NO se" in view._position_note.text()
+    assert view._invested.text() == ""
+    assert view._exposure.text() == ""
+    assert view._yield.text() == ""
+    assert view._classification.currentData() is None
+    assert view._equity_cost.text() == "13.5"
+
+
+def test_switching_holding_invalidates_prior_capital_scenario(
+    calculator: CapitalEquivalentRateView,
+) -> None:
+    view = calculator
+    view.bind_positions((_sample_row(), _sample_row("CRTEST000002")), cutoff="2026-10-02")
+    view._position.setCurrentIndex(1)
+    view._invested.setText("100")
+    view._exposure.setText("100")
+    view._yield.setText("8")
+    view._equity_cost.setText("12")
+    view._classification.setCurrentIndex(3)
+    view._calculate_equivalent()
+    assert "Tasa equivalente" in view._result.text()
+    view._position.setCurrentIndex(2)
+    assert view._invested.text() == ""
+    assert view._exposure.text() == ""
+    assert view._yield.text() == ""
+    assert view._classification.currentData() is None
+    assert view._equity_cost.text() == "12"
+    view.bind_positions((_sample_row("CRTEST000003"),), cutoff="2026-10-03")
+    assert view._position.currentIndex() == 0
+    assert "Tasa equivalente" not in view._result.text()
+
+
+def test_unverified_risk_weight_is_rejected(calculator: CapitalEquivalentRateView) -> None:
+    view = calculator
+    view._invested.setText("100")
+    view._exposure.setText("100")
+    view._yield.setText("8")
+    view._equity_cost.setText("12")
+    view._calculate_equivalent()
+    assert "ponderador regulatorio" in view._result.text()
+
+
+def test_selected_usd_holding_cannot_use_crc_sovereign_zero_weight(
+    calculator: CapitalEquivalentRateView,
+) -> None:
+    view = calculator
+    view.bind_positions((_sample_row(),), cutoff="2026-10-02")
+    view._position.setCurrentIndex(1)
+    view._invested.setText("100")
+    view._exposure.setText("100")
+    view._yield.setText("8")
+    view._equity_cost.setText("12")
+    view._classification.setCurrentIndex(view._classification.findText("Gobierno CRC · 0%"))
+    view._calculate_equivalent()
+    assert "0% soberano CRC" in view._result.text()
+
+
+def test_all_defined_capital_weight_categories_can_be_selected(
+    calculator: CapitalEquivalentRateView,
+) -> None:
+    view = calculator
+    actual = {
+        view._classification.itemData(index)
+        for index in range(view._classification.count())
+        if view._classification.itemData(index) is not None
+    }
+    assert actual == set(ExposureClass)
+
+
+def _audited() -> VerifiedCapitalPosition:
+    return VerifiedCapitalPosition(
+        position_key="lot-1",
+        isin="CRTEST000001",
+        issuer="Gobierno",
+        currency="USD",
+        cutoff=date(2026, 10, 2),
+        invested_amount_crc=Decimal("100"),
+        regulatory_exposure_crc=Decimal("120"),
+        annual_net_yield=Decimal("0.08"),
+        exposure_class=ExposureClass.GOVERNMENT_USD,
+        classification_effective_date=date(2026, 9, 30),
+        invested_amount_source="verified book lot-1",
+        regulatory_exposure_source="verified regulatory amount",
+        net_yield_source="verified net yield",
+        classification_source="master rating at cutoff",
+        fx_translation_source="BCCR rate 2026-10-02",
+    )
+
+
+def test_bind_verified_evidence_populates_only_audited_inputs(
+    calculator: CapitalEquivalentRateView,
+) -> None:
+    view = calculator
+    view.bind_positions((_sample_row(),), cutoff="2026-10-02")
+    view._position.setCurrentIndex(1)
+    view.bind_verified_evidence((_audited(),), cutoff="2026-10-02")
+    assert view._invested.text() == "100"
+    assert view._exposure.text() == "120"
+    assert view._yield.text() == "8.00"
+    assert view._classification.currentData() == ExposureClass.GOVERNMENT_USD
+    assert view._equity_cost.text() == ""
+    assert "master rating at cutoff" in view._position_note.text()
+    view._equity_cost.setText("12")
+    view._calculate_equivalent()
+    assert "6.2720 %" in view._result.text()
+
+
+def test_audited_evidence_rejects_stale_cutoff_and_duplicate_lots(
+    calculator: CapitalEquivalentRateView,
+) -> None:
+    view = calculator
+    view.bind_positions((_sample_row(), _sample_row()), cutoff="2026-10-02")
+    view._position.setCurrentIndex(1)
+    with pytest.raises(ValueError, match="cutoff"):
+        view.bind_verified_evidence((_audited(),), cutoff="2026-10-03")
+    assert view._invested.text() == ""
+
+    view.bind_verified_evidence((_audited(),), cutoff="2026-10-02")
+    assert "duplicados" in view._position_note.text()
+    assert view._exposure.text() == ""
+
+    view.bind_positions((_sample_row(),), cutoff="2026-10-03")
+    view._position.setCurrentIndex(1)
+    assert view._exposure.text() == ""
+    assert view._classification.currentData() is None

@@ -1,0 +1,355 @@
+from __future__ import annotations
+
+import hashlib
+import re
+from dataclasses import dataclass
+from datetime import date
+from decimal import Decimal
+from pathlib import Path
+from typing import Mapping, Sequence
+
+from aip.domain.portfolio.services.portfolio_capital_evidence_service import (
+    PortfolioCapitalEvidenceService,
+    VerifiedCapitalPosition,
+)
+from aip.domain.portfolio.services.portfolio_duration_service import PortfolioDurationService
+from aip.domain.portfolio.services.portfolio_dv01_service import PortfolioDV01Service
+from aip.domain.portfolio.services.portfolio_hqla_service import PortfolioHQLAService
+from aip.domain.portfolio.services.portfolio_scenario_evidence_bridge import (
+    VerifiedPositionMarketRisk,
+)
+from aip.product.configured.irrbb.investment_source_rules import InvestmentMasterSourceRules
+from aip.product.configured.readers.institutional_portfolio_master_reader import (
+    InstitutionalPortfolioMasterReader,
+    InstitutionalPortfolioMasterReadResult,
+)
+
+
+@dataclass(frozen=True, slots=True)
+class VerifiedScenarioFXRate:
+    """Explicit historical FX conversion evidence; never a fallback spot quote."""
+
+    currency: str
+    cutoff: date
+    effective_date: date
+    crc_per_unit: Decimal
+    rate_type: str
+    source_reference: str
+
+
+@dataclass(frozen=True, slots=True)
+class InstitutionalScenarioMarketEvidence:
+    """Dated source and auditable sensitivity rows; never regulatory classification."""
+
+    cutoff: date
+    master_file: str
+    sheet_name: str
+    market_risks: tuple[VerifiedPositionMarketRisk, ...]
+    total_market_value_crc: Decimal
+    master_sha256: str = ""
+
+
+class InstitutionalMasterScenarioRiskAdapter:
+    """Bridge the institutional master reader to existing duration/DV01/HQLA engines.
+
+    This adapter requires native CRC valuation and approved lot-to-row identities.
+    It never uses the configured dashboard's market-value fallback, converts
+    local-currency market values to CRC, or guesses exposure classes.
+    Regulatory capital remains an independently verified input.
+    """
+
+    _DATED_FILENAME = re.compile(
+        r"(?<!\d)(?P<day>\d{1,2})[-_.]?(?P<month>\d{1,2})[-_.]?(?P<year>\d{4})(?!\d)"
+    )
+    _REQUIRED_NATIVE_COLUMNS = frozenset(
+        {
+            "market_value_crc",
+            "market_value",
+            "currency",
+            "issuer",
+            "isin",
+            "classification",
+            "product_code",
+        }
+    )
+
+    @staticmethod
+    def _file_sha256(master_file: Path) -> str:
+        if not master_file.is_file():
+            raise ValueError("Institutional master file is unverified or unavailable")
+        digest = hashlib.sha256()
+        with master_file.open("rb") as stream:
+            while block := stream.read(1024 * 1024):
+                digest.update(block)
+        return digest.hexdigest()
+
+    @classmethod
+    def read_file(
+        cls,
+        master_file: str | Path,
+        capital_positions: Sequence[VerifiedCapitalPosition],
+        source_row_by_position: Mapping[str, int] | None,
+        *,
+        cutoff: date,
+        fx_rates_by_currency: Mapping[str, VerifiedScenarioFXRate] | None = None,
+    ) -> InstitutionalScenarioMarketEvidence:
+        """Use explicit cutoff override only after checking the native filename date."""
+        file_name = Path(master_file).stem
+        candidates: list[date] = []
+        for match in cls._DATED_FILENAME.finditer(file_name):
+            try:
+                candidates.append(
+                    date(
+                        int(match.group("year")),
+                        int(match.group("month")),
+                        int(match.group("day")),
+                    )
+                )
+            except ValueError as exc:
+                raise ValueError("Master filename contains an invalid date") from exc
+        if len(candidates) != 1:
+            raise ValueError("Institutional master filename needs one DD-MM-YYYY cutoff")
+        if candidates[0] != cutoff:
+            raise ValueError("Institutional master filename cutoff does not match selection")
+        path = Path(master_file)
+        before_digest = cls._file_sha256(path)
+        reader_result = InstitutionalPortfolioMasterReader().read(
+            path, valuation_date_override=cutoff
+        )
+        if cls._file_sha256(path) != before_digest:
+            raise ValueError("Institutional master changed during source reading")
+        return cls.adapt(
+            reader_result,
+            capital_positions,
+            source_row_by_position,
+            cutoff=cutoff,
+            fx_rates_by_currency=fx_rates_by_currency,
+            master_sha256=before_digest,
+        )
+
+    @staticmethod
+    def resolve_native_position_rows(
+        result: InstitutionalPortfolioMasterReadResult,
+        capital_positions: Sequence[VerifiedCapitalPosition],
+        *,
+        cutoff: date,
+    ) -> dict[str, int]:
+        """Join approved lot IDs by native contract+ISIN, never by display order.
+
+        Missing or duplicated contractual identity requires explicit audited
+        source-row binding. An ISIN alone is never a sufficient lot identifier.
+        """
+        positions = PortfolioCapitalEvidenceService.validate(capital_positions, cutoff=cutoff)
+        if result.valuation_date != cutoff or result.source_status != "HEALTHY":
+            raise ValueError("Native lot identity source and cutoff are not verified")
+        if not {"contract_number", "isin"}.issubset(result.detected_column_mapping):
+            raise ValueError(
+                "Native contract and ISIN columns are required for automatic lot mapping"
+            )
+        rows: dict[str, int] = {}
+        used_numbers: set[int] = set()
+        for item in result.normalized_positions:
+            number = item.get("source_row")
+            contract = str(item.get("contract_number") or "").strip()
+            isin = str(item.get("isin") or "").strip()
+            if type(number) is not int or number <= 0 or not contract or not isin:
+                raise ValueError(
+                    "Automatic lot mapping needs positive source row, contract and ISIN"
+                )
+            key = InvestmentMasterSourceRules.stable_position_id(
+                contract_number=contract,
+                isin=isin,
+                series=item.get("series"),
+            )
+            if key is None or key in rows or number in used_numbers:
+                raise ValueError("Institutional lot identity is duplicate or ambiguous")
+            rows[key] = number
+            used_numbers.add(number)
+        if set(rows) != {item.position_key for item in positions}:
+            raise ValueError("Audited capital lot keys do not match native contract and ISIN")
+        return rows
+
+    @classmethod
+    def adapt(
+        cls,
+        result: InstitutionalPortfolioMasterReadResult,
+        capital_positions: Sequence[VerifiedCapitalPosition],
+        source_row_by_position: Mapping[str, int] | None,
+        *,
+        cutoff: date,
+        fx_rates_by_currency: Mapping[str, VerifiedScenarioFXRate] | None = None,
+        master_sha256: str = "",
+    ) -> InstitutionalScenarioMarketEvidence:
+        positions = PortfolioCapitalEvidenceService.validate(capital_positions, cutoff=cutoff)
+        if source_row_by_position is None:
+            source_row_by_position = cls.resolve_native_position_rows(
+                result, positions, cutoff=cutoff
+            )
+        approved_fx = fx_rates_by_currency or {}
+        foreign_currencies = {
+            position.currency.strip().upper()
+            for position in positions
+            if position.currency.strip().upper() != "CRC"
+        }
+        if set(approved_fx) != foreign_currencies:
+            raise ValueError("Foreign positions need one explicit approved FX rate per currency")
+        for currency, rate in approved_fx.items():
+            if (
+                rate.currency != currency
+                or rate.cutoff != cutoff
+                or rate.effective_date > cutoff
+                or not rate.rate_type.strip()
+                or not rate.source_reference.strip()
+                or not isinstance(rate.crc_per_unit, Decimal)
+                or not rate.crc_per_unit.is_finite()
+                or rate.crc_per_unit <= 0
+            ):
+                raise ValueError("Foreign FX rate date, currency or provenance is invalid")
+        if (
+            result.valuation_date != cutoff
+            or result.source_status != "HEALTHY"
+            or result.warnings
+            or result.rejected_row_count
+            or not result.source_file.strip()
+            or not result.sheet_selected.strip()
+        ):
+            raise ValueError("Institutional master cutoff, completeness or source is unverified")
+        missing_columns = cls._REQUIRED_NATIVE_COLUMNS.difference(result.detected_column_mapping)
+        if missing_columns:
+            raise ValueError(
+                "Native institutional columns missing: " + ", ".join(sorted(missing_columns))
+            )
+        keys = tuple(position.position_key for position in positions)
+        if set(source_row_by_position) != set(keys):
+            raise ValueError("Approved row mapping must cover every audited capital lot")
+        mapped_rows = tuple(source_row_by_position[key] for key in keys)
+        if any(type(row_number) is not int or row_number <= 0 for row_number in mapped_rows) or len(
+            set(mapped_rows)
+        ) != len(mapped_rows):
+            raise ValueError("Approved physical source row numbers must be unique integers")
+
+        raw = tuple(result.normalized_positions)
+        source_rows = tuple(item.get("source_row") for item in raw)
+        if (
+            len(raw) != len(positions)
+            or len(set(source_rows)) != len(source_rows)
+            or set(source_rows) != set(mapped_rows)
+        ):
+            raise ValueError("Every institutional master row must match one approved capital lot")
+        by_row = {item["source_row"]: item for item in raw}
+
+        def finite(value: object) -> Decimal:
+            if value is None or isinstance(value, bool):
+                raise ValueError("Native numeric evidence is unavailable")
+            try:
+                number = Decimal(str(value))
+            except (ValueError, ArithmeticError, TypeError) as exc:
+                raise ValueError("Native numeric evidence is invalid") from exc
+            if not number.is_finite():
+                raise ValueError("Native numeric evidence must be finite")
+            return number
+
+        market_risks: list[VerifiedPositionMarketRisk] = []
+        for capital, row_number in zip(positions, mapped_rows, strict=True):
+            row = by_row[row_number]
+            original_currency = str(row.get("source_currency") or "").strip().upper()
+            capital_currency = capital.currency.strip().upper()
+            if original_currency != capital_currency or original_currency not in {"CRC", "USD"}:
+                raise ValueError("Native master currency is missing or does not match capital lot")
+            if (
+                str(row.get("isin") or "").strip().upper() != capital.isin.strip().upper()
+                or str(row.get("issuer") or "").strip().casefold()
+                != capital.issuer.strip().casefold()
+            ):
+                raise ValueError("Native ISIN or issuer does not match approved capital identity")
+            if capital.position_key.startswith("contract:"):
+                if "contract_number" not in result.detected_column_mapping:
+                    raise ValueError("Contract-based lot identity needs native contract column")
+                native_key = InvestmentMasterSourceRules.stable_position_id(
+                    contract_number=row.get("contract_number"),
+                    isin=row.get("isin"),
+                    series=row.get("series"),
+                )
+                if native_key != capital.position_key:
+                    raise ValueError("Mapped row does not match approved contractual lot key")
+            if (
+                not str(row.get("classification") or "").strip()
+                or not str(row.get("product_code") or "").strip()
+            ):
+                raise ValueError("Native instrument classification and product are required")
+
+            market = finite(row.get("market_value_crc"))
+            local_market = finite(row.get("market_value"))
+            if market <= 0 or local_market <= 0:
+                raise ValueError("Native local and CRC market values must be positive")
+            if original_currency == "CRC":
+                expected_crc = local_market
+                fx_reference = "native CRC"
+            else:
+                fx = approved_fx[original_currency]
+                if capital.fx_translation_source.strip() != fx.source_reference:
+                    raise ValueError("FX reference must match capital audit provenance")
+                expected_crc = local_market * fx.crc_per_unit
+                fx_reference = (
+                    f"{fx.source_reference}|rate:{fx.rate_type}"
+                    f"|effective:{fx.effective_date.isoformat()}"
+                )
+            if abs(expected_crc - market) > Decimal("0.01"):
+                raise ValueError("Native market valuation is not reconciled to approved FX")
+
+            engine_row = dict(row)
+            principal = row.get("principal_balance")
+            if principal is not None:
+                if "principal_balance" not in result.detected_column_mapping:
+                    raise ValueError("Duration principal must originate in a native column")
+                engine_row["nominal"] = finite(principal)
+            engine_row["market_value_crc"] = market
+            duration = PortfolioDurationService.calculate(engine_row, cutoff)
+            if (
+                duration.modified_duration is None
+                or not duration.modified_duration.is_finite()
+                or duration.modified_duration < 0
+                or not duration.included_in_portfolio_duration
+            ):
+                raise ValueError("Audited modified duration is not available for every lot")
+            engine_row["modified_duration"] = duration.modified_duration
+            dv01 = PortfolioDV01Service.calculate(engine_row)
+            if dv01.status != "CALCULATED" or dv01.dv01_crc is None:
+                raise ValueError("Institutional DV01 cannot be calculated for every lot")
+            hqla = PortfolioHQLAService.calculate(engine_row)
+            if not hqla.hqla_value_crc.is_finite():
+                raise ValueError("HQLA result must be finite")
+            source = (
+                f"{result.source_file}|{result.sheet_selected}|row:{row_number}"
+                f"|cutoff:{cutoff.isoformat()}"
+            )
+            if master_sha256:
+                source += f"|sha256:{master_sha256}"
+            market_risks.append(
+                VerifiedPositionMarketRisk(
+                    position_key=capital.position_key,
+                    cutoff=cutoff,
+                    market_value_crc=market,
+                    modified_duration_years=duration.modified_duration,
+                    dv01_crc=dv01.dv01_crc,
+                    eligible_hqla_value_crc=hqla.hqla_value_crc,
+                    market_value_source=(
+                        f"{source}|column:{result.detected_column_mapping['market_value_crc']}"
+                        f"|fx:{fx_reference}"
+                    ),
+                    duration_source=f"{source}|duration:{duration.method}|{duration.source}",
+                    dv01_source=f"{source}|dv01:{dv01.method}|{dv01.source}",
+                    hqla_source=f"{source}|hqla:{hqla.status}|{hqla.source}",
+                )
+            )
+
+        return InstitutionalScenarioMarketEvidence(
+            cutoff=cutoff,
+            master_file=result.source_file,
+            sheet_name=result.sheet_selected,
+            market_risks=tuple(market_risks),
+            total_market_value_crc=sum(
+                (row.market_value_crc for row in market_risks), Decimal("0")
+            ),
+            master_sha256=master_sha256,
+        )

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from datetime import date
 from decimal import Decimal
+from typing import Mapping, Sequence
 
 from PySide6.QtCore import QObject, Qt, QThread, Signal, Slot
 from PySide6.QtGui import QFont
@@ -17,11 +19,34 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from aip.domain.portfolio.services.portfolio_capital_evidence_service import VerifiedCapitalPosition
+from aip.domain.portfolio.services.portfolio_optimization_preflight_service import (
+    OptimizationPreflightResult,
+)
+from aip.domain.portfolio.services.portfolio_scenario_evidence_bridge import (
+    AuditedPortfolioScenario,
+    PortfolioScenarioEvidenceBridge,
+    VerifiedPositionMarketRisk,
+)
+from aip.domain.portfolio.services.portfolio_scenario_risk_service import (
+    ScenarioRiskComparison,
+    ScenarioRiskPolicy,
+)
+from aip.product.configured.adapters.institutional_portfolio_scenario_adapter import (
+    VerifiedScenarioFXRate,
+)
+from aip.product.configured.services.configured_institutional_scenario_service import (
+    ApprovedMasterAttestation,
+    ConfiguredInstitutionalScenarioService,
+    ConfiguredPortfolioSnapshot,
+)
 from aip.ui.modules.portfolio.models.portfolio_history_point import PortfolioHistorySeries
 from aip.ui.modules.portfolio.presenters.portfolio_presenter import PortfolioPresenter
 from aip.ui.modules.portfolio.viewmodels.portfolio_view_model import PortfolioViewModel
+from aip.ui.modules.portfolio.views.capital_equivalent_rate_view import CapitalEquivalentRateView
 from aip.ui.modules.portfolio.views.portfolio_details_view import PortfolioDetailsView
 from aip.ui.modules.portfolio.views.portfolio_history_view import PortfolioHistoryView
+from aip.ui.modules.portfolio.views.portfolio_markowitz_view import PortfolioMarkowitzView
 from aip.ui.modules.portfolio.views.portfolio_positions_view import PortfolioPositionsView
 from aip.ui.modules.portfolio.views.portfolio_summary_view import PortfolioSummaryView
 from aip.ui.modules.portfolio.views.portfolio_toolbar import PortfolioToolbar
@@ -73,6 +98,8 @@ class PortfolioView(QWidget):
         )
         self._history = PortfolioHistoryView()
         self._valuation_comparison = PortfolioValuationComparisonView()
+        self._capital_calculator = CapitalEquivalentRateView()
+        self._markowitz = PortfolioMarkowitzView()
         self._status_bar = PortfolioStatusBadge("Portafolio listo")
         self._content_splitter: QSplitter | None = None
         self._positions_page: QWidget | None = None
@@ -215,6 +242,8 @@ class PortfolioView(QWidget):
         self._build_dashboard_tab()
         self._tabs.addTab(self._history, "Histórico KPIs")
         self._tabs.addTab(self._valuation_comparison, "Ganancia / pérdida")
+        self._tabs.addTab(self._capital_calculator, "Tasa equivalente y capital")
+        self._tabs.addTab(self._markowitz, "Optimización Markowitz")
         self._build_positions_tab()
 
         layout.addWidget(self._status_bar)
@@ -322,6 +351,8 @@ class PortfolioView(QWidget):
         self._currency_chart.set_data(view_model.currency_points)
         self._currency_chart.set_center_value(market_value_display)
         self._valuation_comparison.bind(view_model.valuation_comparison, summary.valuation_date)
+        self._capital_calculator.bind_positions(view_model.rows, cutoff=str(summary.valuation_date))
+        self._markowitz.bind_portfolio_cutoff(str(summary.valuation_date))
         self._dashboard_note.setText(
             f"Vista ejecutiva · Calidad de datos: {view_model.data_quality_status} · "
             f"MIL elegible: {summary.mil_eligible_percent} · "
@@ -438,6 +469,103 @@ class PortfolioView(QWidget):
 
         if cutoff == self._view_model.summary.valuation_date:
             self._history.set_error(message or f"No fue posible calcular la frecuencia {sampling}")
+
+    def evaluate_and_bind_configured_scenario(
+        self,
+        provider: ConfiguredPortfolioSnapshot,
+        positions: Sequence[VerifiedCapitalPosition],
+        source_row_by_position: Mapping[str, int] | None,
+        proposed_weights: Mapping[str, Decimal],
+        *,
+        cutoff: str,
+        policy: ScenarioRiskPolicy,
+        fx_rates_by_currency: Mapping[str, VerifiedScenarioFXRate] | None = None,
+        master_attestation: ApprovedMasterAttestation | None = None,
+    ) -> AuditedPortfolioScenario:
+        """Use the already configured institutional master, without demo fallback."""
+        if cutoff != str(self._view_model.summary.valuation_date):
+            raise ValueError("Configured scenario cutoff must match active portfolio")
+        try:
+            scenario = ConfiguredInstitutionalScenarioService(provider).evaluate(
+                positions,
+                source_row_by_position,
+                proposed_weights,
+                cutoff=date.fromisoformat(cutoff),
+                policy=policy,
+                fx_rates_by_currency=fx_rates_by_currency,
+                master_attestation=master_attestation,
+            )
+        except Exception as exc:
+            reason = (
+                str(exc)
+                if isinstance(exc, ValueError)
+                else (f"Error de lectura o procesamiento: {type(exc).__name__}")
+            )
+            self._markowitz.invalidate_risk_evidence(cutoff=cutoff, reason=reason)
+            raise
+        self.bind_verified_scenario_risk(scenario.comparison, cutoff=cutoff)
+        self._markowitz.bind_source_attestation(
+            cutoff=cutoff, manifest_matched=master_attestation is not None
+        )
+        return scenario
+
+    def evaluate_and_bind_verified_scenario(
+        self,
+        positions: Sequence[VerifiedCapitalPosition],
+        risks: Sequence[VerifiedPositionMarketRisk],
+        proposed_weights: Mapping[str, Decimal],
+        *,
+        cutoff: str,
+        portfolio_market_value_crc: Decimal,
+        portfolio_valuation_source: str,
+        policy: ScenarioRiskPolicy,
+    ) -> AuditedPortfolioScenario:
+        """Render only a reconciled lot-level scenario for the selected cutoff."""
+        if cutoff != str(self._view_model.summary.valuation_date):
+            raise ValueError("Scenario evidence cutoff must match active portfolio")
+        try:
+            evaluated = PortfolioScenarioEvidenceBridge.compare(
+                positions,
+                risks,
+                proposed_weights,
+                cutoff=date.fromisoformat(cutoff),
+                portfolio_market_value_crc=portfolio_market_value_crc,
+                portfolio_valuation_source=portfolio_valuation_source,
+                policy=policy,
+            )
+        except Exception as exc:
+            reason = (
+                str(exc)
+                if isinstance(exc, ValueError)
+                else (f"Error de lectura o procesamiento: {type(exc).__name__}")
+            )
+            self._markowitz.invalidate_risk_evidence(cutoff=cutoff, reason=reason)
+            raise
+        self.bind_verified_scenario_risk(evaluated.comparison, cutoff=cutoff)
+        self._markowitz.bind_source_attestation(cutoff=cutoff, manifest_matched=False)
+        return evaluated
+
+    def bind_verified_scenario_risk(self, result: ScenarioRiskComparison, *, cutoff: str) -> None:
+        """Only accept approved snapshot results, never descriptive portfolio rows."""
+        if cutoff != str(self._view_model.summary.valuation_date):
+            raise ValueError("Scenario risk cutoff must match active portfolio")
+        self._markowitz.bind_risk_comparison(result, cutoff=cutoff)
+
+    def bind_optimization_preflight(
+        self, result: OptimizationPreflightResult, *, cutoff: str
+    ) -> None:
+        """Receive only externally verified, cutoff-scoped total-return inputs."""
+        if cutoff != str(self._view_model.summary.valuation_date):
+            raise ValueError("Historical optimization cutoff must match active portfolio")
+        self._markowitz.bind_preflight(result, cutoff=cutoff)
+
+    def bind_verified_capital_evidence(
+        self, records: Sequence[VerifiedCapitalPosition], *, cutoff: str
+    ) -> None:
+        """Explicit injection point for an audited institutional capital adapter."""
+        if cutoff != str(self._view_model.summary.valuation_date):
+            raise ValueError("Capital evidence cutoff must match active portfolio")
+        self._capital_calculator.bind_verified_evidence(records, cutoff=cutoff)
 
     def refresh(self) -> None:
         self._view_model = self._presenter.refresh()

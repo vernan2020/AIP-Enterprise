@@ -1,19 +1,36 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
+
+import pytest
 from PySide6.QtCore import QThread
 from PySide6.QtWidgets import QTabWidget
 
 from aip.ui.modules.portfolio.views.portfolio_view import PortfolioView
 
 
-def test_portfolio_view_constructs(qt_app) -> None:
+@pytest.fixture
+def portfolio_view(qt_app) -> Iterator[PortfolioView]:
+    """Close embedded Qt widgets and stop workers before fixture teardown."""
     view = PortfolioView()
+    try:
+        yield view
+    finally:
+        view.close()
+        view.deleteLater()
+        qt_app.processEvents()
+
+
+def test_portfolio_view_constructs(portfolio_view: PortfolioView) -> None:
+    view = portfolio_view
     assert view is not None
     assert view.selected_row() is not None
 
 
-def test_portfolio_view_exposes_historical_kpi_tab_between_panel_and_positions(qt_app) -> None:
-    view = PortfolioView()
+def test_portfolio_view_exposes_historical_kpi_tab_between_panel_and_positions(
+    portfolio_view: PortfolioView,
+) -> None:
+    view = portfolio_view
     tabs = view.findChild(QTabWidget)
 
     assert tabs is not None
@@ -21,12 +38,16 @@ def test_portfolio_view_exposes_historical_kpi_tab_between_panel_and_positions(q
         "Resumen ejecutivo",
         "Histórico KPIs",
         "Ganancia / pérdida",
+        "Tasa equivalente y capital",
+        "Optimización Markowitz",
         "Posiciones",
     ]
 
 
-def test_portfolio_history_worker_starts_only_when_history_tab_is_opened(qt_app) -> None:
-    view = PortfolioView()
+def test_portfolio_history_worker_starts_only_when_history_tab_is_opened(
+    portfolio_view: PortfolioView, qt_app
+) -> None:
+    view = portfolio_view
     try:
         tabs = view.findChild(QTabWidget)
         assert tabs is not None
@@ -43,7 +64,7 @@ def test_portfolio_history_worker_starts_only_when_history_tab_is_opened(qt_app)
         qt_app.processEvents()
 
 
-def test_portfolio_view_refresh_and_bind(qt_app) -> None:
-    view = PortfolioView()
+def test_portfolio_view_refresh_and_bind(portfolio_view: PortfolioView) -> None:
+    view = portfolio_view
     view.refresh()
     assert view.view_model().status == "loaded"
