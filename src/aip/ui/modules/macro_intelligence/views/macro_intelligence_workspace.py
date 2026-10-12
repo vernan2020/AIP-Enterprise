@@ -48,6 +48,7 @@ from aip.ui.modules.macro_intelligence.viewmodels.macro_intelligence_view_model 
     MacroForecastLabViewModel,
     MacroProjectionViewModel,
 )
+from aip.ui.themes.institutional_white import InstitutionalWhiteDesign
 from aip.ui.widgets.chart_tooltip import (
     build_chart_tooltip,
     point_hit_rect,
@@ -127,7 +128,6 @@ class _ForecastProjectionWorker(QRunnable):
         except Exception as exc:
             self.signals.failed.emit(f"{type(exc).__name__}: {exc}")
 
-from aip.ui.themes.institutional_white import InstitutionalWhiteDesign
 
 class _MacroMetricCard(QFrame):
     def __init__(self, title: str) -> None:
