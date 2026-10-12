@@ -42,6 +42,11 @@ def test_peer_chart_keeps_selected_entity_and_readable_scroll_height(qt_app) -> 
         assert panel._chart_scroll.widgetResizable()
         assert panel._chart_view is not None
         assert panel._chart_view.minimumHeight() >= 75 + 32 * 15
+        assert panel._hover_detail.objectName() == "financialPeerHoverDetail"
+        assert panel._point_readout(points[-1], panel._series[0]) == (
+            "Entidad supervisada 19 · Rentabilidad sobre activos: 1.00%"
+            " · Entidad seleccionada"
+        )
     finally:
         panel.close()
         qt_app.processEvents()
@@ -67,6 +72,35 @@ def test_peer_chart_shows_source_context_in_pie_mode(qt_app) -> None:
         assert panel._summary.text() == "2 entidades · %"
         assert "valor completo" in panel._chart_context.text()
         assert panel._chart_view is not None
+        assert panel._hover_detail.text().startswith("Detalle al pasar")
+    finally:
+        panel.close()
+        qt_app.processEvents()
+
+
+def test_peer_hover_readout_uses_complete_name_and_resets_on_selection(qt_app) -> None:
+    panel = FinancialPeerChartPanel()
+    item = PeerChartSeriesView(
+        code="ROA",
+        label="Rentabilidad sobre activos",
+        unit="%",
+        chart_type="BAR",
+        points=(
+            PeerChartPointView(
+                "1", "Entidad supervisada con nombre institucional extenso",
+                1.45, "1.45%", selected=True,
+            ),
+        ),
+    )
+    try:
+        panel.bind_series((item,))
+        # Reuse the formatted value shown by both bar and pie hover handlers.
+        readout = panel._point_readout(item.points[0], item)
+        assert "Entidad supervisada con nombre institucional extenso" in readout
+        assert "1.45%" in readout
+        panel._hover_detail.setText(readout)
+        panel.bind_series(())
+        assert panel._hover_detail.text().startswith("Detalle al pasar")
     finally:
         panel.close()
         qt_app.processEvents()
