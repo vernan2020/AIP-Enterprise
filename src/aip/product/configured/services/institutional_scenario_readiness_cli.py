@@ -62,6 +62,11 @@ def summarize_native_master(result: InstitutionalPortfolioMasterReadResult) -> d
     source_rows: set[int] = set()
     currencies: set[str] = set()
     for position in result.normalized_positions:
+        if any(
+            not str(position.get(field) or "").strip()
+            for field in ("issuer", "classification", "product_code")
+        ):
+            issues.add("INSTRUMENT_METADATA_MISSING")
         row_number = position.get("source_row")
         if type(row_number) is not int or row_number <= 0 or row_number in source_rows:
             issues.add("SOURCE_ROW_IDENTITY_INVALID")

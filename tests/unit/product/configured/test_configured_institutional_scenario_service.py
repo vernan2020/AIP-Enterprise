@@ -302,7 +302,10 @@ def test_selected_master_cannot_escape_configured_folder_via_symlink(
     allowed.mkdir()
     outside = tmp_path / "outside.xlsx"
     outside.write_bytes(b"unapproved master")
-    (allowed / "02-10-2026.xlsx").symlink_to(outside)
+    try:
+        (allowed / "02-10-2026.xlsx").symlink_to(outside)
+    except (OSError, NotImplementedError):
+        pytest.skip("Creating symlinks is not permitted on this Windows runner")
     service = ConfiguredInstitutionalScenarioService(_Provider(_snapshot(str(allowed))))
     with pytest.raises(ValueError, match="regular file inside"):
         service.evaluate(

@@ -30,6 +30,9 @@ def _reader_result() -> InstitutionalPortfolioMasterReadResult:
                 "contract_number": "CONTRACT-A",
                 "isin": "TEST-A",
                 "source_currency": "CRC",
+                "issuer": "GOBIERNO",
+                "classification": "D.V GOBIERNO",
+                "product_code": "BONO",
                 "market_value": 600,
                 "market_value_crc": 600,
             }
@@ -92,6 +95,12 @@ def test_duplicate_lots_missing_columns_fx_and_crc_mismatch_are_reported() -> No
 
     wrong = replace(first, normalized_positions=[{**rows[0], "market_value_crc": 550}])
     assert "CRC_NATIVE_VALUATION_MISMATCH" in summarize_native_master(wrong)["blocking_codes"]
+    absent_metadata = replace(
+        first, normalized_positions=[{**rows[0], "classification": ""}]
+    )
+    assert "INSTRUMENT_METADATA_MISSING" in (
+        summarize_native_master(absent_metadata)["blocking_codes"]
+    )
 
 
 class _Reader:
