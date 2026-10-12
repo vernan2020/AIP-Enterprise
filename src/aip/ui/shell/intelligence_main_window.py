@@ -73,9 +73,15 @@ class FinancialIntelligenceMainWindow(MainWindow):
                 RunIRRBBAnalysis,
             )
             from aip.core.container import ServiceNotRegisteredError
-            from aip.product.configured.configuration.configured_source_config import ConfiguredSourceConfig
-            from aip.product.configured.configuration.institutional_paths import expand_environment_path
-            from aip.product.configured.irrbb.regulatory_financial_xml import RegulatoryFinancialXMLReader
+            from aip.product.configured.configuration.configured_source_config import (
+                ConfiguredSourceConfig,
+            )
+            from aip.product.configured.configuration.institutional_paths import (
+                expand_environment_path,
+            )
+            from aip.product.configured.irrbb.regulatory_financial_xml import (
+                RegulatoryFinancialXMLReader,
+            )
             from aip.ui.modules.rate_risk.controllers import RateRiskWorkspaceController
             from aip.ui.modules.rate_risk.views import RateRiskWorkspace
 
