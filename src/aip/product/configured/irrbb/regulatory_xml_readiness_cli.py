@@ -13,12 +13,17 @@ from aip.product.demo.configuration.environment_loader import EnvironmentLoader
 def main(argv: list[str] | None = None) -> int:
     """Inspect the configured institutional XML sources without modifying them."""
     parser = argparse.ArgumentParser(description="Diagnóstico XML Brechas / Calce RTILB")
-    parser.add_argument("--cutoff", required=True, help="Fecha de cierre YYYY-MM-DD")
+    parser.add_argument("--cutoff", help="Fecha de cierre YYYY-MM-DD (modo histórico)")
+    parser.add_argument("--latest", action="store_true", help="Último mes guardado (predeterminado)")
     args = parser.parse_args(argv)
-    try:
-        cutoff = date.fromisoformat(args.cutoff)
-    except ValueError:
-        parser.error("--cutoff requiere YYYY-MM-DD")
+    if args.cutoff and args.latest:
+        parser.error("Use --cutoff o --latest, pero no ambos.")
+    cutoff = None
+    if args.cutoff:
+        try:
+            cutoff = date.fromisoformat(args.cutoff)
+        except ValueError:
+            parser.error("--cutoff requiere YYYY-MM-DD")
     config = EnvironmentLoader().load_source_config().xml_confia
     if not config.enabled or not config.root:
         print(
@@ -37,12 +42,19 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({"status": "UNCONFIGURED"}, ensure_ascii=False))
         return 2
 
-    snapshot = RegulatoryFinancialXMLReader(resolved).load(cutoff_date=cutoff)
+    reader = RegulatoryFinancialXMLReader(resolved)
+    snapshot = (
+        reader.load(cutoff_date=cutoff)
+        if cutoff is not None
+        else reader.load_latest(reference_cutoff=date.today())
+    )
     gap = build_regulatory_gap(snapshot)
     print(
         json.dumps(
             {
-                "cutoff": cutoff.isoformat(),
+                "mode": "FIXED_CUTOFF" if cutoff is not None else "LATEST_SAVED",
+                "source_month": snapshot.cutoff_date.strftime("%Y-%m")
+                if any(item.period for item in snapshot.files) else None,
                 "status": "VALIDATED" if snapshot.is_valid else "BLOCKED",
                 "six_band_gap": {
                     "status": gap.status,
