@@ -109,6 +109,9 @@ class FinancialPeerChartPanel(QWidget):
             self._selector.clear()
             for item in series:
                 self._selector.addItem(item.label, item.code)
+                self._selector.setItemData(
+                    self._selector.count() - 1, item.label, Qt.ItemDataRole.ToolTipRole
+                )
             if current_code:
                 index = self._selector.findData(current_code)
                 if index >= 0:
@@ -121,6 +124,7 @@ class FinancialPeerChartPanel(QWidget):
         self._render_current()
 
     def _render_current(self) -> None:
+        self._selector.setToolTip(self._selector.currentText())
         self._clear_chart()
         self._hover_detail.setText("Detalle al pasar el cursor: seleccione una barra o un sector.")
         index = self._selector.currentIndex()
