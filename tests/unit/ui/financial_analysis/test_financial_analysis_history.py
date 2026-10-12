@@ -9,7 +9,6 @@ from aip.domain.financial_analysis.models import (
     FinancialMetricHistoryPoint,
     FinancialMetricHistorySeries,
 )
-
 from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model import (
     FinancialMetricHistoryPointView,
     FinancialMetricHistorySeriesView,
