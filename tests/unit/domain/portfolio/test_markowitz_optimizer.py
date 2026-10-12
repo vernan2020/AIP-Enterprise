@@ -84,3 +84,31 @@ def test_markowitz_rejects_infeasible_group_limits() -> None:
     )
     with pytest.raises(ValueError, match="infeasible"):
         MarkowitzOptimizer.optimize(("A", "B"), _returns()[:, :2], limits)
+
+
+def test_markowitz_flat_returns_have_stable_degenerate_frontier() -> None:
+    constraints = MarkowitzConstraints((0.0, 0.0), (1.0, 1.0))
+    result = MarkowitzOptimizer.optimize(
+        ("A", "B"), [[0.001, 0.001]] * 40, constraints, frontier_points=8
+    )
+    assert len(result.efficient_frontier) == 8
+    assert all(
+        point.weights == result.minimum_variance.weights
+        for point in result.efficient_frontier
+    )
+    assert all(point.volatility == pytest.approx(0.0) for point in result.efficient_frontier)
+
+
+def test_markowitz_frontier_ends_at_feasible_maximum_return() -> None:
+    limits = MarkowitzConstraints(
+        minimum_weights=(0.0, 0.0, 0.0),
+        maximum_weights=(0.7, 0.7, 0.7),
+        group_limits=(MarkowitzGroupLimit("Issuer A", (0, 1), 0.5),),
+    )
+    result = MarkowitzOptimizer.optimize(
+        ("A", "B", "C"), _returns(), limits, frontier_points=7
+    )
+    highest = result.efficient_frontier[-1]
+    assert sum(highest.weights) == pytest.approx(1.0, abs=1e-8)
+    assert highest.weights[0] + highest.weights[1] <= 0.500001
+    assert highest.expected_return >= result.minimum_variance.expected_return - 1e-9
