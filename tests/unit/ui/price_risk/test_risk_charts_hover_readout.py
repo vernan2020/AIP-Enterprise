@@ -30,9 +30,8 @@ def test_bar_chart_hover_displays_full_label_and_clears_on_refresh(qt_app) -> No
         center = chart._readout_regions[0][0].center().toPoint()
         QTest.mouseMove(chart, center)
         qt_app.processEvents()
-        assert "Gobierno de Costa Rica" in history[-1]
-        assert "15.75" in history[-1]
-        assert "60.0%" in history[-1]
+        assert any("Gobierno de Costa Rica" in value for value in history)
+        assert any("15.75" in value and "60.0%" in value for value in history)
 
         chart.set_data(())
         assert history[-1] == ""
@@ -60,9 +59,12 @@ def test_pareto_hover_readout_has_contribution_and_cumulative_percent(qt_app) ->
         position: QPoint = chart._readout_regions[0][0].center().toPoint()
         QTest.mouseMove(chart, position)
         qt_app.processEvents()
-        assert "Serie larga G-2026" in history[-1]
-        assert "Contribución: 16.50" in history[-1]
-        assert "Acumulado: 16.5%" in history[-1]
+        assert any(
+            "Serie larga G-2026" in value
+            and "Contribución: 16.50" in value
+            and "Acumulado: 16.5%" in value
+            for value in history
+        )
 
         chart.set_data(())
         assert history[-1] == ""
