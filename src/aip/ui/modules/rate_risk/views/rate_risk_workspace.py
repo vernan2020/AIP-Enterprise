@@ -5,10 +5,10 @@ from datetime import date
 
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
-from aip.ui.modules.rate_risk.controllers import RateRiskWorkspaceController
-from aip.ui.modules.rate_risk.views.source_diagnostics_rate_risk_view import RateRiskView
-from aip.ui.modules.rate_risk.views.regulatory_xml_panel import RegulatoryXMLPanel
 from aip.product.configured.irrbb.regulatory_financial_xml import RegulatoryFinancialXMLReader
+from aip.ui.modules.rate_risk.controllers import RateRiskWorkspaceController
+from aip.ui.modules.rate_risk.views.regulatory_xml_panel import RegulatoryXMLPanel
+from aip.ui.modules.rate_risk.views.source_diagnostics_rate_risk_view import RateRiskView
 
 
 class RateRiskWorkspace(QWidget):
