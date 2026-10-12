@@ -3,9 +3,7 @@ from __future__ import annotations
 from aip.product.demo.configuration.environment_loader import EnvironmentLoader
 
 
-def test_environment_loader_honors_existing_xml_confia_configuration(
-    tmp_path, monkeypatch
-) -> None:
+def test_environment_loader_honors_existing_xml_confia_configuration(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("AIP_XML_CONFIA_ROOT", str(tmp_path))
     monkeypatch.setenv("AIP_XML_CONFIA_ENABLED", "true")
 
