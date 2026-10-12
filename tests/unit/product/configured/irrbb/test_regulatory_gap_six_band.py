@@ -20,6 +20,7 @@ def _snapshot(*, missing: tuple[str, str] | None = None, mismatch: bool = False)
         "22120": 70,
         "22220": 20,
         "22320": 90,
+        "22300": 60,
     }
     for band in range(1, 7):
         for account, amount in values.items():
@@ -90,3 +91,36 @@ def test_blocked_input_does_not_create_an_aggregate_gap():
     result = build_regulatory_gap(blocked)
     assert result.status == "BLOCKED"
     assert result.rows == ()
+
+
+
+def test_reported_22300_mismatch_blocks_six_band_gap():
+    snapshot = _snapshot()
+    brechas = snapshot.files[0]
+    rows = tuple(
+        RegulatoryXMLRow(
+            row.record_id,
+            row.account_code,
+            row.catalog_code,
+            row.bucket_code,
+            Decimal("55") if row.account_code == "22300" and row.bucket_code == "3"
+            else row.amount,
+        )
+        for row in brechas.rows
+    )
+    mismatched = RegulatoryXMLPairResult(
+        snapshot.cutoff_date,
+        (
+            RegulatoryXMLFileResult(
+                brechas.key,
+                brechas.filename,
+                brechas.status,
+                rows=rows,
+            ),
+            snapshot.files[1],
+        ),
+    )
+    result = build_regulatory_gap(mismatched)
+    assert result.status == "BLOCKED"
+    assert not result.rows
+    assert any("22300 no concilia" in issue for issue in result.issues)
