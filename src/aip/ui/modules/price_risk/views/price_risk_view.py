@@ -94,6 +94,9 @@ class PriceRiskView(QWidget):
         self._rate_chart_grid: QGridLayout | None = None
         self._rate_chart_groups: tuple[QGroupBox, ...] = ()
         self._chart_columns = 2
+        self._rate_context_grid: QGridLayout | None = None
+        self._rate_context_blocks: tuple[QWidget, ...] = ()
+        self._rate_context_columns = 3
         self._build_ui()
         self._setup_worker()
         self._set_loading_state(initial=True)
@@ -287,6 +290,21 @@ class PriceRiskView(QWidget):
             self._reflow_chart_grid(self._rate_chart_grid, self._rate_chart_groups, columns)
         self._chart_columns = columns
 
+    def _arrange_rate_context(self, width: int) -> None:
+        grid = self._rate_context_grid
+        if grid is None or not self._rate_context_blocks:
+            return
+        columns = 1 if width < 740 else 3
+        if columns == self._rate_context_columns:
+            return
+        for block in self._rate_context_blocks:
+            grid.removeWidget(block)
+        for index, block in enumerate(self._rate_context_blocks):
+            grid.addWidget(block, index // columns, index % columns)
+        for column in range(3):
+            grid.setColumnStretch(column, 1 if column < columns else 0)
+        self._rate_context_columns = columns
+
     def resizeEvent(self, event) -> None:  # noqa: N802
         super().resizeEvent(event)
         width = event.size().width()
@@ -294,6 +312,7 @@ class PriceRiskView(QWidget):
         self._arrange_rate_kpis(width)
         self._arrange_quality_cards(width)
         self._arrange_visual_grids(width)
+        self._arrange_rate_context(width)
 
     @staticmethod
     def _new_chart_readout(object_name: str) -> QLabel:
@@ -542,29 +561,41 @@ class PriceRiskView(QWidget):
             "QFrame#rateRiskContextStrip {background:#F5F9FC; border:1px solid #D7E4ED; "
             "border-radius:8px;}"
         )
-        context_layout = QHBoxLayout(context)
+        context_layout = QGridLayout(context)
         context_layout.setContentsMargins(12, 6, 12, 6)
-        context_layout.setSpacing(24)
+        context_layout.setHorizontalSpacing(16)
+        context_layout.setVerticalSpacing(8)
+        context_blocks: list[QWidget] = []
         for key, caption in (
             ("worst_eve", "Peor ΔEVE aproximado"),
             ("shock_status", "Estado sensibilidad"),
         ):
-            block = QVBoxLayout()
+            context_card = QWidget()
+            block = QVBoxLayout(context_card)
+            block.setContentsMargins(0, 0, 0, 0)
             label = QLabel(caption)
             label.setStyleSheet("color:#6B7F8E; font-size:8px; border:none;")
+            label.setWordWrap(True)
             value = QLabel("-")
             value.setStyleSheet("color:#17324D; font-size:11px; font-weight:700; border:none;")
+            value.setWordWrap(True)
             self._rate_context_labels[key] = value
             block.addWidget(label)
             block.addWidget(value)
-            context_layout.addLayout(block)
-        context_layout.addStretch(1)
+            context_blocks.append(context_card)
+            context_layout.addWidget(context_card, 0, len(context_blocks) - 1)
         method = QLabel("SENSIBILIDAD APROXIMADA · DURACIÓN MODIFICADA")
         method.setStyleSheet(
             "color:#176895; font-size:8px; font-weight:700; padding:4px 8px; "
             "background:#EAF5FA; border:1px solid #CFE0EC; border-radius:6px;"
         )
-        context_layout.addWidget(method)
+        method.setWordWrap(True)
+        context_blocks.append(method)
+        context_layout.addWidget(method, 0, 2)
+        for column in range(3):
+            context_layout.setColumnStretch(column, 1)
+        self._rate_context_grid = context_layout
+        self._rate_context_blocks = tuple(context_blocks)
         layout.addWidget(context)
 
         charts = QGridLayout()
