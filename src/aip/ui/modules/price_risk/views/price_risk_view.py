@@ -6,6 +6,7 @@ from PySide6.QtCore import QObject, Qt, QThread, QTimer, Signal, Slot
 from PySide6.QtGui import QColor, QFont
 from PySide6.QtWidgets import (
     QAbstractItemView,
+    QFileDialog,
     QFrame,
     QGridLayout,
     QGroupBox,
@@ -13,6 +14,8 @@ from PySide6.QtWidgets import (
     QHeaderView,
     QLabel,
     QLineEdit,
+    QMessageBox,
+    QPushButton,
     QScrollArea,
     QTableWidget,
     QTableWidgetItem,
@@ -21,12 +24,14 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from aip.ui.modules.price_risk.models.price_risk_row import RiskChartPoint
 from aip.ui.modules.price_risk.presenters.price_risk_presenter import PriceRiskPresenter
 from aip.ui.modules.price_risk.viewmodels.price_risk_view_model import PriceRiskViewModel
 from aip.ui.modules.price_risk.views.portfolio_var_simulator_view import (
     PortfolioVaRSimulatorView,
 )
 from aip.ui.modules.price_risk.widgets.risk_charts import ParetoChartWidget, RiskBarChartWidget
+from aip.ui.services.export_service import ExcelSheet, TableExportService
 
 
 class _PriceRiskWorker(QObject):
@@ -138,6 +143,10 @@ class PriceRiskView(QWidget):
             "border:1px solid #73B3DD; border-radius:6px; font-weight:700;}"
         )
         header.addWidget(self._date_label)
+        self._export_module_action = QPushButton("Exportar módulo · Excel")
+        self._export_module_action.setObjectName("priceRiskExcelFullModule")
+        self._export_module_action.clicked.connect(self._export_module)
+        header.addWidget(self._export_module_action)
         root.addLayout(header)
 
         self._tabs = QTabWidget()
@@ -275,6 +284,7 @@ class PriceRiskView(QWidget):
             value_formatter=lambda value: f"{value:+.2f}%"
         )
         top_layout.addWidget(self._contribution_chart)
+        self._add_chart_export(top_layout, "contribution")
         analytics.addWidget(top_group, 0, 0)
 
         pareto_group = QGroupBox("Contribución acumulada · reconciliación al 100%")
@@ -282,6 +292,7 @@ class PriceRiskView(QWidget):
         pareto_layout = QVBoxLayout(pareto_group)
         self._pareto_chart = ParetoChartWidget()
         pareto_layout.addWidget(self._pareto_chart)
+        self._add_chart_export(pareto_layout, "pareto")
         analytics.addWidget(pareto_group, 0, 1)
 
         issuer_group = QGroupBox("Contribución al VeR por emisor")
@@ -289,6 +300,7 @@ class PriceRiskView(QWidget):
         issuer_layout = QVBoxLayout(issuer_group)
         self._issuer_chart = RiskBarChartWidget(value_formatter=lambda value: f"{value:+.2f}%")
         issuer_layout.addWidget(self._issuer_chart)
+        self._add_chart_export(issuer_layout, "issuer")
         analytics.addWidget(issuer_group, 1, 0)
 
         currency_group = QGroupBox("Distribución por moneda · Valor de Mercado VeR")
@@ -299,6 +311,7 @@ class PriceRiskView(QWidget):
             show_secondary=True,
         )
         currency_layout.addWidget(self._var_currency_chart)
+        self._add_chart_export(currency_layout, "var_currency")
         analytics.addWidget(currency_group, 1, 1)
         analytics.setColumnStretch(0, 1)
         analytics.setColumnStretch(1, 1)
@@ -314,6 +327,10 @@ class PriceRiskView(QWidget):
         self._table_search.textChanged.connect(self._filter_table)
         table_header.addWidget(self._table_search)
         table_header.addStretch(1)
+        export_table = QPushButton("Exportar tabla · Excel")
+        export_table.setObjectName("priceRiskExcelVarTable")
+        export_table.clicked.connect(self._export_var_table)
+        table_header.addWidget(export_table)
         table_layout.addLayout(table_header)
 
         self._table = QTableWidget()
@@ -415,6 +432,7 @@ class PriceRiskView(QWidget):
             show_secondary=True,
         )
         bucket_layout.addWidget(self._bucket_chart)
+        self._add_chart_export(bucket_layout, "dv01_bucket")
         charts.addWidget(bucket_group, 0, 0)
 
         currency_group = QGroupBox("DV01 por moneda · CRC equivalente")
@@ -425,6 +443,7 @@ class PriceRiskView(QWidget):
             show_secondary=True,
         )
         currency_layout.addWidget(self._currency_chart)
+        self._add_chart_export(currency_layout, "dv01_currency")
         charts.addWidget(currency_group, 0, 1)
 
         shock_group = QGroupBox("Sensibilidad a shocks paralelos de tasas · ΔEVE aproximado")
@@ -432,6 +451,7 @@ class PriceRiskView(QWidget):
         shock_layout = QVBoxLayout(shock_group)
         self._shock_chart = RiskBarChartWidget(value_formatter=lambda value: self._format_mm(value))
         shock_layout.addWidget(self._shock_chart)
+        self._add_chart_export(shock_layout, "rate_shock")
         charts.addWidget(shock_group, 1, 0)
 
         shock_table_group = QGroupBox("Detalle de escenarios de sensibilidad")
@@ -445,6 +465,10 @@ class PriceRiskView(QWidget):
         self._shock_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self._shock_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         shock_table_layout.addWidget(self._shock_table)
+        export_shocks = QPushButton("Exportar tabla · Excel")
+        export_shocks.setObjectName("priceRiskExcelShockTable")
+        export_shocks.clicked.connect(self._export_shock_table)
+        shock_table_layout.addWidget(export_shocks)
         charts.addWidget(shock_table_group, 1, 1)
         layout.addLayout(charts)
 
@@ -659,6 +683,112 @@ class PriceRiskView(QWidget):
         self._populate_var_table(vm)
         self._populate_shock_table(vm)
         self._filter_table(self._table_search.text())
+
+    def _add_chart_export(self, layout: QVBoxLayout, key: str) -> None:
+        button = QPushButton("Exportar datos · Excel")
+        button.setObjectName(f"priceRiskExcel_{key}")
+        button.clicked.connect(
+            lambda _checked=False, selected=key: self._export_chart(selected)
+        )
+        layout.addWidget(button, 0, Qt.AlignmentFlag.AlignRight)
+
+    def _chart_definitions(self) -> dict[str, tuple[str, tuple[RiskChartPoint, ...], str]]:
+        vm = self._view_model
+        return {
+            "contribution": ("Contribución al VeR", vm.var_contribution_points, "%"),
+            "pareto": ("Pareto VeR", vm.var_pareto_points, "%"),
+            "issuer": ("VeR por emisor", vm.issuer_contribution_points, "%"),
+            "var_currency": ("Valor mercado moneda", vm.currency_market_value_points, "CRC"),
+            "dv01_bucket": ("DV01 por tramo", vm.dv01_bucket_points, "CRC"),
+            "dv01_currency": ("DV01 por moneda", vm.dv01_currency_points, "CRC"),
+            "rate_shock": ("Sensibilidad tasas", vm.rate_shock_points, "CRC"),
+        }
+
+    @staticmethod
+    def _risk_chart_sheet(
+        title: str, points: tuple[RiskChartPoint, ...], unit: str, *, pareto: bool = False
+    ) -> ExcelSheet:
+        return ExcelSheet(
+            title=title,
+            headers=("Categoría", f"Valor ({unit})", "Valor secundario"),
+            rows=tuple((p.label, p.value, p.secondary_value) for p in points),
+            chart_title=title,
+            chart_type="line" if pareto else "bar",
+            unit=unit,
+        )
+
+    @staticmethod
+    def _visible_table_sheet(title: str, table: QTableWidget) -> ExcelSheet:
+        headers = tuple(
+            table.horizontalHeaderItem(i).text() if table.horizontalHeaderItem(i) else ""
+            for i in range(table.columnCount())
+        )
+        rows = tuple(
+            tuple(table.item(r, c).text() if table.item(r, c) else "" for c in range(table.columnCount()))
+            for r in range(table.rowCount())
+            if not table.isRowHidden(r)
+        )
+        return ExcelSheet(title=title, headers=headers, rows=rows)
+
+    def _export_sheets(self, title: str, sheets: tuple[ExcelSheet, ...]) -> None:
+        if not any(sheet.rows for sheet in sheets):
+            QMessageBox.information(self, "Sin datos", "No hay datos disponibles para exportar.")
+            return
+        destination, _filter = QFileDialog.getSaveFileName(
+            self, title, "AIP_Riesgo_Precio.xlsx", "Excel (*.xlsx)"
+        )
+        if not destination:
+            return
+        try:
+            TableExportService().export_workbook(
+                destination,
+                sheets=sheets,
+                metadata={
+                    "Módulo": "Riesgo de Precio · VeR y DV01",
+                    "Corte": self._view_model.valuation_date,
+                    "Estado": self._view_model.status,
+                    "Fuente": "Datos de la vista institucional de AIP",
+                    "Alcance": "Exportación de series y tablas de presentación; sin recálculo.",
+                    "Regla N/D": "No disponible no equivale a cero.",
+                },
+            )
+        except (OSError, ValueError) as exc:
+            QMessageBox.warning(self, "Exportación fallida", str(exc))
+
+    def _export_chart(self, key: str) -> None:
+        name, points, unit = self._chart_definitions()[key]
+        self._export_sheets(
+            f"Exportar {name}",
+            (self._risk_chart_sheet(name, points, unit, pareto=key == "pareto"),),
+        )
+
+    def _export_var_table(self) -> None:
+        self._export_sheets(
+            "Exportar contribución por título",
+            (self._visible_table_sheet("Títulos VeR", self._table),),
+        )
+
+    def _export_shock_table(self) -> None:
+        self._export_sheets(
+            "Exportar sensibilidad por shock",
+            (self._visible_table_sheet("Escenarios shocks", self._shock_table),),
+        )
+
+    def _export_module(self) -> None:
+        sheets = tuple(
+            self._risk_chart_sheet(
+                name, points, unit, pareto=key == "pareto"
+            )
+            for key, (name, points, unit) in self._chart_definitions().items()
+            if points
+        )
+        self._export_sheets(
+            "Exportar Riesgo de Precio",
+            sheets + (
+                self._visible_table_sheet("Títulos VeR", self._table),
+                self._visible_table_sheet("Escenarios shocks", self._shock_table),
+            ),
+        )
 
     def _populate_var_table(self, vm: PriceRiskViewModel) -> None:
         self._table.setSortingEnabled(False)
