@@ -25,6 +25,7 @@ jobs:
           - portfolio-ui
           - all-ui
           - portfolio-domain
+          - full-unit-teardown
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -46,4 +47,5 @@ jobs:
             portfolio-ui) pytest tests/unit/ui/portfolio -q -W error -o faulthandler_timeout=180 ;;
             all-ui) pytest tests/unit/ui -q -W error -o faulthandler_timeout=180 ;;
             portfolio-domain) pytest tests/unit/domain/portfolio -q -W error -o faulthandler_timeout=180 ;;
+            full-unit-teardown) PYTHONFAULTHANDLER=1 pytest tests/unit -vv -W error -o faulthandler_timeout=180 ;;
           esac
