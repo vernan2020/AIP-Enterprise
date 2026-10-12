@@ -63,10 +63,14 @@ class _ForecastLabWorker(QRunnable):
 
 
 class _ForecastPathChart(QWidget):
+    hover_readout_changed = Signal(str)
+
     def __init__(self) -> None:
         super().__init__()
         self._view_model = MacroForecastLabViewModel()
         self._tooltip_regions: list[tuple[QRectF, str]] = []
+        self._readout_regions: list[tuple[QRectF, str]] = []
+        self._last_readout = ""
         self.setMouseTracking(True)
         self.setMinimumHeight(280)
 
@@ -80,6 +84,7 @@ class _ForecastPathChart(QWidget):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         painter.fillRect(self.rect(), QColor("#FFFFFF"))
         self._tooltip_regions = []
+        self._readout_regions = []
         points = self._view_model.points
         if not points:
             painter.setPen(QColor("#718096"))
@@ -186,7 +191,16 @@ class _ForecastPathChart(QWidget):
                 ),
                 note="Proyección ensemble fuera de muestra; las bandas expresan incertidumbre.",
             )
-            self._tooltip_regions.append((point_hit_rect(screen_point, 10.0), tooltip))
+            region = point_hit_rect(screen_point, 10.0)
+            self._tooltip_regions.append((region, tooltip))
+            self._readout_regions.append(
+                (
+                    region,
+                    f"{self._view_model.indicator_label} · {item.period:%m/%Y} · "
+                    f"{self._format_value(item.forecast)} · "
+                    f"Banda 80%: {self._format_interval(item.lower_80, item.upper_80) or 'N/D'}",
+                )
+            )
         painter.setBrush(Qt.BrushStyle.NoBrush)
         painter.setPen(QPen(QColor("#005EB8"), 2.5))
         painter.drawPolyline(QPolygonF(forecast_points))
@@ -220,7 +234,21 @@ class _ForecastPathChart(QWidget):
 
     def mouseMoveEvent(self, event) -> None:  # noqa: N802
         show_chart_tooltip(self, event, self._tooltip_regions)
+        position = event.position()
+        readout = next(
+            (text for region, text in reversed(self._readout_regions) if region.contains(position)),
+            "",
+        )
+        if readout != self._last_readout:
+            self._last_readout = readout
+            self.hover_readout_changed.emit(readout)
         super().mouseMoveEvent(event)
+
+    def leaveEvent(self, event) -> None:  # noqa: N802
+        if self._last_readout:
+            self._last_readout = ""
+            self.hover_readout_changed.emit("")
+        super().leaveEvent(event)
 
     def _format_value(self, value: float) -> str:
         if self._view_model.indicator_code in {"FX_BUY", "FX_SELL"}:
@@ -338,6 +366,22 @@ class MacroForecastLabPanel(QWidget):
         trajectory_layout = QVBoxLayout(trajectory)
         self._chart = _ForecastPathChart()
         trajectory_layout.addWidget(self._chart, 1)
+        self._hover_readout = QLabel(
+            "Pase el cursor sobre un punto para consultar el pronóstico y su banda."
+        )
+        self._hover_readout.setObjectName("macroForecastHoverReadout")
+        self._hover_readout.setTextFormat(Qt.TextFormat.PlainText)
+        self._hover_readout.setWordWrap(True)
+        self._hover_readout.setStyleSheet(
+            "color:#17324D; background:#EAF4FC; border:1px solid #C7DDEB; "
+            "border-radius:6px; padding:6px 9px; font-weight:600;"
+        )
+        self._chart.hover_readout_changed.connect(
+            lambda value: self._hover_readout.setText(
+                value or "Pase el cursor sobre un punto para consultar el pronóstico y su banda."
+            )
+        )
+        trajectory_layout.addWidget(self._hover_readout)
         self._forecast_table = self._table(
             ["Horizonte", "Periodo", "Forecast", "Banda 80%", "Banda 95%"]
         )
