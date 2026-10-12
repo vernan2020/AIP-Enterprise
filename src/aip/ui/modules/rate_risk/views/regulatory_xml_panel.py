@@ -179,8 +179,8 @@ class RegulatoryXMLPanel(QWidget):
             ):
                 self._cell(self._gap_table, index, column, value)
         self._gap_notice.setText(
-            "Conciliado: 22310 = 22110 + 22210, 22320 = 22120 + 22220; "
-            "GAP = activos - pasivos. No es delta NII ni delta VEP."
+            "Conciliado: 22310 = 22110 + 22210; 22320 = 22120 + 22220; "
+            "22300 = 22310 - 22320. No es delta NII ni delta VEP."
             if gap.is_ready
             else "No disponible: " + " ".join(gap.issues[:4])
         )
