@@ -16,9 +16,7 @@ REGULATORY_BRECHA_BUCKETS: tuple[tuple[str, str], ...] = (
 )
 # Regulatory mother rows: assets 22310 = 22110 (MN) + 22210 (ME);
 # liabilities 22320 = 22120 (MN) + 22220 (ME).
-REGULATORY_GAP_ACCOUNTS = (
-    "22110", "22210", "22310", "22120", "22220", "22320"
-)
+REGULATORY_GAP_ACCOUNTS = ("22110", "22210", "22310", "22120", "22220", "22320")
 
 
 @dataclass(frozen=True, slots=True)
@@ -63,14 +61,9 @@ def build_regulatory_gap(snapshot: RegulatoryXMLPairResult) -> RegulatoryGapResu
     derived: list[RegulatoryGapBucket] = []
     cumulative = Decimal("0")
     for band, label in REGULATORY_BRECHA_BUCKETS:
-        missing = [
-            account for account in REGULATORY_GAP_ACCOUNTS
-            if (account, band) not in source
-        ]
+        missing = [account for account in REGULATORY_GAP_ACCOUNTS if (account, band) not in source]
         if missing:
-            issues.append(
-                f"Banda {band}: faltan cuentas oficiales: {', '.join(missing)}."
-            )
+            issues.append(f"Banda {band}: faltan cuentas oficiales: {', '.join(missing)}.")
             continue
         assets_mn, assets_me, assets = (
             source[("22110", band)],
@@ -88,9 +81,7 @@ def build_regulatory_gap(snapshot: RegulatoryXMLPairResult) -> RegulatoryGapResu
             issues.append(f"Banda {band}: pasivos MN+ME no concilian con 22320.")
         delta = assets - liabilities
         cumulative += delta
-        derived.append(
-            RegulatoryGapBucket(band, label, assets, liabilities, delta, cumulative)
-        )
+        derived.append(RegulatoryGapBucket(band, label, assets, liabilities, delta, cumulative))
 
     if issues or len(derived) != len(REGULATORY_BRECHA_BUCKETS):
         return RegulatoryGapResult("BLOCKED", issues=tuple(issues))
