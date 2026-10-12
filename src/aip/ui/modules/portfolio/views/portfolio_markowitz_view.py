@@ -121,11 +121,7 @@ class PortfolioMarkowitzView(QWidget):
 
     def bind_risk_comparison(self, result: ScenarioRiskComparison, *, cutoff: str) -> None:
         """Read-only view of externally audited scenario risk; no invented inputs."""
-        if (
-            not self._cutoff
-            or cutoff != self._cutoff
-            or result.cutoff.isoformat() != cutoff
-        ):
+        if not self._cutoff or cutoff != self._cutoff or result.cutoff.isoformat() != cutoff:
             raise ValueError("Scenario risk cutoff does not match active portfolio")
         self._scenario_risk = result
         self._scenario_risk_status.setText(

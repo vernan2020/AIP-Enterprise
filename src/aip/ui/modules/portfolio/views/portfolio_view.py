@@ -453,9 +453,7 @@ class PortfolioView(QWidget):
         if cutoff == self._view_model.summary.valuation_date:
             self._history.set_error(message or f"No fue posible calcular la frecuencia {sampling}")
 
-    def bind_verified_scenario_risk(
-        self, result: ScenarioRiskComparison, *, cutoff: str
-    ) -> None:
+    def bind_verified_scenario_risk(self, result: ScenarioRiskComparison, *, cutoff: str) -> None:
         """Only accept approved snapshot results, never descriptive portfolio rows."""
         if cutoff != str(self._view_model.summary.valuation_date):
             raise ValueError("Scenario risk cutoff must match active portfolio")
