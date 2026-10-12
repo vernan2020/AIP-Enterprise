@@ -247,9 +247,7 @@ class PriceRiskView(QWidget):
 
     @staticmethod
     def _update_chart_readout(label: QLabel, value: str) -> None:
-        label.setText(
-            value or "Pase el cursor sobre un gráfico para consultar el valor completo."
-        )
+        label.setText(value or "Pase el cursor sobre un gráfico para consultar el valor completo.")
 
     def _build_price_page(self) -> None:
         layout = QVBoxLayout(self._price_page)
