@@ -293,6 +293,10 @@ def test_var_scenario_fields_reflow_and_keep_period_and_status(qt_app) -> None:
                 item = grid.itemAtPosition(index // columns, index % columns)
                 assert item is not None
                 assert item.widget() is field
+            note_row = (len(fields) + columns - 1) // columns
+            note = grid.itemAtPosition(note_row, 0)
+            assert note is not None
+            assert note.widget() is view._diagnostic_label
             assert view._scenario_period.text() == original_period
             assert view._status_label.text() == original_status
         assert view._diagnostic_label.wordWrap()
