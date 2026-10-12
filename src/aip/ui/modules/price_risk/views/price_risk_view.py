@@ -27,8 +27,8 @@ from aip.ui.modules.price_risk.views.portfolio_var_simulator_view import (
     PortfolioVaRSimulatorView,
 )
 from aip.ui.modules.price_risk.widgets.risk_charts import ParetoChartWidget, RiskBarChartWidget
-
 from aip.ui.themes.institutional_white import InstitutionalWhiteDesign
+
 
 class _PriceRiskWorker(QObject):
     result_ready = Signal(object)

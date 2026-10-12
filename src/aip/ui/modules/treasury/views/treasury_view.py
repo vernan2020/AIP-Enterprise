@@ -21,8 +21,8 @@ from aip.ui.modules.treasury.models.treasury_row import TreasuryRow
 from aip.ui.modules.treasury.presenters.treasury_presenter import TreasuryPresenter
 from aip.ui.modules.treasury.viewmodels.treasury_view_model import TreasuryViewModel
 from aip.ui.modules.treasury.widgets.treasury_status_badge import TreasuryStatusBadge
-
 from aip.ui.themes.institutional_white import InstitutionalWhiteDesign
+
 
 class TreasuryView(QWidget):
     """Espacio de apoyo a decisiones de tesorería con datos certificados."""

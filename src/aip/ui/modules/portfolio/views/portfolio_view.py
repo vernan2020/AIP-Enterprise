@@ -35,8 +35,8 @@ from aip.ui.modules.portfolio.widgets.portfolio_dashboard_chart import (
 )
 from aip.ui.modules.portfolio.widgets.portfolio_filter_panel import PortfolioFilterPanel
 from aip.ui.modules.portfolio.widgets.portfolio_status_badge import PortfolioStatusBadge
-
 from aip.ui.themes.institutional_white import InstitutionalWhiteDesign
+
 
 class _PortfolioHistoryWorker(QObject):
     result_ready = Signal(int, str, str, object)

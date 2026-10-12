@@ -41,8 +41,8 @@ from aip.ui.modules.financial_analysis.views.financial_peer_chart import (
 from aip.ui.modules.financial_analysis.views.financial_statement_history_panel import (
     FinancialStatementHistoryPanel,
 )
-
 from aip.ui.themes.institutional_white import InstitutionalWhiteDesign
+
 
 class _ComparisonWorker(QObject):
     finished = Signal(object)

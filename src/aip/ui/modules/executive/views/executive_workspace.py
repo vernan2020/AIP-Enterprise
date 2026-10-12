@@ -21,8 +21,8 @@ from aip.ui.modules.executive.models.executive_row import ExecutiveRow
 from aip.ui.modules.executive.presenters.executive_presenter import ExecutivePresenter
 from aip.ui.modules.executive.viewmodels.executive_view_model import ExecutiveViewModel
 from aip.ui.modules.executive.widgets.executive_status_card import ExecutiveStatusCard
-
 from aip.ui.themes.institutional_white import InstitutionalWhiteDesign
+
 
 class ExecutiveWorkspace(QWidget):
     """Panel compacto de gestión para el entorno integrado AIP Hybrid."""
