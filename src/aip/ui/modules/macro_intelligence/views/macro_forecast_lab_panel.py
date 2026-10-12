@@ -76,6 +76,9 @@ class _ForecastPathChart(QWidget):
 
     def set_view_model(self, view_model: MacroForecastLabViewModel) -> None:
         self._view_model = view_model
+        self._readout_regions = []
+        self._last_readout = ""
+        self.hover_readout_changed.emit("")
         self.update()
 
     def paintEvent(self, event) -> None:  # noqa: N802
