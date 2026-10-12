@@ -135,6 +135,9 @@ class EnvironmentLoader:
                 "AIP_SQLSERVER_ENABLED",
                 "AIP_SQL_CONNECTOR_ENABLED",
                 "AIP_CURVES_ENABLED",
+                "AIP_XML_CONFIA_ROOT",
+                "AIP_XMLCONFIA_ROOT",
+                "AIP_XML_CONFIA_ENABLED",
             )
         )
         if execution_mode not in {"DEMO", "CONFIGURED"}:
