@@ -15,6 +15,7 @@ from aip.product.configured.configuration.configured_source_config import (
     SQLServerSourceConfig,
     SUGEFFinancialSourceConfig,
     VectorSourceConfig,
+    XMLConfiaSourceConfig,
 )
 from aip.product.demo.configuration.demo_config import DemoConfig
 from aip.product.demo.exceptions import DemoConfigurationError
@@ -155,6 +156,7 @@ class EnvironmentLoader:
         vector_source = self._read_vector_config()
         bccr_source = self._read_bccr_config()
         sugef_source = self._read_sugef_financial_config()
+        xml_confia_source = self._read_xml_confia_config()
         configured_source_config = ConfiguredSourceConfig(
             sql_server=SQLServerSourceConfig(
                 enabled=sql_source["enabled"],
@@ -210,6 +212,7 @@ class EnvironmentLoader:
                 token=bccr_source["token"],
             ),
             sugef_financial=SUGEFFinancialSourceConfig(**sugef_source),
+            xml_confia=xml_confia_source,
             diagnostic_mode=_parse_boolean_flag(
                 os.getenv("AIP_CONFIGURED_DIAGNOSTIC_MODE"), default=False
             ),
@@ -256,6 +259,7 @@ class EnvironmentLoader:
         vector_source = self._read_vector_config()
         bccr_source = self._read_bccr_config()
         sugef_source = self._read_sugef_financial_config()
+        xml_confia_source = self._read_xml_confia_config()
 
         return ConfiguredSourceConfig(
             sql_server=SQLServerSourceConfig(
@@ -312,6 +316,7 @@ class EnvironmentLoader:
                 token=bccr_source["token"],
             ),
             sugef_financial=SUGEFFinancialSourceConfig(**sugef_source),
+            xml_confia=xml_confia_source,
             diagnostic_mode=_parse_boolean_flag(
                 os.getenv("AIP_CONFIGURED_DIAGNOSTIC_MODE"),
                 default=False,
@@ -324,6 +329,19 @@ class EnvironmentLoader:
                 "icl_max_prior_days": int(os.getenv("AIP_ICL_MAX_PRIOR_DAYS", "7")),
                 "data_cutoff_date": effective_cutoff,
             },
+        )
+
+    def _read_xml_confia_config(self) -> XMLConfiaSourceConfig:
+        """Honor the existing configured XML root; do not invent institutional paths."""
+        root = _normalize_path_value(
+            os.getenv("AIP_XML_CONFIA_ROOT") or os.getenv("AIP_XMLCONFIA_ROOT")
+        )
+        return XMLConfiaSourceConfig(
+            enabled=_parse_boolean_flag(
+                os.getenv("AIP_XML_CONFIA_ENABLED"),
+                default=bool(root),
+            ),
+            root=root,
         )
 
     def _read_sql_source_config(self) -> dict[str, Any]:
