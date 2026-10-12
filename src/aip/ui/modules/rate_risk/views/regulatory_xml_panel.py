@@ -75,6 +75,17 @@ class RegulatoryXMLPanel(QWidget):
     def _cell(table: QTableWidget, row: int, column: int, value: object) -> None:
         table.setItem(row, column, QTableWidgetItem(str(value)))
 
+    def set_unconfigured(self) -> None:
+        self._snapshot = None
+        self._headline.setText("XML Brechas y Calce: fuente no configurada")
+        self._files.setRowCount(0)
+        self._rows.setRowCount(0)
+        self._account_selector.clear()
+        self._detail_note.setText(
+            "Revise la fuente XML CONFÍA ya documentada en AIP. "
+            "No hay datos regulatorios cargados; no se asumen valores cero."
+        )
+
     def set_snapshot(self, snapshot: RegulatoryXMLPairResult) -> None:
         self._files.setRowCount(len(snapshot.files))
         for index, item in enumerate(snapshot.files):
