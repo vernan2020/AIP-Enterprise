@@ -3,7 +3,9 @@ from __future__ import annotations
 from dataclasses import replace
 from datetime import date
 from decimal import Decimal
+from pathlib import Path
 
+import openpyxl
 import pytest
 
 from aip.domain.portfolio.services.portfolio_capital_consumption_service import (
@@ -226,3 +228,66 @@ def test_read_file_requires_a_dated_unambiguous_name(monkeypatch) -> None:
             cutoff=CUTOFF,
         )
     assert calls == [CUTOFF]
+
+
+def test_real_xlsx_reader_boundary_supplies_dated_native_risk_inputs(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "02-10-2026.xlsx"
+    workbook = openpyxl.Workbook()
+    sheet = workbook.active
+    sheet.title = "Cartera"
+    sheet.append(
+        [
+            "#",
+            "Emisor",
+            "Moneda",
+            "Código Producto",
+            "Clasificación",
+            "Valor Mercado Colonizado",
+            "ISIN",
+            "Saldo Principal",
+            "Saldo Valor Mercado",
+            "Saldo Valor Compra",
+            "Tasa Nominal",
+            "Periodicidad",
+            "TIR",
+            "Fecha Vencimiento",
+        ]
+    )
+    for serial, issuer, classification, market, isin in (
+        (1, "G", "D.V GOBIERNO", 600, "TEST-A"),
+        (2, "Issuer B", "PRIVADA", 400, "TEST-B"),
+    ):
+        sheet.append(
+            [
+                serial,
+                issuer,
+                "CRC",
+                "BONO",
+                classification,
+                market,
+                isin,
+                market,
+                market,
+                market,
+                5,
+                "semestral",
+                5.5,
+                date(2028, 10, 2),
+            ]
+        )
+    workbook.save(path)
+    workbook.close()
+
+    evidence = InstitutionalMasterScenarioRiskAdapter.read_file(
+        path,
+        _positions(),
+        {"A": 2, "B": 3},
+        cutoff=CUTOFF,
+    )
+    assert evidence.total_market_value_crc == Decimal("1000")
+    assert tuple(row.position_key for row in evidence.market_risks) == ("A", "B")
+    assert evidence.market_risks[0].eligible_hqla_value_crc == Decimal("540.00")
+    assert evidence.market_risks[1].dv01_crc > 0
+    assert "row:2" in evidence.market_risks[0].market_value_source

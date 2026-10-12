@@ -168,7 +168,7 @@ def test_fails_closed_before_file_access(update: dict, message: str, tmp_path: P
         )
 
 
-@pytest.mark.parametrize("filename", ("../outside.xlsx", "other\\file.xlsx", "unsafe.csv", ""))
+@pytest.mark.parametrize("filename", ("../outside.xlsx", r"other\\file.xlsx", "unsafe.csv", ""))
 def test_untrusted_source_filename_is_rejected(tmp_path: Path, filename: str) -> None:
     snapshot = _snapshot(str(tmp_path))
     snapshot["portfolio_master"]["file_name"] = filename
