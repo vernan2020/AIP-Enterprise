@@ -325,9 +325,7 @@ class PortfolioView(QWidget):
         self._currency_chart.set_data(view_model.currency_points)
         self._currency_chart.set_center_value(market_value_display)
         self._valuation_comparison.bind(view_model.valuation_comparison, summary.valuation_date)
-        self._capital_calculator.bind_positions(
-            view_model.rows, cutoff=str(summary.valuation_date)
-        )
+        self._capital_calculator.bind_positions(view_model.rows, cutoff=str(summary.valuation_date))
         self._dashboard_note.setText(
             f"Vista ejecutiva · Calidad de datos: {view_model.data_quality_status} · "
             f"MIL elegible: {summary.mil_eligible_percent} · "
