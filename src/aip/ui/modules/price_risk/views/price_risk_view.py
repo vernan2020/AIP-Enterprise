@@ -97,6 +97,9 @@ class PriceRiskView(QWidget):
         self._rate_context_grid: QGridLayout | None = None
         self._rate_context_blocks: tuple[QWidget, ...] = ()
         self._rate_context_columns = 3
+        self._scenario_grid: QGridLayout | None = None
+        self._scenario_fields: tuple[QWidget, ...] = ()
+        self._scenario_columns = 3
         self._build_ui()
         self._setup_worker()
         self._set_loading_state(initial=True)
@@ -305,6 +308,21 @@ class PriceRiskView(QWidget):
             grid.setColumnStretch(column, 1 if column < columns else 0)
         self._rate_context_columns = columns
 
+    def _arrange_scenario_fields(self, width: int) -> None:
+        grid = self._scenario_grid
+        if grid is None or not self._scenario_fields:
+            return
+        columns = 1 if width < 800 else 3
+        if columns == self._scenario_columns:
+            return
+        for field in self._scenario_fields:
+            grid.removeWidget(field)
+        for index, field in enumerate(self._scenario_fields):
+            grid.addWidget(field, index // columns, index % columns)
+        for column in range(3):
+            grid.setColumnStretch(column, 1 if column < columns else 0)
+        self._scenario_columns = columns
+
     def resizeEvent(self, event) -> None:  # noqa: N802
         super().resizeEvent(event)
         width = event.size().width()
@@ -313,6 +331,7 @@ class PriceRiskView(QWidget):
         self._arrange_quality_cards(width)
         self._arrange_visual_grids(width)
         self._arrange_rate_context(width)
+        self._arrange_scenario_fields(width)
 
     @staticmethod
     def _new_chart_readout(object_name: str) -> QLabel:
@@ -419,13 +438,28 @@ class PriceRiskView(QWidget):
             "color:#566D7C; font-size:9px; padding:5px 8px; "
             "background:#F7F9FB; border:1px solid #E2E8EE; border-radius:5px;"
         )
-        scenario_layout.addWidget(QLabel("Escenario"), 0, 0)
-        scenario_layout.addWidget(self._scenario_label, 0, 1)
-        scenario_layout.addWidget(QLabel("Ventana histórica"), 0, 2)
-        scenario_layout.addWidget(self._scenario_period, 0, 3)
-        scenario_layout.addWidget(QLabel("Estado"), 1, 0)
-        scenario_layout.addWidget(self._status_label, 1, 1)
-        scenario_layout.addWidget(self._diagnostic_label, 1, 2, 1, 2)
+        scenario_fields: list[QWidget] = []
+        for caption, value in (
+            ("Escenario", self._scenario_label),
+            ("Ventana histórica", self._scenario_period),
+            ("Estado", self._status_label),
+        ):
+            field = QWidget()
+            field_layout = QVBoxLayout(field)
+            field_layout.setContentsMargins(2, 2, 2, 2)
+            field_layout.setSpacing(3)
+            heading = QLabel(caption)
+            heading.setStyleSheet("color:#718096; font-size:9px;")
+            value.setWordWrap(True)
+            field_layout.addWidget(heading)
+            field_layout.addWidget(value)
+            scenario_layout.addWidget(field, 0, len(scenario_fields))
+            scenario_fields.append(field)
+        scenario_layout.addWidget(self._diagnostic_label, 1, 0, 1, 3)
+        for column in range(3):
+            scenario_layout.setColumnStretch(column, 1)
+        self._scenario_grid = scenario_layout
+        self._scenario_fields = tuple(scenario_fields)
         layout.addWidget(scenario_group)
 
         analytics = QGridLayout()
