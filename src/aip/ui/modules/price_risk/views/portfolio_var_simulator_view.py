@@ -6,6 +6,7 @@ from PySide6.QtCore import QObject, Qt, QThread, Signal, Slot
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QAbstractItemView,
+    QApplication,
     QComboBox,
     QDoubleSpinBox,
     QFrame,
@@ -63,8 +64,15 @@ class PortfolioVaRSimulatorView(QWidget):
         self._busy = False
         self._closing = False
         self._result_labels: dict[str, QLabel] = {}
+        self._thread: QThread | None = None
+        self._worker: _SimulationWorker | None = None
         self._build_ui()
-        self._setup_worker()
+        # Do not start a simulation thread just by opening Price Risk: configured
+        # preflight can fail before the first simulation and Qt then tears down
+        # a still-running child QThread.
+        app = QApplication.instance()
+        if app is not None:
+            app.aboutToQuit.connect(self.shutdown)
 
     @staticmethod
     def _group_style() -> str:
@@ -244,6 +252,8 @@ class PortfolioVaRSimulatorView(QWidget):
         return card
 
     def _setup_worker(self) -> None:
+        if self._closing or (self._thread is not None and self._thread.isRunning()):
+            return
         self._thread = QThread(self)
         self._thread.setObjectName("portfolioVaRSimulationWorkerThread")
         self._worker = _SimulationWorker(self._presenter)
@@ -392,8 +402,9 @@ class PortfolioVaRSimulatorView(QWidget):
 
     @Slot(bool)
     def _calculate(self, _checked: bool = False) -> None:
-        if self._busy or not self._scenario:
+        if self._busy or self._closing or not self._scenario:
             return
+        self._setup_worker()
         self._busy = True
         self._status.setText("Recalculando 500 escenarios históricos para el portafolio simulado…")
         self._status.setStyleSheet("color:#005EB8; font-weight:700;")
@@ -478,12 +489,16 @@ class PortfolioVaRSimulatorView(QWidget):
         self._amount.setEnabled(not self._busy)
 
     def shutdown(self) -> None:
+        if self._closing:
+            return
         self._closing = True
-        thread = getattr(self, "_thread", None)
+        thread = self._thread
         if thread is not None and thread.isRunning():
             thread.requestInterruption()
             thread.quit()
-            thread.wait(30000)
+            # A live QThread must not be destroyed while a calculation is
+            # executing. Join it before the application releases its parent.
+            thread.wait()
 
     @property
     def scenario_count(self) -> int:
