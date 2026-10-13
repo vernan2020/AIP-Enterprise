@@ -63,6 +63,22 @@ def test_table_csv_export_escapes_formulas_and_quotes(qt_app, tmp_path) -> None:
         qt_app.processEvents()
 
 
+def test_table_csv_export_preserves_signed_rate_shocks(qt_app, tmp_path) -> None:
+    table = QTableWidget(2, 1)
+    table.setHorizontalHeaderLabels(["Shock"])
+    try:
+        table.setItem(0, 0, QTableWidgetItem("-200 pb"))
+        table.setItem(1, 0, QTableWidgetItem("+200 pb"))
+        path = tmp_path / "rate-shocks.csv"
+        assert export_table_csv(table, path) == 2
+        with path.open(encoding="utf-8-sig", newline="") as stream:
+            exported = list(csv.reader(stream, delimiter=";"))
+        assert exported == [["Shock"], ["-200 pb"], ["+200 pb"]]
+    finally:
+        table.close()
+        qt_app.processEvents()
+
+
 def test_table_csv_export_preserves_multiline_text(qt_app, tmp_path) -> None:
     table = QTableWidget(1, 1)
     table.setHorizontalHeaderLabels(["Trazabilidad"])

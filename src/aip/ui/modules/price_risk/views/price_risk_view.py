@@ -77,6 +77,8 @@ class PriceRiskView(QWidget):
         self._refresh_pending = False
         self._refresh_pending_force = False
         self._closing = False
+        self._table: QTableWidget
+        self._shock_table: QTableWidget
         self._kpi_labels: dict[str, QLabel] = {}
         self._quality_labels: dict[str, QLabel] = {}
         self._bucket_labels: dict[str, QLabel] = {}

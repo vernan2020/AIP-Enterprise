@@ -121,6 +121,7 @@ class FinancialAnalysisView(QWidget):
         self.setObjectName("financialAnalysisWorkspace")
         self._presenter = presenter or FinancialAnalysisPresenter()
         self._view_model = FinancialAnalysisViewModel()
+        self._statement_table: QTableWidget
         self._kpi_values: dict[str, QLabel] = {}
         self._kpi_changes: dict[str, QLabel] = {}
         self._kpi_grid: QGridLayout | None = None
