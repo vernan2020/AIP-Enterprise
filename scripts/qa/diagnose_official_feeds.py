@@ -1,0 +1,176 @@
+"""Read-only, credential-safe operational diagnosis of official SUGEF and BCCR.
+
+Only prints statuses and record counts. It neither copies databases nor logs
+tokens, emails, entity names, source URLs, HTTP bodies or request payloads.
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+from dataclasses import replace
+from datetime import date, timedelta
+
+from aip.integration.bccr.providers.urllib_http_provider import UrllibHTTPProvider
+from aip.product.configured.readers.sugef_financial_api_client import (
+    SUGEFFinancialApiClient,
+)
+from aip.product.demo.configuration.environment_loader import EnvironmentLoader
+
+
+def _outcome(error: Exception) -> str:
+    """No exception text: URLs and proxy diagnostics can contain private data."""
+    from urllib.error import HTTPError, URLError
+
+    if isinstance(error, HTTPError):
+        return f"HTTP {error.code}"
+    if isinstance(error, URLError):
+        return "RED/TLS/DNS NO DISPONIBLE"
+    if isinstance(error, TimeoutError):
+        return "TIMEOUT"
+    if isinstance(error, OSError):
+        return "ERROR DE RED O SISTEMA"
+    if isinstance(error, ValueError):
+        return "RESPUESTA NO INTERPRETABLE"
+    return f"ERROR {type(error).__name__}"
+
+
+def _records(payload: object, expected_key: str) -> int:
+    """Return only the count of records from an official public response."""
+    if not isinstance(payload, dict):
+        return 0
+    if payload.get("tieneError") is True:
+        return 0
+    value = payload.get(expected_key)
+    if isinstance(value, list):
+        return len(value)
+    # Older API variants use a differently cased list name.
+    for key, value in payload.items():
+        if key.casefold() == expected_key.casefold() and isinstance(value, list):
+            return len(value)
+    return 0
+
+
+def _bccr_probe(config: object, *, target_date: date) -> str:
+    token = getattr(config, "token", None)
+    if not token:
+        return "BCCR: CREDENCIAL NO VISIBLE EN ESTA SESIÓN (NO SE CONSULTÓ)"
+    from aip.integration.bccr.configuration.bccr_config import BCCRConfig
+    from aip.integration.bccr.connector.rest_client import BCCRRestClient
+
+    try:
+        client = BCCRRestClient(
+            config=BCCRConfig(
+                base_url=getattr(config, "base_url", None) or "https://apim.bccr.fi.cr",
+                timeout_seconds=12.0,
+                token=token,
+            ),
+            provider=UrllibHTTPProvider(),
+        )
+        request_url = client.build_chart_url(
+            chart_code="1",
+            from_date=(target_date - timedelta(days=14)).strftime("%Y/%m/%d"),
+            to_date=target_date.strftime("%Y/%m/%d"),
+        )
+        # A single request, no exponential retries; identical credential/header
+        # contract to the production BCCRRestClient.
+        response = UrllibHTTPProvider().get(
+            request_url,
+            timeout=12.0,
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Accept": "application/json",
+                "User-Agent": "Mozilla/5.0",
+            },
+        )
+        status = int(response.get("status_code", 0))
+        body = response.get("body")
+        contains_data = bool(body) if isinstance(body, (dict, list)) else False
+        return (
+            f"BCCR cuadro 1: HTTP {status}; "
+            f"respuesta JSON {'CON DATOS' if contains_data else 'SIN DATOS'}"
+        )
+    except Exception as exc:
+        return f"BCCR cuadro 1: {_outcome(exc)}"
+
+
+def _sugef_probe(config: object, *, target_date: date) -> tuple[str, ...]:
+    if not getattr(config, "enabled", False) or not getattr(config, "api_enabled", False):
+        return ("SUGEF: API DESHABILITADA EN CONFIGURACIÓN EFECTIVA",)
+    codes = getattr(config, "api_entity_codes", ())
+    if not codes:
+        return ("SUGEF: SIN CÓDIGO DE ENTIDAD PARA CONSULTA",)
+    api = SUGEFFinancialApiClient(
+        replace(config, api_timeout_seconds=12.0, api_retries=0)
+    )
+    period = target_date.strftime("%Y%m01")
+    reports = (
+        ("BALANZA", "ReporteBalanzaComprobacionEntidad", "listaBalanzaComprobacionEntidad"),
+        ("BALANCE", "ReporteBalanceSituacionAnalisisFinancieroEntidad", "listaBalanceSituacionAnalisisFinancieroEntidad"),
+        ("RESULTADOS", "ReporteEstadoResultadosAnalisisFinancieroEntidad", "listaEstadoResultadosAnalisisFinancieroEntidad"),
+    )
+    messages: list[str] = []
+    for label, report, key in reports:
+        try:
+            payload = {
+                "parametrosEntidad": {
+                    "codigoEntidad": codes[0],
+                    "periodos": period,
+                    "codigoCuenta": "",
+                }
+            }
+            result = api._post_json(api._endpoint(report), payload)
+            count = _records(result, key)
+            error = bool(result.get("tieneError"))
+            messages.append(
+                f"SUGEF {label} {target_date:%Y-%m}: "
+                f"{'ERROR DE RESPUESTA' if error else 'HTTP OK'}; {count} registros"
+            )
+        except Exception as exc:
+            messages.append(
+                f"SUGEF {label} {target_date:%Y-%m}: {_outcome(exc)}"
+            )
+    return tuple(messages)
+
+
+def diagnose(*, period: date, live: bool) -> list[str]:
+    env = os.environ
+    config = EnvironmentLoader().load_source_config()
+    status = [
+        "AIP CONFIGURED - DIAGNÓSTICO OFICIAL SIN CAMBIOS",
+        f"Corte SUGEF consultado: {period:%Y-%m}",
+        "BCCR token: " + ("PRESENTE" if config.bccr.token else "NO VISIBLE"),
+        "BCCR conector: " + ("HABILITADO" if config.bccr.enabled else "DESHABILITADO"),
+        "SUGEF API: " + ("HABILITADA" if config.sugef_financial.api_enabled else "DESHABILITADA"),
+        "SUGEF entidad: "
+        + ("CONFIGURADA" if config.sugef_financial.api_entity_codes else "NO CONFIGURADA"),
+        "Configuración local: "
+        + ("VARIABLE DEFINIDA" if env.get("AIP_RUNTIME_LOCAL_CMD") else "SIN OVERRIDE EXTERNO"),
+    ]
+    if not live:
+        return status + ["Pruebas de red omitidas; utilice --live para verificar fuentes oficiales."]
+    if config.bccr.enabled:
+        status.append(_bccr_probe(config.bccr, target_date=date.today()))
+    status.extend(_sugef_probe(config.sugef_financial, target_date=period))
+    status.append("FIN - nunca se guardaron credenciales ni respuestas.")
+    return status
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Diagnóstico seguro BCCR y SUGEF")
+    parser.add_argument("--live", action="store_true", help="Consultar APIs con credenciales configuradas")
+    parser.add_argument("--period", default="2026-09", help="Período SUGEF YYYY-MM")
+    args = parser.parse_args(argv)
+    try:
+        period = date.fromisoformat(args.period + "-01")
+        for line in diagnose(period=period, live=args.live):
+            print(line)
+    except Exception as exc:
+        # Never include raw exception messages from URL/config loading.
+        print("No se completó el diagnóstico: " + _outcome(exc))
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
