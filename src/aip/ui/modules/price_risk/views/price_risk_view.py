@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
     QHeaderView,
     QLabel,
     QLineEdit,
+    QPushButton,
     QScrollArea,
     QTableWidget,
     QTableWidgetItem,
@@ -27,6 +28,7 @@ from aip.ui.modules.price_risk.views.portfolio_var_simulator_view import (
     PortfolioVaRSimulatorView,
 )
 from aip.ui.modules.price_risk.widgets.risk_charts import ParetoChartWidget, RiskBarChartWidget
+from aip.ui.widgets.table_csv_export import save_table_csv_dialog
 
 
 class _PriceRiskWorker(QObject):
@@ -530,6 +532,19 @@ class PriceRiskView(QWidget):
         self._table_search.textChanged.connect(self._filter_table)
         table_header.addWidget(self._table_search)
         table_header.addStretch(1)
+        self._export_positions_button = QPushButton("Exportar CSV")
+        self._export_positions_button.setToolTip(
+            "Exportar las posiciones VeR visibles, con los valores de la tabla, a CSV para Excel."
+        )
+        self._export_positions_button.clicked.connect(
+            lambda: save_table_csv_dialog(
+                self,
+                self._table,
+                "aip-var-posiciones.csv",
+                visible_rows_only=True,
+            )
+        )
+        table_header.addWidget(self._export_positions_button)
         table_layout.addLayout(table_header)
 
         self._table = QTableWidget()
@@ -669,6 +684,16 @@ class PriceRiskView(QWidget):
         shock_table_group = QGroupBox("Detalle de escenarios de sensibilidad")
         shock_table_group.setStyleSheet(self._group_style())
         shock_table_layout = QVBoxLayout(shock_table_group)
+        self._export_shock_button = QPushButton("Exportar CSV")
+        self._export_shock_button.setToolTip(
+            "Exportar los escenarios de shock de tasas y sensibilidad a CSV para Excel."
+        )
+        self._export_shock_button.clicked.connect(
+            lambda: save_table_csv_dialog(self, self._shock_table, "aip-dv01-shocks.csv")
+        )
+        shock_table_layout.addWidget(
+            self._export_shock_button, alignment=Qt.AlignmentFlag.AlignRight
+        )
         self._shock_table = QTableWidget(0, 3)
         self._shock_table.setHorizontalHeaderLabels(
             ["Shock", "ΔEVE aproximado", "Valor de Mercado sensibilizado"]

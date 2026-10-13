@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+import csv
 from decimal import Decimal
 
-from PySide6.QtWidgets import QTabWidget
+from PySide6.QtWidgets import QTableWidgetItem, QTabWidget
 
 from aip.ui.modules.price_risk.models.price_risk_row import RateShockViewRow, RiskChartPoint
 from aip.ui.modules.price_risk.viewmodels.price_risk_view_model import PriceRiskViewModel
 from aip.ui.modules.price_risk.views.price_risk_view import PriceRiskView
+from aip.ui.widgets.table_csv_export import export_table_csv
 
 
 class _StubPresenter:
@@ -300,6 +302,50 @@ def test_var_scenario_fields_reflow_and_keep_period_and_status(qt_app) -> None:
             assert view._scenario_period.text() == original_period
             assert view._status_label.text() == original_status
         assert view._diagnostic_label.wordWrap()
+    finally:
+        view.close()
+        qt_app.processEvents()
+
+
+def test_var_and_dv01_csv_actions_are_available(qt_app, tmp_path) -> None:
+    view = PriceRiskView(_StubPresenter())  # type: ignore[arg-type]
+    try:
+        view._bind_view_model(_view_model())
+        assert view._export_positions_button.text() == "Exportar CSV"
+        assert view._export_shock_button.text() == "Exportar CSV"
+        destination = tmp_path / "rate-shocks.csv"
+        count = export_table_csv(view._shock_table, destination)
+        assert count == 2
+        with destination.open(encoding="utf-8-sig", newline="") as stream:
+            exported = list(csv.reader(stream, delimiter=";"))
+        assert exported[0] == [
+            "Shock",
+            "ΔEVE aproximado",
+            "Valor de Mercado sensibilizado",
+        ]
+        assert exported[1][0] == "-200 pb"
+        assert exported[2][0] == "+200 pb"
+    finally:
+        view.close()
+        qt_app.processEvents()
+
+
+def test_var_csv_export_respects_position_filters(qt_app, tmp_path) -> None:
+    view = PriceRiskView(_StubPresenter())  # type: ignore[arg-type]
+    try:
+        table = view._table
+        table.setSortingEnabled(False)
+        table.setRowCount(2)
+        table.setItem(0, 0, QTableWidgetItem("CRG0001"))
+        table.setItem(1, 0, QTableWidgetItem("CRG0002"))
+        view._table_search.setText("CRG0001")
+        assert table.isRowHidden(1)
+        destination = tmp_path / "var-posiciones.csv"
+        assert export_table_csv(table, destination, visible_rows_only=True) == 1
+        with destination.open(encoding="utf-8-sig", newline="") as stream:
+            exported = list(csv.reader(stream, delimiter=";"))
+        assert len(exported) == 2
+        assert exported[1][0] == "CRG0001"
     finally:
         view.close()
         qt_app.processEvents()
