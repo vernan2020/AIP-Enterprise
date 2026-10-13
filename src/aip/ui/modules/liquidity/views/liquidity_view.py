@@ -467,6 +467,9 @@ class LiquidityView(QWidget):
         self._presenter = presenter or LiquidityPresenter()
         self._view_model = self._presenter.build_view_model()
         self._kpis: dict[str, QLabel] = {}
+        self._kpi_grid: QGridLayout | None = None
+        self._kpi_cards: tuple[QFrame, ...] = ()
+        self._kpi_columns = 6
         self._build_ui()
         self.bind_view_model(self._view_model)
 
@@ -494,7 +497,9 @@ class LiquidityView(QWidget):
     def _metric_card(self, key: str, title: str, helper: str) -> QFrame:
         card = QFrame()
         card.setObjectName("liquidityMetricCard")
-        card.setMinimumHeight(76)
+        card.setMinimumHeight(104)
+        card.setAccessibleName(title)
+        card.setToolTip(f"{title}: {helper}")
         card.setStyleSheet(
             "QFrame#liquidityMetricCard {"
             "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
@@ -506,15 +511,20 @@ class LiquidityView(QWidget):
         layout.setContentsMargins(10, 7, 10, 7)
         layout.setSpacing(2)
         caption = QLabel(title)
-        caption.setStyleSheet("color:#DDF4FF; font-size:9px; font-weight:600; border:none;")
+        caption.setWordWrap(True)
+        caption.setStyleSheet("color:#DDF4FF; font-size:10pt; font-weight:600; border:none;")
         value = QLabel("-")
         font = QFont()
         font.setPointSize(12)
         font.setBold(True)
         value.setFont(font)
+        value.setWordWrap(True)
+        value.setAccessibleName(f"Valor de {title}")
+        value.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         value.setStyleSheet("color:#FFFFFF; border:none;")
         hint = QLabel(helper)
-        hint.setStyleSheet("color:#CBEAF8; font-size:8px; border:none;")
+        hint.setWordWrap(True)
+        hint.setStyleSheet("color:#CBEAF8; font-size:9pt; border:none;")
         layout.addWidget(caption)
         layout.addWidget(value)
         layout.addWidget(hint)
@@ -559,14 +569,18 @@ class LiquidityView(QWidget):
             ("maturity30", "Principal ≤30 días", "Flujo contractual de inversiones"),
             ("coupon30", "Cupones ≤30 días", "Ingreso contractual/proyectado"),
         )
+        cards: list[QFrame] = []
         for index, definition in enumerate(definitions):
             card = self._metric_card(*definition)
+            cards.append(card)
             if index < 6:
                 kpis.addWidget(card, 0, index)
             elif index == 6:
                 kpis.addWidget(card, 1, 0, 1, 3)
             else:
                 kpis.addWidget(card, 1, 3, 1, 3)
+        self._kpi_grid = kpis
+        self._kpi_cards = tuple(cards)
         for column in range(6):
             kpis.setColumnStretch(column, 1)
         root.addLayout(kpis)
@@ -589,6 +603,36 @@ class LiquidityView(QWidget):
         self._status.setWordWrap(True)
         self._status.setStyleSheet("color:#617386; padding:3px 2px;")
         root.addWidget(self._status)
+
+    @staticmethod
+    def _kpi_columns_for_width(width: int) -> int:
+        if width < 780:
+            return 2
+        if width < 1250:
+            return 4
+        return 6
+
+    def _arrange_kpis(self, width: int) -> None:
+        grid = self._kpi_grid
+        if grid is None:
+            return
+        columns = self._kpi_columns_for_width(width)
+        if columns == self._kpi_columns:
+            return
+        for card in self._kpi_cards:
+            grid.removeWidget(card)
+        for index, card in enumerate(self._kpi_cards):
+            if columns == 6 and index >= 6:
+                grid.addWidget(card, 1, (index - 6) * 3, 1, 3)
+            else:
+                grid.addWidget(card, index // columns, index % columns)
+        for column in range(6):
+            grid.setColumnStretch(column, 1 if column < columns else 0)
+        self._kpi_columns = columns
+
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        self._arrange_kpis(event.size().width())
 
     def _build_summary_tab(self) -> None:
         page = QWidget()

@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QPushButton,
+    QScrollArea,
     QVBoxLayout,
     QWidget,
 )
@@ -45,13 +46,28 @@ class HomeWorkspace(QWidget):
         self.setObjectName("homeWorkspace")
         self._application_factory = application_factory
         self._context_labels: dict[str, QLabel] = {}
+        self._module_grid: QGridLayout | None = None
+        self._module_cards: tuple[QFrame, ...] = ()
+        self._module_columns = 3
+        self._context_grid: QGridLayout | None = None
+        self._context_cards: tuple[QFrame, ...] = ()
+        self._context_columns = 4
         self._build_ui()
         self.refresh()
 
     def _build_ui(self) -> None:
-        root = QVBoxLayout(self)
+        shell = QVBoxLayout(self)
+        shell.setContentsMargins(0, 0, 0, 0)
+        shell.setSpacing(0)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        body = QWidget()
+        root = QVBoxLayout(body)
         root.setContentsMargins(22, 16, 22, 18)
         root.setSpacing(12)
+        scroll.setWidget(body)
+        shell.addWidget(scroll)
 
         hero = QFrame()
         hero.setObjectName("homeHero")
@@ -83,6 +99,7 @@ class HomeWorkspace(QWidget):
         context = QGridLayout()
         context.setHorizontalSpacing(8)
         context.setVerticalSpacing(8)
+        context_cards: list[QFrame] = []
         for index, (key, caption) in enumerate(
             (
                 ("mode", "Modo"),
@@ -91,7 +108,11 @@ class HomeWorkspace(QWidget):
                 ("sources", "Fuentes"),
             )
         ):
-            context.addWidget(self._context_card(key, caption), 0, index)
+            card = self._context_card(key, caption)
+            context.addWidget(card, 0, index)
+            context_cards.append(card)
+        self._context_grid = context
+        self._context_cards = tuple(context_cards)
         root.addLayout(context)
 
         section = QLabel("ESPACIOS DE TRABAJO")
@@ -101,8 +122,13 @@ class HomeWorkspace(QWidget):
         modules = QGridLayout()
         modules.setHorizontalSpacing(12)
         modules.setVerticalSpacing(12)
+        module_cards: list[QFrame] = []
         for index, (module_title, detail, route) in enumerate(self._MODULES):
-            modules.addWidget(self._module_card(module_title, detail, route), index // 3, index % 3)
+            card = self._module_card(module_title, detail, route)
+            modules.addWidget(card, index // 3, index % 3)
+            module_cards.append(card)
+        self._module_grid = modules
+        self._module_cards = tuple(module_cards)
         root.addLayout(modules)
         root.addStretch(1)
 
@@ -115,10 +141,43 @@ class HomeWorkspace(QWidget):
         root.addWidget(note)
 
         self.setStyleSheet(
-            "QFrame#homeHero {background:#173F63; border:1px solid #173F63; border-radius:10px;}"
+            "QFrame#homeHero {background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
+            "stop:0 #00477F,stop:0.68 #005EB8,stop:1 #00A9E0);"
+            "border:1px solid #1675C5; border-radius:12px;}"
             "QFrame#homeContextCard, QFrame#homeModuleCard {background:#FFFFFF; border:1px solid #D7E0E8; "
             "border-radius:10px;} QFrame#homeModuleCard:hover {border-color:#5F8EAF; background:#F7FBFE;}"
         )
+
+    @staticmethod
+    def _columns_for_width(width: int) -> tuple[int, int]:
+        if width < 700:
+            return 1, 1
+        if width < 1180:
+            return 2, 2
+        return 3, 4
+
+    def _arrange_home(self, width: int) -> None:
+        module_columns, context_columns = self._columns_for_width(width)
+        if self._module_grid is not None and module_columns != self._module_columns:
+            for card in self._module_cards:
+                self._module_grid.removeWidget(card)
+            for index, card in enumerate(self._module_cards):
+                self._module_grid.addWidget(
+                    card, index // module_columns, index % module_columns
+                )
+            self._module_columns = module_columns
+        if self._context_grid is not None and context_columns != self._context_columns:
+            for card in self._context_cards:
+                self._context_grid.removeWidget(card)
+            for index, card in enumerate(self._context_cards):
+                self._context_grid.addWidget(
+                    card, index // context_columns, index % context_columns
+                )
+            self._context_columns = context_columns
+
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        self._arrange_home(event.size().width())
 
     def _context_card(self, key: str, caption: str) -> QFrame:
         card = QFrame()
@@ -127,9 +186,12 @@ class HomeWorkspace(QWidget):
         layout = QVBoxLayout(card)
         layout.setContentsMargins(11, 8, 11, 8)
         title = QLabel(caption)
-        title.setStyleSheet("color:#7A8794; font-size:8px; border:none;")
+        title.setStyleSheet("color:#566D7C; font-size:10pt; border:none;")
         value = QLabel("-")
-        value.setStyleSheet("color:#17324D; font-size:11px; font-weight:700; border:none;")
+        value.setStyleSheet("color:#00345F; font-size:12pt; font-weight:700; border:none;")
+        value.setWordWrap(True)
+        value.setAccessibleName(f"Valor de {caption}")
+        value.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         layout.addWidget(title)
         layout.addWidget(value)
         self._context_labels[key] = value
@@ -142,10 +204,10 @@ class HomeWorkspace(QWidget):
         layout = QVBoxLayout(card)
         layout.setContentsMargins(12, 10, 12, 10)
         name = QLabel(title)
-        name.setStyleSheet("font-size:11px; font-weight:700; color:#17324D; border:none;")
+        name.setStyleSheet("font-size:11pt; font-weight:700; color:#00345F; border:none;")
         description = QLabel(detail)
         description.setWordWrap(True)
-        description.setStyleSheet("font-size:9px; color:#667788; border:none;")
+        description.setStyleSheet("font-size:9.5pt; color:#566D7C; border:none;")
         button = QPushButton("ABRIR")
         button.setCursor(Qt.CursorShape.PointingHandCursor)
         button.clicked.connect(lambda _checked=False, value=route: self.route_requested.emit(value))

@@ -45,6 +45,9 @@ class TreasuryView(QWidget):
         self._view_model = self._presenter.build_view_model()
         self._status_badge = TreasuryStatusBadge("Listo")
         self._kpis: dict[str, QLabel] = {}
+        self._kpi_grid: QGridLayout | None = None
+        self._kpi_cards: tuple[QFrame, ...] = ()
+        self._kpi_columns = 6
         self._context_labels: dict[str, QLabel] = {}
         self._build_ui()
         self.bind_view_model(self._view_model)
@@ -64,7 +67,9 @@ class TreasuryView(QWidget):
     def _metric_card(self, key: str, title: str, helper: str) -> QFrame:
         card = QFrame()
         card.setObjectName("treasuryMetricCard")
-        card.setMinimumHeight(94)
+        card.setMinimumHeight(104)
+        card.setAccessibleName(title)
+        card.setToolTip(f"{title}: {helper}")
         card.setStyleSheet(
             "QFrame#treasuryMetricCard {"
             "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
@@ -76,15 +81,20 @@ class TreasuryView(QWidget):
         layout.setContentsMargins(10, 7, 10, 7)
         layout.setSpacing(2)
         caption = QLabel(title)
-        caption.setStyleSheet("color:#DDF4FF; font-size:9px; font-weight:600; border:none;")
+        caption.setWordWrap(True)
+        caption.setStyleSheet("color:#DDF4FF; font-size:10pt; font-weight:600; border:none;")
         value = QLabel("-")
         value_font = QFont()
         value_font.setPointSize(12)
         value_font.setBold(True)
         value.setFont(value_font)
+        value.setWordWrap(True)
+        value.setAccessibleName(f"Valor de {title}")
+        value.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         value.setStyleSheet("color:#FFFFFF; border:none;")
         hint = QLabel(helper)
-        hint.setStyleSheet("color:#CBEAF8; font-size:8px; border:none;")
+        hint.setWordWrap(True)
+        hint.setStyleSheet("color:#CBEAF8; font-size:9pt; border:none;")
         layout.addWidget(caption)
         layout.addWidget(value)
         layout.addWidget(hint)
@@ -130,9 +140,13 @@ class TreasuryView(QWidget):
             ("maturity", "Vence ≤30 días", "Vencimientos contractuales"),
             ("icl", "ICL Total", "Indicador institucional"),
         )
+        cards: list[QFrame] = []
         for index, definition in enumerate(definitions):
             card = self._metric_card(*definition)
             kpis.addWidget(card, 0, index)
+            cards.append(card)
+        self._kpi_grid = kpis
+        self._kpi_cards = tuple(cards)
         for column in range(6):
             kpis.setColumnStretch(column, 1)
         layout.addLayout(kpis)
@@ -193,6 +207,33 @@ class TreasuryView(QWidget):
         governance_layout.addWidget(note)
         layout.addWidget(governance)
         layout.addWidget(self._status_badge)
+
+    @staticmethod
+    def _kpi_columns_for_width(width: int) -> int:
+        if width < 780:
+            return 2
+        if width < 1280:
+            return 3
+        return 6
+
+    def _arrange_kpis(self, width: int) -> None:
+        grid = self._kpi_grid
+        if grid is None:
+            return
+        columns = self._kpi_columns_for_width(width)
+        if columns == self._kpi_columns:
+            return
+        for card in self._kpi_cards:
+            grid.removeWidget(card)
+        for index, card in enumerate(self._kpi_cards):
+            grid.addWidget(card, index // columns, index % columns)
+        for column in range(6):
+            grid.setColumnStretch(column, 1 if column < columns else 0)
+        self._kpi_columns = columns
+
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        self._arrange_kpis(event.size().width())
 
     def _build_table_tab(self, title: str) -> QTableWidget:
         page = QWidget()

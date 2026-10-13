@@ -85,6 +85,9 @@ class PortfolioView(QWidget):
         self._history_requested_sampling = "monthly"
         self._closing = False
         self._kpis: dict[str, QLabel] = {}
+        self._kpi_grid: QGridLayout | None = None
+        self._kpi_cards: tuple[QFrame, ...] = ()
+        self._kpi_columns = 6
         self._build_ui()
         self._toolbar.actions()[0].triggered.connect(self.refresh)
         self._history.sampling_requested.connect(self._load_history)
@@ -115,6 +118,8 @@ class PortfolioView(QWidget):
         card = QFrame()
         card.setObjectName("portfolioMetricCard")
         card.setMinimumHeight(112)
+        card.setAccessibleName(title)
+        card.setToolTip(f"{title}: {helper}")
         card.setStyleSheet(
             "QFrame#portfolioMetricCard {"
             "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
@@ -126,15 +131,20 @@ class PortfolioView(QWidget):
         layout.setContentsMargins(14, 10, 14, 10)
         layout.setSpacing(2)
         caption = QLabel(title)
-        caption.setStyleSheet("color:#E8F6FF; font-size:10px; font-weight:700; border:none;")
+        caption.setWordWrap(True)
+        caption.setStyleSheet("color:#E8F6FF; font-size:10pt; font-weight:700; border:none;")
         value = QLabel("-")
         value_font = QFont()
         value_font.setPointSize(16)
         value_font.setBold(True)
         value.setFont(value_font)
+        value.setWordWrap(True)
+        value.setAccessibleName(f"Valor de {title}")
+        value.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         value.setStyleSheet("color:#FFFFFF; border:none;")
         hint = QLabel(helper)
-        hint.setStyleSheet("color:#D1ECFA; font-size:8px; border:none;")
+        hint.setWordWrap(True)
+        hint.setStyleSheet("color:#D1ECFA; font-size:9pt; border:none;")
         layout.addWidget(caption)
         layout.addWidget(value)
         layout.addWidget(hint)
@@ -198,9 +208,13 @@ class PortfolioView(QWidget):
             ("issuer_count", "Emisores", "Activos en portafolio"),
             ("hhi", "Concentración por emisor", "Índice Herfindahl"),
         )
+        cards: list[QFrame] = []
         for index, definition in enumerate(definitions):
             card = self._metric_card(*definition)
             kpi_grid.addWidget(card, 0, index)
+            cards.append(card)
+        self._kpi_grid = kpi_grid
+        self._kpi_cards = tuple(cards)
         for column in range(6):
             kpi_grid.setColumnStretch(column, 1)
         layout.addLayout(kpi_grid)
@@ -218,6 +232,33 @@ class PortfolioView(QWidget):
         self._build_positions_tab()
 
         layout.addWidget(self._status_bar)
+
+    @staticmethod
+    def _kpi_columns_for_width(width: int) -> int:
+        if width < 780:
+            return 2
+        if width < 1260:
+            return 3
+        return 6
+
+    def _arrange_kpis(self, width: int) -> None:
+        grid = self._kpi_grid
+        if grid is None:
+            return
+        columns = self._kpi_columns_for_width(width)
+        if columns == self._kpi_columns:
+            return
+        for card in self._kpi_cards:
+            grid.removeWidget(card)
+        for index, card in enumerate(self._kpi_cards):
+            grid.addWidget(card, index // columns, index % columns)
+        for column in range(6):
+            grid.setColumnStretch(column, 1 if column < columns else 0)
+        self._kpi_columns = columns
+
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        self._arrange_kpis(event.size().width())
 
     def _build_dashboard_tab(self) -> None:
         page = QWidget()
