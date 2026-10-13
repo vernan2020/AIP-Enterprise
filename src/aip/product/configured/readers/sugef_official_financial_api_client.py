@@ -320,13 +320,15 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
                 # The requested accounting month itself is genuinely complete.
                 # Or a prior monthly publication is now confirmed, as with
                 # September being available during the October publication lag.
-                return probe
+                diagnostics.extend(probe_failures)
+                return best_probe
             probe_failures.append(
                 f"Sondeo SUGEF {candidate:%m/%Y}: la API devolvió "
                 f"{cutoff:%m/%Y}; comprobando el siguiente período solicitado."
             )
 
         if best_probe is not None:
+            diagnostics.extend(probe_failures)
             diagnostics.append(
                 "No se confirmó un corte completo para todos los meses sondeados; "
                 "se conserva el más reciente encontrado con Balance y Resultados: "

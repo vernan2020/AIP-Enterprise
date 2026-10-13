@@ -255,8 +255,8 @@ def test_official_api_falls_back_to_latest_complete_accounting_cutoff() -> None:
         "Corte solicitado en AIP: 31/08/2026" in message and "31/07/2026" in message
         for message in result.diagnostics
     )
-    assert all(
-        "August accounting cutoff not published" not in message for message in result.diagnostics
+    assert any(
+        "August accounting cutoff not published" in message for message in result.diagnostics
     )
 
 
@@ -375,3 +375,76 @@ def test_future_month_end_is_not_selected_before_requested_cutoff() -> None:
     assert probe is not None
     assert probe.cutoff == date(2026, 9, 30)
     assert ("3004045138", "BALANCE", "20260901") in client.requests
+
+
+def test_publication_failure_remains_visible_after_august_fallback() -> None:
+    class SeptemberFailureClient(_OfficialStubClient):
+        def _post_json(self, endpoint: str, payload: dict[str, object]) -> dict[str, object]:
+            parameters = payload["parametrosEntidad"]
+            assert isinstance(parameters, dict)
+            if parameters["periodos"] in {"20261001", "20260901"}:
+                raise URLError("accounting endpoint unavailable")
+            return super()._post_json(endpoint, payload)
+
+    client = SeptemberFailureClient(SUGEFFinancialSourceConfig(api_retries=0))
+    diagnostics: list[str] = []
+    probe = client._resolve_primary_statement_cutoff(date(2026, 10, 13), diagnostics)
+
+    assert probe is not None
+    assert probe.cutoff == date(2026, 8, 31)
+    assert any("01/09/2026" in message and "URLError" in message for message in diagnostics)
+
+
+def test_inconsistent_responses_never_replace_newest_confirmed_cutoff() -> None:
+    class InconsistentClient(_OfficialStubClient):
+        def _post_json(self, endpoint: str, payload: dict[str, object]) -> dict[str, object]:
+            parameters = payload["parametrosEntidad"]
+            assert isinstance(parameters, dict)
+            response = super()._post_json(endpoint, payload)
+            returned_period = (
+                "2026-09-01T00:00:00"
+                if parameters["periodos"] == "20261001"
+                else "2026-08-01T00:00:00"
+            )
+            for key, rows in response.items():
+                if key.startswith("lista") and isinstance(rows, list):
+                    for row in rows:
+                        row["periodo"] = returned_period
+            return response
+
+    client = InconsistentClient(SUGEFFinancialSourceConfig(api_retries=0))
+    diagnostics: list[str] = []
+    probe = client._resolve_primary_statement_cutoff(date(2026, 10, 13), diagnostics)
+
+    assert probe is not None
+    assert probe.cutoff == date(2026, 9, 30)
+    assert {line.statement_date for line in (*probe.balance_lines, *probe.income_lines)} == {
+        date(2026, 9, 30)
+    }
+    assert any("09/2026" in message and "08/2026" in message for message in diagnostics)
+
+
+def test_september_official_empty_response_is_visible_with_august_data() -> None:
+    class SeptemberNotPublishedClient(_OfficialStubClient):
+        def _post_json(self, endpoint: str, payload: dict[str, object]) -> dict[str, object]:
+            parameters = payload["parametrosEntidad"]
+            assert isinstance(parameters, dict)
+            if parameters["periodos"] == "20260901":
+                # Public Balance response observed during the September probe.
+                return {
+                    "mensaje": "No se encontraron registros para los datos consultados.",
+                    "tipoMensaje": "warning",
+                    "tieneError": True,
+                }
+            return super()._post_json(endpoint, payload)
+
+    client = SeptemberNotPublishedClient(SUGEFFinancialSourceConfig(api_retries=0))
+    diagnostics: list[str] = []
+    probe = client._resolve_primary_statement_cutoff(date(2026, 9, 30), diagnostics)
+
+    assert probe is not None
+    assert probe.cutoff == date(2026, 8, 31)
+    assert any(
+        "01/09/2026" in message and "No se encontraron registros" in message
+        for message in diagnostics
+    )
