@@ -22,15 +22,9 @@ def test_inspection_reads_existing_macro_history_and_scenarios(tmp_path: Path) -
     path.parent.mkdir(parents=True)
     connection = duckdb.connect(str(path))
     try:
-        connection.execute(
-            "CREATE TABLE economic_history_observations (indicator_code VARCHAR)"
-        )
-        connection.execute(
-            "INSERT INTO economic_history_observations VALUES ('TPM'), ('TBP')"
-        )
-        connection.execute(
-            "CREATE TABLE institutional_macro_scenarios (status VARCHAR)"
-        )
+        connection.execute("CREATE TABLE economic_history_observations (indicator_code VARCHAR)")
+        connection.execute("INSERT INTO economic_history_observations VALUES ('TPM'), ('TBP')")
+        connection.execute("CREATE TABLE institutional_macro_scenarios (status VARCHAR)")
         connection.execute(
             "INSERT INTO institutional_macro_scenarios VALUES "
             "('APPROVED'), ('DRAFT'), ('approved')"
