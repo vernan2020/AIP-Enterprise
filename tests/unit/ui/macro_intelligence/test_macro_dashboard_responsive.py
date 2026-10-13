@@ -213,6 +213,9 @@ def test_macro_tab_navigation_preserves_full_titles_in_compact_view(qt_app) -> N
         assert tabs.elideMode() == Qt.TextElideMode.ElideRight
         assert tabs.currentIndex() == 3
         assert tuple(tabs.tabText(i) for i in range(tabs.count())) == titles
+        for index in range(tabs.count()):
+            tabs.setTabToolTip(index, tabs.tabText(index))
+            assert tabs.tabToolTip(index) == titles[index]
     finally:
         tabs.close()
         qt_app.processEvents()
