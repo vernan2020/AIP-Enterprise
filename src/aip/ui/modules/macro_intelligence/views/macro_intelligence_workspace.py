@@ -47,12 +47,12 @@ from aip.ui.modules.macro_intelligence.viewmodels.macro_intelligence_view_model 
     MacroForecastLabViewModel,
     MacroProjectionViewModel,
 )
+from aip.ui.themes.typography import numeric_font_family
 from aip.ui.widgets.chart_tooltip import (
     build_chart_tooltip,
     point_hit_rect,
     show_chart_tooltip,
 )
-from aip.ui.themes.typography import numeric_font_family
 from aip.ui.widgets.table_csv_export import save_table_csv_dialog
 
 _MONTHS = (
