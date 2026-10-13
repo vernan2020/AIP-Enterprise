@@ -20,7 +20,7 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 30
     env:
-      QT_QPA_PLATFORM: offscreen
+      QT_QPA_PLATFORM: windows
       AIP_EXECUTION_MODE: DEMO
       AIP_DEMO_MODE_ENABLED: 'true'
       AIP_VECTOR_ENABLED: 'false'
