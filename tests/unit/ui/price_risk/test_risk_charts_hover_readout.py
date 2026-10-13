@@ -4,6 +4,7 @@ from decimal import Decimal
 
 from PySide6.QtCore import QEvent, QPoint, QPointF, Qt
 from PySide6.QtGui import QMouseEvent
+from PySide6.QtWidgets import QToolTip
 
 from aip.ui.modules.price_risk.models.price_risk_row import RiskChartPoint
 from aip.ui.modules.price_risk.widgets.risk_charts import (
@@ -86,3 +87,19 @@ def test_pareto_hover_readout_has_contribution_and_cumulative_percent(qt_app) ->
     finally:
         chart.close()
         qt_app.processEvents()
+
+
+def test_risk_chart_refresh_and_leave_dismiss_stale_tooltips(qt_app, monkeypatch) -> None:
+    dismissed: list[bool] = []
+    monkeypatch.setattr(QToolTip, "hideText", lambda: dismissed.append(True))
+    for chart in (RiskBarChartWidget(), ParetoChartWidget()):
+        try:
+            chart.set_data((RiskChartPoint("BCCR", Decimal("1.0"), Decimal("100")),))
+            chart.set_data(())
+            assert len(dismissed) >= 2
+            before_leave = len(dismissed)
+            chart.leaveEvent(QEvent(QEvent.Type.Leave))
+            assert len(dismissed) == before_leave + 1
+        finally:
+            chart.close()
+    qt_app.processEvents()
