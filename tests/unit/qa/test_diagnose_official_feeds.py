@@ -6,13 +6,32 @@ from datetime import date
 from types import SimpleNamespace
 from urllib.error import HTTPError
 
+from aip.product.configured.configuration.configured_source_config import (
+    SUGEFFinancialSourceConfig,
+)
 from scripts.qa import diagnose_official_feeds as check
 
 
 def test_report_counts_are_read_only_and_schema_tolerant() -> None:
-    assert check._records({"listaBalanzaComprobacionEntidad": [{"a": 1}]}, "listaBalanzaComprobacionEntidad") == 1
-    assert check._records({"LISTABALANZACOMPROBACIONENTIDAD": [{"a": 1}]}, "listaBalanzaComprobacionEntidad") == 1
-    assert check._records({"tieneError": True, "listaBalanzaComprobacionEntidad": [{}]}, "listaBalanzaComprobacionEntidad") == 0
+    assert (
+        check._records(
+            {"listaBalanzaComprobacionEntidad": [{"a": 1}]}, "listaBalanzaComprobacionEntidad"
+        )
+        == 1
+    )
+    assert (
+        check._records(
+            {"LISTABALANZACOMPROBACIONENTIDAD": [{"a": 1}]}, "listaBalanzaComprobacionEntidad"
+        )
+        == 1
+    )
+    assert (
+        check._records(
+            {"tieneError": True, "listaBalanzaComprobacionEntidad": [{}]},
+            "listaBalanzaComprobacionEntidad",
+        )
+        == 0
+    )
 
 
 def test_sugef_period_and_credentials_never_appear(monkeypatch) -> None:
@@ -36,7 +55,13 @@ def test_sugef_period_and_credentials_never_appear(monkeypatch) -> None:
             }
 
     monkeypatch.setattr(check, "SUGEFFinancialApiClient", FakeClient)
-    config = SimpleNamespace(enabled=True, api_enabled=True, api_entity_codes=("3004045138",), api_timeout_seconds=90, api_retries=2)
+    config = SUGEFFinancialSourceConfig(
+        enabled=True,
+        api_enabled=True,
+        api_entity_codes=("3004045138",),
+        api_timeout_seconds=90,
+        api_retries=2,
+    )
     messages = check._sugef_probe(config, target_date=date(2026, 9, 1))
     assert all("1 registros" in x for x in messages)
     assert len(calls) == 3

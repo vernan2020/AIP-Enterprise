@@ -45,7 +45,6 @@ def test_source_audit_marks_absence_without_touching_files(tmp_path) -> None:
     assert not certified.exists()
 
 
-
 def test_historical_inventory_is_read_only(tmp_path) -> None:
     import duckdb
 
@@ -67,6 +66,4 @@ def test_historical_inventory_is_read_only(tmp_path) -> None:
     assert "economic_history_observations: 2 registros" in result
     assert "institutional_macro_scenarios: tabla ausente" in result
     with duckdb.connect(str(candidate), read_only=True) as con:
-        assert con.execute(
-            "SELECT count(*) FROM economic_history_observations"
-        ).fetchone()[0] == 2
+        assert con.execute("SELECT count(*) FROM economic_history_observations").fetchone()[0] == 2
