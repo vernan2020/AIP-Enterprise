@@ -285,12 +285,58 @@ class EconomicHistoricalStore:
         *,
         indicator_code: str,
     ) -> EconomicHistoricalObservation | None:
-        observations = self.observations_for_series(indicator_code=(indicator_code))
-
-        if not observations:
+        """Read a single latest row instead of materializing the entire series."""
+        normalized_code = indicator_code.strip().upper()
+        if not normalized_code:
             return None
+        self.initialize()
+        row = self._database.connection.execute(
+            """
+            SELECT indicator_code, observation_date, value, source,
+                   source_series_code, unit, frequency
+            FROM economic_history_observations
+            WHERE indicator_code = ?
+            ORDER BY observation_date DESC
+            LIMIT 1
+            """,
+            [normalized_code],
+        ).fetchone()
+        if row is None:
+            return None
+        return EconomicHistoricalObservation(
+            indicator_code=str(row[0]),
+            observation_date=row[1],
+            value=Decimal(str(row[2])),
+            source=str(row[3]),
+            source_series_code=(None if row[4] is None else str(row[4])),
+            unit=str(row[5]),
+            frequency=str(row[6]),
+        )
 
-        return observations[-1]
+    def latest_observation_dates(
+        self,
+        indicator_codes: tuple[str, ...],
+    ) -> dict[str, date]:
+        """Single aggregate query for forecast cache invalidation signatures."""
+        normalized = tuple(
+            dict.fromkeys(
+                code.strip().upper() for code in indicator_codes if code.strip()
+            )
+        )
+        if not normalized:
+            return {}
+        self.initialize()
+        placeholders = ", ".join("?" for _ in normalized)
+        rows = self._database.connection.execute(
+            f"""
+            SELECT indicator_code, MAX(observation_date)
+            FROM economic_history_observations
+            WHERE indicator_code IN ({placeholders})
+            GROUP BY indicator_code
+            """,
+            list(normalized),
+        ).fetchall()
+        return {str(code): observed for code, observed in rows}
 
     def available_dates(
         self,

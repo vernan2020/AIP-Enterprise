@@ -71,6 +71,15 @@ class EconomicHistoricalRepository:
 
         return observation.observation_date
 
+    def latest_available_dates(
+        self,
+        indicator_codes: tuple[str, ...],
+    ) -> dict[str, date | None]:
+        """Resolve all latest observation dates with one read-only aggregate."""
+        normalized_codes = tuple(code.strip().upper() for code in indicator_codes)
+        found = self._store.latest_observation_dates(normalized_codes)
+        return {code: found.get(code) for code in normalized_codes}
+
     def available_series(
         self,
     ) -> tuple[str, ...]:

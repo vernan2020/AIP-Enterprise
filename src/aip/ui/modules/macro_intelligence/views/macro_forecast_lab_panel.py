@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from time import perf_counter
+
 from PySide6.QtCore import QObject, QPointF, QRectF, QRunnable, Qt, QThreadPool, Signal, Slot
 from PySide6.QtGui import QColor, QFont, QPainter, QPen, QPolygonF
 from PySide6.QtWidgets import (
@@ -326,6 +328,8 @@ class MacroForecastLabPanel(QWidget):
         self._worker: _ForecastLabWorker | None = None
         self._loading = False
         self._pending_force = False
+        self._evaluation_started_at: float | None = None
+        self._last_duration_seconds: float | None = None
         self._view_model = MacroForecastLabViewModel()
         self._kpi_values: dict[str, QLabel] = {}
         self._kpi_grid: QGridLayout | None = None
@@ -555,6 +559,7 @@ class MacroForecastLabPanel(QWidget):
             return
         code = str(self._indicator_combo.currentData() or "TPM")
         self._loading = True
+        self._evaluation_started_at = perf_counter()
         self._run_button.setEnabled(False)
         self._run_button.setText("CALCULANDO...")
         self._status.setText(
@@ -581,6 +586,9 @@ class MacroForecastLabPanel(QWidget):
         self._finish()
 
     def _finish(self) -> None:
+        if self._evaluation_started_at is not None:
+            self._last_duration_seconds = perf_counter() - self._evaluation_started_at
+            self._evaluation_started_at = None
         self._loading = False
         self._worker = None
         self._run_button.setEnabled(True)
@@ -601,10 +609,15 @@ class MacroForecastLabPanel(QWidget):
         origin = (
             view_model.forecast_origin.strftime("%d/%m/%Y") if view_model.forecast_origin else "-"
         )
+        duration = (
+            f" · procesamiento {perf_counter() - self._evaluation_started_at:.1f}s"
+            if self._evaluation_started_at is not None
+            else ""
+        )
         self._status.setText(
             f"Estado {view_model.status} · origen {origin} · "
             f"{view_model.historical_observations} observaciones · "
-            f"{view_model.diagnostic or 'sin diagnósticos'}"
+            f"{view_model.diagnostic or 'sin diagnósticos'}{duration}"
         )
         self._chart.set_view_model(view_model)
         self._bind_forecast_table(view_model)

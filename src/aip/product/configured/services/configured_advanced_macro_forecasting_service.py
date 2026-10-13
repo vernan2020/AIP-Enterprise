@@ -135,7 +135,8 @@ class ConfiguredAdvancedMacroForecastingService:
         )
 
     def _history_signature(self) -> tuple[tuple[str, date | None], ...]:
-        return tuple(
-            (code, self._repository.latest_available_date(code))
-            for code in EconometricDatasetBuilder.MONTHLY_INDICATORS
-        )
+        codes = EconometricDatasetBuilder.MONTHLY_INDICATORS
+        # An indexed aggregate replaces an individual full-series read for
+        # each indicator. This is cache validation only, not model mathematics.
+        latest = self._repository.latest_available_dates(codes)
+        return tuple((code, latest.get(code)) for code in codes)
