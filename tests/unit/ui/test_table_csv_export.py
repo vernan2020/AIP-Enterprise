@@ -40,7 +40,12 @@ def test_table_csv_export_escapes_formulas_and_quotes(qt_app, tmp_path) -> None:
     table = QTableWidget(1, 4)
     table.setHorizontalHeaderLabels(["A", "B", "C", "D"])
     try:
-        entries = ("=HYPERLINK(\"https://example.com\")", "+1+2", "@SUM(A1)", "-1,234.50")
+        entries = (
+            '=HYPERLINK("https://example.com")',
+            "+1+2",
+            "@SUM(A1)",
+            "-1,234.50",
+        )
         for index, value in enumerate(entries):
             table.setItem(0, index, QTableWidgetItem(value))
         path = tmp_path / "safe.csv"
@@ -48,7 +53,7 @@ def test_table_csv_export_escapes_formulas_and_quotes(qt_app, tmp_path) -> None:
         with path.open(encoding="utf-8-sig", newline="") as stream:
             data = list(csv.reader(stream, delimiter=";"))
         assert data[1] == [
-            "'=HYPERLINK(\"https://example.com\")",
+            """'=HYPERLINK("https://example.com")""",
             "'+1+2",
             "'@SUM(A1)",
             "-1,234.50",

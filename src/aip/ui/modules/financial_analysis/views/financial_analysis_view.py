@@ -23,8 +23,6 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from aip.ui.widgets.table_csv_export import save_table_csv_dialog
-
 from aip.ui.modules.financial_analysis.presenters.financial_analysis_presenter import (
     FinancialAnalysisPresenter,
 )
@@ -43,6 +41,7 @@ from aip.ui.modules.financial_analysis.views.financial_peer_chart import (
 from aip.ui.modules.financial_analysis.views.financial_statement_history_panel import (
     FinancialStatementHistoryPanel,
 )
+from aip.ui.widgets.table_csv_export import save_table_csv_dialog
 
 
 class _ComparisonWorker(QObject):

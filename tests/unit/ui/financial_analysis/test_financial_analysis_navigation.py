@@ -312,7 +312,14 @@ def test_sugef_csv_exports_filtered_rows_and_audit_columns(qt_app, tmp_path) -> 
 
         with path.open(encoding="utf-8-sig", newline="") as stream:
             rows = list(csv.reader(stream, delimiter=";"))
-        assert rows[0] == ["Estado", "Cuenta", "Descripción", "Valor", "Moneda", "Trazabilidad"]
+        assert rows[0] == [
+            "Estado",
+            "Cuenta",
+            "Descripción",
+            "Valor",
+            "Moneda",
+            "Trazabilidad",
+        ]
         assert rows[1] == list(entries[0])
         assert len(rows) == 2
     finally:

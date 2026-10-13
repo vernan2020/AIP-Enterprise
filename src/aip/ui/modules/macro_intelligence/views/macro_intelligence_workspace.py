@@ -47,13 +47,12 @@ from aip.ui.modules.macro_intelligence.viewmodels.macro_intelligence_view_model 
     MacroForecastLabViewModel,
     MacroProjectionViewModel,
 )
-from aip.ui.widgets.table_csv_export import save_table_csv_dialog
-
 from aip.ui.widgets.chart_tooltip import (
     build_chart_tooltip,
     point_hit_rect,
     show_chart_tooltip,
 )
+from aip.ui.widgets.table_csv_export import save_table_csv_dialog
 
 _MONTHS = (
     "ene",
@@ -864,13 +863,17 @@ class MacroIntelligenceWorkspace(QWidget):
         self._projection_table.setAlternatingRowColors(True)
         self._projection_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self._export_projection_button = QPushButton("Exportar CSV")
-        self._export_projection_button.setToolTip("Exportar la matriz macro a CSV para Excel.")
+        self._export_projection_button.setToolTip(
+            "Exportar la matriz macro a CSV para Excel."
+        )
         self._export_projection_button.clicked.connect(
             lambda: save_table_csv_dialog(
                 self, self._projection_table, "aip-matriz-macro.csv"
             )
         )
-        layout.addWidget(self._export_projection_button, alignment=Qt.AlignmentFlag.AlignRight)
+        layout.addWidget(
+            self._export_projection_button, alignment=Qt.AlignmentFlag.AlignRight
+        )
         layout.addWidget(self._projection_table)
         self._tabs.addTab(page, "Matriz macro")
 
@@ -959,9 +962,10 @@ class MacroIntelligenceWorkspace(QWidget):
         layout = QVBoxLayout(group)
         export_button = QPushButton("Exportar CSV")
         export_button.setToolTip(f"Exportar {title} a CSV para Excel.")
-        export_button.clicked.connect(
-            lambda: save_table_csv_dialog(self, table, filename)
-        )
+        def export_current_table() -> None:
+            save_table_csv_dialog(self, table, filename)
+
+        export_button.clicked.connect(export_current_table)
         layout.addWidget(export_button, alignment=Qt.AlignmentFlag.AlignRight)
         layout.addWidget(table)
         return group
