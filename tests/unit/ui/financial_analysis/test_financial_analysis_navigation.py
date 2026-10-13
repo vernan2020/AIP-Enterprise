@@ -159,3 +159,27 @@ def test_financial_entity_selector_full_name_tooltips(qt_app) -> None:
     finally:
         view.close()
         qt_app.processEvents()
+
+
+def test_financial_source_footer_reflows_without_losing_trace_or_action(qt_app) -> None:
+    view = FinancialAnalysisView(presenter=_Presenter())  # type: ignore[arg-type]
+    try:
+        grid = view._source_grid
+        assert grid is not None
+        trace = "SUGEF · datos oficiales · 31/08/2026 · fuente y procedencia"
+        view._source_status.setText(trace)
+        for width, compact in ((1400, False), (680, True), (1400, False)):
+            view._arrange_source(width)
+            assert view._source_compact is compact
+            source_cell = grid.itemAtPosition(0, 0)
+            link_cell = grid.itemAtPosition(1 if compact else 0, 0 if compact else 1)
+            assert source_cell is not None
+            assert link_cell is not None
+            assert source_cell.widget() is view._source_status
+            assert link_cell.widget() is view._source_link
+            assert view._source_status.text() == trace
+            assert view._source_link.text() == "Abrir fuente oficial"
+        assert view._source_status.wordWrap()
+    finally:
+        view.close()
+        qt_app.processEvents()
