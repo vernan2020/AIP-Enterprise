@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QComboBox,
     QFrame,
@@ -7,6 +8,7 @@ from PySide6.QtWidgets import (
     QGroupBox,
     QLabel,
     QPushButton,
+    QTabWidget,
     QWidget,
 )
 
@@ -188,4 +190,29 @@ def test_macro_transmission_stages_reflow_without_changing_explanations(qt_app) 
                 assert card.objectName() == captions[index]
     finally:
         host.close()
+        qt_app.processEvents()
+
+
+def test_macro_tab_navigation_preserves_full_titles_in_compact_view(qt_app) -> None:
+    tabs = QTabWidget()
+    try:
+        tabs.setDocumentMode(True)
+        tabs.tabBar().setUsesScrollButtons(True)
+        tabs.setElideMode(Qt.TextElideMode.ElideRight)
+        titles = (
+            "Forecast ejecutivo",
+            "Matriz macro",
+            "Curvas TRI",
+            "Transmisión",
+        )
+        for title in titles:
+            tabs.addTab(QWidget(), title)
+        tabs.resize(380, 320)
+        tabs.setCurrentIndex(3)
+        assert tabs.tabBar().usesScrollButtons()
+        assert tabs.elideMode() == Qt.TextElideMode.ElideRight
+        assert tabs.currentIndex() == 3
+        assert tuple(tabs.tabText(i) for i in range(tabs.count())) == titles
+    finally:
+        tabs.close()
         qt_app.processEvents()
