@@ -128,6 +128,8 @@ class FinancialAnalysisView(QWidget):
         self._controls_grid: QGridLayout | None = None
         self._controls_widgets: tuple[QWidget, ...] = ()
         self._controls_columns = 4
+        self._source_grid: QGridLayout | None = None
+        self._source_compact = False
         self._building_entity_selector = False
         self._comparison_thread: QThread | None = None
         self._comparison_worker: _ComparisonWorker | None = None
@@ -234,14 +236,16 @@ class FinancialAnalysisView(QWidget):
 
         source = QFrame()
         source.setObjectName("sugefSourcePanel")
-        source_layout = QHBoxLayout(source)
+        source_layout = QGridLayout(source)
         source_layout.setContentsMargins(8, 4, 8, 4)
         self._source_status = QLabel("SUGEF · fuente no configurada")
-        source_layout.addWidget(self._source_status)
-        source_layout.addStretch(1)
+        self._source_status.setWordWrap(True)
+        source_layout.addWidget(self._source_status, 0, 0)
         self._source_link = QPushButton("Abrir fuente oficial")
         self._source_link.clicked.connect(self._open_source)
-        source_layout.addWidget(self._source_link)
+        source_layout.addWidget(self._source_link, 0, 1)
+        source_layout.setColumnStretch(0, 1)
+        self._source_grid = source_layout
         root.addWidget(source)
 
         self.setStyleSheet(
@@ -628,11 +632,30 @@ class FinancialAnalysisView(QWidget):
             grid.setColumnStretch(column, 1 if column == 1 else 0)
         self._controls_columns = columns
 
+    def _arrange_source(self, width: int) -> None:
+        grid = self._source_grid
+        if grid is None:
+            return
+        compact = width < 750
+        if compact == self._source_compact:
+            return
+        grid.removeWidget(self._source_status)
+        grid.removeWidget(self._source_link)
+        grid.addWidget(self._source_status, 0, 0)
+        if compact:
+            grid.addWidget(self._source_link, 1, 0)
+            grid.setColumnStretch(1, 0)
+        else:
+            grid.addWidget(self._source_link, 0, 1)
+        grid.setColumnStretch(0, 1)
+        self._source_compact = compact
+
     def resizeEvent(self, event) -> None:  # noqa: N802
         super().resizeEvent(event)
         width = event.size().width()
         self._arrange_kpi_cards(width)
         self._arrange_controls(width)
+        self._arrange_source(width)
 
     def _metric_card(self, code: str, label: str) -> QFrame:
         card = QFrame()
