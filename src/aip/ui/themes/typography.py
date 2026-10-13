@@ -22,7 +22,9 @@ def choose_installed_font(
     available: Iterable[str], preferred: tuple[str, ...], fallback: str
 ) -> str:
     names = {name.casefold(): name for name in available}
-    return next((names[name.casefold()] for name in preferred if name.casefold() in names), fallback)
+    return next(
+        (names[name.casefold()] for name in preferred if name.casefold() in names), fallback
+    )
 
 
 def _resolve(preferred: tuple[str, ...]) -> str:

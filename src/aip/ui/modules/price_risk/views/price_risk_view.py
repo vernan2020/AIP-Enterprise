@@ -200,9 +200,7 @@ class PriceRiskView(QWidget):
         value_font.setPointSize(12)
         value_font.setBold(True)
         value.setFont(value_font)
-        value.setStyleSheet(
-            f'color:#FFFFFF; font-family:"{numeric_font_family()}"; border:none;'
-        )
+        value.setStyleSheet(f'color:#FFFFFF; font-family:"{numeric_font_family()}"; border:none;')
         hint = QLabel(helper)
         hint.setStyleSheet("color:#CBEAF8; font-size:8px; border:none;")
         layout.addWidget(title)
