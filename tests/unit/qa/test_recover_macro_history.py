@@ -92,9 +92,7 @@ def test_incompatible_table_schema_does_not_copy_partial_data(tmp_path) -> None:
     assert len(list((target.parent / "backups").glob("*/aip.duckdb"))) == 1
 
 
-def test_existing_wal_is_backed_up_before_preview_checkpoint(
-    tmp_path, monkeypatch
-) -> None:
+def test_existing_wal_is_backed_up_before_preview_checkpoint(tmp_path, monkeypatch) -> None:
     from scripts.qa import recover_macro_history as migration
 
     source = tmp_path / "certified" / "database" / "aip.duckdb"
