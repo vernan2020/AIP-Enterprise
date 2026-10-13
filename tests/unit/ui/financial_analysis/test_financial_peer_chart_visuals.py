@@ -177,9 +177,7 @@ def test_peer_selector_exposes_accessible_name_and_guidance(qt_app) -> None:
 def test_peer_selector_label_is_associated_with_selector(qt_app) -> None:
     panel = FinancialPeerChartPanel()
     try:
-        label = next(
-            widget for widget in panel.findChildren(QLabel) if widget.text() == "Gráfico:"
-        )
+        label = next(widget for widget in panel.findChildren(QLabel) if widget.text() == "Gráfico:")
         assert label.buddy() is panel._selector
     finally:
         panel.close()
