@@ -157,16 +157,20 @@ class _MacroMetricCard(QFrame):
         layout.setContentsMargins(11, 8, 11, 8)
         layout.setSpacing(2)
         caption = QLabel(title)
+        caption.setWordWrap(True)
         caption.setStyleSheet("color:#DDF4FF; font-size:9px; font-weight:600; border:none;")
         self._value = QLabel("N/D")
         value_font = QFont()
         value_font.setPointSize(14)
         value_font.setBold(True)
         self._value.setFont(value_font)
+        self._value.setWordWrap(True)
         self._value.setStyleSheet("color:#FFFFFF; border:none;")
         self._change = QLabel("—")
+        self._change.setWordWrap(True)
         self._change.setStyleSheet("color:#D9F4FC; font-size:9px; border:none;")
         self._date = QLabel("Sin dato")
+        self._date.setWordWrap(True)
         self._date.setStyleSheet("color:#CBEAF8; font-size:8px; border:none;")
         layout.addWidget(caption)
         layout.addWidget(self._value)
@@ -535,6 +539,9 @@ class MacroIntelligenceWorkspace(QWidget):
         self._governance_grid: QGridLayout | None = None
         self._governance_cards: tuple[QFrame, ...] = ()
         self._governance_columns = 4
+        self._header_grid: QGridLayout | None = None
+        self._header_widgets: tuple[QWidget, ...] = ()
+        self._header_compact = False
         self._build_ui()
         self._apply_styles()
         self._load_persisted_snapshot()
@@ -563,25 +570,35 @@ class MacroIntelligenceWorkspace(QWidget):
 
         header = QFrame()
         header.setObjectName("macroHeader")
-        header_layout = QHBoxLayout(header)
-        title_box = QVBoxLayout()
+        header_layout = QGridLayout(header)
+        header_layout.setHorizontalSpacing(8)
+        header_layout.setVerticalSpacing(5)
+        title_widget = QWidget()
+        title_box = QVBoxLayout(title_widget)
+        title_box.setContentsMargins(0, 0, 0, 0)
         title = QLabel("INTELIGENCIA MACROECONÓMICA")
         title_font = QFont()
         title_font.setPointSize(15)
         title_font.setBold(True)
         title.setFont(title_font)
+        title.setWordWrap(True)
         self._status_label = QLabel("Cargando información observada y escenario institucional...")
+        self._status_label.setWordWrap(True)
         self._status_label.setStyleSheet("color:#667788; font-size:9px;")
         title_box.addWidget(title)
         title_box.addWidget(self._status_label)
-        header_layout.addLayout(title_box)
-        header_layout.addStretch(1)
+        header_layout.addWidget(title_widget, 0, 0)
         self._scenario_badge = QLabel("Escenario: -")
         self._scenario_badge.setObjectName("macroScenarioBadge")
-        header_layout.addWidget(self._scenario_badge)
+        self._scenario_badge.setWordWrap(True)
+        header_layout.addWidget(self._scenario_badge, 0, 1)
         self._refresh_button = QPushButton("ACTUALIZAR BCCR")
         self._refresh_button.clicked.connect(self.refresh)
-        header_layout.addWidget(self._refresh_button)
+        header_layout.addWidget(self._refresh_button, 0, 2)
+        header_layout.setColumnStretch(0, 2)
+        header_layout.setColumnStretch(1, 1)
+        self._header_grid = header_layout
+        self._header_widgets = (title_widget, self._scenario_badge, self._refresh_button)
         root.addWidget(header)
 
         metric_grid = QGridLayout()
@@ -640,7 +657,29 @@ class MacroIntelligenceWorkspace(QWidget):
         for column in range(len(cards)):
             grid.setColumnStretch(column, 1 if column < columns else 0)
 
+    @staticmethod
+    def _reflow_macro_header(
+        grid: QGridLayout, widgets: tuple[QWidget, ...], compact: bool
+    ) -> None:
+        for widget in widgets:
+            grid.removeWidget(widget)
+        if compact:
+            grid.addWidget(widgets[0], 0, 0, 1, 2)
+            grid.addWidget(widgets[1], 1, 0)
+            grid.addWidget(widgets[2], 1, 1)
+        else:
+            for index, widget in enumerate(widgets):
+                grid.addWidget(widget, 0, index)
+        for column in range(3):
+            stretch = (2 if column == 0 else 1) if column < (2 if compact else 3) else 0
+            grid.setColumnStretch(column, stretch)
+
     def _reflow_dashboard(self, width: int) -> None:
+        if self._header_grid is not None and self._header_widgets:
+            compact = width < 1050
+            if compact != self._header_compact:
+                self._reflow_macro_header(self._header_grid, self._header_widgets, compact)
+                self._header_compact = compact
         if self._metric_grid is not None:
             metric_columns = self._metric_columns_for_width(width)
             if metric_columns != self._metric_columns:
@@ -669,10 +708,13 @@ class MacroIntelligenceWorkspace(QWidget):
         layout = QVBoxLayout(card)
         layout.setContentsMargins(10, 5, 10, 5)
         title = QLabel(caption)
+        title.setWordWrap(True)
         title.setStyleSheet("color:#667788; font-size:8px; border:none;")
         value = QLabel("-")
+        value.setWordWrap(True)
         value.setStyleSheet("color:#17324D; font-weight:700; font-size:11px; border:none;")
         hint = QLabel(helper)
+        hint.setWordWrap(True)
         hint.setStyleSheet("color:#93A0AC; font-size:7px; border:none;")
         layout.addWidget(title)
         layout.addWidget(value)
