@@ -16,7 +16,7 @@ def test_windows_v451_launcher_uses_only_configured_runtime() -> None:
 
 def test_configured_entrypoint_reuses_existing_local_configuration() -> None:
     launcher = Path("run_aip_configured.cmd").read_text(encoding="utf-8")
-    assert 'if defined AIP_RUNTIME_LOCAL_CMD (' in launcher
+    assert "if defined AIP_RUNTIME_LOCAL_CMD (" in launcher
     assert 'call "%AIP_RUNTIME_LOCAL_CMD%"' in launcher
     assert 'if exist "config\\runtime.local.cmd" call "config\\runtime.local.cmd"' in launcher
     assert 'set "AIP_EXECUTION_MODE=CONFIGURED"' in launcher
