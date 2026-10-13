@@ -209,9 +209,7 @@ def test_sugef_statement_search_and_filter_are_accessible(qt_app) -> None:
     try:
         assert view._statement_search.accessibleName() == "Buscar cuentas e indicadores SUGEF"
         assert view._statement_search.isClearButtonEnabled()
-        assert view._statement_type_filter.accessibleName() == (
-            "Filtrar tipo de estado financiero"
-        )
+        assert view._statement_type_filter.accessibleName() == ("Filtrar tipo de estado financiero")
         labels = view._statement_type_filter
         for index in range(labels.count()):
             assert labels.itemData(index, Qt.ItemDataRole.ToolTipRole) == labels.itemText(index)
