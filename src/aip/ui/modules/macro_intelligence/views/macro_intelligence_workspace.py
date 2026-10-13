@@ -1194,6 +1194,9 @@ class MacroIntelligenceWorkspace(QWidget):
         self._status_label.setText("Actualizando información observada BCCR...")
         try:
             provider = self._application_factory.container.resolve(EconomicIndicatorsProvider)
+            invalidate = getattr(provider, "invalidate_cache", None)
+            if callable(invalidate):
+                invalidate()
             worker = _EconomicLoadWorker(EconomicViewModel(provider))
         except Exception as exc:
             self._handle_load_error(f"{type(exc).__name__}: {exc}")

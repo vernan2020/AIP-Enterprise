@@ -15,8 +15,8 @@ from aip.product.configured.repositories.economic_historical_store import (
 from aip.product.configured.services.configured_advanced_macro_forecasting_service import (
     ConfiguredAdvancedMacroForecastingService,
 )
-from aip.product.economic.economic_history import EconomicHistoricalObservation
 from aip.product.economic.econometric_dataset_builder import EconometricDatasetBuilder
+from aip.product.economic.economic_history import EconomicHistoricalObservation
 
 
 def _observation(code: str, value: str, observed: date) -> EconomicHistoricalObservation:

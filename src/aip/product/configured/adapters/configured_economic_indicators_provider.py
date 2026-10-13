@@ -38,6 +38,7 @@ from aip.product.configured.protocols import (
 from aip.product.configured.repositories.economic_historical_repository import (
     EconomicHistoricalRepository,
 )
+from aip.product.economic.economic_history import EconomicHistoricalObservation
 
 
 class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
@@ -94,6 +95,49 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
         self._parser = BCCREconomicSeriesParser(self._mapper)
 
         self._cache = BCCRCache(ttl_seconds=300)
+
+    def invalidate_cache(self) -> None:
+        """Explicit user refresh must query BCCR rather than reuse an old response."""
+        self._cache = BCCRCache(ttl_seconds=300)
+
+    @staticmethod
+    def _official_history_rows(
+        observations_by_code: dict[str, tuple[EconomicIndicatorObservation, ...]],
+    ) -> tuple[EconomicHistoricalObservation, ...]:
+        """Preserve dates and values of parsed, genuinely official observations."""
+        rows: list[EconomicHistoricalObservation] = []
+        for code, observations in observations_by_code.items():
+            definition = get_indicator_definition(code)
+            if definition is None:
+                continue
+            for observation in observations:
+                if observation.source != "BCCR":
+                    continue
+                rows.append(
+                    EconomicHistoricalObservation(
+                        indicator_code=code,
+                        observation_date=observation.observation_date,
+                        value=observation.value,
+                        source="BCCR",
+                        source_series_code=observation.source_series_code,
+                        unit=observation.unit,
+                        frequency=definition.frequency.value,
+                    )
+                )
+        return tuple(rows)
+
+    def _persist_official_history(
+        self,
+        observations_by_code: dict[str, tuple[EconomicIndicatorObservation, ...]],
+    ) -> int:
+        rows = self._official_history_rows(observations_by_code)
+        if not rows:
+            return 0
+        repository = EconomicHistoricalRepository()
+        try:
+            return repository.append(rows)
+        finally:
+            repository.store.close()
 
     def get_indicators(
         self,
@@ -265,6 +309,13 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
             return self._historical_fallback(
                 reason=("; ".join(diagnostics) if diagnostics else "BCCR live data unavailable")
             )
+
+        # Update the persisted BCCR history after successful official requests.
+        # Never change approved institutional scenarios or financial formulas.
+        try:
+            self._persist_official_history(observations_by_code)
+        except Exception as exc:
+            diagnostics.append(f"BCCR: persistencia fallida ({type(exc).__name__})")
 
         return {
             "status": "AVAILABLE",
