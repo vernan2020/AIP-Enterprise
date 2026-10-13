@@ -183,3 +183,19 @@ def test_financial_source_footer_reflows_without_losing_trace_or_action(qt_app) 
     finally:
         view.close()
         qt_app.processEvents()
+
+
+def test_financial_tabs_keep_navigation_accessible_on_narrow_windows(qt_app) -> None:
+    view = FinancialAnalysisView(presenter=_Presenter())  # type: ignore[arg-type]
+    try:
+        bar = view._tabs.tabBar()
+        assert bar.usesScrollButtons()
+        assert view._tabs.elideMode() == Qt.TextElideMode.ElideRight
+        original = view._tabs.tabText(5)
+        view.resize(590, 480)
+        view._tabs.setCurrentIndex(5)
+        assert view._tabs.currentIndex() == 5
+        assert view._tabs.tabText(5) == original
+    finally:
+        view.close()
+        qt_app.processEvents()
