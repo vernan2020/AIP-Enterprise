@@ -29,7 +29,7 @@ def test_chart_tooltips_have_legible_type_and_escape_source_text() -> None:
 def test_tooltips_readable_in_both_institutional_themes(qt_app) -> None:
     for theme in (LightTheme(), DarkTheme()):
         qss = theme.stylesheet()
-        tooltip = qss.split("QToolTip {{", 1)[1].split("}}", 1)[0]
+        tooltip = qss.split("QToolTip {", 1)[1].split("}", 1)[0]
         assert "font-size: 10pt;" in tooltip
         assert "padding: 8px 11px;" in tooltip
 
