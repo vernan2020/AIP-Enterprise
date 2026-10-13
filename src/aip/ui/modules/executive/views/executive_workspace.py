@@ -21,8 +21,8 @@ from PySide6.QtWidgets import (
 from aip.ui.modules.executive.models.executive_row import ExecutiveRow
 from aip.ui.modules.executive.presenters.executive_presenter import ExecutivePresenter
 from aip.ui.modules.executive.viewmodels.executive_view_model import ExecutiveViewModel
-from aip.ui.modules.executive.widgets.executive_status_card import ExecutiveStatusCard
 from aip.ui.modules.executive.widgets.executive_signal_radar import ExecutiveSignalRadar
+from aip.ui.modules.executive.widgets.executive_status_card import ExecutiveStatusCard
 
 
 class ExecutiveWorkspace(QWidget):
