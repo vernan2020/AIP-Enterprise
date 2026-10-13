@@ -226,6 +226,7 @@ def test_macro_executive_defaults_to_approved_source_and_draws_existing_projecti
 ) -> None:
     """The restored certified scenario must render without launching the ML engine."""
     from datetime import date
+
     from PySide6.QtWidgets import QTableWidget
 
     from aip.ui.modules.macro_intelligence.viewmodels.macro_intelligence_view_model import (
