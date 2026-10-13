@@ -45,6 +45,7 @@ def test_chart_png_failed_write_does_not_replace_user_data(qt_app, tmp_path) -> 
     assert not target.exists()
     chart.close()
 
+
 def test_chart_png_invalid_capture_preserves_existing_file(qt_app, tmp_path) -> None:
     target = tmp_path / "informe-certificado.png"
     original = b"prior-approved-report"
