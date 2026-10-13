@@ -513,7 +513,7 @@ class MacroForecastLabPanel(QWidget):
         value.setWordWrap(True)
         value.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         value.setAccessibleName(f"Valor de {caption}")
-        value.setStyleSheet('color:#FFFFFF; border:none;')
+        value.setStyleSheet("color:#FFFFFF; border:none;")
         hint = QLabel(helper)
         hint.setWordWrap(True)
         hint.setStyleSheet("color:#CBEAF8; font-size:10px; border:none;")
