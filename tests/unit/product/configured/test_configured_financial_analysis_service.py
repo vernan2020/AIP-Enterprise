@@ -302,7 +302,6 @@ def test_service_does_not_query_catalog_when_api_is_disabled() -> None:
     assert any("Catálogo contable SUGEF no consultado" in item for item in snapshot.diagnostics)
 
 
-
 def test_sugef_api_monthly_lag_rechecks_after_ttl_without_manual_refresh(
     monkeypatch,
 ) -> None:

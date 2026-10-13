@@ -508,16 +508,13 @@ class ConfiguredFinancialAnalysisService:
         primary = next(iter(self._config.api_entity_codes), None)
         if not primary:
             return False
-        previous_month_end = date(cutoff_date.year, cutoff_date.month, 1) - timedelta(
-            days=1
-        )
+        previous_month_end = date(cutoff_date.year, cutoff_date.month, 1) - timedelta(days=1)
         complete_dates = self._analysis._complete_accounting_dates(cached.lines, primary)
         if complete_dates and complete_dates[0] >= previous_month_end:
             return False
         last_checked = self._cached_result_checked_at.get(cutoff_date)
         return (
-            last_checked is None
-            or monotonic() - last_checked >= self._PUBLICATION_RECHECK_SECONDS
+            last_checked is None or monotonic() - last_checked >= self._PUBLICATION_RECHECK_SECONDS
         )
 
     def _read(self, *, cutoff_date: date, force_refresh: bool) -> SUGEFFinancialReadResult:

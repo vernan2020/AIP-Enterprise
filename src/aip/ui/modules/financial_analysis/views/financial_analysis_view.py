@@ -206,9 +206,7 @@ class FinancialAnalysisView(QWidget):
         self._cutoff_notice = QLabel("")
         self._cutoff_notice.setObjectName("sugefCutoffPublicationNotice")
         self._cutoff_notice.setWordWrap(True)
-        self._cutoff_notice.setTextInteractionFlags(
-            Qt.TextInteractionFlag.TextSelectableByMouse
-        )
+        self._cutoff_notice.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         self._cutoff_notice.setStyleSheet(
             "color:#795400; background:#FFF8E6; border:1px solid #EBD5A0; "
             "border-radius:6px; padding:6px 9px;"

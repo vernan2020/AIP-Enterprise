@@ -25,11 +25,16 @@ def test_internal_rating_weights_and_13_indicator_contract() -> None:
         "Supervisión proporcional": Decimal("10"),
     }
     for dimension, weight in service.DIMENSION_WEIGHTS:
-        assert sum(
-            (item.weight_percent for item in service.INDICATORS if item.dimension == dimension),
-            Decimal("0"),
-        ) == weight
-    assert {item.code for item in service.INDICATORS if item.direction is RatingDirection.BINARY} == {
+        assert (
+            sum(
+                (item.weight_percent for item in service.INDICATORS if item.dimension == dimension),
+                Decimal("0"),
+            )
+            == weight
+        )
+    assert {
+        item.code for item in service.INDICATORS if item.direction is RatingDirection.BINARY
+    } == {
         "PROPORTIONAL_SUPERVISION",
         "STATE_GUARANTEE",
     }
