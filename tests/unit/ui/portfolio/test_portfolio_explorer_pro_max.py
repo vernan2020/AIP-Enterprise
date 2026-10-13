@@ -94,9 +94,7 @@ def test_portfolio_export_respects_filtered_positions(qt_app, monkeypatch, tmp_p
         view._positions.bind_rows(rows)
         view._filter_panel.set_rows(rows)
         view._filter_panel.search.setText("BC001")
-        monkeypatch.setattr(
-            QFileDialog, "getSaveFileName", lambda *a, **k: (str(path), "CSV")
-        )
+        monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *a, **k: (str(path), "CSV"))
         view._toolbar.export_action.trigger()
         with path.open(encoding="utf-8-sig", newline="") as inp:
             data = list(csv.reader(inp))

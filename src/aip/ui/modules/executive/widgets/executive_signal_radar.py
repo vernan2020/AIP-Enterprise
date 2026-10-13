@@ -68,7 +68,12 @@ class ExecutiveSignalRadar(QFrame):
     @staticmethod
     def _high_priority(severity: str) -> bool:
         return str(severity).strip().casefold() in {
-            "high", "critical", "alta", "alto", "crítica", "critica",
+            "high",
+            "critical",
+            "alta",
+            "alto",
+            "crítica",
+            "critica",
         }
 
     def set_rows(

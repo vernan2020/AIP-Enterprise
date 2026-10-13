@@ -65,8 +65,11 @@ def test_executive_tables_preserve_full_traceability(qt_app) -> None:
     try:
         rows = (
             ExecutiveRow(
-                "Alerta", "Detalle con trazabilidad", category="Liquidez",
-                severity="High", source="SUGEF",
+                "Alerta",
+                "Detalle con trazabilidad",
+                category="Liquidez",
+                severity="High",
+                source="SUGEF",
             ),
         )
         view._populate_rows(view._alerts_table, rows)

@@ -42,9 +42,7 @@ class PortfolioDetailsView(QWidget):
         layout.setContentsMargins(12, 12, 12, 12)
         layout.setSpacing(8)
         title = QLabel("DETALLE DEL INSTRUMENTO")
-        title.setStyleSheet(
-            "color:#00345F; font-size:11pt; font-weight:800; border:none;"
-        )
+        title.setStyleSheet("color:#00345F; font-size:11pt; font-weight:800; border:none;")
         title.setWordWrap(True)
         layout.addWidget(title)
         self._selected_label = QLabel("")
@@ -72,9 +70,7 @@ class PortfolioDetailsView(QWidget):
             value.setObjectName(f"portfolioDetail_{key}")
             value.setWordWrap(True)
             value.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-            value.setStyleSheet(
-                "color:#17324D; font-size:9.5pt; font-weight:600;"
-            )
+            value.setStyleSheet("color:#17324D; font-size:9.5pt; font-weight:600;")
             grid.addWidget(label, index, 0, Qt.AlignmentFlag.AlignTop)
             grid.addWidget(value, index, 1, Qt.AlignmentFlag.AlignTop)
             self._values[key] = value
@@ -85,7 +81,8 @@ class PortfolioDetailsView(QWidget):
     def bind_row(self, row: object | None) -> None:
         self._selected_label.setText(
             str(getattr(row, "isin", "Seleccione una posición"))
-            if row is not None else "Seleccione una posición"
+            if row is not None
+            else "Seleccione una posición"
         )
         for key, value in self._values.items():
             raw = getattr(row, key, None) if row is not None else None

@@ -162,9 +162,7 @@ class HomeWorkspace(QWidget):
             for card in self._module_cards:
                 self._module_grid.removeWidget(card)
             for index, card in enumerate(self._module_cards):
-                self._module_grid.addWidget(
-                    card, index // module_columns, index % module_columns
-                )
+                self._module_grid.addWidget(card, index // module_columns, index % module_columns)
             self._module_columns = module_columns
         if self._context_grid is not None and context_columns != self._context_columns:
             for card in self._context_cards:

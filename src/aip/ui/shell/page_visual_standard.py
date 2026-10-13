@@ -22,9 +22,7 @@ def apply_page_visual_standard(page: QWidget) -> None:
         for index in range(widget.count()):
             tab_bar.setTabToolTip(index, widget.tabText(index))
 
-    tables = ([page] if isinstance(page, QTableView) else []) + page.findChildren(
-        QTableView
-    )
+    tables = ([page] if isinstance(page, QTableView) else []) + page.findChildren(QTableView)
     for table in tables:
         table.setAlternatingRowColors(True)
         table.setTextElideMode(Qt.TextElideMode.ElideRight)

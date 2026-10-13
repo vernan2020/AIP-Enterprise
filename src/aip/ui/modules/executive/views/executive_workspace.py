@@ -298,17 +298,13 @@ class ExecutiveWorkspace(QWidget):
             for card in self._context_cells:
                 self._context_grid.removeWidget(card)
             for index, card in enumerate(self._context_cells):
-                self._context_grid.addWidget(
-                    card, index // context_cols, index % context_cols
-                )
+                self._context_grid.addWidget(card, index // context_cols, index % context_cols)
             self._context_columns = context_cols
         if self._domain_grid is not None and domain_cols != self._domain_columns:
             for card in self._domain_cards:
                 self._domain_grid.removeWidget(card)
             for index, card in enumerate(self._domain_cards):
-                self._domain_grid.addWidget(
-                    card, index // domain_cols, index % domain_cols
-                )
+                self._domain_grid.addWidget(card, index // domain_cols, index % domain_cols)
             self._domain_columns = domain_cols
         self._decision_splitter.setOrientation(
             Qt.Orientation.Vertical if width < 960 else Qt.Orientation.Horizontal

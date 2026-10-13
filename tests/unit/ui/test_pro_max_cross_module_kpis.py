@@ -70,9 +70,7 @@ def test_rtilb_kpis_use_white_values_on_blue_cards(qt_app) -> None:
         assert len(view._summary_kpi_cards) == 5
         view._arrange_summary_kpis(650)
         assert view._summary_columns == 2
-        assert view._summary_kpi_grid.itemAtPosition(2, 0).widget() is (
-            view._summary_kpi_cards[4]
-        )
+        assert view._summary_kpi_grid.itemAtPosition(2, 0).widget() is (view._summary_kpi_cards[4])
         assert "color:#FFFFFF" in view._kpi_values["BASE_EVE"].styleSheet()
         assert "stop:0 #00477F" in view._summary_kpi_cards[0].styleSheet()
     finally:

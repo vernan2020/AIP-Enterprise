@@ -101,9 +101,7 @@ class PortfolioPositionsView(QWidget):
         )
         self._count_label = QLabel("0 posiciones")
         self._count_label.setObjectName("portfolioPositionsCount")
-        self._count_label.setStyleSheet(
-            "color:#174E78; font-weight:700; font-size:10pt;"
-        )
+        self._count_label.setStyleSheet("color:#174E78; font-weight:700; font-size:10pt;")
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(6)
@@ -174,9 +172,7 @@ class PortfolioPositionsView(QWidget):
     def _update_count(self, visible: int | None = None) -> None:
         if visible is None:
             visible = self._table.rowCount()
-        self._count_label.setText(
-            f"{visible:,} de {self._table.rowCount():,} posiciones"
-        )
+        self._count_label.setText(f"{visible:,} de {self._table.rowCount():,} posiciones")
 
     def visible_rows(self) -> tuple[object, ...]:
         rows: list[object] = []

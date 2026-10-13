@@ -229,9 +229,7 @@ class PortfolioView(QWidget):
             "QTabBar::tab:selected {color:#174E78; border-bottom:2px solid #1F5A8A;}"
         )
         self._tabs.setMinimumHeight(440)
-        self._tabs.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
-        )
+        self._tabs.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         layout.addWidget(self._tabs, 1)
         self._build_dashboard_tab()
         self._tabs.addTab(self._history, "Histórico KPIs")
@@ -525,12 +523,12 @@ class PortfolioView(QWidget):
     def _export_visible_positions(self) -> None:
         rows = self._positions.visible_rows()
         if not rows:
-            QMessageBox.information(
-                self, "Portafolio", "No hay posiciones visibles para exportar."
-            )
+            QMessageBox.information(self, "Portafolio", "No hay posiciones visibles para exportar.")
             return
         filename, _ = QFileDialog.getSaveFileName(
-            self, "Exportar posiciones filtradas", "Portafolio_Posiciones.csv",
+            self,
+            "Exportar posiciones filtradas",
+            "Portafolio_Posiciones.csv",
             "Archivos CSV (*.csv)",
         )
         if not filename:
