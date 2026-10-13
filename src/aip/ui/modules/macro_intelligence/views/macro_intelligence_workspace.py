@@ -548,6 +548,9 @@ class MacroIntelligenceWorkspace(QWidget):
         self._curve_grid: QGridLayout | None = None
         self._curve_groups: tuple[QGroupBox, ...] = ()
         self._curve_columns = 2
+        self._transmission_grid: QGridLayout | None = None
+        self._transmission_cards: tuple[QFrame, ...] = ()
+        self._transmission_columns = 4
         self._build_ui()
         self._apply_styles()
         self._load_persisted_snapshot()
@@ -710,6 +713,13 @@ class MacroIntelligenceWorkspace(QWidget):
             if compact != self._header_compact:
                 self._reflow_macro_header(self._header_grid, self._header_widgets, compact)
                 self._header_compact = compact
+        if self._transmission_grid is not None and self._transmission_cards:
+            transmission_columns = 2 if width < 1050 else 4
+            if transmission_columns != self._transmission_columns:
+                self._reflow_grid(
+                    self._transmission_grid, self._transmission_cards, transmission_columns
+                )
+                self._transmission_columns = transmission_columns
         if self._curve_grid is not None and self._curve_groups:
             curve_columns = 1 if width < 980 else 2
             if curve_columns != self._curve_columns:
@@ -869,7 +879,10 @@ class MacroIntelligenceWorkspace(QWidget):
         page = QWidget()
         layout = QVBoxLayout(page)
         layout.setContentsMargins(4, 8, 4, 4)
-        strip = QHBoxLayout()
+        strip = QGridLayout()
+        strip.setHorizontalSpacing(9)
+        strip.setVerticalSpacing(8)
+        cards: list[QFrame] = []
         stages = (
             ("1", "MACRO", "7 variables aprobadas"),
             ("2", "MERCADOS", "Curvas · tasas · tipo de cambio"),
@@ -890,11 +903,11 @@ class MacroIntelligenceWorkspace(QWidget):
             card_layout.addWidget(step)
             card_layout.addWidget(name)
             card_layout.addWidget(text)
-            strip.addWidget(card, 1)
-            if index < len(stages) - 1:
-                arrow = QLabel("→")
-                arrow.setStyleSheet("font-size:22px; color:#8293A2;")
-                strip.addWidget(arrow)
+            strip.addWidget(card, 0, index)
+            strip.setColumnStretch(index, 1)
+            cards.append(card)
+        self._transmission_grid = strip
+        self._transmission_cards = tuple(cards)
         layout.addLayout(strip)
         governance = QGroupBox("Gobierno del escenario y alcance del módulo")
         governance_layout = QVBoxLayout(governance)
