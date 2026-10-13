@@ -61,9 +61,7 @@ def test_bccr_history_records_are_written_to_repository(monkeypatch) -> None:
     import aip.product.configured.adapters.configured_economic_indicators_provider as provider_module
 
     monkeypatch.setattr(provider_module, "EconomicHistoricalRepository", FakeRepository)
-    provider = ConfiguredEconomicIndicatorsProvider(
-        bccr_config=BCCRConfig(token="TEST_ONLY")
-    )
+    provider = ConfiguredEconomicIndicatorsProvider(bccr_config=BCCRConfig(token="TEST_ONLY"))
     assert (
         provider._persist_official_history({"TBP": (_point("TBP", "3.62", date(2026, 10, 12)),)})
         == 1
