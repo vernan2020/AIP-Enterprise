@@ -282,6 +282,8 @@ class FinancialAnalysisView(QWidget):
 
         self._statement_content_tabs = QTabWidget()
         self._statement_content_tabs.setDocumentMode(True)
+        self._statement_content_tabs.tabBar().setUsesScrollButtons(True)
+        self._statement_content_tabs.setElideMode(Qt.TextElideMode.ElideRight)
 
         balances_page = QWidget()
         balances_layout = QVBoxLayout(balances_page)
@@ -485,6 +487,8 @@ class FinancialAnalysisView(QWidget):
         self._rating_content_tabs = QTabWidget()
         self._rating_content_tabs.setObjectName("ratingContentTabs")
         self._rating_content_tabs.setDocumentMode(True)
+        self._rating_content_tabs.tabBar().setUsesScrollButtons(True)
+        self._rating_content_tabs.setElideMode(Qt.TextElideMode.ElideRight)
 
         ranking = QWidget()
         ranking_layout = QVBoxLayout(ranking)
