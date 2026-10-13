@@ -47,6 +47,8 @@ from aip.ui.modules.macro_intelligence.viewmodels.macro_intelligence_view_model 
     MacroForecastLabViewModel,
     MacroProjectionViewModel,
 )
+from aip.ui.widgets.table_csv_export import save_table_csv_dialog
+
 from aip.ui.widgets.chart_tooltip import (
     build_chart_tooltip,
     point_hit_rect,
@@ -861,6 +863,14 @@ class MacroIntelligenceWorkspace(QWidget):
         self._projection_table.verticalHeader().setVisible(False)
         self._projection_table.setAlternatingRowColors(True)
         self._projection_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self._export_projection_button = QPushButton("Exportar CSV")
+        self._export_projection_button.setToolTip("Exportar la matriz macro a CSV para Excel.")
+        self._export_projection_button.clicked.connect(
+            lambda: save_table_csv_dialog(
+                self, self._projection_table, "aip-matriz-macro.csv"
+            )
+        )
+        layout.addWidget(self._export_projection_button, alignment=Qt.AlignmentFlag.AlignRight)
         layout.addWidget(self._projection_table)
         self._tabs.addTab(page, "Matriz macro")
 
@@ -873,8 +883,12 @@ class MacroIntelligenceWorkspace(QWidget):
         self._tri_crc_table = self._curve_table()
         self._tri_usd_table = self._curve_table()
         self._curve_groups = (
-            self._table_group("TRI CRC · observado", self._tri_crc_table),
-            self._table_group("TRI USD · observado", self._tri_usd_table),
+            self._table_group(
+                "TRI CRC · observado", self._tri_crc_table, "aip-tri-crc.csv"
+            ),
+            self._table_group(
+                "TRI USD · observado", self._tri_usd_table, "aip-tri-usd.csv"
+            ),
         )
         for index, group in enumerate(self._curve_groups):
             layout.addWidget(group, 0, index)
@@ -940,10 +954,15 @@ class MacroIntelligenceWorkspace(QWidget):
         table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         return table
 
-    @staticmethod
-    def _table_group(title: str, table: QTableWidget) -> QGroupBox:
+    def _table_group(self, title: str, table: QTableWidget, filename: str) -> QGroupBox:
         group = QGroupBox(title)
         layout = QVBoxLayout(group)
+        export_button = QPushButton("Exportar CSV")
+        export_button.setToolTip(f"Exportar {title} a CSV para Excel.")
+        export_button.clicked.connect(
+            lambda: save_table_csv_dialog(self, table, filename)
+        )
+        layout.addWidget(export_button, alignment=Qt.AlignmentFlag.AlignRight)
         layout.addWidget(table)
         return group
 

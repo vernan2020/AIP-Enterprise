@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import date
 
 from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QTableWidgetItem
 
 from aip.domain.financial_analysis.models import FinancialAnalysisSnapshot
 from aip.ui.modules.financial_analysis.presenters.financial_analysis_presenter import (
@@ -15,6 +16,7 @@ from aip.ui.modules.financial_analysis.views.financial_analysis_view import (
     FinancialAnalysisView,
 )
 from aip.ui.shell.main_window import MainWindow
+from aip.ui.widgets.table_csv_export import export_table_csv
 
 
 class _Presenter:
@@ -271,6 +273,48 @@ def test_nested_sugef_and_rating_tabs_support_compact_navigation(qt_app) -> None
             tabs.setCurrentIndex(last)
             assert tabs.currentIndex() == last
             assert tabs.tabText(last) == title
+    finally:
+        view.close()
+        qt_app.processEvents()
+
+def test_sugef_export_button_tracks_responsive_toolbar(qt_app) -> None:
+    view = FinancialAnalysisView(presenter=_Presenter())  # type: ignore[arg-type]
+    try:
+        grid = view._statement_controls_grid
+        assert grid is not None
+        assert view._export_statement_button.text() == "Exportar CSV"
+        view._arrange_statement_controls(720)
+        assert grid.itemAtPosition(2, 0).widget() is view._export_statement_button
+        view._arrange_statement_controls(1400)
+        assert grid.itemAtPosition(0, 4).widget() is view._export_statement_button
+    finally:
+        view.close()
+        qt_app.processEvents()
+
+
+def test_sugef_csv_exports_filtered_rows_and_audit_columns(qt_app, tmp_path) -> None:
+    view = FinancialAnalysisView(presenter=_Presenter())  # type: ignore[arg-type]
+    try:
+        table = view._statement_table
+        table.setRowCount(2)
+        entries = (
+            ("Balance de situación", "110", "Activos", "1,200.50", "CRC", "SUGEF 2026-08"),
+            ("Estado de resultados", "410", "Ingresos", "150.75", "CRC", "SUGEF 2026-08"),
+        )
+        for row, values in enumerate(entries):
+            for column, value in enumerate(values):
+                table.setItem(row, column, QTableWidgetItem(value))
+        view._statement_search.setText("Activos")
+        path = tmp_path / "sugef-estados.csv"
+        count = export_table_csv(table, path, visible_rows_only=True)
+        assert count == 1
+        import csv
+
+        with path.open(encoding="utf-8-sig", newline="") as stream:
+            rows = list(csv.reader(stream, delimiter=";"))
+        assert rows[0] == ["Estado", "Cuenta", "Descripción", "Valor", "Moneda", "Trazabilidad"]
+        assert rows[1] == list(entries[0])
+        assert len(rows) == 2
     finally:
         view.close()
         qt_app.processEvents()

@@ -23,6 +23,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from aip.ui.widgets.table_csv_export import save_table_csv_dialog
+
 from aip.ui.modules.financial_analysis.presenters.financial_analysis_presenter import (
     FinancialAnalysisPresenter,
 )
@@ -318,6 +320,15 @@ class FinancialAnalysisView(QWidget):
         self._statement_type_filter.currentTextChanged.connect(self._apply_statement_filter)
         self._statement_count = QLabel("0 registros")
         self._statement_count.setStyleSheet("color:#667788; font-size:9px;")
+        self._export_statement_button = QPushButton("Exportar CSV")
+        self._export_statement_button.setToolTip(
+            "Exportar las filas y columnas visibles, con trazabilidad, a CSV para Excel."
+        )
+        self._export_statement_button.clicked.connect(
+            lambda: save_table_csv_dialog(
+                self, self._statement_table, "aip-sugef-estados.csv", visible_rows_only=True
+            )
+        )
         widgets = (
             self._statement_search,
             filter_label,
@@ -326,6 +337,7 @@ class FinancialAnalysisView(QWidget):
         )
         for index, widget in enumerate(widgets):
             controls.addWidget(widget, 0, index)
+        controls.addWidget(self._export_statement_button, 0, 4)
         controls.setColumnStretch(0, 1)
         self._statement_controls_grid = controls
         self._statement_controls = widgets
@@ -673,14 +685,17 @@ class FinancialAnalysisView(QWidget):
             return
         for widget in self._statement_controls:
             grid.removeWidget(widget)
+        grid.removeWidget(self._export_statement_button)
         if compact:
             grid.addWidget(self._statement_search, 0, 0, 1, 3)
             grid.addWidget(self._statement_controls[1], 1, 0)
             grid.addWidget(self._statement_type_filter, 1, 1)
             grid.addWidget(self._statement_count, 1, 2)
+            grid.addWidget(self._export_statement_button, 2, 0, 1, 3)
         else:
             for index, widget in enumerate(self._statement_controls):
                 grid.addWidget(widget, 0, index)
+            grid.addWidget(self._export_statement_button, 0, 4)
         for column in range(4):
             grid.setColumnStretch(column, 1 if column == (1 if compact else 0) else 0)
         self._statement_controls_compact = compact
