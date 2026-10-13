@@ -240,8 +240,8 @@ class ExecutiveWorkspace(QWidget):
             self._domain_panel("market_panel", "MERCADO"),
             self._macro_panel(),
         )
-        for index, card in enumerate(domains):
-            panels.addWidget(card, index // 2, index % 2)
+        for index, domain_card in enumerate(domains):
+            panels.addWidget(domain_card, index // 2, index % 2)
         self._domain_grid = panels
         self._domain_cards = domains
         root.addLayout(panels)
@@ -295,16 +295,20 @@ class ExecutiveWorkspace(QWidget):
                 self._kpi_grid.setColumnStretch(column, 1 if column < kpi_cols else 0)
             self._kpi_columns = kpi_cols
         if self._context_grid is not None and context_cols != self._context_columns:
-            for card in self._context_cells:
-                self._context_grid.removeWidget(card)
-            for index, card in enumerate(self._context_cells):
-                self._context_grid.addWidget(card, index // context_cols, index % context_cols)
+            for context_cell in self._context_cells:
+                self._context_grid.removeWidget(context_cell)
+            for index, context_cell in enumerate(self._context_cells):
+                self._context_grid.addWidget(
+                    context_cell, index // context_cols, index % context_cols
+                )
             self._context_columns = context_cols
         if self._domain_grid is not None and domain_cols != self._domain_columns:
-            for card in self._domain_cards:
-                self._domain_grid.removeWidget(card)
-            for index, card in enumerate(self._domain_cards):
-                self._domain_grid.addWidget(card, index // domain_cols, index % domain_cols)
+            for domain_card in self._domain_cards:
+                self._domain_grid.removeWidget(domain_card)
+            for index, domain_card in enumerate(self._domain_cards):
+                self._domain_grid.addWidget(
+                    domain_card, index // domain_cols, index % domain_cols
+                )
             self._domain_columns = domain_cols
         self._decision_splitter.setOrientation(
             Qt.Orientation.Vertical if width < 960 else Qt.Orientation.Horizontal
