@@ -162,3 +162,13 @@ def test_peer_selector_exposes_complete_indicator_name_in_tooltip(qt_app) -> Non
     finally:
         panel.close()
         qt_app.processEvents()
+
+
+def test_peer_selector_exposes_accessible_name_and_guidance(qt_app) -> None:
+    panel = FinancialPeerChartPanel()
+    try:
+        assert panel._selector.accessibleName() == "Indicador de comparación financiera"
+        assert "nombre completo" in panel._selector.accessibleDescription()
+    finally:
+        panel.close()
+        qt_app.processEvents()
