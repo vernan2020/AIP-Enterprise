@@ -338,9 +338,8 @@ def test_unpublished_september_keeps_latest_complete_august_without_fabrication(
             parameters = payload["parametrosEntidad"]
             assert isinstance(parameters, dict)
             response = super()._post_json(endpoint, payload)
-            if (
-                str(parameters["codigoEntidad"]) == "3004045138"
-                and ("BalanceSituacion" in endpoint or "EstadoResultados" in endpoint)
+            if str(parameters["codigoEntidad"]) == "3004045138" and (
+                "BalanceSituacion" in endpoint or "EstadoResultados" in endpoint
             ):
                 key = (
                     "listaBalanceSituacionAnalisisFinancieroEntidad"

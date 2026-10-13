@@ -299,9 +299,7 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
                 balance_lines=tuple(
                     line for line in balance_lines if line.statement_date == cutoff
                 ),
-                income_lines=tuple(
-                    line for line in income_lines if line.statement_date == cutoff
-                ),
+                income_lines=tuple(line for line in income_lines if line.statement_date == cutoff),
                 endpoints=(balance_endpoint, income_endpoint),
             )
             if best_probe is None or cutoff > best_probe.cutoff:
