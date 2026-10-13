@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from PySide6.QtCharts import QChart
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QToolTip
-from PySide6.QtWidgets import QLabel
+from PySide6.QtWidgets import QLabel, QToolTip
 
 from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model import (
     PeerChartPointView,
