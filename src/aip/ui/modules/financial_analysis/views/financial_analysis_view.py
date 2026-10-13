@@ -125,6 +125,9 @@ class FinancialAnalysisView(QWidget):
         self._kpi_grid: QGridLayout | None = None
         self._kpi_cards: tuple[QFrame, ...] = ()
         self._kpi_columns = 7
+        self._controls_grid: QGridLayout | None = None
+        self._controls_widgets: tuple[QWidget, ...] = ()
+        self._controls_columns = 4
         self._building_entity_selector = False
         self._comparison_thread: QThread | None = None
         self._comparison_worker: _ComparisonWorker | None = None
@@ -154,6 +157,7 @@ class FinancialAnalysisView(QWidget):
         self._subtitle = QLabel(
             "Resumen ejecutivo, estados financieros, benchmarking y trazabilidad SUGEF"
         )
+        self._subtitle.setWordWrap(True)
         self._subtitle.setStyleSheet("color:#667788; font-size:9px;")
         title_box.addWidget(self._title)
         title_box.addWidget(self._subtitle)
@@ -163,17 +167,19 @@ class FinancialAnalysisView(QWidget):
 
         # Keep the entity selector and refresh controls out of the heading row:
         # otherwise a long institutional name can force every KPI to clip.
-        controls = QHBoxLayout()
-        controls.setSpacing(7)
-        controls.addWidget(QLabel("Entidad:"))
+        controls = QGridLayout()
+        controls.setHorizontalSpacing(7)
+        controls.setVerticalSpacing(5)
+        entity_label = QLabel("Entidad:")
         self._entity_selector = QComboBox()
-        self._entity_selector.setMinimumWidth(210)
+        entity_label.setBuddy(self._entity_selector)
+        self._entity_selector.setMinimumWidth(155)
+        self._entity_selector.setAccessibleName("Entidad financiera supervisada")
         self._entity_selector.currentIndexChanged.connect(self._entity_changed)
-        controls.addWidget(self._entity_selector, 1)
         self._refresh_button = QPushButton("Actualizar fuente")
         self._refresh_button.clicked.connect(self._refresh)
-        controls.addWidget(self._refresh_button)
         self._cutoff = QLabel("Corte SUGEF: -")
+        self._cutoff.setWordWrap(True)
         self._cutoff.setToolTip(
             "Último corte oficial SUGEF disponible que no excede el corte general de AIP."
         )
@@ -181,7 +187,12 @@ class FinancialAnalysisView(QWidget):
             "padding:6px 10px; background:#F3F6F9; border:1px solid #D7E0E8; "
             "border-radius:6px; font-weight:600;"
         )
-        controls.addWidget(self._cutoff)
+        widgets = (entity_label, self._entity_selector, self._refresh_button, self._cutoff)
+        for index, widget in enumerate(widgets):
+            controls.addWidget(widget, 0, index)
+        controls.setColumnStretch(1, 1)
+        self._controls_grid = controls
+        self._controls_widgets = widgets
         root.addLayout(controls)
 
         kpis = QGridLayout()
@@ -602,9 +613,26 @@ class FinancialAnalysisView(QWidget):
             grid.setColumnStretch(column, 1 if column < columns else 0)
         self._kpi_columns = columns
 
+    def _arrange_controls(self, width: int) -> None:
+        grid = self._controls_grid
+        if grid is None or not self._controls_widgets:
+            return
+        columns = 2 if width < 1050 else 4
+        if columns == self._controls_columns:
+            return
+        for widget in self._controls_widgets:
+            grid.removeWidget(widget)
+        for index, widget in enumerate(self._controls_widgets):
+            grid.addWidget(widget, index // columns, index % columns)
+        for column in range(4):
+            grid.setColumnStretch(column, 1 if column == 1 else 0)
+        self._controls_columns = columns
+
     def resizeEvent(self, event) -> None:  # noqa: N802
         super().resizeEvent(event)
-        self._arrange_kpi_cards(event.size().width())
+        width = event.size().width()
+        self._arrange_kpi_cards(width)
+        self._arrange_controls(width)
 
     def _metric_card(self, code: str, label: str) -> QFrame:
         card = QFrame()
@@ -690,11 +718,15 @@ class FinancialAnalysisView(QWidget):
             self._entity_selector.clear()
             for entity_id, name in view_model.entities:
                 self._entity_selector.addItem(name, entity_id)
+                self._entity_selector.setItemData(
+                    self._entity_selector.count() - 1, name, Qt.ItemDataRole.ToolTipRole
+                )
             selected = self._entity_selector.findData(view_model.selected_entity_id)
             if selected >= 0:
                 self._entity_selector.setCurrentIndex(selected)
         finally:
             self._building_entity_selector = False
+        self._entity_selector.setToolTip(self._entity_selector.currentText())
 
     def _bind_statements(self, view_model: FinancialAnalysisViewModel) -> None:
         self._statement_table.setRowCount(len(view_model.statement_rows))
@@ -1026,6 +1058,7 @@ class FinancialAnalysisView(QWidget):
     def _entity_changed(self, _index: int) -> None:
         if self._building_entity_selector:
             return
+        self._entity_selector.setToolTip(self._entity_selector.currentText())
         entity_id = self._entity_selector.currentData()
         if entity_id:
             self._request_load(str(entity_id), False)
