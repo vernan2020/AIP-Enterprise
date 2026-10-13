@@ -202,3 +202,22 @@ def test_financial_tabs_keep_navigation_accessible_on_narrow_windows(qt_app) -> 
     finally:
         view.close()
         qt_app.processEvents()
+
+
+def test_sugef_statement_search_and_filter_are_accessible(qt_app) -> None:
+    view = FinancialAnalysisView(presenter=_Presenter())  # type: ignore[arg-type]
+    try:
+        assert view._statement_search.accessibleName() == "Buscar cuentas e indicadores SUGEF"
+        assert view._statement_search.isClearButtonEnabled()
+        assert view._statement_type_filter.accessibleName() == (
+            "Filtrar tipo de estado financiero"
+        )
+        labels = view._statement_type_filter
+        for index in range(labels.count()):
+            assert labels.itemData(index, Qt.ItemDataRole.ToolTipRole) == labels.itemText(index)
+        view._statement_search.setText("activo")
+        view._statement_search.clear()
+        assert view._statement_search.text() == ""
+    finally:
+        view.close()
+        qt_app.processEvents()
