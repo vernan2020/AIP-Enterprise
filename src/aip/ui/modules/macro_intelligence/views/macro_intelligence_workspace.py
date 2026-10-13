@@ -642,6 +642,8 @@ class MacroIntelligenceWorkspace(QWidget):
 
         self._tabs = QTabWidget()
         self._tabs.setDocumentMode(True)
+        self._tabs.tabBar().setUsesScrollButtons(True)
+        self._tabs.setElideMode(Qt.TextElideMode.ElideRight)
         root.addWidget(self._tabs, 1)
         self._build_projection_tab()
         self._build_projection_table_tab()
