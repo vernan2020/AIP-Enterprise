@@ -306,9 +306,7 @@ class ExecutiveWorkspace(QWidget):
             for domain_card in self._domain_cards:
                 self._domain_grid.removeWidget(domain_card)
             for index, domain_card in enumerate(self._domain_cards):
-                self._domain_grid.addWidget(
-                    domain_card, index // domain_cols, index % domain_cols
-                )
+                self._domain_grid.addWidget(domain_card, index // domain_cols, index % domain_cols)
             self._domain_columns = domain_cols
         self._decision_splitter.setOrientation(
             Qt.Orientation.Vertical if width < 960 else Qt.Orientation.Horizontal
