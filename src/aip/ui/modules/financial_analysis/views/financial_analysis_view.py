@@ -221,6 +221,8 @@ class FinancialAnalysisView(QWidget):
 
         self._tabs = QTabWidget()
         self._tabs.setDocumentMode(True)
+        self._tabs.tabBar().setUsesScrollButtons(True)
+        self._tabs.setElideMode(Qt.TextElideMode.ElideRight)
         self._history_panel = FinancialHistoryPanel()
         self._comparison_panel = FinancialEntityComparisonPanel()
         self._comparison_panel.compareRequested.connect(self._run_entity_comparison)
