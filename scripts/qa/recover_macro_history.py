@@ -118,16 +118,35 @@ def recover(
     backup_dir.mkdir(parents=True, exist_ok=False)
     backup = backup_dir / "aip.duckdb"
     shutil.copy2(destination, backup)
+    if backup.stat().st_size != destination.stat().st_size:
+        raise RuntimeError("Respaldo de PREVIEW incompleto; abortar.")
+    # A leftover DuckDB WAL may contain valid, committed PREVIEW changes.
+    # Preserve both files BEFORE opening PREVIEW for any write/checkpoint.
+    wal = destination.with_name(destination.name + ".wal")
+    if wal.exists():
+        wal_copy = backup_dir / wal.name
+        shutil.copy2(wal, wal_copy)
+        if wal_copy.stat().st_size != wal.stat().st_size:
+            raise RuntimeError("Respaldo WAL incompleto; abortar.")
+        notes.append("WAL de PREVIEW respaldado junto a la base original.")
     notes.append("Respaldo de PREVIEW creado antes de modificar datos.")
+    # The exclusive connection fails safely if AIP is still running.
+    # DuckDB checkpoints any valid WAL into PREVIEW (never CERTIFICADA).
+    with duckdb.connect(str(destination), read_only=False) as target:
+        target.execute("CHECKPOINT")
+    if inventory(destination) != destination_counts:
+        raise ValueError("PREVIEW cambió durante checkpoint; abortar y revisar respaldo.")
 
     root = destination.parent.parent
     history_store = EconomicHistoricalStore(project_root=root)
     scenario_store = InstitutionalMacroScenarioStore(project_root=root)
     try:
         history_store.initialize()
-        scenario_store.initialize()
     finally:
         history_store.close()
+    try:
+        scenario_store.initialize()
+    finally:
         scenario_store.close()
 
     with duckdb.connect(str(destination), read_only=False) as target:

@@ -90,3 +90,19 @@ def test_incompatible_table_schema_does_not_copy_partial_data(tmp_path) -> None:
     assert inventory(source)["economic_history_observations"] == 2
     assert inventory(target)["economic_history_observations"] == 0
     assert len(list((target.parent / "backups").glob("*/aip.duckdb"))) == 1
+
+
+def test_existing_wal_is_backed_up_before_preview_checkpoint(tmp_path) -> None:
+    source = tmp_path / "certified" / "database" / "aip.duckdb"
+    target = tmp_path / "preview" / "database" / "aip.duckdb"
+    _db(source, amount=2)
+    _db(target, amount=0)
+    # Mimic a leftover WAL marker: never delete it without a verified backup.
+    wal = target.with_name(target.name + ".wal")
+    wal.write_bytes(b"")
+    result = recover(source, target, apply=True)
+    assert any("WAL de PREVIEW respaldado" in message for message in result)
+    backups = list((target.parent / "backups").glob("*/aip.duckdb.wal"))
+    assert len(backups) == 1
+    assert backups[0].read_bytes() == b""
+    assert inventory(target)["economic_history_observations"] == 2
