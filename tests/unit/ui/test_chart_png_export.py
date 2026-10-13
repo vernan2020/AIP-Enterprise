@@ -44,3 +44,14 @@ def test_chart_png_failed_write_does_not_replace_user_data(qt_app, tmp_path) -> 
         export_widget_png(chart, target)
     assert not target.exists()
     chart.close()
+
+def test_chart_png_invalid_capture_preserves_existing_file(qt_app, tmp_path) -> None:
+    target = tmp_path / "informe-certificado.png"
+    original = b"prior-approved-report"
+    target.write_bytes(original)
+    chart = QWidget()
+    chart.resize(0, 0)
+    with pytest.raises(ValueError, match="dimensiones"):
+        export_widget_png(chart, target)
+    assert target.read_bytes() == original
+    chart.close()
