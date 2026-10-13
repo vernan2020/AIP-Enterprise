@@ -219,3 +219,94 @@ def test_macro_tab_navigation_preserves_full_titles_in_compact_view(qt_app) -> N
     finally:
         tabs.close()
         qt_app.processEvents()
+
+
+def test_macro_executive_defaults_to_approved_source_and_draws_existing_projection(
+    qt_app, monkeypatch
+) -> None:
+    """The restored certified scenario must render without launching the ML engine."""
+    from datetime import date
+    from PySide6.QtWidgets import QTableWidget
+
+    from aip.ui.modules.macro_intelligence.viewmodels.macro_intelligence_view_model import (
+        MacroProjectionRow,
+        MacroProjectionViewModel,
+    )
+
+    # Construct only the actual UI tab; no institutional connector is replaced.
+    workspace = MacroIntelligenceWorkspace.__new__(MacroIntelligenceWorkspace)
+    QWidget.__init__(workspace)
+    workspace._tabs = QTabWidget(workspace)
+    ml_requests: list[str] = []
+    monkeypatch.setattr(workspace, "_load_ml_projection", ml_requests.append)
+    try:
+        workspace._build_projection_tab()
+        assert workspace._projection_source_combo.currentData() == "INSTITUTIONAL"
+        assert workspace._projection_source_combo.itemData(1) == "ML"
+        workspace._scenario_badge = QLabel()
+        workspace._governance_labels = {
+            key: QLabel() for key in ("scenario", "version", "dataset", "horizon")
+        }
+        workspace._projection_table = QTableWidget(0, 8)
+        rows = (
+            MacroProjectionRow(
+                period=date(2026, 9, 1),
+                fx_sell=449.99,
+                tpm=3.0,
+                tbp=3.6,
+                tri_crc_12m=6.2,
+                tri_usd_12m=4.11,
+                inflation=-0.28,
+                imae=3.33,
+            ),
+            MacroProjectionRow(
+                period=date(2026, 10, 1),
+                fx_sell=447.09,
+                tpm=3.0,
+                tbp=3.59,
+                tri_crc_12m=6.2,
+                tri_usd_12m=4.11,
+                inflation=-0.28,
+                imae=3.61,
+            ),
+        )
+        workspace._projection = MacroProjectionViewModel(
+            status="AVAILABLE",
+            scenario_id="BASE-MACRO-INSTITUTIONAL",
+            scenario_type="BASE",
+            scenario_status="APPROVED",
+            version=4,
+            horizon=12,
+            rows=rows,
+        )
+        workspace._bind_projection()
+        assert workspace._projection_chart._projection.rows == rows
+        assert workspace._projection_chart._ml_forecast is None
+        assert workspace._projection_table.rowCount() == len(rows)
+        assert workspace._projection_chart._driver_code == "TPM"
+        assert "directamente del escenario" in workspace._projection_note.text()
+        assert not ml_requests
+        # ML starts only if the user chooses that option.
+        workspace._projection_source_combo.setCurrentIndex(1)
+        assert ml_requests == ["TPM"]
+        workspace._projection_source_combo.setCurrentIndex(0)
+        assert workspace._projection_chart._projection.rows == rows
+        assert workspace._projection_chart._ml_forecast is None
+    finally:
+        workspace.close()
+        qt_app.processEvents()
+
+
+def test_empty_ml_result_has_correct_source_specific_placeholder(qt_app) -> None:
+    from aip.ui.modules.macro_intelligence.viewmodels.macro_intelligence_view_model import (
+        MacroForecastLabViewModel,
+    )
+
+    chart = _ProjectionChart()
+    try:
+        chart.set_ml_forecast(MacroForecastLabViewModel(indicator_code="TPM"))
+        assert chart._ml_forecast is not None
+        assert chart._ml_forecast.points == ()
+    finally:
+        chart.close()
+        qt_app.processEvents()

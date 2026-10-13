@@ -793,8 +793,11 @@ class MacroIntelligenceWorkspace(QWidget):
             QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon
         )
         self._projection_source_combo.setMinimumContentsLength(18)
-        self._projection_source_combo.addItem("Ensemble ML · backtesting rolling", "ML")
+        # The approved institutional scenario is the authoritative executive
+        # baseline. ML is an explicit, optional analytical comparison, never
+        # the default data source or an implicit long-running startup job.
         self._projection_source_combo.addItem("Escenario institucional aprobado", "INSTITUTIONAL")
+        self._projection_source_combo.addItem("Ensemble ML · backtesting rolling", "ML")
         self._projection_source_combo.currentIndexChanged.connect(
             lambda _index: self._projection_source_changed()
         )
@@ -1134,6 +1137,9 @@ class MacroIntelligenceWorkspace(QWidget):
                 "No sustituye el escenario institucional aprobado."
             )
         else:
+            # Do not leave a stale institutional curve (or its misleading
+            # placeholder) visible when the user explicitly chose ML.
+            self._projection_chart.set_ml_forecast(result)
             self._projection_note.setText(
                 f"Proyección ML no disponible · {result.diagnostic or result.status}"
             )
@@ -1141,6 +1147,13 @@ class MacroIntelligenceWorkspace(QWidget):
 
     @Slot(str)
     def _ml_projection_failed(self, message: str) -> None:
+        self._projection_chart.set_ml_forecast(
+            MacroForecastLabViewModel(
+                indicator_code=str(self._driver_combo.currentData() or "TPM"),
+                status="ERROR",
+                diagnostic=message,
+            )
+        )
         self._projection_note.setText(f"Proyección ML no disponible · {message}")
         self._finish_ml_projection()
 
