@@ -203,6 +203,19 @@ class FinancialAnalysisView(QWidget):
         self._controls_widgets = widgets
         root.addLayout(controls)
 
+        self._cutoff_notice = QLabel("")
+        self._cutoff_notice.setObjectName("sugefCutoffPublicationNotice")
+        self._cutoff_notice.setWordWrap(True)
+        self._cutoff_notice.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse
+        )
+        self._cutoff_notice.setStyleSheet(
+            "color:#795400; background:#FFF8E6; border:1px solid #EBD5A0; "
+            "border-radius:6px; padding:6px 9px;"
+        )
+        self._cutoff_notice.hide()
+        root.addWidget(self._cutoff_notice)
+
         kpis = QGridLayout()
         kpis.setHorizontalSpacing(6)
         kpis.setVerticalSpacing(0)
@@ -476,7 +489,7 @@ class FinancialAnalysisView(QWidget):
         summary_layout = QGridLayout(summary)
         summary_layout.setContentsMargins(14, 8, 14, 8)
         summary_layout.setHorizontalSpacing(22)
-        self._rating_heading = QLabel("Calificación 08ME14-01 sobre datos SUGEF")
+        self._rating_heading = QLabel("Calificación interna 08ME14-01 · datos SUGEF")
         self._rating_heading.setStyleSheet("font-size:11px; font-weight:600; color:#314A5E;")
         self._rating_grade = QLabel("Sin emitir")
         self._rating_grade.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -487,6 +500,10 @@ class FinancialAnalysisView(QWidget):
         self._rating_coverage = QLabel("Cobertura: 0.00%")
         self._rating_coverage.setStyleSheet("font-size:11px; font-weight:600; color:#314A5E;")
         self._rating_methodology = QLabel("Metodología: 08ME14-01")
+        self._rating_methodology.setToolTip(
+            "Modelo interno de evaluación de entidades financieras. "
+            "No es una calificación de riesgo emitida por SUGEF."
+        )
         self._rating_methodology.setStyleSheet("color:#52687A; font-size:10px;")
         summary_layout.addWidget(self._rating_grade, 0, 0, 2, 1)
         summary_layout.addWidget(self._rating_heading, 0, 1)
@@ -787,6 +804,26 @@ class FinancialAnalysisView(QWidget):
         self._title.setText(view_model.title)
         self._subtitle.setText(view_model.subtitle)
         self._cutoff.setText(f"Corte SUGEF: {view_model.cutoff_date}")
+        publication_notice = next(
+            (
+                message
+                for message in view_model.diagnostics
+                if "último corte contable SUGEF completo utilizable" in message
+                or "Corte efectivo de análisis alineado al último mes" in message
+            ),
+            "",
+        )
+        self._cutoff_notice.setText(
+            publication_notice + " Use «Actualizar fuente» para volver a consultar SUGEF."
+            if publication_notice
+            else ""
+        )
+        self._cutoff_notice.setVisible(bool(publication_notice))
+        self._cutoff.setToolTip(
+            self._cutoff_notice.text()
+            if publication_notice
+            else "Último corte contable completo confirmado en la fuente oficial SUGEF."
+        )
         self._bind_entities(view_model)
         metrics = {item.code: item for item in view_model.metrics}
         for code in self._KPI_ORDER:

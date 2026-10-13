@@ -3,10 +3,10 @@ from __future__ import annotations
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import replace
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from threading import RLock
-from time import perf_counter
+from time import monotonic, perf_counter
 
 from aip.domain.financial_analysis.financial_metric_history import (
     FinancialMetricHistoryService,
@@ -44,7 +44,9 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class ConfiguredFinancialAnalysisService:
-    """Caso de uso de análisis SUGEF con caché invalidada por cambios de archivo."""
+    """Caso de uso de análisis SUGEF con caché y revalidación de publicaciones."""
+
+    _PUBLICATION_RECHECK_SECONDS = 3600
 
     def __init__(
         self,
@@ -69,6 +71,7 @@ class ConfiguredFinancialAnalysisService:
         self._cached_account_catalog: tuple[FinancialAccountCatalogEntry, ...] | None = None
         self._cached_account_catalog_diagnostics: tuple[str, ...] = ()
         self._cached_results: dict[date, SUGEFFinancialReadResult] = {}
+        self._cached_result_checked_at: dict[date, float] = {}
         self._cached_history: dict[tuple[str, date], SUGEFApiReadResult] = {}
         self._cached_comparison_history: dict[tuple[str, date, int | None], SUGEFApiReadResult] = {}
         self._lock = RLock()
@@ -496,17 +499,44 @@ class ConfiguredFinancialAnalysisService:
                 self._cached_account_catalog_diagnostics,
             )
 
+    def _needs_publication_recheck(
+        self, cutoff_date: date, cached: SUGEFFinancialReadResult
+    ) -> bool:
+        """Recheck stale monthly SUGEF API releases without polling on every navigation."""
+        if not self._config.enabled or not self._config.api_enabled:
+            return False
+        primary = next(iter(self._config.api_entity_codes), None)
+        if not primary:
+            return False
+        previous_month_end = date(cutoff_date.year, cutoff_date.month, 1) - timedelta(
+            days=1
+        )
+        complete_dates = self._analysis._complete_accounting_dates(cached.lines, primary)
+        if complete_dates and complete_dates[0] >= previous_month_end:
+            return False
+        last_checked = self._cached_result_checked_at.get(cutoff_date)
+        return (
+            last_checked is None
+            or monotonic() - last_checked >= self._PUBLICATION_RECHECK_SECONDS
+        )
+
     def _read(self, *, cutoff_date: date, force_refresh: bool) -> SUGEFFinancialReadResult:
         with self._lock:
             cached = self._cached_results.get(cutoff_date)
-            if force_refresh or not self._config.cache_enabled or cached is None:
+            should_refresh = (
+                force_refresh
+                or not self._config.cache_enabled
+                or cached is None
+                or self._needs_publication_recheck(cutoff_date, cached)
+            )
+            if not should_refresh:
+                current_fingerprint = self._reader.fingerprint(cutoff_date=cutoff_date)
+                should_refresh = current_fingerprint != cached.fingerprint
+            if should_refresh:
                 result = self._reader.read(cutoff_date=cutoff_date)
                 self._cached_results[cutoff_date] = result
+                self._cached_result_checked_at[cutoff_date] = monotonic()
                 return result
-            current_fingerprint = self._reader.fingerprint(cutoff_date=cutoff_date)
-            if current_fingerprint != cached.fingerprint:
-                cached = self._reader.read(cutoff_date=cutoff_date)
-                self._cached_results[cutoff_date] = cached
             return cached
 
     def _read_history(

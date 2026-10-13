@@ -63,7 +63,7 @@ def test_financial_analysis_exposes_methodology_rating_tab(qt_app) -> None:
         "Indicadores y dimensiones",
         "Reconciliación",
     ]
-    assert view._rating_heading.text() == "Calificación 08ME14-01 sobre datos SUGEF"
+    assert view._rating_heading.text() == "Calificación interna 08ME14-01 · datos SUGEF"
     assert view._rating_methodology.text() == "Metodología: 08ME14-01"
     assert view._rating_grade.text() == "Sin emitir"
     assert view._rating_indicator_table.isColumnHidden(10)
@@ -76,6 +76,9 @@ def test_financial_analysis_exposes_methodology_rating_tab(qt_app) -> None:
     assert "Calificación oficial" not in view._rating_heading.text()
     assert view._cutoff.text().startswith("Corte SUGEF:")
     assert "corte general de AIP" in view._cutoff.toolTip()
+    assert "No es una calificación de riesgo emitida por SUGEF" in (
+        view._rating_methodology.toolTip()
+    )
     view.close()
     qt_app.processEvents()
 
@@ -323,6 +326,34 @@ def test_sugef_csv_exports_filtered_rows_and_audit_columns(qt_app, tmp_path) -> 
         ]
         assert rows[1] == list(entries[0])
         assert len(rows) == 2
+    finally:
+        view.close()
+        qt_app.processEvents()
+
+
+
+def test_sugef_cutoff_lag_is_visible_and_reset_when_new_data_arrives(qt_app) -> None:
+    view = FinancialAnalysisView(presenter=_Presenter())  # type: ignore[arg-type]
+    try:
+        view.bind_view_model(
+            FinancialAnalysisViewModel(
+                cutoff_date="31/08/2026",
+                diagnostics=(
+                    "Corte solicitado en AIP: 12/10/2026; "
+                    "último corte contable SUGEF completo utilizable: 31/08/2026.",
+                ),
+            )
+        )
+        assert view._cutoff_notice.isVisibleTo(view) is False
+        assert not view._cutoff_notice.isHidden()
+        assert "31/08/2026" in view._cutoff_notice.text()
+        assert "Actualizar fuente" in view._cutoff_notice.text()
+        view.bind_view_model(
+            FinancialAnalysisViewModel(cutoff_date="30/09/2026")
+        )
+        assert view._cutoff_notice.isHidden()
+        assert view._cutoff_notice.text() == ""
+        assert view._cutoff.text() == "Corte SUGEF: 30/09/2026"
     finally:
         view.close()
         qt_app.processEvents()
