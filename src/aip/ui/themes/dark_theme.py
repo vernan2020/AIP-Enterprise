@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from aip.ui.themes.palette import DarkThemePalette
+from aip.ui.themes.typography import interface_font_family, numeric_font_family
 
 
 class DarkTheme:
@@ -8,6 +9,8 @@ class DarkTheme:
 
     def stylesheet(self) -> str:
         p = DarkThemePalette()
+        ui_font = interface_font_family()
+        numeric_font = numeric_font_family()
         return f"""
         QMainWindow, QDialog {{
             background-color: {p.canvas};
@@ -15,7 +18,7 @@ class DarkTheme:
         }}
         QWidget {{
             color: {p.text};
-            font-family: "Lucida Sans Unicode";
+            font-family: "{ui_font}";
             font-size: 9.5pt;
         }}
         QToolTip {{
@@ -154,6 +157,7 @@ class DarkTheme:
             background: {p.surface};
         }}
         QTableView, QTableWidget, QTreeView, QListView, QListWidget {{
+            font-family: "{numeric_font}";
             background: {p.surface};
             alternate-background-color: {p.surface_alt};
             color: {p.text};

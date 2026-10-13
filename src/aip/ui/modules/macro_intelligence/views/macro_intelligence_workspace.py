@@ -52,6 +52,7 @@ from aip.ui.widgets.chart_tooltip import (
     point_hit_rect,
     show_chart_tooltip,
 )
+from aip.ui.themes.typography import numeric_font_family
 from aip.ui.widgets.table_csv_export import save_table_csv_dialog
 
 _MONTHS = (
@@ -160,12 +161,14 @@ class _MacroMetricCard(QFrame):
         caption.setWordWrap(True)
         caption.setStyleSheet("color:#DDF4FF; font-size:9px; font-weight:600; border:none;")
         self._value = QLabel("N/D")
-        value_font = QFont()
+        value_font = QFont(numeric_font_family())
         value_font.setPointSize(14)
         value_font.setBold(True)
         self._value.setFont(value_font)
         self._value.setWordWrap(True)
-        self._value.setStyleSheet("color:#FFFFFF; border:none;")
+        self._value.setStyleSheet(
+            f'color:#FFFFFF; font-family:"{numeric_font_family()}"; border:none;'
+        )
         self._change = QLabel("—")
         self._change.setWordWrap(True)
         self._change.setStyleSheet("color:#D9F4FC; font-size:9px; border:none;")

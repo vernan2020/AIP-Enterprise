@@ -41,6 +41,7 @@ from aip.ui.modules.financial_analysis.views.financial_peer_chart import (
 from aip.ui.modules.financial_analysis.views.financial_statement_history_panel import (
     FinancialStatementHistoryPanel,
 )
+from aip.ui.themes.typography import numeric_font_family
 from aip.ui.widgets.table_csv_export import save_table_csv_dialog
 
 
@@ -743,7 +744,10 @@ class FinancialAnalysisView(QWidget):
         caption = QLabel(label)
         caption.setStyleSheet("color:#DDF4FF; font-size:8px; font-weight:600; border:none;")
         value = QLabel("-")
-        value.setStyleSheet("color:#FFFFFF; font-size:12px; font-weight:700; border:none;")
+        value.setStyleSheet(
+            f'color:#FFFFFF; font-family:"{numeric_font_family()}"; '
+            "font-size:12px; font-weight:700; border:none;"
+        )
         value.setWordWrap(True)
         change = QLabel("Sin datos")
         change.setStyleSheet("color:#CBEAF8; font-size:7px; border:none;")

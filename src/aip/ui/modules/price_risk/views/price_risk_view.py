@@ -28,6 +28,7 @@ from aip.ui.modules.price_risk.views.portfolio_var_simulator_view import (
     PortfolioVaRSimulatorView,
 )
 from aip.ui.modules.price_risk.widgets.risk_charts import ParetoChartWidget, RiskBarChartWidget
+from aip.ui.themes.typography import numeric_font_family
 from aip.ui.widgets.table_csv_export import save_table_csv_dialog
 
 
@@ -195,11 +196,13 @@ class PriceRiskView(QWidget):
         title = QLabel(caption)
         title.setStyleSheet("color:#DDF4FF; font-size:8px; font-weight:600; border:none;")
         value = QLabel("-")
-        value_font = QFont()
+        value_font = QFont(numeric_font_family())
         value_font.setPointSize(12)
         value_font.setBold(True)
         value.setFont(value_font)
-        value.setStyleSheet("color:#FFFFFF; border:none;")
+        value.setStyleSheet(
+            f'color:#FFFFFF; font-family:"{numeric_font_family()}"; border:none;'
+        )
         hint = QLabel(helper)
         hint.setStyleSheet("color:#CBEAF8; font-size:8px; border:none;")
         layout.addWidget(title)
