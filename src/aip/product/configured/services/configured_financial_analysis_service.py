@@ -526,7 +526,7 @@ class ConfiguredFinancialAnalysisService:
                 or cached is None
                 or self._needs_publication_recheck(cutoff_date, cached)
             )
-            if not should_refresh:
+            if not should_refresh and cached is not None:
                 current_fingerprint = self._reader.fingerprint(cutoff_date=cutoff_date)
                 should_refresh = current_fingerprint != cached.fingerprint
             if should_refresh:
