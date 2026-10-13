@@ -812,7 +812,8 @@ class FinancialAnalysisView(QWidget):
             "",
         )
         if (
-            view_model.status not in {"LOADING", "PENDING"}
+            not publication_notice
+            and view_model.status not in {"LOADING", "PENDING"}
             and not view_model.entities
             and not view_model.statement_rows
         ):

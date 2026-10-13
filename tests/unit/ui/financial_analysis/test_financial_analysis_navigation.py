@@ -346,7 +346,13 @@ def test_sugef_cutoff_lag_is_visible_and_reset_when_new_data_arrives(qt_app) -> 
         assert not view._cutoff_notice.isHidden()
         assert "31/08/2026" in view._cutoff_notice.text()
         assert "Actualizar fuente" in view._cutoff_notice.text()
-        view.bind_view_model(FinancialAnalysisViewModel(cutoff_date="30/09/2026"))
+        view.bind_view_model(
+            FinancialAnalysisViewModel(
+                cutoff_date="30/09/2026",
+                status="LOADED",
+                entities=(("3004045138", "COOPEALIANZA"),),
+            )
+        )
         assert view._cutoff_notice.isHidden()
         assert view._cutoff_notice.text() == ""
         assert view._cutoff.text() == "Corte SUGEF: 30/09/2026"
