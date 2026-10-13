@@ -542,6 +542,9 @@ class MacroIntelligenceWorkspace(QWidget):
         self._header_grid: QGridLayout | None = None
         self._header_widgets: tuple[QWidget, ...] = ()
         self._header_compact = False
+        self._projection_selector_grid: QGridLayout | None = None
+        self._projection_selector_widgets: tuple[QWidget, ...] = ()
+        self._projection_selector_compact = False
         self._build_ui()
         self._apply_styles()
         self._load_persisted_snapshot()
@@ -674,7 +677,31 @@ class MacroIntelligenceWorkspace(QWidget):
             stretch = (2 if column == 0 else 1) if column < (2 if compact else 3) else 0
             grid.setColumnStretch(column, stretch)
 
+    @staticmethod
+    def _reflow_projection_selectors(
+        grid: QGridLayout, widgets: tuple[QWidget, ...], compact: bool
+    ) -> None:
+        for widget in widgets:
+            grid.removeWidget(widget)
+        if compact:
+            for row in range(2):
+                grid.addWidget(widgets[2 * row], row, 0)
+                grid.addWidget(widgets[2 * row + 1], row, 1)
+            grid.addWidget(widgets[4], 2, 0, 1, 2)
+        else:
+            for index, widget in enumerate(widgets):
+                grid.addWidget(widget, 0, index)
+        for column in range(5):
+            grid.setColumnStretch(column, 1 if column == (1 if compact else 3) else 0)
+
     def _reflow_dashboard(self, width: int) -> None:
+        if self._projection_selector_grid is not None and self._projection_selector_widgets:
+            compact = width < 1100
+            if compact != self._projection_selector_compact:
+                self._reflow_projection_selectors(
+                    self._projection_selector_grid, self._projection_selector_widgets, compact
+                )
+                self._projection_selector_compact = compact
         if self._header_grid is not None and self._header_widgets:
             compact = width < 1050
             if compact != self._header_compact:
@@ -726,27 +753,46 @@ class MacroIntelligenceWorkspace(QWidget):
         page = QWidget()
         layout = QVBoxLayout(page)
         layout.setContentsMargins(4, 8, 4, 4)
-        selector = QHBoxLayout()
-        selector.addWidget(QLabel("Fuente:"))
+        selector = QGridLayout()
+        selector.setHorizontalSpacing(8)
+        selector.setVerticalSpacing(6)
+        source_label = QLabel("Fuente:")
         self._projection_source_combo = QComboBox()
+        source_label.setBuddy(self._projection_source_combo)
+        self._projection_source_combo.setAccessibleName("Fuente de proyección macroeconómica")
+        self._projection_source_combo.setSizeAdjustPolicy(
+            QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon
+        )
+        self._projection_source_combo.setMinimumContentsLength(18)
         self._projection_source_combo.addItem("Ensemble ML · backtesting rolling", "ML")
         self._projection_source_combo.addItem("Escenario institucional aprobado", "INSTITUTIONAL")
         self._projection_source_combo.currentIndexChanged.connect(
             lambda _index: self._projection_source_changed()
         )
-        selector.addWidget(self._projection_source_combo)
-        selector.addWidget(QLabel("Variable proyectada:"))
+        driver_label = QLabel("Variable proyectada:")
         self._driver_combo = QComboBox()
+        driver_label.setBuddy(self._driver_combo)
+        self._driver_combo.setAccessibleName("Variable de proyección macroeconómica")
         for code, label in self._DRIVER_LABELS:
             self._driver_combo.addItem(label, code)
         self._driver_combo.currentIndexChanged.connect(
             lambda _index: self._refresh_projection_chart()
         )
-        selector.addWidget(self._driver_combo)
-        selector.addStretch(1)
         self._projection_range = QLabel("-")
+        self._projection_range.setWordWrap(True)
         self._projection_range.setStyleSheet("color:#53697C; font-weight:600;")
-        selector.addWidget(self._projection_range)
+        projection_widgets = (
+            source_label,
+            self._projection_source_combo,
+            driver_label,
+            self._driver_combo,
+            self._projection_range,
+        )
+        for index, widget in enumerate(projection_widgets):
+            selector.addWidget(widget, 0, index)
+        selector.setColumnStretch(3, 1)
+        self._projection_selector_grid = selector
+        self._projection_selector_widgets = projection_widgets
         layout.addLayout(selector)
 
         group = QGroupBox("PROYECCIÓN MACROECONÓMICA · ENSEMBLE ML / ESCENARIO INSTITUCIONAL")
