@@ -92,17 +92,38 @@ def test_incompatible_table_schema_does_not_copy_partial_data(tmp_path) -> None:
     assert len(list((target.parent / "backups").glob("*/aip.duckdb"))) == 1
 
 
-def test_existing_wal_is_backed_up_before_preview_checkpoint(tmp_path) -> None:
+def test_existing_wal_is_backed_up_before_preview_checkpoint(
+    tmp_path, monkeypatch
+) -> None:
+    from scripts.qa import recover_macro_history as migration
+
     source = tmp_path / "certified" / "database" / "aip.duckdb"
     target = tmp_path / "preview" / "database" / "aip.duckdb"
     _db(source, amount=2)
     _db(target, amount=0)
-    # Mimic a leftover WAL marker: never delete it without a verified backup.
+    source_inventory = inventory(source)
+    target_inventory = inventory(target)
+    # A synthetic WAL is not valid DuckDB journal bytes: avoid reading it
+    # and simulate an exclusive database lock after PREVIEW has been backed up.
     wal = target.with_name(target.name + ".wal")
-    wal.write_bytes(b"")
-    result = recover(source, target, apply=True)
-    assert any("WAL de PREVIEW respaldado" in message for message in result)
+    wal.write_bytes(b"simulated pending journal")
+
+    def known_inventory(path):
+        return source_inventory if path == source else target_inventory
+
+    original_connect = duckdb.connect
+
+    def refuse_locked_preview(database, *args, **kwargs):
+        if str(database) == str(target) and kwargs.get("read_only") is False:
+            raise duckdb.IOException("simulated AIP file lock")
+        return original_connect(database, *args, **kwargs)
+
+    monkeypatch.setattr(migration, "inventory", known_inventory)
+    monkeypatch.setattr(migration.duckdb, "connect", refuse_locked_preview)
+    with pytest.raises(duckdb.IOException, match="simulated AIP file lock"):
+        migration.recover(source, target, apply=True)
+
     backups = list((target.parent / "backups").glob("*/aip.duckdb.wal"))
     assert len(backups) == 1
-    assert backups[0].read_bytes() == b""
-    assert inventory(target)["economic_history_observations"] == 2
+    assert backups[0].read_bytes() == b"simulated pending journal"
+    assert wal.read_bytes() == b"simulated pending journal"
