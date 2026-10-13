@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QTableWidget,
     QTableWidgetItem,
     QTabWidget,
+    QToolTip,
     QVBoxLayout,
     QWidget,
 )
@@ -24,6 +25,7 @@ from aip.ui.modules.macro_intelligence.presenters.macro_intelligence_presenter i
 from aip.ui.modules.macro_intelligence.viewmodels.macro_intelligence_view_model import (
     MacroForecastLabViewModel,
 )
+from aip.ui.themes.typography import numeric_font_family
 from aip.ui.widgets.chart_tooltip import (
     build_chart_tooltip,
     point_hit_rect,
@@ -73,9 +75,22 @@ class _ForecastPathChart(QWidget):
         self._last_readout = ""
         self.setMouseTracking(True)
         self.setMinimumHeight(280)
+        self.setAccessibleName("Pronóstico macroeconómico ensemble con bandas de incertidumbre")
+
+    @staticmethod
+    def _visible_label_indexes(count: int, plot_width: float) -> tuple[int, ...]:
+        """Reduce horizontal-axis label collisions on small screens."""
+        if count <= 0:
+            return ()
+        visible = min(count, max(1, int(plot_width // 76)))
+        if visible == 1:
+            return (0,)
+        return tuple(round(index * (count - 1) / (visible - 1)) for index in range(visible))
 
     def set_view_model(self, view_model: MacroForecastLabViewModel) -> None:
         self._view_model = view_model
+        self._tooltip_regions = []
+        QToolTip.hideText()
         self._readout_regions = []
         self._last_readout = ""
         self.hover_readout_changed.emit("")
@@ -213,7 +228,7 @@ class _ForecastPathChart(QWidget):
             painter.drawEllipse(point, 3.5, 3.5)
 
         painter.setPen(QColor("#53697C"))
-        label_indexes = sorted({0, len(points) - 1, 2, 5, 8})
+        label_indexes = self._visible_label_indexes(len(points), width)
         for index in label_indexes:
             if not 0 <= index < len(points):
                 continue
@@ -232,7 +247,11 @@ class _ForecastPathChart(QWidget):
         painter.drawText(
             QRectF(left, 2, width, 20),
             Qt.AlignmentFlag.AlignLeft,
-            f"Ensemble · {self._view_model.indicator_label} · bandas 80% / 95%",
+            painter.fontMetrics().elidedText(
+                f"Ensemble · {self._view_model.indicator_label} · bandas 80% / 95%",
+                Qt.TextElideMode.ElideRight,
+                int(width),
+            ),
         )
 
     def mouseMoveEvent(self, event) -> None:  # noqa: N802
@@ -248,6 +267,7 @@ class _ForecastPathChart(QWidget):
         super().mouseMoveEvent(event)
 
     def leaveEvent(self, event) -> None:  # noqa: N802
+        QToolTip.hideText()
         if self._last_readout:
             self._last_readout = ""
             self.hover_readout_changed.emit("")
@@ -308,6 +328,9 @@ class MacroForecastLabPanel(QWidget):
         self._pending_force = False
         self._view_model = MacroForecastLabViewModel()
         self._kpi_values: dict[str, QLabel] = {}
+        self._kpi_grid: QGridLayout | None = None
+        self._kpi_cards: tuple[QFrame, ...] = ()
+        self._kpi_columns = 6
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -348,9 +371,14 @@ class MacroForecastLabPanel(QWidget):
             ("p6", "Proyección 6M", "Ensemble"),
             ("p12", "Proyección 12M", "Ensemble"),
         )
+        cards: list[QFrame] = []
         for index, definition in enumerate(definitions):
-            kpis.addWidget(self._metric_card(*definition), 0, index)
+            card = self._metric_card(*definition)
+            kpis.addWidget(card, 0, index)
+            cards.append(card)
             kpis.setColumnStretch(index, 1)
+        self._kpi_grid = kpis
+        self._kpi_cards = tuple(cards)
         root.addLayout(kpis)
 
         self._status = QLabel("Seleccione un indicador y ejecute los modelos.")
@@ -432,22 +460,63 @@ class MacroForecastLabPanel(QWidget):
         ensemble_layout.addWidget(group, 1)
         tabs.addTab(ensemble, "Ensemble y gobierno")
 
+    @staticmethod
+    def _kpi_columns_for_width(width: int) -> int:
+        if width < 730:
+            return 2
+        if width < 1140:
+            return 3
+        return 6
+
+    def _arrange_kpis(self, width: int) -> None:
+        grid = self._kpi_grid
+        if grid is None or not self._kpi_cards:
+            return
+        columns = self._kpi_columns_for_width(width)
+        if columns == self._kpi_columns:
+            return
+        for card in self._kpi_cards:
+            grid.removeWidget(card)
+        for index, card in enumerate(self._kpi_cards):
+            grid.addWidget(card, index // columns, index % columns)
+        for column in range(6):
+            grid.setColumnStretch(column, 1 if column < columns else 0)
+        self._kpi_columns = columns
+
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        self._arrange_kpis(event.size().width())
+
     def _metric_card(self, key: str, caption: str, helper: str) -> QFrame:
         card = QFrame()
         card.setObjectName("forecastLabMetricCard")
-        card.setMinimumHeight(76)
+        card.setMinimumHeight(100)
         card.setStyleSheet(
-            "QFrame#forecastLabMetricCard {background:#F8FBFD; border:1px solid #CFE0EC; "
-            "border-radius:10px;} QFrame#forecastLabMetricCard:hover {border:1px solid #73B3DD;}"
+            "QFrame#forecastLabMetricCard {"
+            "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
+            "stop:0 #00477F,stop:0.65 #005EB8,stop:1 #00A9E0); "
+            "border:1px solid #1675C5; border-radius:12px;}"
+            "QFrame#forecastLabMetricCard:hover {border:1px solid #73B3DD;}"
         )
+        card.setAccessibleName(caption)
+        card.setToolTip(f"{caption}: {helper}")
         layout = QVBoxLayout(card)
         layout.setContentsMargins(10, 7, 10, 7)
         title = QLabel(caption)
-        title.setStyleSheet("color:#667788; font-size:8px; border:none;")
+        title.setWordWrap(True)
+        title.setStyleSheet("color:#DDF4FF; font-size:10px; font-weight:600; border:none;")
         value = QLabel("-")
-        value.setStyleSheet("color:#005EB8; font-size:13px; font-weight:700; border:none;")
+        value_font = QFont(numeric_font_family())
+        value_font.setPointSize(13)
+        value_font.setBold(True)
+        value.setFont(value_font)
+        value.setWordWrap(True)
+        value.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        value.setAccessibleName(f"Valor de {caption}")
+        value.setStyleSheet('color:#FFFFFF; border:none;')
         hint = QLabel(helper)
-        hint.setStyleSheet("color:#93A0AC; font-size:8px; border:none;")
+        hint.setWordWrap(True)
+        hint.setStyleSheet("color:#CBEAF8; font-size:10px; border:none;")
         layout.addWidget(title)
         layout.addWidget(value)
         layout.addWidget(hint)
