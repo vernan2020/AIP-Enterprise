@@ -64,28 +64,16 @@ def test_partial_scenario_history_is_not_mixed_with_certified_history(tmp_path) 
     _db(source, amount=0)
     _db(target, amount=0)
     with duckdb.connect(str(source)) as con:
-        con.execute(
-            "CREATE TABLE institutional_macro_scenarios "
-            "(scenario_id VARCHAR, version INTEGER)"
-        )
-        con.execute(
-            "INSERT INTO institutional_macro_scenarios VALUES ('C', 1)"
-        )
+        con.execute("CREATE TABLE institutional_macro_scenarios " "(scenario_id VARCHAR, version INTEGER)")
+        con.execute("INSERT INTO institutional_macro_scenarios VALUES ('C', 1)")
     with duckdb.connect(str(target)) as con:
-        con.execute(
-            "CREATE TABLE institutional_macro_scenario_events "
-            "(event_id VARCHAR)"
-        )
-        con.execute(
-            "INSERT INTO institutional_macro_scenario_events VALUES ('P')"
-        )
+        con.execute("CREATE TABLE institutional_macro_scenario_events " "(event_id VARCHAR)")
+        con.execute("INSERT INTO institutional_macro_scenario_events VALUES ('P')")
     with pytest.raises(ValueError, match="conciliación"):
         recover(source, target, apply=True)
     assert not (target.parent / "backups").exists()
     with duckdb.connect(str(source), read_only=True) as con:
-        assert con.execute(
-            "SELECT COUNT(*) FROM institutional_macro_scenarios"
-        ).fetchone()[0] == 1
+        assert con.execute("SELECT COUNT(*) FROM institutional_macro_scenarios").fetchone()[0] == 1
 
 
 def test_incompatible_table_schema_does_not_copy_partial_data(tmp_path) -> None:
@@ -94,9 +82,7 @@ def test_incompatible_table_schema_does_not_copy_partial_data(tmp_path) -> None:
     _db(source, amount=2)
     _db(target, amount=0)
     with duckdb.connect(str(source)) as con:
-        con.execute(
-            "ALTER TABLE economic_history_observations ADD COLUMN extra VARCHAR"
-        )
+        con.execute("ALTER TABLE economic_history_observations ADD COLUMN extra VARCHAR")
     with pytest.raises(ValueError, match="Esquema incompatible"):
         recover(source, target, apply=True)
     assert inventory(source)["economic_history_observations"] == 2
