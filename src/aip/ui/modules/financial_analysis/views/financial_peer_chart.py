@@ -92,6 +92,8 @@ class FinancialPeerChartPanel(QWidget):
 
         self._chart_context = QLabel("Seleccione un indicador para comparar entidades.")
         self._chart_context.setWordWrap(True)
+        self._chart_context.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        self._chart_context.setAccessibleName("Contexto del gráfico financiero comparativo")
         self._chart_context.setStyleSheet("color:#52687A; font-size:9px; padding:4px 0;")
         root.addWidget(self._chart_context)
 
@@ -99,6 +101,8 @@ class FinancialPeerChartPanel(QWidget):
         self._hover_detail.setObjectName("financialPeerHoverDetail")
         self._hover_detail.setTextFormat(Qt.TextFormat.PlainText)
         self._hover_detail.setWordWrap(True)
+        self._hover_detail.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        self._hover_detail.setAccessibleName("Detalle completo de la entidad supervisada")
         self._hover_detail.setStyleSheet(
             "color:#17324D; background:#EAF4FC; border:1px solid #C7DDEB; "
             "border-radius:6px; padding:6px 9px; font-weight:600;"
@@ -181,6 +185,7 @@ class FinancialPeerChartPanel(QWidget):
         save_widget_png_dialog(self, self._chart_view, "aip-comparativo-sugef.png")
 
     def _clear_chart(self) -> None:
+        QToolTip.hideText()
         self._export_chart_button.setEnabled(False)
         if self._chart_view is not None:
             self._chart_host.removeWidget(self._chart_view)
@@ -194,7 +199,7 @@ class FinancialPeerChartPanel(QWidget):
         visible = ordered[: cls._MAX_BAR_ENTITIES]
         if selected is not None and selected not in visible and visible:
             visible[-1] = selected
-        return tuple(visible)
+        return tuple(sorted(visible, key=lambda point: abs(point.value), reverse=True))
 
     @staticmethod
     def _point_readout(point: PeerChartPointView, item: PeerChartSeriesView) -> str:
@@ -211,7 +216,8 @@ class FinancialPeerChartPanel(QWidget):
         chart.legend().hide()
         chart.setBackgroundVisible(False)
         chart.setMargins(QMargins(4, 2, 4, 2))
-        chart.setAnimationOptions(QChart.AnimationOption.SeriesAnimations)
+        # Avoid animation delays when switching between large SUGEF peer comparisons.
+        chart.setAnimationOptions(QChart.AnimationOption.NoAnimation)
 
         bar_set = QBarSet(item.label)
         bar_set.append([point.value for point in points])
@@ -230,14 +236,14 @@ class FinancialPeerChartPanel(QWidget):
             ]
         )
         category_font = categories.labelsFont()
-        category_font.setPointSize(8)
+        category_font.setPointSize(9)
         categories.setLabelsFont(category_font)
 
         value_axis = QValueAxis()
         value_axis.setTitleText(item.unit)
         value_axis.setLabelFormat("%.2f" if item.unit == "%" else "%.0f")
         value_font = value_axis.labelsFont()
-        value_font.setPointSize(8)
+        value_font.setPointSize(9)
         value_axis.setLabelsFont(value_font)
 
         values = [point.value for point in points]
@@ -256,6 +262,7 @@ class FinancialPeerChartPanel(QWidget):
         view = QChartView(chart)
         view.setRenderHint(QPainter.RenderHint.Antialiasing)
         view.setMinimumHeight(max(285, 75 + 32 * len(points)))
+        view.setAccessibleName(f"Comparativo financiero: {item.label}")
 
         def show_bar_tooltip(status: bool, index: int) -> None:
             if not status or not 0 <= index < len(points):
@@ -304,6 +311,7 @@ class FinancialPeerChartPanel(QWidget):
         view = QChartView(chart)
         view.setRenderHint(QPainter.RenderHint.Antialiasing)
         view.setMinimumHeight(245)
+        view.setAccessibleName(f"Composición financiera: {item.label}")
 
         for slice_, point in slice_points:
             tooltip = build_chart_tooltip(
