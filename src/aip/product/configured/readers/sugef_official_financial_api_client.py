@@ -285,6 +285,16 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
                 and line.statement_date <= requested_cutoff
             }
             common_dates = balance_dates & income_dates
+            # The SUGEF trial balance may appear before analytical statements.
+            # Surface only period/count evidence; never imply the latest cutoff
+            # was usable unless BOTH Balance and Results share its month.
+            balance_month = max(balance_dates).strftime("%m/%Y") if balance_dates else "N/D"
+            income_month = max(income_dates).strftime("%m/%Y") if income_dates else "N/D"
+            diagnostics.append(
+                f"SUGEF sondeo {candidate:%m/%Y}: "
+                f"Balance {len(balance_lines)} filas (último {balance_month}); "
+                f"Resultados {len(income_lines)} filas (último {income_month})."
+            )
             if not common_dates:
                 probe_failures.append(
                     "Sondeo SUGEF "

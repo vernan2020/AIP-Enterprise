@@ -330,6 +330,10 @@ def test_latest_published_september_is_not_skipped_by_stale_october_response() -
     assert ("3004045138", "INCOME", "20261001") in client.requests
     assert ("3004045138", "BALANCE", "20260901") in client.requests
     assert ("3004045138", "INCOME", "20260901") in client.requests
+    assert any(
+        "SUGEF sondeo 09/2026" in message and "último 09/2026" in message
+        for message in diagnostics
+    )
 
 
 def test_unpublished_september_keeps_latest_complete_august_without_fabrication() -> None:
