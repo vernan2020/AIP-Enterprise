@@ -563,4 +563,4 @@ class PortfolioView(QWidget):
         return self._view_model
 
     def selected_row(self) -> object | None:
-        return self._view_model.rows[0] if self._view_model.rows else None
+        return self._positions.selected_row()
