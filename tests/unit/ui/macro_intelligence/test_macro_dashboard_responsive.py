@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from PySide6.QtWidgets import QFrame, QGridLayout, QLabel, QPushButton, QWidget
+from PySide6.QtWidgets import QComboBox, QFrame, QGridLayout, QLabel, QPushButton, QWidget
 
 from aip.ui.modules.macro_intelligence.views.macro_intelligence_workspace import (
     MacroIntelligenceWorkspace,
@@ -104,4 +104,40 @@ def test_macro_metric_card_wraps_value_change_and_observation_source(qt_app) -> 
         assert "BCCR" in card._date.text()
     finally:
         card.close()
+        qt_app.processEvents()
+
+
+def test_macro_projection_toolbar_stacks_selectors_and_preserves_choices(qt_app) -> None:
+    host = QWidget()
+    grid = QGridLayout(host)
+    source_label = QLabel("Fuente:")
+    source = QComboBox()
+    source.addItem("Ensemble ML", "ML")
+    source.addItem("Escenario institucional", "INSTITUTIONAL")
+    driver_label = QLabel("Variable proyectada:")
+    driver = QComboBox()
+    driver.addItem("TPM", "TPM")
+    driver.addItem("USD/CRC venta", "FX_SELL")
+    context = QLabel("Octubre de 2026 · 12 meses")
+    widgets = (source_label, source, driver_label, driver, context)
+    try:
+        source.setCurrentIndex(1)
+        driver.setCurrentIndex(1)
+        for compact in (False, True, False):
+            MacroIntelligenceWorkspace._reflow_projection_selectors(grid, widgets, compact)
+            if compact:
+                assert grid.itemAtPosition(0, 0).widget() is source_label
+                assert grid.itemAtPosition(0, 1).widget() is source
+                assert grid.itemAtPosition(1, 0).widget() is driver_label
+                assert grid.itemAtPosition(1, 1).widget() is driver
+                assert grid.itemAtPosition(2, 0).widget() is context
+                assert grid.itemAtPosition(2, 1).widget() is context
+            else:
+                for index, widget in enumerate(widgets):
+                    assert grid.itemAtPosition(0, index).widget() is widget
+            assert source.currentData() == "INSTITUTIONAL"
+            assert driver.currentData() == "FX_SELL"
+            assert context.text() == "Octubre de 2026 · 12 meses"
+    finally:
+        host.close()
         qt_app.processEvents()
