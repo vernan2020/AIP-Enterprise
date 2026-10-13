@@ -69,6 +69,10 @@ class FinancialPeerChartPanel(QWidget):
             QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon
         )
         self._selector.setMinimumContentsLength(20)
+        self._selector.setAccessibleName("Indicador de comparación financiera")
+        self._selector.setAccessibleDescription(
+            "Seleccione un indicador. Su nombre completo está disponible como ayuda contextual."
+        )
         self._selector.currentIndexChanged.connect(self._selection_changed)
         selector_row.addWidget(self._selector)
         selector_row.addStretch(1)
