@@ -825,6 +825,10 @@ class MacroIntelligenceWorkspace(QWidget):
         )
         self._projection_readout.setObjectName("macroProjectionHoverReadout")
         self._projection_readout.setTextFormat(Qt.TextFormat.PlainText)
+        self._projection_readout.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse
+            | Qt.TextInteractionFlag.TextSelectableByKeyboard
+        )
         self._projection_readout.setWordWrap(True)
         self._projection_readout.setStyleSheet(
             "color:#17324D; background:#EAF4FC; border:1px solid #C7DDEB; "
