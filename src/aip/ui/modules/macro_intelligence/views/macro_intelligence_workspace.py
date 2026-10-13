@@ -649,6 +649,8 @@ class MacroIntelligenceWorkspace(QWidget):
         self._build_projection_table_tab()
         self._build_market_curves_tab()
         self._build_transmission_tab()
+        for index in range(self._tabs.count()):
+            self._tabs.setTabToolTip(index, self._tabs.tabText(index))
 
     @staticmethod
     def _metric_columns_for_width(width: int) -> int:
