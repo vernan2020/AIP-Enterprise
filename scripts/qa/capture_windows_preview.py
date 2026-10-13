@@ -18,7 +18,12 @@ os.environ["AIP_BCCR_ENABLED"] = "false"
 
 from PySide6.QtCore import QThreadPool  # noqa: E402
 from PySide6.QtGui import QFont, QFontDatabase  # noqa: E402
-from PySide6.QtWidgets import QApplication, QPushButton  # noqa: E402
+from PySide6.QtWidgets import (  # noqa: E402
+    QApplication,
+    QPushButton,
+    QScrollArea,
+    QTabWidget,
+)
 
 from aip.ui.shell.intelligence_main_window import (  # noqa: E402
     FinancialIntelligenceMainWindow,
@@ -29,6 +34,24 @@ WORKSPACES = (
     ("macro_intelligence", "02-inteligencia-macroeconomica", 3),
     ("price_risk", "03-riesgo-de-precio", 2),
 )
+
+
+def _capture(window: FinancialIntelligenceMainWindow, path: Path) -> None:
+    image = window.grab()
+    if image.isNull() or not image.save(str(path), "PNG"):
+        raise RuntimeError(f"Could not capture Qt workspace: {path}")
+    print(f"SCREENSHOT {path}", flush=True)
+
+
+def _select_tab(widget: object, title: str) -> None:
+    tabs = getattr(widget, "_tabs", None)
+    if not isinstance(tabs, QTabWidget):
+        raise RuntimeError(f"Missing Qt tabs for {title}")
+    for index in range(tabs.count()):
+        if tabs.tabText(index) == title:
+            tabs.setCurrentIndex(index)
+            return
+    raise RuntimeError(f"Missing expected tab: {title}")
 
 
 def main() -> int:
@@ -60,13 +83,32 @@ def main() -> int:
                 raise AssertionError(
                     f"{route_id}: expected {minimum_exports} exports, found {len(exports)}"
                 )
-            capture = window.grab()
-            if capture.isNull():
-                raise RuntimeError(f"Empty Qt screenshot for {route_id}")
             destination = output / f"{filename}.png"
-            if not capture.save(str(destination), "PNG"):
-                raise OSError(f"Could not save screenshot: {destination}")
-            print(f"PASS {route_id}: {len(exports)} export buttons; {destination}", flush=True)
+            _capture(window, destination)
+            print(f"PASS {route_id}: {len(exports)} export buttons", flush=True)
+            extra_views = ()
+            if route_id == "macro_intelligence":
+                extra_views = (
+                    ("Matriz macro", "04-matriz-macro"),
+                    ("Curvas TRI", "05-curvas-tri"),
+                )
+            elif route_id == "price_risk":
+                extra_views = (
+                    ("Resumen VeR", "06-var-posiciones"),
+                    ("Riesgo de Tasa · DV01", "07-dv01-shocks"),
+                )
+            for tab_name, shot_name in extra_views:
+                _select_tab(workspace, tab_name)
+                scroll = workspace.findChild(QScrollArea)
+                if scroll is not None and route_id == "price_risk":
+                    target = (
+                        workspace._export_positions_button
+                        if tab_name == "Resumen VeR"
+                        else workspace._export_shock_button
+                    )
+                    scroll.ensureWidgetVisible(target)
+                app.processEvents()
+                _capture(window, output / f"{shot_name}.png")
         return 0
     finally:
         print("Closing Qt workspaces...", flush=True)
