@@ -130,6 +130,9 @@ class FinancialAnalysisView(QWidget):
         self._controls_columns = 4
         self._source_grid: QGridLayout | None = None
         self._source_compact = False
+        self._statement_controls_grid: QGridLayout | None = None
+        self._statement_controls: tuple[QWidget, ...] = ()
+        self._statement_controls_compact = False
         self._building_entity_selector = False
         self._comparison_thread: QThread | None = None
         self._comparison_worker: _ComparisonWorker | None = None
@@ -285,16 +288,15 @@ class FinancialAnalysisView(QWidget):
         balances_layout.setContentsMargins(4, 4, 4, 4)
         balances_layout.setSpacing(4)
 
-        controls = QHBoxLayout()
-        controls.setSpacing(6)
+        controls = QGridLayout()
+        controls.setHorizontalSpacing(6)
+        controls.setVerticalSpacing(5)
         self._statement_search = QLineEdit()
         self._statement_search.setAccessibleName("Buscar cuentas e indicadores SUGEF")
         self._statement_search.setClearButtonEnabled(True)
         self._statement_search.setPlaceholderText("Buscar por código, cuenta, estado o indicador…")
         self._statement_search.textChanged.connect(self._apply_statement_filter)
-        controls.addWidget(self._statement_search, 1)
         filter_label = QLabel("Mostrar:")
-        controls.addWidget(filter_label)
         self._statement_type_filter = QComboBox()
         filter_label.setBuddy(self._statement_type_filter)
         self._statement_type_filter.setAccessibleName("Filtrar tipo de estado financiero")
@@ -312,10 +314,19 @@ class FinancialAnalysisView(QWidget):
                 index, self._statement_type_filter.itemText(index), Qt.ItemDataRole.ToolTipRole
             )
         self._statement_type_filter.currentTextChanged.connect(self._apply_statement_filter)
-        controls.addWidget(self._statement_type_filter)
         self._statement_count = QLabel("0 registros")
         self._statement_count.setStyleSheet("color:#667788; font-size:9px;")
-        controls.addWidget(self._statement_count)
+        widgets = (
+            self._statement_search,
+            filter_label,
+            self._statement_type_filter,
+            self._statement_count,
+        )
+        for index, widget in enumerate(widgets):
+            controls.addWidget(widget, 0, index)
+        controls.setColumnStretch(0, 1)
+        self._statement_controls_grid = controls
+        self._statement_controls = widgets
         balances_layout.addLayout(controls)
 
         self._statement_table = self._table(
@@ -649,6 +660,27 @@ class FinancialAnalysisView(QWidget):
             grid.setColumnStretch(column, 1 if column == 1 else 0)
         self._controls_columns = columns
 
+    def _arrange_statement_controls(self, width: int) -> None:
+        grid = self._statement_controls_grid
+        if grid is None or not self._statement_controls:
+            return
+        compact = width < 950
+        if compact == self._statement_controls_compact:
+            return
+        for widget in self._statement_controls:
+            grid.removeWidget(widget)
+        if compact:
+            grid.addWidget(self._statement_search, 0, 0, 1, 3)
+            grid.addWidget(self._statement_controls[1], 1, 0)
+            grid.addWidget(self._statement_type_filter, 1, 1)
+            grid.addWidget(self._statement_count, 1, 2)
+        else:
+            for index, widget in enumerate(self._statement_controls):
+                grid.addWidget(widget, 0, index)
+        for column in range(4):
+            grid.setColumnStretch(column, 1 if column == (1 if compact else 0) else 0)
+        self._statement_controls_compact = compact
+
     def _arrange_source(self, width: int) -> None:
         grid = self._source_grid
         if grid is None:
@@ -673,6 +705,7 @@ class FinancialAnalysisView(QWidget):
         self._arrange_kpi_cards(width)
         self._arrange_controls(width)
         self._arrange_source(width)
+        self._arrange_statement_controls(width)
 
     def _metric_card(self, code: str, label: str) -> QFrame:
         card = QFrame()
