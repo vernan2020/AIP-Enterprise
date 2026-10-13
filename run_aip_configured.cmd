@@ -8,8 +8,27 @@ set "AIP_EXECUTION_MODE=CONFIGURED"
 set "AIP_DEMO_MODE_ENABLED=false"
 set "PYTHONPATH=src"
 
-REM Local secrets/overrides are intentionally not versioned.
-if exist "config\runtime.local.cmd" call "config\runtime.local.cmd"
+REM Local secrets/overrides are never versioned.
+REM A branch checkout can reuse the exact configuration of the installed,
+REM functional AIP via AIP_RUNTIME_LOCAL_CMD without copying credentials.
+if defined AIP_RUNTIME_LOCAL_CMD (
+    if not exist "%AIP_RUNTIME_LOCAL_CMD%" (
+        echo ERROR: existing institutional configuration not found.
+        echo Check AIP_RUNTIME_LOCAL_CMD. No fallback to DEMO is permitted.
+        exit /b 1
+    )
+    call "%AIP_RUNTIME_LOCAL_CMD%"
+    if errorlevel 1 (
+        echo ERROR: institutional local configuration failed.
+        exit /b 1
+    )
+) else (
+    if exist "config\runtime.local.cmd" call "config\runtime.local.cmd"
+)
+
+REM The configured runtime must never silently switch to a demo environment.
+set "AIP_EXECUTION_MODE=CONFIGURED"
+set "AIP_DEMO_MODE_ENABLED=false"
 
 if not defined AIP_FOLDERWATCH_ENABLED set "AIP_FOLDERWATCH_ENABLED=true"
 if not defined AIP_VECTOR_ENABLED set "AIP_VECTOR_ENABLED=true"
@@ -52,4 +71,5 @@ REM The fast configured preflight now runs inside the same Python process that
 REM launches AIP. This preserves the startup gate while avoiding a redundant
 REM interpreter launch on Windows.
 python -m aip
-endlocal
+set "AIP_CONFIGURED_EXIT=%errorlevel%"
+endlocal & exit /b %AIP_CONFIGURED_EXIT%
