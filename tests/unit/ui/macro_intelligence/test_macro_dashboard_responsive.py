@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from PySide6.QtWidgets import QComboBox, QFrame, QGridLayout, QLabel, QPushButton, QWidget
+from PySide6.QtWidgets import QComboBox, QFrame, QGridLayout, QGroupBox, QLabel, QPushButton, QWidget
 
 from aip.ui.modules.macro_intelligence.views.macro_intelligence_workspace import (
     MacroIntelligenceWorkspace,
@@ -138,6 +138,26 @@ def test_macro_projection_toolbar_stacks_selectors_and_preserves_choices(qt_app)
             assert source.currentData() == "INSTITUTIONAL"
             assert driver.currentData() == "FX_SELL"
             assert context.text() == "Octubre de 2026 · 12 meses"
+    finally:
+        host.close()
+        qt_app.processEvents()
+
+
+def test_macro_crc_and_usd_curve_tables_stack_without_replacing_widgets(qt_app) -> None:
+    host = QWidget()
+    grid = QGridLayout(host)
+    crc = QGroupBox("TRI CRC · observado")
+    usd = QGroupBox("TRI USD · observado")
+    groups = (crc, usd)
+    try:
+        for columns in (2, 1, 2):
+            MacroIntelligenceWorkspace._reflow_grid(grid, groups, columns)
+            for index, group in enumerate(groups):
+                item = grid.itemAtPosition(index // columns, index % columns)
+                assert item is not None
+                assert item.widget() is group
+        assert crc.title() == "TRI CRC · observado"
+        assert usd.title() == "TRI USD · observado"
     finally:
         host.close()
         qt_app.processEvents()
