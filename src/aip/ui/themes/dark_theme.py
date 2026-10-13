@@ -175,6 +175,9 @@ class DarkTheme:
         QListView::item:hover {{
             background: {p.surface_hover};
         }}
+        QSpinBox, QDoubleSpinBox {{
+            font-family: "{numeric_font}";
+        }}
         QHeaderView::section {{
             background: {p.surface_alt};
             color: {p.text_secondary};

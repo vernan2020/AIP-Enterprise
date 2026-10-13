@@ -10,6 +10,7 @@ from aip.core.version import APP_NAME, APP_VERSION
 from aip.product.demo.bootstrap.demo_bootstrap import DemoBootstrap
 from aip.product.demo.configuration.environment_loader import EnvironmentLoader
 from aip.ui.application.app import AIPApplication
+from aip.ui.themes.typography import apply_application_typography
 from aip.ui.services.diagnostic_service import DiagnosticMetricsStore
 
 
@@ -37,6 +38,7 @@ def main(
         qt_app = QApplication.instance() or QApplication([app_name])
         qt_app.setApplicationName(APP_NAME)
         qt_app.setApplicationVersion(APP_VERSION)
+        apply_application_typography(qt_app)
 
     with timer.stage("configuration_load"):
         loader = EnvironmentLoader()

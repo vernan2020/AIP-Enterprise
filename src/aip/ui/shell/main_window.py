@@ -45,6 +45,7 @@ from aip.ui.shell.ribbon import Ribbon
 from aip.ui.shell.sidebar import Sidebar
 from aip.ui.shell.status_bar import StatusBar
 from aip.ui.shell.workspace import Workspace
+from aip.ui.themes.typography import apply_application_typography
 
 
 class MainWindow(QMainWindow):
@@ -650,6 +651,7 @@ class MainWindow(QMainWindow):
     def _apply_theme(self) -> None:
         app = cast(QApplication | None, QApplication.instance())
         if app is not None:
+            apply_application_typography(app)
             app.setStyleSheet(self._theme_service.stylesheet())
 
     def _refresh_status_panel(self) -> None:

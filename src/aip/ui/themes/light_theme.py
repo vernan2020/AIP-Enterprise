@@ -175,6 +175,9 @@ class LightTheme:
         QListView::item:hover {{
             background: {p.blue_050};
         }}
+        QSpinBox, QDoubleSpinBox {{
+            font-family: "{numeric_font}";
+        }}
         QHeaderView::section {{
             background: {p.surface_alt};
             color: {p.blue_800};
