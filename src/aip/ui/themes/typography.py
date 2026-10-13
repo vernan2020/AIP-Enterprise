@@ -42,7 +42,6 @@ def numeric_font_family() -> str:
     return _resolve(NUMERIC_FONTS)
 
 
-
 def apply_application_typography(app: QApplication) -> str:
     """Apply the installed UI font globally, including dialogs and late-created modules.
 

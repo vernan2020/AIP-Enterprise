@@ -47,7 +47,6 @@ def test_macro_kpi_uses_monospace_without_altering_financial_value(
         qt_app.processEvents()
 
 
-
 def test_global_application_font_covers_windows_dialogs_and_late_widgets(
     qt_app: QApplication,
 ) -> None:

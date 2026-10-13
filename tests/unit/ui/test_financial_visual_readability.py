@@ -14,7 +14,8 @@ from aip.ui.widgets.chart_tooltip import build_chart_tooltip
 
 def test_chart_tooltips_have_legible_type_and_escape_source_text() -> None:
     html = build_chart_tooltip(
-        "ΔEVE <200 pb", (("Entidad", "Gobierno & BCCR"), ("Valor", "₡123.50")),
+        "ΔEVE <200 pb",
+        (("Entidad", "Gobierno & BCCR"), ("Valor", "₡123.50")),
         note="Sensibilidad de tasas",
     )
     assert "font-size:14px" in html
