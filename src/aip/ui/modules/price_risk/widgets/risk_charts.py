@@ -53,6 +53,18 @@ class RiskBarChartWidget(QWidget):
         right = min(146.0, max(78.0, view_width * 0.29))
         return left, right, max(16.0, view_width - left - right - 10.0)
 
+    @staticmethod
+    def _bar_rectangle(
+        center: float, bar_width: float, bar_y: float, bar_height: float, negative: bool
+    ) -> QRectF:
+        """Draw negative contributions to the left of their zero baseline."""
+        return QRectF(
+            center - bar_width if negative else center,
+            bar_y,
+            max(2.0, bar_width),
+            bar_height,
+        )
+
     def set_data(self, points: tuple[RiskChartPoint, ...]) -> None:
         self._points = tuple(points)
         # Give dense portfolios enough vertical space inside the existing scroll area.
@@ -137,10 +149,7 @@ class RiskBarChartWidget(QWidget):
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(gradient)
 
-            if diverging and numeric < 0:
-                rect = QRectF(center - bar_width, bar_y, max(2.0, bar_width), bar_height)
-            else:
-                rect = QRectF(center, bar_y, max(2.0, bar_width), bar_height)
+            rect = self._bar_rectangle(center, bar_width, bar_y, bar_height, numeric < 0)
             painter.drawRoundedRect(rect, 5, 5)
             tooltip_rows: list[tuple[str, object]] = [("Valor", self._formatter(point.value))]
             if self._show_secondary:
