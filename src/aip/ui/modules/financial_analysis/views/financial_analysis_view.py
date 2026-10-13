@@ -284,11 +284,16 @@ class FinancialAnalysisView(QWidget):
         controls = QHBoxLayout()
         controls.setSpacing(6)
         self._statement_search = QLineEdit()
+        self._statement_search.setAccessibleName("Buscar cuentas e indicadores SUGEF")
+        self._statement_search.setClearButtonEnabled(True)
         self._statement_search.setPlaceholderText("Buscar por código, cuenta, estado o indicador…")
         self._statement_search.textChanged.connect(self._apply_statement_filter)
         controls.addWidget(self._statement_search, 1)
-        controls.addWidget(QLabel("Mostrar:"))
+        filter_label = QLabel("Mostrar:")
+        controls.addWidget(filter_label)
         self._statement_type_filter = QComboBox()
+        filter_label.setBuddy(self._statement_type_filter)
+        self._statement_type_filter.setAccessibleName("Filtrar tipo de estado financiero")
         self._statement_type_filter.addItems(
             [
                 "Todos",
@@ -298,6 +303,10 @@ class FinancialAnalysisView(QWidget):
                 "Balanza de comprobación",
             ]
         )
+        for index in range(self._statement_type_filter.count()):
+            self._statement_type_filter.setItemData(
+                index, self._statement_type_filter.itemText(index), Qt.ItemDataRole.ToolTipRole
+            )
         self._statement_type_filter.currentTextChanged.connect(self._apply_statement_filter)
         controls.addWidget(self._statement_type_filter)
         self._statement_count = QLabel("0 registros")
