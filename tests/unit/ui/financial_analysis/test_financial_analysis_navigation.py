@@ -277,6 +277,7 @@ def test_nested_sugef_and_rating_tabs_support_compact_navigation(qt_app) -> None
         view.close()
         qt_app.processEvents()
 
+
 def test_sugef_export_button_tracks_responsive_toolbar(qt_app) -> None:
     view = FinancialAnalysisView(presenter=_Presenter())  # type: ignore[arg-type]
     try:

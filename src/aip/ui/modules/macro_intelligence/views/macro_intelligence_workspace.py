@@ -863,17 +863,11 @@ class MacroIntelligenceWorkspace(QWidget):
         self._projection_table.setAlternatingRowColors(True)
         self._projection_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self._export_projection_button = QPushButton("Exportar CSV")
-        self._export_projection_button.setToolTip(
-            "Exportar la matriz macro a CSV para Excel."
-        )
+        self._export_projection_button.setToolTip("Exportar la matriz macro a CSV para Excel.")
         self._export_projection_button.clicked.connect(
-            lambda: save_table_csv_dialog(
-                self, self._projection_table, "aip-matriz-macro.csv"
-            )
+            lambda: save_table_csv_dialog(self, self._projection_table, "aip-matriz-macro.csv")
         )
-        layout.addWidget(
-            self._export_projection_button, alignment=Qt.AlignmentFlag.AlignRight
-        )
+        layout.addWidget(self._export_projection_button, alignment=Qt.AlignmentFlag.AlignRight)
         layout.addWidget(self._projection_table)
         self._tabs.addTab(page, "Matriz macro")
 
@@ -886,12 +880,8 @@ class MacroIntelligenceWorkspace(QWidget):
         self._tri_crc_table = self._curve_table()
         self._tri_usd_table = self._curve_table()
         self._curve_groups = (
-            self._table_group(
-                "TRI CRC · observado", self._tri_crc_table, "aip-tri-crc.csv"
-            ),
-            self._table_group(
-                "TRI USD · observado", self._tri_usd_table, "aip-tri-usd.csv"
-            ),
+            self._table_group("TRI CRC · observado", self._tri_crc_table, "aip-tri-crc.csv"),
+            self._table_group("TRI USD · observado", self._tri_usd_table, "aip-tri-usd.csv"),
         )
         for index, group in enumerate(self._curve_groups):
             layout.addWidget(group, 0, index)
@@ -962,6 +952,7 @@ class MacroIntelligenceWorkspace(QWidget):
         layout = QVBoxLayout(group)
         export_button = QPushButton("Exportar CSV")
         export_button.setToolTip(f"Exportar {title} a CSV para Excel.")
+
         def export_current_table() -> None:
             save_table_csv_dialog(self, table, filename)
 

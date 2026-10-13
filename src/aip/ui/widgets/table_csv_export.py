@@ -24,9 +24,7 @@ def export_table_csv(
     table: QTableWidget, destination: str | Path, *, visible_rows_only: bool = False
 ) -> int:
     """Export visible columns and optionally filtered rows without changing their data."""
-    columns = [
-        col for col in range(table.columnCount()) if not table.isColumnHidden(col)
-    ]
+    columns = [col for col in range(table.columnCount()) if not table.isColumnHidden(col)]
     count = 0
     with Path(destination).open("w", encoding="utf-8-sig", newline="") as output:
         writer = csv.writer(output, delimiter=";", lineterminator="\r\n")
@@ -46,9 +44,7 @@ def export_table_csv(
             writer.writerow(
                 [
                     _excel_safe_cell(
-                        table.item(row, col).text()
-                        if table.item(row, col) is not None
-                        else ""
+                        table.item(row, col).text() if table.item(row, col) is not None else ""
                     )
                     for col in columns
                 ]
@@ -78,9 +74,7 @@ def save_table_csv_dialog(
     try:
         exported = export_table_csv(table, path, visible_rows_only=visible_rows_only)
     except OSError as exc:
-        QMessageBox.warning(
-            parent, "Error de exportación", f"No se pudo guardar el CSV: {exc}"
-        )
+        QMessageBox.warning(parent, "Error de exportación", f"No se pudo guardar el CSV: {exc}")
         return
     QMessageBox.information(
         parent, "Exportación completada", f"Se exportaron {exported} registros a CSV."
