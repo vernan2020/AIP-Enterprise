@@ -29,6 +29,7 @@ from aip.ui.modules.price_risk.views.portfolio_var_simulator_view import (
 )
 from aip.ui.modules.price_risk.widgets.risk_charts import ParetoChartWidget, RiskBarChartWidget
 from aip.ui.themes.typography import numeric_font_family
+from aip.ui.widgets.chart_png_export import save_widget_png_dialog
 from aip.ui.widgets.table_csv_export import save_table_csv_dialog
 
 
@@ -517,7 +518,21 @@ class PriceRiskView(QWidget):
         analytics.setColumnStretch(1, 1)
         self._var_chart_grid = analytics
         self._var_chart_groups = (top_group, pareto_group, issuer_group, currency_group)
-        layout.addLayout(analytics)
+        self._price_chart_gallery = QWidget()
+        self._price_chart_gallery.setObjectName("priceRiskChartGallery")
+        self._price_chart_gallery.setLayout(analytics)
+        export_var_charts = QPushButton("Guardar gráficos PNG")
+        export_var_charts.setAccessibleName("Exportar gráficos de riesgo de precio")
+        export_var_charts.setToolTip(
+            "Guardar la contribución al VeR, Pareto, emisor y moneda en PNG."
+        )
+        export_var_charts.clicked.connect(
+            lambda: save_widget_png_dialog(
+                self, self._price_chart_gallery, "aip-var-graficos.png"
+            )
+        )
+        layout.addWidget(export_var_charts, alignment=Qt.AlignmentFlag.AlignRight)
+        layout.addWidget(self._price_chart_gallery)
         self._price_hover_readout = self._new_chart_readout("priceRiskHoverReadout")
         for chart in (
             self._contribution_chart,
@@ -722,7 +737,21 @@ class PriceRiskView(QWidget):
             shock_group,
             shock_table_group,
         )
-        layout.addLayout(charts)
+        self._rate_chart_gallery = QWidget()
+        self._rate_chart_gallery.setObjectName("rateRiskChartGallery")
+        self._rate_chart_gallery.setLayout(charts)
+        export_rate_charts = QPushButton("Guardar sensibilidad PNG")
+        export_rate_charts.setAccessibleName("Exportar gráficos de sensibilidad y DV01")
+        export_rate_charts.setToolTip(
+            "Guardar DV01 y escenarios de sensibilidad en PNG."
+        )
+        export_rate_charts.clicked.connect(
+            lambda: save_widget_png_dialog(
+                self, self._rate_chart_gallery, "aip-dv01-sensibilidad.png"
+            )
+        )
+        layout.addWidget(export_rate_charts, alignment=Qt.AlignmentFlag.AlignRight)
+        layout.addWidget(self._rate_chart_gallery)
         self._rate_hover_readout = self._new_chart_readout("rateRiskHoverReadout")
         for chart in (self._bucket_chart, self._currency_chart, self._shock_chart):
             chart.hover_readout_changed.connect(

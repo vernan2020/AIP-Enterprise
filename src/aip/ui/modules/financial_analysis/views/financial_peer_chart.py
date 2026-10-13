@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QScrollArea,
     QToolTip,
+    QPushButton,
     QVBoxLayout,
     QWidget,
 )
@@ -27,6 +28,7 @@ from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model 
     PeerChartPointView,
     PeerChartSeriesView,
 )
+from aip.ui.widgets.chart_png_export import save_widget_png_dialog
 from aip.ui.widgets.chart_tooltip import build_chart_tooltip
 
 
@@ -78,6 +80,16 @@ class FinancialPeerChartPanel(QWidget):
         self._selector.currentIndexChanged.connect(self._selection_changed)
         selector_row.addWidget(self._selector)
         selector_row.addStretch(1)
+        self._export_chart_button = QPushButton("Guardar PNG")
+        self._export_chart_button.setAccessibleName(
+            "Exportar gráfico comparativo financiero"
+        )
+        self._export_chart_button.setToolTip(
+            "Guardar el gráfico SUGEF seleccionado como imagen PNG."
+        )
+        self._export_chart_button.setEnabled(False)
+        self._export_chart_button.clicked.connect(self._export_current_chart)
+        selector_row.addWidget(self._export_chart_button)
         root.addLayout(selector_row)
 
         self._chart_context = QLabel("Seleccione un indicador para comparar entidades.")
@@ -163,8 +175,15 @@ class FinancialPeerChartPanel(QWidget):
             else self._bar_chart(item, detail_label=self._hover_detail)
         )
         self._chart_host.addWidget(self._chart_view)
+        self._export_chart_button.setEnabled(True)
+
+    def _export_current_chart(self) -> None:
+        if self._chart_view is None:
+            return
+        save_widget_png_dialog(self, self._chart_view, "aip-comparativo-sugef.png")
 
     def _clear_chart(self) -> None:
+        self._export_chart_button.setEnabled(False)
         if self._chart_view is not None:
             self._chart_host.removeWidget(self._chart_view)
             self._chart_view.deleteLater()

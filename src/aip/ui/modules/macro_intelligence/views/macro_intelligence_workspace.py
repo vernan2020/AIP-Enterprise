@@ -53,6 +53,7 @@ from aip.ui.widgets.chart_tooltip import (
     point_hit_rect,
     show_chart_tooltip,
 )
+from aip.ui.widgets.chart_png_export import save_widget_png_dialog
 from aip.ui.widgets.table_csv_export import save_table_csv_dialog
 
 _MONTHS = (
@@ -827,6 +828,22 @@ class MacroIntelligenceWorkspace(QWidget):
         group_layout = QVBoxLayout(group)
         self._projection_chart = _ProjectionChart()
         group_layout.addWidget(self._projection_chart)
+        self._export_projection_png_button = QPushButton("Guardar proyección PNG")
+        self._export_projection_png_button.setAccessibleName(
+            "Exportar proyección macroeconómica a PNG"
+        )
+        self._export_projection_png_button.setToolTip(
+            "Guardar la curva visualizada, con sus escenarios y bandas de pronóstico."
+        )
+        self._export_projection_png_button.clicked.connect(
+            lambda: save_widget_png_dialog(
+                self, self._projection_chart, "aip-proyeccion-macro.png"
+            )
+        )
+        group_layout.addWidget(
+            self._export_projection_png_button,
+            alignment=Qt.AlignmentFlag.AlignRight,
+        )
         self._projection_readout = QLabel(
             "Pase el cursor sobre un punto para consultar el período y valor."
         )
