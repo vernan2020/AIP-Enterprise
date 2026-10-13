@@ -621,9 +621,7 @@ class MacroIntelligenceWorkspace(QWidget):
         self._freshness_notice = QLabel("")
         self._freshness_notice.setObjectName("macroFreshnessNotice")
         self._freshness_notice.setWordWrap(True)
-        self._freshness_notice.setTextInteractionFlags(
-            Qt.TextInteractionFlag.TextSelectableByMouse
-        )
+        self._freshness_notice.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         self._freshness_notice.setStyleSheet(
             "background:#FFF3DA; color:#754000; border:1px solid #E9B456;"
             "border-radius:7px; padding:9px 12px; font-size:11px; font-weight:600;"

@@ -83,9 +83,7 @@ def test_probe_respects_missing_existing_tokens() -> None:
 
 def test_sugef_probe_does_not_treat_old_report_as_september() -> None:
     response = {
-        "listaBalanceSituacionAnalisisFinancieroEntidad": [
-            {"periodo": "2026-08-01T00:00:00"}
-        ]
+        "listaBalanceSituacionAnalisisFinancieroEntidad": [{"periodo": "2026-08-01T00:00:00"}]
     }
     message = check._period_coverage(
         response,
@@ -96,9 +94,11 @@ def test_sugef_probe_does_not_treat_old_report_as_september() -> None:
     assert "2026-08" in message
     assert (
         check._period_coverage(
-            {"listaBalanceSituacionAnalisisFinancieroEntidad": [
-                {"periodo": "2026-09-01T00:00:00"}
-            ]},
+            {
+                "listaBalanceSituacionAnalisisFinancieroEntidad": [
+                    {"periodo": "2026-09-01T00:00:00"}
+                ]
+            },
             "listaBalanceSituacionAnalisisFinancieroEntidad",
             target_date=date(2026, 9, 1),
         )

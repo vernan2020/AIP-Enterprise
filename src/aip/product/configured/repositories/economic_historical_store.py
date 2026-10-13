@@ -319,9 +319,7 @@ class EconomicHistoricalStore:
     ) -> dict[str, date]:
         """Single aggregate query for forecast cache invalidation signatures."""
         normalized = tuple(
-            dict.fromkeys(
-                code.strip().upper() for code in indicator_codes if code.strip()
-            )
+            dict.fromkeys(code.strip().upper() for code in indicator_codes if code.strip())
         )
         if not normalized:
             return {}

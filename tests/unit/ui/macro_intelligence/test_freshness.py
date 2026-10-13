@@ -32,7 +32,11 @@ def _snapshot(*, source: str, observed: date) -> EconomicSnapshot:
         status="AVAILABLE",
         source=source,
         cutoff_date=observed,
-        market_snapshot=(_card("FX_SELL", observed), _card("TPM", observed), _card("TBP", observed)),
+        market_snapshot=(
+            _card("FX_SELL", observed),
+            _card("TPM", observed),
+            _card("TBP", observed),
+        ),
         tri_crc_curve=(),
         tri_usd_curve=(),
         diagnostics=(),

@@ -37,9 +37,7 @@ def test_live_bccr_rows_keep_official_date_value_and_frequency() -> None:
 
 
 def test_refresh_invalidates_cached_bccr_responses() -> None:
-    provider = ConfiguredEconomicIndicatorsProvider(
-        bccr_config=BCCRConfig(token="TEST_ONLY")
-    )
+    provider = ConfiguredEconomicIndicatorsProvider(bccr_config=BCCRConfig(token="TEST_ONLY"))
     provider._cache.set("chart:1", {"FX_SELL": ("old",)})
     assert provider._cache.size() == 1
     provider.invalidate_cache()
@@ -67,9 +65,7 @@ def test_bccr_history_records_are_written_to_repository(monkeypatch) -> None:
         bccr_config=BCCRConfig(token="TEST_ONLY")
     )
     assert (
-        provider._persist_official_history(
-            {"TBP": (_point("TBP", "3.62", date(2026, 10, 12)),)}
-        )
+        provider._persist_official_history({"TBP": (_point("TBP", "3.62", date(2026, 10, 12)),)})
         == 1
     )
     assert saved[0].value == Decimal("3.62")
