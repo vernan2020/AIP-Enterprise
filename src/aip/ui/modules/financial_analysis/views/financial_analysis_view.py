@@ -730,7 +730,7 @@ class FinancialAnalysisView(QWidget):
     def _metric_card(self, code: str, label: str) -> QFrame:
         card = QFrame()
         card.setObjectName("financialMetricCard")
-        card.setMinimumHeight(94)
+        card.setMinimumHeight(108)
         card.setStyleSheet(
             "QFrame#financialMetricCard {"
             "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
@@ -739,18 +739,22 @@ class FinancialAnalysisView(QWidget):
             "} QFrame#financialMetricCard:hover {border:1px solid #73B3DD;}"
         )
         layout = QVBoxLayout(card)
-        layout.setContentsMargins(8, 5, 8, 5)
+        layout.setContentsMargins(10, 8, 10, 8)
         layout.setSpacing(2)
         caption = QLabel(label)
-        caption.setStyleSheet("color:#DDF4FF; font-size:8px; font-weight:600; border:none;")
+        caption.setWordWrap(True)
+        caption.setStyleSheet("color:#DDF4FF; font-size:9px; font-weight:600; border:none;")
         value = QLabel("-")
         value.setStyleSheet(
             f'color:#FFFFFF; font-family:"{numeric_font_family()}"; '
-            "font-size:12px; font-weight:700; border:none;"
+            "font-size:14px; font-weight:700; border:none;"
         )
         value.setWordWrap(True)
+        value.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        card.setAccessibleName(label)
+        value.setAccessibleName(f"Valor de {label}")
         change = QLabel("Sin datos")
-        change.setStyleSheet("color:#CBEAF8; font-size:7px; border:none;")
+        change.setStyleSheet("color:#CBEAF8; font-size:9px; border:none;")
         change.setWordWrap(True)
         layout.addWidget(caption)
         layout.addWidget(value)

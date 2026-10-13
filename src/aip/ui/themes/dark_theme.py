@@ -25,7 +25,9 @@ class DarkTheme:
             background-color: #00182C;
             color: {p.text};
             border: 1px solid {p.celeste};
-            padding: 5px 7px;
+            padding: 8px 11px;
+            font-size: 10pt;
+            border-radius: 6px;
         }}
         QToolBar {{
             background: {p.surface};

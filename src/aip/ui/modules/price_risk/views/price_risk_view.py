@@ -182,7 +182,7 @@ class PriceRiskView(QWidget):
     def _metric_card(self, key: str, caption: str, helper: str) -> QFrame:
         card = QFrame()
         card.setObjectName("riskMetricCard")
-        card.setMinimumHeight(94)
+        card.setMinimumHeight(108)
         card.setStyleSheet(
             "QFrame#riskMetricCard {"
             "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
@@ -191,18 +191,25 @@ class PriceRiskView(QWidget):
             "} QFrame#riskMetricCard:hover {border:1px solid #73B3DD;}"
         )
         layout = QVBoxLayout(card)
-        layout.setContentsMargins(10, 7, 10, 7)
+        layout.setContentsMargins(12, 8, 12, 8)
         layout.setSpacing(2)
         title = QLabel(caption)
-        title.setStyleSheet("color:#DDF4FF; font-size:8px; font-weight:600; border:none;")
+        title.setWordWrap(True)
+        title.setStyleSheet("color:#DDF4FF; font-size:9px; font-weight:600; border:none;")
         value = QLabel("-")
         value_font = QFont(numeric_font_family())
-        value_font.setPointSize(12)
+        value_font.setPointSize(13)
         value_font.setBold(True)
         value.setFont(value_font)
         value.setStyleSheet(f'color:#FFFFFF; font-family:"{numeric_font_family()}"; border:none;')
+        value.setWordWrap(True)
+        value.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         hint = QLabel(helper)
-        hint.setStyleSheet("color:#CBEAF8; font-size:8px; border:none;")
+        hint.setWordWrap(True)
+        hint.setStyleSheet("color:#CBEAF8; font-size:9px; border:none;")
+        card.setAccessibleName(caption)
+        card.setToolTip(f"{caption}: {helper}")
+        value.setAccessibleName(f"Valor de {caption}")
         layout.addWidget(title)
         layout.addWidget(value)
         layout.addWidget(hint)

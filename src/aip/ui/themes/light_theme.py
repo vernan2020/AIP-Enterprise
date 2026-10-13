@@ -25,7 +25,9 @@ class LightTheme:
             background-color: {p.navy_950};
             color: {p.inverse};
             border: 1px solid {p.brand_celeste};
-            padding: 5px 7px;
+            padding: 8px 11px;
+            font-size: 10pt;
+            border-radius: 6px;
         }}
         QToolBar {{
             background-color: {p.surface};

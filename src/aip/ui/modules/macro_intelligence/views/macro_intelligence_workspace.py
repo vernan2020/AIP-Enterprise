@@ -153,7 +153,7 @@ class _MacroMetricCard(QFrame):
     def __init__(self, title: str) -> None:
         super().__init__()
         self.setObjectName("macroMetricCard")
-        self.setMinimumHeight(88)
+        self.setMinimumHeight(104)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(11, 8, 11, 8)
         layout.setSpacing(2)
@@ -166,6 +166,9 @@ class _MacroMetricCard(QFrame):
         value_font.setBold(True)
         self._value.setFont(value_font)
         self._value.setWordWrap(True)
+        self._value.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        self.setAccessibleName(title)
+        self._value.setAccessibleName(f"Valor de {title}")
         self._value.setStyleSheet(
             f'color:#FFFFFF; font-family:"{numeric_font_family()}"; border:none;'
         )
@@ -174,7 +177,7 @@ class _MacroMetricCard(QFrame):
         self._change.setStyleSheet("color:#D9F4FC; font-size:9px; border:none;")
         self._date = QLabel("Sin dato")
         self._date.setWordWrap(True)
-        self._date.setStyleSheet("color:#CBEAF8; font-size:8px; border:none;")
+        self._date.setStyleSheet("color:#CBEAF8; font-size:9px; border:none;")
         layout.addWidget(caption)
         layout.addWidget(self._value)
         layout.addWidget(self._change)
