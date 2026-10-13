@@ -43,3 +43,30 @@ def test_source_audit_marks_absence_without_touching_files(tmp_path) -> None:
     assert "CERTIFICADA: DuckDB no encontrado" in output
     assert not preview.exists()
     assert not certified.exists()
+
+
+
+def test_historical_inventory_is_read_only(tmp_path) -> None:
+    import duckdb
+
+    root = tmp_path / "archive"
+    candidate = root / "database" / "aip.duckdb"
+    candidate.parent.mkdir(parents=True)
+    with duckdb.connect(str(candidate)) as con:
+        con.execute(
+            "CREATE TABLE economic_history_observations "
+            "(indicator_code VARCHAR, observation_date DATE)"
+        )
+        con.execute(
+            "INSERT INTO economic_history_observations VALUES "
+            "('TPM', DATE '2026-09-30'), ('TBP', DATE '2026-09-30')"
+        )
+    from scripts.qa.audit_configured_sources import _historical_inventory
+
+    result = _historical_inventory(root)
+    assert "economic_history_observations: 2 registros" in result
+    assert "institutional_macro_scenarios: tabla ausente" in result
+    with duckdb.connect(str(candidate), read_only=True) as con:
+        assert con.execute(
+            "SELECT count(*) FROM economic_history_observations"
+        ).fetchone()[0] == 2

@@ -24,6 +24,39 @@ def _database_state(base: Path) -> str:
     return "no encontrado"
 
 
+
+def _historical_inventory(base: Path) -> tuple[str, ...]:
+    """Read-only counts of known persisted history, without inspecting values."""
+    candidate = base / "database" / "aip.duckdb"
+    if not candidate.is_file():
+        return ("históricos: base no encontrada",)
+    try:
+        import duckdb
+
+        with duckdb.connect(str(candidate), read_only=True) as connection:
+            existing = {
+                str(row[0])
+                for row in connection.execute(
+                    "SELECT table_name FROM information_schema.tables "
+                    "WHERE table_schema = 'main'"
+                ).fetchall()
+            }
+            results: list[str] = []
+            for table_name in (
+                "economic_history_observations",
+                "institutional_macro_scenarios",
+            ):
+                if table_name not in existing:
+                    results.append(f"{table_name}: tabla ausente")
+                    continue
+                count = connection.execute(
+                    f"SELECT COUNT(*) FROM {table_name}"
+                ).fetchone()[0]
+                results.append(f"{table_name}: {int(count)} registros")
+            return tuple(results)
+    except Exception:
+        return ("históricos: no inspeccionables; cierre AIP y reintente",)
+
 def audit_source_configuration(
     preview: Path,
     certified: Path,
@@ -57,6 +90,9 @@ def audit_source_configuration(
                 + ("presente" if (base / ".env").is_file() else "ausente"),
             )
         )
+    for label, root in (("PREVIEW", preview), ("CERTIFICADA", certified)):
+        for entry in _historical_inventory(root):
+            lines.append(f"{label}: {entry}")
     if not (preview / "database" / "aip.duckdb").is_file():
         lines.append("AVISO: PREVIEW no tiene base persistente.")
     lines.append("Diagnóstico de rutas únicamente. No se consultaron APIs ni se copiaron datos.")
