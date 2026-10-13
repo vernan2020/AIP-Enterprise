@@ -47,6 +47,7 @@ from aip.ui.modules.macro_intelligence.viewmodels.macro_intelligence_view_model 
     MacroForecastLabViewModel,
     MacroProjectionViewModel,
 )
+from aip.ui.modules.macro_intelligence.freshness import economic_source_freshness_notice
 from aip.ui.themes.typography import numeric_font_family
 from aip.ui.widgets.chart_png_export import save_widget_png_dialog
 from aip.ui.widgets.chart_tooltip import (
@@ -616,6 +617,19 @@ class MacroIntelligenceWorkspace(QWidget):
         self._header_grid = header_layout
         self._header_widgets = (title_widget, self._scenario_badge, self._refresh_button)
         root.addWidget(header)
+
+        self._freshness_notice = QLabel("")
+        self._freshness_notice.setObjectName("macroFreshnessNotice")
+        self._freshness_notice.setWordWrap(True)
+        self._freshness_notice.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse
+        )
+        self._freshness_notice.setStyleSheet(
+            "background:#FFF3DA; color:#754000; border:1px solid #E9B456;"
+            "border-radius:7px; padding:9px 12px; font-size:11px; font-weight:600;"
+        )
+        self._freshness_notice.hide()
+        root.addWidget(self._freshness_notice)
 
         metric_grid = QGridLayout()
         metric_grid.setHorizontalSpacing(7)
@@ -1237,6 +1251,9 @@ class MacroIntelligenceWorkspace(QWidget):
             else f"Diagnósticos: {len(snapshot.diagnostics)}"
         )
         self._status_label.setText(" · ".join(parts))
+        warning = economic_source_freshness_notice(snapshot, as_of=date.today())
+        self._freshness_notice.setText(warning)
+        self._freshness_notice.setVisible(bool(warning))
 
     @staticmethod
     def _populate_curve(table: QTableWidget, curve: tuple[EconomicCurvePoint, ...]) -> None:

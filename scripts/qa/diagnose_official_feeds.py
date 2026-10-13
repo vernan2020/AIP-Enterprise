@@ -51,6 +51,45 @@ def _records(payload: object, expected_key: str) -> int:
     return 0
 
 
+def _period_coverage(payload: object, expected_key: str, *, target_date: date) -> str:
+    """Summarize returned accounting months, not just HTTP success.
+
+    Neither identifiers nor monetary amounts leave the diagnostic process.
+    """
+    if not isinstance(payload, dict):
+        return "RESPUESTA INVÁLIDA"
+    if payload.get("tieneError") is True:
+        return "ERROR DE RESPUESTA"
+    rows = payload.get(expected_key)
+    if not isinstance(rows, list):
+        rows = next(
+            (
+                value
+                for key, value in payload.items()
+                if key.casefold() == expected_key.casefold() and isinstance(value, list)
+            ),
+            None,
+        )
+    if not isinstance(rows, list):
+        return "ESQUEMA INESPERADO"
+    months: set[str] = set()
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        raw = str(row.get("periodo") or "")
+        month = raw[:7] if len(raw) >= 7 and raw[4] == "-" else raw[:6]
+        if len(month) == 6 and month.isdigit():
+            month = month[:4] + "-" + month[4:]
+        if len(month) == 7 and month[:4].isdigit() and month[5:7].isdigit():
+            months.add(month)
+    expected = f"{target_date:%Y-%m}"
+    if expected in months:
+        return f"CORTE {expected} PRESENTE"
+    if months:
+        return f"CORTE {expected} AUSENTE; último devuelto {max(months)}"
+    return "SIN FECHAS CONTABLES EN LA RESPUESTA"
+
+
 def _bccr_probe(config: object, *, target_date: date) -> str:
     token = getattr(config, "token", None)
     if not token:
@@ -121,10 +160,10 @@ def _sugef_probe(config: object, *, target_date: date) -> tuple[str, ...]:
             }
             result = api._post_json(api._endpoint(report), payload)
             count = _records(result, key)
-            error = bool(result.get("tieneError"))
+            coverage = _period_coverage(result, key, target_date=target_date)
             messages.append(
                 f"SUGEF {label} {target_date:%Y-%m}: "
-                f"{'ERROR DE RESPUESTA' if error else 'HTTP OK'}; {count} registros"
+                f"{count} registros; {coverage}"
             )
         except Exception as exc:
             messages.append(

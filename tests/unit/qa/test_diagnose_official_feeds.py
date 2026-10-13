@@ -79,3 +79,39 @@ def test_safe_network_errors_do_not_reveal_request_urls() -> None:
 def test_probe_respects_missing_existing_tokens() -> None:
     status = check._bccr_probe(SimpleNamespace(token=None), target_date=date(2026, 10, 13))
     assert "CREDENCIAL NO VISIBLE" in status
+
+
+def test_sugef_probe_does_not_treat_old_report_as_september() -> None:
+    response = {
+        "listaBalanceSituacionAnalisisFinancieroEntidad": [
+            {"periodo": "2026-08-01T00:00:00"}
+        ]
+    }
+    message = check._period_coverage(
+        response,
+        "listaBalanceSituacionAnalisisFinancieroEntidad",
+        target_date=date(2026, 9, 1),
+    )
+    assert "2026-09 AUSENTE" in message
+    assert "2026-08" in message
+    assert (
+        check._period_coverage(
+            {"listaBalanceSituacionAnalisisFinancieroEntidad": [
+                {"periodo": "2026-09-01T00:00:00"}
+            ]},
+            "listaBalanceSituacionAnalisisFinancieroEntidad",
+            target_date=date(2026, 9, 1),
+        )
+        == "CORTE 2026-09 PRESENTE"
+    )
+
+
+def test_sugef_probe_does_not_claim_valid_report_when_schema_is_missing() -> None:
+    assert (
+        check._period_coverage(
+            {"tieneError": False, "otraClave": []},
+            "listaBalanceSituacionAnalisisFinancieroEntidad",
+            target_date=date(2026, 9, 1),
+        )
+        == "ESQUEMA INESPERADO"
+    )
