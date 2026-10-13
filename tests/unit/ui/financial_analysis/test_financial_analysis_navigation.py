@@ -196,6 +196,9 @@ def test_financial_tabs_keep_navigation_accessible_on_narrow_windows(qt_app) -> 
         view._tabs.setCurrentIndex(5)
         assert view._tabs.currentIndex() == 5
         assert view._tabs.tabText(5) == original
+        assert view._tabs.tabToolTip(5) == original
+        for index in range(view._tabs.count()):
+            assert view._tabs.tabToolTip(index) == view._tabs.tabText(index)
     finally:
         view.close()
         qt_app.processEvents()
