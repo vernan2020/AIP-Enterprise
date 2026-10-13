@@ -545,6 +545,9 @@ class MacroIntelligenceWorkspace(QWidget):
         self._projection_selector_grid: QGridLayout | None = None
         self._projection_selector_widgets: tuple[QWidget, ...] = ()
         self._projection_selector_compact = False
+        self._curve_grid: QGridLayout | None = None
+        self._curve_groups: tuple[QGroupBox, ...] = ()
+        self._curve_columns = 2
         self._build_ui()
         self._apply_styles()
         self._load_persisted_snapshot()
@@ -707,6 +710,11 @@ class MacroIntelligenceWorkspace(QWidget):
             if compact != self._header_compact:
                 self._reflow_macro_header(self._header_grid, self._header_widgets, compact)
                 self._header_compact = compact
+        if self._curve_grid is not None and self._curve_groups:
+            curve_columns = 1 if width < 980 else 2
+            if curve_columns != self._curve_columns:
+                self._reflow_grid(self._curve_grid, self._curve_groups, curve_columns)
+                self._curve_columns = curve_columns
         if self._metric_grid is not None:
             metric_columns = self._metric_columns_for_width(width)
             if metric_columns != self._metric_columns:
@@ -841,12 +849,20 @@ class MacroIntelligenceWorkspace(QWidget):
 
     def _build_market_curves_tab(self) -> None:
         page = QWidget()
-        layout = QHBoxLayout(page)
+        layout = QGridLayout(page)
         layout.setContentsMargins(4, 8, 4, 4)
+        layout.setHorizontalSpacing(9)
+        layout.setVerticalSpacing(8)
         self._tri_crc_table = self._curve_table()
         self._tri_usd_table = self._curve_table()
-        layout.addWidget(self._table_group("TRI CRC · observado", self._tri_crc_table), 1)
-        layout.addWidget(self._table_group("TRI USD · observado", self._tri_usd_table), 1)
+        self._curve_groups = (
+            self._table_group("TRI CRC · observado", self._tri_crc_table),
+            self._table_group("TRI USD · observado", self._tri_usd_table),
+        )
+        for index, group in enumerate(self._curve_groups):
+            layout.addWidget(group, 0, index)
+            layout.setColumnStretch(index, 1)
+        self._curve_grid = layout
         self._tabs.addTab(page, "Curvas TRI")
 
     def _build_transmission_tab(self) -> None:
