@@ -244,6 +244,10 @@ class FinancialAnalysisView(QWidget):
         source_layout.setContentsMargins(8, 4, 8, 4)
         self._source_status = QLabel("SUGEF · fuente no configurada")
         self._source_status.setWordWrap(True)
+        self._source_status.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse
+            | Qt.TextInteractionFlag.TextSelectableByKeyboard
+        )
         source_layout.addWidget(self._source_status, 0, 0)
         self._source_link = QPushButton("Abrir fuente oficial")
         self._source_link.clicked.connect(self._open_source)
