@@ -230,3 +230,31 @@ def test_sugef_source_trace_is_copyable_for_audit(qt_app) -> None:
     finally:
         view.close()
         qt_app.processEvents()
+
+
+def test_sugef_statement_toolbar_reflows_without_losing_search_or_filter(qt_app) -> None:
+    view = FinancialAnalysisView(presenter=_Presenter())  # type: ignore[arg-type]
+    try:
+        grid = view._statement_controls_grid
+        assert grid is not None
+        view._statement_search.setText("activos")
+        view._statement_type_filter.setCurrentIndex(1)
+        view._statement_count.setText("25 registros")
+
+        view._arrange_statement_controls(720)
+        assert view._statement_controls_compact
+        assert grid.itemAtPosition(0, 0).widget() is view._statement_search
+        assert grid.itemAtPosition(0, 2).widget() is view._statement_search
+        assert grid.itemAtPosition(1, 1).widget() is view._statement_type_filter
+        assert grid.itemAtPosition(1, 2).widget() is view._statement_count
+
+        view._arrange_statement_controls(1400)
+        assert not view._statement_controls_compact
+        for index, widget in enumerate(view._statement_controls):
+            assert grid.itemAtPosition(0, index).widget() is widget
+        assert view._statement_search.text() == "activos"
+        assert view._statement_type_filter.currentIndex() == 1
+        assert view._statement_count.text() == "25 registros"
+    finally:
+        view.close()
+        qt_app.processEvents()
