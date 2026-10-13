@@ -527,9 +527,7 @@ class PriceRiskView(QWidget):
             "Guardar la contribución al VeR, Pareto, emisor y moneda en PNG."
         )
         export_var_charts.clicked.connect(
-            lambda: save_widget_png_dialog(
-                self, self._price_chart_gallery, "aip-var-graficos.png"
-            )
+            lambda: save_widget_png_dialog(self, self._price_chart_gallery, "aip-var-graficos.png")
         )
         layout.addWidget(export_var_charts, alignment=Qt.AlignmentFlag.AlignRight)
         layout.addWidget(self._price_chart_gallery)
@@ -742,9 +740,7 @@ class PriceRiskView(QWidget):
         self._rate_chart_gallery.setLayout(charts)
         export_rate_charts = QPushButton("Guardar sensibilidad PNG")
         export_rate_charts.setAccessibleName("Exportar gráficos de sensibilidad y DV01")
-        export_rate_charts.setToolTip(
-            "Guardar DV01 y escenarios de sensibilidad en PNG."
-        )
+        export_rate_charts.setToolTip("Guardar DV01 y escenarios de sensibilidad en PNG.")
         export_rate_charts.clicked.connect(
             lambda: save_widget_png_dialog(
                 self, self._rate_chart_gallery, "aip-dv01-sensibilidad.png"

@@ -836,9 +836,7 @@ class MacroIntelligenceWorkspace(QWidget):
             "Guardar la curva visualizada, con sus escenarios y bandas de pronóstico."
         )
         self._export_projection_png_button.clicked.connect(
-            lambda: save_widget_png_dialog(
-                self, self._projection_chart, "aip-proyeccion-macro.png"
-            )
+            lambda: save_widget_png_dialog(self, self._projection_chart, "aip-proyeccion-macro.png")
         )
         group_layout.addWidget(
             self._export_projection_png_button,

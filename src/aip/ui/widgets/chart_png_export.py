@@ -27,9 +27,7 @@ def export_widget_png(widget: QWidget, destination: str | Path) -> tuple[int, in
     return pixmap.width(), pixmap.height()
 
 
-def save_widget_png_dialog(
-    parent: QWidget, widget: QWidget, suggested_filename: str
-) -> None:
+def save_widget_png_dialog(parent: QWidget, widget: QWidget, suggested_filename: str) -> None:
     """Export only after the user chooses the file path; report any write failure."""
     path, _selected_filter = QFileDialog.getSaveFileName(
         parent,
@@ -44,9 +42,7 @@ def save_widget_png_dialog(
     try:
         export_widget_png(widget, path)
     except (OSError, ValueError) as exc:
-        QMessageBox.warning(
-            parent, "Error de exportación", f"No se pudo guardar el gráfico: {exc}"
-        )
+        QMessageBox.warning(parent, "Error de exportación", f"No se pudo guardar el gráfico: {exc}")
         return
     QMessageBox.information(
         parent, "Exportación completada", "El gráfico se guardó como imagen PNG."

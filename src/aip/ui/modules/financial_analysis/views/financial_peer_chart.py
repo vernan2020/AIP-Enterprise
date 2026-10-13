@@ -81,9 +81,7 @@ class FinancialPeerChartPanel(QWidget):
         selector_row.addWidget(self._selector)
         selector_row.addStretch(1)
         self._export_chart_button = QPushButton("Guardar PNG")
-        self._export_chart_button.setAccessibleName(
-            "Exportar gráfico comparativo financiero"
-        )
+        self._export_chart_button.setAccessibleName("Exportar gráfico comparativo financiero")
         self._export_chart_button.setToolTip(
             "Guardar el gráfico SUGEF seleccionado como imagen PNG."
         )
