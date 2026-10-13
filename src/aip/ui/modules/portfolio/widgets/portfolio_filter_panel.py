@@ -64,9 +64,9 @@ class PortfolioFilterPanel(QWidget):
             layout.setColumnStretch(column, 1)
         layout.addWidget(self.reset_button, 3, 2)
         for combo in (self.issuer, self.currency):
-            combo.currentIndexChanged.connect(self.filters_changed.emit)
+            combo.currentIndexChanged.connect(lambda _index: self.filters_changed.emit())
         for edit in (self.instrument, self.classification, self.search):
-            edit.textChanged.connect(self.filters_changed.emit)
+            edit.textChanged.connect(lambda _text: self.filters_changed.emit())
         self.reset_button.clicked.connect(self.reset_filters)
 
     def set_rows(self, rows: tuple[object, ...]) -> None:
