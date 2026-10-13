@@ -93,6 +93,22 @@ def recover(
     ):
         notes.append("Nada por restaurar: no se realizaron modificaciones.")
         return tuple(notes)
+    # Scenario metadata and its review/event trails form one governance unit.
+    # Mixing an existing PREVIEW scenario history with certified audit records
+    # from another snapshot would make approvals and traceability ambiguous.
+    scenario_tables = _TABLES[1:]
+    existing_scenario_data = any(
+        (destination_counts[name] or 0) > 0 for name in scenario_tables
+    )
+    missing_certified_scenario_data = any(
+        (source_counts[name] or 0) > 0 and not destination_counts[name]
+        for name in scenario_tables
+    )
+    if existing_scenario_data and missing_certified_scenario_data:
+        raise ValueError(
+            "PREVIEW contiene una parte de los escenarios: "
+            "se requiere conciliación antes de restaurar auditoría."
+        )
 
     # The restored schema comes from the existing application repositories.
     # Back up PREVIEW first, before any potentially mutating operation.
@@ -131,8 +147,10 @@ def recover(
                 source_schema = tuple((row[0], row[1]) for row in source_info)
                 destination_schema = tuple((row[0], row[1]) for row in dest_info)
                 if source_schema != destination_schema:
-                    notes.append(f"{name}: esquema incompatible; no se importó.")
-                    continue
+                    raise ValueError(
+                        f"Esquema incompatible en {name}; "
+                        "no se restauró ninguna tabla."
+                    )
                 target.execute(
                     f"INSERT INTO main.{name} SELECT * FROM previous.main.{name}"
                 )
