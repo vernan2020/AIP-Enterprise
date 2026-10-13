@@ -258,3 +258,19 @@ def test_sugef_statement_toolbar_reflows_without_losing_search_or_filter(qt_app)
     finally:
         view.close()
         qt_app.processEvents()
+
+
+def test_nested_sugef_and_rating_tabs_support_compact_navigation(qt_app) -> None:
+    view = FinancialAnalysisView(presenter=_Presenter())  # type: ignore[arg-type]
+    try:
+        for tabs in (view._statement_content_tabs, view._rating_content_tabs):
+            assert tabs.tabBar().usesScrollButtons()
+            assert tabs.elideMode() == Qt.TextElideMode.ElideRight
+            last = tabs.count() - 1
+            title = tabs.tabText(last)
+            tabs.setCurrentIndex(last)
+            assert tabs.currentIndex() == last
+            assert tabs.tabText(last) == title
+    finally:
+        view.close()
+        qt_app.processEvents()
