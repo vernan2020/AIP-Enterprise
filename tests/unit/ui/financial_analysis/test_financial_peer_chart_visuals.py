@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from PySide6.QtCharts import QChart
 from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QToolTip
 from PySide6.QtWidgets import QLabel
 
 from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model import (
@@ -179,6 +181,53 @@ def test_peer_selector_label_is_associated_with_selector(qt_app) -> None:
     try:
         label = next(widget for widget in panel.findChildren(QLabel) if widget.text() == "Gráfico:")
         assert label.buddy() is panel._selector
+    finally:
+        panel.close()
+        qt_app.processEvents()
+
+
+def test_peer_chart_disables_repaint_animation_and_exposes_copyable_context(qt_app) -> None:
+    panel = FinancialPeerChartPanel()
+    try:
+        points = (
+            PeerChartPointView("1", "Entidad A", -1.25, "-1.25%"),
+            PeerChartPointView("2", "Entidad B", 0.75, "0.75%", selected=True),
+        )
+        panel.bind_series(
+            (
+                PeerChartSeriesView(
+                    code="RISK",
+                    label="Indicador SUGEF",
+                    unit="%",
+                    chart_type="BAR",
+                    points=points,
+                ),
+            )
+        )
+        assert panel._chart_view is not None
+        assert panel._chart_view.chart().animationOptions() == QChart.AnimationOption.NoAnimation
+        assert panel._chart_view.accessibleName() == "Comparativo financiero: Indicador SUGEF"
+        assert panel._hover_detail.textInteractionFlags() & (
+            Qt.TextInteractionFlag.TextSelectableByMouse
+        )
+        assert panel._chart_context.textInteractionFlags() & (
+            Qt.TextInteractionFlag.TextSelectableByMouse
+        )
+        assert panel._bar_points(panel._series[0])[0].value == -1.25
+    finally:
+        panel.close()
+        qt_app.processEvents()
+
+
+def test_peer_chart_switch_dismisses_obsolete_tooltip(qt_app, monkeypatch) -> None:
+    panel = FinancialPeerChartPanel()
+    calls: list[bool] = []
+    monkeypatch.setattr(QToolTip, "hideText", lambda: calls.append(True))
+    try:
+        panel.bind_series(())
+        assert calls == [True]
+        panel.bind_series(())
+        assert calls == [True, True]
     finally:
         panel.close()
         qt_app.processEvents()
