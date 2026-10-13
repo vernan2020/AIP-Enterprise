@@ -221,3 +221,14 @@ def test_sugef_statement_search_and_filter_are_accessible(qt_app) -> None:
     finally:
         view.close()
         qt_app.processEvents()
+
+
+def test_sugef_source_trace_is_copyable_for_audit(qt_app) -> None:
+    view = FinancialAnalysisView(presenter=_Presenter())  # type: ignore[arg-type]
+    try:
+        flags = view._source_status.textInteractionFlags()
+        assert flags & Qt.TextInteractionFlag.TextSelectableByMouse
+        assert flags & Qt.TextInteractionFlag.TextSelectableByKeyboard
+    finally:
+        view.close()
+        qt_app.processEvents()
