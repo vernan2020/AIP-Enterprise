@@ -3,9 +3,9 @@ setlocal EnableExtensions
 cd /d "%~dp0"
 
 echo ============================================================
-echo   AIP ENTERPRISE V4.5.1 - VISTA PREVIA DE DESARROLLO
+echo   AIP ENTERPRISE V4.5.1 - VISTA PREVIA CON DATOS REALES
 echo   Rama: feature/ux-v4-5-1-performance-responsiveness
-echo   Esta ejecucion NO altera el release certificado.
+echo   No se modifica el release certificado.
 echo ============================================================
 echo.
 
@@ -20,7 +20,7 @@ if not exist ".venv\Scripts\python.exe" (
 )
 
 if not exist ".venv\.preview-installed" (
-    echo Instalando dependencias de la vista previa...
+    echo Instalando las dependencias del codigo de desarrollo...
     ".venv\Scripts\python.exe" -m pip install -e .
     if errorlevel 1 (
         echo ERROR: instalacion de dependencias fallida.
@@ -30,9 +30,33 @@ if not exist ".venv\.preview-installed" (
     echo installed> ".venv\.preview-installed"
 )
 
-if /I "%~1"=="configured" goto configured
+REM The REAL configured runtime is always the default entry point.
+REM Demo is opt-in for developer-only tests; never silently replace live data.
+if /I "%~1"=="demo" goto demo
+if /I not "%~1"=="configured" if not "%~1"=="" (
+    echo Uso: run_aip_ux_preview.cmd [configured ^| demo]
+    exit /b 2
+)
 
-echo Abriendo modo DEMO: solo para revisar interfaz y navegacion.
+echo Iniciando AIP CONFIGURED con las fuentes existentes.
+if not exist "config\runtime.local.cmd" (
+    echo AVISO: no existe config\runtime.local.cmd en esta copia.
+    echo Se usaran rutas institucionales detectadas y variables de entorno.
+    echo Si su instalacion certificada usa overrides locales, copiarlos
+    echo UNICAMENTE a esta copia local. No subir credenciales a GitHub.
+)
+call run_aip_configured.cmd
+set "AIP_PREVIEW_EXIT=%errorlevel%"
+if not "%AIP_PREVIEW_EXIT%"=="0" (
+    echo.
+    echo ERROR: inicio con datos reales o preflight institucional fallido.
+    echo Revise config\runtime.local.cmd y accesibilidad de fuentes.
+    pause
+)
+exit /b %AIP_PREVIEW_EXIT%
+
+:demo
+echo MODO DEMO ACTIVADO EXPLICITAMENTE: no carga datos institucionales.
 set "AIP_EXECUTION_MODE=DEMO"
 set "AIP_DEMO_MODE_ENABLED=true"
 set "AIP_CONFIGURED_DIAGNOSTIC_MODE=false"
@@ -48,28 +72,4 @@ set "AIP_CURVES_ENABLED=false"
 set "AIP_BCCR_ENABLED=false"
 set "PYTHONPATH=%CD%\src"
 ".venv\Scripts\python.exe" -m aip
-if errorlevel 1 (
-    echo.
-    echo ERROR: no se pudo abrir la vista previa.
-    pause
-    exit /b 1
-)
-exit /b 0
-
-:configured
-if not exist "config\runtime.local.cmd" (
-    echo ERROR: falta config\runtime.local.cmd para ejecutar con fuentes reales.
-    echo Copie el archivo privado desde su instalacion institucional validada.
-    echo NO suba ese archivo a GitHub.
-    pause
-    exit /b 1
-)
-echo Abriendo modo CONFIGURED con sus fuentes locales...
-call run_aip_configured.cmd
-if errorlevel 1 (
-    echo.
-    echo ERROR: preflight institucional o arranque fallido.
-    pause
-    exit /b 1
-)
-exit /b 0
+exit /b %errorlevel%
