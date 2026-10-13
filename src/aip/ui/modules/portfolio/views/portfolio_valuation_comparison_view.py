@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
     QHeaderView,
     QLabel,
     QPushButton,
+    QScrollArea,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -39,9 +40,19 @@ class PortfolioValuationComparisonView(QWidget):
         self._model = PortfolioValuationComparisonDisplay()
         self._show_all = False
 
-        layout = QVBoxLayout(self)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        self._scroll = QScrollArea()
+        self._scroll.setObjectName("portfolioValuationScroll")
+        self._scroll.setWidgetResizable(True)
+        self._scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self._scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        body = QWidget()
+        layout = QVBoxLayout(body)
         layout.setContentsMargins(4, 8, 4, 4)
-        layout.setSpacing(8)
+        layout.setSpacing(10)
+        self._scroll.setWidget(body)
+        outer.addWidget(self._scroll)
 
         self._note = QLabel(
             "La ganancia / pérdida parte directamente de la ‘Valuación acumulada’ del "
@@ -115,12 +126,13 @@ class PortfolioValuationComparisonView(QWidget):
             ]
         )
         self._positions.setObjectName("portfolioValuationPositions")
-        self._positions.setMinimumHeight(180)
+        self._positions.setMinimumHeight(240)
         layout.addWidget(self._positions, 1)
 
     @staticmethod
     def _chart_group(title: str, chart: QWidget) -> QGroupBox:
         group = QGroupBox(title)
+        group.setMinimumHeight(240)
         group.setStyleSheet(
             "QGroupBox {font-weight:700; color:#17324D; background:#FFFFFF; "
             "border:1px solid #DCE5EC; border-radius:8px; margin-top:7px;}"
@@ -128,6 +140,7 @@ class PortfolioValuationComparisonView(QWidget):
         )
         inner = QVBoxLayout(group)
         inner.setContentsMargins(8, 14, 8, 6)
+        chart.setMinimumHeight(210)
         inner.addWidget(chart)
         return group
 
@@ -139,9 +152,13 @@ class PortfolioValuationComparisonView(QWidget):
         table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         table.setAlternatingRowColors(True)
         table.verticalHeader().setVisible(False)
-        table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
-        table.horizontalHeader().setStretchLastSection(True)
-        table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        header = table.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+        header.setStretchLastSection(False)
+        for index, width in enumerate((48, 205, 108, 86, 245, 245)):
+            table.setColumnWidth(index, width)
+        table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        table.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
         return table
 
     def bind(self, model: PortfolioValuationComparisonDisplay, valuation_date: str) -> None:
@@ -224,6 +241,7 @@ class PortfolioValuationComparisonView(QWidget):
             color = self._tone_color(row.tone)
             for column, text in enumerate(values):
                 item = QTableWidgetItem(text)
+                item.setToolTip(text)
                 if column == 5:
                     item.setForeground(color)
                 self._positions.setItem(row_index, column, item)

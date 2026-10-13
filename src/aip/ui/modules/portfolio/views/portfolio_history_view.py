@@ -2,13 +2,15 @@ from __future__ import annotations
 
 from datetime import date
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QComboBox,
+    QFrame,
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
     QLabel,
+    QScrollArea,
     QSizePolicy,
     QVBoxLayout,
     QWidget,
@@ -118,7 +120,15 @@ class PortfolioHistoryView(QWidget):
         root.addWidget(self._status_label)
 
         self._charts: dict[str, PortfolioHistoryLineChart] = {}
-        grid = QGridLayout()
+        self._chart_cards: list[QGroupBox] = []
+        self._chart_scroll = QScrollArea()
+        self._chart_scroll.setObjectName("portfolioHistoryChartScroll")
+        self._chart_scroll.setWidgetResizable(True)
+        self._chart_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self._chart_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self._chart_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        chart_container = QWidget()
+        grid = QGridLayout(chart_container)
         grid.setHorizontalSpacing(12)
         grid.setVerticalSpacing(12)
 
@@ -183,7 +193,8 @@ class PortfolioHistoryView(QWidget):
         ) in enumerate(definitions):
             group = QGroupBox(heading)
             group.setProperty("historyCard", True)
-            group.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+            group.setMinimumHeight(345)
+            group.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
             box = QVBoxLayout(group)
             box.setContentsMargins(12, 8, 12, 12)
             box.setSpacing(6)
@@ -198,13 +209,15 @@ class PortfolioHistoryView(QWidget):
             )
             box.addWidget(chart, 1)
             self._charts[key] = chart
+            self._chart_cards.append(group)
             grid.addWidget(group, index // 2, index % 2)
 
         grid.setColumnStretch(0, 1)
         grid.setColumnStretch(1, 1)
         for row in range(3):
             grid.setRowStretch(row, 1)
-        root.addLayout(grid, 1)
+        self._chart_scroll.setWidget(chart_container)
+        root.addWidget(self._chart_scroll, 1)
 
     def set_loading(self, sampling: str) -> None:
         """Expose non-blocking loading state while historical cuts are calculated."""
