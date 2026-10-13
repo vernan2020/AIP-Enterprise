@@ -19,7 +19,7 @@ class LightTheme:
         QWidget {{
             color: {p.text};
             font-family: "{ui_font}";
-            font-size: 9.5pt;
+            font-size: 10pt;
         }}
         QToolTip {{
             background-color: {p.navy_950};
@@ -145,8 +145,9 @@ class LightTheme:
             color: {p.text_secondary};
             border: none;
             border-bottom: 2px solid transparent;
-            padding: 7px 13px;
+            padding: 8px 14px;
             margin-right: 2px;
+            font-size: 10pt;
             font-weight: 600;
         }}
         QTabBar::tab:hover {{
@@ -170,7 +171,7 @@ class LightTheme:
             outline: none;
         }}
         QTableView::item, QTableWidget::item, QTreeView::item, QListView::item {{
-            padding: 4px 6px;
+            padding: 5px 7px;
             border: none;
         }}
         QTableView::item:hover, QTableWidget::item:hover, QTreeView::item:hover,
@@ -188,7 +189,7 @@ class LightTheme:
             border-bottom: 1px solid {p.border};
             padding: 6px 7px;
             font-weight: 700;
-            font-size: 9pt;
+            font-size: 9.5pt;
         }}
         QGroupBox {{
             background: {p.surface};
@@ -223,7 +224,7 @@ class LightTheme:
         }}
         QScrollBar:vertical {{
             background: transparent;
-            width: 10px;
+            width: 12px;
             margin: 1px;
         }}
         QScrollBar::handle:vertical {{
@@ -236,7 +237,7 @@ class LightTheme:
         }}
         QScrollBar:horizontal {{
             background: transparent;
-            height: 10px;
+            height: 12px;
             margin: 1px;
         }}
         QScrollBar::handle:horizontal {{
@@ -256,6 +257,17 @@ class LightTheme:
         }}
         QDockWidget {{
             color: {p.text};
+        }}
+        QTableView::item:selected, QTableWidget::item:selected {{
+            background: {p.surface_selected};
+            color: {p.navy_950};
+        }}
+        QHeaderView::section:hover {{
+            background: {p.blue_700};
+            color: {p.inverse};
+        }}
+        QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus {{
+            border: 2px solid {p.brand_celeste};
         }}
         QDockWidget::title {{
             background: {p.surface_alt};

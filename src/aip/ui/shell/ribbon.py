@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import base64
 
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QAction, QPixmap
-from PySide6.QtWidgets import QLabel, QSizePolicy, QToolBar, QWidget
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QAction, QFontMetrics, QPixmap
+from PySide6.QtWidgets import QLabel, QMenu, QSizePolicy, QToolBar, QToolButton, QWidget
 
 from aip.ui.assets import COOPEALIANZA_LOGO_PNG_BASE64
 
@@ -38,6 +38,7 @@ class Ribbon(QToolBar):
         self.setMinimumHeight(52)
         self.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
         self._actions: dict[str, QAction] = {}
+        self._overflow_actions: dict[str, QAction] = {}
 
         self._brand_logo = self._build_brand_logo()
         self.addWidget(self._brand_logo)
@@ -48,6 +49,7 @@ class Ribbon(QToolBar):
                 self.addSeparator()
             action = QAction(label, self)
             self.addAction(action)
+            action.setToolTip(f"Abrir {label}")
             self._actions[label] = action
 
         spacer = QWidget(self)
@@ -55,16 +57,60 @@ class Ribbon(QToolBar):
         spacer.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         self.addWidget(spacer)
 
+        self._overflow_menu = QMenu(self)
+        self._overflow_button = QToolButton(self)
+        self._overflow_button.setObjectName("aipRibbonMoreModules")
+        self._overflow_button.setText("Más módulos ▾")
+        self._overflow_button.setToolTip("Ver módulos que no caben en la barra de navegación")
+        self._overflow_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        self._overflow_button.setMenu(self._overflow_menu)
+        for label, action in self._actions.items():
+            menu_action = QAction(label, self._overflow_menu)
+            menu_action.triggered.connect(action.trigger)
+            self._overflow_menu.addAction(menu_action)
+            self._overflow_actions[label] = menu_action
+        self.addWidget(self._overflow_button)
+        self._overflow_button.hide()
+
         self.setStyleSheet(
             "QToolBar#aipRibbon {background:#FFFFFF; border:none; "
             "border-bottom:1px solid #D5DEE3; spacing:1px; padding:3px 8px;}"
             "QToolBar#aipRibbon QToolButton {background:transparent; border:none; "
-            "border-radius:6px; padding:6px 7px; color:#354B5E; font-size:8.5px; font-weight:600;}"
+            "border-radius:6px; padding:7px 9px; color:#354B5E; font-size:9pt; font-weight:600;}"
             "QToolBar#aipRibbon QToolButton:hover {background:#F0F8FC; color:#005EB8;}"
             "QToolBar#aipRibbon QToolButton:pressed {background:#DDEFFA; color:#00345F;}"
             "QToolBar#aipRibbon::separator {background:#D5DEE3; width:1px; margin:7px 6px;}"
+            "QToolButton#aipRibbonMoreModules {background:#F0F8FC; color:#005EB8;"
+            "border:1px solid #73B3DD; border-radius:7px; padding:6px 9px; font-weight:700;}"
             "QLabel#coopealianzaHeaderLogo {background:transparent; border:none; margin:0 8px 0 2px;}"
         )
+        QTimer.singleShot(0, self._update_overflow)
+
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        QTimer.singleShot(0, self._update_overflow)
+
+    def _update_overflow(self) -> None:
+        """Preserve all routes when DPI or window width limits the ribbon."""
+        if not self._actions:
+            return
+        # Always reserve the logo, command menu, system spacing and more button.
+        available = max(0, self.width() - self._brand_logo.width() - 155)
+        metrics = QFontMetrics(self.font())
+        overflow: list[str] = []
+        for label, action in self._actions.items():
+            button = self.widgetForAction(action)
+            estimate = button.sizeHint().width() if button is not None else 0
+            required = max(estimate, metrics.horizontalAdvance(label) + 25)
+            if available >= required:
+                available -= required
+                action.setVisible(True)
+            else:
+                action.setVisible(False)
+                overflow.append(label)
+        for label, menu_action in self._overflow_actions.items():
+            menu_action.setVisible(label in overflow)
+        self._overflow_button.setVisible(bool(overflow))
 
     @staticmethod
     def _build_brand_logo() -> QLabel:

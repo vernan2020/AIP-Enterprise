@@ -545,6 +545,12 @@ class MainWindow(QMainWindow):
 
     def _add_operational_menu_actions(self) -> None:
         view_menu = self.menuBar().addMenu("Vista")
+        search_action = view_menu.addAction("Buscar módulos")
+        search_action.setShortcut("Ctrl+K")
+        search_action.setToolTip("Mostrar buscador de módulos y navegar con el teclado")
+        search_action.triggered.connect(self._toggle_module_search)
+        self._module_search_action = search_action
+
         inspector_action = view_menu.addAction("Inspector")
         inspector_action.setCheckable(True)
         inspector_action.triggered.connect(
@@ -572,6 +578,16 @@ class MainWindow(QMainWindow):
 
         help_menu = self.menuBar().addMenu("Ayuda")
         help_menu.addAction("Acerca de AIP Enterprise", self._show_about)
+
+    def _toggle_module_search(self) -> None:
+        """Keyboard-first navigation, independent of the desktop ribbon width."""
+        if self._sidebar.isVisible():
+            self._sidebar.hide()
+            self._content_splitter.setSizes([0, max(1, self.width())])
+            return
+        self._sidebar.show()
+        self._content_splitter.setSizes([210, max(1, self.width() - 210)])
+        self._sidebar.focus_search()
 
     def _show_health_center(self) -> None:
         from aip.ui.widgets.health_center import HealthCenterWidget
