@@ -58,7 +58,7 @@ def build_chart_tooltip(
         "<table bgcolor='#102D47' cellspacing='0' cellpadding='0' "
         "style='background-color:#102D47; border:1px solid #3477A1;'>"
         "<tr><td style='padding:9px 12px;'>"
-        "<div style='min-width:235px;color:#FFFFFF;font-size:13px;'>"
+        "<div style='min-width:220px;color:#FFFFFF;font-size:13px;'>"
         f"<div style='font-weight:800;color:#FFFFFF;font-size:14px;margin-bottom:5px;'>{escape(title)}</div>"
         f"{table}{note_html}"
         "</div></td></tr></table>"
