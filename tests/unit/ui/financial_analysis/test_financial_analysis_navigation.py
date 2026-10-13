@@ -112,3 +112,50 @@ def test_financial_kpis_reflow_without_losing_sugef_values(qt_app) -> None:
     finally:
         view.close()
         qt_app.processEvents()
+
+
+def test_financial_controls_reflow_without_losing_entity_selection(qt_app) -> None:
+    view = FinancialAnalysisView(presenter=_Presenter())  # type: ignore[arg-type]
+    try:
+        grid = view._controls_grid
+        widgets = view._controls_widgets
+        assert grid is not None
+        assert len(widgets) == 4
+        assert widgets[0].buddy() is view._entity_selector
+        view._building_entity_selector = True
+        view._entity_selector.addItem("Entidad financiera de denominación extensa", "E001")
+        view._entity_selector.setCurrentIndex(0)
+        view._building_entity_selector = False
+        view._cutoff.setText("Corte SUGEF: 31/08/2026")
+
+        for width, columns in ((1400, 4), (760, 2), (1400, 4)):
+            view._arrange_controls(width)
+            assert view._controls_columns == columns
+            for index, widget in enumerate(widgets):
+                cell = grid.itemAtPosition(index // columns, index % columns)
+                assert cell is not None
+                assert cell.widget() is widget
+            assert view._entity_selector.currentData() == "E001"
+            assert view._cutoff.text() == "Corte SUGEF: 31/08/2026"
+        assert view._cutoff.wordWrap()
+        assert view._entity_selector.accessibleName() == "Entidad financiera supervisada"
+        assert view._subtitle.wordWrap()
+    finally:
+        view.close()
+        qt_app.processEvents()
+
+
+def test_financial_entity_selector_full_name_tooltips(qt_app) -> None:
+    view = FinancialAnalysisView(presenter=_Presenter())  # type: ignore[arg-type]
+    try:
+        name = "Cooperativa de Ahorro y Crédito con Denominación Institucional Larga"
+        model = FinancialAnalysisViewModel(
+            entities=(("E001", name),),
+            selected_entity_id="E001",
+        )
+        view._bind_entities(model)
+        assert view._entity_selector.itemData(0, Qt.ItemDataRole.ToolTipRole) == name
+        assert view._entity_selector.toolTip() == name
+    finally:
+        view.close()
+        qt_app.processEvents()
