@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from PySide6.QtWidgets import QFrame, QGridLayout, QWidget
+from PySide6.QtWidgets import QFrame, QGridLayout, QLabel, QPushButton, QWidget
 
 from aip.ui.modules.macro_intelligence.views.macro_intelligence_workspace import (
     MacroIntelligenceWorkspace,
     _ProjectionChart,
+    _MacroMetricCard,
 )
 
 
@@ -58,4 +59,49 @@ def test_institutional_macro_chart_has_visible_readout_signal(qt_app) -> None:
         assert chart._readout_regions == []
     finally:
         chart.close()
+        qt_app.processEvents()
+
+
+def test_macro_header_stacks_without_losing_scenario_or_refresh_button(qt_app) -> None:
+    host = QWidget()
+    grid = QGridLayout(host)
+    title = QWidget()
+    scenario = QLabel("Escenario: BASE-2026")
+    refresh = QPushButton("ACTUALIZAR BCCR")
+    widgets = (title, scenario, refresh)
+    try:
+        MacroIntelligenceWorkspace._reflow_macro_header(grid, widgets, False)
+        for index, widget in enumerate(widgets):
+            item = grid.itemAtPosition(0, index)
+            assert item is not None
+            assert item.widget() is widget
+
+        MacroIntelligenceWorkspace._reflow_macro_header(grid, widgets, True)
+        assert grid.itemAtPosition(0, 0).widget() is title
+        assert grid.itemAtPosition(0, 1).widget() is title
+        assert grid.itemAtPosition(1, 0).widget() is scenario
+        assert grid.itemAtPosition(1, 1).widget() is refresh
+        assert scenario.text() == "Escenario: BASE-2026"
+        assert refresh.text() == "ACTUALIZAR BCCR"
+
+        MacroIntelligenceWorkspace._reflow_macro_header(grid, widgets, False)
+        assert grid.itemAtPosition(0, 1).widget() is scenario
+        assert grid.itemAtPosition(0, 2).widget() is refresh
+    finally:
+        host.close()
+        qt_app.processEvents()
+
+
+def test_macro_metric_card_wraps_value_change_and_observation_source(qt_app) -> None:
+    card = _MacroMetricCard("Indicador de denominación extensa")
+    try:
+        labels = card.findChildren(QLabel)
+        assert len(labels) == 4
+        assert all(label.wordWrap() for label in labels)
+        card._value.setText("1,234,567.89")
+        card._date.setText("12/10/2026 · BCCR fuente institucional")
+        assert card._value.text() == "1,234,567.89"
+        assert "BCCR" in card._date.text()
+    finally:
+        card.close()
         qt_app.processEvents()
