@@ -1,0 +1,33 @@
+name: Prepare AIP V4.5.1 source ZIP
+on:
+  push:
+    branches:
+      - temporary/v451-export-1e9c960
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package-validated-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout validated AIP source at exact commit
+        uses: actions/checkout@v4
+        with:
+          ref: 1e9c960bcc9a87473a10c623ba97621618ec3f70
+          persist-credentials: false
+      - name: Create portable source ZIP without credentials or environments
+        run: |
+          test "$(git rev-parse HEAD)" = "1e9c960bcc9a87473a10c623ba97621618ec3f70"
+          git archive --format=zip --output=AIP-Enterprise-V451-UI-UX-PRO-MAX.zip HEAD
+          unzip -t AIP-Enterprise-V451-UI-UX-PRO-MAX.zip | tail -1
+          sha256sum AIP-Enterprise-V451-UI-UX-PRO-MAX.zip
+      - name: Publish ZIP artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AIP-V451-validated-source
+          path: AIP-Enterprise-V451-UI-UX-PRO-MAX.zip
+          if-no-files-found: error
+          retention-days: 7
