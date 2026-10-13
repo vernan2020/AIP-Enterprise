@@ -169,3 +169,23 @@ def test_macro_crc_and_usd_curve_tables_stack_without_replacing_widgets(qt_app) 
     finally:
         host.close()
         qt_app.processEvents()
+
+
+def test_macro_transmission_stages_reflow_without_changing_explanations(qt_app) -> None:
+    host = QWidget()
+    grid = QGridLayout(host)
+    stages = tuple(QFrame() for _ in range(4))
+    captions = ("MACRO", "MERCADOS", "BALANCE", "RESULTADOS")
+    try:
+        for card, caption in zip(stages, captions):
+            card.setObjectName(caption)
+        for columns in (4, 2, 4):
+            MacroIntelligenceWorkspace._reflow_grid(grid, stages, columns)
+            for index, card in enumerate(stages):
+                item = grid.itemAtPosition(index // columns, index % columns)
+                assert item is not None
+                assert item.widget() is card
+                assert card.objectName() == captions[index]
+    finally:
+        host.close()
+        qt_app.processEvents()
