@@ -260,9 +260,7 @@ class MarketView(QWidget):
         self._workspace_scroll.setObjectName("marketWorkspaceScroll")
         self._workspace_scroll.setWidgetResizable(True)
         self._workspace_scroll.setFrameShape(QFrame.Shape.NoFrame)
-        self._workspace_scroll.setVerticalScrollBarPolicy(
-            Qt.ScrollBarPolicy.ScrollBarAsNeeded
-        )
+        self._workspace_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         body = QWidget()
         root = QVBoxLayout(body)
         root.setContentsMargins(16, 10, 16, 12)

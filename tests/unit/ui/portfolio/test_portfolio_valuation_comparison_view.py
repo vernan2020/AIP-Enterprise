@@ -128,9 +128,7 @@ def test_valuation_charts_are_not_clipped_and_table_can_scroll(qt_app) -> None:
         assert scroll.widget().height() > scroll.viewport().height()
         for chart in (view._top_gains, view._top_losses, view._currency, view._issuers):
             assert chart.minimumHeight() >= 210
-        assert view._positions.horizontalScrollBarPolicy() == (
-            Qt.ScrollBarPolicy.ScrollBarAsNeeded
-        )
+        assert view._positions.horizontalScrollBarPolicy() == (Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         assert not view._positions.horizontalHeader().stretchLastSection()
     finally:
         view.close()

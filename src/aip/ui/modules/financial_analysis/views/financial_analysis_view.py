@@ -811,6 +811,16 @@ class FinancialAnalysisView(QWidget):
             ),
             "",
         )
+        if (
+            view_model.status not in {"LOADING", "PENDING"}
+            and not view_model.entities
+            and not view_model.statement_rows
+        ):
+            publication_notice = (
+                "SUGEF: no se recibieron entidades ni estados financieros en este corte. "
+                "Verifique la configuración institucional existente y consulte "
+                "«Calidad y trazabilidad» antes de interpretar las cifras."
+            )
         self._cutoff_notice.setText(
             publication_notice + " Use «Actualizar fuente» para volver a consultar SUGEF."
             if publication_notice

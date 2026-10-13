@@ -353,3 +353,17 @@ def test_sugef_cutoff_lag_is_visible_and_reset_when_new_data_arrives(qt_app) -> 
     finally:
         view.close()
         qt_app.processEvents()
+
+
+def test_missing_official_sugef_data_has_explicit_non_demo_warning(qt_app) -> None:
+    view = FinancialAnalysisView(presenter=_Presenter())  # type: ignore[arg-type]
+    try:
+        view.bind_view_model(
+            FinancialAnalysisViewModel(status="UNAVAILABLE", cutoff_date="-")
+        )
+        assert "no se recibieron entidades" in view._cutoff_notice.text()
+        assert "Calidad y trazabilidad" in view._cutoff_notice.text()
+        assert not view._cutoff_notice.isHidden()
+    finally:
+        view.close()
+        qt_app.processEvents()
