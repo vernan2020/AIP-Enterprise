@@ -64,7 +64,9 @@ def test_partial_scenario_history_is_not_mixed_with_certified_history(tmp_path) 
     _db(source, amount=0)
     _db(target, amount=0)
     with duckdb.connect(str(source)) as con:
-        con.execute("CREATE TABLE institutional_macro_scenarios " "(scenario_id VARCHAR, version INTEGER)")
+        con.execute(
+            "CREATE TABLE institutional_macro_scenarios " "(scenario_id VARCHAR, version INTEGER)"
+        )
         con.execute("INSERT INTO institutional_macro_scenarios VALUES ('C', 1)")
     with duckdb.connect(str(target)) as con:
         con.execute("CREATE TABLE institutional_macro_scenario_events " "(event_id VARCHAR)")
