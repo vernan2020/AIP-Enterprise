@@ -1,11 +1,19 @@
 from __future__ import annotations
 
-from PySide6.QtWidgets import QComboBox, QFrame, QGridLayout, QGroupBox, QLabel, QPushButton, QWidget
+from PySide6.QtWidgets import (
+    QComboBox,
+    QFrame,
+    QGridLayout,
+    QGroupBox,
+    QLabel,
+    QPushButton,
+    QWidget,
+)
 
 from aip.ui.modules.macro_intelligence.views.macro_intelligence_workspace import (
     MacroIntelligenceWorkspace,
-    _ProjectionChart,
     _MacroMetricCard,
+    _ProjectionChart,
 )
 
 
