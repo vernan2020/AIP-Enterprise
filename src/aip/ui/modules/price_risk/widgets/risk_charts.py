@@ -5,7 +5,7 @@ from typing import Callable
 
 from PySide6.QtCore import QPointF, QRectF, Qt, Signal
 from PySide6.QtGui import QColor, QFont, QLinearGradient, QPainter, QPen, QPolygonF
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QToolTip, QWidget
 
 from aip.ui.modules.price_risk.models.price_risk_row import RiskChartPoint
 from aip.ui.widgets.chart_tooltip import (
@@ -50,6 +50,7 @@ class RiskBarChartWidget(QWidget):
         self._tooltip_regions = []
         self._readout_regions = []
         self._last_readout = ""
+        QToolTip.hideText()
         self.hover_readout_changed.emit("")
         self.update()
 
@@ -179,6 +180,7 @@ class RiskBarChartWidget(QWidget):
         super().mouseMoveEvent(event)
 
     def leaveEvent(self, event) -> None:  # noqa: N802
+        QToolTip.hideText()
         if self._last_readout:
             self._last_readout = ""
             self.hover_readout_changed.emit("")
@@ -356,6 +358,7 @@ class ParetoChartWidget(QWidget):
         super().mouseMoveEvent(event)
 
     def leaveEvent(self, event) -> None:  # noqa: N802
+        QToolTip.hideText()
         if self._last_readout:
             self._last_readout = ""
             self.hover_readout_changed.emit("")
