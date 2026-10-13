@@ -242,7 +242,13 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
         primary = self._config.api_entity_codes[0]
         requested_month = date(requested_cutoff.year, requested_cutoff.month, 1)
         probe_failures: list[str] = []
+        best_probe: _PrimaryProbe | None = None
 
+        # The API may return an older publication even when asked for a newer
+        # period (particularly during the first days of the following month).
+        # A valid, older August response to an October query must NOT stop us
+        # from checking September. Never label a later indicator as an
+        # accounting cutoff without BOTH Balance and Results for that month.
         for offset in range(self._COMPARATIVE_LOOKBACK_MONTHS + 1):
             candidate = self._shift_month(requested_month, -offset)
             period = candidate.strftime("%Y%m%d")
@@ -269,30 +275,56 @@ class SUGEFOfficialFinancialApiClient(SUGEFFinancialApiClient):
                 for line in balance_lines
                 if line.entity.entity_id == primary
                 and line.statement_type is FinancialStatementType.BALANCE_SHEET
+                and line.statement_date <= requested_cutoff
             }
             income_dates = {
                 line.statement_date
                 for line in income_lines
                 if line.entity.entity_id == primary
                 and line.statement_type is FinancialStatementType.INCOME_STATEMENT
+                and line.statement_date <= requested_cutoff
             }
             common_dates = balance_dates & income_dates
-            if common_dates:
-                cutoff = max(common_dates)
-                return _PrimaryProbe(
-                    cutoff=cutoff,
-                    balance_lines=tuple(
-                        line for line in balance_lines if line.statement_date == cutoff
-                    ),
-                    income_lines=tuple(
-                        line for line in income_lines if line.statement_date == cutoff
-                    ),
-                    endpoints=(balance_endpoint, income_endpoint),
+            if not common_dates:
+                probe_failures.append(
+                    "Sondeo SUGEF "
+                    f"{candidate.strftime('%d/%m/%Y')}: sin corte común de "
+                    "Balance y Resultados anterior o igual al corte solicitado."
                 )
-            probe_failures.append(
-                "Sondeo SUGEF "
-                f"{candidate.strftime('%d/%m/%Y')}: no existe un corte común de Balance y Resultados."
+                continue
+
+            cutoff = max(common_dates)
+            probe = _PrimaryProbe(
+                cutoff=cutoff,
+                balance_lines=tuple(
+                    line for line in balance_lines if line.statement_date == cutoff
+                ),
+                income_lines=tuple(
+                    line for line in income_lines if line.statement_date == cutoff
+                ),
+                endpoints=(balance_endpoint, income_endpoint),
             )
+            if best_probe is None or cutoff > best_probe.cutoff:
+                best_probe = probe
+
+            candidate_month_end = self._month_end_date(candidate.year, candidate.month)
+            if cutoff >= candidate_month_end:
+                # The requested accounting month itself is genuinely complete.
+                # Or a prior monthly publication is now confirmed, as with
+                # September being available during the October publication lag.
+                return probe
+            probe_failures.append(
+                f"Sondeo SUGEF {candidate:%m/%Y}: la API devolvió "
+                f"{cutoff:%m/%Y}; comprobando el siguiente período solicitado."
+            )
+
+        if best_probe is not None:
+            diagnostics.append(
+                "No se confirmó un corte completo para todos los meses sondeados; "
+                "se conserva el más reciente encontrado con Balance y Resultados: "
+                f"{best_probe.cutoff:%d/%m/%Y}."
+            )
+            return best_probe
 
         diagnostics.append(
             "No se encontró un corte contable SUGEF completo (Balance + Estado de Resultados) "

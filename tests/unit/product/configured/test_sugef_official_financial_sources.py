@@ -287,3 +287,89 @@ def test_official_reader_never_activates_bundled_reference_matrix() -> None:
     assert result.source_files == ()
     assert any("no se utiliza información de respaldo" in message for message in result.diagnostics)
     assert all("referencia institucional" not in message for message in result.diagnostics)
+
+
+class _StaleOctoberResponseClient(_OfficialStubClient):
+    """October query may return a stale August snapshot; September is published."""
+
+    def _post_json(self, endpoint: str, payload: dict[str, object]) -> dict[str, object]:
+        parameters = payload["parametrosEntidad"]
+        assert isinstance(parameters, dict)
+        response = super()._post_json(endpoint, payload)
+        if (
+            str(parameters["codigoEntidad"]) == "3004045138"
+            and str(parameters["periodos"]) == "20261001"
+            and ("BalanceSituacion" in endpoint or "EstadoResultados" in endpoint)
+        ):
+            key = (
+                "listaBalanceSituacionAnalisisFinancieroEntidad"
+                if "BalanceSituacion" in endpoint
+                else "listaEstadoResultadosAnalisisFinancieroEntidad"
+            )
+            rows = response[key]
+            assert isinstance(rows, list)
+            for row in rows:
+                row["periodo"] = "2026-08-01T00:00:00"
+        return response
+
+
+def test_latest_published_september_is_not_skipped_by_stale_october_response() -> None:
+    client = _StaleOctoberResponseClient(
+        SUGEFFinancialSourceConfig(api_retries=0, api_entity_codes=("3004045138",))
+    )
+    diagnostics: list[str] = []
+
+    probe = client._resolve_primary_statement_cutoff(date(2026, 10, 12), diagnostics)
+
+    assert probe is not None
+    assert probe.cutoff == date(2026, 9, 30)
+    assert {line.statement_date for line in (*probe.balance_lines, *probe.income_lines)} == {
+        date(2026, 9, 30)
+    }
+    assert ("3004045138", "BALANCE", "20261001") in client.requests
+    assert ("3004045138", "INCOME", "20261001") in client.requests
+    assert ("3004045138", "BALANCE", "20260901") in client.requests
+    assert ("3004045138", "INCOME", "20260901") in client.requests
+
+
+def test_unpublished_september_keeps_latest_complete_august_without_fabrication() -> None:
+    class AugustOnlyClient(_OfficialStubClient):
+        def _post_json(self, endpoint: str, payload: dict[str, object]) -> dict[str, object]:
+            parameters = payload["parametrosEntidad"]
+            assert isinstance(parameters, dict)
+            response = super()._post_json(endpoint, payload)
+            if (
+                str(parameters["codigoEntidad"]) == "3004045138"
+                and ("BalanceSituacion" in endpoint or "EstadoResultados" in endpoint)
+            ):
+                key = (
+                    "listaBalanceSituacionAnalisisFinancieroEntidad"
+                    if "BalanceSituacion" in endpoint
+                    else "listaEstadoResultadosAnalisisFinancieroEntidad"
+                )
+                rows = response[key]
+                assert isinstance(rows, list)
+                for row in rows:
+                    row["periodo"] = "2026-08-01T00:00:00"
+            return response
+
+    client = AugustOnlyClient(
+        SUGEFFinancialSourceConfig(api_retries=0, api_entity_codes=("3004045138",))
+    )
+    probe = client._resolve_primary_statement_cutoff(date(2026, 10, 12), [])
+
+    assert probe is not None
+    assert probe.cutoff == date(2026, 8, 31)
+    assert ("3004045138", "BALANCE", "20260901") in client.requests
+    assert ("3004045138", "BALANCE", "20260801") in client.requests
+
+
+def test_future_month_end_is_not_selected_before_requested_cutoff() -> None:
+    client = _OfficialStubClient(
+        SUGEFFinancialSourceConfig(api_retries=0, api_entity_codes=("3004045138",))
+    )
+    probe = client._resolve_primary_statement_cutoff(date(2026, 10, 12), [])
+
+    assert probe is not None
+    assert probe.cutoff == date(2026, 9, 30)
+    assert ("3004045138", "BALANCE", "20260901") in client.requests
