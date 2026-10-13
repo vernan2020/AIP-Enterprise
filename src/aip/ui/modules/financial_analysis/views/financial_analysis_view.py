@@ -234,6 +234,8 @@ class FinancialAnalysisView(QWidget):
         self._tabs.addTab(self._comparison_panel, "Comparativo gráfico")
         self._tabs.addTab(self._rating_panel, "Calificación")
         self._tabs.addTab(self._diagnostics, "Calidad y trazabilidad")
+        for index in range(self._tabs.count()):
+            self._tabs.setTabToolTip(index, self._tabs.tabText(index))
         root.addWidget(self._tabs, 1)
 
         source = QFrame()
