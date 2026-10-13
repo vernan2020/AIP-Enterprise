@@ -40,6 +40,7 @@ from aip.product.economic.economic_viewmodel import (
     EconomicSnapshot,
     EconomicViewModel,
 )
+from aip.ui.modules.macro_intelligence.freshness import economic_source_freshness_notice
 from aip.ui.modules.macro_intelligence.presenters.macro_intelligence_presenter import (
     MacroIntelligencePresenter,
 )
@@ -47,7 +48,6 @@ from aip.ui.modules.macro_intelligence.viewmodels.macro_intelligence_view_model 
     MacroForecastLabViewModel,
     MacroProjectionViewModel,
 )
-from aip.ui.modules.macro_intelligence.freshness import economic_source_freshness_notice
 from aip.ui.themes.typography import numeric_font_family
 from aip.ui.widgets.chart_png_export import save_widget_png_dialog
 from aip.ui.widgets.chart_tooltip import (
