@@ -174,9 +174,7 @@ class BCCRRestClient:
             now = time.monotonic()
             previous = self._last_request_monotonic
             scheduled = (
-                now
-                if previous is None
-                else max(now, previous + self._MIN_REQUEST_INTERVAL_SECONDS)
+                now if previous is None else max(now, previous + self._MIN_REQUEST_INTERVAL_SECONDS)
             )
             self._last_request_monotonic = scheduled
             delay = scheduled - now
