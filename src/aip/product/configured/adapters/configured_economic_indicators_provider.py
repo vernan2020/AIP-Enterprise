@@ -325,65 +325,68 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
         rate-limit, or BCCR service interruptions without fabricating data.
         """
         repository = EconomicHistoricalRepository()
-        requested_codes = (
-            *self._FX_INDICATORS,
-            *self._CORE_INDICATORS,
-            "UNEMPLOYMENT",
-        )
+        try:
+            requested_codes = (
+                *self._FX_INDICATORS,
+                *self._CORE_INDICATORS,
+                "UNEMPLOYMENT",
+            )
 
-        indicators: list[dict[str, Any]] = []
-        available_codes = set(repository.available_series())
+            indicators: list[dict[str, Any]] = []
+            available_codes = set(repository.available_series())
 
-        tri_codes = sorted(
-            code
-            for code in available_codes
-            if code.startswith("TRI_CRC_") or code.startswith("TRI_USD_")
-        )
+            tri_codes = sorted(
+                code
+                for code in available_codes
+                if code.startswith("TRI_CRC_") or code.startswith("TRI_USD_")
+            )
 
-        for logical_code in (*requested_codes, *tri_codes):
-            if logical_code not in available_codes:
-                continue
+            for logical_code in (*requested_codes, *tri_codes):
+                if logical_code not in available_codes:
+                    continue
 
-            series = repository.get_recent_series(logical_code, limit=2)
-            if not series.observations:
-                continue
+                series = repository.get_recent_series(logical_code, limit=2)
+                if not series.observations:
+                    continue
 
-            converted = tuple(
-                EconomicIndicatorObservation(
-                    indicator_code=item.indicator_code,
-                    observation_date=item.observation_date,
-                    value=item.value,
-                    source=item.source,
-                    unit=item.unit,
-                    source_series_code=item.source_series_code,
-                    quality_status="VALID",
-                    is_preliminary=False,
+                converted = tuple(
+                    EconomicIndicatorObservation(
+                        indicator_code=item.indicator_code,
+                        observation_date=item.observation_date,
+                        value=item.value,
+                        source=item.source,
+                        unit=item.unit,
+                        source_series_code=item.source_series_code,
+                        quality_status="VALID",
+                        is_preliminary=False,
+                    )
+                    for item in series.observations[-2:]
                 )
-                for item in series.observations[-2:]
-            )
 
-            payload = self._build_indicator_payload(
-                logical_code,
-                converted,
-            )
-            if payload is not None:
-                payload["source"] = series.source
-                indicators.append(payload)
+                payload = self._build_indicator_payload(
+                    logical_code,
+                    converted,
+                )
+                if payload is not None:
+                    payload["source"] = series.source
+                    indicators.append(payload)
 
-        return {
-            "status": "AVAILABLE" if indicators else "UNAVAILABLE",
-            "source": "BCCR · HISTÓRICO LOCAL",
-            "indicators": indicators,
-            "tri_curves": {
-                "CRC": self._build_tri_curve(indicators, "CRC"),
-                "USD": self._build_tri_curve(indicators, "USD"),
-            },
-            "diagnostics": (
-                f"Live BCCR unavailable: {reason}",
-                "Using persisted official economic history",
-            ),
-            "cache": {"entries": 0},
-        }
+            return {
+                "status": "AVAILABLE" if indicators else "UNAVAILABLE",
+                "source": "BCCR · HISTÓRICO LOCAL",
+                "indicators": indicators,
+                "tri_curves": {
+                    "CRC": self._build_tri_curve(indicators, "CRC"),
+                    "USD": self._build_tri_curve(indicators, "USD"),
+                },
+                "diagnostics": (
+                    f"Live BCCR unavailable: {reason}",
+                    "Using persisted official economic history",
+                ),
+                "cache": {"entries": 0},
+            }
+        finally:
+            repository.store.close()
 
     def _get_or_fetch_observations(
         self,
