@@ -142,3 +142,41 @@ def test_bccr_diagnostic_rejects_error_envelopes_and_reports_actual_dates() -> N
     assert "venta: 1 obs; último 2026-10-14" in observed
     assert "101.0" not in observed
     assert "102.0" not in observed
+
+
+def test_bccr_probe_can_distinguish_chart_500_from_live_individual_fx(monkeypatch) -> None:
+    from aip.integration.bccr.providers import urllib_http_provider as provider_module
+
+    class StubProvider:
+        def get(self, url, *, timeout, headers):
+            assert headers["Authorization"] == "Bearer TEST_ONLY"
+            assert "fechaInicio=" in url and "fechainicio=" not in url
+            if "/cuadro/1/series" in url:
+                return {"status_code": 500, "body": {"estado": False}}
+            assert "/indicadoresEconomicos/317/series" in url
+            return {
+                "status_code": 200,
+                "body": {
+                    "estado": True,
+                    "datos": [
+                        {
+                            "codigoIndicador": "317",
+                            "series": [
+                                {"fecha": "2026-10-14", "valorDatoPorPeriodo": 450.0}
+                            ],
+                        }
+                    ],
+                },
+            }
+
+    monkeypatch.setattr(provider_module, "UrllibHTTPProvider", StubProvider)
+    monkeypatch.setattr(check, "UrllibHTTPProvider", StubProvider)
+    config = SimpleNamespace(token="TEST_ONLY", base_url="https://apim.bccr.fi.cr")
+    chart = check._bccr_probe(config, target_date=date(2026, 10, 14))
+    single = check._bccr_probe(
+        config, target_date=date(2026, 10, 14), indicator_code="317"
+    )
+    assert "BCCR cuadro 1: HTTP 500" in chart
+    assert "BCCR indicador 317: HTTP 200; 1 obs; último 2026-10-14" in single
+    assert "450.0" not in single
+    assert "TEST_ONLY" not in chart + single
