@@ -5,6 +5,7 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 from threading import Lock
 from types import SimpleNamespace
+from urllib.parse import parse_qs, urlsplit
 
 import pytest
 
@@ -94,3 +95,25 @@ def test_concurrent_call_starts_are_reserved_with_minimum_spacing(
     with ThreadPoolExecutor(max_workers=4) as executor:
         list(executor.map(lambda _: client._throttle(), range(4)))
     assert sorted(delays) == [0.75, 1.5, 2.25]
+
+
+def test_sdde_query_parameter_casing_matches_bccr_specification() -> None:
+    """Both public SDDE series routes require fechaInicio, not fechainicio."""
+    client = BCCRRestClient(
+        config=BCCRConfig(token="TEST_ONLY"), provider=RecordingProvider([200])
+    )
+    urls = (
+        client.build_chart_url(
+            chart_code="1", from_date="2026/10/01", to_date="2026/10/14"
+        ),
+        client.build_url(
+            indicator_code="317", from_date="2026/10/01", to_date="2026/10/14"
+        ),
+    )
+    for url in urls:
+        params = parse_qs(urlsplit(url).query)
+        assert params == {
+            "fechaInicio": ["2026/10/01"],
+            "fechaFin": ["2026/10/14"],
+            "idioma": ["es"],
+        }
