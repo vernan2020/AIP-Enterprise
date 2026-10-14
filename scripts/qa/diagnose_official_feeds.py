@@ -205,6 +205,41 @@ def _bccr_probe(config: object, *, target_date: date, indicator_code: str | None
         return f"{route}: {_outcome(exc)}"
 
 
+def _bccr_metadata_probe(config: object) -> str:
+    """Isolate SDDE gateway access from the economic-series processing backend.
+
+    The endpoint is documented by BCCR; never return the URL, HTTP body, token
+    or any identity-related field in diagnostics.
+    """
+    token = getattr(config, "token", None)
+    if not token:
+        return "BCCR metadatos cuadro 1: TOKEN NO VISIBLE"
+    base_url = (getattr(config, "base_url", None) or "https://apim.bccr.fi.cr").rstrip("/")
+    url = (
+        f"{base_url}/SDDE/api/Bccr.GE.SDDE.Publico.Indicadores.API/"
+        "cuadro/1/metadata?idioma=ES"
+    )
+    try:
+        response = UrllibHTTPProvider().get(
+            url,
+            timeout=12.0,
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Accept": "application/json",
+                "User-Agent": "Mozilla/5.0",
+            },
+        )
+        code = int(response.get("status_code", 0))
+        body = response.get("body")
+        valid = isinstance(body, dict) and body.get("estado") is True
+        return (
+            f"BCCR metadatos cuadro 1: HTTP {code}; "
+            + ("RESPUESTA EXITOSA" if code == 200 and valid else "NO CONFIRMADA")
+        )
+    except Exception as exc:
+        return f"BCCR metadatos cuadro 1: {_outcome(exc)}"
+
+
 def _sugef_probe(config: object, *, target_date: date) -> tuple[str, ...]:
     if not getattr(config, "enabled", False) or not getattr(config, "api_enabled", False):
         return ("SUGEF: API DESHABILITADA EN CONFIGURACIÓN EFECTIVA",)
@@ -269,6 +304,7 @@ def diagnose(*, period: date, live: bool) -> list[str]:
     if not live:
         return status + ["Pruebas de red omitidas; utilice --live para verificar fuentes oficiales."]
     if config.bccr.enabled:
+        status.append(_bccr_metadata_probe(config.bccr))
         status.append(_bccr_probe(config.bccr, target_date=date.today()))
         status.append(_bccr_probe(config.bccr, target_date=date.today(), indicator_code="317"))
     status.extend(_sugef_probe(config.sugef_financial, target_date=period))
