@@ -139,6 +139,9 @@ def test_bccr_live_series_load_uses_bounded_workers_and_preserves_dates(monkeypa
     monkeypatch.setattr(provider, "_get_or_fetch_grouped_chart_observations", grouped)
     monkeypatch.setattr(provider, "_get_or_fetch_tri_observations", tri)
     monkeypatch.setattr(provider, "_persist_official_history", lambda rows: saved.append(rows))
+    monkeypatch.setattr(
+        provider, "_restore_missing_from_local_history", lambda live_codes: ([], ())
+    )
 
     payload = provider.get_indicators()
     assert payload["source"] == "BCCR"
@@ -278,3 +281,102 @@ def test_bccr_partial_urllib_failure_keeps_healthy_official_series(monkeypatch) 
     assert any(item["code"] == "TPM" for item in payload["indicators"])
     assert any(message.startswith("FX: URLError") for message in payload["diagnostics"])
     assert any(message.startswith("LABOR: URLError") for message in payload["diagnostics"])
+
+
+def test_partial_bccr_api_merges_missing_historical_cards_without_replacing_live(
+    monkeypatch,
+) -> None:
+    from aip.product.economic.economic_history import (
+        EconomicHistoricalObservation,
+        EconomicHistoricalSeries,
+    )
+
+    opened = []
+    closed = []
+
+    class FakeStore:
+        def close(self) -> None:
+            closed.append(True)
+
+    class FakeRepository:
+        store = FakeStore()
+
+        def __init__(self) -> None:
+            opened.append(True)
+
+        def available_series(self) -> tuple[str, ...]:
+            return ("TPM", "FX_BUY", "FX_SELL", "IMAE")
+
+        def get_recent_series(self, code: str, *, limit: int = 2):
+            assert code != "TPM"  # Never replace a confirmed live TPM.
+            assert limit == 2
+            item = EconomicHistoricalObservation(
+                indicator_code=code,
+                observation_date=date(2026, 8, 31),
+                value=Decimal("400.25"),
+                source="BCCR",
+                source_series_code="1234",
+                unit="%",
+                frequency="DAILY",
+            )
+            return EconomicHistoricalSeries(
+                indicator_code=code, observations=(item,), source="BCCR"
+            )
+
+    import aip.product.configured.adapters.configured_economic_indicators_provider as module
+
+    monkeypatch.setattr(module, "EconomicHistoricalRepository", FakeRepository)
+    provider = ConfiguredEconomicIndicatorsProvider(bccr_config=BCCRConfig(token="TEST_ONLY"))
+    monkeypatch.setattr(provider, "_load_history_watermarks", lambda: ())
+    monkeypatch.setattr(
+        provider, "_get_or_fetch_grouped_chart_observations", lambda **kwargs: {}
+    )
+    monkeypatch.setattr(
+        provider,
+        "_get_or_fetch_observations",
+        lambda code: (_point("TPM", "3.25", date(2026, 10, 14)),)
+        if code == "TPM"
+        else (),
+    )
+    monkeypatch.setattr(provider, "_get_or_fetch_tri_observations", lambda: {})
+    monkeypatch.setattr(provider, "_persist_official_history", lambda rows: 1)
+    payload = provider.get_indicators()
+    cards = {item["code"]: item for item in payload["indicators"]}
+    assert payload["source"] == "BCCR · MIXTO CON HISTÓRICO LOCAL"
+    assert cards["TPM"]["date"] == date(2026, 10, 14)
+    assert cards["TPM"]["source"] == "BCCR"
+    assert cards["FX_BUY"]["date"] == date(2026, 8, 31)
+    assert cards["FX_BUY"]["source"] == "BCCR · HISTÓRICO LOCAL"
+    assert "sin confirmación BCCR en vivo" in " ".join(payload["diagnostics"])
+    assert len(opened) == 1
+    assert closed == [True]
+
+
+def test_partial_bccr_network_diagnostics_never_disclose_sensitive_error_text(
+    monkeypatch,
+) -> None:
+    from urllib.error import URLError
+
+    provider = ConfiguredEconomicIndicatorsProvider(bccr_config=BCCRConfig(token="TEST_ONLY"))
+    monkeypatch.setattr(provider, "_load_history_watermarks", lambda: ())
+    monkeypatch.setattr(
+        provider,
+        "_get_or_fetch_grouped_chart_observations",
+        lambda **kwargs: (_ for _ in ()).throw(URLError("secret=DO_NOT_LEAK")),
+    )
+    monkeypatch.setattr(
+        provider,
+        "_get_or_fetch_observations",
+        lambda code: (_point("TPM", "3.25", date(2026, 10, 14)),)
+        if code == "TPM"
+        else (),
+    )
+    monkeypatch.setattr(provider, "_get_or_fetch_tri_observations", lambda: {})
+    monkeypatch.setattr(provider, "_persist_official_history", lambda rows: 1)
+    monkeypatch.setattr(
+        provider, "_restore_missing_from_local_history", lambda live_codes: ([], ())
+    )
+    payload = provider.get_indicators()
+    assert payload["status"] == "AVAILABLE"
+    assert "FX: URLError" in payload["diagnostics"]
+    assert "secret=DO_NOT_LEAK" not in str(payload["diagnostics"])
