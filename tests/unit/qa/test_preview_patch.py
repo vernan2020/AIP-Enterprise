@@ -100,6 +100,7 @@ def test_safe_source_is_packaged() -> None:
     assert allowed("run_aip_ux_preview.cmd")
     assert not allowed("secrets.txt")
 
+
 def test_cmd_launcher_quotes_non_trailing_package_directory() -> None:
     """Windows CLI cannot pass a quoted path ending in backslash to Python."""
     installer = Path("scripts/qa/preview_patch_installer.cmd").read_text(encoding="utf-8")
