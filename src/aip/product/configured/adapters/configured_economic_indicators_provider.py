@@ -243,7 +243,7 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
                     indicator = self._build_indicator_payload(logical_code, observations)
                     if indicator is not None:
                         indicators.append(indicator)
-            except (ConnectionError, TimeoutError, ValueError) as exc:
+            except (ConnectionError, TimeoutError, OSError, ValueError) as exc:
                 diagnostics.append(f"FX: {type(exc).__name__}: {exc}")
 
             for logical_code, future in core_futures.items():
@@ -256,7 +256,7 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
                     indicator = self._build_indicator_payload(logical_code, observations)
                     if indicator is not None:
                         indicators.append(indicator)
-                except (ConnectionError, TimeoutError, ValueError) as exc:
+                except (ConnectionError, TimeoutError, OSError, ValueError) as exc:
                     diagnostics.append(f"{logical_code}: {type(exc).__name__}: {exc}")
 
             try:
@@ -270,7 +270,7 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
                     indicator = self._build_indicator_payload(logical_code, observations)
                     if indicator is not None:
                         indicators.append(indicator)
-            except (ConnectionError, TimeoutError, ValueError) as exc:
+            except (ConnectionError, TimeoutError, OSError, ValueError) as exc:
                 diagnostics.append(f"LABOR: {type(exc).__name__}: {exc}")
 
             try:
@@ -280,7 +280,7 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
                     indicator = self._build_indicator_payload(logical_code, observations)
                     if indicator is not None:
                         indicators.append(indicator)
-            except (ConnectionError, TimeoutError, ValueError) as exc:
+            except (ConnectionError, TimeoutError, OSError, ValueError) as exc:
                 diagnostics.append(f"TRI: {type(exc).__name__}: {exc}")
 
         unemployment = self._build_unemployment_indicator(observations_by_code)
