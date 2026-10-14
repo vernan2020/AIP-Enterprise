@@ -53,9 +53,12 @@ def test_bccr_successful_retry_and_no_retry_for_authentication_error(
         provider=retry,
     )
     client._MIN_REQUEST_INTERVAL_SECONDS = 0.0
-    assert client.fetch_series(
-        indicator_code="317", from_date="2026/10/01", to_date="2026/10/14"
-    )["status_code"] == 200
+    assert (
+        client.fetch_series(indicator_code="317", from_date="2026/10/01", to_date="2026/10/14")[
+            "status_code"
+        ]
+        == 200
+    )
     assert retry.calls == 2
 
     unauthorized = RecordingProvider([401])
@@ -64,9 +67,7 @@ def test_bccr_successful_retry_and_no_retry_for_authentication_error(
         provider=unauthorized,
     )
     with pytest.raises(ConnectionError, match="HTTP 401") as error:
-        client.fetch_series(
-            indicator_code="317", from_date="2026/10/01", to_date="2026/10/14"
-        )
+        client.fetch_series(indicator_code="317", from_date="2026/10/01", to_date="2026/10/14")
     assert "TEST_ONLY" not in str(error.value)
     assert unauthorized.calls == 1
 
