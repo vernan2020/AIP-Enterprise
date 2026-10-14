@@ -115,3 +115,36 @@ def test_sugef_probe_does_not_claim_valid_report_when_schema_is_missing() -> Non
         )
         == "ESQUEMA INESPERADO"
     )
+
+
+def test_bccr_diagnostic_rejects_error_envelopes_and_reports_actual_dates() -> None:
+    assert check._bccr_fx_coverage({"estado": False, "mensaje": "error"}) == (
+        "RESPUESTA OFICIAL NO EXITOSA"
+    )
+    assert check._bccr_fx_coverage({"estado": True, "datos": {}}) == "ESQUEMA INESPERADO"
+    observed = check._bccr_fx_coverage(
+        {
+            "estado": True,
+            "datos": [
+                {
+                    "indicadores": [
+                        {
+                            "codigoIndicador": 317,
+                            "series": [
+                                {"fecha": "2026-10-10T00:00:00", "valorDatoPorPeriodo": 100.00},
+                                {"fecha": "2026-10-14T00:00:00", "valorDatoPorPeriodo": 101.00},
+                            ],
+                        },
+                        {
+                            "codigoIndicador": 318,
+                            "series": [{"fecha": "2026-10-14", "valorDatoPorPeriodo": 102.00}],
+                        },
+                    ]
+                }
+            ],
+        }
+    )
+    assert "compra: 2 obs; último 2026-10-14" in observed
+    assert "venta: 1 obs; último 2026-10-14" in observed
+    assert "101.0" not in observed
+    assert "102.0" not in observed
