@@ -49,8 +49,8 @@ def test_sugef_period_and_credentials_never_appear(monkeypatch) -> None:
             return {
                 {
                     "ReporteBalanzaComprobacionEntidad": "listaBalanzaComprobacionEntidad",
-                    "ReporteBalanceSituacionAnalisisFinancieroEntidad": "listaBalanceSituacionAnalisisFinancieroEntidad",
-                    "ReporteEstadoResultadosAnalisisFinancieroEntidad": "listaEstadoResultadosAnalisisFinancieroEntidad",
+                    "ReporteBalanceSituacionContableDespuesMarzo2020Entidad": "listaBalanceSituacionContableEntidad",
+                    "ReporteEstadoResultadosContableDespuesMarzo2020Entidad": "listaEstadoResultadosContableEntidad",
                 }[endpoint]: [{"periodo": "2026-09-01"}]
             }
 
@@ -83,11 +83,11 @@ def test_probe_respects_missing_existing_tokens() -> None:
 
 def test_sugef_probe_does_not_treat_old_report_as_september() -> None:
     response = {
-        "listaBalanceSituacionAnalisisFinancieroEntidad": [{"periodo": "2026-08-01T00:00:00"}]
+        "listaBalanceSituacionContableEntidad": [{"periodo": "2026-08-01T00:00:00"}]
     }
     message = check._period_coverage(
         response,
-        "listaBalanceSituacionAnalisisFinancieroEntidad",
+        "listaBalanceSituacionContableEntidad",
         target_date=date(2026, 9, 1),
     )
     assert "2026-09 AUSENTE" in message
@@ -95,11 +95,11 @@ def test_sugef_probe_does_not_treat_old_report_as_september() -> None:
     assert (
         check._period_coverage(
             {
-                "listaBalanceSituacionAnalisisFinancieroEntidad": [
+                "listaBalanceSituacionContableEntidad": [
                     {"periodo": "2026-09-01T00:00:00"}
                 ]
             },
-            "listaBalanceSituacionAnalisisFinancieroEntidad",
+            "listaBalanceSituacionContableEntidad",
             target_date=date(2026, 9, 1),
         )
         == "CORTE 2026-09 PRESENTE"
@@ -110,7 +110,7 @@ def test_sugef_probe_does_not_claim_valid_report_when_schema_is_missing() -> Non
     assert (
         check._period_coverage(
             {"tieneError": False, "otraClave": []},
-            "listaBalanceSituacionAnalisisFinancieroEntidad",
+            "listaBalanceSituacionContableEntidad",
             target_date=date(2026, 9, 1),
         )
         == "ESQUEMA INESPERADO"
