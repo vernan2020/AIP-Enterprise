@@ -18,14 +18,21 @@ def _package(tmp_path: Path, source: bytes = b"NEW") -> tuple[Path, Path]:
     file.parent.mkdir(parents=True)
     file.write_bytes(source)
     (package / "manifest.json").write_text(
-        json.dumps({
-            "format": "aip-v451-preview-patch-v1",
-            "repository": "vernan2020/AIP-Enterprise",
-            "source_sha": "a" * 40,
-            "target_name": "AIP-V451-PREVIEW",
-            "files": [{"path": "src/aip/example.py",
-                       "sha256": hashlib.sha256(source).hexdigest(), "size": len(source)}],
-        }),
+        json.dumps(
+            {
+                "format": "aip-v451-preview-patch-v1",
+                "repository": "vernan2020/AIP-Enterprise",
+                "source_sha": "a" * 40,
+                "target_name": "AIP-V451-PREVIEW",
+                "files": [
+                    {
+                        "path": "src/aip/example.py",
+                        "sha256": hashlib.sha256(source).hexdigest(),
+                        "size": len(source),
+                    }
+                ],
+            }
+        ),
         encoding="utf-8",
     )
     target = tmp_path / "AIP-V451-PREVIEW"
