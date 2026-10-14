@@ -19,8 +19,14 @@ from pathlib import Path, PurePosixPath
 FORMAT = "aip-v451-preview-patch-v1"
 PROTECTED = frozenset(
     {
-        ".env", ".env.local", ".git", ".venv", "database", "__pycache__",
-        "runtime.local.cmd", "runtime.local.env",
+        ".env",
+        ".env.local",
+        ".git",
+        ".venv",
+        "database",
+        "__pycache__",
+        "runtime.local.cmd",
+        "runtime.local.env",
     }
 )
 NO_COPY_EXT = frozenset({".ttf", ".otf", ".woff", ".woff2", ".duckdb", ".db", ".wal", ".pyc"})
@@ -34,15 +40,23 @@ def validate_path(name: str) -> Path:
     candidate = PurePosixPath(name)
     parts = candidate.parts
     if (
-        not parts or candidate.is_absolute() or "\\" in name or ".." in parts
+        not parts
+        or candidate.is_absolute()
+        or "\\" in name
+        or ".." in parts
         or any(part.lower() in PROTECTED for part in parts)
         or candidate.suffix.lower() in NO_COPY_EXT
         or not (
             (len(parts) > 1 and parts[0] in ("src", "scripts"))
-            or name in {
-                "main.py", "pyproject.toml", "run_aip_configured.cmd",
-                "run_aip_ux_preview.cmd", "DIAGNOSTICAR_BCCR_SUGEF.cmd",
-                "AUDITAR_FUENTES_CONFIGURADAS.cmd", "INSPECCIONAR_HISTORICOS_PREVIEW.cmd",
+            or name
+            in {
+                "main.py",
+                "pyproject.toml",
+                "run_aip_configured.cmd",
+                "run_aip_ux_preview.cmd",
+                "DIAGNOSTICAR_BCCR_SUGEF.cmd",
+                "AUDITAR_FUENTES_CONFIGURADAS.cmd",
+                "INSPECCIONAR_HISTORICOS_PREVIEW.cmd",
             }
         )
     ):
@@ -68,7 +82,9 @@ def verify_payload(package_root: Path) -> tuple[dict, list[tuple[Path, Path]]]:
     files: list[tuple[Path, Path]] = []
     seen: set[str] = set()
     for entry in manifest["files"]:
-        if not isinstance(entry, dict) or not all(key in entry for key in ("path", "sha256", "size")):
+        if not isinstance(entry, dict) or not all(
+            key in entry for key in ("path", "sha256", "size")
+        ):
             raise UpdateRejected("invalid file entry")
         relative = validate_path(entry["path"])
         key = relative.as_posix().casefold()
@@ -79,10 +95,7 @@ def verify_payload(package_root: Path) -> tuple[dict, list[tuple[Path, Path]]]:
         if not source.is_file() or source.is_symlink():
             raise UpdateRejected("missing or linked package member")
         payload = source.read_bytes()
-        if (
-            len(payload) != entry["size"]
-            or hashlib.sha256(payload).hexdigest() != entry["sha256"]
-        ):
+        if len(payload) != entry["size"] or hashlib.sha256(payload).hexdigest() != entry["sha256"]:
             raise UpdateRejected("SHA256 mismatch in payload")
         files.append((relative, source))
     if not any(path.as_posix().startswith("src/aip/") for path, _ in files):
@@ -94,10 +107,7 @@ def _validate_target(target: Path) -> Path:
     # PREVIEW path is the only valid destination, including test installations.
     if target.name.casefold() != "aip-v451-preview" or not target.is_dir():
         raise UpdateRejected("destination is not AIP-V451-PREVIEW")
-    if not (
-        (target / "src" / "aip").is_dir()
-        and (target / "run_aip_ux_preview.cmd").is_file()
-    ):
+    if not ((target / "src" / "aip").is_dir() and (target / "run_aip_ux_preview.cmd").is_file()):
         raise UpdateRejected("PREVIEW application signature missing")
     return target.resolve(strict=True)
 
@@ -107,7 +117,11 @@ def install(package_root: Path, target: Path, *, dry_run: bool = False) -> dict[
     target = _validate_target(target)
     for relative, _ in files:
         destination = target / relative
-        if destination.is_symlink() or any(parent.is_symlink() for parent in destination.parents if parent != target and target in parent.parents):
+        if destination.is_symlink() or any(
+            parent.is_symlink()
+            for parent in destination.parents
+            if parent != target and target in parent.parents
+        ):
             raise UpdateRejected("destination contains a symbolic link")
     count = len(files)
     if dry_run:
@@ -142,8 +156,11 @@ def install(package_root: Path, target: Path, *, dry_run: bool = False) -> dict[
             applied.append((relative, existed))
         (backup / "RESTORE_MANIFEST.json").write_text(
             json.dumps(
-                {"source_sha": manifest["source_sha"], "replaced": originals,
-                 "new_files": [str(path) for path, existed in applied if not existed]},
+                {
+                    "source_sha": manifest["source_sha"],
+                    "replaced": originals,
+                    "new_files": [str(path) for path, existed in applied if not existed],
+                },
                 indent=2,
             ),
             encoding="utf-8",
@@ -156,7 +173,12 @@ def install(package_root: Path, target: Path, *, dry_run: bool = False) -> dict[
             else:
                 dest.unlink(missing_ok=True)
         raise
-    return {"status": "applied", "files": count, "sha": manifest["source_sha"], "backup": str(backup)}
+    return {
+        "status": "applied",
+        "files": count,
+        "sha": manifest["source_sha"],
+        "backup": str(backup),
+    }
 
 
 def main() -> int:
