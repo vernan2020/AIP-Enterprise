@@ -10,7 +10,7 @@ if defined AIP_RUNTIME_LOCAL_CMD (
         echo ERROR: AIP_RUNTIME_LOCAL_CMD no se encuentra. No se usa DEMO.
         exit /b 2
     )
-    call "%AIP_RUNTIME_LOCAL_CMD%"
+    call "%AIP_RUNTIME_LOCAL_CMD%" >nul 2>&1
     if errorlevel 1 (
         echo ERROR: la configuracion institucional explicita fallo.
         exit /b 2
@@ -20,7 +20,7 @@ if defined AIP_RUNTIME_LOCAL_CMD (
 )
 
 if exist "config\runtime.local.cmd" (
-    call "config\runtime.local.cmd"
+    call "config\runtime.local.cmd" >nul 2>&1
     if errorlevel 1 (
         echo ERROR: la configuracion privada de PREVIEW fallo.
         exit /b 2
@@ -37,7 +37,7 @@ if defined AIP_BCCR_TOKEN (
 REM Trusted institutional source: execute the existing private CMD in place.
 REM Never copy it into PREVIEW, GitHub, a ZIP, or a diagnostic report.
 if exist "C:\Proyectos\AIP-TIR5-RC1\AIP-Enterprise-release-core-v1.0\config\runtime.local.cmd" (
-    call "C:\Proyectos\AIP-TIR5-RC1\AIP-Enterprise-release-core-v1.0\config\runtime.local.cmd"
+    call "C:\Proyectos\AIP-TIR5-RC1\AIP-Enterprise-release-core-v1.0\config\runtime.local.cmd" >nul 2>&1
     if errorlevel 1 (
         echo ERROR: la configuracion privada certificada fallo.
         exit /b 2
