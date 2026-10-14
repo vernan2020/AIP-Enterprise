@@ -161,9 +161,7 @@ def test_bccr_probe_can_distinguish_chart_500_from_live_individual_fx(monkeypatc
                     "datos": [
                         {
                             "codigoIndicador": "317",
-                            "series": [
-                                {"fecha": "2026-10-14", "valorDatoPorPeriodo": 450.0}
-                            ],
+                            "series": [{"fecha": "2026-10-14", "valorDatoPorPeriodo": 450.0}],
                         }
                     ],
                 },
@@ -173,9 +171,7 @@ def test_bccr_probe_can_distinguish_chart_500_from_live_individual_fx(monkeypatc
     monkeypatch.setattr(check, "UrllibHTTPProvider", StubProvider)
     config = SimpleNamespace(token="TEST_ONLY", base_url="https://apim.bccr.fi.cr")
     chart = check._bccr_probe(config, target_date=date(2026, 10, 14))
-    single = check._bccr_probe(
-        config, target_date=date(2026, 10, 14), indicator_code="317"
-    )
+    single = check._bccr_probe(config, target_date=date(2026, 10, 14), indicator_code="317")
     assert "BCCR cuadro 1: HTTP 500" in chart
     assert "BCCR indicador 317: HTTP 200; 1 obs; último 2026-10-14" in single
     assert "450.0" not in single
