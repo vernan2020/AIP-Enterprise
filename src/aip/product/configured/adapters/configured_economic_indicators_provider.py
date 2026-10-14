@@ -300,7 +300,7 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
             if logical_code not in available_codes:
                 continue
 
-            series = repository.get_series(logical_code)
+            series = repository.get_recent_series(logical_code, limit=2)
             if not series.observations:
                 continue
 
