@@ -249,3 +249,32 @@ def test_incremental_bccr_api_requests_use_last_persisted_period(monkeypatch) ->
         ("series", "3541", "2026/09/29", "2026/10/14"),
         ("chart", "1", "2026/09/29", "2026/10/14"),
     ]
+
+
+def test_bccr_partial_urllib_failure_keeps_healthy_official_series(monkeypatch) -> None:
+    from urllib.error import URLError
+
+    provider = ConfiguredEconomicIndicatorsProvider(bccr_config=BCCRConfig(token="TEST_ONLY"))
+    observation = _point("TPM", "3.25", date(2026, 10, 14))
+
+    monkeypatch.setattr(provider, "_load_history_watermarks", lambda: ())
+    monkeypatch.setattr(
+        provider,
+        "_get_or_fetch_grouped_chart_observations",
+        lambda **kwargs: (_ for _ in ()).throw(URLError("offline")),
+    )
+    monkeypatch.setattr(
+        provider,
+        "_get_or_fetch_observations",
+        lambda code: (observation,) if code == "TPM" else (),
+    )
+    monkeypatch.setattr(provider, "_get_or_fetch_tri_observations", lambda: {})
+    monkeypatch.setattr(provider, "_persist_official_history", lambda rows: 1)
+
+    payload = provider.get_indicators()
+
+    assert payload["status"] == "AVAILABLE"
+    assert payload["source"] == "BCCR"
+    assert any(item["code"] == "TPM" for item in payload["indicators"])
+    assert any(message.startswith("FX: URLError") for message in payload["diagnostics"])
+    assert any(message.startswith("LABOR: URLError") for message in payload["diagnostics"])
