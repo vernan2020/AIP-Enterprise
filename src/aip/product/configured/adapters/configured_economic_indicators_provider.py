@@ -109,8 +109,9 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
 
     def _load_history_watermarks(self) -> tuple[str, ...]:
         """Read all latest persisted dates with one short-lived DuckDB connection."""
-        repository = EconomicHistoricalRepository()
+        repository: EconomicHistoricalRepository | None = None
         try:
+            repository = EconomicHistoricalRepository()
             codes = (
                 *self._FX_INDICATORS,
                 *self._CORE_INDICATORS,
@@ -128,7 +129,8 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
             self._history_watermarks = {}
             return (f"BCCR histórico incremental no disponible: {type(exc).__name__}",)
         finally:
-            repository.store.close()
+            if repository is not None:
+                repository.store.close()
 
     def _incremental_start(self, *, codes: tuple[str, ...], end: date, default_days: int) -> date:
         """Retain overlapping observations and never query beyond the current date.
@@ -214,10 +216,11 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
         if not missing:
             return [], ()
 
-        repository = EconomicHistoricalRepository()
+        repository: EconomicHistoricalRepository | None = None
         restored: list[dict[str, Any]] = []
         diagnostics: list[str] = []
         try:
+            repository = EconomicHistoricalRepository()
             stored_codes = set(repository.available_series())
             for logical_code in missing:
                 if logical_code not in stored_codes:
@@ -248,7 +251,8 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
         except Exception as exc:
             diagnostics.append(f"BCCR histórico local no disponible: {type(exc).__name__}")
         finally:
-            repository.store.close()
+            if repository is not None:
+                repository.store.close()
         return restored, tuple(diagnostics)
 
     def get_indicators(self) -> dict[str, Any]:
