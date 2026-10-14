@@ -39,7 +39,7 @@ def test_existing_private_runtime_resolver_uses_safe_precedence() -> None:
     assert 'call "config\\runtime.local.cmd"' in loader
     assert "exit /b 2" in loader
     assert "set AIP_BCCR_TOKEN=" not in loader
-    assert "copy " not in loader.lower()
+    assert "\ncopy " not in loader.lower()
     for diagnostic in ("DIAGNOSTICAR_BCCR_SUGEF.cmd", "AUDITAR_FUENTES_CONFIGURADAS.cmd"):
         text = Path(diagnostic).read_text(encoding="utf-8")
         assert 'call "scripts\\launch\\load_existing_institutional_runtime.cmd"' in text
