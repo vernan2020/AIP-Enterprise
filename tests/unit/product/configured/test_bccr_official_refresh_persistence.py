@@ -5,6 +5,8 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
+import pytest
+
 from aip.domain.economic.economic_indicator_observation import EconomicIndicatorObservation
 from aip.integration.bccr.configuration.bccr_config import BCCRConfig
 from aip.product.configured.adapters.configured_economic_indicators_provider import (
@@ -400,3 +402,64 @@ def test_unavailable_duckdb_does_not_block_working_live_bccr(monkeypatch) -> Non
     assert "sensitive database path" not in str(payload["diagnostics"])
     assert any("histórico incremental no disponible" in d for d in payload["diagnostics"])
     assert any("histórico local no disponible" in d for d in payload["diagnostics"])
+
+
+def test_fx_chart_outage_recovers_official_individual_series() -> None:
+    provider = ConfiguredEconomicIndicatorsProvider(bccr_config=BCCRConfig(token="TEST_ONLY"))
+
+    class FailedChartWorkingSeries:
+        def __init__(self) -> None:
+            self.requested: list[str] = []
+
+        def fetch_chart_series(self, **kwargs):
+            raise ConnectionError("BCCR REST API returned HTTP 500")
+
+        def fetch_series(self, *, indicator_code, from_date, to_date):
+            self.requested.append(indicator_code)
+            return {
+                "body": {
+                    "estado": True,
+                    "datos": [
+                        {
+                            "codigoIndicador": indicator_code,
+                            "series": [
+                                {
+                                    "fecha": "2026-10-13",
+                                    "valorDatoPorPeriodo": (
+                                        450.25 if indicator_code == "317" else 455.25
+                                    ),
+                                }
+                            ],
+                        }
+                    ],
+                }
+            }
+
+    client = FailedChartWorkingSeries()
+    provider._client = client
+    result = provider._fetch_grouped_chart_observations(
+        chart_code="1", logical_codes=("FX_BUY", "FX_SELL"), history_days=45
+    )
+
+    assert client.requested == ["317", "318"]
+    assert result["FX_BUY"][0].observation_date == date(2026, 10, 13)
+    assert result["FX_BUY"][0].value == Decimal("450.25")
+    assert result["FX_SELL"][0].value == Decimal("455.25")
+    assert result["FX_BUY"][0].source == "BCCR"
+
+
+def test_fx_chart_and_individual_outage_preserves_failure() -> None:
+    provider = ConfiguredEconomicIndicatorsProvider(bccr_config=BCCRConfig(token="TEST_ONLY"))
+
+    class BothFail:
+        def fetch_chart_series(self, **kwargs):
+            raise ConnectionError("BCCR REST API returned HTTP 500")
+
+        def fetch_series(self, **kwargs):
+            raise ConnectionError("BCCR REST API returned HTTP 500")
+
+    provider._client = BothFail()
+    with pytest.raises(ConnectionError, match="HTTP 500"):
+        provider._fetch_grouped_chart_observations(
+            chart_code="1", logical_codes=("FX_BUY", "FX_SELL"), history_days=45
+        )
