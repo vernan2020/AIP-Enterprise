@@ -37,7 +37,9 @@ PRIVATE_NAMES = frozenset(
         ".env.local",
     }
 )
-EXCLUDED_EXTENSIONS = frozenset({".ttf", ".otf", ".woff", ".woff2", ".pyc", ".pyo", ".db", ".duckdb", ".wal"})
+EXCLUDED_EXTENSIONS = frozenset(
+    {".ttf", ".otf", ".woff", ".woff2", ".pyc", ".pyo", ".db", ".duckdb", ".wal"}
+)
 INSTALLER_FILES = (
     "scripts/qa/apply_preview_patch.py",
     "scripts/qa/preview_patch_installer.cmd",
@@ -78,7 +80,9 @@ def tracked_payload_files(root: Path) -> tuple[Path, ...]:
         if not source.is_file():
             raise ValueError(f"tracked file missing: {name}")
         included.append(source)
-    if not included or not any(str(path.relative_to(root)).startswith("src/aip/") for path in included):
+    if not included or not any(
+        str(path.relative_to(root)).startswith("src/aip/") for path in included
+    ):
         raise ValueError("AIP source tree is missing")
     return tuple(included)
 
