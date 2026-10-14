@@ -70,13 +70,13 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
     _TTL_BY_CODE: dict[str, int] = {
         "TPM": 900,
         "TBP": 900,
-        "INFLATION": 21600,
-        "IMAE": 21600,
-        "GDP": 86400,
+        "INFLATION": 3600,
+        "IMAE": 3600,
+        "GDP": 3600,
     }
 
     _FX_TTL_SECONDS = 300
-    _LABOR_TTL_SECONDS = 86400
+    _LABOR_TTL_SECONDS = 3600
     _TRI_TTL_SECONDS = 900
 
     def __init__(
