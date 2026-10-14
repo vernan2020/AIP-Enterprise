@@ -176,3 +176,32 @@ def test_bccr_probe_can_distinguish_chart_500_from_live_individual_fx(monkeypatc
     assert "BCCR indicador 317: HTTP 200; 1 obs; último 2026-10-14" in single
     assert "450.0" not in single
     assert "TEST_ONLY" not in chart + single
+
+
+def test_bccr_metadata_probe_isolate_gateway_500(monkeypatch) -> None:
+    class StubProvider:
+        def get(self, url, *, timeout, headers):
+            assert url.endswith("/cuadro/1/metadata?idioma=ES")
+            assert headers["Authorization"] == "Bearer TEST_ONLY"
+            return {
+                "status_code": 500,
+                "body": {"CodigoError": "500", "Mensaje": "token=DO_NOT_DISCLOSE"},
+            }
+
+    monkeypatch.setattr(check, "UrllibHTTPProvider", StubProvider)
+    config = SimpleNamespace(token="TEST_ONLY", base_url="https://apim.bccr.fi.cr")
+    message = check._bccr_metadata_probe(config)
+    assert message == "BCCR metadatos cuadro 1: HTTP 500; NO CONFIRMADA"
+    assert "TEST_ONLY" not in message and "DO_NOT_DISCLOSE" not in message
+
+
+def test_bccr_metadata_probe_reports_confirmed_official_access(monkeypatch) -> None:
+    class StubProvider:
+        def get(self, url, *, timeout, headers):
+            return {"status_code": 200, "body": {"estado": True, "datos": []}}
+
+    monkeypatch.setattr(check, "UrllibHTTPProvider", StubProvider)
+    config = SimpleNamespace(token="TEST_ONLY", base_url="https://apim.bccr.fi.cr")
+    assert check._bccr_metadata_probe(config) == (
+        "BCCR metadatos cuadro 1: HTTP 200; RESPUESTA EXITOSA"
+    )
