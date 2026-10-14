@@ -328,15 +328,11 @@ def test_partial_bccr_api_merges_missing_historical_cards_without_replacing_live
     monkeypatch.setattr(module, "EconomicHistoricalRepository", FakeRepository)
     provider = ConfiguredEconomicIndicatorsProvider(bccr_config=BCCRConfig(token="TEST_ONLY"))
     monkeypatch.setattr(provider, "_load_history_watermarks", lambda: ())
-    monkeypatch.setattr(
-        provider, "_get_or_fetch_grouped_chart_observations", lambda **kwargs: {}
-    )
+    monkeypatch.setattr(provider, "_get_or_fetch_grouped_chart_observations", lambda **kwargs: {})
     monkeypatch.setattr(
         provider,
         "_get_or_fetch_observations",
-        lambda code: (_point("TPM", "3.25", date(2026, 10, 14)),)
-        if code == "TPM"
-        else (),
+        lambda code: (_point("TPM", "3.25", date(2026, 10, 14)),) if code == "TPM" else (),
     )
     monkeypatch.setattr(provider, "_get_or_fetch_tri_observations", lambda: {})
     monkeypatch.setattr(provider, "_persist_official_history", lambda rows: 1)
@@ -367,9 +363,7 @@ def test_partial_bccr_network_diagnostics_never_disclose_sensitive_error_text(
     monkeypatch.setattr(
         provider,
         "_get_or_fetch_observations",
-        lambda code: (_point("TPM", "3.25", date(2026, 10, 14)),)
-        if code == "TPM"
-        else (),
+        lambda code: (_point("TPM", "3.25", date(2026, 10, 14)),) if code == "TPM" else (),
     )
     monkeypatch.setattr(provider, "_get_or_fetch_tri_observations", lambda: {})
     monkeypatch.setattr(provider, "_persist_official_history", lambda rows: 1)
@@ -390,15 +384,11 @@ def test_unavailable_duckdb_does_not_block_working_live_bccr(monkeypatch) -> Non
 
     monkeypatch.setattr(module, "EconomicHistoricalRepository", inaccessible_history)
     provider = ConfiguredEconomicIndicatorsProvider(bccr_config=BCCRConfig(token="TEST_ONLY"))
-    monkeypatch.setattr(
-        provider, "_get_or_fetch_grouped_chart_observations", lambda **kwargs: {}
-    )
+    monkeypatch.setattr(provider, "_get_or_fetch_grouped_chart_observations", lambda **kwargs: {})
     monkeypatch.setattr(
         provider,
         "_get_or_fetch_observations",
-        lambda code: (_point("TPM", "3.25", date(2026, 10, 14)),)
-        if code == "TPM"
-        else (),
+        lambda code: (_point("TPM", "3.25", date(2026, 10, 14)),) if code == "TPM" else (),
     )
     monkeypatch.setattr(provider, "_get_or_fetch_tri_observations", lambda: {})
     monkeypatch.setattr(provider, "_persist_official_history", lambda rows: 0)
