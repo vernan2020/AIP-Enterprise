@@ -140,6 +140,7 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
                 tuple(dict.fromkeys(item.indicator_code for item in rows))
             )
             overlap_days = {"DAILY": 7, "MONTHLY": 70, "QUARTERLY": 120}
+
             def should_persist(item: EconomicHistoricalObservation) -> bool:
                 last = latest_dates.get(item.indicator_code)
                 return last is None or item.observation_date >= last - timedelta(
