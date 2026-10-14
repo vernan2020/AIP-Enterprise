@@ -570,11 +570,29 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
             codes=logical_codes, end=to_date, default_days=history_days
         )
 
-        response = self._client.fetch_chart_series(
-            chart_code=chart_code,
-            from_date=(from_date.strftime("%Y/%m/%d")),
-            to_date=(to_date.strftime("%Y/%m/%d")),
-        )
+        try:
+            response = self._client.fetch_chart_series(
+                chart_code=chart_code,
+                from_date=(from_date.strftime("%Y/%m/%d")),
+                to_date=(to_date.strftime("%Y/%m/%d")),
+            )
+        except (ConnectionError, TimeoutError, OSError, ValueError):
+            # Official SDDE also publishes exchange rates as individual series.
+            # A chart-level outage must not prevent confirmed FX observations.
+            # Never fabricate data or replace an authoritative successful chart.
+            if chart_code != self._FX_CHART_CODE:
+                raise
+            recovered: dict[str, tuple[EconomicIndicatorObservation, ...]] = {}
+            for logical_code in logical_codes:
+                try:
+                    observations = self._get_or_fetch_observations(logical_code)
+                except (ConnectionError, TimeoutError, OSError, ValueError):
+                    continue
+                if observations:
+                    recovered[logical_code] = observations
+            if recovered:
+                return recovered
+            raise
 
         body = response.get("body")
 
