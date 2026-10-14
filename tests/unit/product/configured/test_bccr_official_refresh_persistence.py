@@ -148,3 +148,101 @@ def test_bccr_live_series_load_uses_bounded_workers_and_preserves_dates(monkeypa
     assert len(workers) >= 2
     assert all(name.startswith("bccr-live") for name in workers)
     assert len(saved) == 1
+
+
+def test_incremental_bccr_query_ranges_keep_previous_observations() -> None:
+    provider = ConfiguredEconomicIndicatorsProvider(bccr_config=BCCRConfig(token="TEST_ONLY"))
+    today = date(2026, 10, 14)
+    assert provider._incremental_start(
+        codes=("TPM",), end=today, default_days=45
+    ) == date(2026, 8, 30)
+
+    provider._history_watermarks = {"TPM": date(2026, 10, 13)}
+    assert provider._incremental_start(
+        codes=("TPM",), end=today, default_days=45
+    ) == date(2026, 9, 29)
+
+    provider._history_watermarks = {"IMAE": date(2026, 9, 30)}
+    assert provider._incremental_start(
+        codes=("IMAE",), end=today, default_days=450
+    ) == date(2026, 7, 22)
+
+    # An unknown or invalid watermark must never hide missing historical data.
+    provider._history_watermarks = {
+        "FX_BUY": date(2026, 10, 13),
+        "FX_SELL": date(2026, 10, 15),
+    }
+    assert provider._incremental_start(
+        codes=("FX_BUY", "FX_SELL"), end=today, default_days=45
+    ) == date(2026, 8, 30)
+
+    provider._history_watermarks["FX_SELL"] = date(2026, 10, 12)
+    assert provider._incremental_start(
+        codes=("FX_BUY", "FX_SELL"), end=today, default_days=45
+    ) == date(2026, 9, 28)
+
+
+def test_incremental_bccr_watermarks_are_read_once_and_connection_closed(monkeypatch) -> None:
+    calls = []
+    closed = []
+
+    class FakeStore:
+        def close(self):
+            closed.append(True)
+
+    class FakeRepository:
+        store = FakeStore()
+
+        def latest_available_dates(self, codes):
+            calls.append(codes)
+            return {"TPM": date(2026, 10, 13), "FX_BUY": None}
+
+    import aip.product.configured.adapters.configured_economic_indicators_provider as module
+
+    monkeypatch.setattr(module, "EconomicHistoricalRepository", FakeRepository)
+    provider = ConfiguredEconomicIndicatorsProvider(bccr_config=BCCRConfig(token="TEST_ONLY"))
+    assert provider._load_history_watermarks() == ()
+    assert provider._history_watermarks == {"TPM": date(2026, 10, 13)}
+    assert len(calls) == 1
+    assert {"FX_BUY", "FX_SELL", "TPM", "TBP", "IMAE", "GDP", "INFLATION"} <= set(calls[0])
+    assert len(provider._tri_codes()) == 18
+    assert closed == [True]
+
+
+def test_incremental_bccr_api_requests_use_last_persisted_period(monkeypatch) -> None:
+    import aip.product.configured.adapters.configured_economic_indicators_provider as module
+
+    class FixedClock:
+        @staticmethod
+        def today():
+            return date(2026, 10, 14)
+
+    class RecordingClient:
+        def __init__(self):
+            self.queries = []
+
+        def fetch_series(self, *, indicator_code, from_date, to_date):
+            self.queries.append(("series", indicator_code, from_date, to_date))
+            return {"body": {"datos": []}}
+
+        def fetch_chart_series(self, *, chart_code, from_date, to_date):
+            self.queries.append(("chart", chart_code, from_date, to_date))
+            return {"body": {"estado": True, "datos": []}}
+
+    monkeypatch.setattr(module, "date", FixedClock)
+    provider = ConfiguredEconomicIndicatorsProvider(bccr_config=BCCRConfig(token="TEST_ONLY"))
+    client = RecordingClient()
+    provider._client = client
+    provider._history_watermarks = {
+        "TPM": date(2026, 10, 13),
+        "FX_BUY": date(2026, 10, 13),
+        "FX_SELL": date(2026, 10, 13),
+    }
+    assert provider._fetch_observations("TPM") == ()
+    assert provider._fetch_grouped_chart_observations(
+        chart_code="1", logical_codes=("FX_BUY", "FX_SELL"), history_days=45
+    ) == {}
+    assert client.queries == [
+        ("series", "3541", "2026/09/29", "2026/10/14"),
+        ("chart", "1", "2026/09/29", "2026/10/14"),
+    ]
