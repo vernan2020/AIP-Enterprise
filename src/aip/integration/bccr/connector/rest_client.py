@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import random
 import time
+from threading import Lock
 from typing import Any
 from urllib.parse import urlencode
 
@@ -27,6 +28,7 @@ class BCCRRestClient:
         self._config = config
         self._provider = provider
         self._last_request_monotonic: float | None = None
+        self._throttle_lock = Lock()
 
     def build_url(
         self,
@@ -120,7 +122,7 @@ class BCCRRestClient:
             "User-Agent": self._config.user_agent,
         }
 
-        for attempt in range(self._MAX_RETRIES + 1):
+        for attempt in range(self._config.retry_attempts + 1):
             self._throttle()
             try:
                 response = self._provider.get(
@@ -128,8 +130,8 @@ class BCCRRestClient:
                     timeout=self._config.timeout_seconds,
                     headers=headers,
                 )
-            except TimeoutError:
-                if attempt >= self._MAX_RETRIES:
+            except (TimeoutError, ConnectionError):
+                if attempt >= self._config.retry_attempts:
                     raise
                 delay = min(
                     self._INITIAL_BACKOFF_SECONDS * (2**attempt),
@@ -138,13 +140,12 @@ class BCCRRestClient:
                 time.sleep(delay)
                 continue
 
-            self._last_request_monotonic = time.monotonic()
             status_code = int(response.get("status_code", 200))
             if 200 <= status_code < 300:
                 return response
 
             if status_code == 429:
-                if attempt >= self._MAX_RETRIES:
+                if attempt >= self._config.retry_attempts:
                     raise ConnectionError(
                         "BCCR REST API returned HTTP 429 after maximum retry attempts"
                     )
@@ -164,12 +165,23 @@ class BCCRRestClient:
         raise ConnectionError("BCCR REST API request failed")
 
     def _throttle(self) -> None:
-        if self._last_request_monotonic is None:
-            return
-        elapsed = time.monotonic() - self._last_request_monotonic
-        remaining = self._MIN_REQUEST_INTERVAL_SECONDS - elapsed
-        if remaining > 0:
-            time.sleep(remaining)
+        """Reserve spaced request starts, including across concurrent workers.
+
+        The reservation lock is released before sleeping or calling the network.
+        This enforces the client rate limit without serializing HTTP latency.
+        """
+        with self._throttle_lock:
+            now = time.monotonic()
+            previous = self._last_request_monotonic
+            scheduled = (
+                now
+                if previous is None
+                else max(now, previous + self._MIN_REQUEST_INTERVAL_SECONDS)
+            )
+            self._last_request_monotonic = scheduled
+            delay = scheduled - now
+        if delay > 0:
+            time.sleep(delay)
 
     @staticmethod
     def _extract_retry_after(response: dict[str, Any]) -> float | None:
