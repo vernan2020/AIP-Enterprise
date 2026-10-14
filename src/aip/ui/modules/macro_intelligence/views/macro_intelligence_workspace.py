@@ -563,6 +563,13 @@ class MacroIntelligenceWorkspace(QWidget):
         self._apply_styles()
         self._load_persisted_snapshot()
         self._load_projection()
+        # Render the persisted snapshot immediately and refresh observations
+        # without blocking Qt. A hidden workspace does not poll the API.
+        self._live_refresh_timer = QTimer(self)
+        self._live_refresh_timer.setInterval(15 * 60 * 1000)
+        self._live_refresh_timer.timeout.connect(self._scheduled_refresh)
+        self._live_refresh_timer.start()
+        QTimer.singleShot(0, self._scheduled_refresh_on_open)
 
     @property
     def projection(self) -> MacroProjectionViewModel:
@@ -1179,8 +1186,18 @@ class MacroIntelligenceWorkspace(QWidget):
         if pending is not None:
             QTimer.singleShot(0, lambda: self._load_ml_projection(pending))
 
+    def _scheduled_refresh_on_open(self) -> None:
+        # First startup refresh is unconditional; the persisted snapshot
+        # remains visible while the live worker resolves official dates.
+        if not self._loading:
+            self.refresh(force_refresh=False)
+
+    def _scheduled_refresh(self) -> None:
+        if self.isVisible() and not self._loading:
+            self.refresh(force_refresh=False)
+
     @Slot()
-    def refresh(self) -> None:
+    def refresh(self, *, force_refresh: bool = True) -> None:
         self._load_projection()
         if self._loading:
             self._refresh_pending = True
@@ -1193,7 +1210,7 @@ class MacroIntelligenceWorkspace(QWidget):
         try:
             provider = self._application_factory.container.resolve(EconomicIndicatorsProvider)
             invalidate = getattr(provider, "invalidate_cache", None)
-            if callable(invalidate):
+            if force_refresh and callable(invalidate):
                 invalidate()
             worker = _EconomicLoadWorker(EconomicViewModel(provider))
         except Exception as exc:
