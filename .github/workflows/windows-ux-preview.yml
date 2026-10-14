@@ -9,6 +9,11 @@ on:
       - 'scripts/qa/capture_windows_preview.py'
       - '.github/workflows/windows-ux-preview.yml'
       - 'run_aip_ux_preview.cmd'
+      - 'run_aip_configured.cmd'
+      - 'DIAGNOSTICAR_BCCR_SUGEF.cmd'
+      - 'AUDITAR_FUENTES_CONFIGURADAS.cmd'
+      - 'scripts/launch/load_existing_institutional_runtime.cmd'
+      - 'scripts/qa/verify_windows_configured_runtime.py'
   workflow_dispatch:
 
 permissions:
@@ -36,6 +41,8 @@ jobs:
           cache: 'pip'
       - name: Install desktop dependencies
         run: python -m pip install -e .
+      - name: Verify CONFIGURED CMD bootstrap with isolated credentials
+        run: python scripts/qa/verify_windows_configured_runtime.py
       - name: Open workspaces and capture screenshots
         run: python scripts/qa/capture_windows_preview.py
       - name: Upload screenshots
