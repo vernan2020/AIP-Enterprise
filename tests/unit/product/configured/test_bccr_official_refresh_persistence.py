@@ -223,7 +223,7 @@ def test_incremental_bccr_api_requests_use_last_persisted_period(monkeypatch) ->
 
         def fetch_series(self, *, indicator_code, from_date, to_date):
             self.queries.append(("series", indicator_code, from_date, to_date))
-            return {"body": {"datos": []}}
+            return {"body": {"estado": True, "datos": []}}
 
         def fetch_chart_series(self, *, chart_code, from_date, to_date):
             self.queries.append(("chart", chart_code, from_date, to_date))
