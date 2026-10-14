@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.qa.apply_preview_patch import UpdateRejected, install, verify_payload
+from scripts.qa.apply_preview_patch import UpdateRejected, install
 from scripts.qa.build_preview_patch import allowed
 
 
