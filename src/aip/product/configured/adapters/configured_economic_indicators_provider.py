@@ -130,9 +130,7 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
         finally:
             repository.store.close()
 
-    def _incremental_start(
-        self, *, codes: tuple[str, ...], end: date, default_days: int
-    ) -> date:
+    def _incremental_start(self, *, codes: tuple[str, ...], end: date, default_days: int) -> date:
         """Retain overlapping observations and never query beyond the current date.
 
         Missing, future or stale series use the complete normal lookback.
@@ -143,7 +141,9 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
         dates = [self._history_watermarks.get(code) for code in codes]
         if not dates or any(value is None or value > end for value in dates):
             return start
-        return max(start, min(value for value in dates if value is not None) - timedelta(days=overlap))
+        return max(
+            start, min(value for value in dates if value is not None) - timedelta(days=overlap)
+        )
 
     @staticmethod
     def _official_history_rows(
@@ -639,9 +639,7 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
     ]:
         to_date = date.today()
 
-        from_date = self._incremental_start(
-            codes=self._tri_codes(), end=to_date, default_days=45
-        )
+        from_date = self._incremental_start(codes=self._tri_codes(), end=to_date, default_days=45)
 
         response = self._client.fetch_chart_series(
             chart_code=(self._TRI_CHART_CODE),
