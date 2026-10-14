@@ -101,7 +101,7 @@ class BCCRRestClient:
         base_url = self._config.base_url.rstrip("/")
         params = urlencode(
             {
-                "fechainicio": from_date,
+                "fechaInicio": from_date,
                 "fechaFin": to_date,
                 "idioma": language,
             }
