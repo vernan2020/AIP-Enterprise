@@ -90,6 +90,47 @@ def _period_coverage(payload: object, expected_key: str, *, target_date: date) -
     return "SIN FECHAS CONTABLES EN LA RESPUESTA"
 
 
+def _bccr_fx_coverage(body: object) -> str:
+    """Check actual FX series dates, never treat a nonempty error as success."""
+    if not isinstance(body, dict) or body.get("estado") is not True:
+        return "RESPUESTA OFICIAL NO EXITOSA"
+    charts = body.get("datos")
+    if not isinstance(charts, list):
+        return "ESQUEMA INESPERADO"
+
+    coverage: dict[str, list[date]] = {"317": [], "318": []}
+    for chart in charts:
+        if not isinstance(chart, dict):
+            continue
+        indicators = chart.get("indicadores")
+        if not isinstance(indicators, list):
+            continue
+        for indicator in indicators:
+            if not isinstance(indicator, dict):
+                continue
+            code = str(indicator.get("codigoIndicador", ""))
+            if code not in coverage or not isinstance(indicator.get("series"), list):
+                continue
+            for observation in indicator["series"]:
+                if not isinstance(observation, dict):
+                    continue
+                try:
+                    observed = date.fromisoformat(str(observation.get("fecha", ""))[:10])
+                except ValueError:
+                    continue
+                coverage[code].append(observed)
+
+    def describe(code: str, name: str) -> str:
+        dates = coverage[code]
+        return (
+            f"{name}: {len(dates)} obs; último {max(dates):%Y-%m-%d}"
+            if dates
+            else f"{name}: SIN OBSERVACIONES"
+        )
+
+    return f"{describe('317', 'compra')}; {describe('318', 'venta')}"
+
+
 def _bccr_probe(config: object, *, target_date: date) -> str:
     token = getattr(config, "token", None)
     if not token:
@@ -124,11 +165,7 @@ def _bccr_probe(config: object, *, target_date: date) -> str:
         )
         status = int(response.get("status_code", 0))
         body = response.get("body")
-        contains_data = bool(body) if isinstance(body, (dict, list)) else False
-        return (
-            f"BCCR cuadro 1: HTTP {status}; "
-            f"respuesta JSON {'CON DATOS' if contains_data else 'SIN DATOS'}"
-        )
+        return f"BCCR cuadro 1: HTTP {status}; {_bccr_fx_coverage(body)}"
     except Exception as exc:
         return f"BCCR cuadro 1: {_outcome(exc)}"
 
