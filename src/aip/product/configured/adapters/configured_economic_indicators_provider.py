@@ -196,6 +196,61 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
         finally:
             repository.store.close()
 
+    def _restore_missing_from_local_history(
+        self, available_live: set[str]
+    ) -> tuple[list[dict[str, Any]], tuple[str, ...]]:
+        """Fill missing macro cards with date-labelled persisted observations.
+
+        Never claim restored rows are a live response and never overwrite
+        a current BCCR observation. Reads only the two latest rows per code.
+        """
+        expected = (
+            *self._FX_INDICATORS,
+            *self._CORE_INDICATORS,
+            "UNEMPLOYMENT",
+            *self._tri_codes(),
+        )
+        missing = tuple(code for code in expected if code not in available_live)
+        if not missing:
+            return [], ()
+
+        repository = EconomicHistoricalRepository()
+        restored: list[dict[str, Any]] = []
+        diagnostics: list[str] = []
+        try:
+            stored_codes = set(repository.available_series())
+            for logical_code in missing:
+                if logical_code not in stored_codes:
+                    continue
+                series = repository.get_recent_series(logical_code, limit=2)
+                converted = tuple(
+                    EconomicIndicatorObservation(
+                        indicator_code=item.indicator_code,
+                        observation_date=item.observation_date,
+                        value=item.value,
+                        source=item.source,
+                        unit=item.unit,
+                        source_series_code=item.source_series_code,
+                        quality_status="VALID",
+                        is_preliminary=False,
+                    )
+                    for item in series.observations
+                )
+                payload = self._build_indicator_payload(logical_code, converted)
+                if payload is None:
+                    continue
+                payload["source"] = f"{series.source} · HISTÓRICO LOCAL"
+                restored.append(payload)
+                diagnostics.append(
+                    f"{logical_code}: histórico local, última observación "
+                    f"{payload['date']:%Y-%m-%d}; sin confirmación BCCR en vivo"
+                )
+        except Exception as exc:
+            diagnostics.append(f"BCCR histórico local no disponible: {type(exc).__name__}")
+        finally:
+            repository.store.close()
+        return restored, tuple(diagnostics)
+
     def get_indicators(self) -> dict[str, Any]:
         """Load independent BCCR series concurrently, with bounded HTTP pacing.
 
@@ -244,7 +299,7 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
                     if indicator is not None:
                         indicators.append(indicator)
             except (ConnectionError, TimeoutError, OSError, ValueError) as exc:
-                diagnostics.append(f"FX: {type(exc).__name__}: {exc}")
+                diagnostics.append(f"FX: {type(exc).__name__}")
 
             for logical_code, future in core_futures.items():
                 try:
@@ -257,7 +312,7 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
                     if indicator is not None:
                         indicators.append(indicator)
                 except (ConnectionError, TimeoutError, OSError, ValueError) as exc:
-                    diagnostics.append(f"{logical_code}: {type(exc).__name__}: {exc}")
+                    diagnostics.append(f"{logical_code}: {type(exc).__name__}")
 
             try:
                 grouped = labor_future.result()
@@ -271,7 +326,7 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
                     if indicator is not None:
                         indicators.append(indicator)
             except (ConnectionError, TimeoutError, OSError, ValueError) as exc:
-                diagnostics.append(f"LABOR: {type(exc).__name__}: {exc}")
+                diagnostics.append(f"LABOR: {type(exc).__name__}")
 
             try:
                 grouped = tri_future.result()
@@ -281,7 +336,7 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
                     if indicator is not None:
                         indicators.append(indicator)
             except (ConnectionError, TimeoutError, OSError, ValueError) as exc:
-                diagnostics.append(f"TRI: {type(exc).__name__}: {exc}")
+                diagnostics.append(f"TRI: {type(exc).__name__}")
 
         unemployment = self._build_unemployment_indicator(observations_by_code)
         if unemployment is not None:
@@ -302,9 +357,16 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
         except Exception as exc:
             diagnostics.append(f"BCCR: persistencia fallida ({type(exc).__name__})")
 
+        # One failed or unpublished series must not blank a valid cached card.
+        # Every restored card carries its own LOCAL provenance and observation date.
+        live_codes = {item["code"] for item in indicators}
+        restored, historical_diagnostics = self._restore_missing_from_local_history(live_codes)
+        indicators.extend(restored)
+        diagnostics.extend(historical_diagnostics)
+
         return {
             "status": "AVAILABLE",
-            "source": "BCCR",
+            "source": "BCCR · MIXTO CON HISTÓRICO LOCAL" if restored else "BCCR",
             "indicators": indicators,
             "tri_curves": {
                 "CRC": self._build_tri_curve(indicators, "CRC"),
