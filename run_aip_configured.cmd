@@ -8,23 +8,10 @@ set "AIP_EXECUTION_MODE=CONFIGURED"
 set "AIP_DEMO_MODE_ENABLED=false"
 set "PYTHONPATH=src"
 
-REM Local secrets/overrides are never versioned.
-REM A branch checkout can reuse the exact configuration of the installed,
-REM functional AIP via AIP_RUNTIME_LOCAL_CMD without copying credentials.
-if defined AIP_RUNTIME_LOCAL_CMD (
-    if not exist "%AIP_RUNTIME_LOCAL_CMD%" (
-        echo ERROR: existing institutional configuration not found.
-        echo Check AIP_RUNTIME_LOCAL_CMD. No fallback to DEMO is permitted.
-        exit /b 1
-    )
-    call "%AIP_RUNTIME_LOCAL_CMD%"
-    if errorlevel 1 (
-        echo ERROR: institutional local configuration failed.
-        exit /b 1
-    )
-) else (
-    if exist "config\runtime.local.cmd" call "config\runtime.local.cmd"
-)
+REM Existing private runtime configuration is read in-place, never copied.
+REM The same loader is used by all CONFIGURED diagnostics.
+call "scripts\launch\load_existing_institutional_runtime.cmd"
+if errorlevel 1 exit /b 1
 
 REM The configured runtime must never silently switch to a demo environment.
 set "AIP_EXECUTION_MODE=CONFIGURED"
