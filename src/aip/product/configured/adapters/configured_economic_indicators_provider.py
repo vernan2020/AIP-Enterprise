@@ -140,14 +140,13 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
                 tuple(dict.fromkeys(item.indicator_code for item in rows))
             )
             overlap_days = {"DAILY": 7, "MONTHLY": 70, "QUARTERLY": 120}
-            incremental = tuple(
-                item
-                for item in rows
-                if latest_dates.get(item.indicator_code) is None
-                or item.observation_date
-                >= latest_dates[item.indicator_code]
-                - timedelta(days=overlap_days.get(item.frequency, 35))
-            )
+            def should_persist(item: EconomicHistoricalObservation) -> bool:
+                last = latest_dates.get(item.indicator_code)
+                return last is None or item.observation_date >= last - timedelta(
+                    days=overlap_days.get(item.frequency, 35)
+                )
+
+            incremental = tuple(item for item in rows if should_persist(item))
             return repository.append(incremental) if incremental else 0
         finally:
             repository.store.close()
