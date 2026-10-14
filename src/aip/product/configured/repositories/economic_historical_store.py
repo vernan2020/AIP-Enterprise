@@ -280,6 +280,38 @@ class EconomicHistoricalStore:
             for row in rows
         )
 
+    def recent_observations_for_series(
+        self, *, indicator_code: str, limit: int = 2
+    ) -> tuple[EconomicHistoricalObservation, ...]:
+        """Read a few recent points without materializing years of DuckDB history."""
+        normalized_code = indicator_code.strip().upper()
+        if not normalized_code or limit <= 0:
+            return ()
+        self.initialize()
+        rows = self._database.connection.execute(
+            """
+            SELECT indicator_code, observation_date, value, source,
+                   source_series_code, unit, frequency
+            FROM economic_history_observations
+            WHERE indicator_code = ?
+            ORDER BY observation_date DESC
+            LIMIT ?
+            """,
+            [normalized_code, limit],
+        ).fetchall()
+        return tuple(
+            EconomicHistoricalObservation(
+                indicator_code=str(row[0]),
+                observation_date=row[1],
+                value=Decimal(str(row[2])),
+                source=str(row[3]),
+                source_series_code=None if row[4] is None else str(row[4]),
+                unit=str(row[5]),
+                frequency=str(row[6]),
+            )
+            for row in reversed(rows)
+        )
+
     def latest_observation(
         self,
         *,
