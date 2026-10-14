@@ -60,6 +60,20 @@ class EconomicHistoricalRepository:
             source=source,
         )
 
+    def get_recent_series(
+        self, indicator_code: str, *, limit: int = 2
+    ) -> EconomicHistoricalSeries:
+        """Load only the newest historical points for low-latency fallback."""
+        normalized_code = indicator_code.strip().upper()
+        observations = self._store.recent_observations_for_series(
+            indicator_code=normalized_code, limit=limit
+        )
+        return EconomicHistoricalSeries(
+            indicator_code=normalized_code,
+            observations=observations,
+            source=observations[-1].source if observations else "UNKNOWN",
+        )
+
     def latest_available_date(
         self,
         indicator_code: str,
