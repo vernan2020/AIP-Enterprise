@@ -380,3 +380,33 @@ def test_partial_bccr_network_diagnostics_never_disclose_sensitive_error_text(
     assert payload["status"] == "AVAILABLE"
     assert "FX: URLError" in payload["diagnostics"]
     assert "secret=DO_NOT_LEAK" not in str(payload["diagnostics"])
+
+
+def test_unavailable_duckdb_does_not_block_working_live_bccr(monkeypatch) -> None:
+    import aip.product.configured.adapters.configured_economic_indicators_provider as module
+
+    def inaccessible_history():
+        raise OSError("sensitive database path must stay private")
+
+    monkeypatch.setattr(module, "EconomicHistoricalRepository", inaccessible_history)
+    provider = ConfiguredEconomicIndicatorsProvider(bccr_config=BCCRConfig(token="TEST_ONLY"))
+    monkeypatch.setattr(
+        provider, "_get_or_fetch_grouped_chart_observations", lambda **kwargs: {}
+    )
+    monkeypatch.setattr(
+        provider,
+        "_get_or_fetch_observations",
+        lambda code: (_point("TPM", "3.25", date(2026, 10, 14)),)
+        if code == "TPM"
+        else (),
+    )
+    monkeypatch.setattr(provider, "_get_or_fetch_tri_observations", lambda: {})
+    monkeypatch.setattr(provider, "_persist_official_history", lambda rows: 0)
+
+    payload = provider.get_indicators()
+    assert payload["status"] == "AVAILABLE"
+    assert payload["source"] == "BCCR"
+    assert [item["code"] for item in payload["indicators"]] == ["TPM"]
+    assert "sensitive database path" not in str(payload["diagnostics"])
+    assert any("histórico incremental no disponible" in d for d in payload["diagnostics"])
+    assert any("histórico local no disponible" in d for d in payload["diagnostics"])
