@@ -96,10 +96,54 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
         self._parser = BCCREconomicSeriesParser(self._mapper)
 
         self._cache = BCCRCache(ttl_seconds=300)
+        self._history_watermarks: dict[str, date] = {}
 
     def invalidate_cache(self) -> None:
         """Explicit user refresh must query BCCR rather than reuse an old response."""
         self._cache = BCCRCache(ttl_seconds=300)
+
+    @staticmethod
+    def _tri_codes() -> tuple[str, ...]:
+        tenors = ("1W", "1M", "3M", "6M", "9M", "12M", "24M", "36M", "60M")
+        return tuple(f"TRI_{currency}_{tenor}" for currency in ("CRC", "USD") for tenor in tenors)
+
+    def _load_history_watermarks(self) -> tuple[str, ...]:
+        """Read all latest persisted dates with one short-lived DuckDB connection."""
+        repository = EconomicHistoricalRepository()
+        try:
+            codes = (
+                *self._FX_INDICATORS,
+                *self._CORE_INDICATORS,
+                *self._LABOR_INPUTS,
+                *self._tri_codes(),
+            )
+            self._history_watermarks = {
+                code: observed
+                for code, observed in repository.latest_available_dates(codes).items()
+                if observed is not None
+            }
+            return ()
+        except Exception as exc:
+            # The live API remains usable while local history is inaccessible.
+            self._history_watermarks = {}
+            return (f"BCCR histórico incremental no disponible: {type(exc).__name__}",)
+        finally:
+            repository.store.close()
+
+    def _incremental_start(
+        self, *, codes: tuple[str, ...], end: date, default_days: int
+    ) -> date:
+        """Retain overlapping observations and never query beyond the current date.
+
+        Missing, future or stale series use the complete normal lookback.
+        Grouped charts use the oldest eligible watermark across all codes.
+        """
+        start = end - timedelta(days=default_days)
+        overlap = 14 if default_days <= 60 else (70 if default_days <= 500 else 120)
+        dates = [self._history_watermarks.get(code) for code in codes]
+        if not dates or any(value is None or value > end for value in dates):
+            return start
+        return max(start, min(value for value in dates if value is not None) - timedelta(days=overlap))
 
     @staticmethod
     def _official_history_rows(
@@ -162,7 +206,7 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
             return self._historical_fallback(reason="BCCR token is unavailable")
 
         indicators: list[dict[str, Any]] = []
-        diagnostics: list[str] = []
+        diagnostics: list[str] = list(self._load_history_watermarks())
         observations_by_code: dict[str, tuple[EconomicIndicatorObservation, ...]] = {}
 
         # Eight independent endpoints, but never more than three in flight.
@@ -453,7 +497,9 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
 
         to_date = date.today()
 
-        from_date = to_date - timedelta(days=history_days)
+        from_date = self._incremental_start(
+            codes=logical_codes, end=to_date, default_days=history_days
+        )
 
         response = self._client.fetch_chart_series(
             chart_code=chart_code,
@@ -551,7 +597,11 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
 
         to_date = date.today()
 
-        from_date = to_date - self._history_window(definition.frequency)
+        from_date = self._incremental_start(
+            codes=(logical_code,),
+            end=to_date,
+            default_days=self._history_window(definition.frequency).days,
+        )
 
         response = self._client.fetch_series(
             indicator_code=(mapping.source_series_code),
@@ -586,7 +636,9 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
     ]:
         to_date = date.today()
 
-        from_date = to_date - timedelta(days=45)
+        from_date = self._incremental_start(
+            codes=self._tri_codes(), end=to_date, default_days=45
+        )
 
         response = self._client.fetch_chart_series(
             chart_code=(self._TRI_CHART_CODE),
