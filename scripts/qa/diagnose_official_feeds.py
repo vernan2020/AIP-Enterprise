@@ -131,8 +131,36 @@ def _bccr_fx_coverage(body: object) -> str:
     return f"{describe('317', 'compra')}; {describe('318', 'venta')}"
 
 
-def _bccr_probe(config: object, *, target_date: date) -> str:
+def _bccr_individual_coverage(body: object, code: str) -> str:
+    """Summarize one officially published series without leaking monetary amounts."""
+    if not isinstance(body, dict) or body.get("estado") is not True:
+        return "RESPUESTA OFICIAL NO EXITOSA"
+    series = body.get("datos")
+    if not isinstance(series, list):
+        return "ESQUEMA INESPERADO"
+    dates: list[date] = []
+    for indicator in series:
+        if not isinstance(indicator, dict):
+            continue
+        if str(indicator.get("codigoIndicador", "")) != code:
+            continue
+        for item in indicator.get("series", ()):
+            if not isinstance(item, dict):
+                continue
+            try:
+                dates.append(date.fromisoformat(str(item.get("fecha", ""))[:10]))
+            except ValueError:
+                continue
+    return (
+        f"{len(dates)} obs; último {max(dates):%Y-%m-%d}"
+        if dates
+        else "SIN OBSERVACIONES"
+    )
+
+
+def _bccr_probe(config: object, *, target_date: date, indicator_code: str | None = None) -> str:
     token = getattr(config, "token", None)
+    route = f"BCCR indicador {indicator_code}" if indicator_code else "BCCR cuadro 1"
     if not token:
         return "BCCR: CREDENCIAL NO VISIBLE EN ESTA SESIÓN (NO SE CONSULTÓ)"
     from aip.integration.bccr.configuration.bccr_config import BCCRConfig
@@ -147,10 +175,12 @@ def _bccr_probe(config: object, *, target_date: date) -> str:
             ),
             provider=UrllibHTTPProvider(),
         )
-        request_url = client.build_chart_url(
-            chart_code="1",
-            from_date=(target_date - timedelta(days=14)).strftime("%Y/%m/%d"),
-            to_date=target_date.strftime("%Y/%m/%d"),
+        start = (target_date - timedelta(days=14)).strftime("%Y/%m/%d")
+        end = target_date.strftime("%Y/%m/%d")
+        request_url = (
+            client.build_url(indicator_code=indicator_code, from_date=start, to_date=end)
+            if indicator_code
+            else client.build_chart_url(chart_code="1", from_date=start, to_date=end)
         )
         # A single request, no exponential retries; identical credential/header
         # contract to the production BCCRRestClient.
@@ -165,9 +195,14 @@ def _bccr_probe(config: object, *, target_date: date) -> str:
         )
         status = int(response.get("status_code", 0))
         body = response.get("body")
-        return f"BCCR cuadro 1: HTTP {status}; {_bccr_fx_coverage(body)}"
+        coverage = (
+            _bccr_individual_coverage(body, indicator_code)
+            if indicator_code
+            else _bccr_fx_coverage(body)
+        )
+        return f"{route}: HTTP {status}; {coverage}"
     except Exception as exc:
-        return f"BCCR cuadro 1: {_outcome(exc)}"
+        return f"{route}: {_outcome(exc)}"
 
 
 def _sugef_probe(config: object, *, target_date: date) -> tuple[str, ...]:
@@ -235,6 +270,7 @@ def diagnose(*, period: date, live: bool) -> list[str]:
         return status + ["Pruebas de red omitidas; utilice --live para verificar fuentes oficiales."]
     if config.bccr.enabled:
         status.append(_bccr_probe(config.bccr, target_date=date.today()))
+        status.append(_bccr_probe(config.bccr, target_date=date.today(), indicator_code="317"))
     status.extend(_sugef_probe(config.sugef_financial, target_date=period))
     status.append("FIN - nunca se guardaron credenciales ni respuestas.")
     return status
