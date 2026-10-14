@@ -153,19 +153,19 @@ def test_bccr_live_series_load_uses_bounded_workers_and_preserves_dates(monkeypa
 def test_incremental_bccr_query_ranges_keep_previous_observations() -> None:
     provider = ConfiguredEconomicIndicatorsProvider(bccr_config=BCCRConfig(token="TEST_ONLY"))
     today = date(2026, 10, 14)
-    assert provider._incremental_start(
-        codes=("TPM",), end=today, default_days=45
-    ) == date(2026, 8, 30)
+    assert provider._incremental_start(codes=("TPM",), end=today, default_days=45) == date(
+        2026, 8, 30
+    )
 
     provider._history_watermarks = {"TPM": date(2026, 10, 13)}
-    assert provider._incremental_start(
-        codes=("TPM",), end=today, default_days=45
-    ) == date(2026, 9, 29)
+    assert provider._incremental_start(codes=("TPM",), end=today, default_days=45) == date(
+        2026, 9, 29
+    )
 
     provider._history_watermarks = {"IMAE": date(2026, 9, 30)}
-    assert provider._incremental_start(
-        codes=("IMAE",), end=today, default_days=450
-    ) == date(2026, 7, 22)
+    assert provider._incremental_start(codes=("IMAE",), end=today, default_days=450) == date(
+        2026, 7, 22
+    )
 
     # An unknown or invalid watermark must never hide missing historical data.
     provider._history_watermarks = {
@@ -239,9 +239,12 @@ def test_incremental_bccr_api_requests_use_last_persisted_period(monkeypatch) ->
         "FX_SELL": date(2026, 10, 13),
     }
     assert provider._fetch_observations("TPM") == ()
-    assert provider._fetch_grouped_chart_observations(
-        chart_code="1", logical_codes=("FX_BUY", "FX_SELL"), history_days=45
-    ) == {}
+    assert (
+        provider._fetch_grouped_chart_observations(
+            chart_code="1", logical_codes=("FX_BUY", "FX_SELL"), history_days=45
+        )
+        == {}
+    )
     assert client.queries == [
         ("series", "3541", "2026/09/29", "2026/10/14"),
         ("chart", "1", "2026/09/29", "2026/10/14"),
