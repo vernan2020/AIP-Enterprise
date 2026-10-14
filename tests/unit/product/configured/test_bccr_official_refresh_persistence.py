@@ -96,16 +96,16 @@ def test_bccr_incremental_upsert_keeps_recent_revisions_but_skips_old_rows(monke
     monkeypatch.setattr(provider_module, "EconomicHistoricalRepository", FakeRepository)
     provider = ConfiguredEconomicIndicatorsProvider(bccr_config=BCCRConfig(token="TEST_ONLY"))
     count = provider._persist_official_history(
-        {"TPM": (
-            _point("TPM", "3.50", date(2026, 9, 1)),
-            _point("TPM", "3.25", date(2026, 10, 12)),
-            _point("TPM", "3.00", date(2026, 10, 14)),
-        )}
+        {
+            "TPM": (
+                _point("TPM", "3.50", date(2026, 9, 1)),
+                _point("TPM", "3.25", date(2026, 10, 12)),
+                _point("TPM", "3.00", date(2026, 10, 14)),
+            )
+        }
     )
     assert count == 2
-    assert [row.observation_date for row in saved] == [
-        date(2026, 10, 12), date(2026, 10, 14)
-    ]
+    assert [row.observation_date for row in saved] == [date(2026, 10, 12), date(2026, 10, 14)]
     assert closed == [True]
 
 
