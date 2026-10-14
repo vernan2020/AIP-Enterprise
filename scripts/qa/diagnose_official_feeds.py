@@ -182,8 +182,16 @@ def _sugef_probe(config: object, *, target_date: date) -> tuple[str, ...]:
     period = target_date.strftime("%Y%m01")
     reports = (
         ("BALANZA", "ReporteBalanzaComprobacionEntidad", "listaBalanzaComprobacionEntidad"),
-        ("BALANCE", "ReporteBalanceSituacionAnalisisFinancieroEntidad", "listaBalanceSituacionAnalisisFinancieroEntidad"),
-        ("RESULTADOS", "ReporteEstadoResultadosAnalisisFinancieroEntidad", "listaEstadoResultadosAnalisisFinancieroEntidad"),
+        (
+            "BALANCE CONTABLE",
+            "ReporteBalanceSituacionContableDespuesMarzo2020Entidad",
+            "listaBalanceSituacionContableEntidad",
+        ),
+        (
+            "RESULTADOS CONTABLES",
+            "ReporteEstadoResultadosContableDespuesMarzo2020Entidad",
+            "listaEstadoResultadosContableEntidad",
+        ),
     )
     messages: list[str] = []
     for label, report, key in reports:
