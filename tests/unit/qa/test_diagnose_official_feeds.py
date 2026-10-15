@@ -225,9 +225,7 @@ def test_ticotrader_parity_probe_reports_httpx_status_without_leaking(monkeypatc
                 "datos": [
                     {
                         "codigoIndicador": "317",
-                        "series": [
-                            {"fecha": "2026-10-15", "valorDatoPorPeriodo": "450.01"}
-                        ],
+                        "series": [{"fecha": "2026-10-15", "valorDatoPorPeriodo": "450.01"}],
                     }
                 ],
             },
@@ -238,13 +236,10 @@ def test_ticotrader_parity_probe_reports_httpx_status_without_leaking(monkeypatc
         "select_official_bccr_transport",
         lambda: HttpxHTTPProvider(transport=httpx.MockTransport(handler)),
     )
-    config = SimpleNamespace(
-        token="SECRET_DO_NOT_PRINT", base_url="https://apim.bccr.fi.cr"
-    )
+    config = SimpleNamespace(token="SECRET_DO_NOT_PRINT", base_url="https://apim.bccr.fi.cr")
     result = check._bccr_ticotrader_parity_probe(config, target_date=date(2026, 10, 15))
     assert result == (
-        "BCCR Tico-compatible indicador 317 (HTTPX): "
-        "HTTP 200; 1 obs; último 2026-10-15"
+        "BCCR Tico-compatible indicador 317 (HTTPX): " "HTTP 200; 1 obs; último 2026-10-15"
     )
     assert "450.01" not in result
     assert "SECRET_DO_NOT_PRINT" not in result
