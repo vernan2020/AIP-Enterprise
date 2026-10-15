@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - release/core-v1.0
+      - feature/ux-v4-5-1-performance-responsiveness
     paths:
       - 'src/aip/ui/**'
       - 'scripts/qa/capture_windows_preview.py'
@@ -21,7 +22,7 @@ permissions:
 
 jobs:
   windows-screenshots:
-    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'feature/ux-v4-5-1-performance-responsiveness'
+    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'feature/ux-v4-5-1-performance-responsiveness' || github.head_ref == 'feature/ux-v451-rtilb-xml-integration'
     runs-on: windows-latest
     timeout-minutes: 30
     env:
