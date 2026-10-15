@@ -2,9 +2,13 @@ from __future__ import annotations
 
 from datetime import date
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QAbstractItemView,
     QComboBox,
+    QHBoxLayout,
     QLabel,
+    QLineEdit,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -27,7 +31,10 @@ class RegulatoryXMLPanel(QWidget):
         layout.setContentsMargins(8, 8, 8, 8)
         self._headline = QLabel("XML regulatorios: sin leer")
         self._headline.setObjectName("rateRiskRegulatoryXMLStatus")
-        self._headline.setStyleSheet("color:#00345F; font-size:13px; font-weight:800;")
+        self._headline.setStyleSheet(
+            "color:#00345F; background:#EAF4FC; border:1px solid #A7D4ED;"
+            "border-radius:8px; padding:10px 12px; font-size:13px; font-weight:800;"
+        )
         layout.addWidget(self._headline)
         self._period_label = QLabel("Último corte XML: pendiente")
         self._period_label.setObjectName("rateRiskRegulatoryXMLSelectedPeriod")
@@ -85,7 +92,19 @@ class RegulatoryXMLPanel(QWidget):
             "Filtre una cuenta regulatoria para no sumar categorías jerárquicas."
         )
         self._account_selector.currentIndexChanged.connect(self._populate_rows)
-        layout.addWidget(self._account_selector)
+        filters = QHBoxLayout()
+        filters.setSpacing(8)
+        filters.addWidget(self._account_selector, 1)
+        self._filter_input = QLineEdit()
+        self._filter_input.setObjectName("rateRiskRegulatoryXMLSearch")
+        self._filter_input.setClearButtonEnabled(True)
+        self._filter_input.setPlaceholderText("Buscar cuenta, banda o fuente…")
+        self._filter_input.setToolTip(
+            "Filtra únicamente el detalle visible; no altera sumas ni conciliaciones."
+        )
+        self._filter_input.textChanged.connect(self._populate_rows)
+        filters.addWidget(self._filter_input, 1)
+        layout.addLayout(filters)
 
         self._detail_note = QLabel("Detalle XML: pendiente de validación")
         self._detail_note.setStyleSheet("color:#566D7C; font-weight:700;")
@@ -100,6 +119,16 @@ class RegulatoryXMLPanel(QWidget):
         table.setHorizontalHeaderLabels(headers)
         table.setAlternatingRowColors(True)
         table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        table.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
+        table.setVerticalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
+        table.setTextElideMode(Qt.TextElideMode.ElideRight)
+        table.setWordWrap(False)
+        table.verticalHeader().setDefaultSectionSize(27)
+        for col, header in enumerate(headers):
+            item = table.horizontalHeaderItem(col)
+            if item is not None:
+                item.setToolTip(header)
         table.verticalHeader().setVisible(False)
         table.horizontalHeader().setStretchLastSection(True)
         return table
@@ -115,6 +144,7 @@ class RegulatoryXMLPanel(QWidget):
         self._files.setRowCount(0)
         self._rows.setRowCount(0)
         self._account_selector.clear()
+        self._filter_input.clear()
         self._gap_table.setRowCount(0)
         self._gap_notice.setText("No disponible: fuente XML no configurada.")
         self._detail_note.setText(
@@ -208,13 +238,27 @@ class RegulatoryXMLPanel(QWidget):
         if snapshot is None:
             return
         selected = self._account_selector.currentData()
-        visible = [
+        search = self._filter_input.text().strip().casefold()
+        matching = [
             (item.key, row)
             for item in snapshot.files
             if item.is_valid
             for row in item.rows
-            if selected is None or selected == (item.key, row.account_code)
-        ][: self._MAX_VISIBLE_ROWS]
+            if (selected is None or selected == (item.key, row.account_code))
+            and (
+                not search
+                or any(
+                    search in field.casefold()
+                    for field in (
+                        item.key,
+                        row.account_code,
+                        row.bucket_code,
+                        row.catalog_code,
+                    )
+                )
+            )
+        ]
+        visible = matching[: self._MAX_VISIBLE_ROWS]
         self._rows.setRowCount(len(visible))
         for index, (source, row) in enumerate(visible):
             for column, value in enumerate(
@@ -222,13 +266,7 @@ class RegulatoryXMLPanel(QWidget):
             ):
                 self._cell(self._rows, index, column, value)
 
-        available = sum(
-            1
-            for item in snapshot.files
-            if item.is_valid
-            for row in item.rows
-            if selected is None or selected == (item.key, row.account_code)
-        )
+        available = len(matching)
         label = (
             f"Cuenta seleccionada: {selected[0]} / {selected[1]}."
             if selected is not None
