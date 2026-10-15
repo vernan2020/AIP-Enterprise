@@ -1,0 +1,83 @@
+"""Credential-safe BCCR v2 diagnostics tested without accessing the internet."""
+
+from __future__ import annotations
+
+from datetime import date
+from types import SimpleNamespace
+
+import pytest
+
+import aip.integration.bccr.connector.sdde_v2_diagnostic as diagnostic
+
+
+def test_sdde_v2_dry_run_consumes_registered_identity_without_printing_it(
+    monkeypatch: pytest.MonkeyPatch, capsys
+) -> None:
+    token = "SECRET.TEST.JWT"
+    account = "usuario.bccr@company.invalid"
+    settings = SimpleNamespace(
+        enabled=True,
+        base_url="https://apim.bccr.fi.cr",
+        token=token,
+        name="Cuenta SDDE",
+        email=account,
+        timeout_seconds=10.0,
+        retries=1,
+    )
+    monkeypatch.setattr(
+        diagnostic, "EnvironmentLoader",
+        lambda: SimpleNamespace(
+            load_source_config=lambda: SimpleNamespace(bccr=settings)
+        ),
+    )
+
+    class StubClient:
+        def __init__(self, *, config):
+            assert config.token == token
+            assert config.email == account
+            assert config.name == "Cuenta SDDE"
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(diagnostic, "SDDEv2Client", StubClient)
+    assert diagnostic.run(["--dry-run"]) == 0
+    output = capsys.readouterr().out
+    assert "READY_FOR_LIVE_TEST" in output
+    assert '"name_configured": true' in output
+    assert '"email_configured": true' in output
+    assert token not in output
+    assert account not in output
+
+
+def test_sdde_v2_diagnostic_validates_real_response_metadata() -> None:
+    result = diagnostic._latest_valid_observation(
+        {
+            "body": {
+                "datos": [
+                    {
+                        "codigoIndicador": "317",
+                        "series": [
+                            {"fecha": "2026-09-13", "valorDatoPorPeriodo": "453.00"},
+                            {"fecha": "2026-09-14", "valorDatoPorPeriodo": "456.15"},
+                        ],
+                    }
+                ]
+            }
+        },
+        "317",
+    )
+    assert result == {"date": "2026-09-14", "value": "456.15"}
+    assert diagnostic._latest_valid_observation({"body": {"datos": []}}, "317") is None
+
+
+def test_bccr_v2_launcher_preserves_private_config_and_exit_code() -> None:
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[5]
+    cmd = (root / "DIAGNOSTICAR_BCCR_V2.cmd").read_text(encoding="utf-8")
+    assert 'set "AIP_EXECUTION_MODE=CONFIGURED"' in cmd
+    assert "sdde_v2_diagnostic %*" in cmd
+    assert "config\\runtime.local.cmd" in cmd
+    assert "token" not in cmd.lower()
+    assert "echo BCCR SDDE v2" in cmd
