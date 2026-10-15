@@ -1,0 +1,91 @@
+name: BCCR Live Egress Diagnostic
+
+on:
+  push:
+    branches: ["feature/ux-v4-5-1-performance-responsiveness"]
+    paths:
+      - ".github/workflows/bccr-live-egress-diagnostic.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      AIP_BCCR_TOKEN: ${{ secrets.AIP_BCCR_TOKEN }}
+    steps:
+      - name: Install pinned HTTP transport
+        run: python -m pip install "httpx==0.28.1"
+
+      - name: Compare BCCR SDDE egress using the existing AIP secret
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib
+          import os
+          from datetime import date
+
+          import httpx
+
+          token = os.getenv("AIP_BCCR_TOKEN", "").strip()
+          if not token:
+              print("AIP_BCCR_TOKEN GitHub secret: NOT_CONFIGURED")
+              raise SystemExit(2)
+          print("AIP_BCCR_TOKEN GitHub secret: CONFIGURED")
+          print("AIP token fingerprint sha256_16:", hashlib.sha256(token.encode()).hexdigest()[:16])
+          print("GitHub runner HTTP proxy configured:", any(
+              os.getenv(k) for k in ("HTTPS_PROXY", "HTTP_PROXY", "ALL_PROXY")
+          ))
+
+          url = (
+              "https://apim.bccr.fi.cr/SDDE/api/"
+              "Bccr.GE.SDDE.Publico.Indicadores.API/"
+              "indicadoresEconomicos/317/series"
+          )
+          params = {
+              "fechaInicio": "2026/10/01",
+              "fechaFin": date.today().strftime("%Y/%m/%d"),
+              "idioma": "es",
+          }
+          common_headers = {
+              "User-Agent": "TicoTrader-Portafolio360/1.0",
+              "Accept": "application/json",
+          }
+
+          def probe(name, bearer):
+              headers = dict(common_headers)
+              if bearer is not None:
+                  headers["Authorization"] = "Bearer " + bearer
+              try:
+                  with httpx.Client(timeout=12.0, follow_redirects=False) as client:
+                      response = client.get(url, params=params, headers=headers)
+              except httpx.HTTPError as exc:
+                  print(f"{name}: TRANSPORT_ERROR={type(exc).__name__}")
+                  return
+
+              print(f"{name}: HTTP {response.status_code}")
+              if response.status_code == 200:
+                  try:
+                      body = response.json()
+                      state = body.get("estado") is True if isinstance(body, dict) else False
+                      dates = [
+                          str(point.get("fecha", ""))[:10]
+                          for entry in body.get("datos", [])
+                          if isinstance(entry, dict)
+                          for point in entry.get("series", [])
+                          if isinstance(point, dict) and point.get("fecha")
+                      ] if isinstance(body, dict) else []
+                      print(f"{name}: SDDE_estado={state}")
+                      print(f"{name}: observations={len(dates)}")
+                      print(f"{name}: latest_date={max(dates) if dates else 'NONE'}")
+                  except (ValueError, TypeError, AttributeError):
+                      print(f"{name}: INVALID_JSON_OR_SCHEMA")
+
+          probe("NO_TOKEN", None)
+          probe("FAKE_TOKEN", "token.ficticio.invalido")
+          probe("AIP_GITHUB_SECRET", token)
+          print("Diagnostic finished: no secrets or response bodies logged")
+          PY
