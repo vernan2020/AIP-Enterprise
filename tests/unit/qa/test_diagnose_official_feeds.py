@@ -205,3 +205,46 @@ def test_bccr_metadata_probe_reports_confirmed_official_access(monkeypatch) -> N
     assert check._bccr_metadata_probe(config) == (
         "BCCR metadatos cuadro 1: HTTP 200; RESPUESTA EXITOSA"
     )
+
+
+def test_ticotrader_parity_probe_reports_httpx_status_without_leaking(monkeypatch) -> None:
+    import httpx
+
+    from aip.integration.bccr.providers.httpx_http_provider import HttpxHTTPProvider
+    import aip.integration.bccr.providers.select_official_transport as selector
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.headers["authorization"] == "Bearer SECRET_DO_NOT_PRINT"
+        assert request.headers["user-agent"] == "TicoTrader-Portafolio360/1.0"
+        assert "content-type" not in request.headers
+        assert request.url.params["fechaInicio"] == "2026/08/31"
+        return httpx.Response(
+            200,
+            json={
+                "estado": True,
+                "datos": [
+                    {
+                        "codigoIndicador": "317",
+                        "series": [
+                            {"fecha": "2026-10-15", "valorDatoPorPeriodo": "450.01"}
+                        ],
+                    }
+                ],
+            },
+        )
+
+    monkeypatch.setattr(
+        selector,
+        "select_official_bccr_transport",
+        lambda: HttpxHTTPProvider(transport=httpx.MockTransport(handler)),
+    )
+    config = SimpleNamespace(
+        token="SECRET_DO_NOT_PRINT", base_url="https://apim.bccr.fi.cr"
+    )
+    result = check._bccr_ticotrader_parity_probe(config, target_date=date(2026, 10, 15))
+    assert result == (
+        "BCCR Tico-compatible indicador 317 (HTTPX): "
+        "HTTP 200; 1 obs; último 2026-10-15"
+    )
+    assert "450.01" not in result
+    assert "SECRET_DO_NOT_PRINT" not in result
