@@ -26,6 +26,8 @@ jobs:
           python - <<'PY'
           import hashlib
           import os
+          import socket
+          import ssl
           from datetime import date
 
           import httpx
@@ -39,6 +41,26 @@ jobs:
           print("GitHub runner HTTP proxy configured:", any(
               os.getenv(k) for k in ("HTTPS_PROXY", "HTTP_PROXY", "ALL_PROXY")
           ))
+
+          host = "apim.bccr.fi.cr"
+          try:
+              addresses = sorted({
+                  row[4][0] for row in socket.getaddrinfo(
+                      host, 443, type=socket.SOCK_STREAM
+                  ) if row[0] == socket.AF_INET
+              })
+              print("GitHub runner BCCR DNS IPv4:", ",".join(addresses) or "NONE")
+              context = ssl.create_default_context()
+              with socket.create_connection((host, 443), timeout=12) as connection:
+                  with context.wrap_socket(connection, server_hostname=host) as tls:
+                      print("GitHub runner BCCR TLS peer:", tls.getpeername()[0])
+                      print("GitHub runner BCCR TLS version:", tls.version())
+                      print(
+                          "GitHub runner BCCR leaf certificate SHA256:",
+                          hashlib.sha256(tls.getpeercert(binary_form=True)).hexdigest()[:24]
+                      )
+          except (OSError, ssl.SSLError) as exc:
+              print("GitHub runner BCCR DNS/TLS failure type:", type(exc).__name__)
 
           url = (
               "https://apim.bccr.fi.cr/SDDE/api/"
@@ -67,6 +89,7 @@ jobs:
                   return
 
               print(f"{name}: HTTP {response.status_code}")
+              print(f"{name}: HTTP_version={response.http_version}")
               if response.status_code == 200:
                   try:
                       body = response.json()
