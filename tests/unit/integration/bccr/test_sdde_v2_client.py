@@ -37,9 +37,7 @@ def test_bccr_sdde_v2_uses_saved_account_and_bearer_only_on_official_rest_get() 
                 "datos": [
                     {
                         "codigoIndicador": "317",
-                        "series": [
-                            {"fecha": "2026-10-15", "valorDatoPorPeriodo": 453.75}
-                        ],
+                        "series": [{"fecha": "2026-10-15", "valorDatoPorPeriodo": 453.75}],
                     }
                 ],
             },
@@ -82,20 +80,24 @@ def test_bccr_sdde_v2_uses_saved_account_and_bearer_only_on_official_rest_get() 
         ("2026/10/01", "2026/10/15", "0"),
     ],
 )
-def test_bccr_v2_rejects_invalid_parameters_before_network(
-    from_date, to_date, code
-) -> None:
+def test_bccr_v2_rejects_invalid_parameters_before_network(from_date, to_date, code) -> None:
     client = _client(lambda _req: pytest.fail("Network should not be called"))
     try:
         with pytest.raises(ValueError):
-            client.fetch_series(
-                indicator_code=code, from_date=from_date, to_date=to_date
-            )
+            client.fetch_series(indicator_code=code, from_date=from_date, to_date=to_date)
     finally:
         client.close()
 
 
-@pytest.mark.parametrize("origin", ["http://apim.bccr.fi.cr", "https://evil.invalid", "https://apim.bccr.fi.cr@evil.invalid", "https://apim.bccr.fi.cr/path"])
+@pytest.mark.parametrize(
+    "origin",
+    [
+        "http://apim.bccr.fi.cr",
+        "https://evil.invalid",
+        "https://apim.bccr.fi.cr@evil.invalid",
+        "https://apim.bccr.fi.cr/path",
+    ],
+)
 def test_sdde_v2_rejects_non_official_hosts_and_non_https(origin) -> None:
     with pytest.raises(ValueError, match="official HTTPS"):
         SDDEv2Client(config=BCCRConfig(base_url=origin, token="FAKE"))
@@ -113,22 +115,20 @@ def test_sdde_v2_fails_closed_with_redacted_http_errors(status: int) -> None:
     )
     try:
         with pytest.raises(ConnectionError, match=f"HTTP {status}") as error:
-            client.fetch_series(
-                indicator_code="317", from_date="2026/10/01", to_date="2026/10/15"
-            )
+            client.fetch_series(indicator_code="317", from_date="2026/10/01", to_date="2026/10/15")
         assert "PRIVATE.TEST.SIGNATURE" not in str(error.value)
     finally:
         client.close()
 
 
-@pytest.mark.parametrize("body", [{"estado": False, "datos": []}, {"estado": True, "datos": {}}, {"status": "ok"}])
+@pytest.mark.parametrize(
+    "body", [{"estado": False, "datos": []}, {"estado": True, "datos": {}}, {"status": "ok"}]
+)
 def test_sdde_v2_rejects_false_success_and_malformed_payload(body: dict) -> None:
     client = _client(lambda request: httpx.Response(200, json=body))
     try:
         with pytest.raises(ValueError, match="BCCR SDDE"):
-            client.fetch_series(
-                indicator_code="317", from_date="2026/10/01", to_date="2026/10/15"
-            )
+            client.fetch_series(indicator_code="317", from_date="2026/10/01", to_date="2026/10/15")
     finally:
         client.close()
 
@@ -165,9 +165,12 @@ def test_sdde_v2_supports_chart_series_with_same_authentication() -> None:
 
     client = _client(handler)
     try:
-        assert client.fetch_chart_series(
-            chart_code="1", from_date="2026/10/01", to_date="2026/10/15"
-        )["status_code"] == 200
+        assert (
+            client.fetch_chart_series(chart_code="1", from_date="2026/10/01", to_date="2026/10/15")[
+                "status_code"
+            ]
+            == 200
+        )
         assert request_paths[0].endswith("/cuadro/1/series")
     finally:
         client.close()
