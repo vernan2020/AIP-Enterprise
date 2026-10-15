@@ -83,9 +83,7 @@ def run(argv: list[str] | None = None) -> int:
         end = today.strftime("%Y/%m/%d")
         for code in args.codes:
             try:
-                response = client.fetch_series(
-                    indicator_code=code, from_date=start, to_date=end
-                )
+                response = client.fetch_series(indicator_code=code, from_date=start, to_date=end)
                 observation = _latest_valid_observation(response, code)
                 record = {"code": code, "status": "LIVE_OK" if observation else "NO_OBSERVATIONS"}
                 if observation is not None:
@@ -96,17 +94,25 @@ def run(argv: list[str] | None = None) -> int:
                 # Avoid echoing any raw exception or HTTP response body.
                 details = str(exc)
                 http_status = next(
-                    (item for item in ("401", "403", "404", "429", "500", "502", "503", "504")
-                     if f"HTTP {item}" in details),
+                    (
+                        item
+                        for item in ("401", "403", "404", "429", "500", "502", "503", "504")
+                        if f"HTTP {item}" in details
+                    ),
                     None,
                 )
-                report["indicators"].append({
-                    "code": code, "status": "HTTP_ERROR" if http_status else "ERROR",
-                    "http_status": http_status, "type": type(exc).__name__,
-                })
+                report["indicators"].append(
+                    {
+                        "code": code,
+                        "status": "HTTP_ERROR" if http_status else "ERROR",
+                        "http_status": http_status,
+                        "type": type(exc).__name__,
+                    }
+                )
 
         report["status"] = (
-            "LIVE_OK" if all(item["status"] == "LIVE_OK" for item in report["indicators"])
+            "LIVE_OK"
+            if all(item["status"] == "LIVE_OK" for item in report["indicators"])
             else "PARTIAL_OR_BLOCKED"
         )
         print(json.dumps(report, ensure_ascii=False, indent=2))
