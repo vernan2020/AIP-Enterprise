@@ -31,9 +31,7 @@ class SDDEv2Client:
     _BACKOFF_SECONDS = 1.0
     _MAX_RETRY_AFTER = 8.0
 
-    def __init__(
-        self, *, config: BCCRConfig, provider: HTTPProvider | None = None
-    ) -> None:
+    def __init__(self, *, config: BCCRConfig, provider: HTTPProvider | None = None) -> None:
         self._config = config
         self._base_url = self._validate_origin(config.base_url)
         self._provider = provider if provider is not None else SDDEv2HTTPProvider()
@@ -68,9 +66,7 @@ class SDDEv2Client:
             raise ValueError("BCCR SDDE start date exceeds end date")
         return start, end
 
-    def _url(
-        self, *, segment: str, code: str, from_date: str, to_date: str, language: str
-    ) -> str:
+    def _url(self, *, segment: str, code: str, from_date: str, to_date: str, language: str) -> str:
         if not _CODE.fullmatch(str(code)):
             raise ValueError("BCCR SDDE code must be a positive integer")
         if int(code) <= 0:
@@ -104,13 +100,9 @@ class SDDEv2Client:
             language=language,
         )
 
-    def fetch_series(
-        self, *, indicator_code: str, from_date: str, to_date: str
-    ) -> dict[str, Any]:
+    def fetch_series(self, *, indicator_code: str, from_date: str, to_date: str) -> dict[str, Any]:
         return self._request(
-            self.build_url(
-                indicator_code=indicator_code, from_date=from_date, to_date=to_date
-            ),
+            self.build_url(indicator_code=indicator_code, from_date=from_date, to_date=to_date),
             resource="indicator",
         )
 
