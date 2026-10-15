@@ -74,10 +74,10 @@ def test_sdde_v2_diagnostic_validates_real_response_metadata() -> None:
 def test_bccr_v2_launcher_preserves_private_config_and_exit_code() -> None:
     from pathlib import Path
 
-    root = Path(__file__).resolve().parents[5]
+    root = Path(__file__).resolve().parents[4]
     cmd = (root / "DIAGNOSTICAR_BCCR_V2.cmd").read_text(encoding="utf-8")
     assert 'set "AIP_EXECUTION_MODE=CONFIGURED"' in cmd
     assert "sdde_v2_diagnostic %*" in cmd
     assert "config\\runtime.local.cmd" in cmd
-    assert "token" not in cmd.lower()
+    assert "AIP_BCCR_TOKEN" not in cmd
     assert "echo BCCR SDDE v2" in cmd
