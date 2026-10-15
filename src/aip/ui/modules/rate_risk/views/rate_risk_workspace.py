@@ -6,6 +6,7 @@ from datetime import date
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from aip.product.configured.irrbb.regulatory_financial_xml import RegulatoryFinancialXMLReader
+from aip.product.configured.irrbb.regulatory_gap_six_band import build_regulatory_gap
 from aip.ui.modules.rate_risk.controllers import RateRiskWorkspaceController
 from aip.ui.modules.rate_risk.views.regulatory_xml_panel import RegulatoryXMLPanel
 from aip.ui.modules.rate_risk.views.source_diagnostics_rate_risk_view import RateRiskView
@@ -34,6 +35,10 @@ class RateRiskWorkspace(QWidget):
         self._regulatory_xml_reader = regulatory_xml_reader
         self._regulatory_xml_panel = RegulatoryXMLPanel()
         self._view._tabs.addTab(self._regulatory_xml_panel, "XML Brechas / Calce")
+        self._view._open_regulatory_evidence.setEnabled(True)
+        self._view._open_regulatory_evidence.clicked.connect(
+            lambda: self._view._tabs.setCurrentWidget(self._regulatory_xml_panel)
+        )
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -54,9 +59,46 @@ class RateRiskWorkspace(QWidget):
         cutoff_date = self._valuation_date_provider()
         if self._regulatory_xml_reader is None:
             self._regulatory_xml_panel.set_unconfigured()
+            self._view.set_regulatory_evidence_status(
+                "XML Brechas / Calce: fuente regulatoria no configurada. "
+                "No se asumen saldos ni flujos."
+            )
         else:
             snapshot = self._regulatory_xml_reader.load_latest(reference_cutoff=cutoff_date)
             self._regulatory_xml_panel.set_snapshot(snapshot, valuation_cutoff=cutoff_date)
+            regulatory_gap = build_regulatory_gap(snapshot)
+            if snapshot.is_valid and regulatory_gap.is_ready:
+                rows = {item.key: len(item.rows) for item in snapshot.files}
+                same_month = (
+                    snapshot.cutoff_date.year,
+                    snapshot.cutoff_date.month,
+                ) == (cutoff_date.year, cutoff_date.month)
+                headline = (
+                    f"XML Brechas / Calce {snapshot.cutoff_date:%m/%Y} conciliados · "
+                    f"{rows.get('BRECHAS', 0)} Brechas + "
+                    f"{rows.get('CALCE', 0)} Calce · "
+                    "GAP regulatorio de 6 bandas disponible. "
+                )
+                if same_month:
+                    headline += "ΔNII/ΔVEP requieren cálculo contractual independiente."
+                else:
+                    headline += (
+                        f"Desfase con corte AIP {cutoff_date:%m/%Y}: "
+                        "solo evidencia histórica, no cálculo RTILB vigente."
+                    )
+                self._view.set_regulatory_evidence_status(
+                    headline, status="ready" if same_month else "stale"
+                )
+            else:
+                issue = next(
+                    (problem for item in snapshot.files for problem in item.issues),
+                    next(iter(regulatory_gap.issues), "Sin par XML conciliado."),
+                )
+                self._view.set_regulatory_evidence_status(
+                    f"XML Brechas / Calce no conciliados: {issue} "
+                    "No se muestran importes no certificados.",
+                    status="blocked",
+                )
         controller = self._controller
         if controller is None:
             self._view.set_read_model(None)
