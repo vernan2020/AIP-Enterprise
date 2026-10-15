@@ -71,6 +71,16 @@ class RateRiskView(QWidget):
     def _table() -> QTableWidget:
         table = QTableWidget()
         table.setAlternatingRowColors(True)
+        table.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
+        table.setVerticalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
+        table.setTextElideMode(Qt.TextElideMode.ElideRight)
+        table.setWordWrap(False)
+        table.verticalHeader().setDefaultSectionSize(29)
+        # Use the installed AIP application font, never ship a font binary.
+        font = table.font()
+        if font.pointSize() < 10:
+            font.setPointSize(10)
+            table.setFont(font)
         table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         table.verticalHeader().setVisible(False)
@@ -538,7 +548,7 @@ class RateRiskView(QWidget):
         self._populate_quality(read_model)
 
     def _set_unconfigured_state(self) -> None:
-        self._cutoff_label.setText("Corte: pendiente")
+        self._cutoff_label.setText("Corte RTILB: pendiente")
         self._set_analysis_status("UNCONFIGURED")
         self._methodology_label.setText(
             "No hay un cálculo contractual RTILB certificado. La evidencia regulatoria "
@@ -722,6 +732,7 @@ class RateRiskView(QWidget):
     def _set_row(table: QTableWidget, row: int, values: tuple[str, ...]) -> None:
         for column, value in enumerate(values):
             item = QTableWidgetItem(value)
+            item.setToolTip(value)
             if column > 0:
                 item.setTextAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
             table.setItem(row, column, item)
