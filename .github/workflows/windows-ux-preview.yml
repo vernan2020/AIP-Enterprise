@@ -1,0 +1,55 @@
+name: Windows V4.5.1 UX Preview
+
+on:
+  pull_request:
+    branches:
+      - release/core-v1.0
+    paths:
+      - 'src/aip/ui/**'
+      - 'scripts/qa/capture_windows_preview.py'
+      - '.github/workflows/windows-ux-preview.yml'
+      - 'run_aip_ux_preview.cmd'
+      - 'run_aip_configured.cmd'
+      - 'DIAGNOSTICAR_BCCR_SUGEF.cmd'
+      - 'AUDITAR_FUENTES_CONFIGURADAS.cmd'
+      - 'scripts/launch/load_existing_institutional_runtime.cmd'
+      - 'scripts/qa/verify_windows_configured_runtime.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-screenshots:
+    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'feature/ux-v4-5-1-performance-responsiveness'
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      QT_QPA_PLATFORM: windows
+      AIP_EXECUTION_MODE: DEMO
+      AIP_DEMO_MODE_ENABLED: 'true'
+      AIP_VECTOR_ENABLED: 'false'
+      AIP_FOLDERWATCH_ENABLED: 'false'
+      AIP_SQLSERVER_ENABLED: 'false'
+      AIP_BCCR_ENABLED: 'false'
+      PYTHONPATH: src
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+      - name: Install desktop dependencies
+        run: python -m pip install -e .
+      - name: Verify CONFIGURED CMD bootstrap with isolated credentials
+        run: python scripts/qa/verify_windows_configured_runtime.py
+      - name: Open workspaces and capture screenshots
+        run: python scripts/qa/capture_windows_preview.py
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aip-v451-windows-ux-preview
+          path: preview-screenshots/*.png
+          if-no-files-found: warn
+          retention-days: 14

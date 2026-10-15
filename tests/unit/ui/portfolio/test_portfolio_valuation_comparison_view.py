@@ -111,3 +111,24 @@ def test_methodology_note_exposes_bccr_sell_rate_and_cutoff(qt_app) -> None:
     assert note is not None
     assert "TC venta BCCR 503.2500" in note.text()
     assert "2026-09-30" in note.text()
+
+
+def test_valuation_charts_are_not_clipped_and_table_can_scroll(qt_app) -> None:
+    from PySide6.QtCore import Qt
+    from PySide6.QtWidgets import QScrollArea
+
+    view = PortfolioValuationComparisonView()
+    view.resize(1000, 590)
+    view.show()
+    qt_app.processEvents()
+    try:
+        scroll = view.findChild(QScrollArea, "portfolioValuationScroll")
+        assert scroll is not None
+        assert scroll.widget() is not None
+        assert scroll.widget().height() > scroll.viewport().height()
+        for chart in (view._top_gains, view._top_losses, view._currency, view._issuers):
+            assert chart.minimumHeight() >= 210
+        assert view._positions.horizontalScrollBarPolicy() == (Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        assert not view._positions.horizontalHeader().stretchLastSection()
+    finally:
+        view.close()

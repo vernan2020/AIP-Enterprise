@@ -35,8 +35,8 @@ class Sidebar(QWidget):
     ) -> None:
         super().__init__()
         self.setObjectName("navigationSidebar")
-        self.setMinimumWidth(132)
-        self.setMaximumWidth(146)
+        self.setMinimumWidth(180)
+        self.setMaximumWidth(240)
         self._navigation = navigation
         self._application_factory = application_factory
         self._workspace: Workspace | None = None
@@ -55,6 +55,8 @@ class Sidebar(QWidget):
         self._search = QLineEdit()
         self._search.setObjectName("moduleSearch")
         self._search.setPlaceholderText("Buscar módulo...")
+        self._search.setAccessibleName("Buscar páginas de AIP Enterprise")
+        self._search.setClearButtonEnabled(True)
         self._search.textChanged.connect(self._apply_filter)
 
         self._tree = QListWidget()
@@ -67,6 +69,10 @@ class Sidebar(QWidget):
         layout.addWidget(self._search)
         layout.addWidget(self._tree, 1)
 
+    def focus_search(self) -> None:
+        self._search.setFocus()
+        self._search.selectAll()
+
     def _apply_local_style(self) -> None:
         self.setStyleSheet(
             "QWidget#navigationSidebar {background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #F7FBFD,stop:1 #EDF4F8); border-right:1px solid #C9D9E4;}"
@@ -74,7 +80,7 @@ class Sidebar(QWidget):
             "padding:6px 7px; color:#183247;}"
             "QLineEdit#moduleSearch:focus {border-color:#00A9E0;}"
             "QListWidget#moduleList {background:transparent; border:none; outline:none;}"
-            "QListWidget#moduleList::item {padding:7px 8px; margin:1px 0; border-radius:5px; color:#566D7C;}"
+            "QListWidget#moduleList::item {padding:9px 8px; margin:1px 0; border-radius:5px; color:#566D7C;}"
             "QListWidget#moduleList::item:hover {background:#F0F8FC; color:#005EB8;}"
             "QListWidget#moduleList::item:selected {background:#E1F2FB; color:#00345F; "
             "font-weight:700; border-left:4px solid #005EB8;}"

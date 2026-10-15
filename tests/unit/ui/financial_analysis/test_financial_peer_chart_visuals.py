@@ -1,0 +1,232 @@
+from __future__ import annotations
+
+from PySide6.QtCharts import QChart
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QLabel, QToolTip
+
+from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model import (
+    PeerChartPointView,
+    PeerChartSeriesView,
+)
+from aip.ui.modules.financial_analysis.views.financial_peer_chart import (
+    FinancialPeerChartPanel,
+)
+
+
+def test_peer_chart_keeps_selected_entity_and_readable_scroll_height(qt_app) -> None:
+    points = tuple(
+        PeerChartPointView(
+            entity_id=f"ENTITY-{index:02}",
+            entity_name=f"Entidad supervisada {index:02}",
+            value=float(20 - index),
+            display_value=f"{20 - index:.2f}%",
+            selected=index == 19,
+        )
+        for index in range(20)
+    )
+    panel = FinancialPeerChartPanel()
+    try:
+        panel.bind_series(
+            (
+                PeerChartSeriesView(
+                    code="ROA",
+                    label="Rentabilidad sobre activos",
+                    unit="%",
+                    chart_type="BAR",
+                    points=points,
+                ),
+            )
+        )
+
+        visible = panel._bar_points(panel._series[0])
+        assert len(visible) == 15
+        assert points[-1] in visible
+        assert panel._summary.text() == "15/20 entidades · %"
+        assert "entidad seleccionada" in panel._chart_context.text()
+        assert panel._chart_scroll.widgetResizable()
+        assert panel._chart_view is not None
+        assert panel._chart_view.minimumHeight() >= 75 + 32 * 15
+        assert panel._hover_detail.objectName() == "financialPeerHoverDetail"
+        assert panel._point_readout(points[-1], panel._series[0]) == (
+            "Entidad supervisada 19 · Rentabilidad sobre activos: 1.00%" " · Entidad seleccionada"
+        )
+    finally:
+        panel.close()
+        qt_app.processEvents()
+
+
+def test_peer_chart_shows_source_context_in_pie_mode(qt_app) -> None:
+    panel = FinancialPeerChartPanel()
+    try:
+        panel.bind_series(
+            (
+                PeerChartSeriesView(
+                    code="MARKET",
+                    label="Participación de activos",
+                    unit="%",
+                    chart_type="PIE",
+                    points=(
+                        PeerChartPointView("1", "Entidad Uno", 60.0, "60.00%"),
+                        PeerChartPointView("2", "Entidad Dos", 40.0, "40.00%"),
+                    ),
+                ),
+            )
+        )
+        assert panel._summary.text() == "2 entidades · %"
+        assert "valor completo" in panel._chart_context.text()
+        assert panel._chart_view is not None
+        assert panel._hover_detail.text().startswith("Detalle al pasar")
+    finally:
+        panel.close()
+        qt_app.processEvents()
+
+
+def test_peer_hover_readout_uses_complete_name_and_resets_on_selection(qt_app) -> None:
+    panel = FinancialPeerChartPanel()
+    item = PeerChartSeriesView(
+        code="ROA",
+        label="Rentabilidad sobre activos",
+        unit="%",
+        chart_type="BAR",
+        points=(
+            PeerChartPointView(
+                "1",
+                "Entidad supervisada con nombre institucional extenso",
+                1.45,
+                "1.45%",
+                selected=True,
+            ),
+        ),
+    )
+    try:
+        panel.bind_series((item,))
+        # Reuse the formatted value shown by both bar and pie hover handlers.
+        readout = panel._point_readout(item.points[0], item)
+        assert "Entidad supervisada con nombre institucional extenso" in readout
+        assert "1.45%" in readout
+        panel._hover_detail.setText(readout)
+        panel.bind_series(())
+        assert panel._hover_detail.text().startswith("Detalle al pasar")
+    finally:
+        panel.close()
+        qt_app.processEvents()
+
+
+def test_peer_selector_remains_usable_in_compact_window(qt_app) -> None:
+    panel = FinancialPeerChartPanel()
+    try:
+        panel.resize(400, 380)
+        assert panel._selector.minimumWidth() <= 160
+        assert panel._selector.minimumContentsLength() == 20
+        assert panel._selector.isEnabled()
+    finally:
+        panel.close()
+        qt_app.processEvents()
+
+
+def test_peer_chart_heading_and_summary_wrap_at_compact_width(qt_app) -> None:
+    panel = FinancialPeerChartPanel()
+    try:
+        panel.resize(420, 360)
+        title = panel.findChild(QLabel, "financialPeerChartTitle")
+        assert title is not None
+        assert title.wordWrap()
+        assert title.text() == "Comparación y composición del mercado"
+        assert panel._summary.wordWrap()
+        assert panel._summary.alignment() & Qt.AlignmentFlag.AlignRight
+        panel._summary.setText("15/21 entidades · CRC")
+        assert panel._summary.text() == "15/21 entidades · CRC"
+    finally:
+        panel.close()
+        qt_app.processEvents()
+
+
+def test_peer_selector_exposes_complete_indicator_name_in_tooltip(qt_app) -> None:
+    panel = FinancialPeerChartPanel()
+    label = "Indicador financiero comparativo con denominación institucional extensa"
+    try:
+        panel.bind_series(
+            (
+                PeerChartSeriesView(
+                    code="LONG_METRIC",
+                    label=label,
+                    unit="%",
+                    chart_type="BAR",
+                    points=(),
+                ),
+            )
+        )
+        assert panel._selector.itemData(0, Qt.ItemDataRole.ToolTipRole) == label
+        assert panel._selector.toolTip() == label
+        panel.bind_series(())
+        assert panel._selector.toolTip() == ""
+    finally:
+        panel.close()
+        qt_app.processEvents()
+
+
+def test_peer_selector_exposes_accessible_name_and_guidance(qt_app) -> None:
+    panel = FinancialPeerChartPanel()
+    try:
+        assert panel._selector.accessibleName() == "Indicador de comparación financiera"
+        assert "nombre completo" in panel._selector.accessibleDescription()
+    finally:
+        panel.close()
+        qt_app.processEvents()
+
+
+def test_peer_selector_label_is_associated_with_selector(qt_app) -> None:
+    panel = FinancialPeerChartPanel()
+    try:
+        label = next(widget for widget in panel.findChildren(QLabel) if widget.text() == "Gráfico:")
+        assert label.buddy() is panel._selector
+    finally:
+        panel.close()
+        qt_app.processEvents()
+
+
+def test_peer_chart_disables_repaint_animation_and_exposes_copyable_context(qt_app) -> None:
+    panel = FinancialPeerChartPanel()
+    try:
+        points = (
+            PeerChartPointView("1", "Entidad A", -1.25, "-1.25%"),
+            PeerChartPointView("2", "Entidad B", 0.75, "0.75%", selected=True),
+        )
+        panel.bind_series(
+            (
+                PeerChartSeriesView(
+                    code="RISK",
+                    label="Indicador SUGEF",
+                    unit="%",
+                    chart_type="BAR",
+                    points=points,
+                ),
+            )
+        )
+        assert panel._chart_view is not None
+        assert panel._chart_view.chart().animationOptions() == QChart.AnimationOption.NoAnimation
+        assert panel._chart_view.accessibleName() == "Comparativo financiero: Indicador SUGEF"
+        assert panel._hover_detail.textInteractionFlags() & (
+            Qt.TextInteractionFlag.TextSelectableByMouse
+        )
+        assert panel._chart_context.textInteractionFlags() & (
+            Qt.TextInteractionFlag.TextSelectableByMouse
+        )
+        assert panel._bar_points(panel._series[0])[0].value == -1.25
+    finally:
+        panel.close()
+        qt_app.processEvents()
+
+
+def test_peer_chart_switch_dismisses_obsolete_tooltip(qt_app, monkeypatch) -> None:
+    panel = FinancialPeerChartPanel()
+    calls: list[bool] = []
+    monkeypatch.setattr(QToolTip, "hideText", lambda: calls.append(True))
+    try:
+        panel.bind_series(())
+        assert calls == [True]
+        panel.bind_series(())
+        assert calls == [True, True]
+    finally:
+        panel.close()
+        qt_app.processEvents()

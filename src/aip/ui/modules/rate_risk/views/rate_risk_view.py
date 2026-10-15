@@ -51,6 +51,9 @@ class RateRiskView(QWidget):
         self.setObjectName("rateRiskWorkspace")
         self._read_model = read_model
         self._kpi_values: dict[str, QLabel] = {}
+        self._summary_kpi_grid: QGridLayout | None = None
+        self._summary_kpi_cards: tuple[QFrame, ...] = ()
+        self._summary_columns = 5
         self._empty_state_labels: dict[str, QLabel] = {}
         self._build_ui()
         self.set_read_model(read_model)
@@ -180,8 +183,13 @@ class RateRiskView(QWidget):
             ("TIER1_CAPITAL", "Capital Nivel 1", "Denominador de exposición RTILB"),
             ("CALCULATED_POSITIONS", "Posiciones calculadas", "Perímetro incluido en VEP"),
         )
+        metric_cards: list[QFrame] = []
         for index, (key, caption, helper) in enumerate(definitions):
-            cards.addWidget(self._metric_card(key, caption, helper), 0, index)
+            card = self._metric_card(key, caption, helper)
+            cards.addWidget(card, 0, index)
+            metric_cards.append(card)
+        self._summary_kpi_grid = cards
+        self._summary_kpi_cards = tuple(metric_cards)
         layout.addLayout(cards)
 
         readiness = QGroupBox("Preparación del cálculo")
@@ -211,31 +219,66 @@ class RateRiskView(QWidget):
     def _metric_card(self, key: str, caption: str, helper: str) -> QFrame:
         card = QFrame()
         card.setObjectName("rateRiskMetricCard")
-        card.setMinimumHeight(82)
+        card.setMinimumHeight(110)
+        card.setAccessibleName(caption)
+        card.setToolTip(f"{caption}: {helper}")
         card.setStyleSheet(
-            "QFrame#rateRiskMetricCard {background:#FFFFFF; border:1px solid #D5DEE3; "
-            "border-radius:8px;}"
-            "QFrame#rateRiskMetricCard:hover {background:#F0F8FC; border-color:#73B3DD;}"
+            "QFrame#rateRiskMetricCard {"
+            "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
+            "stop:0 #00477F,stop:0.62 #005EB8,stop:1 #00A9E0);"
+            "border:1px solid #1675C5; border-radius:12px;}"
+            "QFrame#rateRiskMetricCard:hover {border:1px solid #73B3DD;}"
         )
         layout = QVBoxLayout(card)
         layout.setContentsMargins(10, 7, 10, 7)
         layout.setSpacing(2)
         title = QLabel(caption)
-        title.setStyleSheet("color:#566D7C; font-size:8px; border:none;")
+        title.setWordWrap(True)
+        title.setStyleSheet("color:#DDF4FF; font-size:10pt; border:none;")
         value = QLabel("-")
         value_font = QFont()
         value_font.setPointSize(12)
         value_font.setBold(True)
         value.setFont(value_font)
-        value.setStyleSheet("color:#00345F; border:none;")
+        value.setWordWrap(True)
+        value.setAccessibleName(f"Valor de {caption}")
+        value.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        value.setStyleSheet("color:#FFFFFF; border:none;")
         hint = QLabel(helper)
         hint.setWordWrap(True)
-        hint.setStyleSheet("color:#7B8D98; font-size:8px; border:none;")
+        hint.setStyleSheet("color:#CBEAF8; font-size:9pt; border:none;")
         layout.addWidget(title)
         layout.addWidget(value)
         layout.addWidget(hint)
         self._kpi_values[key] = value
         return card
+
+    @staticmethod
+    def _summary_columns_for_width(width: int) -> int:
+        if width < 780:
+            return 2
+        if width < 1280:
+            return 3
+        return 5
+
+    def _arrange_summary_kpis(self, width: int) -> None:
+        grid = self._summary_kpi_grid
+        if grid is None:
+            return
+        columns = self._summary_columns_for_width(width)
+        if columns == self._summary_columns:
+            return
+        for card in self._summary_kpi_cards:
+            grid.removeWidget(card)
+        for index, card in enumerate(self._summary_kpi_cards):
+            grid.addWidget(card, index // columns, index % columns)
+        for column in range(5):
+            grid.setColumnStretch(column, 1 if column < columns else 0)
+        self._summary_columns = columns
+
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        self._arrange_summary_kpis(event.size().width())
 
     def _build_scenario_page(self) -> None:
         layout = QVBoxLayout(self._scenario_page)

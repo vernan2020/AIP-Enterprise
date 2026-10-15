@@ -38,7 +38,7 @@ def build_chart_tooltip(
     table = ""
     if body:
         table = (
-            "<table cellspacing='0' cellpadding='1' style='margin-top:3px;'>"
+            "<table cellspacing='0' cellpadding='1' style='margin-top:5px;'>"
             + "".join(body)
             + "</table>"
         )
@@ -46,16 +46,22 @@ def build_chart_tooltip(
     note_html = ""
     if note and note.strip():
         note_html = (
-            "<div style='margin-top:6px;color:#A9D8EC;font-size:10px;'>"
+            "<div style='margin-top:7px;color:#A9D8EC;font-size:12px;'>"
             f"{escape(note.strip())}"
             "</div>"
         )
 
+    # Qt's native tooltip palette can be light under Windows even when the
+    # HTML uses white text. Explicit table background + bgcolor fallback
+    # guarantees contrast without mutating QApplication/QToolTip globally.
     return (
-        "<div style='min-width:220px;color:#FFFFFF;font-size:11px;'>"
-        f"<div style='font-weight:800;color:#FFFFFF;margin-bottom:3px;'>{escape(title)}</div>"
+        "<table bgcolor='#102D47' cellspacing='0' cellpadding='0' "
+        "style='background-color:#102D47; border:1px solid #3477A1;'>"
+        "<tr><td style='padding:9px 12px;'>"
+        "<div style='min-width:220px;color:#FFFFFF;font-size:13px;'>"
+        f"<div style='font-weight:800;color:#FFFFFF;font-size:14px;margin-bottom:5px;'>{escape(title)}</div>"
         f"{table}{note_html}"
-        "</div>"
+        "</div></td></tr></table>"
     )
 
 

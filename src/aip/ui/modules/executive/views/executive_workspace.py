@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QHeaderView,
     QLabel,
     QScrollArea,
+    QSplitter,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -20,6 +21,7 @@ from PySide6.QtWidgets import (
 from aip.ui.modules.executive.models.executive_row import ExecutiveRow
 from aip.ui.modules.executive.presenters.executive_presenter import ExecutivePresenter
 from aip.ui.modules.executive.viewmodels.executive_view_model import ExecutiveViewModel
+from aip.ui.modules.executive.widgets.executive_signal_radar import ExecutiveSignalRadar
 from aip.ui.modules.executive.widgets.executive_status_card import ExecutiveStatusCard
 
 
@@ -43,8 +45,17 @@ class ExecutiveWorkspace(QWidget):
         self._view_model = self._presenter.build_view_model()
         self._status_card = ExecutiveStatusCard("Listo")
         self._kpis: dict[str, QLabel] = {}
+        self._kpi_cards: tuple[QFrame, ...] = ()
+        self._kpi_grid: QGridLayout | None = None
+        self._kpi_columns = 6
         self._context_labels: dict[str, QLabel] = {}
+        self._context_cells: tuple[QWidget, ...] = ()
+        self._context_grid: QGridLayout | None = None
+        self._context_columns = 5
         self._panel_labels: dict[str, QLabel] = {}
+        self._domain_grid: QGridLayout | None = None
+        self._domain_cards: tuple[QGroupBox, ...] = ()
+        self._domain_columns = 2
         self._build_ui()
         self.bind_view_model(self._view_model)
 
@@ -63,7 +74,9 @@ class ExecutiveWorkspace(QWidget):
     def _metric_card(self, key: str, title: str, helper: str) -> QFrame:
         card = QFrame()
         card.setObjectName("executiveMetricCard")
-        card.setMinimumHeight(82)
+        card.setMinimumHeight(112)
+        card.setAccessibleName(title)
+        card.setToolTip(f"{title}: {helper}")
         card.setStyleSheet(
             "QFrame#executiveMetricCard {"
             "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
@@ -72,18 +85,23 @@ class ExecutiveWorkspace(QWidget):
             "} QFrame#executiveMetricCard:hover {border:1px solid #73B3DD;}"
         )
         layout = QVBoxLayout(card)
-        layout.setContentsMargins(10, 7, 10, 7)
-        layout.setSpacing(2)
+        layout.setContentsMargins(13, 10, 13, 10)
+        layout.setSpacing(4)
         caption = QLabel(title)
-        caption.setStyleSheet("color:#DDF4FF; font-size:9px; font-weight:600; border:none;")
+        caption.setWordWrap(True)
+        caption.setStyleSheet("color:#DDF4FF; font-size:10pt; font-weight:600; border:none;")
         value = QLabel("-")
         value_font = QFont()
-        value_font.setPointSize(12)
+        value_font.setPointSize(15)
         value_font.setBold(True)
         value.setFont(value_font)
+        value.setWordWrap(True)
+        value.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        value.setAccessibleName(f"Valor de {title}")
         value.setStyleSheet("color:#FFFFFF; border:none;")
         hint = QLabel(helper)
-        hint.setStyleSheet("color:#CBEAF8; font-size:8px; border:none;")
+        hint.setWordWrap(True)
+        hint.setStyleSheet("color:#CBEAF8; font-size:9pt; border:none;")
         layout.addWidget(caption)
         layout.addWidget(value)
         layout.addWidget(hint)
@@ -106,15 +124,16 @@ class ExecutiveWorkspace(QWidget):
 
         header = QHBoxLayout()
         title_box = QVBoxLayout()
-        self._title = QLabel("PANEL EJECUTIVO")
+        self._title = QLabel("CENTRO DE INTELIGENCIA EJECUTIVA")
         title_font = QFont()
-        title_font.setPointSize(15)
+        title_font.setPointSize(17)
         title_font.setBold(True)
         self._title.setFont(title_font)
         self._subtitle = QLabel(
             "Visión integrada de Portafolio · Liquidez · Mercado · Riesgo · Macroeconomía"
         )
-        self._subtitle.setStyleSheet("color:#667788; font-size:10px;")
+        self._subtitle.setWordWrap(True)
+        self._subtitle.setStyleSheet("color:#566D7C; font-size:10pt;")
         title_box.addWidget(self._title)
         title_box.addWidget(self._subtitle)
         header.addLayout(title_box)
@@ -133,6 +152,13 @@ class ExecutiveWorkspace(QWidget):
         header.addWidget(self._date_label)
         root.addLayout(header)
 
+        section = QLabel("INDICADORES ESTRATÉGICOS")
+        section.setObjectName("executiveSectionTitle")
+        section.setStyleSheet(
+            "color:#00345F; font-size:10pt; font-weight:800; padding:5px 0 2px 0;"
+        )
+        root.addWidget(section)
+
         kpis = QGridLayout()
         kpis.setHorizontalSpacing(7)
         kpis.setVerticalSpacing(7)
@@ -144,8 +170,13 @@ class ExecutiveWorkspace(QWidget):
             ("gap", "Brecha de Liquidez", "Posición institucional"),
             ("icl", "ICL Total", "Cobertura 30 días"),
         )
+        cards: list[QFrame] = []
         for index, definition in enumerate(definitions):
-            kpis.addWidget(self._metric_card(*definition), 0, index)
+            card = self._metric_card(*definition)
+            kpis.addWidget(card, 0, index)
+            cards.append(card)
+        self._kpi_grid = kpis
+        self._kpi_cards = tuple(cards)
         root.addLayout(kpis)
 
         context_strip = QFrame()
@@ -157,6 +188,7 @@ class ExecutiveWorkspace(QWidget):
         context_layout = QGridLayout(context_strip)
         context_layout.setContentsMargins(10, 6, 10, 6)
         context_layout.setHorizontalSpacing(18)
+        context_cells: list[QWidget] = []
         for index, (key, caption) in enumerate(
             (
                 ("mil", "MIL elegible"),
@@ -167,10 +199,14 @@ class ExecutiveWorkspace(QWidget):
             )
         ):
             caption_label = QLabel(caption)
-            caption_label.setStyleSheet("color:#718096; font-size:8px; border:none;")
+            caption_label.setWordWrap(True)
+            caption_label.setStyleSheet("color:#566D7C; font-size:9pt; border:none;")
             value_label = QLabel("-")
+            value_label.setWordWrap(True)
+            value_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+            value_label.setAccessibleName(f"Valor de {caption}")
             value_label.setStyleSheet(
-                "color:#17324D; font-size:10px; font-weight:700; border:none;"
+                "color:#00345F; font-size:11pt; font-weight:700; border:none;"
             )
             self._context_labels[key] = value_label
             cell = QWidget()
@@ -180,45 +216,116 @@ class ExecutiveWorkspace(QWidget):
             cell_layout.addWidget(caption_label)
             cell_layout.addWidget(value_label)
             context_layout.addWidget(cell, 0, index)
+            context_cells.append(cell)
+        self._context_grid = context_layout
+        self._context_cells = tuple(context_cells)
         root.addWidget(context_strip)
+
+        self._radar = ExecutiveSignalRadar()
+        root.addWidget(self._radar)
+
+        panels_heading = QLabel("LECTURA INTEGRADA POR ÁREA")
+        panels_heading.setObjectName("executiveSectionTitle")
+        panels_heading.setStyleSheet(
+            "color:#00345F; font-size:10pt; font-weight:800; padding:7px 0 2px 0;"
+        )
+        root.addWidget(panels_heading)
 
         panels = QGridLayout()
         panels.setHorizontalSpacing(8)
         panels.setVerticalSpacing(8)
-        panels.addWidget(self._domain_panel("portfolio_panel", "PORTAFOLIO"), 0, 0)
-        panels.addWidget(self._domain_panel("liquidity_panel", "LIQUIDEZ"), 0, 1)
-        panels.addWidget(self._domain_panel("market_panel", "MERCADO"), 1, 0)
-        panels.addWidget(self._macro_panel(), 1, 1)
+        domains = (
+            self._domain_panel("portfolio_panel", "PORTAFOLIO"),
+            self._domain_panel("liquidity_panel", "LIQUIDEZ"),
+            self._domain_panel("market_panel", "MERCADO"),
+            self._macro_panel(),
+        )
+        for index, domain_card in enumerate(domains):
+            panels.addWidget(domain_card, index // 2, index % 2)
+        self._domain_grid = panels
+        self._domain_cards = domains
         root.addLayout(panels)
 
-        decisions = QHBoxLayout()
-        decisions.setSpacing(8)
-        alerts_group = QGroupBox("Alertas")
+        decisions_heading = QLabel("ALERTAS Y DECISIONES")
+        decisions_heading.setObjectName("executiveSectionTitle")
+        decisions_heading.setStyleSheet(
+            "color:#00345F; font-size:10pt; font-weight:800; padding:7px 0 2px 0;"
+        )
+        root.addWidget(decisions_heading)
+        decisions = QSplitter(Qt.Orientation.Horizontal)
+        decisions.setChildrenCollapsible(False)
+        decisions.setHandleWidth(7)
+        alerts_group = QGroupBox("Alertas y riesgos prioritarios")
         alerts_group.setStyleSheet(self._group_style())
         alerts_layout = QVBoxLayout(alerts_group)
         self._alerts_table = self._decision_table()
         alerts_layout.addWidget(self._alerts_table)
-        decisions.addWidget(alerts_group, 1)
+        decisions.addWidget(alerts_group)
 
         actions_group = QGroupBox("Observaciones y oportunidades")
         actions_group.setStyleSheet(self._group_style())
         actions_layout = QVBoxLayout(actions_group)
         self._recommendations_table = self._decision_table()
         actions_layout.addWidget(self._recommendations_table)
-        decisions.addWidget(actions_group, 1)
-        root.addLayout(decisions)
+        decisions.addWidget(actions_group)
+        decisions.setStretchFactor(0, 1)
+        decisions.setStretchFactor(1, 1)
+        decisions.setSizes([620, 620])
+        self._decision_splitter = decisions
+        root.addWidget(decisions)
 
         root.addWidget(self._status_card)
+
+    @staticmethod
+    def _columns_for_width(width: int) -> tuple[int, int, int]:
+        if width < 760:
+            return 2, 1, 1
+        if width < 1220:
+            return 3, 3, 2
+        return 6, 5, 2
+
+    def _arrange_dashboard(self, width: int) -> None:
+        kpi_cols, context_cols, domain_cols = self._columns_for_width(width)
+        if self._kpi_grid is not None and kpi_cols != self._kpi_columns:
+            for card in self._kpi_cards:
+                self._kpi_grid.removeWidget(card)
+            for index, card in enumerate(self._kpi_cards):
+                self._kpi_grid.addWidget(card, index // kpi_cols, index % kpi_cols)
+            for column in range(6):
+                self._kpi_grid.setColumnStretch(column, 1 if column < kpi_cols else 0)
+            self._kpi_columns = kpi_cols
+        if self._context_grid is not None and context_cols != self._context_columns:
+            for context_cell in self._context_cells:
+                self._context_grid.removeWidget(context_cell)
+            for index, context_cell in enumerate(self._context_cells):
+                self._context_grid.addWidget(
+                    context_cell, index // context_cols, index % context_cols
+                )
+            self._context_columns = context_cols
+        if self._domain_grid is not None and domain_cols != self._domain_columns:
+            for domain_card in self._domain_cards:
+                self._domain_grid.removeWidget(domain_card)
+            for index, domain_card in enumerate(self._domain_cards):
+                self._domain_grid.addWidget(domain_card, index // domain_cols, index % domain_cols)
+            self._domain_columns = domain_cols
+        self._decision_splitter.setOrientation(
+            Qt.Orientation.Vertical if width < 960 else Qt.Orientation.Horizontal
+        )
+
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        self._arrange_dashboard(event.size().width())
 
     def _domain_panel(self, key: str, title: str) -> QGroupBox:
         group = QGroupBox(title)
         group.setStyleSheet(self._group_style())
-        group.setMinimumHeight(160)
+        group.setMinimumHeight(185)
         layout = QVBoxLayout(group)
         label = QLabel("-")
         label.setWordWrap(True)
         label.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
-        label.setStyleSheet("color:#44586B; line-height:1.3; padding:5px;")
+        label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        label.setStyleSheet("color:#183247; font-size:10pt; padding:7px;")
         layout.addWidget(label)
         self._panel_labels[key] = label
         return group
@@ -233,15 +340,17 @@ class ExecutiveWorkspace(QWidget):
         macro_font.setPointSize(12)
         macro_font.setBold(True)
         self._macro_scenario.setFont(macro_font)
-        self._macro_scenario.setStyleSheet("color:#174E78; padding:5px;")
+        self._macro_scenario.setWordWrap(True)
+        self._macro_scenario.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        self._macro_scenario.setStyleSheet("color:#005EB8; font-size:12pt; padding:5px;")
         self._macro_horizon = QLabel("-")
-        self._macro_horizon.setStyleSheet("color:#667788; padding:0 5px;")
+        self._macro_horizon.setStyleSheet("color:#566D7C; font-size:10pt; padding:0 5px;")
         note = QLabel(
             "Escenario institucional aprobado consumido por el entorno de ejecución. El impacto financiero "
             "se incorporará cuando el motor de transmisión publique resultados auditables."
         )
         note.setWordWrap(True)
-        note.setStyleSheet("color:#7A8794; padding:5px; font-size:9px;")
+        note.setStyleSheet("color:#566D7C; padding:5px; font-size:9pt;")
         layout.addWidget(self._macro_scenario)
         layout.addWidget(self._macro_horizon)
         layout.addWidget(note)
@@ -263,11 +372,16 @@ class ExecutiveWorkspace(QWidget):
         header.setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
         header.setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
         header.setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents)
-        table.setMinimumHeight(170)
+        table.setMinimumHeight(210)
+        table.setSortingEnabled(True)
+        table.setWordWrap(False)
+        table.setToolTip("Seleccione una fila para inspeccionar su señal, severidad y fuente")
         return table
 
     @classmethod
     def _populate_rows(cls, table: QTableWidget, rows: tuple[ExecutiveRow, ...]) -> None:
+        previous_sorting = table.isSortingEnabled()
+        table.setSortingEnabled(False)
         table.setRowCount(len(rows))
         for row_index, row in enumerate(rows):
             values = (
@@ -283,7 +397,9 @@ class ExecutiveWorkspace(QWidget):
                     item.setTextAlignment(
                         Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignVCenter
                     )
+                item.setToolTip(value)
                 table.setItem(row_index, column, item)
+        table.setSortingEnabled(previous_sorting)
 
     @staticmethod
     def _lines(values: tuple[str, ...]) -> str:
@@ -295,7 +411,7 @@ class ExecutiveWorkspace(QWidget):
 
     def bind_view_model(self, view_model: ExecutiveViewModel) -> None:
         self._view_model = view_model
-        self._title.setText(view_model.title)
+        self._title.setText("CENTRO DE INTELIGENCIA EJECUTIVA")
         self._subtitle.setText(view_model.subtitle)
         self._date_label.setText(f"Corte: {view_model.valuation_date}")
         self._quality_badge.setText(f"Calidad: {view_model.data_quality_status}")
@@ -321,6 +437,7 @@ class ExecutiveWorkspace(QWidget):
         self._panel_labels["market_panel"].setText(self._lines(view_model.market))
         self._macro_scenario.setText(view_model.macro_scenario)
         self._macro_horizon.setText(f"Horizonte: {view_model.macro_horizon}")
+        self._radar.set_rows(view_model.alerts, view_model.recommendations)
         self._populate_rows(self._alerts_table, view_model.alerts)
         self._populate_rows(self._recommendations_table, view_model.recommendations)
         self._status_card.setText(self._translate_status(view_model.status))

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from decimal import Decimal
 
 from aip.ui.modules.financial_analysis.presenters.financial_analysis_presenter import (
@@ -38,8 +39,19 @@ class _Presenter:
 def test_rating_table_exposes_comparable_peer_count(qt_app) -> None:
     view = FinancialAnalysisView(presenter=_Presenter())  # type: ignore[arg-type]
 
-    assert view._rating_indicator_table.horizontalHeaderItem(3).text() == "Pares"
-    assert view._rating_indicator_table.item(0, 3).text() == "2"
+    try:
+        deadline = time.monotonic() + 5.0
+        while time.monotonic() < deadline:
+            qt_app.processEvents()
+            if view._rating_indicator_table.item(0, 3) is not None:
+                break
+            time.sleep(0.01)
+
+        assert view._rating_indicator_table.horizontalHeaderItem(3).text() == "Pares"
+        assert view._rating_indicator_table.item(0, 3).text() == "2"
+    finally:
+        view.close()
+        qt_app.processEvents()
 
 
 def test_statement_value_formats_only_true_binary_methodology_indicators() -> None:

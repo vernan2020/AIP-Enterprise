@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from datetime import date
 
-from PySide6.QtCore import QObject, Qt, QThread, Signal, Slot
-from PySide6.QtGui import QDesktopServices, QFont
+from PySide6.QtCore import QObject, QRunnable, Qt, QThread, QThreadPool, QTimer, Signal, Slot
+from PySide6.QtGui import QCloseEvent, QDesktopServices, QFont
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QComboBox,
@@ -41,6 +41,8 @@ from aip.ui.modules.financial_analysis.views.financial_peer_chart import (
 from aip.ui.modules.financial_analysis.views.financial_statement_history_panel import (
     FinancialStatementHistoryPanel,
 )
+from aip.ui.themes.typography import numeric_font_family
+from aip.ui.widgets.table_csv_export import save_table_csv_dialog
 
 
 class _ComparisonWorker(QObject):
@@ -76,6 +78,40 @@ class _ComparisonWorker(QObject):
         self.finished.emit(comparison)
 
 
+class _FinancialLoadSignals(QObject):
+    completed = Signal(object, object)
+    failed = Signal(object, str)
+
+
+class _FinancialLoadWorker(QRunnable):
+    """One-shot data task; no QThread owned by the financial workspace."""
+
+    def __init__(
+        self,
+        presenter: FinancialAnalysisPresenter,
+        entity_id: object,
+        force_refresh: bool,
+    ) -> None:
+        super().__init__()
+        self._presenter = presenter
+        self._entity_id = entity_id
+        self._force_refresh = force_refresh
+        self.signals = _FinancialLoadSignals()
+        # Release the runnable and its Qt signal object on the UI thread.
+        self.setAutoDelete(False)
+
+    @Slot()
+    def run(self) -> None:
+        try:
+            model = self._presenter.build_view_model(
+                selected_entity_id=str(self._entity_id) if self._entity_id else None,
+                force_refresh=self._force_refresh,
+            )
+            self.signals.completed.emit(self._entity_id, model)
+        except Exception as exc:
+            self.signals.failed.emit(self._entity_id, f"{type(exc).__name__}: {exc}")
+
+
 class FinancialAnalysisView(QWidget):
     """Workspace comparativo de estados financieros publicados por SUGEF."""
 
@@ -86,13 +122,30 @@ class FinancialAnalysisView(QWidget):
         self.setObjectName("financialAnalysisWorkspace")
         self._presenter = presenter or FinancialAnalysisPresenter()
         self._view_model = FinancialAnalysisViewModel()
+        self._statement_table: QTableWidget
         self._kpi_values: dict[str, QLabel] = {}
         self._kpi_changes: dict[str, QLabel] = {}
+        self._kpi_grid: QGridLayout | None = None
+        self._kpi_cards: tuple[QFrame, ...] = ()
+        self._kpi_columns = 7
+        self._controls_grid: QGridLayout | None = None
+        self._controls_widgets: tuple[QWidget, ...] = ()
+        self._controls_columns = 4
+        self._source_grid: QGridLayout | None = None
+        self._source_compact = False
+        self._statement_controls_grid: QGridLayout | None = None
+        self._statement_controls: tuple[QWidget, ...] = ()
+        self._statement_controls_compact = False
         self._building_entity_selector = False
         self._comparison_thread: QThread | None = None
         self._comparison_worker: _ComparisonWorker | None = None
+        self._loading = False
+        self._pending_request: tuple[object, bool] | None = None
+        self._closing = False
+        self._load_pool = QThreadPool.globalInstance()
+        self._active_load_worker: _FinancialLoadWorker | None = None
         self._build_ui()
-        self.bind_view_model(self._presenter.build_view_model())
+        QTimer.singleShot(0, lambda: self._request_load(None, False))
 
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
@@ -112,20 +165,29 @@ class FinancialAnalysisView(QWidget):
         self._subtitle = QLabel(
             "Resumen ejecutivo, estados financieros, benchmarking y trazabilidad SUGEF"
         )
+        self._subtitle.setWordWrap(True)
         self._subtitle.setStyleSheet("color:#667788; font-size:9px;")
         title_box.addWidget(self._title)
         title_box.addWidget(self._subtitle)
         header.addLayout(title_box)
         header.addStretch(1)
-        header.addWidget(QLabel("Entidad:"))
+        root.addLayout(header)
+
+        # Keep the entity selector and refresh controls out of the heading row:
+        # otherwise a long institutional name can force every KPI to clip.
+        controls = QGridLayout()
+        controls.setHorizontalSpacing(7)
+        controls.setVerticalSpacing(5)
+        entity_label = QLabel("Entidad:")
         self._entity_selector = QComboBox()
-        self._entity_selector.setMinimumWidth(360)
+        entity_label.setBuddy(self._entity_selector)
+        self._entity_selector.setMinimumWidth(155)
+        self._entity_selector.setAccessibleName("Entidad financiera supervisada")
         self._entity_selector.currentIndexChanged.connect(self._entity_changed)
-        header.addWidget(self._entity_selector)
         self._refresh_button = QPushButton("Actualizar fuente")
         self._refresh_button.clicked.connect(self._refresh)
-        header.addWidget(self._refresh_button)
         self._cutoff = QLabel("Corte SUGEF: -")
+        self._cutoff.setWordWrap(True)
         self._cutoff.setToolTip(
             "Último corte oficial SUGEF disponible que no excede el corte general de AIP."
         )
@@ -133,12 +195,29 @@ class FinancialAnalysisView(QWidget):
             "padding:6px 10px; background:#F3F6F9; border:1px solid #D7E0E8; "
             "border-radius:6px; font-weight:600;"
         )
-        header.addWidget(self._cutoff)
-        root.addLayout(header)
+        widgets = (entity_label, self._entity_selector, self._refresh_button, self._cutoff)
+        for index, widget in enumerate(widgets):
+            controls.addWidget(widget, 0, index)
+        controls.setColumnStretch(1, 1)
+        self._controls_grid = controls
+        self._controls_widgets = widgets
+        root.addLayout(controls)
+
+        self._cutoff_notice = QLabel("")
+        self._cutoff_notice.setObjectName("sugefCutoffPublicationNotice")
+        self._cutoff_notice.setWordWrap(True)
+        self._cutoff_notice.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        self._cutoff_notice.setStyleSheet(
+            "color:#795400; background:#FFF8E6; border:1px solid #EBD5A0; "
+            "border-radius:6px; padding:6px 9px;"
+        )
+        self._cutoff_notice.hide()
+        root.addWidget(self._cutoff_notice)
 
         kpis = QGridLayout()
         kpis.setHorizontalSpacing(6)
         kpis.setVerticalSpacing(0)
+        cards: list[QFrame] = []
         for index, definition in enumerate(
             (
                 ("ASSETS", "Activos"),
@@ -150,11 +229,17 @@ class FinancialAnalysisView(QWidget):
                 ("ROE", "ROE"),
             )
         ):
-            kpis.addWidget(self._metric_card(*definition), 0, index)
+            card = self._metric_card(*definition)
+            cards.append(card)
+            kpis.addWidget(card, 0, index)
+        self._kpi_grid = kpis
+        self._kpi_cards = tuple(cards)
         root.addLayout(kpis)
 
         self._tabs = QTabWidget()
         self._tabs.setDocumentMode(True)
+        self._tabs.tabBar().setUsesScrollButtons(True)
+        self._tabs.setElideMode(Qt.TextElideMode.ElideRight)
         self._history_panel = FinancialHistoryPanel()
         self._comparison_panel = FinancialEntityComparisonPanel()
         self._comparison_panel.compareRequested.connect(self._run_entity_comparison)
@@ -166,18 +251,26 @@ class FinancialAnalysisView(QWidget):
         self._tabs.addTab(self._comparison_panel, "Comparativo gráfico")
         self._tabs.addTab(self._rating_panel, "Calificación")
         self._tabs.addTab(self._diagnostics, "Calidad y trazabilidad")
+        for index in range(self._tabs.count()):
+            self._tabs.setTabToolTip(index, self._tabs.tabText(index))
         root.addWidget(self._tabs, 1)
 
         source = QFrame()
         source.setObjectName("sugefSourcePanel")
-        source_layout = QHBoxLayout(source)
+        source_layout = QGridLayout(source)
         source_layout.setContentsMargins(8, 4, 8, 4)
         self._source_status = QLabel("SUGEF · fuente no configurada")
-        source_layout.addWidget(self._source_status)
-        source_layout.addStretch(1)
+        self._source_status.setWordWrap(True)
+        self._source_status.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse
+            | Qt.TextInteractionFlag.TextSelectableByKeyboard
+        )
+        source_layout.addWidget(self._source_status, 0, 0)
         self._source_link = QPushButton("Abrir fuente oficial")
         self._source_link.clicked.connect(self._open_source)
-        source_layout.addWidget(self._source_link)
+        source_layout.addWidget(self._source_link, 0, 1)
+        source_layout.setColumnStretch(0, 1)
+        self._source_grid = source_layout
         root.addWidget(source)
 
         self.setStyleSheet(
@@ -203,20 +296,26 @@ class FinancialAnalysisView(QWidget):
 
         self._statement_content_tabs = QTabWidget()
         self._statement_content_tabs.setDocumentMode(True)
+        self._statement_content_tabs.tabBar().setUsesScrollButtons(True)
+        self._statement_content_tabs.setElideMode(Qt.TextElideMode.ElideRight)
 
         balances_page = QWidget()
         balances_layout = QVBoxLayout(balances_page)
         balances_layout.setContentsMargins(4, 4, 4, 4)
         balances_layout.setSpacing(4)
 
-        controls = QHBoxLayout()
-        controls.setSpacing(6)
+        controls = QGridLayout()
+        controls.setHorizontalSpacing(6)
+        controls.setVerticalSpacing(5)
         self._statement_search = QLineEdit()
+        self._statement_search.setAccessibleName("Buscar cuentas e indicadores SUGEF")
+        self._statement_search.setClearButtonEnabled(True)
         self._statement_search.setPlaceholderText("Buscar por código, cuenta, estado o indicador…")
         self._statement_search.textChanged.connect(self._apply_statement_filter)
-        controls.addWidget(self._statement_search, 1)
-        controls.addWidget(QLabel("Mostrar:"))
+        filter_label = QLabel("Mostrar:")
         self._statement_type_filter = QComboBox()
+        filter_label.setBuddy(self._statement_type_filter)
+        self._statement_type_filter.setAccessibleName("Filtrar tipo de estado financiero")
         self._statement_type_filter.addItems(
             [
                 "Todos",
@@ -226,11 +325,34 @@ class FinancialAnalysisView(QWidget):
                 "Balanza de comprobación",
             ]
         )
+        for index in range(self._statement_type_filter.count()):
+            self._statement_type_filter.setItemData(
+                index, self._statement_type_filter.itemText(index), Qt.ItemDataRole.ToolTipRole
+            )
         self._statement_type_filter.currentTextChanged.connect(self._apply_statement_filter)
-        controls.addWidget(self._statement_type_filter)
         self._statement_count = QLabel("0 registros")
         self._statement_count.setStyleSheet("color:#667788; font-size:9px;")
-        controls.addWidget(self._statement_count)
+        self._export_statement_button = QPushButton("Exportar CSV")
+        self._export_statement_button.setToolTip(
+            "Exportar las filas y columnas visibles, con trazabilidad, a CSV para Excel."
+        )
+        self._export_statement_button.clicked.connect(
+            lambda: save_table_csv_dialog(
+                self, self._statement_table, "aip-sugef-estados.csv", visible_rows_only=True
+            )
+        )
+        widgets = (
+            self._statement_search,
+            filter_label,
+            self._statement_type_filter,
+            self._statement_count,
+        )
+        for index, widget in enumerate(widgets):
+            controls.addWidget(widget, 0, index)
+        controls.addWidget(self._export_statement_button, 0, 4)
+        controls.setColumnStretch(0, 1)
+        self._statement_controls_grid = controls
+        self._statement_controls = widgets
         balances_layout.addLayout(controls)
 
         self._statement_table = self._table(
@@ -365,7 +487,7 @@ class FinancialAnalysisView(QWidget):
         summary_layout = QGridLayout(summary)
         summary_layout.setContentsMargins(14, 8, 14, 8)
         summary_layout.setHorizontalSpacing(22)
-        self._rating_heading = QLabel("Calificación 08ME14-01 sobre datos SUGEF")
+        self._rating_heading = QLabel("Calificación interna 08ME14-01 · datos SUGEF")
         self._rating_heading.setStyleSheet("font-size:11px; font-weight:600; color:#314A5E;")
         self._rating_grade = QLabel("Sin emitir")
         self._rating_grade.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -376,6 +498,10 @@ class FinancialAnalysisView(QWidget):
         self._rating_coverage = QLabel("Cobertura: 0.00%")
         self._rating_coverage.setStyleSheet("font-size:11px; font-weight:600; color:#314A5E;")
         self._rating_methodology = QLabel("Metodología: 08ME14-01")
+        self._rating_methodology.setToolTip(
+            "Modelo interno de evaluación de entidades financieras. "
+            "No es una calificación de riesgo emitida por SUGEF."
+        )
         self._rating_methodology.setStyleSheet("color:#52687A; font-size:10px;")
         summary_layout.addWidget(self._rating_grade, 0, 0, 2, 1)
         summary_layout.addWidget(self._rating_heading, 0, 1)
@@ -389,6 +515,8 @@ class FinancialAnalysisView(QWidget):
         self._rating_content_tabs = QTabWidget()
         self._rating_content_tabs.setObjectName("ratingContentTabs")
         self._rating_content_tabs.setDocumentMode(True)
+        self._rating_content_tabs.tabBar().setUsesScrollButtons(True)
+        self._rating_content_tabs.setElideMode(Qt.TextElideMode.ElideRight)
 
         ranking = QWidget()
         ranking_layout = QVBoxLayout(ranking)
@@ -525,10 +653,99 @@ class FinancialAnalysisView(QWidget):
         layout.addWidget(self._rating_notes)
         return panel
 
+    @staticmethod
+    def _kpi_columns_for_width(width: int) -> int:
+        """Keep all seven SUGEF KPI cards legible on compact workspaces."""
+        if width < 760:
+            return 2
+        if width < 1200:
+            return 4
+        return 7
+
+    def _arrange_kpi_cards(self, width: int) -> None:
+        grid = self._kpi_grid
+        if grid is None or not self._kpi_cards:
+            return
+        columns = self._kpi_columns_for_width(width)
+        if columns == self._kpi_columns:
+            return
+        for card in self._kpi_cards:
+            grid.removeWidget(card)
+        for index, card in enumerate(self._kpi_cards):
+            grid.addWidget(card, index // columns, index % columns)
+        for column in range(7):
+            grid.setColumnStretch(column, 1 if column < columns else 0)
+        self._kpi_columns = columns
+
+    def _arrange_controls(self, width: int) -> None:
+        grid = self._controls_grid
+        if grid is None or not self._controls_widgets:
+            return
+        columns = 2 if width < 1050 else 4
+        if columns == self._controls_columns:
+            return
+        for widget in self._controls_widgets:
+            grid.removeWidget(widget)
+        for index, widget in enumerate(self._controls_widgets):
+            grid.addWidget(widget, index // columns, index % columns)
+        for column in range(4):
+            grid.setColumnStretch(column, 1 if column == 1 else 0)
+        self._controls_columns = columns
+
+    def _arrange_statement_controls(self, width: int) -> None:
+        grid = self._statement_controls_grid
+        if grid is None or not self._statement_controls:
+            return
+        compact = width < 950
+        if compact == self._statement_controls_compact:
+            return
+        for widget in self._statement_controls:
+            grid.removeWidget(widget)
+        grid.removeWidget(self._export_statement_button)
+        if compact:
+            grid.addWidget(self._statement_search, 0, 0, 1, 3)
+            grid.addWidget(self._statement_controls[1], 1, 0)
+            grid.addWidget(self._statement_type_filter, 1, 1)
+            grid.addWidget(self._statement_count, 1, 2)
+            grid.addWidget(self._export_statement_button, 2, 0, 1, 3)
+        else:
+            for index, widget in enumerate(self._statement_controls):
+                grid.addWidget(widget, 0, index)
+            grid.addWidget(self._export_statement_button, 0, 4)
+        for column in range(4):
+            grid.setColumnStretch(column, 1 if column == (1 if compact else 0) else 0)
+        self._statement_controls_compact = compact
+
+    def _arrange_source(self, width: int) -> None:
+        grid = self._source_grid
+        if grid is None:
+            return
+        compact = width < 750
+        if compact == self._source_compact:
+            return
+        grid.removeWidget(self._source_status)
+        grid.removeWidget(self._source_link)
+        grid.addWidget(self._source_status, 0, 0)
+        if compact:
+            grid.addWidget(self._source_link, 1, 0)
+            grid.setColumnStretch(1, 0)
+        else:
+            grid.addWidget(self._source_link, 0, 1)
+        grid.setColumnStretch(0, 1)
+        self._source_compact = compact
+
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        width = event.size().width()
+        self._arrange_kpi_cards(width)
+        self._arrange_controls(width)
+        self._arrange_source(width)
+        self._arrange_statement_controls(width)
+
     def _metric_card(self, code: str, label: str) -> QFrame:
         card = QFrame()
         card.setObjectName("financialMetricCard")
-        card.setMinimumHeight(94)
+        card.setMinimumHeight(108)
         card.setStyleSheet(
             "QFrame#financialMetricCard {"
             "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
@@ -537,14 +754,22 @@ class FinancialAnalysisView(QWidget):
             "} QFrame#financialMetricCard:hover {border:1px solid #73B3DD;}"
         )
         layout = QVBoxLayout(card)
-        layout.setContentsMargins(8, 5, 8, 5)
+        layout.setContentsMargins(10, 8, 10, 8)
         layout.setSpacing(2)
         caption = QLabel(label)
-        caption.setStyleSheet("color:#DDF4FF; font-size:8px; font-weight:600; border:none;")
+        caption.setWordWrap(True)
+        caption.setStyleSheet("color:#DDF4FF; font-size:9px; font-weight:600; border:none;")
         value = QLabel("-")
-        value.setStyleSheet("color:#FFFFFF; font-size:12px; font-weight:700; border:none;")
+        value.setStyleSheet(
+            f'color:#FFFFFF; font-family:"{numeric_font_family()}"; '
+            "font-size:14px; font-weight:700; border:none;"
+        )
+        value.setWordWrap(True)
+        value.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        card.setAccessibleName(label)
+        value.setAccessibleName(f"Valor de {label}")
         change = QLabel("Sin datos")
-        change.setStyleSheet("color:#CBEAF8; font-size:7px; border:none;")
+        change.setStyleSheet("color:#CBEAF8; font-size:9px; border:none;")
         change.setWordWrap(True)
         layout.addWidget(caption)
         layout.addWidget(value)
@@ -577,6 +802,37 @@ class FinancialAnalysisView(QWidget):
         self._title.setText(view_model.title)
         self._subtitle.setText(view_model.subtitle)
         self._cutoff.setText(f"Corte SUGEF: {view_model.cutoff_date}")
+        publication_notice = next(
+            (
+                message
+                for message in view_model.diagnostics
+                if "último corte contable SUGEF completo utilizable" in message
+                or "Corte efectivo de análisis alineado al último mes" in message
+            ),
+            "",
+        )
+        if (
+            not publication_notice
+            and view_model.status not in {"LOADING", "PENDING"}
+            and not view_model.entities
+            and not view_model.statement_rows
+        ):
+            publication_notice = (
+                "SUGEF: no se recibieron entidades ni estados financieros en este corte. "
+                "Verifique la configuración institucional existente y consulte "
+                "«Calidad y trazabilidad» antes de interpretar las cifras."
+            )
+        self._cutoff_notice.setText(
+            publication_notice + " Use «Actualizar fuente» para volver a consultar SUGEF."
+            if publication_notice
+            else ""
+        )
+        self._cutoff_notice.setVisible(bool(publication_notice))
+        self._cutoff.setToolTip(
+            self._cutoff_notice.text()
+            if publication_notice
+            else "Último corte contable completo confirmado en la fuente oficial SUGEF."
+        )
         self._bind_entities(view_model)
         metrics = {item.code: item for item in view_model.metrics}
         for code in self._KPI_ORDER:
@@ -608,11 +864,15 @@ class FinancialAnalysisView(QWidget):
             self._entity_selector.clear()
             for entity_id, name in view_model.entities:
                 self._entity_selector.addItem(name, entity_id)
+                self._entity_selector.setItemData(
+                    self._entity_selector.count() - 1, name, Qt.ItemDataRole.ToolTipRole
+                )
             selected = self._entity_selector.findData(view_model.selected_entity_id)
             if selected >= 0:
                 self._entity_selector.setCurrentIndex(selected)
         finally:
             self._building_entity_selector = False
+        self._entity_selector.setToolTip(self._entity_selector.currentText())
 
     def _bind_statements(self, view_model: FinancialAnalysisViewModel) -> None:
         self._statement_table.setRowCount(len(view_model.statement_rows))
@@ -897,14 +1157,57 @@ class FinancialAnalysisView(QWidget):
         if selected >= 0:
             self._entity_selector.setCurrentIndex(selected)
 
+    def _request_load(self, entity_id: object, force_refresh: bool) -> None:
+        if self._closing:
+            return
+        if self._loading:
+            previous = self._pending_request
+            self._pending_request = (
+                entity_id,
+                force_refresh or (previous is not None and previous[1]),
+            )
+            return
+        self._loading = True
+        self._refresh_button.setEnabled(False)
+        worker = _FinancialLoadWorker(self._presenter, entity_id, force_refresh)
+        worker.signals.completed.connect(self._load_completed, Qt.ConnectionType.QueuedConnection)
+        worker.signals.failed.connect(self._load_failed, Qt.ConnectionType.QueuedConnection)
+        self._active_load_worker = worker
+        self._load_pool.start(worker)
+
+    @Slot(object, object)
+    def _load_completed(self, entity_id: object, model: object) -> None:
+        self._active_load_worker = None
+        if self._closing:
+            return
+        self._loading = False
+        self._refresh_button.setEnabled(True)
+        if self._pending_request is not None:
+            entity, refresh = self._pending_request
+            self._pending_request = None
+            self._request_load(entity, refresh)
+            return
+        current_entity = self._entity_selector.currentData()
+        if entity_id is not None and str(current_entity) != str(entity_id):
+            self._request_load(current_entity, False)
+            return
+        if isinstance(model, FinancialAnalysisViewModel):
+            self.bind_view_model(model)
+
+    @Slot(object, str)
+    def _load_failed(self, entity_id: object, message: str) -> None:
+        self._load_completed(
+            entity_id,
+            FinancialAnalysisViewModel(diagnostics=(f"Carga SUGEF no disponible: {message}",)),
+        )
+
     def _entity_changed(self, _index: int) -> None:
         if self._building_entity_selector:
             return
+        self._entity_selector.setToolTip(self._entity_selector.currentText())
         entity_id = self._entity_selector.currentData()
         if entity_id:
-            self.bind_view_model(
-                self._presenter.build_view_model(selected_entity_id=str(entity_id))
-            )
+            self._request_load(str(entity_id), False)
 
     def _run_entity_comparison(
         self,
@@ -948,13 +1251,12 @@ class FinancialAnalysisView(QWidget):
         self._comparison_worker = None
 
     def _refresh(self) -> None:
-        entity_id = self._entity_selector.currentData()
-        self.bind_view_model(
-            self._presenter.build_view_model(
-                selected_entity_id=str(entity_id) if entity_id else None,
-                force_refresh=True,
-            )
-        )
+        self._request_load(self._entity_selector.currentData(), True)
+
+    def closeEvent(self, event: QCloseEvent) -> None:
+        self._closing = True
+        self._pending_request = None
+        super().closeEvent(event)
 
     def _open_source(self) -> None:
         from PySide6.QtCore import QUrl

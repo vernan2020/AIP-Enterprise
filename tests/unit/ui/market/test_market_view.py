@@ -77,3 +77,29 @@ def test_relative_value_table_maps_legacy_classifications_to_compra_venta(qt_app
     assert {table.item(row, 2).text() for row in range(table.rowCount())}.isdisjoint(
         {"BARATO", "CARO"}
     )
+
+
+def test_market_details_reflow_and_instrument_tables_scroll(qt_app) -> None:
+    from PySide6.QtCore import Qt
+    from PySide6.QtWidgets import QScrollArea
+
+    view = MarketView()
+    view.resize(960, 650)
+    view.show()
+    qt_app.processEvents()
+    try:
+        scroll = view.findChild(QScrollArea, "marketWorkspaceScroll")
+        assert scroll is not None
+        assert view._analytical_splitter.orientation() == Qt.Orientation.Vertical
+        assert view._detail_columns == 2
+        assert view._detail_group.minimumHeight() >= 185
+        assert scroll.widget() is not None
+        assert scroll.widget().height() > scroll.viewport().height()
+        assert not view._market_table.horizontalHeader().stretchLastSection()
+        view.resize(1680, 920)
+        qt_app.processEvents()
+        assert view._analytical_splitter.orientation() == Qt.Orientation.Horizontal
+        assert view._detail_columns == 4
+    finally:
+        view.close()
+        qt_app.processEvents()

@@ -3,9 +3,9 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Callable
 
-from PySide6.QtCore import QPointF, QRectF, Qt
+from PySide6.QtCore import QPointF, QRectF, Qt, Signal
 from PySide6.QtGui import QColor, QFont, QLinearGradient, QPainter, QPen, QPolygonF
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QToolTip, QWidget
 
 from aip.ui.modules.price_risk.models.price_risk_row import RiskChartPoint
 from aip.ui.widgets.chart_tooltip import (
@@ -17,6 +17,8 @@ from aip.ui.widgets.chart_tooltip import (
 
 class RiskBarChartWidget(QWidget):
     """Professional horizontal risk bars with automatic zero-centred mode."""
+
+    hover_readout_changed = Signal(str)
 
     _TEXT = QColor("#17324D")
     _MUTED = QColor("#718096")
@@ -38,11 +40,40 @@ class RiskBarChartWidget(QWidget):
         self._formatter = value_formatter or (lambda value: f"{value:,.2f}")
         self._show_secondary = show_secondary
         self._tooltip_regions: list[tuple[QRectF, str]] = []
+        self._readout_regions: list[tuple[QRectF, str]] = []
+        self._last_readout = ""
         self.setMouseTracking(True)
         self.setMinimumHeight(210)
+        self.setAccessibleName("Gráfico de contribuciones y sensibilidades de riesgo")
+
+    @staticmethod
+    def _responsive_columns(view_width: int) -> tuple[float, float, float]:
+        """Reserve readable labels and figures without drawing outside a narrow widget."""
+        left = min(140.0, max(76.0, view_width * 0.29))
+        right = min(146.0, max(78.0, view_width * 0.29))
+        return left, right, max(16.0, view_width - left - right - 10.0)
+
+    @staticmethod
+    def _bar_rectangle(
+        center: float, bar_width: float, bar_y: float, bar_height: float, negative: bool
+    ) -> QRectF:
+        """Draw negative contributions to the left of their zero baseline."""
+        return QRectF(
+            center - bar_width if negative else center,
+            bar_y,
+            max(2.0, bar_width),
+            bar_height,
+        )
 
     def set_data(self, points: tuple[RiskChartPoint, ...]) -> None:
         self._points = tuple(points)
+        # Give dense portfolios enough vertical space inside the existing scroll area.
+        self.setMinimumHeight(max(210, min(800, 30 * len(self._points) + 24)))
+        self._tooltip_regions = []
+        self._readout_regions = []
+        self._last_readout = ""
+        QToolTip.hideText()
+        self.hover_readout_changed.emit("")
         self.update()
 
     def paintEvent(self, event) -> None:  # noqa: N802
@@ -55,26 +86,24 @@ class RiskBarChartWidget(QWidget):
         background.setColorAt(1.0, QColor("#F3F8FB"))
         painter.fillRect(self.rect(), background)
         self._tooltip_regions = []
+        self._readout_regions = []
 
         if not self._points:
             self._draw_empty_state(painter)
             return
 
-        left = 126.0
-        right = 116.0
+        left, right, width = self._responsive_columns(self.width())
         top = 12.0
         bottom = 12.0
-        width = max(50.0, self.width() - left - right)
         height = max(40.0, self.height() - top - bottom)
         row_height = height / max(1, len(self._points))
 
         values = tuple(float(point.value) for point in self._points)
-        has_positive = any(value > 0 for value in values)
-        has_negative = any(value < 0 for value in values)
-        diverging = has_positive and has_negative
+        # Negative-only series still need a true leftward bar from zero.
+        diverging = any(value < 0 for value in values)
 
         label_font = QFont(self.font())
-        label_font.setPointSize(8)
+        label_font.setPointSize(9)
         value_font = QFont(label_font)
         value_font.setBold(True)
 
@@ -101,7 +130,9 @@ class RiskBarChartWidget(QWidget):
             painter.drawText(
                 QRectF(6, y, left - 16, row_height),
                 Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
-                point.label[:24],
+                painter.fontMetrics().elidedText(
+                    point.label, Qt.TextElideMode.ElideRight, max(0, int(left - 20))
+                ),
             )
 
             if not diverging:
@@ -118,10 +149,7 @@ class RiskBarChartWidget(QWidget):
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(gradient)
 
-            if diverging and numeric < 0:
-                rect = QRectF(center - bar_width, bar_y, max(2.0, bar_width), bar_height)
-            else:
-                rect = QRectF(center, bar_y, max(2.0, bar_width), bar_height)
+            rect = self._bar_rectangle(center, bar_width, bar_y, bar_height, numeric < 0)
             painter.drawRoundedRect(rect, 5, 5)
             tooltip_rows: list[tuple[str, object]] = [("Valor", self._formatter(point.value))]
             if self._show_secondary:
@@ -136,12 +164,12 @@ class RiskBarChartWidget(QWidget):
                     ),
                 )
             )
-            self._tooltip_regions.append(
-                (
-                    QRectF(0, y, self.width(), row_height),
-                    build_chart_tooltip(point.label, tooltip_rows),
-                )
-            )
+            region = QRectF(0, y, self.width(), row_height)
+            self._tooltip_regions.append((region, build_chart_tooltip(point.label, tooltip_rows)))
+            value_text = self._formatter(point.value)
+            if self._show_secondary:
+                value_text += f" · Participación: {point.secondary_value:.1f}%"
+            self._readout_regions.append((region, f"{point.label} · {value_text}"))
 
             painter.setFont(value_font)
             painter.setPen(fill.darker(118) if numeric else self._TEXT)
@@ -151,12 +179,32 @@ class RiskBarChartWidget(QWidget):
             painter.drawText(
                 QRectF(left + width + 6, y, right - 10, row_height),
                 Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignRight,
-                text,
+                painter.fontMetrics().elidedText(
+                    text, Qt.TextElideMode.ElideLeft, max(0, int(right - 18))
+                ),
             )
 
     def mouseMoveEvent(self, event) -> None:  # noqa: N802
         show_chart_tooltip(self, event, self._tooltip_regions)
+        value = next(
+            (
+                text
+                for region, text in reversed(self._readout_regions)
+                if region.contains(event.position())
+            ),
+            "",
+        )
+        if value != self._last_readout:
+            self._last_readout = value
+            self.hover_readout_changed.emit(value)
         super().mouseMoveEvent(event)
+
+    def leaveEvent(self, event) -> None:  # noqa: N802
+        QToolTip.hideText()
+        if self._last_readout:
+            self._last_readout = ""
+            self.hover_readout_changed.emit("")
+        super().leaveEvent(event)
 
     def _draw_empty_state(self, painter: QPainter) -> None:
         center = self.rect().center()
@@ -177,15 +225,35 @@ class RiskBarChartWidget(QWidget):
 class ParetoChartWidget(QWidget):
     """Pareto moderno: barras de contribución + línea acumulada y referencia 100%."""
 
+    hover_readout_changed = Signal(str)
+
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._points: tuple[RiskChartPoint, ...] = ()
         self._tooltip_regions: list[tuple[QRectF, str]] = []
+        self._readout_regions: list[tuple[QRectF, str]] = []
+        self._last_readout = ""
         self.setMouseTracking(True)
         self.setMinimumHeight(230)
+        self.setAccessibleName("Gráfico Pareto: contribución y porcentaje acumulado")
+
+    @staticmethod
+    def _visible_label_indexes(count: int, plot_width: float) -> tuple[int, ...]:
+        """Avoid overlapping Pareto captions in compact window layouts."""
+        if count <= 0:
+            return ()
+        visible = min(count, max(1, int(plot_width // 105)))
+        if visible == 1:
+            return (0,)
+        return tuple(round(index * (count - 1) / (visible - 1)) for index in range(visible))
 
     def set_data(self, points: tuple[RiskChartPoint, ...]) -> None:
         self._points = tuple(points)
+        self._tooltip_regions = []
+        self._readout_regions = []
+        self._last_readout = ""
+        QToolTip.hideText()
+        self.hover_readout_changed.emit("")
         self.update()
 
     def paintEvent(self, event) -> None:  # noqa: N802
@@ -198,6 +266,7 @@ class ParetoChartWidget(QWidget):
         background.setColorAt(1.0, QColor("#F3F8FB"))
         painter.fillRect(self.rect(), background)
         self._tooltip_regions = []
+        self._readout_regions = []
 
         if not self._points:
             painter.setPen(QColor("#718096"))
@@ -255,8 +324,16 @@ class ParetoChartWidget(QWidget):
                 ),
                 note="La barra muestra contribución y la línea el acumulado del Pareto.",
             )
-            self._tooltip_regions.append((QRectF(left + slot * index, top, slot, height), tooltip))
-            self._tooltip_regions.append((point_hit_rect(line_point, 8.0), tooltip))
+            readout = (
+                f"{point.label} · Contribución: {point.value:,.2f}"
+                f" · Acumulado: {point.secondary_value:,.1f}%"
+            )
+            slot_region = QRectF(left + slot * index, top, slot, height)
+            point_region = point_hit_rect(line_point, 8.0)
+            self._tooltip_regions.append((slot_region, tooltip))
+            self._tooltip_regions.append((point_region, tooltip))
+            self._readout_regions.append((slot_region, readout))
+            self._readout_regions.append((point_region, readout))
 
         if line_points:
             area = [QPointF(line_points[0].x(), top + height), *line_points]
@@ -282,10 +359,14 @@ class ParetoChartWidget(QWidget):
         painter.drawText(
             QRectF(left, 0, width, 20),
             Qt.AlignmentFlag.AlignRight,
-            "Barras: contribución · Línea: acumulado · Referencia: 100%",
+            painter.fontMetrics().elidedText(
+                "Barras: contribución · Línea: acumulado · Referencia: 100%",
+                Qt.TextElideMode.ElideRight,
+                int(width),
+            ),
         )
 
-        label_indexes = sorted({0, count - 1, count // 3, (count * 2) // 3})
+        label_indexes = self._visible_label_indexes(count, width)
         painter.setPen(QColor("#718096"))
         for index in label_indexes:
             if not 0 <= index < count:
@@ -294,9 +375,29 @@ class ParetoChartWidget(QWidget):
             painter.drawText(
                 QRectF(center_x - 45, top + height + 7, 90, 22),
                 Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
-                self._points[index].label[:12],
+                painter.fontMetrics().elidedText(
+                    self._points[index].label, Qt.TextElideMode.ElideRight, 88
+                ),
             )
 
     def mouseMoveEvent(self, event) -> None:  # noqa: N802
         show_chart_tooltip(self, event, self._tooltip_regions)
+        value = next(
+            (
+                text
+                for region, text in reversed(self._readout_regions)
+                if region.contains(event.position())
+            ),
+            "",
+        )
+        if value != self._last_readout:
+            self._last_readout = value
+            self.hover_readout_changed.emit(value)
         super().mouseMoveEvent(event)
+
+    def leaveEvent(self, event) -> None:  # noqa: N802
+        QToolTip.hideText()
+        if self._last_readout:
+            self._last_readout = ""
+            self.hover_readout_changed.emit("")
+        super().leaveEvent(event)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from aip.ui.themes.palette import DarkThemePalette
+from aip.ui.themes.typography import interface_font_family, numeric_font_family
 
 
 class DarkTheme:
@@ -8,6 +9,8 @@ class DarkTheme:
 
     def stylesheet(self) -> str:
         p = DarkThemePalette()
+        ui_font = interface_font_family()
+        numeric_font = numeric_font_family()
         return f"""
         QMainWindow, QDialog {{
             background-color: {p.canvas};
@@ -15,14 +18,16 @@ class DarkTheme:
         }}
         QWidget {{
             color: {p.text};
-            font-family: "Lucida Sans Unicode";
-            font-size: 9.5pt;
+            font-family: "{ui_font}";
+            font-size: 10pt;
         }}
         QToolTip {{
             background-color: #00182C;
             color: {p.text};
             border: 1px solid {p.celeste};
-            padding: 5px 7px;
+            padding: 8px 11px;
+            font-size: 10pt;
+            border-radius: 6px;
         }}
         QToolBar {{
             background: {p.surface};
@@ -140,8 +145,9 @@ class DarkTheme:
             color: {p.text_secondary};
             border: none;
             border-bottom: 2px solid transparent;
-            padding: 7px 13px;
+            padding: 8px 14px;
             margin-right: 2px;
+            font-size: 10pt;
             font-weight: 600;
         }}
         QTabBar::tab:hover {{
@@ -154,6 +160,7 @@ class DarkTheme:
             background: {p.surface};
         }}
         QTableView, QTableWidget, QTreeView, QListView, QListWidget {{
+            font-family: "{numeric_font}";
             background: {p.surface};
             alternate-background-color: {p.surface_alt};
             color: {p.text};
@@ -164,12 +171,15 @@ class DarkTheme:
             outline: none;
         }}
         QTableView::item, QTableWidget::item, QTreeView::item, QListView::item {{
-            padding: 4px 6px;
+            padding: 5px 7px;
             border: none;
         }}
         QTableView::item:hover, QTableWidget::item:hover, QTreeView::item:hover,
         QListView::item:hover {{
             background: {p.surface_hover};
+        }}
+        QSpinBox, QDoubleSpinBox {{
+            font-family: "{numeric_font}";
         }}
         QHeaderView::section {{
             background: {p.surface_alt};
@@ -179,7 +189,7 @@ class DarkTheme:
             border-bottom: 1px solid {p.border};
             padding: 6px 7px;
             font-weight: 700;
-            font-size: 9pt;
+            font-size: 9.5pt;
         }}
         QGroupBox {{
             background: {p.surface};
@@ -214,7 +224,7 @@ class DarkTheme:
         }}
         QScrollBar:vertical {{
             background: transparent;
-            width: 10px;
+            width: 12px;
             margin: 1px;
         }}
         QScrollBar::handle:vertical {{
@@ -227,7 +237,7 @@ class DarkTheme:
         }}
         QScrollBar:horizontal {{
             background: transparent;
-            height: 10px;
+            height: 12px;
             margin: 1px;
         }}
         QScrollBar::handle:horizontal {{
@@ -247,6 +257,25 @@ class DarkTheme:
         }}
         QDockWidget {{
             color: {p.text};
+        }}
+        QTableView::item:selected, QTableWidget::item:selected {{
+            background: {p.surface_selected};
+            color: {p.text};
+        }}
+        QHeaderView::section:hover {{
+            background: {p.surface_hover};
+            color: {p.text};
+        }}
+        QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus {{
+            border: 2px solid {p.celeste};
+        }}
+        QFrame#executiveMetricCard {{
+            background: qlineargradient(
+                x1:0, y1:0, x2:1, y2:1,
+                stop:0 #00477F, stop:0.60 #00549F, stop:1 #006DAD
+            );
+            border: 1px solid #3481AD;
+            border-radius: 11px;
         }}
         QDockWidget::title {{
             background: {p.surface_alt};

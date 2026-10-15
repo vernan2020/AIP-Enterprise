@@ -8,8 +8,14 @@ set "AIP_EXECUTION_MODE=CONFIGURED"
 set "AIP_DEMO_MODE_ENABLED=false"
 set "PYTHONPATH=src"
 
-REM Local secrets/overrides are intentionally not versioned.
-if exist "config\runtime.local.cmd" call "config\runtime.local.cmd"
+REM Existing private runtime configuration is read in-place, never copied.
+REM The same loader is used by all CONFIGURED diagnostics.
+call "scripts\launch\load_existing_institutional_runtime.cmd"
+if errorlevel 1 exit /b 1
+
+REM The configured runtime must never silently switch to a demo environment.
+set "AIP_EXECUTION_MODE=CONFIGURED"
+set "AIP_DEMO_MODE_ENABLED=false"
 
 if not defined AIP_FOLDERWATCH_ENABLED set "AIP_FOLDERWATCH_ENABLED=true"
 if not defined AIP_VECTOR_ENABLED set "AIP_VECTOR_ENABLED=true"
@@ -52,4 +58,5 @@ REM The fast configured preflight now runs inside the same Python process that
 REM launches AIP. This preserves the startup gate while avoiding a redundant
 REM interpreter launch on Windows.
 python -m aip
-endlocal
+set "AIP_CONFIGURED_EXIT=%errorlevel%"
+endlocal & exit /b %AIP_CONFIGURED_EXIT%

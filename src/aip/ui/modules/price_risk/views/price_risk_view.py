@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
     QHeaderView,
     QLabel,
     QLineEdit,
+    QPushButton,
     QScrollArea,
     QTableWidget,
     QTableWidgetItem,
@@ -27,6 +28,9 @@ from aip.ui.modules.price_risk.views.portfolio_var_simulator_view import (
     PortfolioVaRSimulatorView,
 )
 from aip.ui.modules.price_risk.widgets.risk_charts import ParetoChartWidget, RiskBarChartWidget
+from aip.ui.themes.typography import numeric_font_family
+from aip.ui.widgets.chart_png_export import save_widget_png_dialog
+from aip.ui.widgets.table_csv_export import save_table_csv_dialog
 
 
 class _PriceRiskWorker(QObject):
@@ -75,10 +79,33 @@ class PriceRiskView(QWidget):
         self._refresh_pending = False
         self._refresh_pending_force = False
         self._closing = False
+        self._table: QTableWidget
+        self._shock_table: QTableWidget
         self._kpi_labels: dict[str, QLabel] = {}
         self._quality_labels: dict[str, QLabel] = {}
         self._bucket_labels: dict[str, QLabel] = {}
         self._rate_context_labels: dict[str, QLabel] = {}
+        self._kpi_grid: QGridLayout | None = None
+        self._kpi_cards: tuple[QFrame, ...] = ()
+        self._kpi_columns = 6
+        self._rate_kpi_grid: QGridLayout | None = None
+        self._rate_kpi_cards: tuple[QFrame, ...] = ()
+        self._rate_kpi_columns = 6
+        self._quality_grid: QGridLayout | None = None
+        self._quality_cards: tuple[QWidget, ...] = ()
+        self._quality_note: QLabel | None = None
+        self._quality_columns = 8
+        self._var_chart_grid: QGridLayout | None = None
+        self._var_chart_groups: tuple[QGroupBox, ...] = ()
+        self._rate_chart_grid: QGridLayout | None = None
+        self._rate_chart_groups: tuple[QGroupBox, ...] = ()
+        self._chart_columns = 2
+        self._rate_context_grid: QGridLayout | None = None
+        self._rate_context_blocks: tuple[QWidget, ...] = ()
+        self._rate_context_columns = 3
+        self._scenario_grid: QGridLayout | None = None
+        self._scenario_fields: tuple[QWidget, ...] = ()
+        self._scenario_columns = 3
         self._build_ui()
         self._setup_worker()
         self._set_loading_state(initial=True)
@@ -156,7 +183,7 @@ class PriceRiskView(QWidget):
     def _metric_card(self, key: str, caption: str, helper: str) -> QFrame:
         card = QFrame()
         card.setObjectName("riskMetricCard")
-        card.setMinimumHeight(94)
+        card.setMinimumHeight(108)
         card.setStyleSheet(
             "QFrame#riskMetricCard {"
             "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
@@ -165,23 +192,178 @@ class PriceRiskView(QWidget):
             "} QFrame#riskMetricCard:hover {border:1px solid #73B3DD;}"
         )
         layout = QVBoxLayout(card)
-        layout.setContentsMargins(10, 7, 10, 7)
+        layout.setContentsMargins(12, 8, 12, 8)
         layout.setSpacing(2)
         title = QLabel(caption)
-        title.setStyleSheet("color:#DDF4FF; font-size:8px; font-weight:600; border:none;")
+        title.setWordWrap(True)
+        title.setStyleSheet("color:#DDF4FF; font-size:9px; font-weight:600; border:none;")
         value = QLabel("-")
-        value_font = QFont()
-        value_font.setPointSize(12)
+        value_font = QFont(numeric_font_family())
+        value_font.setPointSize(13)
         value_font.setBold(True)
         value.setFont(value_font)
-        value.setStyleSheet("color:#FFFFFF; border:none;")
+        value.setStyleSheet(f'color:#FFFFFF; font-family:"{numeric_font_family()}"; border:none;')
+        value.setWordWrap(True)
+        value.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         hint = QLabel(helper)
-        hint.setStyleSheet("color:#CBEAF8; font-size:8px; border:none;")
+        hint.setWordWrap(True)
+        hint.setStyleSheet("color:#CBEAF8; font-size:9px; border:none;")
+        card.setAccessibleName(caption)
+        card.setToolTip(f"{caption}: {helper}")
+        value.setAccessibleName(f"Valor de {caption}")
         layout.addWidget(title)
         layout.addWidget(value)
         layout.addWidget(hint)
         self._kpi_labels[key] = value
         return card
+
+    @staticmethod
+    def _kpi_columns_for_width(width: int) -> int:
+        """Preserve six KPIs at full width without clipping in narrow windows."""
+        if width < 730:
+            return 2
+        if width < 1140:
+            return 3
+        return 6
+
+    def _arrange_kpi_cards(self, width: int) -> None:
+        grid = self._kpi_grid
+        if grid is None or not self._kpi_cards:
+            return
+        columns = self._kpi_columns_for_width(width)
+        if columns == self._kpi_columns:
+            return
+        for card in self._kpi_cards:
+            grid.removeWidget(card)
+        for index, card in enumerate(self._kpi_cards):
+            grid.addWidget(card, index // columns, index % columns)
+        for column in range(6):
+            grid.setColumnStretch(column, 1 if column < columns else 0)
+        self._kpi_columns = columns
+
+    def _arrange_rate_kpis(self, width: int) -> None:
+        grid = self._rate_kpi_grid
+        if grid is None or not self._rate_kpi_cards:
+            return
+        columns = self._kpi_columns_for_width(width)
+        if columns == self._rate_kpi_columns:
+            return
+        for card in self._rate_kpi_cards:
+            grid.removeWidget(card)
+        for index, card in enumerate(self._rate_kpi_cards):
+            grid.addWidget(card, index // columns, index % columns)
+        for column in range(6):
+            grid.setColumnStretch(column, 1 if column < columns else 0)
+        self._rate_kpi_columns = columns
+
+    @staticmethod
+    def _quality_columns_for_width(width: int) -> int:
+        if width < 760:
+            return 2
+        if width < 1280:
+            return 4
+        return 8
+
+    def _arrange_quality_cards(self, width: int) -> None:
+        grid = self._quality_grid
+        if grid is None or not self._quality_cards or self._quality_note is None:
+            return
+        columns = self._quality_columns_for_width(width)
+        if columns == self._quality_columns:
+            return
+        for card in self._quality_cards:
+            grid.removeWidget(card)
+        grid.removeWidget(self._quality_note)
+        for index, card in enumerate(self._quality_cards):
+            grid.addWidget(card, index // columns, index % columns)
+        grid.addWidget(
+            self._quality_note,
+            (len(self._quality_cards) + columns - 1) // columns,
+            0,
+            1,
+            columns,
+        )
+        for column in range(8):
+            grid.setColumnStretch(column, 1 if column < columns else 0)
+        self._quality_columns = columns
+
+    @staticmethod
+    def _reflow_chart_grid(grid: QGridLayout, groups: tuple[QGroupBox, ...], columns: int) -> None:
+        for group in groups:
+            grid.removeWidget(group)
+        for index, group in enumerate(groups):
+            grid.addWidget(group, index // columns, index % columns)
+        for column in range(2):
+            grid.setColumnStretch(column, 1 if column < columns else 0)
+
+    def _arrange_visual_grids(self, width: int) -> None:
+        columns = 1 if width < 980 else 2
+        if columns == self._chart_columns:
+            return
+        if self._var_chart_grid is not None and self._var_chart_groups:
+            self._reflow_chart_grid(self._var_chart_grid, self._var_chart_groups, columns)
+        if self._rate_chart_grid is not None and self._rate_chart_groups:
+            self._reflow_chart_grid(self._rate_chart_grid, self._rate_chart_groups, columns)
+        self._chart_columns = columns
+
+    def _arrange_rate_context(self, width: int) -> None:
+        grid = self._rate_context_grid
+        if grid is None or not self._rate_context_blocks:
+            return
+        columns = 1 if width < 740 else 3
+        if columns == self._rate_context_columns:
+            return
+        for block in self._rate_context_blocks:
+            grid.removeWidget(block)
+        for index, block in enumerate(self._rate_context_blocks):
+            grid.addWidget(block, index // columns, index % columns)
+        for column in range(3):
+            grid.setColumnStretch(column, 1 if column < columns else 0)
+        self._rate_context_columns = columns
+
+    def _arrange_scenario_fields(self, width: int) -> None:
+        grid = self._scenario_grid
+        if grid is None or not self._scenario_fields:
+            return
+        columns = 1 if width < 800 else 3
+        if columns == self._scenario_columns:
+            return
+        for field in self._scenario_fields:
+            grid.removeWidget(field)
+        grid.removeWidget(self._diagnostic_label)
+        for index, field in enumerate(self._scenario_fields):
+            grid.addWidget(field, index // columns, index % columns)
+        note_row = (len(self._scenario_fields) + columns - 1) // columns
+        grid.addWidget(self._diagnostic_label, note_row, 0, 1, columns)
+        for column in range(3):
+            grid.setColumnStretch(column, 1 if column < columns else 0)
+        self._scenario_columns = columns
+
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        width = event.size().width()
+        self._arrange_kpi_cards(width)
+        self._arrange_rate_kpis(width)
+        self._arrange_quality_cards(width)
+        self._arrange_visual_grids(width)
+        self._arrange_rate_context(width)
+        self._arrange_scenario_fields(width)
+
+    @staticmethod
+    def _new_chart_readout(object_name: str) -> QLabel:
+        label = QLabel("Pase el cursor sobre un gráfico para consultar el valor completo.")
+        label.setObjectName(object_name)
+        label.setTextFormat(Qt.TextFormat.PlainText)
+        label.setWordWrap(True)
+        label.setStyleSheet(
+            "color:#17324D; background:#EAF4FC; border:1px solid #C7DDEB; "
+            "border-radius:6px; padding:7px 10px; font-weight:600;"
+        )
+        return label
+
+    @staticmethod
+    def _update_chart_readout(label: QLabel, value: str) -> None:
+        label.setText(value or "Pase el cursor sobre un gráfico para consultar el valor completo.")
 
     def _build_price_page(self) -> None:
         layout = QVBoxLayout(self._price_page)
@@ -199,11 +381,15 @@ class PriceRiskView(QWidget):
             ("titles", "Títulos calculados", "Series incorporadas"),
             ("scenarios", "Escenarios", "Simulaciones históricas"),
         )
+        cards: list[QFrame] = []
         for index, definition in enumerate(definitions):
             card = self._metric_card(*definition)
             kpi_grid.addWidget(card, 0, index)
+            cards.append(card)
         for column in range(6):
             kpi_grid.setColumnStretch(column, 1)
+        self._kpi_cards = tuple(cards)
+        self._kpi_grid = kpi_grid
         layout.addLayout(kpi_grid)
 
         quality = QFrame()
@@ -211,9 +397,11 @@ class PriceRiskView(QWidget):
         quality.setStyleSheet(
             "QFrame#varQualityStrip {background:#F7F9FA; border:1px solid #D5DEE3; border-radius:7px;}"
         )
-        quality_layout = QHBoxLayout(quality)
+        quality_layout = QGridLayout(quality)
         quality_layout.setContentsMargins(10, 6, 10, 6)
-        quality_layout.setSpacing(18)
+        quality_layout.setHorizontalSpacing(12)
+        quality_layout.setVerticalSpacing(6)
+        quality_cards: list[QWidget] = []
         for key, caption in (
             ("eligible_vm", "Universo elegible"),
             ("policy_excluded_vm", "Excluido por política"),
@@ -224,23 +412,34 @@ class PriceRiskView(QWidget):
             ("horizon", "Horizonte"),
             ("reconciliation", "Reconciliación"),
         ):
-            block = QVBoxLayout()
+            quality_card = QWidget()
+            block = QVBoxLayout(quality_card)
+            block.setContentsMargins(1, 1, 1, 1)
+            block.setSpacing(2)
             label = QLabel(caption)
             label.setStyleSheet("color:#7B8D98; font-size:8px;")
+            label.setWordWrap(True)
             value = QLabel("-")
             value.setStyleSheet("color:#183247; font-weight:700; font-size:9px;")
+            value.setWordWrap(True)
             self._quality_labels[key] = value
             block.addWidget(label)
             block.addWidget(value)
-            quality_layout.addLayout(block)
-        quality_layout.addStretch(1)
+            quality_layout.addWidget(quality_card, 0, len(quality_cards))
+            quality_cards.append(quality_card)
         quality_note = QLabel(
             "Calidad, horizonte y reconciliación integrados en una franja compacta."
         )
+        quality_note.setWordWrap(True)
         quality_note.setStyleSheet(
             "color:#315468; font-size:8px; font-weight:600; padding:0 4px; border:none;"
         )
-        quality_layout.addWidget(quality_note)
+        quality_layout.addWidget(quality_note, 1, 0, 1, 8)
+        for column in range(8):
+            quality_layout.setColumnStretch(column, 1)
+        self._quality_grid = quality_layout
+        self._quality_cards = tuple(quality_cards)
+        self._quality_note = quality_note
         layout.addWidget(quality)
 
         scenario_group = QGroupBox("Escenario VeR seleccionado")
@@ -255,13 +454,28 @@ class PriceRiskView(QWidget):
             "color:#566D7C; font-size:9px; padding:5px 8px; "
             "background:#F7F9FB; border:1px solid #E2E8EE; border-radius:5px;"
         )
-        scenario_layout.addWidget(QLabel("Escenario"), 0, 0)
-        scenario_layout.addWidget(self._scenario_label, 0, 1)
-        scenario_layout.addWidget(QLabel("Ventana histórica"), 0, 2)
-        scenario_layout.addWidget(self._scenario_period, 0, 3)
-        scenario_layout.addWidget(QLabel("Estado"), 1, 0)
-        scenario_layout.addWidget(self._status_label, 1, 1)
-        scenario_layout.addWidget(self._diagnostic_label, 1, 2, 1, 2)
+        scenario_fields: list[QWidget] = []
+        for caption, value in (
+            ("Escenario", self._scenario_label),
+            ("Ventana histórica", self._scenario_period),
+            ("Estado", self._status_label),
+        ):
+            field = QWidget()
+            field_layout = QVBoxLayout(field)
+            field_layout.setContentsMargins(2, 2, 2, 2)
+            field_layout.setSpacing(3)
+            heading = QLabel(caption)
+            heading.setStyleSheet("color:#718096; font-size:9px;")
+            value.setWordWrap(True)
+            field_layout.addWidget(heading)
+            field_layout.addWidget(value)
+            scenario_layout.addWidget(field, 0, len(scenario_fields))
+            scenario_fields.append(field)
+        scenario_layout.addWidget(self._diagnostic_label, 1, 0, 1, 3)
+        for column in range(3):
+            scenario_layout.setColumnStretch(column, 1)
+        self._scenario_grid = scenario_layout
+        self._scenario_fields = tuple(scenario_fields)
         layout.addWidget(scenario_group)
 
         analytics = QGridLayout()
@@ -302,7 +516,34 @@ class PriceRiskView(QWidget):
         analytics.addWidget(currency_group, 1, 1)
         analytics.setColumnStretch(0, 1)
         analytics.setColumnStretch(1, 1)
-        layout.addLayout(analytics)
+        self._var_chart_grid = analytics
+        self._var_chart_groups = (top_group, pareto_group, issuer_group, currency_group)
+        self._price_chart_gallery = QWidget()
+        self._price_chart_gallery.setObjectName("priceRiskChartGallery")
+        self._price_chart_gallery.setLayout(analytics)
+        export_var_charts = QPushButton("Guardar gráficos PNG")
+        export_var_charts.setAccessibleName("Exportar gráficos de riesgo de precio")
+        export_var_charts.setToolTip(
+            "Guardar la contribución al VeR, Pareto, emisor y moneda en PNG."
+        )
+        export_var_charts.clicked.connect(
+            lambda: save_widget_png_dialog(self, self._price_chart_gallery, "aip-var-graficos.png")
+        )
+        layout.addWidget(export_var_charts, alignment=Qt.AlignmentFlag.AlignRight)
+        layout.addWidget(self._price_chart_gallery)
+        self._price_hover_readout = self._new_chart_readout("priceRiskHoverReadout")
+        for chart in (
+            self._contribution_chart,
+            self._pareto_chart,
+            self._issuer_chart,
+            self._var_currency_chart,
+        ):
+            chart.hover_readout_changed.connect(
+                lambda value, label=self._price_hover_readout: self._update_chart_readout(
+                    label, value
+                )
+            )
+        layout.addWidget(self._price_hover_readout)
 
         table_group = QGroupBox("Contribución por título al escenario VeR")
         table_group.setStyleSheet(self._group_style())
@@ -314,6 +555,19 @@ class PriceRiskView(QWidget):
         self._table_search.textChanged.connect(self._filter_table)
         table_header.addWidget(self._table_search)
         table_header.addStretch(1)
+        self._export_positions_button = QPushButton("Exportar CSV")
+        self._export_positions_button.setToolTip(
+            "Exportar las posiciones VeR visibles, con los valores de la tabla, a CSV para Excel."
+        )
+        self._export_positions_button.clicked.connect(
+            lambda: save_table_csv_dialog(
+                self,
+                self._table,
+                "aip-var-posiciones.csv",
+                visible_rows_only=True,
+            )
+        )
+        table_header.addWidget(self._export_positions_button)
         table_layout.addLayout(table_header)
 
         self._table = QTableWidget()
@@ -365,11 +619,15 @@ class PriceRiskView(QWidget):
             ("shock_coverage", "Cobertura shocks", "VM sensible a tasas"),
             ("worst_shock", "Shock más adverso", "Escenario de menor ΔEVE"),
         )
+        rate_cards: list[QFrame] = []
         for index, definition in enumerate(definitions):
             card = self._metric_card(*definition)
             kpi_grid.addWidget(card, 0, index)
+            rate_cards.append(card)
         for column in range(6):
             kpi_grid.setColumnStretch(column, 1)
+        self._rate_kpi_grid = kpi_grid
+        self._rate_kpi_cards = tuple(rate_cards)
         layout.addLayout(kpi_grid)
 
         context = QFrame()
@@ -378,29 +636,41 @@ class PriceRiskView(QWidget):
             "QFrame#rateRiskContextStrip {background:#F5F9FC; border:1px solid #D7E4ED; "
             "border-radius:8px;}"
         )
-        context_layout = QHBoxLayout(context)
+        context_layout = QGridLayout(context)
         context_layout.setContentsMargins(12, 6, 12, 6)
-        context_layout.setSpacing(24)
+        context_layout.setHorizontalSpacing(16)
+        context_layout.setVerticalSpacing(8)
+        context_blocks: list[QWidget] = []
         for key, caption in (
             ("worst_eve", "Peor ΔEVE aproximado"),
             ("shock_status", "Estado sensibilidad"),
         ):
-            block = QVBoxLayout()
+            context_card = QWidget()
+            block = QVBoxLayout(context_card)
+            block.setContentsMargins(0, 0, 0, 0)
             label = QLabel(caption)
             label.setStyleSheet("color:#6B7F8E; font-size:8px; border:none;")
+            label.setWordWrap(True)
             value = QLabel("-")
             value.setStyleSheet("color:#17324D; font-size:11px; font-weight:700; border:none;")
+            value.setWordWrap(True)
             self._rate_context_labels[key] = value
             block.addWidget(label)
             block.addWidget(value)
-            context_layout.addLayout(block)
-        context_layout.addStretch(1)
+            context_blocks.append(context_card)
+            context_layout.addWidget(context_card, 0, len(context_blocks) - 1)
         method = QLabel("SENSIBILIDAD APROXIMADA · DURACIÓN MODIFICADA")
         method.setStyleSheet(
             "color:#176895; font-size:8px; font-weight:700; padding:4px 8px; "
             "background:#EAF5FA; border:1px solid #CFE0EC; border-radius:6px;"
         )
-        context_layout.addWidget(method)
+        method.setWordWrap(True)
+        context_blocks.append(method)
+        context_layout.addWidget(method, 0, 2)
+        for column in range(3):
+            context_layout.setColumnStretch(column, 1)
+        self._rate_context_grid = context_layout
+        self._rate_context_blocks = tuple(context_blocks)
         layout.addWidget(context)
 
         charts = QGridLayout()
@@ -437,6 +707,16 @@ class PriceRiskView(QWidget):
         shock_table_group = QGroupBox("Detalle de escenarios de sensibilidad")
         shock_table_group.setStyleSheet(self._group_style())
         shock_table_layout = QVBoxLayout(shock_table_group)
+        self._export_shock_button = QPushButton("Exportar CSV")
+        self._export_shock_button.setToolTip(
+            "Exportar los escenarios de shock de tasas y sensibilidad a CSV para Excel."
+        )
+        self._export_shock_button.clicked.connect(
+            lambda: save_table_csv_dialog(self, self._shock_table, "aip-dv01-shocks.csv")
+        )
+        shock_table_layout.addWidget(
+            self._export_shock_button, alignment=Qt.AlignmentFlag.AlignRight
+        )
         self._shock_table = QTableWidget(0, 3)
         self._shock_table.setHorizontalHeaderLabels(
             ["Shock", "ΔEVE aproximado", "Valor de Mercado sensibilizado"]
@@ -446,7 +726,36 @@ class PriceRiskView(QWidget):
         self._shock_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         shock_table_layout.addWidget(self._shock_table)
         charts.addWidget(shock_table_group, 1, 1)
-        layout.addLayout(charts)
+        charts.setColumnStretch(0, 1)
+        charts.setColumnStretch(1, 1)
+        self._rate_chart_grid = charts
+        self._rate_chart_groups = (
+            bucket_group,
+            currency_group,
+            shock_group,
+            shock_table_group,
+        )
+        self._rate_chart_gallery = QWidget()
+        self._rate_chart_gallery.setObjectName("rateRiskChartGallery")
+        self._rate_chart_gallery.setLayout(charts)
+        export_rate_charts = QPushButton("Guardar sensibilidad PNG")
+        export_rate_charts.setAccessibleName("Exportar gráficos de sensibilidad y DV01")
+        export_rate_charts.setToolTip("Guardar DV01 y escenarios de sensibilidad en PNG.")
+        export_rate_charts.clicked.connect(
+            lambda: save_widget_png_dialog(
+                self, self._rate_chart_gallery, "aip-dv01-sensibilidad.png"
+            )
+        )
+        layout.addWidget(export_rate_charts, alignment=Qt.AlignmentFlag.AlignRight)
+        layout.addWidget(self._rate_chart_gallery)
+        self._rate_hover_readout = self._new_chart_readout("rateRiskHoverReadout")
+        for chart in (self._bucket_chart, self._currency_chart, self._shock_chart):
+            chart.hover_readout_changed.connect(
+                lambda value, label=self._rate_hover_readout: self._update_chart_readout(
+                    label, value
+                )
+            )
+        layout.addWidget(self._rate_hover_readout)
 
         bucket_detail = QGroupBox("Sensibilidad DV01 por tramo")
         bucket_detail.setStyleSheet(self._group_style())
@@ -647,13 +956,22 @@ class PriceRiskView(QWidget):
                     "background:#F7F9FB; border:1px solid #E2E8EE; border-radius:5px;"
                 )
 
-        self._contribution_chart.set_data(vm.var_contribution_points)
-        self._pareto_chart.set_data(vm.var_pareto_points)
-        self._issuer_chart.set_data(vm.issuer_contribution_points)
-        self._var_currency_chart.set_data(vm.currency_market_value_points)
-        self._bucket_chart.set_data(vm.dv01_bucket_points)
-        self._currency_chart.set_data(vm.dv01_currency_points)
-        self._shock_chart.set_data(vm.rate_shock_points)
+        # Keep unchanged chart payloads intact on refresh to avoid redundant paint work.
+        chart_payloads = (
+            ("var_contribution", self._contribution_chart, vm.var_contribution_points),
+            ("var_pareto", self._pareto_chart, vm.var_pareto_points),
+            ("issuer_contribution", self._issuer_chart, vm.issuer_contribution_points),
+            ("currency_market_value", self._var_currency_chart, vm.currency_market_value_points),
+            ("dv01_bucket", self._bucket_chart, vm.dv01_bucket_points),
+            ("dv01_currency", self._currency_chart, vm.dv01_currency_points),
+            ("rate_shock", self._shock_chart, vm.rate_shock_points),
+        )
+        if not hasattr(self, "_last_chart_payloads"):
+            self._last_chart_payloads: dict[str, object] = {}
+        for key, chart, points in chart_payloads:
+            if key not in self._last_chart_payloads or self._last_chart_payloads[key] != points:
+                chart.set_data(points)
+                self._last_chart_payloads[key] = points
         self._simulator_page.bind_securities(vm.simulation_securities)
 
         self._populate_var_table(vm)

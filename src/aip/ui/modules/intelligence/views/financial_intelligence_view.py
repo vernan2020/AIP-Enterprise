@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from PySide6.QtCore import QObject, QThread, Signal, Slot
+from PySide6.QtCore import QObject, Qt, QThread, Signal, Slot
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QFrame,
@@ -83,6 +83,9 @@ class FinancialIntelligenceView(QWidget):
         self._model: FinancialIntelligenceViewModel | None = None
         self._loaded = False
         self._load_requested = False
+        self._metric_grid: QGridLayout | None = None
+        self._metric_cards: tuple[QFrame, ...] = ()
+        self._metric_columns = 6
         self._build_ui()
         self._apply_style()
 
@@ -127,6 +130,8 @@ class FinancialIntelligenceView(QWidget):
         )
         for index, card in enumerate(cards):
             metrics.addWidget(card, 0, index)
+        self._metric_grid = metrics
+        self._metric_cards = cards
         root.addLayout(metrics)
 
         splitter = QSplitter()
@@ -203,7 +208,9 @@ class FinancialIntelligenceView(QWidget):
     def _metric_card(label: str, value: str) -> QFrame:
         frame = QFrame()
         frame.setObjectName("intelligenceMetricCard")
-        frame.setMinimumHeight(68)
+        frame.setMinimumHeight(104)
+        frame.setAccessibleName(label)
+        frame.setToolTip(label)
         layout = QVBoxLayout(frame)
         layout.setContentsMargins(9, 7, 9, 7)
         layout.setSpacing(2)
@@ -212,9 +219,38 @@ class FinancialIntelligenceView(QWidget):
         value_widget = QLabel(value)
         value_widget.setObjectName("metricValue")
         value_widget.setWordWrap(True)
+        value_widget.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        value_widget.setAccessibleName(f"Valor de {label}")
         layout.addWidget(label_widget)
         layout.addWidget(value_widget)
         return frame
+
+    @staticmethod
+    def _metric_columns_for_width(width: int) -> int:
+        if width < 780:
+            return 2
+        if width < 1250:
+            return 3
+        return 6
+
+    def _arrange_metrics(self, width: int) -> None:
+        grid = self._metric_grid
+        if grid is None:
+            return
+        columns = self._metric_columns_for_width(width)
+        if columns == self._metric_columns:
+            return
+        for card in self._metric_cards:
+            grid.removeWidget(card)
+        for index, card in enumerate(self._metric_cards):
+            grid.addWidget(card, index // columns, index % columns)
+        for column in range(6):
+            grid.setColumnStretch(column, 1 if column < columns else 0)
+        self._metric_columns = columns
+
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        self._arrange_metrics(event.size().width())
 
     @staticmethod
     def _set_card_value(card: QFrame, value: str) -> None:
@@ -397,11 +433,13 @@ class FinancialIntelligenceView(QWidget):
         self.setStyleSheet(
             "QLabel#intelligenceTitle {font-size:16px; font-weight:800; color:#00345F;}"
             "QLabel#intelligenceSubtitle {font-size:10px; color:#657D8C;}"
-            "QFrame#intelligenceMetricCard {background:#FFFFFF; border:1px solid #D5DEE3; "
-            "border-radius:9px;} QFrame#intelligenceMetricCard:hover {background:#F7FBFE; "
-            "border-color:#73B3DD;}"
-            "QLabel#metricLabel {font-size:9px; color:#657D8C;}"
-            "QLabel#metricValue {font-size:13px; font-weight:700; color:#00345F;}"
+            "QFrame#intelligenceMetricCard {"
+            "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
+            "stop:0 #00477F,stop:0.60 #005EB8,stop:1 #00A9E0);"
+            "border:1px solid #1675C5; border-radius:12px;}"
+            "QFrame#intelligenceMetricCard:hover {border-color:#73B3DD;}"
+            "QLabel#metricLabel {font-size:10pt; color:#DDF4FF;}"
+            "QLabel#metricValue {font-size:14pt; font-weight:700; color:#FFFFFF;}"
             "QGroupBox {font-weight:700; color:#005EB8; border:1px solid #D5DEE3; "
             "border-radius:7px; margin-top:8px; padding-top:8px;}"
             "QGroupBox::title {subcontrol-origin:margin; left:10px; padding:0 4px;}"

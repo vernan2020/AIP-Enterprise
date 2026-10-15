@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, timedelta
 from decimal import Decimal
 from typing import Any
@@ -26,8 +27,8 @@ from aip.integration.bccr.connector.rest_client import (
 from aip.integration.bccr.normalization.economic_series_parser import (
     BCCREconomicSeriesParser,
 )
-from aip.integration.bccr.providers.urllib_http_provider import (
-    UrllibHTTPProvider,
+from aip.integration.bccr.providers.select_official_transport import (
+    select_official_bccr_transport,
 )
 from aip.integration.economic.official_indicator_mappings import (
     build_official_indicator_mapper,
@@ -38,6 +39,7 @@ from aip.product.configured.protocols import (
 from aip.product.configured.repositories.economic_historical_repository import (
     EconomicHistoricalRepository,
 )
+from aip.product.economic.economic_history import EconomicHistoricalObservation
 
 
 class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
@@ -68,13 +70,13 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
     _TTL_BY_CODE: dict[str, int] = {
         "TPM": 900,
         "TBP": 900,
-        "INFLATION": 21600,
-        "IMAE": 21600,
-        "GDP": 86400,
+        "INFLATION": 3600,
+        "IMAE": 3600,
+        "GDP": 3600,
     }
 
     _FX_TTL_SECONDS = 300
-    _LABOR_TTL_SECONDS = 86400
+    _LABOR_TTL_SECONDS = 3600
     _TRI_TTL_SECONDS = 900
 
     def __init__(
@@ -86,7 +88,7 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
 
         self._client = BCCRRestClient(
             config=bccr_config,
-            provider=UrllibHTTPProvider(),
+            provider=select_official_bccr_transport(),
         )
 
         self._mapper = build_official_indicator_mapper()
@@ -94,168 +96,253 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
         self._parser = BCCREconomicSeriesParser(self._mapper)
 
         self._cache = BCCRCache(ttl_seconds=300)
+        self._history_watermarks: dict[str, date] = {}
 
-    def get_indicators(
+    def invalidate_cache(self) -> None:
+        """Explicit user refresh must query BCCR rather than reuse an old response."""
+        self._cache = BCCRCache(ttl_seconds=300)
+
+    @staticmethod
+    def _tri_codes() -> tuple[str, ...]:
+        tenors = ("1W", "1M", "3M", "6M", "9M", "12M", "24M", "36M", "60M")
+        return tuple(f"TRI_{currency}_{tenor}" for currency in ("CRC", "USD") for tenor in tenors)
+
+    def _load_history_watermarks(self) -> tuple[str, ...]:
+        """Read all latest persisted dates with one short-lived DuckDB connection."""
+        repository: EconomicHistoricalRepository | None = None
+        try:
+            repository = EconomicHistoricalRepository()
+            codes = (
+                *self._FX_INDICATORS,
+                *self._CORE_INDICATORS,
+                *self._LABOR_INPUTS,
+                *self._tri_codes(),
+            )
+            self._history_watermarks = {
+                code: observed
+                for code, observed in repository.latest_available_dates(codes).items()
+                if observed is not None
+            }
+            return ()
+        except Exception as exc:
+            # The live API remains usable while local history is inaccessible.
+            self._history_watermarks = {}
+            return (f"BCCR histórico incremental no disponible: {type(exc).__name__}",)
+        finally:
+            if repository is not None:
+                repository.store.close()
+
+    def _incremental_start(self, *, codes: tuple[str, ...], end: date, default_days: int) -> date:
+        """Retain overlapping observations and never query beyond the current date.
+
+        Missing, future or stale series use the complete normal lookback.
+        Grouped charts use the oldest eligible watermark across all codes.
+        """
+        start = end - timedelta(days=default_days)
+        overlap = 14 if default_days <= 60 else (70 if default_days <= 500 else 120)
+        dates = [self._history_watermarks.get(code) for code in codes]
+        if not dates or any(value is None or value > end for value in dates):
+            return start
+        return max(
+            start, min(value for value in dates if value is not None) - timedelta(days=overlap)
+        )
+
+    @staticmethod
+    def _official_history_rows(
+        observations_by_code: dict[str, tuple[EconomicIndicatorObservation, ...]],
+    ) -> tuple[EconomicHistoricalObservation, ...]:
+        """Preserve dates and values of parsed, genuinely official observations."""
+        rows: list[EconomicHistoricalObservation] = []
+        for code, observations in observations_by_code.items():
+            definition = get_indicator_definition(code)
+            if definition is None:
+                continue
+            for observation in observations:
+                if observation.source != "BCCR":
+                    continue
+                rows.append(
+                    EconomicHistoricalObservation(
+                        indicator_code=code,
+                        observation_date=observation.observation_date,
+                        value=observation.value,
+                        source="BCCR",
+                        source_series_code=observation.source_series_code,
+                        unit=observation.unit,
+                        frequency=definition.frequency.value,
+                    )
+                )
+        return tuple(rows)
+
+    def _persist_official_history(
         self,
-    ) -> dict[str, Any]:
+        observations_by_code: dict[str, tuple[EconomicIndicatorObservation, ...]],
+    ) -> int:
+        rows = self._official_history_rows(observations_by_code)
+        if not rows:
+            return 0
+        repository = EconomicHistoricalRepository()
+        try:
+            latest_dates = repository.latest_available_dates(
+                tuple(dict.fromkeys(item.indicator_code for item in rows))
+            )
+            overlap_days = {"DAILY": 7, "MONTHLY": 70, "QUARTERLY": 120}
+
+            def should_persist(item: EconomicHistoricalObservation) -> bool:
+                last = latest_dates.get(item.indicator_code)
+                return last is None or item.observation_date >= last - timedelta(
+                    days=overlap_days.get(item.frequency, 35)
+                )
+
+            incremental = tuple(item for item in rows if should_persist(item))
+            return repository.append(incremental) if incremental else 0
+        finally:
+            repository.store.close()
+
+    def _restore_missing_from_local_history(
+        self, available_live: set[str]
+    ) -> tuple[list[dict[str, Any]], tuple[str, ...]]:
+        """Fill missing macro cards with date-labelled persisted observations.
+
+        Never claim restored rows are a live response and never overwrite
+        a current BCCR observation. Reads only the two latest rows per code.
+        """
+        expected = (
+            *self._FX_INDICATORS,
+            *self._CORE_INDICATORS,
+            "UNEMPLOYMENT",
+            *self._tri_codes(),
+        )
+        missing = tuple(code for code in expected if code not in available_live)
+        if not missing:
+            return [], ()
+
+        repository: EconomicHistoricalRepository | None = None
+        restored: list[dict[str, Any]] = []
+        diagnostics: list[str] = []
+        try:
+            repository = EconomicHistoricalRepository()
+            stored_codes = set(repository.available_series())
+            for logical_code in missing:
+                if logical_code not in stored_codes:
+                    continue
+                series = repository.get_recent_series(logical_code, limit=2)
+                converted = tuple(
+                    EconomicIndicatorObservation(
+                        indicator_code=item.indicator_code,
+                        observation_date=item.observation_date,
+                        value=item.value,
+                        source=item.source,
+                        unit=item.unit,
+                        source_series_code=item.source_series_code,
+                        quality_status="VALID",
+                        is_preliminary=False,
+                    )
+                    for item in series.observations
+                )
+                payload = self._build_indicator_payload(logical_code, converted)
+                if payload is None:
+                    continue
+                payload["source"] = f"{series.source} · HISTÓRICO LOCAL"
+                restored.append(payload)
+                diagnostics.append(
+                    f"{logical_code}: histórico local, última observación "
+                    f"{payload['date']:%Y-%m-%d}; sin confirmación BCCR en vivo"
+                )
+        except Exception as exc:
+            diagnostics.append(f"BCCR histórico local no disponible: {type(exc).__name__}")
+        finally:
+            if repository is not None:
+                repository.store.close()
+        return restored, tuple(diagnostics)
+
+    def get_indicators(self) -> dict[str, Any]:
+        """Load independent BCCR series concurrently, with bounded HTTP pacing.
+
+        Each chart is requested once; per-series dates and original source
+        metadata are kept intact. The caller already runs in a Qt worker.
+        """
         if not self._bccr_config.token:
             return self._historical_fallback(reason="BCCR token is unavailable")
 
         indicators: list[dict[str, Any]] = []
+        diagnostics: list[str] = list(self._load_history_watermarks())
+        observations_by_code: dict[str, tuple[EconomicIndicatorObservation, ...]] = {}
 
-        diagnostics: list[str] = []
-
-        observations_by_code: dict[
-            str,
-            tuple[
-                EconomicIndicatorObservation,
-                ...,
-            ],
-        ] = {}
-
-        # ----------------------------------------------------
-        # Foreign exchange
-        #
-        # BCCR Cuadro 1 returns both official USD/CRC
-        # reference series in one request:
-        #
-        # 317 -> FX_BUY
-        # 318 -> FX_SELL
-        # ----------------------------------------------------
-
-        try:
-            fx_observations = self._get_or_fetch_grouped_chart_observations(
+        # Eight independent endpoints, but never more than three in flight.
+        # BCCRRestClient reserves spaced starts across these worker threads.
+        with ThreadPoolExecutor(max_workers=3, thread_name_prefix="bccr-live") as executor:
+            fx_future = executor.submit(
+                self._get_or_fetch_grouped_chart_observations,
                 chart_code=self._FX_CHART_CODE,
                 logical_codes=self._FX_INDICATORS,
                 history_days=45,
                 ttl_seconds=self._FX_TTL_SECONDS,
             )
-
-            for logical_code in self._FX_INDICATORS:
-                observations = fx_observations.get(
-                    logical_code,
-                    (),
-                )
-
-                observations_by_code[logical_code] = observations
-
-                if not observations:
-                    diagnostics.append(f"{logical_code}: no observations")
-                    continue
-
-                indicator = self._build_indicator_payload(
-                    logical_code,
-                    observations,
-                )
-
-                if indicator is not None:
-                    indicators.append(indicator)
-
-        except (
-            ConnectionError,
-            TimeoutError,
-            ValueError,
-        ) as exc:
-            diagnostics.append("FX: " f"{type(exc).__name__}: {exc}")
-
-        # ----------------------------------------------------
-        # Indicators that remain official standalone BCCR
-        # series.
-        # ----------------------------------------------------
-
-        for logical_code in self._CORE_INDICATORS:
-            try:
-                observations = self._get_or_fetch_observations(logical_code)
-
-                observations_by_code[logical_code] = observations
-
-                if not observations:
-                    diagnostics.append(f"{logical_code}: no observations")
-                    continue
-
-                indicator = self._build_indicator_payload(
-                    logical_code,
-                    observations,
-                )
-
-                if indicator is not None:
-                    indicators.append(indicator)
-
-            except (
-                ConnectionError,
-                TimeoutError,
-                ValueError,
-            ) as exc:
-                diagnostics.append(f"{logical_code}: " f"{type(exc).__name__}: {exc}")
-
-        # ----------------------------------------------------
-        # Labor market
-        #
-        # BCCR Cuadro 17 returns both source series needed by
-        # the unemployment-rate derivation:
-        #
-        # 22786 -> LABOR_FORCE
-        # 22787 -> EMPLOYED
-        # ----------------------------------------------------
-
-        try:
-            labor_observations = self._get_or_fetch_grouped_chart_observations(
+            core_futures = {
+                code: executor.submit(self._get_or_fetch_observations, code)
+                for code in self._CORE_INDICATORS
+            }
+            labor_future = executor.submit(
+                self._get_or_fetch_grouped_chart_observations,
                 chart_code=self._LABOR_CHART_CODE,
                 logical_codes=self._LABOR_INPUTS,
                 history_days=400,
                 ttl_seconds=self._LABOR_TTL_SECONDS,
             )
+            tri_future = executor.submit(self._get_or_fetch_tri_observations)
 
-            for logical_code in self._LABOR_INPUTS:
-                observations = labor_observations.get(
-                    logical_code,
-                    (),
-                )
+            try:
+                grouped = fx_future.result()
+                for logical_code in self._FX_INDICATORS:
+                    observations = grouped.get(logical_code, ())
+                    observations_by_code[logical_code] = observations
+                    if not observations:
+                        diagnostics.append(f"{logical_code}: no observations")
+                        continue
+                    indicator = self._build_indicator_payload(logical_code, observations)
+                    if indicator is not None:
+                        indicators.append(indicator)
+            except (ConnectionError, TimeoutError, OSError, ValueError) as exc:
+                diagnostics.append(f"FX: {type(exc).__name__}")
 
-                observations_by_code[logical_code] = observations
+            for logical_code, future in core_futures.items():
+                try:
+                    observations = future.result()
+                    observations_by_code[logical_code] = observations
+                    if not observations:
+                        diagnostics.append(f"{logical_code}: no observations")
+                        continue
+                    indicator = self._build_indicator_payload(logical_code, observations)
+                    if indicator is not None:
+                        indicators.append(indicator)
+                except (ConnectionError, TimeoutError, OSError, ValueError) as exc:
+                    diagnostics.append(f"{logical_code}: {type(exc).__name__}")
 
-                if not observations:
-                    diagnostics.append(f"{logical_code}: no observations")
-                    continue
+            try:
+                grouped = labor_future.result()
+                for logical_code in self._LABOR_INPUTS:
+                    observations = grouped.get(logical_code, ())
+                    observations_by_code[logical_code] = observations
+                    if not observations:
+                        diagnostics.append(f"{logical_code}: no observations")
+                        continue
+                    indicator = self._build_indicator_payload(logical_code, observations)
+                    if indicator is not None:
+                        indicators.append(indicator)
+            except (ConnectionError, TimeoutError, OSError, ValueError) as exc:
+                diagnostics.append(f"LABOR: {type(exc).__name__}")
 
-                indicator = self._build_indicator_payload(
-                    logical_code,
-                    observations,
-                )
-
-                if indicator is not None:
-                    indicators.append(indicator)
-
-        except (
-            ConnectionError,
-            TimeoutError,
-            ValueError,
-        ) as exc:
-            diagnostics.append("LABOR: " f"{type(exc).__name__}: {exc}")
-
-        try:
-            tri_observations = self._get_or_fetch_tri_observations()
-
-            for logical_code, observations in tri_observations.items():
-                observations_by_code[logical_code] = observations
-
-                indicator = self._build_indicator_payload(
-                    logical_code,
-                    observations,
-                )
-
-                if indicator is not None:
-                    indicators.append(indicator)
-
-        except (
-            ConnectionError,
-            TimeoutError,
-            ValueError,
-        ) as exc:
-            diagnostics.append("TRI: " f"{type(exc).__name__}: {exc}")
+            try:
+                grouped = tri_future.result()
+                for logical_code, observations in grouped.items():
+                    observations_by_code[logical_code] = observations
+                    indicator = self._build_indicator_payload(logical_code, observations)
+                    if indicator is not None:
+                        indicators.append(indicator)
+            except (ConnectionError, TimeoutError, OSError, ValueError) as exc:
+                diagnostics.append(f"TRI: {type(exc).__name__}")
 
         unemployment = self._build_unemployment_indicator(observations_by_code)
-
         if unemployment is not None:
             indicators.append(unemployment)
         else:
@@ -266,24 +353,31 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
                 reason=("; ".join(diagnostics) if diagnostics else "BCCR live data unavailable")
             )
 
+        # Upsert only new/recent overlapping observations, not the whole
+        # downloaded lookback on every refresh. Historical snapshots are
+        # never replaced and revisions inside the overlap remain recoverable.
+        try:
+            self._persist_official_history(observations_by_code)
+        except Exception as exc:
+            diagnostics.append(f"BCCR: persistencia fallida ({type(exc).__name__})")
+
+        # One failed or unpublished series must not blank a valid cached card.
+        # Every restored card carries its own LOCAL provenance and observation date.
+        live_codes = {item["code"] for item in indicators}
+        restored, historical_diagnostics = self._restore_missing_from_local_history(live_codes)
+        indicators.extend(restored)
+        diagnostics.extend(historical_diagnostics)
+
         return {
             "status": "AVAILABLE",
-            "source": "BCCR",
+            "source": "BCCR · MIXTO CON HISTÓRICO LOCAL" if restored else "BCCR",
             "indicators": indicators,
             "tri_curves": {
-                "CRC": self._build_tri_curve(
-                    indicators,
-                    "CRC",
-                ),
-                "USD": self._build_tri_curve(
-                    indicators,
-                    "USD",
-                ),
+                "CRC": self._build_tri_curve(indicators, "CRC"),
+                "USD": self._build_tri_curve(indicators, "USD"),
             },
             "diagnostics": diagnostics,
-            "cache": {
-                "entries": self._cache.size(),
-            },
+            "cache": {"entries": self._cache.size()},
         }
 
     def _historical_fallback(
@@ -297,65 +391,68 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
         rate-limit, or BCCR service interruptions without fabricating data.
         """
         repository = EconomicHistoricalRepository()
-        requested_codes = (
-            *self._FX_INDICATORS,
-            *self._CORE_INDICATORS,
-            "UNEMPLOYMENT",
-        )
+        try:
+            requested_codes = (
+                *self._FX_INDICATORS,
+                *self._CORE_INDICATORS,
+                "UNEMPLOYMENT",
+            )
 
-        indicators: list[dict[str, Any]] = []
-        available_codes = set(repository.available_series())
+            indicators: list[dict[str, Any]] = []
+            available_codes = set(repository.available_series())
 
-        tri_codes = sorted(
-            code
-            for code in available_codes
-            if code.startswith("TRI_CRC_") or code.startswith("TRI_USD_")
-        )
+            tri_codes = sorted(
+                code
+                for code in available_codes
+                if code.startswith("TRI_CRC_") or code.startswith("TRI_USD_")
+            )
 
-        for logical_code in (*requested_codes, *tri_codes):
-            if logical_code not in available_codes:
-                continue
+            for logical_code in (*requested_codes, *tri_codes):
+                if logical_code not in available_codes:
+                    continue
 
-            series = repository.get_series(logical_code)
-            if not series.observations:
-                continue
+                series = repository.get_recent_series(logical_code, limit=2)
+                if not series.observations:
+                    continue
 
-            converted = tuple(
-                EconomicIndicatorObservation(
-                    indicator_code=item.indicator_code,
-                    observation_date=item.observation_date,
-                    value=item.value,
-                    source=item.source,
-                    unit=item.unit,
-                    source_series_code=item.source_series_code,
-                    quality_status="VALID",
-                    is_preliminary=False,
+                converted = tuple(
+                    EconomicIndicatorObservation(
+                        indicator_code=item.indicator_code,
+                        observation_date=item.observation_date,
+                        value=item.value,
+                        source=item.source,
+                        unit=item.unit,
+                        source_series_code=item.source_series_code,
+                        quality_status="VALID",
+                        is_preliminary=False,
+                    )
+                    for item in series.observations[-2:]
                 )
-                for item in series.observations[-2:]
-            )
 
-            payload = self._build_indicator_payload(
-                logical_code,
-                converted,
-            )
-            if payload is not None:
-                payload["source"] = series.source
-                indicators.append(payload)
+                payload = self._build_indicator_payload(
+                    logical_code,
+                    converted,
+                )
+                if payload is not None:
+                    payload["source"] = series.source
+                    indicators.append(payload)
 
-        return {
-            "status": "AVAILABLE" if indicators else "UNAVAILABLE",
-            "source": "BCCR · HISTÓRICO LOCAL",
-            "indicators": indicators,
-            "tri_curves": {
-                "CRC": self._build_tri_curve(indicators, "CRC"),
-                "USD": self._build_tri_curve(indicators, "USD"),
-            },
-            "diagnostics": (
-                f"Live BCCR unavailable: {reason}",
-                "Using persisted official economic history",
-            ),
-            "cache": {"entries": 0},
-        }
+            return {
+                "status": "AVAILABLE" if indicators else "UNAVAILABLE",
+                "source": "BCCR · HISTÓRICO LOCAL",
+                "indicators": indicators,
+                "tri_curves": {
+                    "CRC": self._build_tri_curve(indicators, "CRC"),
+                    "USD": self._build_tri_curve(indicators, "USD"),
+                },
+                "diagnostics": (
+                    f"Live BCCR unavailable: {reason}",
+                    "Using persisted official economic history",
+                ),
+                "cache": {"entries": 0},
+            }
+        finally:
+            repository.store.close()
 
     def _get_or_fetch_observations(
         self,
@@ -469,13 +566,33 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
 
         to_date = date.today()
 
-        from_date = to_date - timedelta(days=history_days)
-
-        response = self._client.fetch_chart_series(
-            chart_code=chart_code,
-            from_date=(from_date.strftime("%Y/%m/%d")),
-            to_date=(to_date.strftime("%Y/%m/%d")),
+        from_date = self._incremental_start(
+            codes=logical_codes, end=to_date, default_days=history_days
         )
+
+        try:
+            response = self._client.fetch_chart_series(
+                chart_code=chart_code,
+                from_date=(from_date.strftime("%Y/%m/%d")),
+                to_date=(to_date.strftime("%Y/%m/%d")),
+            )
+        except (ConnectionError, TimeoutError, OSError, ValueError):
+            # Official SDDE also publishes exchange rates as individual series.
+            # A chart-level outage must not prevent confirmed FX observations.
+            # Never fabricate data or replace an authoritative successful chart.
+            if chart_code != self._FX_CHART_CODE:
+                raise
+            recovered: dict[str, tuple[EconomicIndicatorObservation, ...]] = {}
+            for logical_code in logical_codes:
+                try:
+                    observations = self._get_or_fetch_observations(logical_code)
+                except (ConnectionError, TimeoutError, OSError, ValueError):
+                    continue
+                if observations:
+                    recovered[logical_code] = observations
+            if recovered:
+                return recovered
+            raise
 
         body = response.get("body")
 
@@ -567,7 +684,11 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
 
         to_date = date.today()
 
-        from_date = to_date - self._history_window(definition.frequency)
+        from_date = self._incremental_start(
+            codes=(logical_code,),
+            end=to_date,
+            default_days=self._history_window(definition.frequency).days,
+        )
 
         response = self._client.fetch_series(
             indicator_code=(mapping.source_series_code),
@@ -602,7 +723,7 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
     ]:
         to_date = date.today()
 
-        from_date = to_date - timedelta(days=45)
+        from_date = self._incremental_start(codes=self._tri_codes(), end=to_date, default_days=45)
 
         response = self._client.fetch_chart_series(
             chart_code=(self._TRI_CHART_CODE),

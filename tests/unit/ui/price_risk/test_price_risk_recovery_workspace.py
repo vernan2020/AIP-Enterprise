@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+import csv
 from decimal import Decimal
 
-from PySide6.QtWidgets import QTabWidget
+from PySide6.QtWidgets import QTableWidgetItem, QTabWidget
 
 from aip.ui.modules.price_risk.models.price_risk_row import RateShockViewRow, RiskChartPoint
 from aip.ui.modules.price_risk.viewmodels.price_risk_view_model import PriceRiskViewModel
 from aip.ui.modules.price_risk.views.price_risk_view import PriceRiskView
+from aip.ui.widgets.table_csv_export import export_table_csv
 
 
 class _StubPresenter:
@@ -121,6 +123,229 @@ def test_price_risk_workspace_shows_rate_sensitivity_without_fabricating_nii(qt_
         assert view.view_model.worst_delta_eve == "-₡84.00 MM"
         assert len(view.view_model.rate_shock_rows) == 2
         assert not hasattr(view.view_model, "delta_nii")
+    finally:
+        view.close()
+        qt_app.processEvents()
+
+
+def test_price_risk_kpis_reflow_without_losing_cards(qt_app) -> None:
+    """Six certified KPI values remain present at compact and desktop widths."""
+    view = PriceRiskView(_StubPresenter())  # type: ignore[arg-type]
+    try:
+        grid = view._kpi_grid
+        assert grid is not None
+        cards = view._kpi_cards
+        assert len(cards) == 6
+
+        for width, expected_columns in ((1280, 6), (900, 3), (620, 2), (1280, 6)):
+            view._arrange_kpi_cards(width)
+            assert view._kpi_columns == expected_columns
+            assert grid.itemAtPosition(0, 0).widget() is cards[0]
+            for index, card in enumerate(cards):
+                item = grid.itemAtPosition(index // expected_columns, index % expected_columns)
+                assert item is not None
+                assert item.widget() is card
+    finally:
+        view.close()
+        qt_app.processEvents()
+
+
+def test_price_and_rate_chart_readout_do_not_require_windows_tooltip(qt_app) -> None:
+    view = PriceRiskView(_StubPresenter())  # type: ignore[arg-type]
+    try:
+        assert view._price_hover_readout.objectName() == "priceRiskHoverReadout"
+        assert view._rate_hover_readout.objectName() == "rateRiskHoverReadout"
+        view._contribution_chart.hover_readout_changed.emit("Serie CRG001 · +16.50%")
+        assert "CRG001" in view._price_hover_readout.text()
+        view._pareto_chart.hover_readout_changed.emit("Acumulado: 28.9%")
+        assert "28.9%" in view._price_hover_readout.text()
+        view._contribution_chart.hover_readout_changed.emit("")
+        assert "Pase el cursor" in view._price_hover_readout.text()
+
+        view._bucket_chart.hover_readout_changed.emit("< 1 año · ₡4.00 MM")
+        assert "₡4.00 MM" in view._rate_hover_readout.text()
+        view._shock_chart.hover_readout_changed.emit("-200 pb · ₡84.00 MM")
+        assert "-200 pb" in view._rate_hover_readout.text()
+        view._shock_chart.hover_readout_changed.emit("")
+        assert "Pase el cursor" in view._rate_hover_readout.text()
+    finally:
+        view.close()
+        qt_app.processEvents()
+
+
+def test_rate_risk_kpi_cards_reflow_without_losing_values(qt_app) -> None:
+    view = PriceRiskView(_StubPresenter())  # type: ignore[arg-type]
+    try:
+        grid = view._rate_kpi_grid
+        assert grid is not None
+        cards = view._rate_kpi_cards
+        assert len(cards) == 6
+        view._kpi_labels["dv01_total"].setText("₡42.00 MM")
+
+        for width, columns in ((1400, 6), (900, 3), (630, 2), (1400, 6)):
+            view._arrange_rate_kpis(width)
+            assert view._rate_kpi_columns == columns
+            for index, card in enumerate(cards):
+                item = grid.itemAtPosition(index // columns, index % columns)
+                assert item is not None
+                assert item.widget() is card
+            assert view._kpi_labels["dv01_total"].text() == "₡42.00 MM"
+    finally:
+        view.close()
+        qt_app.processEvents()
+
+
+def test_var_quality_strip_reflows_all_eight_metrics_without_changing_values(qt_app) -> None:
+    view = PriceRiskView(_StubPresenter())  # type: ignore[arg-type]
+    try:
+        grid = view._quality_grid
+        cards = view._quality_cards
+        note = view._quality_note
+        assert grid is not None
+        assert note is not None
+        assert len(cards) == 8
+        assert len(view._quality_labels) == 8
+
+        view._quality_labels["reconciliation"].setText("100.0000%")
+        for width, columns in ((1440, 8), (980, 4), (680, 2), (1440, 8)):
+            view._arrange_quality_cards(width)
+            assert view._quality_columns == columns
+            for index, card in enumerate(cards):
+                item = grid.itemAtPosition(index // columns, index % columns)
+                assert item is not None
+                assert item.widget() is card
+            note_row = len(cards) // columns
+            note_item = grid.itemAtPosition(note_row, 0)
+            assert note_item is not None
+            assert note_item.widget() is note
+            assert view._quality_labels["reconciliation"].text() == "100.0000%"
+    finally:
+        view.close()
+        qt_app.processEvents()
+
+
+def test_price_risk_chart_groups_stack_at_compact_width(qt_app) -> None:
+    view = PriceRiskView(_StubPresenter())  # type: ignore[arg-type]
+    try:
+        view._bind_view_model(_view_model())
+        price_grid = view._var_chart_grid
+        rate_grid = view._rate_chart_grid
+        assert price_grid is not None
+        assert rate_grid is not None
+        price_groups = view._var_chart_groups
+        rate_groups = view._rate_chart_groups
+        assert len(price_groups) == 4
+        assert len(rate_groups) == 4
+        expected_var = view.view_model.var_crc
+        expected_dv01 = view.view_model.dv01_total
+
+        for width, columns in ((1300, 2), (820, 1), (1300, 2)):
+            view._arrange_visual_grids(width)
+            assert view._chart_columns == columns
+            for grid, groups in ((price_grid, price_groups), (rate_grid, rate_groups)):
+                for index, group in enumerate(groups):
+                    item = grid.itemAtPosition(index // columns, index % columns)
+                    assert item is not None
+                    assert item.widget() is group
+            assert view.view_model.var_crc == expected_var
+            assert view.view_model.dv01_total == expected_dv01
+        assert view._price_hover_readout.objectName() == "priceRiskHoverReadout"
+        assert view._rate_hover_readout.objectName() == "rateRiskHoverReadout"
+    finally:
+        view.close()
+        qt_app.processEvents()
+
+
+def test_rate_context_reflows_without_losing_eve_or_status(qt_app) -> None:
+    view = PriceRiskView(_StubPresenter())  # type: ignore[arg-type]
+    try:
+        view._bind_view_model(_view_model())
+        grid = view._rate_context_grid
+        blocks = view._rate_context_blocks
+        assert grid is not None
+        assert len(blocks) == 3
+        for width, columns in ((1280, 3), (650, 1), (1280, 3)):
+            view._arrange_rate_context(width)
+            assert view._rate_context_columns == columns
+            for index, block in enumerate(blocks):
+                item = grid.itemAtPosition(index // columns, index % columns)
+                assert item is not None
+                assert item.widget() is block
+            assert view._rate_context_labels["worst_eve"].text() == "-₡84.00 MM"
+            assert view._rate_context_labels["shock_status"].text() == "CALCULADO"
+    finally:
+        view.close()
+        qt_app.processEvents()
+
+
+def test_var_scenario_fields_reflow_and_keep_period_and_status(qt_app) -> None:
+    view = PriceRiskView(_StubPresenter())  # type: ignore[arg-type]
+    try:
+        view._bind_view_model(_view_model())
+        grid = view._scenario_grid
+        fields = view._scenario_fields
+        assert grid is not None
+        assert len(fields) == 3
+        original_period = view._scenario_period.text()
+        original_status = view._status_label.text()
+        for width, columns in ((1200, 3), (650, 1), (1200, 3)):
+            view._arrange_scenario_fields(width)
+            assert view._scenario_columns == columns
+            for index, field in enumerate(fields):
+                item = grid.itemAtPosition(index // columns, index % columns)
+                assert item is not None
+                assert item.widget() is field
+            note_row = (len(fields) + columns - 1) // columns
+            note = grid.itemAtPosition(note_row, 0)
+            assert note is not None
+            assert note.widget() is view._diagnostic_label
+            assert view._scenario_period.text() == original_period
+            assert view._status_label.text() == original_status
+        assert view._diagnostic_label.wordWrap()
+    finally:
+        view.close()
+        qt_app.processEvents()
+
+
+def test_var_and_dv01_csv_actions_are_available(qt_app, tmp_path) -> None:
+    view = PriceRiskView(_StubPresenter())  # type: ignore[arg-type]
+    try:
+        view._bind_view_model(_view_model())
+        assert view._export_positions_button.text() == "Exportar CSV"
+        assert view._export_shock_button.text() == "Exportar CSV"
+        destination = tmp_path / "rate-shocks.csv"
+        count = export_table_csv(view._shock_table, destination)
+        assert count == 2
+        with destination.open(encoding="utf-8-sig", newline="") as stream:
+            exported = list(csv.reader(stream, delimiter=";"))
+        assert exported[0] == [
+            "Shock",
+            "ΔEVE aproximado",
+            "Valor de Mercado sensibilizado",
+        ]
+        assert exported[1][0] == "-200 pb"
+        assert exported[2][0] == "+200 pb"
+    finally:
+        view.close()
+        qt_app.processEvents()
+
+
+def test_var_csv_export_respects_position_filters(qt_app, tmp_path) -> None:
+    view = PriceRiskView(_StubPresenter())  # type: ignore[arg-type]
+    try:
+        table = view._table
+        table.setSortingEnabled(False)
+        table.setRowCount(2)
+        table.setItem(0, 0, QTableWidgetItem("CRG0001"))
+        table.setItem(1, 0, QTableWidgetItem("CRG0002"))
+        view._table_search.setText("CRG0001")
+        assert table.isRowHidden(1)
+        destination = tmp_path / "var-posiciones.csv"
+        assert export_table_csv(table, destination, visible_rows_only=True) == 1
+        with destination.open(encoding="utf-8-sig", newline="") as stream:
+            exported = list(csv.reader(stream, delimiter=";"))
+        assert len(exported) == 2
+        assert exported[1][0] == "CRG0001"
     finally:
         view.close()
         qt_app.processEvents()

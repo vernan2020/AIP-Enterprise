@@ -255,8 +255,8 @@ def test_official_api_falls_back_to_latest_complete_accounting_cutoff() -> None:
         "Corte solicitado en AIP: 31/08/2026" in message and "31/07/2026" in message
         for message in result.diagnostics
     )
-    assert all(
-        "August accounting cutoff not published" not in message for message in result.diagnostics
+    assert any(
+        "August accounting cutoff not published" in message for message in result.diagnostics
     )
 
 
@@ -287,3 +287,164 @@ def test_official_reader_never_activates_bundled_reference_matrix() -> None:
     assert result.source_files == ()
     assert any("no se utiliza información de respaldo" in message for message in result.diagnostics)
     assert all("referencia institucional" not in message for message in result.diagnostics)
+
+
+class _StaleOctoberResponseClient(_OfficialStubClient):
+    """October query may return a stale August snapshot; September is published."""
+
+    def _post_json(self, endpoint: str, payload: dict[str, object]) -> dict[str, object]:
+        parameters = payload["parametrosEntidad"]
+        assert isinstance(parameters, dict)
+        response = super()._post_json(endpoint, payload)
+        if (
+            str(parameters["codigoEntidad"]) == "3004045138"
+            and str(parameters["periodos"]) == "20261001"
+            and ("BalanceSituacion" in endpoint or "EstadoResultados" in endpoint)
+        ):
+            key = (
+                "listaBalanceSituacionAnalisisFinancieroEntidad"
+                if "BalanceSituacion" in endpoint
+                else "listaEstadoResultadosAnalisisFinancieroEntidad"
+            )
+            rows = response[key]
+            assert isinstance(rows, list)
+            for row in rows:
+                row["periodo"] = "2026-08-01T00:00:00"
+        return response
+
+
+def test_latest_published_september_is_not_skipped_by_stale_october_response() -> None:
+    client = _StaleOctoberResponseClient(
+        SUGEFFinancialSourceConfig(api_retries=0, api_entity_codes=("3004045138",))
+    )
+    diagnostics: list[str] = []
+
+    probe = client._resolve_primary_statement_cutoff(date(2026, 10, 12), diagnostics)
+
+    assert probe is not None
+    assert probe.cutoff == date(2026, 9, 30)
+    assert {line.statement_date for line in (*probe.balance_lines, *probe.income_lines)} == {
+        date(2026, 9, 30)
+    }
+    assert ("3004045138", "BALANCE", "20261001") in client.requests
+    assert ("3004045138", "INCOME", "20261001") in client.requests
+    assert ("3004045138", "BALANCE", "20260901") in client.requests
+    assert ("3004045138", "INCOME", "20260901") in client.requests
+    assert any(
+        "SUGEF sondeo 09/2026" in message and "último 09/2026" in message for message in diagnostics
+    )
+
+
+def test_unpublished_september_keeps_latest_complete_august_without_fabrication() -> None:
+    class AugustOnlyClient(_OfficialStubClient):
+        def _post_json(self, endpoint: str, payload: dict[str, object]) -> dict[str, object]:
+            parameters = payload["parametrosEntidad"]
+            assert isinstance(parameters, dict)
+            response = super()._post_json(endpoint, payload)
+            if str(parameters["codigoEntidad"]) == "3004045138" and (
+                "BalanceSituacion" in endpoint or "EstadoResultados" in endpoint
+            ):
+                key = (
+                    "listaBalanceSituacionAnalisisFinancieroEntidad"
+                    if "BalanceSituacion" in endpoint
+                    else "listaEstadoResultadosAnalisisFinancieroEntidad"
+                )
+                rows = response[key]
+                assert isinstance(rows, list)
+                for row in rows:
+                    row["periodo"] = "2026-08-01T00:00:00"
+            return response
+
+    client = AugustOnlyClient(
+        SUGEFFinancialSourceConfig(api_retries=0, api_entity_codes=("3004045138",))
+    )
+    probe = client._resolve_primary_statement_cutoff(date(2026, 10, 12), [])
+
+    assert probe is not None
+    assert probe.cutoff == date(2026, 8, 31)
+    assert ("3004045138", "BALANCE", "20260901") in client.requests
+    assert ("3004045138", "BALANCE", "20260801") in client.requests
+
+
+def test_future_month_end_is_not_selected_before_requested_cutoff() -> None:
+    client = _OfficialStubClient(
+        SUGEFFinancialSourceConfig(api_retries=0, api_entity_codes=("3004045138",))
+    )
+    probe = client._resolve_primary_statement_cutoff(date(2026, 10, 12), [])
+
+    assert probe is not None
+    assert probe.cutoff == date(2026, 9, 30)
+    assert ("3004045138", "BALANCE", "20260901") in client.requests
+
+
+def test_publication_failure_remains_visible_after_august_fallback() -> None:
+    class SeptemberFailureClient(_OfficialStubClient):
+        def _post_json(self, endpoint: str, payload: dict[str, object]) -> dict[str, object]:
+            parameters = payload["parametrosEntidad"]
+            assert isinstance(parameters, dict)
+            if parameters["periodos"] in {"20261001", "20260901"}:
+                raise URLError("accounting endpoint unavailable")
+            return super()._post_json(endpoint, payload)
+
+    client = SeptemberFailureClient(SUGEFFinancialSourceConfig(api_retries=0))
+    diagnostics: list[str] = []
+    probe = client._resolve_primary_statement_cutoff(date(2026, 10, 13), diagnostics)
+
+    assert probe is not None
+    assert probe.cutoff == date(2026, 8, 31)
+    assert any("01/09/2026" in message and "URLError" in message for message in diagnostics)
+
+
+def test_inconsistent_responses_never_replace_newest_confirmed_cutoff() -> None:
+    class InconsistentClient(_OfficialStubClient):
+        def _post_json(self, endpoint: str, payload: dict[str, object]) -> dict[str, object]:
+            parameters = payload["parametrosEntidad"]
+            assert isinstance(parameters, dict)
+            response = super()._post_json(endpoint, payload)
+            returned_period = (
+                "2026-09-01T00:00:00"
+                if parameters["periodos"] == "20261001"
+                else "2026-08-01T00:00:00"
+            )
+            for key, rows in response.items():
+                if key.startswith("lista") and isinstance(rows, list):
+                    for row in rows:
+                        row["periodo"] = returned_period
+            return response
+
+    client = InconsistentClient(SUGEFFinancialSourceConfig(api_retries=0))
+    diagnostics: list[str] = []
+    probe = client._resolve_primary_statement_cutoff(date(2026, 10, 13), diagnostics)
+
+    assert probe is not None
+    assert probe.cutoff == date(2026, 9, 30)
+    assert {line.statement_date for line in (*probe.balance_lines, *probe.income_lines)} == {
+        date(2026, 9, 30)
+    }
+    assert any("09/2026" in message and "08/2026" in message for message in diagnostics)
+
+
+def test_september_official_empty_response_is_visible_with_august_data() -> None:
+    class SeptemberNotPublishedClient(_OfficialStubClient):
+        def _post_json(self, endpoint: str, payload: dict[str, object]) -> dict[str, object]:
+            parameters = payload["parametrosEntidad"]
+            assert isinstance(parameters, dict)
+            if parameters["periodos"] == "20260901":
+                # Public Balance response observed during the September probe.
+                return {
+                    "mensaje": "No se encontraron registros para los datos consultados.",
+                    "tipoMensaje": "warning",
+                    "tieneError": True,
+                }
+            return super()._post_json(endpoint, payload)
+
+    client = SeptemberNotPublishedClient(SUGEFFinancialSourceConfig(api_retries=0))
+    diagnostics: list[str] = []
+    probe = client._resolve_primary_statement_cutoff(date(2026, 9, 30), diagnostics)
+
+    assert probe is not None
+    assert probe.cutoff == date(2026, 8, 31)
+    assert any(
+        "01/09/2026" in message and "No se encontraron registros" in message
+        for message in diagnostics
+    )

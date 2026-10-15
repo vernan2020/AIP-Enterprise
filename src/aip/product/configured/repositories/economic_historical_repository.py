@@ -60,6 +60,18 @@ class EconomicHistoricalRepository:
             source=source,
         )
 
+    def get_recent_series(self, indicator_code: str, *, limit: int = 2) -> EconomicHistoricalSeries:
+        """Load only the newest historical points for low-latency fallback."""
+        normalized_code = indicator_code.strip().upper()
+        observations = self._store.recent_observations_for_series(
+            indicator_code=normalized_code, limit=limit
+        )
+        return EconomicHistoricalSeries(
+            indicator_code=normalized_code,
+            observations=observations,
+            source=observations[-1].source if observations else "UNKNOWN",
+        )
+
     def latest_available_date(
         self,
         indicator_code: str,
@@ -70,6 +82,15 @@ class EconomicHistoricalRepository:
             return None
 
         return observation.observation_date
+
+    def latest_available_dates(
+        self,
+        indicator_codes: tuple[str, ...],
+    ) -> dict[str, date | None]:
+        """Resolve all latest observation dates with one read-only aggregate."""
+        normalized_codes = tuple(code.strip().upper() for code in indicator_codes)
+        found = self._store.latest_observation_dates(normalized_codes)
+        return {code: found.get(code) for code in normalized_codes}
 
     def available_series(
         self,

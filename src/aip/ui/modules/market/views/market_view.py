@@ -5,12 +5,14 @@ from PySide6.QtGui import QColor, QFont, QLinearGradient, QPainter, QPen, QPolyg
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QComboBox,
+    QFrame,
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
     QHeaderView,
     QLabel,
     QPlainTextEdit,
+    QScrollArea,
     QSplitter,
     QTableWidget,
     QTableWidgetItem,
@@ -252,9 +254,19 @@ class MarketView(QWidget):
         )
 
     def _build_ui(self) -> None:
-        root = QVBoxLayout(self)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        self._workspace_scroll = QScrollArea()
+        self._workspace_scroll.setObjectName("marketWorkspaceScroll")
+        self._workspace_scroll.setWidgetResizable(True)
+        self._workspace_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self._workspace_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        body = QWidget()
+        root = QVBoxLayout(body)
         root.setContentsMargins(16, 10, 16, 12)
         root.setSpacing(9)
+        self._workspace_scroll.setWidget(body)
+        outer.addWidget(self._workspace_scroll)
         self.setStyleSheet(
             "QWidget#marketWorkspace {background:qlineargradient(x1:0,y1:0,x2:0,y2:1,"
             "stop:0 #F5FAFD,stop:1 #EEF5F9);}"
@@ -293,8 +305,11 @@ class MarketView(QWidget):
         root.addWidget(self._summary_view)
 
         analytical = QSplitter(Qt.Orientation.Horizontal)
+        self._analytical_splitter = analytical
         analytical.setObjectName("marketAnalyticalSplitter")
         analytical.setChildrenCollapsible(False)
+        analytical.setHandleWidth(8)
+        analytical.setMinimumHeight(480)
 
         curve_panel = QWidget()
         curve_layout = QVBoxLayout(curve_panel)
@@ -429,8 +444,8 @@ class MarketView(QWidget):
 
         detail_group = QGroupBox("Detalle del instrumento seleccionado")
         detail_group.setStyleSheet(self._group_style())
-        detail_group.setMinimumHeight(118)
-        detail_group.setMaximumHeight(148)
+        detail_group.setMinimumHeight(185)
+        detail_group.setObjectName("marketInstrumentDetails")
         detail = QGridLayout(detail_group)
         detail.setContentsMargins(10, 10, 10, 7)
         detail.setHorizontalSpacing(10)
@@ -449,17 +464,24 @@ class MarketView(QWidget):
             ("position_count", "Posiciones"),
             ("in_portfolio", "En portafolio"),
         )
+        self._detail_cells: list[tuple[QLabel, QLabel]] = []
+        self._detail_grid = detail
+        self._detail_columns = 4
         for index, (key, caption) in enumerate(fields):
             row = index // 4
             pair = index % 4
             caption_label = QLabel(caption)
-            caption_label.setStyleSheet("color:#7B8D98; font-size:8px;")
+            caption_label.setStyleSheet("color:#566D7C; font-size:9pt;")
+            caption_label.setWordWrap(True)
             value_label = QLabel("-")
+            value_label.setWordWrap(True)
             value_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
             value_label.setStyleSheet("color:#00345F; font-weight:700;")
             self._detail_labels[key] = value_label
             detail.addWidget(caption_label, row, pair * 2)
             detail.addWidget(value_label, row, pair * 2 + 1)
+            self._detail_cells.append((caption_label, value_label))
+        self._detail_group = detail_group
         root.addWidget(detail_group)
 
         self._status = QLabel("")
@@ -478,6 +500,28 @@ class MarketView(QWidget):
             self._rotation_portfolio_filter,
         ):
             combo.currentIndexChanged.connect(self._bind_rotation_rows)
+
+    def _arrange_detail(self, width: int) -> None:
+        columns = 2 if width < 1450 else 4
+        if columns == self._detail_columns:
+            return
+        for caption, value in self._detail_cells:
+            self._detail_grid.removeWidget(caption)
+            self._detail_grid.removeWidget(value)
+        for index, (caption, value) in enumerate(self._detail_cells):
+            row, pair = divmod(index, columns)
+            self._detail_grid.addWidget(caption, row, pair * 2)
+            self._detail_grid.addWidget(value, row, pair * 2 + 1)
+        self._detail_columns = columns
+
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        width = event.size().width()
+        self._arrange_detail(width)
+        self._analytical_splitter.setOrientation(
+            Qt.Orientation.Vertical if width < 1050 else Qt.Orientation.Horizontal
+        )
+        self._analytical_splitter.setMinimumHeight(850 if width < 1050 else 480)
 
     @staticmethod
     def _curve_filter_combo() -> QComboBox:
@@ -502,8 +546,12 @@ class MarketView(QWidget):
         table.verticalHeader().setVisible(False)
         table.verticalHeader().setDefaultSectionSize(29)
         header = table.horizontalHeader()
-        header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
-        header.setStretchLastSection(True)
+        header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+        header.setStretchLastSection(False)
+        header.setMinimumSectionSize(76)
+        for index, title in enumerate(headers):
+            table.setColumnWidth(index, max(90, min(210, 15 + 8 * len(title))))
+        table.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
         table.setStyleSheet(
             "QHeaderView::section {background:#005EB8; color:#FFFFFF; border:none; "
             "border-right:1px solid #1675C5; padding:6px 5px; font-weight:700;}"
@@ -524,6 +572,7 @@ class MarketView(QWidget):
         numeric: bool = False,
     ) -> None:
         item = QTableWidgetItem(text)
+        item.setToolTip(text)
         item.setData(Qt.ItemDataRole.UserRole, source_index)
         if numeric:
             item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)

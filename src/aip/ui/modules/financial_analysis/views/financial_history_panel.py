@@ -26,6 +26,8 @@ class FinancialHistoryPanel(QWidget):
         super().__init__()
         self.setObjectName("financialHistoryPanel")
         self._grid = QGridLayout()
+        self._history_cards: tuple[QFrame, ...] = ()
+        self._history_columns = 2
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -84,7 +86,30 @@ class FinancialHistoryPanel(QWidget):
             "}"
         )
 
+    @staticmethod
+    def _columns_for_width(width: int) -> int:
+        return 1 if width < 980 else 2
+
+    def _reflow_history_cards(self, width: int) -> None:
+        if not self._history_cards:
+            return
+        columns = self._columns_for_width(width)
+        if columns == self._history_columns:
+            return
+        for card in self._history_cards:
+            self._grid.removeWidget(card)
+        for index, card in enumerate(self._history_cards):
+            self._grid.addWidget(card, index // columns, index % columns)
+        self._grid.setColumnStretch(0, 1)
+        self._grid.setColumnStretch(1, 1 if columns == 2 else 0)
+        self._history_columns = columns
+
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        self._reflow_history_cards(event.size().width())
+
     def bind_history(self, series: tuple[FinancialMetricHistorySeriesView, ...]) -> None:
+        self._history_cards = ()
         self._clear_grid()
         if not series:
             empty = QLabel(
@@ -95,8 +120,13 @@ class FinancialHistoryPanel(QWidget):
             self._grid.addWidget(empty, 0, 0, 1, 2)
             return
 
-        for index, item in enumerate(series):
-            self._grid.addWidget(self._history_card(item), index // 2, index % 2)
+        self._history_cards = tuple(self._history_card(item) for item in series)
+        self._history_columns = self._columns_for_width(self.width())
+        for index, card in enumerate(self._history_cards):
+            self._grid.addWidget(
+                card, index // self._history_columns, index % self._history_columns
+            )
+        self._grid.setColumnStretch(1, 1 if self._history_columns == 2 else 0)
 
     def _clear_grid(self) -> None:
         while self._grid.count():
@@ -117,6 +147,8 @@ class FinancialHistoryPanel(QWidget):
 
         top = QHBoxLayout()
         title = QLabel(item.label)
+        title.setWordWrap(True)
+        title.setToolTip(item.label)
         title.setStyleSheet("font-size:11px; font-weight:700; color:#142E46; border:none;")
         top.addWidget(title)
         top.addStretch(1)
@@ -127,16 +159,28 @@ class FinancialHistoryPanel(QWidget):
 
         metrics = QHBoxLayout()
         latest = QLabel(item.latest_value)
+        latest.setObjectName("financialHistoryLatestValue")
+        latest.setWordWrap(True)
         latest.setStyleSheet("font-size:15px; font-weight:700; color:#005EB8; border:none;")
-        metrics.addWidget(latest)
-        metrics.addStretch(1)
+        metrics.addWidget(latest, 1)
         change = QLabel(item.period_change)
+        change.setObjectName("financialHistoryPeriodChange")
+        change.setWordWrap(True)
         change.setStyleSheet("font-size:8px; font-weight:600; color:#52687A; border:none;")
-        metrics.addWidget(change)
+        metrics.addWidget(change, 1)
         layout.addLayout(metrics)
 
-        chart_view = self._chart_view(item)
+        readout = QLabel("Pase el cursor sobre un punto para ver su periodo y valor.")
+        readout.setObjectName("financialHistoryHoverReadout")
+        readout.setTextFormat(Qt.TextFormat.PlainText)
+        readout.setWordWrap(True)
+        readout.setStyleSheet(
+            "color:#17324D; background:#EAF4FC; border:1px solid #C7DDEB; "
+            "border-radius:6px; padding:5px 8px; font-size:9px; font-weight:600;"
+        )
+        chart_view = self._chart_view(item, detail_label=readout)
         layout.addWidget(chart_view, 1)
+        layout.addWidget(readout)
 
         source = QLabel(f"Cuenta/fuente: {item.source_account}")
         source.setWordWrap(True)
@@ -144,7 +188,9 @@ class FinancialHistoryPanel(QWidget):
         layout.addWidget(source)
         return card
 
-    def _chart_view(self, item: FinancialMetricHistorySeriesView) -> QChartView:
+    def _chart_view(
+        self, item: FinancialMetricHistorySeriesView, *, detail_label: QLabel | None = None
+    ) -> QChartView:
         chart = QChart()
         chart.legend().hide()
         chart.setBackgroundVisible(False)
@@ -194,6 +240,7 @@ class FinancialHistoryPanel(QWidget):
 
         segment: QLineSeries | None = None
         segment_tooltips: dict[int, str] | None = None
+        readouts: dict[int, str] = {}
         for point, point_date in zip(item.points, point_dates, strict=True):
             if point.value is None:
                 segment = None
@@ -213,9 +260,20 @@ class FinancialHistoryPanel(QWidget):
                         hovered_point, state, data
                     )
                 )
+                if detail_label is not None:
+                    segment.hovered.connect(
+                        lambda hovered_point, state, label=detail_label, data=segment_tooltips: (
+                            label.setText(
+                                readouts.get(int(hovered_point.x()), "")
+                                if state
+                                else "Pase el cursor sobre un punto para ver su periodo y valor."
+                            )
+                        )
+                    )
             timestamp = int(point_date.toMSecsSinceEpoch())
             segment.append(float(timestamp), point.value)
             assert segment_tooltips is not None
+            readouts[timestamp] = f"{item.label} · {point.date_label} · {point.display_value}"
             segment_tooltips[timestamp] = build_chart_tooltip(
                 item.label,
                 (

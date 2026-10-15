@@ -7,7 +7,8 @@ from aip.ui.modules.portfolio.widgets.portfolio_table import PortfolioTable
 
 def test_portfolio_widgets_construct(qt_app) -> None:
     filter_panel = PortfolioFilterPanel()
-    assert filter_panel.issuer.count() == 2
+    assert filter_panel.issuer.count() == 1
+    assert filter_panel.issuer.currentText() == "Todos"
 
     badge = PortfolioStatusBadge("Ready")
     assert badge.text() == "Ready"

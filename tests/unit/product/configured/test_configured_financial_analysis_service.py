@@ -300,3 +300,85 @@ def test_service_does_not_query_catalog_when_api_is_disabled() -> None:
     assert snapshot.account_catalog == ()
     assert catalog.read_count == 0
     assert any("Catálogo contable SUGEF no consultado" in item for item in snapshot.diagnostics)
+
+
+def test_sugef_api_monthly_lag_rechecks_after_ttl_without_manual_refresh(
+    monkeypatch,
+) -> None:
+    from aip.product.configured.services import configured_financial_analysis_service as module
+
+    now = [1000.0]
+    monkeypatch.setattr(module, "monotonic", lambda: now[0])
+    entity = FinancialEntity("3004045138", "COOPEALIANZA")
+    august = date(2026, 8, 31)
+    september = date(2026, 9, 30)
+
+    class _MonthlyReader:
+        def __init__(self) -> None:
+            self.read_count = 0
+            self.available = august
+
+        def read(self, *, cutoff_date=None) -> SUGEFFinancialReadResult:
+            del cutoff_date
+            self.read_count += 1
+            statement_lines = tuple(
+                FinancialStatementLine(
+                    entity=entity,
+                    statement_date=self.available,
+                    statement_type=statement_type,
+                    account_code=code,
+                    account_name=name,
+                    amount=Decimal("100"),
+                    currency="CRC",
+                )
+                for statement_type, code, name in (
+                    (FinancialStatementType.BALANCE_SHEET, "10000", "ACTIVO TOTAL"),
+                    (FinancialStatementType.INCOME_STATEMENT, "30000", "RESULTADO FINAL"),
+                )
+            )
+            return SUGEFFinancialReadResult(statement_lines, (), (), "same-fingerprint")
+
+        def fingerprint(self, *, cutoff_date=None) -> str:
+            del cutoff_date
+            return "same-fingerprint"
+
+    reader = _MonthlyReader()
+    service = ConfiguredFinancialAnalysisService(
+        SUGEFFinancialSourceConfig(
+            api_enabled=True, cache_enabled=True, api_entity_codes=(entity.entity_id,)
+        ),
+        ValuationDateContext(date(2026, 10, 12)),
+        reader=reader,  # type: ignore[arg-type]
+    )
+    initial = service._read(cutoff_date=date(2026, 10, 12), force_refresh=False)
+    assert reader.read_count == 1
+    service._read(cutoff_date=date(2026, 10, 12), force_refresh=False)
+    assert reader.read_count == 1
+
+    reader.available = september
+    now[0] += 3601
+    refreshed = service._read(cutoff_date=date(2026, 10, 12), force_refresh=False)
+    assert reader.read_count == 2
+    assert refreshed.lines[0].statement_date == september
+
+    now[0] += 7200
+    service._read(cutoff_date=date(2026, 10, 12), force_refresh=False)
+    assert reader.read_count == 2
+    assert initial.lines[0].statement_date == august
+
+
+def test_sugef_lag_does_not_auto_requery_when_api_is_disabled(monkeypatch) -> None:
+    from aip.product.configured.services import configured_financial_analysis_service as module
+
+    now = [1000.0]
+    monkeypatch.setattr(module, "monotonic", lambda: now[0])
+    reader = _Reader()
+    service = ConfiguredFinancialAnalysisService(
+        SUGEFFinancialSourceConfig(api_enabled=False, cache_enabled=True),
+        ValuationDateContext(date(2026, 10, 12)),
+        reader=reader,  # type: ignore[arg-type]
+    )
+    service._read(cutoff_date=date(2026, 10, 12), force_refresh=False)
+    now[0] += 4000
+    service._read(cutoff_date=date(2026, 10, 12), force_refresh=False)
+    assert reader.read_count == 1

@@ -1,16 +1,20 @@
 from __future__ import annotations
 
+import csv
 from decimal import Decimal
 
 from PySide6.QtCore import QObject, Qt, QThread, Signal, Slot
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
+    QFileDialog,
     QFrame,
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
     QLabel,
+    QMessageBox,
     QScrollArea,
+    QSizePolicy,
     QSplitter,
     QTabWidget,
     QVBoxLayout,
@@ -85,8 +89,16 @@ class PortfolioView(QWidget):
         self._history_requested_sampling = "monthly"
         self._closing = False
         self._kpis: dict[str, QLabel] = {}
+        self._kpi_grid: QGridLayout | None = None
+        self._kpi_cards: tuple[QFrame, ...] = ()
+        self._kpi_columns = 6
         self._build_ui()
-        self._toolbar.actions()[0].triggered.connect(self.refresh)
+        self._toolbar.refresh_action.triggered.connect(self.refresh)
+        self._toolbar.export_action.triggered.connect(self._export_visible_positions)
+        self._toolbar.reset_action.triggered.connect(self._filter_panel.reset_filters)
+        self._filter_panel.filters_changed.connect(self._apply_position_filters)
+        self._positions.selection_changed.connect(self._details.bind_row)
+        self._filter_panel.set_rows(self._view_model.rows)
         self._history.sampling_requested.connect(self._load_history)
         self._tabs.currentChanged.connect(self._on_tab_changed)
         self._bind_dashboard(self._view_model)
@@ -115,6 +127,8 @@ class PortfolioView(QWidget):
         card = QFrame()
         card.setObjectName("portfolioMetricCard")
         card.setMinimumHeight(112)
+        card.setAccessibleName(title)
+        card.setToolTip(f"{title}: {helper}")
         card.setStyleSheet(
             "QFrame#portfolioMetricCard {"
             "background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
@@ -126,15 +140,20 @@ class PortfolioView(QWidget):
         layout.setContentsMargins(14, 10, 14, 10)
         layout.setSpacing(2)
         caption = QLabel(title)
-        caption.setStyleSheet("color:#E8F6FF; font-size:10px; font-weight:700; border:none;")
+        caption.setWordWrap(True)
+        caption.setStyleSheet("color:#E8F6FF; font-size:10pt; font-weight:700; border:none;")
         value = QLabel("-")
         value_font = QFont()
         value_font.setPointSize(16)
         value_font.setBold(True)
         value.setFont(value_font)
+        value.setWordWrap(True)
+        value.setAccessibleName(f"Valor de {title}")
+        value.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         value.setStyleSheet("color:#FFFFFF; border:none;")
         hint = QLabel(helper)
-        hint.setStyleSheet("color:#D1ECFA; font-size:8px; border:none;")
+        hint.setWordWrap(True)
+        hint.setStyleSheet("color:#D1ECFA; font-size:9pt; border:none;")
         layout.addWidget(caption)
         layout.addWidget(value)
         layout.addWidget(hint)
@@ -143,8 +162,8 @@ class PortfolioView(QWidget):
 
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
-        root.setContentsMargins(0, 0, 0, 0)
-        root.setSpacing(0)
+        root.setContentsMargins(14, 9, 14, 10)
+        root.setSpacing(8)
         self.setStyleSheet(
             "QWidget#portfolioWorkspace {background:qlineargradient(x1:0,y1:0,x2:0,y2:1,"
             "stop:0 #F4FAFE,stop:1 #EEF5F9);}"
@@ -153,15 +172,9 @@ class PortfolioView(QWidget):
             "QTabBar::tab:selected {color:#0B57B7;}"
         )
 
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.Shape.NoFrame)
-        content = QWidget()
-        layout = QVBoxLayout(content)
-        layout.setContentsMargins(18, 12, 18, 16)
-        layout.setSpacing(10)
-        scroll.setWidget(content)
-        root.addWidget(scroll)
+        # A scroll area around the entire workspace caused the position table to
+        # appear at the bottom of a large blank canvas. Scroll the dashboard only.
+        layout = root
 
         header = QHBoxLayout()
         title_box = QVBoxLayout()
@@ -198,9 +211,13 @@ class PortfolioView(QWidget):
             ("issuer_count", "Emisores", "Activos en portafolio"),
             ("hhi", "Concentración por emisor", "Índice Herfindahl"),
         )
+        cards: list[QFrame] = []
         for index, definition in enumerate(definitions):
             card = self._metric_card(*definition)
             kpi_grid.addWidget(card, 0, index)
+            cards.append(card)
+        self._kpi_grid = kpi_grid
+        self._kpi_cards = tuple(cards)
         for column in range(6):
             kpi_grid.setColumnStretch(column, 1)
         layout.addLayout(kpi_grid)
@@ -211,6 +228,8 @@ class PortfolioView(QWidget):
             "QTabBar::tab {padding:8px 18px; font-weight:600;}"
             "QTabBar::tab:selected {color:#174E78; border-bottom:2px solid #1F5A8A;}"
         )
+        self._tabs.setMinimumHeight(440)
+        self._tabs.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         layout.addWidget(self._tabs, 1)
         self._build_dashboard_tab()
         self._tabs.addTab(self._history, "Histórico KPIs")
@@ -219,8 +238,39 @@ class PortfolioView(QWidget):
 
         layout.addWidget(self._status_bar)
 
+    @staticmethod
+    def _kpi_columns_for_width(width: int) -> int:
+        if width < 780:
+            return 2
+        if width < 1260:
+            return 3
+        return 6
+
+    def _arrange_kpis(self, width: int) -> None:
+        grid = self._kpi_grid
+        if grid is None:
+            return
+        columns = self._kpi_columns_for_width(width)
+        if columns == self._kpi_columns:
+            return
+        for card in self._kpi_cards:
+            grid.removeWidget(card)
+        for index, card in enumerate(self._kpi_cards):
+            grid.addWidget(card, index // columns, index % columns)
+        for column in range(6):
+            grid.setColumnStretch(column, 1 if column < columns else 0)
+        self._kpi_columns = columns
+
+    def resizeEvent(self, event) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        self._arrange_kpis(event.size().width())
+
     def _build_dashboard_tab(self) -> None:
         page = QWidget()
+        dashboard_scroll = QScrollArea()
+        dashboard_scroll.setWidgetResizable(True)
+        dashboard_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        dashboard_scroll.setObjectName("portfolioDashboardScroll")
         layout = QGridLayout(page)
         layout.setContentsMargins(4, 8, 4, 4)
         layout.setHorizontalSpacing(8)
@@ -269,7 +319,8 @@ class PortfolioView(QWidget):
             "border:1px solid #BFDDEB; border-radius:8px; font-weight:600;}"
         )
         layout.addWidget(self._dashboard_note, 2, 0, 1, 2)
-        self._tabs.addTab(page, "Resumen ejecutivo")
+        dashboard_scroll.setWidget(page)
+        self._tabs.addTab(dashboard_scroll, "Resumen ejecutivo")
 
     def _build_positions_tab(self) -> None:
         page = QWidget()
@@ -280,10 +331,13 @@ class PortfolioView(QWidget):
         layout.addWidget(self._toolbar)
         layout.addWidget(self._filter_panel)
         self._content_splitter = QSplitter(Qt.Orientation.Horizontal)
+        self._content_splitter.setChildrenCollapsible(False)
+        self._content_splitter.setHandleWidth(8)
         self._content_splitter.addWidget(self._positions)
         self._content_splitter.addWidget(self._details)
-        self._content_splitter.setStretchFactor(0, 3)
+        self._content_splitter.setStretchFactor(0, 4)
         self._content_splitter.setStretchFactor(1, 1)
+        self._content_splitter.setSizes([1150, 310])
         layout.addWidget(self._content_splitter, 1)
         self._tabs.addTab(page, "Posiciones")
 
@@ -454,26 +508,45 @@ class PortfolioView(QWidget):
         if view_model.summary.valuation_date != previous_cutoff:
             self._history_loaded_for = None
 
-        positions_layout = (
-            self._positions_page.layout() if self._positions_page is not None else None
-        )
-        if positions_layout is not None and self._content_splitter is not None:
-            positions_layout.removeWidget(self._content_splitter)
-            self._content_splitter.hide()
-
-        self._summary = PortfolioSummaryView(view_model.summary)
-        self._positions = PortfolioPositionsView(view_model.rows)
-        self._details = PortfolioDetailsView(view_model.rows[0] if view_model.rows else None)
-        self._content_splitter = QSplitter(Qt.Orientation.Horizontal)
-        self._content_splitter.addWidget(self._positions)
-        self._content_splitter.addWidget(self._details)
-        self._content_splitter.setStretchFactor(0, 3)
-        self._content_splitter.setStretchFactor(1, 1)
-        if positions_layout is not None:
-            positions_layout.addWidget(self._content_splitter)
+        # Update the current widgets in place. Rebuilding a splitter on every
+        # refresh lost table selection, column widths and splitter proportions.
+        self._positions.bind_rows(view_model.rows)
+        self._filter_panel.set_rows(view_model.rows)
+        self._apply_position_filters()
 
         self._status_bar.setText(self._translate_status(view_model.status))
         self._status_bar.setToolTip(view_model.error or "")
+
+    def _apply_position_filters(self) -> None:
+        self._positions.apply_filter(self._filter_panel.matches)
+
+    def _export_visible_positions(self) -> None:
+        rows = self._positions.visible_rows()
+        if not rows:
+            QMessageBox.information(self, "Portafolio", "No hay posiciones visibles para exportar.")
+            return
+        filename, _ = QFileDialog.getSaveFileName(
+            self,
+            "Exportar posiciones filtradas",
+            "Portafolio_Posiciones.csv",
+            "Archivos CSV (*.csv)",
+        )
+        if not filename:
+            return
+        if not filename.lower().endswith(".csv"):
+            filename += ".csv"
+        try:
+            with open(filename, "w", newline="", encoding="utf-8-sig") as out:
+                writer = csv.writer(out)
+                writer.writerow(PortfolioPositionsView.HEADERS)
+                for row in rows:
+                    writer.writerow(
+                        getattr(row, field, "") for field in PortfolioPositionsView.FIELDS
+                    )
+        except OSError as exc:
+            QMessageBox.warning(
+                self, "Error de exportación", f"No fue posible guardar el CSV: {exc}"
+            )
 
     def closeEvent(self, event) -> None:  # noqa: N802
         self._closing = True
@@ -488,4 +561,4 @@ class PortfolioView(QWidget):
         return self._view_model
 
     def selected_row(self) -> object | None:
-        return self._view_model.rows[0] if self._view_model.rows else None
+        return self._positions.selected_row()

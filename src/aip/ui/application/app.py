@@ -7,6 +7,7 @@ from aip.core.version import APP_NAME, APP_VERSION
 from aip.product.demo.bootstrap.application_factory import DemoApplicationFactory
 from aip.product.demo.configuration.environment_loader import EnvironmentLoader
 from aip.ui.shell.intelligence_main_window import FinancialIntelligenceMainWindow as MainWindow
+from aip.ui.themes.typography import apply_application_typography
 
 
 class AIPApplication:
@@ -21,6 +22,8 @@ class AIPApplication:
         self._qt_app: QCoreApplication = QApplication.instance() or QApplication(argv or [])
         self._qt_app.setApplicationName(APP_NAME)
         self._qt_app.setApplicationVersion(APP_VERSION)
+        if isinstance(self._qt_app, QApplication):
+            apply_application_typography(self._qt_app)
         self._window: MainWindow | None = None
         if application_factory is None:
             loader = EnvironmentLoader()
