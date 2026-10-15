@@ -24,10 +24,9 @@ def test_sdde_v2_dry_run_consumes_registered_identity_without_printing_it(
         retries=1,
     )
     monkeypatch.setattr(
-        diagnostic, "EnvironmentLoader",
-        lambda: SimpleNamespace(
-            load_source_config=lambda: SimpleNamespace(bccr=settings)
-        ),
+        diagnostic,
+        "EnvironmentLoader",
+        lambda: SimpleNamespace(load_source_config=lambda: SimpleNamespace(bccr=settings)),
     )
 
     class StubClient:
