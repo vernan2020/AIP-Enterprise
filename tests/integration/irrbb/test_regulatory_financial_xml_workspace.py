@@ -79,6 +79,16 @@ def test_configured_shell_reads_regulatory_xml_without_enabling_eve(
     panel._account_selector.setCurrentIndex(2)
     assert panel._rows.rowCount() == 1
     assert panel._rows.item(0, 0).text() == "CALCE"
+    panel._filter_input.setText("BRECHAS")
+    assert panel._rows.rowCount() == 0
+    panel._filter_input.setText("CALCE")
+    assert panel._rows.rowCount() == 1
+    assert panel._gap_table.rowCount() == 0  # Filters cannot fabricate reconciled GAP.
+    panel._filter_input.clear()
+    panel._account_selector.setCurrentIndex(0)
+    panel._filter_input.setText("101")
+    assert panel._rows.rowCount() == 2
+    assert panel._filter_input.toolTip().startswith("Filtra únicamente")
     assert workspace.view._analysis_status_label.text() == "Estado: Sin cálculo"
     assert all(value.text() == "N/D" for value in workspace.view._kpi_values.values())
 
