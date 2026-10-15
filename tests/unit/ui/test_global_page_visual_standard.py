@@ -125,9 +125,7 @@ def test_page_visual_standard_supports_excel_copy_without_executing_formulas(qt_
         apply_page_visual_standard(table)
         table.setRangeSelected(QTableWidgetSelectionRange(0, 0, 1, 1), True)
         assert copy_selected_table_to_tsv(table)
-        assert qt_app.clipboard().text() == (
-            "'=SUM(A1:A2)\\t123.45\\nRentabilidad\\t-12.34"
-        )
+        assert qt_app.clipboard().text() == ("'=SUM(A1:A2)\t123.45\nRentabilidad\t-12.34")
         assert table.horizontalHeaderItem(0).toolTip() == "Resultado de inversiones"
         assert table.item(0, 0).text() == "=SUM(A1:A2)"
         table.clearSelection()
