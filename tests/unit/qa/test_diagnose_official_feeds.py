@@ -210,8 +210,8 @@ def test_bccr_metadata_probe_reports_confirmed_official_access(monkeypatch) -> N
 def test_ticotrader_parity_probe_reports_httpx_status_without_leaking(monkeypatch) -> None:
     import httpx
 
-    from aip.integration.bccr.providers.httpx_http_provider import HttpxHTTPProvider
     import aip.integration.bccr.providers.select_official_transport as selector
+    from aip.integration.bccr.providers.httpx_http_provider import HttpxHTTPProvider
 
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.headers["authorization"] == "Bearer SECRET_DO_NOT_PRINT"
