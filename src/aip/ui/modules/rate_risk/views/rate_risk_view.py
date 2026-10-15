@@ -556,7 +556,7 @@ class RateRiskView(QWidget):
         )
         self._warning_label.setVisible(True)
         self._warning_label.setText(
-            "No se dispone de VEP, ΔVEP ni GAP contractual de 19 bandas. "
+            "Sin cálculo RTILB cargado: no se dispone de VEP, ΔVEP ni GAP contractual de 19 bandas. "
             "La pestaña XML muestra únicamente GAP regulatorio de seis bandas, "
             "sin convertirlo en flujos contractuales."
         )
