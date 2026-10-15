@@ -41,9 +41,7 @@ def _pair(*, complete: bool) -> RegulatoryXMLPairResult:
             amount=Decimal(amount),
         )
         for index, (band, account, amount) in enumerate(
-            (band, account, amount)
-            for band in range(1, 7)
-            for account, amount in values.items()
+            (band, account, amount) for band in range(1, 7) for account, amount in values.items()
         )
         if complete or band == 1
     )
