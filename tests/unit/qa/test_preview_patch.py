@@ -99,9 +99,7 @@ def test_safe_source_is_packaged() -> None:
     assert allowed("scripts/qa/diagnose_official_feeds.py")
     assert allowed("run_aip_ux_preview.cmd")
     assert allowed("DIAGNOSTICAR_RTILB_XML.cmd")
-    assert validate_path("DIAGNOSTICAR_RTILB_XML.cmd").as_posix() == (
-        "DIAGNOSTICAR_RTILB_XML.cmd"
-    )
+    assert validate_path("DIAGNOSTICAR_RTILB_XML.cmd").as_posix() == ("DIAGNOSTICAR_RTILB_XML.cmd")
     assert not allowed("secrets.txt")
     assert not allowed("DIAGNOSTICAR_NO_AUTORIZADO.cmd")
 
