@@ -27,8 +27,8 @@ from aip.integration.bccr.connector.rest_client import (
 from aip.integration.bccr.normalization.economic_series_parser import (
     BCCREconomicSeriesParser,
 )
-from aip.integration.bccr.providers.urllib_http_provider import (
-    UrllibHTTPProvider,
+from aip.integration.bccr.providers.select_official_transport import (
+    select_official_bccr_transport,
 )
 from aip.integration.economic.official_indicator_mappings import (
     build_official_indicator_mapper,
@@ -88,7 +88,7 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
 
         self._client = BCCRRestClient(
             config=bccr_config,
-            provider=UrllibHTTPProvider(),
+            provider=select_official_bccr_transport(),
         )
 
         self._mapper = build_official_indicator_mapper()
