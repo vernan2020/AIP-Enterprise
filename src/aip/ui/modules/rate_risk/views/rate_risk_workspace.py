@@ -90,13 +90,20 @@ class RateRiskWorkspace(QWidget):
                     headline, status="ready" if same_month else "stale"
                 )
             else:
-                issue = next(
-                    (problem for item in snapshot.files for problem in item.issues),
-                    next(iter(regulatory_gap.issues), "Sin par XML conciliado."),
-                )
+                if snapshot.is_valid:
+                    issue = next(
+                        iter(regulatory_gap.issues),
+                        "Faltan las seis bandas del GAP regulatorio.",
+                    )
+                    prefix = "XML estructuralmente validados; GAP de 6 bandas bloqueado"
+                else:
+                    issue = next(
+                        (problem for item in snapshot.files for problem in item.issues),
+                        "Falta el par XML válido.",
+                    )
+                    prefix = "XML Brechas / Calce no validados"
                 self._view.set_regulatory_evidence_status(
-                    f"XML Brechas / Calce no conciliados: {issue} "
-                    "No se muestran importes no certificados.",
+                    f"{prefix}: {issue} No se muestran importes no certificados.",
                     status="blocked",
                 )
         controller = self._controller
