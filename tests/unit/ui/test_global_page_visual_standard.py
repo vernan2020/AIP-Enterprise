@@ -3,10 +3,21 @@
 from __future__ import annotations
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QAbstractItemView, QTableWidget, QTabWidget, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QTableWidget,
+    QTableWidgetItem,
+    QTableWidgetSelectionRange,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
+)
 
 from aip.ui.modules.executive.widgets.executive_metric_card import ExecutiveMetricCard
-from aip.ui.shell.page_visual_standard import apply_page_visual_standard
+from aip.ui.shell.page_visual_standard import (
+    apply_page_visual_standard,
+    copy_selected_table_to_tsv,
+)
 from aip.ui.shell.ribbon import Ribbon
 from aip.ui.shell.workspace import Workspace
 from aip.ui.themes.dark_theme import DarkTheme
@@ -36,6 +47,9 @@ def test_page_standard_keeps_table_semantics_and_improves_legibility(qt_app) -> 
         assert table.verticalScrollMode() == QAbstractItemView.ScrollMode.ScrollPerPixel
         assert table.isSortingEnabled()
         assert table.selectionBehavior() == QAbstractItemView.SelectionBehavior.SelectItems
+        assert not table.showGrid()
+        assert not table.horizontalHeader().highlightSections()
+        assert table.property("aipCopyShortcutInstalled") is True
     finally:
         root.close()
 
@@ -99,3 +113,24 @@ def test_institutional_global_styles_apply_to_all_financial_pages() -> None:
         assert "font-size: 10pt;" in css
         assert "QTableView::item:selected" in css
         assert "QHeaderView::section:hover" in css
+
+
+def test_page_visual_standard_supports_excel_copy_without_executing_formulas(qt_app) -> None:
+    table = QTableWidget(2, 2)
+    table.setHorizontalHeaderLabels(["Resultado de inversiones", "Monto"])
+    for row, values in enumerate((("=SUM(A1:A2)", "123.45"), ("Rentabilidad", "-12.34"))):
+        for column, value in enumerate(values):
+            table.setItem(row, column, QTableWidgetItem(value))
+    try:
+        apply_page_visual_standard(table)
+        table.setRangeSelected(QTableWidgetSelectionRange(0, 0, 1, 1), True)
+        assert copy_selected_table_to_tsv(table)
+        assert qt_app.clipboard().text() == (
+            "'=SUM(A1:A2)\\t123.45\\nRentabilidad\\t-12.34"
+        )
+        assert table.horizontalHeaderItem(0).toolTip() == "Resultado de inversiones"
+        assert table.item(0, 0).text() == "=SUM(A1:A2)"
+        table.clearSelection()
+        assert not copy_selected_table_to_tsv(table)
+    finally:
+        table.close()
