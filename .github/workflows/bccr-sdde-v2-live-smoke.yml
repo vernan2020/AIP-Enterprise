@@ -34,3 +34,7 @@ jobs:
       - name: Verify new SDDE client with official live BCCR series 317
         run: |
           python -m aip.integration.bccr.connector.sdde_v2_diagnostic --codes 317 --days 20
+      - name: Inspect independently exchange sell, policy and basic rates
+        continue-on-error: true
+        run: |
+          python -m aip.integration.bccr.connector.sdde_v2_diagnostic --codes 318 3541 423 --days 32
