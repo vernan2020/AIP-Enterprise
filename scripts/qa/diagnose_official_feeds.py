@@ -240,6 +240,58 @@ def _bccr_metadata_probe(config: object) -> str:
         return f"BCCR metadatos cuadro 1: {_outcome(exc)}"
 
 
+def _bccr_ticotrader_parity_probe(config: object, *, target_date: date) -> str:
+    """Compare an individual JWT indicator GET with TicoTrader's HTTPX contract.
+
+    The transport selector uses httpx when installed, otherwise reports its
+    urllib fallback. Only the status, observation coverage and transport type
+    are printed: never credentials, URLs or raw response bodies.
+    """
+    from aip.integration.bccr.configuration.bccr_config import BCCRConfig
+    from aip.integration.bccr.connector.rest_client import BCCRRestClient
+    from aip.integration.bccr.providers.select_official_transport import (
+        select_official_bccr_transport,
+    )
+
+    transport = select_official_bccr_transport()
+    scheme = "HTTPX" if type(transport).__name__ == "HttpxHTTPProvider" else "URLLIB"
+    label = f"BCCR Tico-compatible indicador 317 ({scheme})"
+    token = getattr(config, "token", None)
+    if not token:
+        return f"{label}: TOKEN NO VISIBLE"
+    # The user's configured JWT is never copied from a different product.
+    try:
+        client = BCCRRestClient(
+            config=BCCRConfig(
+                base_url=getattr(config, "base_url", None) or "https://apim.bccr.fi.cr",
+                timeout_seconds=12.0,
+                retry_attempts=0,
+                token=token,
+                user_agent="TicoTrader-Portafolio360/1.0",
+            ),
+            provider=transport,
+        )
+        url = client.build_url(
+            indicator_code="317",
+            from_date=(target_date - timedelta(days=45)).strftime("%Y/%m/%d"),
+            to_date=target_date.strftime("%Y/%m/%d"),
+        )
+        response = transport.get(
+            url,
+            timeout=12.0,
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Accept": "application/json",
+                "User-Agent": "TicoTrader-Portafolio360/1.0",
+            },
+        )
+        code = int(response.get("status_code", 0))
+        coverage = _bccr_individual_coverage(response.get("body"), "317")
+        return f"{label}: HTTP {code}; {coverage}"
+    except Exception as exc:
+        return f"{label}: {_outcome(exc)}"
+
+
 def _sugef_probe(config: object, *, target_date: date) -> tuple[str, ...]:
     if not getattr(config, "enabled", False) or not getattr(config, "api_enabled", False):
         return ("SUGEF: API DESHABILITADA EN CONFIGURACIÓN EFECTIVA",)
@@ -307,6 +359,7 @@ def diagnose(*, period: date, live: bool) -> list[str]:
         status.append(_bccr_metadata_probe(config.bccr))
         status.append(_bccr_probe(config.bccr, target_date=date.today()))
         status.append(_bccr_probe(config.bccr, target_date=date.today(), indicator_code="317"))
+        status.append(_bccr_ticotrader_parity_probe(config.bccr, target_date=date.today()))
     status.extend(_sugef_probe(config.sugef_financial, target_date=period))
     status.append("FIN - nunca se guardaron credenciales ni respuestas.")
     return status
