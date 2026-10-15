@@ -5,7 +5,9 @@ from datetime import date
 
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
+from aip.product.configured.irrbb.regulatory_financial_xml import RegulatoryFinancialXMLReader
 from aip.ui.modules.rate_risk.controllers import RateRiskWorkspaceController
+from aip.ui.modules.rate_risk.views.regulatory_xml_panel import RegulatoryXMLPanel
 from aip.ui.modules.rate_risk.views.source_diagnostics_rate_risk_view import RateRiskView
 
 
@@ -22,12 +24,16 @@ class RateRiskWorkspace(QWidget):
         *,
         valuation_date_provider: Callable[[], date],
         controller: RateRiskWorkspaceController | None = None,
+        regulatory_xml_reader: RegulatoryFinancialXMLReader | None = None,
     ) -> None:
         super().__init__()
         self.setObjectName("rateRiskWorkspaceHost")
         self._valuation_date_provider = valuation_date_provider
         self._controller = controller
         self._view = RateRiskView()
+        self._regulatory_xml_reader = regulatory_xml_reader
+        self._regulatory_xml_panel = RegulatoryXMLPanel()
+        self._view._tabs.addTab(self._regulatory_xml_panel, "XML Brechas / Calce")
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -45,10 +51,15 @@ class RateRiskWorkspace(QWidget):
         return self._controller is not None
 
     def refresh(self) -> None:
+        cutoff_date = self._valuation_date_provider()
+        if self._regulatory_xml_reader is None:
+            self._regulatory_xml_panel.set_unconfigured()
+        else:
+            snapshot = self._regulatory_xml_reader.load_latest(reference_cutoff=cutoff_date)
+            self._regulatory_xml_panel.set_snapshot(snapshot, valuation_cutoff=cutoff_date)
         controller = self._controller
         if controller is None:
             self._view.set_read_model(None)
             return
 
-        cutoff_date = self._valuation_date_provider()
         self._view.set_read_model(controller.load(cutoff_date=cutoff_date))
