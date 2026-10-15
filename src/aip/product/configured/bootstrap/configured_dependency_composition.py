@@ -3,7 +3,7 @@ from __future__ import annotations
 from aip.core.container import Container
 from aip.integration.bccr.configuration.bccr_config import BCCRConfig
 from aip.integration.bccr.connector.bccr_connector import BCCRConnector
-from aip.integration.bccr.providers.urllib_http_provider import UrllibHTTPProvider
+from aip.integration.bccr.providers.select_official_transport import select_official_bccr_transport
 from aip.product.configured.adapters.configured_contractual_liquidity_provider import (
     ConfiguredContractualLiquidityProvider,
 )
@@ -99,14 +99,14 @@ class ConfiguredDependencyComposition:
             ),
             timeout_seconds=self._source_config.bccr.timeout_seconds,
             retry_attempts=self._source_config.bccr.retries,
-            user_agent="Mozilla/5.0",
+            user_agent="AIP-Enterprise/1.0",
             name=self._source_config.bccr.name,
             email=self._source_config.bccr.email,
             token=self._source_config.bccr.token,
         )
         bccr_connector = BCCRConnector(
             config=bccr_config,
-            provider=UrllibHTTPProvider(),
+            provider=select_official_bccr_transport(),
         )
         economic_indicators_provider = ConfiguredEconomicIndicatorsProvider(
             bccr_config=bccr_config,
