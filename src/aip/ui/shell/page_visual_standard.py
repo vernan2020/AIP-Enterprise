@@ -30,19 +30,20 @@ def copy_selected_table_to_tsv(table: QTableView) -> bool:
         for column in col_numbers:
             index = cells.get((row, column))
             value = index.data(Qt.ItemDataRole.DisplayRole) if index is not None else ""
-            field = str(value if value is not None else "").replace("\\t", " ").replace(
-                "\\r", " "
-            ).replace("\\n", " ")
+            field = (
+                str(value if value is not None else "")
+                .replace("\t", " ")
+                .replace("\r", " ")
+                .replace("\n", " ")
+            )
             stripped = field.lstrip()
             if stripped.startswith(("=", "+", "@")) or (
-                stripped.startswith("-")
-                and stripped[1:].strip()
-                and not _looks_numeric(stripped)
+                stripped.startswith("-") and stripped[1:].strip() and not _looks_numeric(stripped)
             ):
                 field = "'" + field
             fields.append(field)
-        lines.append("\\t".join(fields))
-    QGuiApplication.clipboard().setText("\\n".join(lines))
+        lines.append("\t".join(fields))
+    QGuiApplication.clipboard().setText("\n".join(lines))
     return True
 
 
@@ -79,9 +80,7 @@ def apply_page_visual_standard(page: QWidget) -> None:
         # export file. Do not replace existing domain models or delegates.
         if not table.property("aipCopyShortcutInstalled"):
             shortcut = QShortcut(QKeySequence.StandardKey.Copy, table)
-            shortcut.activated.connect(
-                lambda target=table: copy_selected_table_to_tsv(target)
-            )
+            shortcut.activated.connect(lambda target=table: copy_selected_table_to_tsv(target))
             table.setProperty("aipCopyShortcutInstalled", True)
         if isinstance(table, QTableWidget):
             for column in range(table.columnCount()):
