@@ -16,7 +16,11 @@ from PySide6.QtWidgets import (
 )
 
 from aip.product.configured.irrbb.regulatory_financial_xml import RegulatoryXMLPairResult
-from aip.product.configured.irrbb.regulatory_gap_six_band import build_regulatory_gap
+from aip.product.configured.irrbb.regulatory_gap_six_band import (
+    RegulatoryGapResult,
+    build_regulatory_gap,
+)
+from aip.ui.modules.rate_risk.views.regulatory_gap_chart import RegulatoryGapChart
 
 
 class RegulatoryXMLPanel(QWidget):
@@ -73,6 +77,8 @@ class RegulatoryXMLPanel(QWidget):
         self._gap_notice = QLabel("GAP regulatorio no calculado")
         self._gap_notice.setWordWrap(True)
         layout.addWidget(self._gap_notice)
+        self._gap_chart = RegulatoryGapChart()
+        layout.addWidget(self._gap_chart)
         self._gap_table = self._table(
             (
                 "Banda",
@@ -146,6 +152,7 @@ class RegulatoryXMLPanel(QWidget):
         self._account_selector.clear()
         self._filter_input.clear()
         self._gap_table.setRowCount(0)
+        self._gap_chart.set_result(RegulatoryGapResult("BLOCKED"))
         self._gap_notice.setText("No disponible: fuente XML no configurada.")
         self._detail_note.setText(
             "Revise la fuente XML CONFÍA ya documentada en AIP. "
@@ -201,6 +208,7 @@ class RegulatoryXMLPanel(QWidget):
         )
         self._snapshot = snapshot
         gap = build_regulatory_gap(snapshot)
+        self._gap_chart.set_result(gap)
         self._gap_table.setRowCount(len(gap.rows))
         for index, row in enumerate(gap.rows):
             for column, value in enumerate(
