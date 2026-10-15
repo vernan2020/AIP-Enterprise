@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QHeaderView,
     QLabel,
+    QPushButton,
     QScrollArea,
     QTableWidget,
     QTableWidgetItem,
@@ -144,6 +145,30 @@ class RateRiskView(QWidget):
         )
         root.addWidget(self._warning_label)
 
+        # Separate regulatory XML readiness from contractual RTILB calculations.
+        # The XML may be reconciled while every ΔVEP KPI legitimately remains N/D.
+        self._regulatory_evidence_banner = QFrame()
+        self._regulatory_evidence_banner.setObjectName("rateRiskRegulatoryEvidenceBanner")
+        evidence_layout = QHBoxLayout(self._regulatory_evidence_banner)
+        evidence_layout.setContentsMargins(12, 8, 12, 8)
+        evidence_layout.setSpacing(10)
+        self._regulatory_evidence_label = QLabel("XML Brechas / Calce: pendiente")
+        self._regulatory_evidence_label.setObjectName("rateRiskRegulatoryEvidenceStatus")
+        self._regulatory_evidence_label.setWordWrap(True)
+        self._regulatory_evidence_label.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse
+        )
+        evidence_layout.addWidget(self._regulatory_evidence_label, 1)
+        self._open_regulatory_evidence = QPushButton("Ver XML Brechas / Calce")
+        self._open_regulatory_evidence.setObjectName("rateRiskOpenRegulatoryXML")
+        self._open_regulatory_evidence.setToolTip(
+            "Abrir el GAP regulatorio conciliado de seis bandas y sus archivos fuente."
+        )
+        self._open_regulatory_evidence.setEnabled(False)
+        evidence_layout.addWidget(self._open_regulatory_evidence)
+        root.addWidget(self._regulatory_evidence_banner)
+        self.set_regulatory_evidence_status("XML Brechas / Calce: sin fuente configurada.")
+
         self._tabs = QTabWidget()
         self._tabs.setDocumentMode(True)
         root.addWidget(self._tabs, 1)
@@ -168,6 +193,31 @@ class RateRiskView(QWidget):
         self._build_curve_page()
         self._build_drilldown_page()
         self._build_quality_page()
+
+    def set_regulatory_evidence_status(
+        self, text: str, *, status: str = "unconfigured"
+    ) -> None:
+        """Show regulatory evidence without changing RTILB analysis status or KPIs."""
+        palettes = {
+            "ready": ("#EDF8F1", "#1C7041", "#9BCFAE"),
+            "stale": ("#FFF8E7", "#815F05", "#E8CA77"),
+            "blocked": ("#FFF2EF", "#A13A2F", "#E5B5AE"),
+            "unconfigured": ("#F2F7FB", "#486579", "#CADBE5"),
+        }
+        background, foreground, border = palettes.get(status, palettes["unconfigured"])
+        self._regulatory_evidence_banner.setStyleSheet(
+            "QFrame#rateRiskRegulatoryEvidenceBanner {"
+            f"background:{background}; border:1px solid {border}; border-radius:8px;"
+            "}"
+            "QLabel#rateRiskRegulatoryEvidenceStatus {"
+            f"color:{foreground}; border:none; font-size:10pt; font-weight:600;"
+            "}"
+            "QPushButton#rateRiskOpenRegulatoryXML {"
+            "background:#FFFFFF; color:#005EB8; border:1px solid #73B3DD;"
+            "border-radius:6px; padding:7px 12px; font-weight:700;}"
+            "QPushButton#rateRiskOpenRegulatoryXML:hover {background:#EAF4FC;}"
+        )
+        self._regulatory_evidence_label.setText(text)
 
     def _build_summary_page(self) -> None:
         layout = QVBoxLayout(self._summary_page)
@@ -491,13 +541,14 @@ class RateRiskView(QWidget):
         self._cutoff_label.setText("Corte: pendiente")
         self._set_analysis_status("UNCONFIGURED")
         self._methodology_label.setText(
-            "Módulo estructurado y sin fuente física configurada. Los datos podrán provenir de "
-            "SQL, XML, OneDrive/Excel, PostgreSQL u otro adaptador aprobado."
+            "No hay un cálculo contractual RTILB certificado. La evidencia regulatoria "
+            "de Brechas y Calce, cuando esté disponible, se presenta por separado."
         )
         self._warning_label.setVisible(True)
         self._warning_label.setText(
-            "Sin cálculo RTILB cargado. AIP no mostrará VEP, ΔVEP, GAP ni curvas hasta recibir "
-            "un read-model certificado desde la capa de aplicación."
+            "No se dispone de VEP, ΔVEP ni GAP contractual de 19 bandas. "
+            "La pestaña XML muestra únicamente GAP regulatorio de seis bandas, "
+            "sin convertirlo en flujos contractuales."
         )
         for label in self._kpi_values.values():
             label.setText("N/D")
