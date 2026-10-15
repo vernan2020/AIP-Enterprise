@@ -161,7 +161,7 @@ class SDDEv2Client:
                 None,
             )
             try:
-                delay = float(raw_retry)
+                delay = float(str(raw_retry))
             except (TypeError, ValueError):
                 delay = self._BACKOFF_SECONDS * (attempt + 1)
             time.sleep(min(self._MAX_RETRY_AFTER, max(0.0, delay)))
