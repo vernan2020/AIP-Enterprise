@@ -118,7 +118,6 @@ class BCCRRestClient:
         headers = {
             auth_header: f"{auth_scheme} {credential}",
             "Accept": "application/json",
-            "Content-Type": "application/json",
             "User-Agent": self._config.user_agent,
         }
 
