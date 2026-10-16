@@ -11,7 +11,11 @@ from aip.product.configured.irrbb.xml_contractual_coverage import REQUIRED_FIELD
 class Reader:
     def resolve_source(self, *, key, cutoff_date):
         assert cutoff_date == date(2026, 9, 30)
-        return SimpleNamespace(key=key, path=Path(key + ".xml"), header=SimpleNamespace(id_entidad="3004045138"))
+        return SimpleNamespace(
+            key=key,
+            path=Path(key + ".xml"),
+            header=SimpleNamespace(id_entidad="3004045138"),
+        )
 
     def iter_records(self, source):
         values = {key: "1" for key in REQUIRED_FIELDS[source.key]}
