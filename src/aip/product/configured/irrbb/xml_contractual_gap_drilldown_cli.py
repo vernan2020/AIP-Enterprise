@@ -26,12 +26,19 @@ GROUP_FIELDS = {
 def summarize(reader: XMLConfiaMonthlySourceReader, cutoff: date) -> list[dict]:
     result = []
     expected_entity = None
+    expected_period = None
     for key, categories in GROUP_FIELDS.items():
         source = reader.resolve_source(key=key, cutoff_date=cutoff)
         entity = source.header.id_entidad
         if expected_entity is not None and entity != expected_entity:
             raise ValueError("Inconsistent entity across contractual XML sources")
         expected_entity = entity
+        period = source.header.periodo
+        if (period.year, period.month) != (cutoff.year, cutoff.month):
+            raise ValueError("Contractual XML period differs from requested cutoff")
+        if expected_period is not None and period != expected_period:
+            raise ValueError("Inconsistent period across contractual XML sources")
+        expected_period = period
         grouped = defaultdict(lambda: {"records": 0, "missing": defaultdict(int)})
         for record in reader.iter_records(source):
             group_key = tuple(
