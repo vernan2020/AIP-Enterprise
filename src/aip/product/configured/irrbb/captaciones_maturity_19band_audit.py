@@ -176,9 +176,14 @@ def inspect_fixed_term_maturities(
                     currency, 0
                 ),
                 "difference": "0",
-                "status": "RECONCILED_VALID_PRINCIPAL",
+                "status": (
+                    "PARTIAL_INVALID_PRINCIPAL"
+                    if source_invalid_principal_records.get(currency, 0)
+                    else "RECONCILED_VALID_PRINCIPAL"
+                ),
             }
-            for currency, source_amount in sorted(source_valid_principal.items())
+            for currency in sorted(set(source_valid_principal) | set(source_invalid_principal_records))
+            for source_amount in (source_valid_principal.get(currency, Decimal(0)),)
         ],
         "bands": [
             {
