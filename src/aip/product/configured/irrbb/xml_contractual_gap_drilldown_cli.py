@@ -74,7 +74,7 @@ def summarize(reader: XMLConfiaMonthlySourceReader, cutoff: date) -> list[dict]:
                 "source": key,
                 "filename": source.path.name,
                 "group_fields": list(categories),
-                "records": sum(group["records"] for group in groups),
+                "records": sum(group["records"] for group in grouped.values()),
                 "groups": groups,
             }
         )
