@@ -133,9 +133,7 @@ class ContractualExposurePanel(QWidget):
         horizontal.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
         horizontal.setStretchLastSection(False)
         horizontal.setMinimumSectionSize(90)
-        for index, (width, description) in enumerate(
-            zip(self._COLUMN_WIDTHS, self._FULL_HEADERS)
-        ):
+        for index, (width, description) in enumerate(zip(self._COLUMN_WIDTHS, self._FULL_HEADERS)):
             self._table.setColumnWidth(index, width)
             header_item = self._table.horizontalHeaderItem(index)
             if header_item is not None:
@@ -233,9 +231,7 @@ class ContractualExposurePanel(QWidget):
         needle = self._filter_input.text().casefold().strip()
         for row in range(self._table.rowCount()):
             haystack = " ".join(
-                self._table.item(row, column).toolTip()
-                + " "
-                + self._table.item(row, column).text()
+                self._table.item(row, column).toolTip() + " " + self._table.item(row, column).text()
                 for column in (0, 1, 2)
                 if self._table.item(row, column) is not None
             ).casefold()
@@ -303,8 +299,7 @@ class ContractualExposurePanel(QWidget):
                 for column, value in enumerate(display_values):
                     item = QTableWidgetItem(value)
                     item.setToolTip(
-                        f"{self._FULL_HEADERS[column]}\\n"
-                        f"Valor original: {raw_values[column]}"
+                        f"{self._FULL_HEADERS[column]}\\n" f"Valor original: {raw_values[column]}"
                     )
                     if column >= 3:
                         item.setTextAlignment(
