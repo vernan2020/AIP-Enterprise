@@ -83,7 +83,9 @@ class XMLConfiaMonthlySourceReader:
             alternate = path.with_name("09-SEPTIEMBRE")
             existing = [candidate for candidate in (path, alternate) if candidate.is_dir()]
             if len(existing) > 1:
-                raise ValueError("Multiple September XML CONFÍA month folders; explicit selection required")
+                raise ValueError(
+                    "Multiple September XML CONFÍA month folders; explicit selection required"
+                )
             if existing:
                 return existing[0]
         if not path.is_dir():
