@@ -80,6 +80,7 @@ def inspect_fixed_term_maturities(
     bands: dict[tuple[str, int, str], _BandBalance] = {}
     excluded_counts: dict[tuple[str, str], int] = {}
     excluded_principal: dict[tuple[str, str], Decimal] = {}
+    term_rate_review: dict[tuple[str, str, str], _BandBalance] = {}
     source_valid_principal: dict[str, Decimal] = {}
     source_invalid_principal_records: dict[str, int] = {}
     seen_ids: set[str] = set()
@@ -103,6 +104,24 @@ def inspect_fixed_term_maturities(
             )
 
         status = _account_status(values.get("CuentaContablePrincipal", "").strip())
+        if status == "TERM":
+            raw_rate = values.get("TipoTasa", "").strip().upper() or "(VACIO)"
+            raw_maturity = values.get("FechaVencimiento", "").strip()
+            parsed_maturity = _source_date(raw_maturity) if raw_maturity else None
+            if not raw_maturity:
+                date_quality = "MISSING_MATURITY"
+            elif parsed_maturity is None:
+                date_quality = "INVALID_MATURITY"
+            elif parsed_maturity < cutoff:
+                date_quality = "PAST_MATURITY"
+            else:
+                date_quality = "CURRENT_OR_FUTURE_MATURITY"
+            review = term_rate_review.setdefault(
+                (currency, raw_rate, date_quality), _BandBalance()
+            )
+            review.records += 1
+            if amount is not None:
+                review.balance += amount
         if currency == "(VACIO)":
             status = "MISSING_CURRENCY"
         elif amount is None:
@@ -191,6 +210,18 @@ def inspect_fixed_term_maturities(
             }
             for (currency, ordinal, label), amount in sorted(
                 bands.items(), key=lambda item: (item[0][0], item[0][1])
+            )
+        ],
+        "term_rate_review": [
+            {
+                "currency_code": currency,
+                "rate_type_source_code": rate_code,
+                "maturity_quality": date_quality,
+                "records": group.records,
+                "valid_source_principal": str(group.balance),
+            }
+            for (currency, rate_code, date_quality), group in sorted(
+                term_rate_review.items()
             )
         ],
         "excluded": [
