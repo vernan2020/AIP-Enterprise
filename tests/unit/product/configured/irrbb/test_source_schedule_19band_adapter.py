@@ -211,3 +211,53 @@ def test_rejects_unbalanced_principal_schedule():
             ),
             certification=_certification(),
         )
+
+
+def test_all_four_certified_segments_bandeo_keeps_asset_liability_sides_separate():
+    records = []
+    for position_id, instrument, side, direction in (
+        ("CREDIT-1", IRRBBInstrumentClass.CREDIT, BankingBookSide.ASSET, CashFlowDirection.RECEIVABLE),
+        ("INV-1", IRRBBInstrumentClass.INVESTMENT, BankingBookSide.ASSET, CashFlowDirection.RECEIVABLE),
+        ("CAP-1", IRRBBInstrumentClass.TERM_DEPOSIT, BankingBookSide.LIABILITY, CashFlowDirection.PAYABLE),
+        ("BORROW-1", IRRBBInstrumentClass.BORROWING, BankingBookSide.LIABILITY, CashFlowDirection.PAYABLE),
+    ):
+        original = _record()
+        position = replace(
+            original.position,
+            position_id=position_id,
+            instrument_class=instrument,
+            side=side,
+            source_reference=f"SOURCE:{position_id}",
+        )
+        schedule = tuple(
+            replace(
+                payment,
+                direction=direction,
+                source_reference=f"{position_id}:{index}",
+            )
+            for index, payment in enumerate(original.gap_schedule)
+        )
+        records.append(
+            replace(original, position=position, gap_schedule=schedule)
+        )
+    snapshot = IRRBBSourceSnapshot(
+        cutoff_date=CUTOFF,
+        position_records=tuple(records),
+        source_references=("CERTIFIED-SOURCE-PERIMETER-FOUR-SEGMENTS",),
+    )
+    result = bridge_certified_fixed_schedules(
+        snapshot=snapshot,
+        certification=_certification(),
+    )
+    assert result.certified_positions == 4
+    assert result.source_flows == 8
+    assert result.evidence.missing_segments == ()
+    assert result.evidence.included_segments == (
+        "BORROWING",
+        "CAPTACIONES",
+        "CREDIT",
+        "INVESTMENT",
+    )
+    assert sum(row.assets for row in result.evidence.rows) == Decimal("205.30")
+    assert sum(row.liabilities for row in result.evidence.rows) == Decimal("205.30")
+    assert not result.publishable_regulatory_gap
