@@ -161,4 +161,3 @@ class Contractual19BandEvidenceAggregator:
             included_segments=tuple(sorted(segments)),
             missing_segments=tuple(sorted(REQUIRED_SEGMENTS - segments)),
         )
-
