@@ -79,3 +79,75 @@ def test_bccr_v2_launcher_preserves_private_config_and_exit_code() -> None:
     assert "config\\runtime.local.cmd" in cmd
     assert "AIP_BCCR_TOKEN" not in cmd
     assert "echo BCCR SDDE v2" in cmd
+
+
+def test_bccr_v2_live_diagnostic_reports_latency_and_window_without_secrets(
+    monkeypatch: pytest.MonkeyPatch, capsys
+) -> None:
+    settings = SimpleNamespace(
+        enabled=True, base_url="https://apim.bccr.fi.cr",
+        token="SECRET.TOKEN", name="Private account", email="private@example.invalid",
+        timeout_seconds=5.0, retries=0,
+    )
+    monkeypatch.setattr(
+        diagnostic, "EnvironmentLoader",
+        lambda: SimpleNamespace(load_source_config=lambda: SimpleNamespace(bccr=settings)),
+    )
+
+    class StubClient:
+        def __init__(self, *, config):
+            assert config.token == "SECRET.TOKEN"
+
+        def fetch_series(self, *, indicator_code, from_date, to_date):
+            assert indicator_code == "317"
+            assert from_date <= to_date
+            return {"body": {"datos": [{"codigoIndicador": "317", "series": [
+                {"fecha": diagnostic.date.today().isoformat(), "valorDatoPorPeriodo": "449.12"}
+            ]}]}}
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(diagnostic, "SDDEv2Client", StubClient)
+    assert diagnostic.run(["--codes", "317", "--days", "20"]) == 0
+    output = capsys.readouterr().out
+    import json
+    report = json.loads(output)
+    assert report["status"] == "LIVE_OK"
+    assert report["window"]["to"] == diagnostic.date.today().strftime("%Y/%m/%d")
+    assert report["indicators"][0]["elapsed_ms"] >= 0
+    assert "SECRET.TOKEN" not in output
+    assert "private@example.invalid" not in output
+
+
+def test_bccr_v2_http_500_diagnostic_includes_latency_and_redacted_status(
+    monkeypatch: pytest.MonkeyPatch, capsys
+) -> None:
+    settings = SimpleNamespace(
+        enabled=True, base_url="https://apim.bccr.fi.cr",
+        token="SECRET.TOKEN", name="Account", email="private@example.invalid",
+        timeout_seconds=5.0, retries=0,
+    )
+    monkeypatch.setattr(
+        diagnostic, "EnvironmentLoader",
+        lambda: SimpleNamespace(load_source_config=lambda: SimpleNamespace(bccr=settings)),
+    )
+
+    class StubClient:
+        def __init__(self, *, config):
+            pass
+
+        def fetch_series(self, **kwargs):
+            raise ConnectionError("BCCR SDDE HTTP 500 on indicator request")
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(diagnostic, "SDDEv2Client", StubClient)
+    assert diagnostic.run(["--codes", "317"]) == 2
+    import json
+    report = json.loads(capsys.readouterr().out)
+    item = report["indicators"][0]
+    assert item["status"] == "HTTP_ERROR"
+    assert item["http_status"] == "500"
+    assert item["elapsed_ms"] >= 0
