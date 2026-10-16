@@ -40,7 +40,7 @@ def test_contractual_coverage_counts_field_gaps_without_exposing_records():
     assert len(results) == 4
     credit = results[0]
     assert credit.record_count == 1
-    assert credit.status == "REVIEW_REQUIRED"
+    assert credit.status == "FIELD_GAPS_FOUND"
     assert dict(credit.missing_by_field)["FechaVencimiento"] == 1
     assert all(result.key != "INVESTMENT" for result in results)
 
@@ -56,5 +56,5 @@ def test_complete_fields_are_not_mistaken_for_certified_flows():
     results = inspect_xml_contractual_coverage(
         SourceReader(), cutoff_date=date(2026, 9, 30)
     )
-    assert all(row.status == "COVERAGE_COMPLETE" for row in results)
+    assert all(row.status == "FIELDS_POPULATED" for row in results)
     assert not hasattr(results[0], "cash_flows")
