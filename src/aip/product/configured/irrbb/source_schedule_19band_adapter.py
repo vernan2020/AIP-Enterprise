@@ -81,7 +81,8 @@ def bridge_certified_fixed_schedules(
         if segment is None:
             raise ValueError("Unsupported investment / funding instrument class")
         expected_side = (
-            BankingBookSide.ASSET if segment in {"CREDIT", "INVESTMENT"}
+            BankingBookSide.ASSET
+            if segment in {"CREDIT", "INVESTMENT"}
             else BankingBookSide.LIABILITY
         )
         if position.side is not expected_side:
@@ -108,7 +109,8 @@ def bridge_certified_fixed_schedules(
             if payment.payment_date > position.maturity_date:
                 raise ValueError("Payment date exceeds certified maturity")
             direction = (
-                CashFlowDirection.RECEIVABLE if expected_side is BankingBookSide.ASSET
+                CashFlowDirection.RECEIVABLE
+                if expected_side is BankingBookSide.ASSET
                 else CashFlowDirection.PAYABLE
             )
             if payment.direction is not direction:
@@ -136,7 +138,9 @@ def bridge_certified_fixed_schedules(
         if not count_principal:
             raise ValueError("Certified contractual schedule lacks principal payment")
         if principal_repayments != position.principal.amount:
-            raise ValueError("Contractual principal payments do not match source outstanding principal")
+            raise ValueError(
+                "Contractual principal payments do not match source outstanding principal"
+            )
     result = Contractual19BandEvidenceAggregator().aggregate(
         cutoff_date=snapshot.cutoff_date, flows=flows
     )
