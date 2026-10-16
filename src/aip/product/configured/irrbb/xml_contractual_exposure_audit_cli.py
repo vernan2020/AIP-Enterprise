@@ -60,10 +60,10 @@ def audit(reader: XMLConfiaMonthlySourceReader, cutoff: date) -> list[dict[str, 
         period = source.header.periodo
         if expected_entity is not None and entity != expected_entity:
             raise ValueError("XML sources contain different entity identifiers")
-        if expected_period is not None and period != expected_period:
-            raise ValueError("XML sources contain different reporting periods")
         if (period.year, period.month) != (cutoff.year, cutoff.month):
             raise ValueError("XML source does not match requested cutoff")
+        if expected_period is not None and period != expected_period:
+            raise ValueError("XML sources contain different reporting periods")
         expected_entity, expected_period = entity, period
         balance_field, currency_field = BALANCE_FIELDS[source_key]
         groups: dict[tuple[str, ...], _Accumulator] = {}
