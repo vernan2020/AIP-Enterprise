@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from time import perf_counter
 
-from PySide6.QtCore import QObject, QPointF, QRectF, QRunnable, Qt, QThreadPool, Signal, Slot
+from PySide6.QtCore import QObject, QPointF, QRectF, QRunnable, Qt, QThreadPool, QTimer, Signal, Slot
 from PySide6.QtGui import QColor, QFont, QPainter, QPen, QPolygonF
 from PySide6.QtWidgets import (
     QComboBox,
@@ -336,6 +336,17 @@ class MacroForecastLabPanel(QWidget):
         self._kpi_cards: tuple[QFrame, ...] = ()
         self._kpi_columns = 6
         self._build_ui()
+        self._elapsed_timer = QTimer(self)
+        self._elapsed_timer.setInterval(1000)
+        self._elapsed_timer.timeout.connect(self._update_elapsed_status)
+
+    def _update_elapsed_status(self) -> None:
+        if self._loading and self._evaluation_started_at is not None:
+            elapsed = int(perf_counter() - self._evaluation_started_at)
+            self._status.setText(
+                f"Backtesting con datos históricos para {self._indicator_combo.currentText()} "
+                f"· {elapsed} s transcurridos. La evaluación continúa en segundo plano."
+            )
 
     def _build_ui(self) -> None:
         root = QVBoxLayout(self)
@@ -569,6 +580,7 @@ class MacroForecastLabPanel(QWidget):
         worker.signals.completed.connect(self._completed)
         worker.signals.failed.connect(self._failed)
         self._worker = worker
+        self._elapsed_timer.start()
         self._thread_pool.start(worker)
 
     @Slot(object)
@@ -586,6 +598,7 @@ class MacroForecastLabPanel(QWidget):
         self._finish()
 
     def _finish(self) -> None:
+        self._elapsed_timer.stop()
         if self._evaluation_started_at is not None:
             self._last_duration_seconds = perf_counter() - self._evaluation_started_at
             self._evaluation_started_at = None
