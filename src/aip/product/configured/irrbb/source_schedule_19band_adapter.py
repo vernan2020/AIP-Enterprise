@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
+from decimal import Decimal
 
 from aip.application.irrbb.contracts import IRRBBSourceSnapshot
 from aip.application.irrbb.source_certification import IRRBBSourceCertificationReport
@@ -93,6 +94,7 @@ def bridge_certified_fixed_schedules(
         if not record.gap_schedule:
             raise ValueError("Contractual source payment schedule is missing")
         count_principal = 0
+        principal_repayments = Decimal(0)
         for payment in record.gap_schedule:
             if payment.amount.currency is not position.currency:
                 raise ValueError("Contractual schedule currency contradicts position")
@@ -108,6 +110,7 @@ def bridge_certified_fixed_schedules(
                 raise ValueError("Payment direction contradicts certified position")
             if payment.flow_type.upper() == "PRINCIPAL":
                 count_principal += 1
+                principal_repayments += payment.amount.amount
             flows.append(
                 EvidencedFlow(
                     segment=segment,
@@ -127,6 +130,8 @@ def bridge_certified_fixed_schedules(
             )
         if not count_principal:
             raise ValueError("Certified contractual schedule lacks principal payment")
+        if principal_repayments != position.principal.amount:
+            raise ValueError("Contractual principal payments do not match source outstanding principal")
     result = Contractual19BandEvidenceAggregator().aggregate(
         cutoff_date=snapshot.cutoff_date, flows=flows
     )
