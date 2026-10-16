@@ -40,7 +40,11 @@ class XMLContractualCoverage:
 def inspect_xml_contractual_coverage(
     reader: XMLConfiaMonthlySourceReader, *, cutoff_date: date
 ) -> tuple[XMLContractualCoverage, ...]:
-    """Inspect only XML cash-flow candidates; investments come from the master."""
+    """Inspect field presence only, never assert contractual-flow readiness.
+
+    Some demand deposits have no contractual maturity. A present XML field is
+    not proof that a complete future cash-flow schedule can be reconstructed.
+    """
     results: list[XMLContractualCoverage] = []
     for key, fields in REQUIRED_FIELDS.items():
         source = reader.resolve_source(key=key, cutoff_date=cutoff_date)
@@ -59,7 +63,7 @@ def inspect_xml_contractual_coverage(
                 entity_id=source.header.id_entidad,
                 record_count=rows,
                 missing_by_field=tuple(missing.items()),
-                status="COVERAGE_COMPLETE" if rows and not any(missing.values()) else "REVIEW_REQUIRED",
+                status="FIELDS_POPULATED" if rows and not any(missing.values()) else "FIELD_GAPS_FOUND",
             )
         )
     if len({result.entity_id for result in results}) != 1:
