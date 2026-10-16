@@ -11,8 +11,11 @@ from aip.application.irrbb.contracts import (
     IRRBBSourceSnapshot,
 )
 from aip.application.irrbb.source_certification import (
+    IRRBBSourceAvailabilityStatus,
     IRRBBSourceCertificationReport,
+    IRRBBSourceCertificationService,
     IRRBBSourceCertificationStatus,
+    IRRBBSourceRequirementAssessment,
     IRRBBSourcePerimeter,
     IRRBBSourceRequirement,
     IRRBBSourceRequirementProfile,
@@ -52,12 +55,21 @@ def _certification(
             ),
         ),
     )
-    return IRRBBSourceCertificationReport(
+    readiness = (
+        IRRBBSourceAvailabilityStatus.NATIVE_AVAILABLE
+        if status is IRRBBSourceCertificationStatus.READY
+        else IRRBBSourceAvailabilityStatus.MISSING_BLOCKING_GAP
+    )
+    return IRRBBSourceCertificationService.certify(
         profile=profile,
-        assessments=(),
-        status=status,
-        blocking_requirement_ids=(),
-        not_assessed_requirement_ids=(),
+        assessments=(
+            IRRBBSourceRequirementAssessment(
+                requirement_id="SCHED",
+                status=readiness,
+                source_reference="CERTIFIED-TEST-SOURCE" if status is IRRBBSourceCertificationStatus.READY else None,
+                evidence_reference="VERIFIED-SCHEDULE" if status is IRRBBSourceCertificationStatus.READY else None,
+            ),
+        ),
     )
 
 
