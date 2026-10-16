@@ -116,9 +116,7 @@ def inspect_fixed_term_maturities(
                 date_quality = "PAST_MATURITY"
             else:
                 date_quality = "CURRENT_OR_FUTURE_MATURITY"
-            review = term_rate_review.setdefault(
-                (currency, raw_rate, date_quality), _BandBalance()
-            )
+            review = term_rate_review.setdefault((currency, raw_rate, date_quality), _BandBalance())
             review.records += 1
             if amount is not None:
                 review.balance += amount
@@ -220,9 +218,7 @@ def inspect_fixed_term_maturities(
                 "records": group.records,
                 "valid_source_principal": str(group.balance),
             }
-            for (currency, rate_code, date_quality), group in sorted(
-                term_rate_review.items()
-            )
+            for (currency, rate_code, date_quality), group in sorted(term_rate_review.items())
         ],
         "excluded": [
             {
