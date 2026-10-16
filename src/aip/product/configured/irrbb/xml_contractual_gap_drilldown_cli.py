@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import argparse
 import json
-from typing import TypedDict
 from datetime import date
+from typing import TypedDict
 from xml.etree.ElementTree import ParseError
 
 from aip.product.configured.configuration.institutional_paths import (
@@ -16,6 +16,7 @@ from aip.product.configured.irrbb.xml_confia_source import (
 )
 from aip.product.configured.irrbb.xml_contractual_coverage import REQUIRED_FIELDS
 from aip.product.demo.configuration.environment_loader import EnvironmentLoader
+
 
 class _GroupCounts(TypedDict):
     records: int
