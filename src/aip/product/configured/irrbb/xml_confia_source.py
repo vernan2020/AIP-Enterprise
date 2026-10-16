@@ -162,7 +162,7 @@ class XMLConfiaMonthlySourceReader:
             for item in month_directory.iterdir()
             if item.is_file()
             and item.suffix.casefold() == ".xml"
-            and item.stem.casefold() == stem.casefold()
+            and item.stem.casefold() in {stem.casefold(), f"{stem}.nuevo".casefold()}
         )
         if not candidates:
             raise FileNotFoundError(
