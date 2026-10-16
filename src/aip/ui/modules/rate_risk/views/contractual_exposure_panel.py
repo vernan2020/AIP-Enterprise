@@ -230,11 +230,12 @@ class ContractualExposurePanel(QWidget):
     def _apply_filter(self, _text: str) -> None:
         needle = self._filter_input.text().casefold().strip()
         for row in range(self._table.rowCount()):
-            haystack = " ".join(
-                self._table.item(row, column).toolTip() + " " + self._table.item(row, column).text()
-                for column in (0, 1, 2)
-                if self._table.item(row, column) is not None
-            ).casefold()
+            values: list[str] = []
+            for column in (0, 1, 2):
+                item = self._table.item(row, column)
+                if item is not None:
+                    values.append(item.toolTip() + " " + item.text())
+            haystack = " ".join(values).casefold()
             self._table.setRowHidden(row, needle not in haystack)
 
     def _populate(self, results: list[dict[str, object]]) -> None:
