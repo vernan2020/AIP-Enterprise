@@ -183,6 +183,4 @@ def test_both_september_spellings_fail_ambiguous(tmp_path: Path) -> None:
     (root / "09-SETIEMBRE").mkdir(parents=True)
     (root / "09-SEPTIEMBRE").mkdir()
     with pytest.raises(ValueError, match="Multiple September"):
-        XMLConfiaMonthlySourceReader(str(tmp_path)).resolve_month_directory(
-            date(2026, 9, 30)
-        )
+        XMLConfiaMonthlySourceReader(str(tmp_path)).resolve_month_directory(date(2026, 9, 30))
