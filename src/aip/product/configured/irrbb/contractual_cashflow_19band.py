@@ -16,6 +16,7 @@ from typing import Iterable
 from aip.domain.irrbb.models import (
     BankingBookSide,
     CashFlowAmountStatus,
+    CashFlowDirection,
     IRRBBCashFlow,
     IRRBBTimeBucket,
 )
@@ -86,7 +87,7 @@ class Contractual19BandEvidenceAggregator:
     ) -> Contractual19BandEvidenceResult:
         amounts: dict[tuple[Currency, int, BankingBookSide], Decimal] = defaultdict(Decimal)
         counts: dict[tuple[Currency, int], int] = defaultdict(int)
-        seen: set[tuple[str, str, date, date, str, Decimal, str]] = set()
+        seen: set[tuple[str, str, date, date, str, str, Currency]] = set()
         currencies: set[Currency] = set()
         segments: set[str] = set()
         count = 0
@@ -100,14 +101,22 @@ class Contractual19BandEvidenceAggregator:
                 raise ValueError("Historical cashflow or repricing date cannot be assigned")
             if event.risk_date > event.cashflow_date:
                 raise ValueError("Risk date cannot be after its contractual payment date")
+            if (
+                event.side is BankingBookSide.ASSET
+                and event.direction is not CashFlowDirection.RECEIVABLE
+            ) or (
+                event.side is BankingBookSide.LIABILITY
+                and event.direction is not CashFlowDirection.PAYABLE
+            ):
+                raise ValueError("Banking-book side and payment direction disagree")
             event_key = (
                 item.segment,
                 event.position_id,
                 event.cashflow_date,
                 event.risk_date,
                 event.flow_type,
-                event.amount.amount,
                 event.source_reference,
+                event.amount.currency,
             )
             if event_key in seen:
                 raise ValueError("Duplicate contractual source cashflow")
