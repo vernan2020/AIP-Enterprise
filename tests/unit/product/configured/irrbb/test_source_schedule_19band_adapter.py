@@ -66,8 +66,14 @@ def _certification(
             IRRBBSourceRequirementAssessment(
                 requirement_id="SCHED",
                 status=readiness,
-                source_reference="CERTIFIED-TEST-SOURCE" if status is IRRBBSourceCertificationStatus.READY else None,
-                evidence_reference="VERIFIED-SCHEDULE" if status is IRRBBSourceCertificationStatus.READY else None,
+                source_reference=(
+                    "CERTIFIED-TEST-SOURCE"
+                    if status is IRRBBSourceCertificationStatus.READY
+                    else None
+                ),
+                evidence_reference=(
+                    "VERIFIED-SCHEDULE" if status is IRRBBSourceCertificationStatus.READY else None
+                ),
             ),
         ),
     )
@@ -121,9 +127,7 @@ def _snapshot(
 
 
 def test_certified_source_schedule_bands_principal_and_interest_without_inference():
-    result = bridge_certified_fixed_schedules(
-        snapshot=_snapshot(), certification=_certification()
-    )
+    result = bridge_certified_fixed_schedules(snapshot=_snapshot(), certification=_certification())
     assert result.certified_positions == 1
     assert result.source_flows == 2
     assert result.status == "FIXED_SCHEDULE_EVIDENCE_ONLY_NOT_CERTIFIED_GAP"
@@ -171,9 +175,7 @@ def test_rejects_unapproved_optionality_and_dates():
             ),
             certification=_certification(),
         )
-    invalid_payment = replace(
-        original.gap_schedule[0], payment_date=date(2027, 2, 1)
-    )
+    invalid_payment = replace(original.gap_schedule[0], payment_date=date(2027, 2, 1))
     with pytest.raises(ValueError, match="exceeds certified maturity"):
         bridge_certified_fixed_schedules(
             snapshot=_snapshot(
@@ -194,6 +196,7 @@ def test_rejects_incompatible_cashflow_currency():
             snapshot=_snapshot(replace(record, gap_schedule=(payment, record.gap_schedule[1]))),
             certification=_certification(),
         )
+
 
 def test_rejects_unbalanced_principal_schedule():
     original = _record()
@@ -216,10 +219,30 @@ def test_rejects_unbalanced_principal_schedule():
 def test_all_four_certified_segments_bandeo_keeps_asset_liability_sides_separate():
     records = []
     for position_id, instrument, side, direction in (
-        ("CREDIT-1", IRRBBInstrumentClass.CREDIT, BankingBookSide.ASSET, CashFlowDirection.RECEIVABLE),
-        ("INV-1", IRRBBInstrumentClass.INVESTMENT, BankingBookSide.ASSET, CashFlowDirection.RECEIVABLE),
-        ("CAP-1", IRRBBInstrumentClass.TERM_DEPOSIT, BankingBookSide.LIABILITY, CashFlowDirection.PAYABLE),
-        ("BORROW-1", IRRBBInstrumentClass.BORROWING, BankingBookSide.LIABILITY, CashFlowDirection.PAYABLE),
+        (
+            "CREDIT-1",
+            IRRBBInstrumentClass.CREDIT,
+            BankingBookSide.ASSET,
+            CashFlowDirection.RECEIVABLE,
+        ),
+        (
+            "INV-1",
+            IRRBBInstrumentClass.INVESTMENT,
+            BankingBookSide.ASSET,
+            CashFlowDirection.RECEIVABLE,
+        ),
+        (
+            "CAP-1",
+            IRRBBInstrumentClass.TERM_DEPOSIT,
+            BankingBookSide.LIABILITY,
+            CashFlowDirection.PAYABLE,
+        ),
+        (
+            "BORROW-1",
+            IRRBBInstrumentClass.BORROWING,
+            BankingBookSide.LIABILITY,
+            CashFlowDirection.PAYABLE,
+        ),
     ):
         original = _record()
         position = replace(
@@ -237,9 +260,7 @@ def test_all_four_certified_segments_bandeo_keeps_asset_liability_sides_separate
             )
             for index, payment in enumerate(original.gap_schedule)
         )
-        records.append(
-            replace(original, position=position, gap_schedule=schedule)
-        )
+        records.append(replace(original, position=position, gap_schedule=schedule))
     snapshot = IRRBBSourceSnapshot(
         cutoff_date=CUTOFF,
         position_records=tuple(records),
