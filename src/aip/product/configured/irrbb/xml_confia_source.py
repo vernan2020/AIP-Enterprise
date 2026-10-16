@@ -18,7 +18,7 @@ _XML_MONTH_NAMES = {
     6: "JUNIO",
     7: "JULIO",
     8: "AGOSTO",
-    9: "SEPTIEMBRE",
+    9: "SETIEMBRE",
     10: "OCTUBRE",
     11: "NOVIEMBRE",
     12: "DICIEMBRE",
