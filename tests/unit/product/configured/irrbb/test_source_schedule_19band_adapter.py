@@ -30,6 +30,10 @@ from aip.domain.irrbb.models import (
     RateType,
 )
 from aip.domain.irrbb.sugef_standard_gap import SugefGapScheduleRecord
+from aip.product.configured.irrbb.four_source_19band_consolidation import (
+    SourceSchedulePerimeter,
+    consolidate_four_certified_sources,
+)
 from aip.product.configured.irrbb.source_schedule_19band_adapter import (
     bridge_certified_fixed_schedules,
 )
@@ -282,3 +286,174 @@ def test_all_four_certified_segments_bandeo_keeps_asset_liability_sides_separate
     assert sum(row.assets for row in result.evidence.rows) == Decimal("205.30")
     assert sum(row.liabilities for row in result.evidence.rows) == Decimal("205.30")
     assert not result.publishable_regulatory_gap
+
+
+def _perimeter_source(
+    *,
+    segment: str,
+    currency: Currency = Currency.CRC,
+    cutoff: date = CUTOFF,
+) -> SourceSchedulePerimeter:
+    classes = {
+        "CREDIT": (IRRBBInstrumentClass.CREDIT, BankingBookSide.ASSET, CashFlowDirection.RECEIVABLE),
+        "INVESTMENT": (
+            IRRBBInstrumentClass.INVESTMENT,
+            BankingBookSide.ASSET,
+            CashFlowDirection.RECEIVABLE,
+        ),
+        "CAPTACIONES": (
+            IRRBBInstrumentClass.TERM_DEPOSIT,
+            BankingBookSide.LIABILITY,
+            CashFlowDirection.PAYABLE,
+        ),
+        "BORROWING": (
+            IRRBBInstrumentClass.BORROWING,
+            BankingBookSide.LIABILITY,
+            CashFlowDirection.PAYABLE,
+        ),
+    }
+    perimeters = {
+        "CREDIT": IRRBBSourcePerimeter.CREDIT,
+        "INVESTMENT": IRRBBSourcePerimeter.INVESTMENT,
+        "CAPTACIONES": IRRBBSourcePerimeter.LIABILITY,
+        "BORROWING": IRRBBSourcePerimeter.LIABILITY,
+    }
+    instrument, side, direction = classes[segment]
+    base = _record()
+    position = replace(
+        base.position,
+        position_id=f"{segment}-001",
+        instrument_class=instrument,
+        side=side,
+        currency=currency,
+        principal=Money(Decimal("100.15"), currency),
+    )
+    schedule = tuple(
+        replace(
+            row,
+            direction=direction,
+            amount=Money(row.amount.amount, currency),
+            source_reference=f"{segment}:SOURCE:ROW:{number}",
+        )
+        for number, row in enumerate(base.gap_schedule)
+    )
+    source = IRRBBSourceSnapshot(
+        cutoff_date=cutoff,
+        position_records=(replace(base, position=position, gap_schedule=schedule),),
+        source_references=(f"SOURCE:{segment}:VERSIONED-SNAPSHOT",),
+    )
+    profile = IRRBBSourceRequirementProfile(
+        code=f"{segment}-CONTRACTUAL-SCHEDULE",
+        version="1",
+        effective_from=CUTOFF,
+        source_reference=f"INSTITUTIONAL-SOURCE:{segment}",
+        requirements=(
+            IRRBBSourceRequirement(
+                requirement_id=f"{segment}-SCHEDULE",
+                canonical_variable="contractual_schedule",
+                perimeter=perimeters[segment],
+                description=f"Dated and reconciled {segment} contractual schedule",
+            ),
+        ),
+    )
+    certification = IRRBBSourceCertificationService.certify(
+        profile=profile,
+        assessments=(
+            IRRBBSourceRequirementAssessment(
+                requirement_id=f"{segment}-SCHEDULE",
+                status=IRRBBSourceAvailabilityStatus.NATIVE_AVAILABLE,
+                source_reference=f"INSTITUTIONAL-SOURCE:{segment}",
+                evidence_reference=f"PROVEN-SCHEDULE:{segment}",
+            ),
+        ),
+    )
+    return SourceSchedulePerimeter(
+        segment=segment, snapshot=source, certification=certification
+    )
+
+
+def test_four_separate_certifications_consolidate_per_currency_and_balance_side():
+    sources = (
+        _perimeter_source(segment="CREDIT"),
+        _perimeter_source(segment="INVESTMENT", currency=Currency.USD),
+        _perimeter_source(segment="CAPTACIONES"),
+        _perimeter_source(segment="BORROWING", currency=Currency.USD),
+    )
+    result = consolidate_four_certified_sources(cutoff_date=CUTOFF, sources=sources)
+    assert result.status == "FOUR_SOURCE_FIXED_SCHEDULE_EVIDENCE_NOT_CERTIFIED_GAP"
+    assert result.publishable_regulatory_gap is False
+    assert result.evidence.total_flows == 8
+    assert len(result.evidence.rows) == 38
+    assert result.evidence.missing_segments == ()
+    assert result.positions_by_segment == (
+        ("BORROWING", 1),
+        ("CAPTACIONES", 1),
+        ("CREDIT", 1),
+        ("INVESTMENT", 1),
+    )
+    assert len(result.reconciliation) == 4
+    assert all(row.difference == 0 for row in result.reconciliation)
+    for currency in (Currency.CRC, Currency.USD):
+        rows = [row for row in result.evidence.rows if row.currency is currency]
+        assert len(rows) == 19
+        assert sum(row.assets for row in rows) == Decimal("102.65")
+        assert sum(row.liabilities for row in rows) == Decimal("102.65")
+
+
+def test_four_source_consolidation_blocks_missing_and_duplicate_segments():
+    sources = tuple(
+        _perimeter_source(segment=segment)
+        for segment in ("CREDIT", "INVESTMENT", "CAPTACIONES")
+    )
+    with pytest.raises(ValueError, match="Four unique"):
+        consolidate_four_certified_sources(cutoff_date=CUTOFF, sources=sources)
+    with pytest.raises(ValueError, match="Four unique"):
+        consolidate_four_certified_sources(
+            cutoff_date=CUTOFF, sources=(*sources, sources[0])
+        )
+
+
+def test_four_source_consolidation_blocks_mismatched_cutoff():
+    sources = tuple(
+        _perimeter_source(segment=segment)
+        for segment in ("CREDIT", "INVESTMENT", "CAPTACIONES")
+    ) + (_perimeter_source(segment="BORROWING", cutoff=date(2026, 8, 31)),)
+    with pytest.raises(ValueError, match="cutoffs must match"):
+        consolidate_four_certified_sources(cutoff_date=CUTOFF, sources=sources)
+
+
+def test_four_source_consolidation_blocks_cross_segment_contamination():
+    sources = [
+        _perimeter_source(segment=segment)
+        for segment in ("CREDIT", "INVESTMENT", "CAPTACIONES", "BORROWING")
+    ]
+    sources[0] = replace(sources[0], snapshot=sources[1].snapshot)
+    with pytest.raises(ValueError, match="mixes incompatible"):
+        consolidate_four_certified_sources(cutoff_date=CUTOFF, sources=sources)
+
+
+def test_four_source_consolidation_blocks_wrong_certification_perimeter():
+    sources = [
+        _perimeter_source(segment=segment)
+        for segment in ("CREDIT", "INVESTMENT", "CAPTACIONES", "BORROWING")
+    ]
+    sources[0] = replace(
+        sources[0], certification=sources[1].certification
+    )
+    with pytest.raises(ValueError, match="does not cover its perimeter"):
+        consolidate_four_certified_sources(cutoff_date=CUTOFF, sources=sources)
+
+
+def test_four_source_consolidation_blocks_incomplete_source_certification():
+    sources = [
+        _perimeter_source(segment=segment)
+        for segment in ("CREDIT", "INVESTMENT", "CAPTACIONES", "BORROWING")
+    ]
+    source = sources[2]
+    blocked = replace(
+        source.certification,
+        status=IRRBBSourceCertificationStatus.INCOMPLETE,
+    )
+    sources[2] = replace(source, certification=blocked)
+    with pytest.raises(ValueError, match="not READY"):
+        consolidate_four_certified_sources(cutoff_date=CUTOFF, sources=sources)
