@@ -8,6 +8,7 @@ on:
     paths:
       - 'src/aip/ui/**'
       - 'scripts/qa/capture_windows_preview.py'
+      - 'scripts/qa/smoke_configured_workspaces.py'
       - '.github/workflows/windows-ux-preview.yml'
       - 'run_aip_ux_preview.cmd'
       - 'run_aip_configured.cmd'
@@ -44,6 +45,11 @@ jobs:
         run: python -m pip install -e .
       - name: Verify CONFIGURED CMD bootstrap with isolated credentials
         run: python scripts/qa/verify_windows_configured_runtime.py
+      - name: Smoke complete CONFIGURED desktop navigation without demo data
+        env:
+          AIP_EXECUTION_MODE: CONFIGURED
+          AIP_DEMO_MODE_ENABLED: 'false'
+        run: python scripts/qa/smoke_configured_workspaces.py
       - name: Open workspaces and capture screenshots
         run: python scripts/qa/capture_windows_preview.py
       - name: Upload screenshots
