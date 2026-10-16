@@ -53,9 +53,7 @@ class CertifiedScheduleEvidence:
     status: str = "FIXED_SCHEDULE_EVIDENCE_ONLY_NOT_CERTIFIED_GAP"
 
     def __post_init__(self) -> None:
-        if self.source_flows != len(self.flows) or self.evidence.total_flows != len(
-            self.flows
-        ):
+        if self.source_flows != len(self.flows) or self.evidence.total_flows != len(self.flows):
             raise ValueError("Certified contractual source flow counts must reconcile")
 
     @property
