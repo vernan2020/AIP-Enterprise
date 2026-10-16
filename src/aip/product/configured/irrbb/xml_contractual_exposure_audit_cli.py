@@ -70,8 +70,7 @@ def audit(reader: XMLConfiaMonthlySourceReader, cutoff: date) -> list[dict[str, 
         for record in reader.iter_records(source):
             currency = record.values.get(currency_field, "").strip()
             values = tuple(
-                record.values.get(field, "").strip() or "(VACIO)"
-                for field in categories
+                record.values.get(field, "").strip() or "(VACIO)" for field in categories
             )
             key = (currency or "(VACIO)", *values)
             row = groups.setdefault(key, _Accumulator())
