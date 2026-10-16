@@ -13,6 +13,16 @@ def _evidence() -> dict[str, object]:
         "source_records": 3,
         "observed_records": 1,
         "excluded_records": 2,
+        "currency_reconciliation": [
+            {
+                "currency_code": "1",
+                "source_valid_principal": "2134.50",
+                "assigned_principal": "1234.50",
+                "excluded_valid_principal": "900",
+                "invalid_principal_records": 0,
+                "status": "RECONCILED_VALID_PRINCIPAL",
+            }
+        ],
         "bands": [
             {
                 "currency_code": "1",
@@ -41,6 +51,8 @@ def test_panel_displays_maturity_only_and_unassigned_categories(qt_app) -> None:
         panel._receive_result(cutoff, _evidence())
         assert panel._bands.rowCount() == 1
         assert panel._excluded.rowCount() == 1
+        assert panel._reconciliation.rowCount() == 1
+        assert panel._reconciliation.item(0, 1).text() == "2134.50"
         assert panel._bands.item(0, 1).text() == "2. 1 día a 1 mes"
         assert panel._bands.item(0, 3).text() == "1234.50"
         assert "SIGHT_NMD" in panel._excluded.item(0, 1).text()
@@ -58,6 +70,7 @@ def test_panel_does_not_reuse_stale_cutoff_results(qt_app) -> None:
         panel._receive_result(date(2026, 9, 30), _evidence())
         assert panel._bands.rowCount() == 0
         assert panel._excluded.rowCount() == 0
+        assert panel._reconciliation.rowCount() == 0
         assert "15/10/2026" in panel._status.text()
     finally:
         panel.close()
