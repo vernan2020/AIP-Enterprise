@@ -1,4 +1,5 @@
 """Read-only per-product classification of missing RTILB contractual XML fields."""
+
 from __future__ import annotations
 
 import argparse
@@ -42,8 +43,7 @@ def summarize(reader: XMLConfiaMonthlySourceReader, cutoff: date) -> list[dict]:
         grouped = defaultdict(lambda: {"records": 0, "missing": defaultdict(int)})
         for record in reader.iter_records(source):
             group_key = tuple(
-                record.values.get(field, "").strip() or "(VACIO)"
-                for field in categories
+                record.values.get(field, "").strip() or "(VACIO)" for field in categories
             )
             group = grouped[group_key]
             group["records"] += 1
