@@ -32,9 +32,5 @@ def test_exact_master_is_chosen_only_at_requested_cutoff(tmp_path):
 def test_master_discovery_fails_closed_for_bad_config(tmp_path):
     cutoff = date(2026, 9, 30)
     assert find_exact_cutoff_master(None, "*.xlsx", cutoff)[0] == "UNCONFIGURED"
-    assert find_exact_cutoff_master(str(tmp_path), "../*.xlsx", cutoff)[0] == (
-        "INVALID_PATTERN"
-    )
-    assert find_exact_cutoff_master(str(tmp_path), "{unknown}", cutoff)[0] == (
-        "INVALID_PATTERN"
-    )
+    assert find_exact_cutoff_master(str(tmp_path), "../*.xlsx", cutoff)[0] == ("INVALID_PATTERN")
+    assert find_exact_cutoff_master(str(tmp_path), "{unknown}", cutoff)[0] == ("INVALID_PATTERN")
