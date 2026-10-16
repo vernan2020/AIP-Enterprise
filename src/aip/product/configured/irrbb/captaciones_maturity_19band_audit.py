@@ -154,9 +154,7 @@ def inspect_fixed_term_maturities(
                 "currency_code": currency,
                 "reason": reason,
                 "records": excluded_counts[(currency, reason)],
-                "source_principal": str(
-                    excluded_principal.get((currency, reason), Decimal(0))
-                ),
+                "source_principal": str(excluded_principal.get((currency, reason), Decimal(0))),
             }
             for currency, reason in sorted(excluded_counts)
         ],
