@@ -95,6 +95,19 @@ class Maturity19BandEvidencePanel(QWidget):
         self._excluded.setObjectName("rateRiskMaturity19BandExclusionTable")
         self._tabs.addTab(self._bands, "Vencimientos observados")
         self._tabs.addTab(self._excluded, "Sin asignar · con motivo")
+        self._reconciliation = self._table(
+            (
+                "Moneda XML",
+                "Principal válido de origen",
+                "Principal en bandas",
+                "Principal excluido",
+                "Registros con principal inválido",
+                "Estado",
+            ),
+            (120, 230, 230, 230, 220, 270),
+        )
+        self._reconciliation.setObjectName("rateRiskMaturity19BandReconciliationTable")
+        self._tabs.addTab(self._reconciliation, "Conciliación por moneda")
         layout.addWidget(self._tabs, 1)
 
     @staticmethod
@@ -120,6 +133,7 @@ class Maturity19BandEvidencePanel(QWidget):
         self._cutoff = cutoff
         self._bands.setRowCount(0)
         self._excluded.setRowCount(0)
+        self._reconciliation.setRowCount(0)
         self._status.setText(
             f"Corte {cutoff:%d/%m/%Y} · Ejecutar auditoría. " "No se cargan datos de otro período."
         )
@@ -142,6 +156,7 @@ class Maturity19BandEvidencePanel(QWidget):
             return
         self._bands.setRowCount(0)
         self._excluded.setRowCount(0)
+        self._reconciliation.setRowCount(0)
         bands = result.get("bands", [])
         for row in bands if isinstance(bands, list) else []:
             if not isinstance(row, dict):
@@ -168,6 +183,21 @@ class Maturity19BandEvidencePanel(QWidget):
                     str(row["source_principal"]),
                 ),
             )
+        reconciliations = result.get("currency_reconciliation", [])
+        for entry in reconciliations if isinstance(reconciliations, list) else []:
+            if not isinstance(entry, dict):
+                continue
+            self._append(
+                self._reconciliation,
+                (
+                    str(entry["currency_code"]),
+                    str(entry["source_valid_principal"]),
+                    str(entry["assigned_principal"]),
+                    str(entry["excluded_valid_principal"]),
+                    str(entry["invalid_principal_records"]),
+                    str(entry["status"]),
+                ),
+            )
         self._status.setText(
             f"Evidencia XML {cutoff:%d/%m/%Y} · {result['source_records']} registros: "
             f"{result['observed_records']} con vencimiento clasificable y "
@@ -179,6 +209,7 @@ class Maturity19BandEvidencePanel(QWidget):
             return
         self._bands.setRowCount(0)
         self._excluded.setRowCount(0)
+        self._reconciliation.setRowCount(0)
         self._status.setText(f"XML {cutoff:%d/%m/%Y}: {message}. Sin datos reutilizados.")
 
     def _finish_worker(self) -> None:
