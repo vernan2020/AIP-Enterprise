@@ -59,8 +59,13 @@ def bridge_certified_fixed_schedules(
     certification: IRRBBSourceCertificationReport,
 ) -> CertifiedScheduleEvidence:
     """Fail atomically rather than publishing a partial / mixed-source result."""
-    if not certification.is_ready:
-        raise ValueError("Source certification is not READY")
+    if (
+        not certification.is_ready
+        or certification.blocking_requirement_ids
+        or certification.not_assessed_requirement_ids
+        or len(certification.assessments) != len(certification.profile.requirements)
+    ):
+        raise ValueError("Source certification is not READY or is incomplete")
     if not snapshot.position_records or not snapshot.source_references:
         raise ValueError("Certified snapshot needs positions and source lineage")
     if snapshot.mapping_failures or snapshot.source_exclusions:
