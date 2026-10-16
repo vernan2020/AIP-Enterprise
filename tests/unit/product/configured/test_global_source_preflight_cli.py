@@ -38,9 +38,7 @@ def test_preflight_reports_configuration_not_connectivity(tmp_path) -> None:
     assert sources["investment_master_root"]["status"] == "PRESENT"
     assert sources["icl_root"]["status"] == "PRESENT"
     assert sources["bccr_api"]["status"] == "CONFIGURED_NETWORK_NOT_TESTED"
-    assert sources["xml_confia"]["cutoff_sources"]["CAPTACIONES"] == (
-        "NOT_AVAILABLE_FOR_CUTOFF"
-    )
+    assert sources["xml_confia"]["cutoff_sources"]["CAPTACIONES"] == ("NOT_AVAILABLE_FOR_CUTOFF")
     assert sources["runtime"]["status"] == "CONFIGURED"
     serialized = str(report)
     assert "private-secret" not in serialized
