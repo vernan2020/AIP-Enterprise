@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget
 from aip.product.configured.irrbb.regulatory_financial_xml import RegulatoryFinancialXMLReader
 from aip.product.configured.irrbb.regulatory_gap_six_band import build_regulatory_gap
 from aip.ui.modules.rate_risk.controllers import RateRiskWorkspaceController
+from aip.ui.modules.rate_risk.views.contractual_exposure_panel import ContractualExposurePanel
 from aip.ui.modules.rate_risk.views.regulatory_xml_panel import RegulatoryXMLPanel
 from aip.ui.modules.rate_risk.views.source_diagnostics_rate_risk_view import RateRiskView
 
@@ -35,6 +36,8 @@ class RateRiskWorkspace(QWidget):
         self._regulatory_xml_reader = regulatory_xml_reader
         self._regulatory_xml_panel = RegulatoryXMLPanel()
         self._view._tabs.addTab(self._regulatory_xml_panel, "XML Brechas / Calce")
+        self._contractual_exposure_panel = ContractualExposurePanel()
+        self._view._tabs.addTab(self._contractual_exposure_panel, "XML contractual · auditoría")
         self._view._open_regulatory_evidence.setEnabled(True)
         self._view._open_regulatory_evidence.clicked.connect(
             lambda: self._view._tabs.setCurrentWidget(self._regulatory_xml_panel)
@@ -57,6 +60,7 @@ class RateRiskWorkspace(QWidget):
 
     def refresh(self) -> None:
         cutoff_date = self._valuation_date_provider()
+        self._contractual_exposure_panel.set_cutoff(cutoff_date)
         if self._regulatory_xml_reader is None:
             self._regulatory_xml_panel.set_unconfigured()
             self._view.set_regulatory_evidence_status(
