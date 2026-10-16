@@ -93,6 +93,15 @@ def test_audit_bands_only_observed_fixed_term_and_keeps_nmd_separate():
         "INVALID_PRINCIPAL": 1,
         "MISSING_CURRENCY": 1,
     }
+    rate_review = result["term_rate_review"]
+    assert {row["rate_type_source_code"] for row in rate_review} == {"F", "V"}
+    assert sum(row["records"] for row in rate_review) == 8
+    assert any(
+        row["rate_type_source_code"] == "V"
+        and row["maturity_quality"] == "CURRENT_OR_FUTURE_MATURITY"
+        and row["valid_source_principal"] == "40"
+        for row in rate_review
+    )
     assert "operation_id" not in str(result).lower()
 
 
