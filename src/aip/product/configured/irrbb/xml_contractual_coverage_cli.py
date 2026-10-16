@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 from datetime import date
+from xml.etree.ElementTree import ParseError
 
 from aip.product.configured.configuration.institutional_paths import expand_environment_path
 from aip.product.configured.irrbb.xml_confia_source import XMLConfiaMonthlySourceReader
@@ -28,7 +29,7 @@ def main(argv: list[str] | None = None) -> int:
         result = inspect_xml_contractual_coverage(
             XMLConfiaMonthlySourceReader(root), cutoff_date=cutoff
         )
-    except (OSError, ValueError, KeyError) as exc:
+    except (OSError, ValueError, KeyError, ParseError) as exc:
         print(json.dumps({"status": "BLOCKED", "reason_type": type(exc).__name__}))
         return 2
     print(json.dumps({
