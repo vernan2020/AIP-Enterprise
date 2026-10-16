@@ -4,8 +4,8 @@ from datetime import date
 from pathlib import Path
 from types import SimpleNamespace
 
-from aip.product.configured.irrbb.xml_contractual_gap_drilldown_cli import summarize
 from aip.product.configured.irrbb.xml_contractual_coverage import REQUIRED_FIELDS
+from aip.product.configured.irrbb.xml_contractual_gap_drilldown_cli import summarize
 
 
 class Reader:
