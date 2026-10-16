@@ -84,10 +84,7 @@ def test_workspace_exposes_contractual_evidence_as_independent_tab(qt_app) -> No
     )
     try:
         assert workspace._contractual_exposure_panel._table.rowCount() == 0
-        labels = [
-            workspace.view._tabs.tabText(i)
-            for i in range(workspace.view._tabs.count())
-        ]
+        labels = [workspace.view._tabs.tabText(i) for i in range(workspace.view._tabs.count())]
         assert "XML contractual · auditoría" in labels
         assert all(v.text() == "N/D" for v in workspace.view._kpi_values.values())
         assert "15/10/2026" in workspace._contractual_exposure_panel._status.text()
