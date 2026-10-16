@@ -4,6 +4,7 @@ This assessment deliberately does not create cash flows or 19-band balances.
 It reports whether required contractual fields are populated in each record.
 No personal identifiers or financial amounts are returned.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -13,14 +14,21 @@ from aip.product.configured.irrbb.xml_confia_source import XMLConfiaMonthlySourc
 
 REQUIRED_FIELDS: dict[str, tuple[str, ...]] = {
     "CREDIT": (
-        "SaldoPrincipalOperacionCrediticia", "TipoMonedaOperacion",
-        "FechaVencimiento", "FechaProximoPagoPrincipal",
-        "FechaProximoPagoIntereses", "IndicadorTipoTasa",
+        "SaldoPrincipalOperacionCrediticia",
+        "TipoMonedaOperacion",
+        "FechaVencimiento",
+        "FechaProximoPagoPrincipal",
+        "FechaProximoPagoIntereses",
+        "IndicadorTipoTasa",
     ),
     "CAPTACIONES": ("SaldoPrincipal", "TipoMonedaObligacion", "TipoTasa"),
     "BORROWING": (
-        "SaldoPrincipal", "TipoMonedaObligacion", "FechaVencimiento",
-        "FechaProximoPagoPrincipal", "FechaProximoPagoInteres", "TipoTasa",
+        "SaldoPrincipal",
+        "TipoMonedaObligacion",
+        "FechaVencimiento",
+        "FechaProximoPagoPrincipal",
+        "FechaProximoPagoInteres",
+        "TipoTasa",
     ),
     "BORROWING_MATURITY": ("SaldoaPagarPrincipal", "TipoRangoPasivo"),
 }
@@ -63,7 +71,9 @@ def inspect_xml_contractual_coverage(
                 entity_id=source.header.id_entidad,
                 record_count=rows,
                 missing_by_field=tuple(missing.items()),
-                status="FIELDS_POPULATED" if rows and not any(missing.values()) else "FIELD_GAPS_FOUND",
+                status=(
+                    "FIELDS_POPULATED" if rows and not any(missing.values()) else "FIELD_GAPS_FOUND"
+                ),
             )
         )
     if len({result.entity_id for result in results}) != 1:
