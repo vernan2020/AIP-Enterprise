@@ -42,9 +42,7 @@ def test_global_suite_runs_each_configured_diagnostic_with_same_cutoff(
     assert len(called) == len(CHECKS)
     assert all(args[-1] == "2026-09-30" for args in called)
     assert "SECRET" not in json.dumps(report)
-    assert all(
-        entry["result"] == "PASSED_EVIDENCE_ONLY" for entry in report["checks"]
-    )
+    assert all(entry["result"] == "PASSED_EVIDENCE_ONLY" for entry in report["checks"])
 
 
 def test_nonzero_or_missing_diagnostic_remains_blocked(tmp_path, monkeypatch) -> None:
@@ -52,9 +50,7 @@ def test_nonzero_or_missing_diagnostic_remains_blocked(tmp_path, monkeypatch) ->
     monkeypatch.setattr(
         subprocess,
         "run",
-        lambda args, **kwargs: subprocess.CompletedProcess(
-            args, 2, '{"status": "VALIDATED"}', ""
-        ),
+        lambda args, **kwargs: subprocess.CompletedProcess(args, 2, '{"status": "VALIDATED"}', ""),
     )
     report = execute_suite(tmp_path, date(2026, 9, 30))
     assert report["all_diagnostics_passed"] is False
