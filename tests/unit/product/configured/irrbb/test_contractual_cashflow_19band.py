@@ -142,18 +142,14 @@ def test_conflicting_amount_for_same_source_event_is_not_double_counted():
     first = _flow("CREDIT", position="a", day=date(2027, 1, 1), amount="100")
     changed = _flow("CREDIT", position="a", day=date(2027, 1, 1), amount="200")
     with pytest.raises(ValueError, match="Duplicate"):
-        Contractual19BandEvidenceAggregator().aggregate(
-            cutoff_date=CUTOFF, flows=(first, changed)
-        )
+        Contractual19BandEvidenceAggregator().aggregate(cutoff_date=CUTOFF, flows=(first, changed))
 
 
 def test_disallows_inconsistent_asset_direction():
     original = _flow("CREDIT", position="a", day=date(2027, 1, 1))
     inconsistent = replace(
         original,
-        cashflow=replace(
-            original.cashflow, direction=CashFlowDirection.PAYABLE
-        ),
+        cashflow=replace(original.cashflow, direction=CashFlowDirection.PAYABLE),
     )
     with pytest.raises(ValueError, match="direction"):
         Contractual19BandEvidenceAggregator().aggregate(
