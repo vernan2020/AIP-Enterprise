@@ -44,9 +44,7 @@ class _MaturityAuditWorker(QThread):
             if not config.enabled or not root:
                 self.blocked.emit("XML CONFÍA no configurado")
                 return
-            result = inspect_fixed_term_maturities(
-                XMLConfiaMonthlySourceReader(root), self._cutoff
-            )
+            result = inspect_fixed_term_maturities(XMLConfiaMonthlySourceReader(root), self._cutoff)
         except (OSError, ValueError, KeyError, ParseError) as exc:
             self.blocked.emit(f"Auditoría bloqueada ({type(exc).__name__})")
             return
@@ -123,8 +121,7 @@ class Maturity19BandEvidencePanel(QWidget):
         self._bands.setRowCount(0)
         self._excluded.setRowCount(0)
         self._status.setText(
-            f"Corte {cutoff:%d/%m/%Y} · Ejecutar auditoría. "
-            "No se cargan datos de otro período."
+            f"Corte {cutoff:%d/%m/%Y} · Ejecutar auditoría. " "No se cargan datos de otro período."
         )
 
     def run_audit(self) -> None:
@@ -199,7 +196,5 @@ class Maturity19BandEvidencePanel(QWidget):
             item = QTableWidgetItem(value)
             item.setToolTip(value)
             if index >= 2:
-                item.setTextAlignment(
-                    Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
-                )
+                item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             table.setItem(row, index, item)
