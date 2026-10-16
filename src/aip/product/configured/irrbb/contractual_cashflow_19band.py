@@ -86,7 +86,6 @@ class Contractual19BandEvidenceAggregator:
     ) -> Contractual19BandEvidenceResult:
         amounts: dict[tuple[Currency, int, BankingBookSide], Decimal] = defaultdict(Decimal)
         counts: dict[tuple[Currency, int], int] = defaultdict(int)
-        metadata: dict[int, tuple[IRRBBTimeBucket, str]] = {}
         seen: set[tuple[str, str, date, date, str, Decimal, str]] = set()
         currencies: set[Currency] = set()
         segments: set[str] = set()
@@ -117,7 +116,6 @@ class Contractual19BandEvidenceAggregator:
                 valuation_date=cutoff_date,
                 risk_date=event.risk_date,
             )
-            metadata[assigned.ordinal] = (assigned.bucket, assigned.label)
             currency = event.amount.currency
             amounts[(currency, assigned.ordinal, event.side)] += event.amount.amount
             counts[(currency, assigned.ordinal)] += 1
@@ -128,27 +126,30 @@ class Contractual19BandEvidenceAggregator:
         # The canonical service defines every ordinal even if no observed flow
         # occupies that band. Present complete 19-row matrices for each currency.
         columns = [
-            IRRBBTimeBucketService.assign(
-                valuation_date=cutoff_date,
-                risk_date=self._probe_date(cutoff_date, ordinal),
-            )
-            for ordinal in range(1, 20)
+            (1, IRRBBTimeBucket.DAY_1, "Overnight"),
+            *[
+                (ordinal, bucket, label)
+                for ordinal, (_months, bucket, label) in enumerate(
+                    IRRBBTimeBucketService._MONTH_BUCKETS, start=2
+                )
+            ],
+            (19, IRRBBTimeBucket.OVER_YEAR_20, "Más de 20 años"),
         ]
         rows: list[NineteenBandEvidenceRow] = []
         for currency in sorted(currencies, key=lambda value: value.value):
-            for band in columns:
-                assets = amounts[(currency, band.ordinal, BankingBookSide.ASSET)]
-                liabilities = amounts[(currency, band.ordinal, BankingBookSide.LIABILITY)]
+            for ordinal, bucket, label in columns:
+                assets = amounts[(currency, ordinal, BankingBookSide.ASSET)]
+                liabilities = amounts[(currency, ordinal, BankingBookSide.LIABILITY)]
                 rows.append(
                     NineteenBandEvidenceRow(
                         currency=currency,
-                        ordinal=band.ordinal,
-                        bucket=band.bucket,
-                        label=band.label,
+                        ordinal=ordinal,
+                        bucket=bucket,
+                        label=label,
                         assets=assets,
                         liabilities=liabilities,
                         net=assets - liabilities,
-                        flow_count=counts[(currency, band.ordinal)],
+                        flow_count=counts[(currency, ordinal)],
                     )
                 )
         if sum(row.flow_count for row in rows) != count:
@@ -161,17 +162,3 @@ class Contractual19BandEvidenceAggregator:
             missing_segments=tuple(sorted(REQUIRED_SEGMENTS - segments)),
         )
 
-    @staticmethod
-    def _probe_date(cutoff: date, ordinal: int) -> date:
-        """Use the exact canonical bucket calendar to obtain all 19 labels."""
-        from datetime import timedelta
-
-        if ordinal == 1:
-            return cutoff
-        months = IRRBBTimeBucketService._MONTH_BUCKETS
-        if ordinal == 2:
-            return cutoff + timedelta(days=2)
-        if ordinal == 19:
-            return IRRBBTimeBucketService._add_months(cutoff, 241)
-        lower = months[ordinal - 3][0]
-        return IRRBBTimeBucketService._add_months(cutoff, lower) + timedelta(days=1)
