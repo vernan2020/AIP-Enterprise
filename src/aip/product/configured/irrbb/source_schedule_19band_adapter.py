@@ -12,7 +12,10 @@ from datetime import date
 from decimal import Decimal
 
 from aip.application.irrbb.contracts import IRRBBSourceSnapshot
-from aip.application.irrbb.source_certification import IRRBBSourceCertificationReport
+from aip.application.irrbb.source_certification import (
+    IRRBBSourceCertificationReport,
+    IRRBBSourceCertificationService,
+)
 from aip.domain.irrbb.models import (
     BankingBookSide,
     CashFlowAmountStatus,
@@ -46,7 +49,14 @@ class CertifiedScheduleEvidence:
     certified_positions: int
     source_flows: int
     evidence: Contractual19BandEvidenceResult
+    flows: tuple[EvidencedFlow, ...]
     status: str = "FIXED_SCHEDULE_EVIDENCE_ONLY_NOT_CERTIFIED_GAP"
+
+    def __post_init__(self) -> None:
+        if self.source_flows != len(self.flows) or self.evidence.total_flows != len(
+            self.flows
+        ):
+            raise ValueError("Certified contractual source flow counts must reconcile")
 
     @property
     def publishable_regulatory_gap(self) -> bool:
@@ -59,13 +69,18 @@ def bridge_certified_fixed_schedules(
     certification: IRRBBSourceCertificationReport,
 ) -> CertifiedScheduleEvidence:
     """Fail atomically rather than publishing a partial / mixed-source result."""
+    # Recompute readiness rather than trusting a caller-supplied READY label.
+    certified = IRRBBSourceCertificationService.certify(
+        profile=certification.profile,
+        assessments=certification.assessments,
+    )
     if (
-        not certification.is_ready
-        or certification.blocking_requirement_ids
-        or certification.not_assessed_requirement_ids
-        or len(certification.assessments) != len(certification.profile.requirements)
+        not certified.is_ready
+        or certification.status is not certified.status
+        or certification.blocking_requirement_ids != certified.blocking_requirement_ids
+        or certification.not_assessed_requirement_ids != certified.not_assessed_requirement_ids
     ):
-        raise ValueError("Source certification is not READY or is incomplete")
+        raise ValueError("Source certification is not READY or is inconsistent")
     if not snapshot.position_records or not snapshot.source_references:
         raise ValueError("Certified snapshot needs positions and source lineage")
     if snapshot.mapping_failures or snapshot.source_exclusions:
@@ -151,4 +166,5 @@ def bridge_certified_fixed_schedules(
         certified_positions=len(snapshot.position_records),
         source_flows=len(flows),
         evidence=result,
+        flows=tuple(flows),
     )
