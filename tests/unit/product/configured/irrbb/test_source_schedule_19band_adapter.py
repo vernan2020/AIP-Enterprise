@@ -182,3 +182,20 @@ def test_rejects_incompatible_cashflow_currency():
             snapshot=_snapshot(replace(record, gap_schedule=(payment, record.gap_schedule[1]))),
             certification=_certification(),
         )
+
+def test_rejects_unbalanced_principal_schedule():
+    original = _record()
+    incorrect_payment = replace(
+        original.gap_schedule[1],
+        amount=Money(Decimal("99.99"), Currency.CRC),
+    )
+    with pytest.raises(ValueError, match="principal payments do not match"):
+        bridge_certified_fixed_schedules(
+            snapshot=_snapshot(
+                replace(
+                    original,
+                    gap_schedule=(original.gap_schedule[0], incorrect_payment),
+                )
+            ),
+            certification=_certification(),
+        )
