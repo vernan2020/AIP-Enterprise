@@ -29,11 +29,10 @@ def select_investment_source(
 ) -> RTILBInvestmentSourceDecision:
     """Use only certified master positions; fail closed without XML substitution."""
     certification_status = str(master.certification.status.value)
-    snapshot_status = str(master.snapshot.status.value)
     count = len(master.snapshot.position_records)
     failures = len(master.snapshot.mapping_failures)
     # The bridge's source-certification gate owns authority to release positions.
-    ready = certification_status == "READY" and snapshot_status == "AVAILABLE"
+    ready = master.certification.is_ready and failures == 0 and count > 0
     if not ready:
         return RTILBInvestmentSourceDecision(
             source="INSTITUTIONAL_PORTFOLIO_MASTER",
@@ -43,7 +42,7 @@ def select_investment_source(
             mapping_failures=failures,
             diagnostics=(
                 f"Master certification: {certification_status}",
-                f"Source snapshot: {snapshot_status}",
+                f"Canonical positions: {count}; mapping failures: {failures}",
                 "Investment XML is reconciliation-only; no fallback positions are generated.",
             ),
         )
