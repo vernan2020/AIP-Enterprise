@@ -96,9 +96,7 @@ def test_audit_table_preserves_exact_amounts_and_describes_xml_codes(qt_app) -> 
     panel = ContractualExposurePanel()
     try:
         panel.set_cutoff(date(2026, 9, 30))
-        assert panel._grouped_number("1234567890123456.987654") == (
-            "1.234.567.890.123.456,987654"
-        )
+        assert panel._grouped_number("1234567890123456.987654") == ("1.234.567.890.123.456,987654")
         panel._receive_result(date(2026, 9, 30), _source_result())
         assert panel._table.columnWidth(2) >= 300
         assert panel._table.horizontalHeader().stretchLastSection() is False
