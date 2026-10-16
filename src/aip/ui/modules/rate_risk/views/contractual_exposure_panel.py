@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 from datetime import date
+from decimal import Decimal, InvalidOperation
 from xml.etree.ElementTree import ParseError
 
-from PySide6.QtCore import QThread, Signal
+from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtWidgets import (
     QAbstractItemView,
+    QHeaderView,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
@@ -56,14 +59,34 @@ class ContractualExposurePanel(QWidget):
     _HEADERS = (
         "Fuente",
         "Moneda XML",
-        "Códigos producto",
+        "Códigos / categoría",
         "Registros",
-        "Saldo principal fuente",
-        "Sin fecha principal",
-        "Saldo principal sin próxima fecha de principal",
-        "Sin fecha intereses",
-        "Saldo principal sin próxima fecha de intereses",
+        "Saldo principal",
+        "Sin fecha ppal.",
+        "Saldo ppal. afectado",
+        "Sin fecha interés",
+        "Saldo ppal. afectado (int.)",
     )
+    _FULL_HEADERS = (
+        "Fuente institucional de origen",
+        "Código de moneda tal como aparece en el XML; no es una traducción ISO",
+        "Códigos de clasificación XML, sin interpretar catálogos regulatorios",
+        "Número de registros en este grupo",
+        "Saldo principal informado en la moneda original, sin conversión",
+        "Número de registros sin fecha de próximo pago de principal",
+        "Saldo principal de registros sin fecha de próximo pago de principal",
+        "Número de registros sin fecha de próximo pago de intereses",
+        "Saldo principal de registros sin fecha de próximo pago de intereses; NO intereses devengados",
+    )
+    _COLUMN_WIDTHS = (105, 110, 330, 100, 220, 140, 220, 145, 245)
+    _FIELD_LABELS = {
+        "TipoOperacion": "Operación",
+        "TipoEstadoOperacionCrediticia": "Estado",
+        "TipoCuotaPrincipal": "Cuota",
+        "TipoOperacionObligaciones": "Obligación",
+        "TipoCuenta": "Cuenta",
+        "TipoTasa": "Tasa",
+    }
 
     def __init__(self) -> None:
         super().__init__()
@@ -99,7 +122,35 @@ class ContractualExposurePanel(QWidget):
         self._table.setAlternatingRowColors(True)
         self._table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self._table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        self._table.horizontalHeader().setStretchLastSection(True)
+        self._table.setWordWrap(False)
+        self._table.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
+        self._table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self._table.setTextElideMode(Qt.TextElideMode.ElideRight)
+        self._table.verticalHeader().setVisible(False)
+        self._table.verticalHeader().setDefaultSectionSize(30)
+        horizontal = self._table.horizontalHeader()
+        horizontal.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+        horizontal.setStretchLastSection(False)
+        horizontal.setMinimumSectionSize(90)
+        for index, (width, description) in enumerate(
+            zip(self._COLUMN_WIDTHS, self._FULL_HEADERS)
+        ):
+            self._table.setColumnWidth(index, width)
+            header_item = self._table.horizontalHeaderItem(index)
+            if header_item is not None:
+                header_item.setToolTip(description)
+
+        self._filter_input = QLineEdit()
+        self._filter_input.setObjectName("rateRiskContractualExposureFilter")
+        self._filter_input.setClearButtonEnabled(True)
+        self._filter_input.setPlaceholderText(
+            "Filtrar por fuente, código de moneda o clasificación XML…"
+        )
+        self._filter_input.setToolTip(
+            "Filtra grupos ya auditados. No cambia saldos, cálculos ni datos XML."
+        )
+        self._filter_input.textChanged.connect(self._apply_filter)
+        layout.addWidget(self._filter_input)
         layout.addWidget(self._table, 1)
 
     def set_cutoff(self, cutoff: date) -> None:
@@ -107,6 +158,7 @@ class ContractualExposurePanel(QWidget):
             return
         self._cutoff = cutoff
         self._table.setRowCount(0)
+        self._filter_input.clear()
         if self._worker is None:
             self._status.setText(
                 f"Corte AIP {cutoff:%d/%m/%Y}. Seleccione Auditar XML del corte. "
@@ -156,6 +208,37 @@ class ContractualExposurePanel(QWidget):
             worker.deleteLater()
             self._run_button.setEnabled(True)
 
+    @staticmethod
+    def _grouped_number(raw: object) -> str:
+        """Costa Rican numeric display, preserving XML amount scale and precision."""
+        value = str(raw)
+        try:
+            amount = Decimal(value)
+        except (InvalidOperation, ValueError):
+            return value
+        if not amount.is_finite():
+            return value
+        formatted = format(amount, ",f")
+        return formatted.replace(",", "_").replace(".", ",").replace("_", ".")
+
+    @classmethod
+    def _short_codes(cls, codes: dict[str, object]) -> str:
+        return " · ".join(
+            f"{cls._FIELD_LABELS.get(key, key)}={value}" for key, value in codes.items()
+        )
+
+    def _apply_filter(self, _text: str) -> None:
+        needle = self._filter_input.text().casefold().strip()
+        for row in range(self._table.rowCount()):
+            haystack = " ".join(
+                self._table.item(row, column).toolTip()
+                + " "
+                + self._table.item(row, column).text()
+                for column in (0, 1, 2)
+                if self._table.item(row, column) is not None
+            ).casefold()
+            self._table.setRowHidden(row, needle not in haystack)
+
     def _populate(self, results: list[dict[str, object]]) -> None:
         self._table.setRowCount(0)
         for source in results:
@@ -183,10 +266,18 @@ class ContractualExposurePanel(QWidget):
                 category = group.get("category_codes", {})
                 if not isinstance(category, dict):
                     category = {}
-                values = (
-                    str(source.get("source", "")),
+                codes = self._short_codes(category)
+                raw_codes = " | ".join(f"{key}={value}" for key, value in category.items())
+                source_key = str(source.get("source", ""))
+                sources = {
+                    "CREDIT": "Cartera",
+                    "BORROWING": "Obligaciones",
+                    "CAPTACIONES": "Captaciones",
+                }
+                raw_values = (
+                    source_key,
                     str(group.get("currency_code", "")),
-                    " · ".join(f"{k}={v}" for k, v in category.items()),
+                    raw_codes,
                     str(group.get("records", "")),
                     str(group.get("principal_balance", "")),
                     str(p.get("records", "N/A")),
@@ -194,7 +285,28 @@ class ContractualExposurePanel(QWidget):
                     str(i.get("records", "N/A")),
                     str(i.get("principal_balance", "N/A")),
                 )
+                display_values = (
+                    sources.get(source_key, source_key),
+                    raw_values[1],
+                    codes,
+                    self._grouped_number(raw_values[3]),
+                    self._grouped_number(raw_values[4]),
+                    self._grouped_number(raw_values[5]),
+                    self._grouped_number(raw_values[6]),
+                    self._grouped_number(raw_values[7]),
+                    self._grouped_number(raw_values[8]),
+                )
                 row = self._table.rowCount()
                 self._table.insertRow(row)
-                for column, value in enumerate(values):
-                    self._table.setItem(row, column, QTableWidgetItem(value))
+                for column, value in enumerate(display_values):
+                    item = QTableWidgetItem(value)
+                    item.setToolTip(
+                        f"{self._FULL_HEADERS[column]}\\n"
+                        f"Valor original: {raw_values[column]}"
+                    )
+                    if column >= 3:
+                        item.setTextAlignment(
+                            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+                        )
+                    self._table.setItem(row, column, item)
+        self._apply_filter(self._filter_input.text())
