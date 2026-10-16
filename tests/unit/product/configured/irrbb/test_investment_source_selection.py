@@ -36,8 +36,6 @@ def test_uncertified_master_never_falls_back_to_investment_xml() -> None:
 
 def test_missing_or_unmapped_positions_are_not_silently_certified() -> None:
     for count, failures in ((0, 0), (2, 1)):
-        decision = select_investment_source(
-            _master(certified=True, count=count, failures=failures)
-        )
+        decision = select_investment_source(_master(certified=True, count=count, failures=failures))
         assert decision.status == "BLOCKED"
         assert decision.canonical_positions == 0
