@@ -166,15 +166,9 @@ def inspect_fixed_term_maturities(
             {
                 "currency_code": currency,
                 "source_valid_principal": str(source_amount),
-                "assigned_principal": str(
-                    bucketed_by_currency.get(currency, Decimal(0))
-                ),
-                "excluded_valid_principal": str(
-                    excluded_by_currency.get(currency, Decimal(0))
-                ),
-                "invalid_principal_records": source_invalid_principal_records.get(
-                    currency, 0
-                ),
+                "assigned_principal": str(bucketed_by_currency.get(currency, Decimal(0))),
+                "excluded_valid_principal": str(excluded_by_currency.get(currency, Decimal(0))),
+                "invalid_principal_records": source_invalid_principal_records.get(currency, 0),
                 "difference": "0",
                 "status": (
                     "PARTIAL_INVALID_PRINCIPAL"
@@ -182,7 +176,9 @@ def inspect_fixed_term_maturities(
                     else "RECONCILED_VALID_PRINCIPAL"
                 ),
             }
-            for currency in sorted(set(source_valid_principal) | set(source_invalid_principal_records))
+            for currency in sorted(
+                set(source_valid_principal) | set(source_invalid_principal_records)
+            )
             for source_amount in (source_valid_principal.get(currency, Decimal(0)),)
         ],
         "bands": [
