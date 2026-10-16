@@ -145,7 +145,10 @@ class Maturity19BandEvidencePanel(QWidget):
             return
         self._bands.setRowCount(0)
         self._excluded.setRowCount(0)
-        for row in result["bands"]:
+        bands = result.get("bands", [])
+        for row in bands if isinstance(bands, list) else []:
+            if not isinstance(row, dict):
+                continue
             self._append(
                 self._bands,
                 (
@@ -155,7 +158,10 @@ class Maturity19BandEvidencePanel(QWidget):
                     str(row["source_principal"]),
                 ),
             )
-        for row in result["excluded"]:
+        exclusions = result.get("excluded", [])
+        for row in exclusions if isinstance(exclusions, list) else []:
+            if not isinstance(row, dict):
+                continue
             self._append(
                 self._excluded,
                 (
