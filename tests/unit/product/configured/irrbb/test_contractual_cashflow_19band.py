@@ -81,17 +81,13 @@ def test_contractual_flows_reconcile_all_nineteen_bands_without_mixing_currencie
     assert aggregate.missing_segments == ()
     assert aggregate.publishable_regulatory_gap is False
     first_crc = next(
-        row
-        for row in aggregate.rows
-        if row.currency is Currency.CRC and row.ordinal == 1
+        row for row in aggregate.rows if row.currency is Currency.CRC and row.ordinal == 1
     )
     assert first_crc.assets == Decimal("100.15")
     assert first_crc.liabilities == Decimal("60.05")
     assert first_crc.net == Decimal("40.10")
     usd_long = next(
-        row
-        for row in aggregate.rows
-        if row.currency is Currency.USD and row.ordinal == 19
+        row for row in aggregate.rows if row.currency is Currency.USD and row.ordinal == 19
     )
     assert usd_long.assets == Decimal("75")
     assert usd_long.liabilities == 0
@@ -134,9 +130,7 @@ def test_rejects_stale_date_and_incompatible_side():
 
 
 def test_empty_input_never_produces_a_publishable_gap():
-    result = Contractual19BandEvidenceAggregator().aggregate(
-        cutoff_date=CUTOFF, flows=()
-    )
+    result = Contractual19BandEvidenceAggregator().aggregate(cutoff_date=CUTOFF, flows=())
     assert result.rows == ()
     assert result.total_flows == 0
     assert len(result.missing_segments) == 4
