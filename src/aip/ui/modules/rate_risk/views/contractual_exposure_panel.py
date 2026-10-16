@@ -60,9 +60,9 @@ class ContractualExposurePanel(QWidget):
         "Registros",
         "Saldo principal fuente",
         "Sin fecha principal",
-        "Saldo principal afectado",
+        "Saldo principal sin próxima fecha de principal",
         "Sin fecha intereses",
-        "Saldo intereses afectado",
+        "Saldo principal sin próxima fecha de intereses",
     )
 
     def __init__(self) -> None:
