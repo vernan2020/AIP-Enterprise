@@ -23,7 +23,7 @@ def test_cli_uses_configured_reader_and_returns_aggregate_only(monkeypatch, caps
         return (SimpleNamespace(
             key="CREDIT", filename="NEC2024_Operaciones_5103.Nuevo.xml",
             period=date(2026, 9, 1), entity_id="3004045138",
-            record_count=2, status="REVIEW_REQUIRED",
+            record_count=2, status="FIELD_GAPS_FOUND",
             missing_by_field=(("FechaVencimiento", 1),)
         ),)
     monkeypatch.setattr(cli, "inspect_xml_contractual_coverage", inspect)
