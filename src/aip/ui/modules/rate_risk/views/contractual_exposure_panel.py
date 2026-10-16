@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from datetime import date
+from xml.etree.ElementTree import ParseError
 
 from PySide6.QtCore import QThread, Signal
-from xml.etree.ElementTree import ParseError
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QHBoxLayout,
