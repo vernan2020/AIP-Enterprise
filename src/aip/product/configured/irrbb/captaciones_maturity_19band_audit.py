@@ -80,6 +80,8 @@ def inspect_fixed_term_maturities(
     bands: dict[tuple[str, int, str], _BandBalance] = {}
     excluded_counts: dict[tuple[str, str], int] = {}
     excluded_principal: dict[tuple[str, str], Decimal] = {}
+    source_valid_principal: dict[str, Decimal] = {}
+    source_invalid_principal_records: dict[str, int] = {}
     seen_ids: set[str] = set()
     total_records = 0
 
@@ -91,6 +93,14 @@ def inspect_fixed_term_maturities(
         values = record.values
         currency = values.get("TipoMonedaObligacion", "").strip() or "(VACIO)"
         amount = _valid_principal(values.get("SaldoPrincipal", "").strip())
+        if amount is not None:
+            source_valid_principal[currency] = (
+                source_valid_principal.get(currency, Decimal(0)) + amount
+            )
+        else:
+            source_invalid_principal_records[currency] = (
+                source_invalid_principal_records.get(currency, 0) + 1
+            )
 
         status = _account_status(values.get("CuentaContablePrincipal", "").strip())
         if currency == "(VACIO)":
@@ -130,6 +140,21 @@ def inspect_fixed_term_maturities(
     excluded = sum(excluded_counts.values())
     if total_records != observed + excluded:
         raise ValueError("Captaciones maturity audit did not reconcile source record count")
+    bucketed_by_currency: dict[str, Decimal] = {}
+    for (currency, _ordinal, _label), group in bands.items():
+        bucketed_by_currency[currency] = (
+            bucketed_by_currency.get(currency, Decimal(0)) + group.balance
+        )
+    excluded_by_currency: dict[str, Decimal] = {}
+    for (currency, _reason), amount in excluded_principal.items():
+        excluded_by_currency[currency] = excluded_by_currency.get(currency, Decimal(0)) + amount
+    for currency, source_amount in source_valid_principal.items():
+        if (
+            bucketed_by_currency.get(currency, Decimal(0))
+            + excluded_by_currency.get(currency, Decimal(0))
+            != source_amount
+        ):
+            raise ValueError("Captaciones principal does not reconcile by XML currency")
     return {
         "status": EVIDENCE_ONLY,
         "cutoff": cutoff.isoformat(),
@@ -137,6 +162,24 @@ def inspect_fixed_term_maturities(
         "source_records": total_records,
         "observed_records": observed,
         "excluded_records": excluded,
+        "currency_reconciliation": [
+            {
+                "currency_code": currency,
+                "source_valid_principal": str(source_amount),
+                "assigned_principal": str(
+                    bucketed_by_currency.get(currency, Decimal(0))
+                ),
+                "excluded_valid_principal": str(
+                    excluded_by_currency.get(currency, Decimal(0))
+                ),
+                "invalid_principal_records": source_invalid_principal_records.get(
+                    currency, 0
+                ),
+                "difference": "0",
+                "status": "RECONCILED_VALID_PRINCIPAL",
+            }
+            for currency, source_amount in sorted(source_valid_principal.items())
+        ],
         "bands": [
             {
                 "currency_code": currency,
