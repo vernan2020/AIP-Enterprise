@@ -204,9 +204,7 @@ class RateRiskView(QWidget):
         self._build_drilldown_page()
         self._build_quality_page()
 
-    def set_regulatory_evidence_status(
-        self, text: str, *, status: str = "unconfigured"
-    ) -> None:
+    def set_regulatory_evidence_status(self, text: str, *, status: str = "unconfigured") -> None:
         """Show regulatory evidence without changing RTILB analysis status or KPIs."""
         palettes = {
             "ready": ("#EDF8F1", "#1C7041", "#9BCFAE"),
