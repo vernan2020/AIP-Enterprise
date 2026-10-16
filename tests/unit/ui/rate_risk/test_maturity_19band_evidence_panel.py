@@ -68,10 +68,7 @@ def test_workspace_has_separate_evidence_and_certified_gap_tabs(qt_app) -> None:
         valuation_date_provider=lambda: date(2026, 9, 30), controller=None
     )
     try:
-        labels = [
-            workspace.view._tabs.tabText(i)
-            for i in range(workspace.view._tabs.count())
-        ]
+        labels = [workspace.view._tabs.tabText(i) for i in range(workspace.view._tabs.count())]
         assert "Bandeo 19 · evidencia" in labels
         assert "GAP SUGEF · 19 bandas" in labels
         assert all(value.text() == "N/D" for value in workspace.view._kpi_values.values())
