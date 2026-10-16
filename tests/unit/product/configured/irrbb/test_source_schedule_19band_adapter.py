@@ -15,9 +15,9 @@ from aip.application.irrbb.source_certification import (
     IRRBBSourceCertificationReport,
     IRRBBSourceCertificationService,
     IRRBBSourceCertificationStatus,
-    IRRBBSourceRequirementAssessment,
     IRRBBSourcePerimeter,
     IRRBBSourceRequirement,
+    IRRBBSourceRequirementAssessment,
     IRRBBSourceRequirementProfile,
 )
 from aip.domain.irrbb.models import (
