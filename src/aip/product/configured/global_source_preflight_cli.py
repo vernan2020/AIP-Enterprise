@@ -12,6 +12,9 @@ import os
 from datetime import date
 from pathlib import Path
 
+from aip.product.configured.configuration.configured_source_config import (
+    ConfiguredSourceConfig,
+)
 from aip.product.configured.configuration.institutional_paths import (
     expand_environment_path,
 )
@@ -33,7 +36,9 @@ def _path_status(value: str | None, *, file_only: bool = False) -> str:
     return "PRESENT" if exists else "NOT_FOUND"
 
 
-def preflight(cutoff: date, config: object, *, environment: dict[str, str]) -> dict[str, object]:
+def preflight(
+    cutoff: date, config: ConfiguredSourceConfig, *, environment: dict[str, str]
+) -> dict[str, object]:
     """Inspect local source presence; never test remote connectivity implicitly."""
     sources: dict[str, dict[str, object]] = {}
     folder = config.folder_watch
