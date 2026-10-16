@@ -1,0 +1,96 @@
+"""Read-only per-product classification of missing RTILB contractual XML fields."""
+from __future__ import annotations
+
+import argparse
+import json
+from collections import defaultdict
+from datetime import date
+from xml.etree.ElementTree import ParseError
+
+from aip.product.configured.configuration.institutional_paths import (
+    expand_environment_path,
+)
+from aip.product.configured.irrbb.xml_confia_source import (
+    XMLConfiaMonthlySourceReader,
+)
+from aip.product.configured.irrbb.xml_contractual_coverage import REQUIRED_FIELDS
+from aip.product.demo.configuration.environment_loader import EnvironmentLoader
+
+GROUP_FIELDS = {
+    "CREDIT": ("TipoOperacion", "TipoEstadoOperacionCrediticia", "TipoCuotaPrincipal"),
+    "BORROWING": ("TipoOperacionObligaciones", "TipoTasa"),
+}
+
+
+def summarize(reader: XMLConfiaMonthlySourceReader, cutoff: date) -> list[dict]:
+    result = []
+    for key, categories in GROUP_FIELDS.items():
+        source = reader.resolve_source(key=key, cutoff_date=cutoff)
+        grouped = defaultdict(lambda: {"records": 0, "missing": defaultdict(int)})
+        for record in reader.iter_records(source):
+            group_key = tuple(
+                record.values.get(field, "").strip() or "(VACIO)"
+                for field in categories
+            )
+            group = grouped[group_key]
+            group["records"] += 1
+            for field in REQUIRED_FIELDS[key]:
+                if not record.values.get(field, "").strip():
+                    group["missing"][field] += 1
+        groups = [
+            {
+                "category": dict(zip(categories, values)),
+                "records": count["records"],
+                "missing_by_field": {
+                    field: count["missing"][field] for field in REQUIRED_FIELDS[key]
+                },
+            }
+            for values, count in sorted(grouped.items())
+        ]
+        result.append(
+            {
+                "source": key,
+                "filename": source.path.name,
+                "group_fields": list(categories),
+                "records": sum(group["records"] for group in groups),
+                "groups": groups,
+            }
+        )
+    return result
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="RTILB field gaps by product")
+    parser.add_argument("--cutoff", default="2026-09-30")
+    args = parser.parse_args(argv)
+    try:
+        cutoff = date.fromisoformat(args.cutoff)
+    except ValueError:
+        parser.error("--cutoff requires YYYY-MM-DD")
+    config = EnvironmentLoader().load_source_config().xml_confia
+    root = expand_environment_path(config.root)
+    if not config.enabled or not root:
+        print(json.dumps({"status": "UNCONFIGURED"}))
+        return 2
+    try:
+        sources = summarize(XMLConfiaMonthlySourceReader(root), cutoff)
+    except (OSError, ValueError, KeyError, ParseError) as exc:
+        print(json.dumps({"status": "BLOCKED", "reason_type": type(exc).__name__}))
+        return 2
+    print(
+        json.dumps(
+            {
+                "status": "AGGREGATE_GAPS_INSPECTED",
+                "cutoff": cutoff.isoformat(),
+                "sources": sources,
+                "note": "Field presence only; not cash flows or 19-band certification.",
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
