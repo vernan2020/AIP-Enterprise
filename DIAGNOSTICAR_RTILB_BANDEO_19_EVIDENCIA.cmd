@@ -1,0 +1,17 @@
+@echo off
+setlocal EnableExtensions
+cd /d "%~dp0"
+REM Fuente institucional solamente; diagnostico no certifica GAP ni ΔEVE/ΔNII.
+set "AIP_EXECUTION_MODE=CONFIGURED"
+set "AIP_DEMO_MODE_ENABLED=false"
+if exist "config\runtime.local.cmd" (
+    call "config\runtime.local.cmd" >nul 2>&1
+    if errorlevel 1 exit /b 2
+)
+set "PYTHONPATH=%CD%\src"
+if exist ".venv\Scripts\python.exe" (
+    ".venv\Scripts\python.exe" -m aip.product.configured.irrbb.captaciones_maturity_19band_cli %*
+) else (
+    python -m aip.product.configured.irrbb.captaciones_maturity_19band_cli %*
+)
+exit /b %ERRORLEVEL%
