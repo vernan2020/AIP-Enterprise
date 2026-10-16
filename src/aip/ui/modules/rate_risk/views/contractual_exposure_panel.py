@@ -126,12 +126,8 @@ class ContractualExposurePanel(QWidget):
         self._worker = worker
         self._run_button.setEnabled(False)
         self._status.setText(f"Leyendo XML reales del corte {requested_cutoff:%d/%m/%Y}…")
-        worker.completed.connect(
-            lambda result: self._receive_result(requested_cutoff, result)
-        )
-        worker.blocked.connect(
-            lambda message: self._receive_error(requested_cutoff, message)
-        )
+        worker.completed.connect(lambda result: self._receive_result(requested_cutoff, result))
+        worker.blocked.connect(lambda message: self._receive_error(requested_cutoff, message))
         worker.finished.connect(self._finish_worker)
         worker.start()
 
