@@ -23,6 +23,15 @@ def _evidence() -> dict[str, object]:
                 "status": "RECONCILED_VALID_PRINCIPAL",
             }
         ],
+        "term_rate_review": [
+            {
+                "currency_code": "1",
+                "rate_type_source_code": "V",
+                "maturity_quality": "CURRENT_OR_FUTURE_MATURITY",
+                "records": 2,
+                "valid_source_principal": "900",
+            }
+        ],
         "bands": [
             {
                 "currency_code": "1",
@@ -52,10 +61,14 @@ def test_panel_displays_maturity_only_and_unassigned_categories(qt_app) -> None:
         assert panel._bands.rowCount() == 1
         assert panel._excluded.rowCount() == 1
         assert panel._reconciliation.rowCount() == 1
-        assert panel._reconciliation.item(0, 1).text() == "2134.50"
+        assert panel._reconciliation.item(0, 1).text() == "2.134,50"
+        assert panel._rate_review.rowCount() == 1
+        assert panel._rate_review.item(0, 1).text() == "V"
+        assert panel._rate_review.item(0, 4).text() == "900"
         assert panel._bands.item(0, 1).text() == "2. 1 día a 1 mes"
-        assert panel._bands.item(0, 3).text() == "1234.50"
-        assert "SIGHT_NMD" in panel._excluded.item(0, 1).text()
+        assert panel._bands.item(0, 3).text() == "1.234,50"
+        assert "A la vista" in panel._excluded.item(0, 1).text()
+        assert "SIGHT_NMD" in panel._excluded.item(0, 1).toolTip()
         assert "NO certificado RTILB" in panel._status.text()
     finally:
         panel.close()
@@ -71,6 +84,7 @@ def test_panel_does_not_reuse_stale_cutoff_results(qt_app) -> None:
         assert panel._bands.rowCount() == 0
         assert panel._excluded.rowCount() == 0
         assert panel._reconciliation.rowCount() == 0
+        assert panel._rate_review.rowCount() == 0
         assert "15/10/2026" in panel._status.text()
     finally:
         panel.close()
