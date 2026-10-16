@@ -52,7 +52,5 @@ def select_investment_source(
         status="READY",
         canonical_positions=count,
         mapping_failures=failures,
-        diagnostics=(
-            "Investment positions originate only from the certified master.",
-        ),
+        diagnostics=("Investment positions originate only from the certified master.",),
     )
