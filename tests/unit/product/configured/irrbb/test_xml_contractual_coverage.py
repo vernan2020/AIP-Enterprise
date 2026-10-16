@@ -53,8 +53,6 @@ def test_contractual_coverage_requires_same_entity():
 
 
 def test_complete_fields_are_not_mistaken_for_certified_flows():
-    results = inspect_xml_contractual_coverage(
-        SourceReader(), cutoff_date=date(2026, 9, 30)
-    )
+    results = inspect_xml_contractual_coverage(SourceReader(), cutoff_date=date(2026, 9, 30))
     assert all(row.status == "FIELDS_POPULATED" for row in results)
     assert not hasattr(results[0], "cash_flows")
