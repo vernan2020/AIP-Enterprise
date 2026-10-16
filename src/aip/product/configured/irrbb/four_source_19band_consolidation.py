@@ -92,8 +92,7 @@ def consolidate_four_certified_sources(
         expected = _PERIMETER[item.segment]
         actual = {req.perimeter for req in item.certification.profile.requirements}
         if expected not in actual or any(
-            perimeter not in {expected, IRRBBSourcePerimeter.COMMON}
-            for perimeter in actual
+            perimeter not in {expected, IRRBBSourcePerimeter.COMMON} for perimeter in actual
         ):
             raise ValueError("Source certification profile does not cover its perimeter")
 
@@ -147,8 +146,7 @@ def consolidate_four_certified_sources(
     for item in all_flows:
         flow = item.cashflow
         expected_amounts = (
-            asset_expected if item.segment in {"CREDIT", "INVESTMENT"}
-            else liability_expected
+            asset_expected if item.segment in {"CREDIT", "INVESTMENT"} else liability_expected
         )
         expected_amounts[flow.amount.currency] += flow.amount.amount
     for currency in set(asset_expected) | set(liability_expected):
