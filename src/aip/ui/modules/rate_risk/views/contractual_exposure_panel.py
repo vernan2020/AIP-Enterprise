@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import Any
 
 from PySide6.QtCore import QThread, Signal
+from xml.etree.ElementTree import ParseError
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QHBoxLayout,
@@ -43,7 +43,7 @@ class _ExposureAuditWorker(QThread):
                 self.blocked.emit("Fuente XML CONFÍA no configurada.")
                 return
             results = audit(XMLConfiaMonthlySourceReader(root), self._cutoff)
-        except (OSError, ValueError, KeyError) as exc:
+        except (OSError, ValueError, KeyError, ParseError) as exc:
             # Never display source paths, personal identifiers or exception messages.
             self.blocked.emit(f"Diagnóstico bloqueado ({type(exc).__name__}).")
             return
