@@ -295,7 +295,11 @@ def _perimeter_source(
     cutoff: date = CUTOFF,
 ) -> SourceSchedulePerimeter:
     classes = {
-        "CREDIT": (IRRBBInstrumentClass.CREDIT, BankingBookSide.ASSET, CashFlowDirection.RECEIVABLE),
+        "CREDIT": (
+            IRRBBInstrumentClass.CREDIT,
+            BankingBookSide.ASSET,
+            CashFlowDirection.RECEIVABLE,
+        ),
         "INVESTMENT": (
             IRRBBInstrumentClass.INVESTMENT,
             BankingBookSide.ASSET,
@@ -367,9 +371,7 @@ def _perimeter_source(
             ),
         ),
     )
-    return SourceSchedulePerimeter(
-        segment=segment, snapshot=source, certification=certification
-    )
+    return SourceSchedulePerimeter(segment=segment, snapshot=source, certification=certification)
 
 
 def test_four_separate_certifications_consolidate_per_currency_and_balance_side():
@@ -402,22 +404,20 @@ def test_four_separate_certifications_consolidate_per_currency_and_balance_side(
 
 def test_four_source_consolidation_blocks_missing_and_duplicate_segments():
     sources = tuple(
-        _perimeter_source(segment=segment)
-        for segment in ("CREDIT", "INVESTMENT", "CAPTACIONES")
+        _perimeter_source(segment=segment) for segment in ("CREDIT", "INVESTMENT", "CAPTACIONES")
     )
     with pytest.raises(ValueError, match="Four unique"):
         consolidate_four_certified_sources(cutoff_date=CUTOFF, sources=sources)
     with pytest.raises(ValueError, match="Four unique"):
-        consolidate_four_certified_sources(
-            cutoff_date=CUTOFF, sources=(*sources, sources[0])
-        )
+        consolidate_four_certified_sources(cutoff_date=CUTOFF, sources=(*sources, sources[0]))
 
 
 def test_four_source_consolidation_blocks_mismatched_cutoff():
     sources = tuple(
-        _perimeter_source(segment=segment)
-        for segment in ("CREDIT", "INVESTMENT", "CAPTACIONES")
-    ) + (_perimeter_source(segment="BORROWING", cutoff=date(2026, 8, 31)),)
+        _perimeter_source(segment=segment) for segment in ("CREDIT", "INVESTMENT", "CAPTACIONES")
+    ) + (
+        _perimeter_source(segment="BORROWING", cutoff=date(2026, 8, 31)),
+    )
     with pytest.raises(ValueError, match="cutoffs must match"):
         consolidate_four_certified_sources(cutoff_date=CUTOFF, sources=sources)
 
@@ -437,9 +437,7 @@ def test_four_source_consolidation_blocks_wrong_certification_perimeter():
         _perimeter_source(segment=segment)
         for segment in ("CREDIT", "INVESTMENT", "CAPTACIONES", "BORROWING")
     ]
-    sources[0] = replace(
-        sources[0], certification=sources[1].certification
-    )
+    sources[0] = replace(sources[0], certification=sources[1].certification)
     with pytest.raises(ValueError, match="does not cover its perimeter"):
         consolidate_four_certified_sources(cutoff_date=CUTOFF, sources=sources)
 
