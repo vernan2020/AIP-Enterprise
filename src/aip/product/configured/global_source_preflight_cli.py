@@ -46,11 +46,7 @@ def preflight(
     sources: dict[str, dict[str, object]] = {}
     folder = config.folder_watch
     sources["investment_master_root"] = {
-        "status": (
-            _path_status(folder.portfolio_root)
-            if folder.enabled
-            else "DISABLED"
-        ),
+        "status": (_path_status(folder.portfolio_root) if folder.enabled else "DISABLED"),
         "scope": "Directory only; latest master and certification not assessed",
     }
     investment_status, match_count = find_exact_cutoff_master(
@@ -109,11 +105,7 @@ def preflight(
         "status": (
             "CONFIGURED_NETWORK_NOT_TESTED"
             if sugef.enabled and sugef.api_enabled
-            else (
-                _path_status(sugef.root)
-                if sugef.enabled
-                else "DISABLED"
-            )
+            else (_path_status(sugef.root) if sugef.enabled else "DISABLED")
         ),
         "scope": "No API request, historical refresh or published cutoff verified",
     }
@@ -133,9 +125,7 @@ def preflight(
         except (OSError, ValueError):
             xml_statuses = {name: "SOURCE_UNAVAILABLE" for name in XML_CONFIA_SOURCE_STEMS}
     else:
-        xml_statuses = {
-            name: "UNCONFIGURED" for name in XML_CONFIA_SOURCE_STEMS
-        }
+        xml_statuses = {name: "UNCONFIGURED" for name in XML_CONFIA_SOURCE_STEMS}
     sources["xml_confia"] = {
         "status": "HEADERS_INSPECTED",
         "cutoff_sources": xml_statuses,
