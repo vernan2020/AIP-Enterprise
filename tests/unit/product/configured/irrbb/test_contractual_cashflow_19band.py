@@ -152,16 +152,12 @@ def test_disallows_inconsistent_asset_direction():
         cashflow=replace(original.cashflow, direction=CashFlowDirection.PAYABLE),
     )
     with pytest.raises(ValueError, match="direction"):
-        Contractual19BandEvidenceAggregator().aggregate(
-            cutoff_date=CUTOFF, flows=(inconsistent,)
-        )
+        Contractual19BandEvidenceAggregator().aggregate(cutoff_date=CUTOFF, flows=(inconsistent,))
 
 
 def test_similar_events_in_distinct_currencies_remain_separate():
     crc = _flow("CREDIT", position="same", day=date(2027, 1, 1), currency=Currency.CRC)
     usd = _flow("CREDIT", position="same", day=date(2027, 1, 1), currency=Currency.USD)
-    result = Contractual19BandEvidenceAggregator().aggregate(
-        cutoff_date=CUTOFF, flows=(crc, usd)
-    )
+    result = Contractual19BandEvidenceAggregator().aggregate(cutoff_date=CUTOFF, flows=(crc, usd))
     assert result.total_flows == 2
     assert len(result.rows) == 38
