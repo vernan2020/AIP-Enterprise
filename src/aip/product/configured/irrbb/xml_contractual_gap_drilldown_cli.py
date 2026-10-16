@@ -19,13 +19,19 @@ from aip.product.demo.configuration.environment_loader import EnvironmentLoader
 GROUP_FIELDS = {
     "CREDIT": ("TipoOperacion", "TipoEstadoOperacionCrediticia", "TipoCuotaPrincipal"),
     "BORROWING": ("TipoOperacionObligaciones", "TipoTasa"),
+    "CAPTACIONES": ("TipoCuenta", "TipoOperacionObligaciones", "TipoTasa"),
 }
 
 
 def summarize(reader: XMLConfiaMonthlySourceReader, cutoff: date) -> list[dict]:
     result = []
+    expected_entity = None
     for key, categories in GROUP_FIELDS.items():
         source = reader.resolve_source(key=key, cutoff_date=cutoff)
+        entity = source.header.id_entidad
+        if expected_entity is not None and entity != expected_entity:
+            raise ValueError("Inconsistent entity across contractual XML sources")
+        expected_entity = entity
         grouped = defaultdict(lambda: {"records": 0, "missing": defaultdict(int)})
         for record in reader.iter_records(source):
             group_key = tuple(
