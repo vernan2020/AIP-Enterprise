@@ -162,3 +162,27 @@ def test_resolves_september_credit_nuevo_variant_and_rejects_ambiguous_files(
     )
     with pytest.raises(ValueError, match="multiple XML CONFÍA files"):
         reader.resolve_source(key="CREDIT", cutoff_date=date(2026, 9, 30))
+
+
+def test_september_setiembre_folder_resolves(tmp_path: Path) -> None:
+    month = tmp_path / "2026" / "09-SETIEMBRE"
+    month.mkdir(parents=True)
+    reader = XMLConfiaMonthlySourceReader(str(tmp_path))
+    assert reader.resolve_month_directory(date(2026, 9, 30)) == month
+
+
+def test_september_septiembre_folder_remains_compatible(tmp_path: Path) -> None:
+    month = tmp_path / "2026" / "09-SEPTIEMBRE"
+    month.mkdir(parents=True)
+    reader = XMLConfiaMonthlySourceReader(str(tmp_path))
+    assert reader.resolve_month_directory(date(2026, 9, 30)) == month
+
+
+def test_both_september_spellings_fail_ambiguous(tmp_path: Path) -> None:
+    root = tmp_path / "2026"
+    (root / "09-SETIEMBRE").mkdir(parents=True)
+    (root / "09-SEPTIEMBRE").mkdir()
+    with pytest.raises(ValueError, match="Multiple September"):
+        XMLConfiaMonthlySourceReader(str(tmp_path)).resolve_month_directory(
+            date(2026, 9, 30)
+        )
