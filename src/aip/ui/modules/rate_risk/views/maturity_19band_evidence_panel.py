@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import date
+from decimal import Decimal, InvalidOperation
 from xml.etree.ElementTree import ParseError
 
 from PySide6.QtCore import Qt, QThread, Signal
@@ -53,6 +54,18 @@ class _MaturityAuditWorker(QThread):
 
 class Maturity19BandEvidencePanel(QWidget):
     """On-demand source maturity buckets; not interest-repricing or payments."""
+
+    _REASONS = {
+        "SIGHT_NMD_BEHAVIORAL_PROFILE_REQUIRED": "A la vista · requiere perfil comportamental",
+        "MATURED_TERM_POLICY_REQUIRED": "Plazo vencido · requiere tratamiento aprobado",
+        "TERM_NOT_FIXED_REPRICING_REQUIRED": "TipoTasa distinto de F · revisar código/reprecio",
+        "TERM_MISSING_MATURITY": "Plazo · falta fecha de vencimiento",
+        "TERM_INVALID_MATURITY": "Plazo · fecha de vencimiento inválida",
+        "TERM_PAST_MATURITY": "Plazo · vencimiento anterior al corte",
+        "INVALID_PRINCIPAL": "Importe principal inválido",
+        "MISSING_CURRENCY": "Código de moneda faltante",
+        "UNSUPPORTED_ACCOUNT": "Cuenta contable sin clasificación aprobada",
+    }
 
     def __init__(self) -> None:
         super().__init__()
@@ -108,6 +121,18 @@ class Maturity19BandEvidencePanel(QWidget):
         )
         self._reconciliation.setObjectName("rateRiskMaturity19BandReconciliationTable")
         self._tabs.addTab(self._reconciliation, "Conciliación por moneda")
+        self._rate_review = self._table(
+            (
+                "Moneda XML",
+                "TipoTasa original",
+                "Fecha de vencimiento",
+                "Registros",
+                "Principal válido en XML",
+            ),
+            (120, 170, 280, 120, 260),
+        )
+        self._rate_review.setObjectName("rateRiskMaturity19BandRateReviewTable")
+        self._tabs.addTab(self._rate_review, "Revisión tipos de tasa")
         layout.addWidget(self._tabs, 1)
 
     @staticmethod
@@ -121,7 +146,7 @@ class Maturity19BandEvidencePanel(QWidget):
         table.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
         table.verticalHeader().setVisible(False)
         horizontal = table.horizontalHeader()
-        horizontal.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+        horizontal.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         horizontal.setStretchLastSection(False)
         for col, width in enumerate(widths):
             table.setColumnWidth(col, width)
@@ -134,6 +159,7 @@ class Maturity19BandEvidencePanel(QWidget):
         self._bands.setRowCount(0)
         self._excluded.setRowCount(0)
         self._reconciliation.setRowCount(0)
+        self._rate_review.setRowCount(0)
         self._status.setText(
             f"Corte {cutoff:%d/%m/%Y} · Ejecutar auditoría. " "No se cargan datos de otro período."
         )
@@ -157,6 +183,7 @@ class Maturity19BandEvidencePanel(QWidget):
         self._bands.setRowCount(0)
         self._excluded.setRowCount(0)
         self._reconciliation.setRowCount(0)
+        self._rate_review.setRowCount(0)
         bands = result.get("bands", [])
         for row in bands if isinstance(bands, list) else []:
             if not isinstance(row, dict):
@@ -169,6 +196,7 @@ class Maturity19BandEvidencePanel(QWidget):
                     str(row["records"]),
                     str(row["source_principal"]),
                 ),
+                numeric_columns=(2, 3),
             )
         exclusions = result.get("excluded", [])
         for row in exclusions if isinstance(exclusions, list) else []:
@@ -178,10 +206,12 @@ class Maturity19BandEvidencePanel(QWidget):
                 self._excluded,
                 (
                     str(row["currency_code"]),
-                    str(row["reason"]),
+                    self._REASONS.get(str(row["reason"]), str(row["reason"])),
                     str(row["records"]),
                     str(row["source_principal"]),
                 ),
+                numeric_columns=(2, 3),
+                raw_details=str(row["reason"]),
             )
         reconciliations = result.get("currency_reconciliation", [])
         for entry in reconciliations if isinstance(reconciliations, list) else []:
@@ -195,8 +225,35 @@ class Maturity19BandEvidencePanel(QWidget):
                     str(entry["assigned_principal"]),
                     str(entry["excluded_valid_principal"]),
                     str(entry["invalid_principal_records"]),
-                    str(entry["status"]),
+                    (
+                        "Principal válido conciliado"
+                        if entry["status"] == "RECONCILED_VALID_PRINCIPAL"
+                        else str(entry["status"])
+                    ),
                 ),
+                numeric_columns=(1, 2, 3, 4),
+                raw_details=str(entry["status"]),
+            )
+        reviews = result.get("term_rate_review", [])
+        for row in reviews if isinstance(reviews, list) else []:
+            if not isinstance(row, dict):
+                continue
+            date_quality = {
+                "MISSING_MATURITY": "Sin fecha",
+                "INVALID_MATURITY": "Fecha inválida",
+                "PAST_MATURITY": "Anterior al corte",
+                "CURRENT_OR_FUTURE_MATURITY": "Igual o posterior al corte",
+            }.get(str(row["maturity_quality"]), str(row["maturity_quality"]))
+            self._append(
+                self._rate_review,
+                (
+                    str(row["currency_code"]),
+                    str(row["rate_type_source_code"]),
+                    date_quality,
+                    str(row["records"]),
+                    str(row["valid_source_principal"]),
+                ),
+                numeric_columns=(3, 4),
             )
         self._status.setText(
             f"Evidencia XML {cutoff:%d/%m/%Y} · {result['source_records']} registros: "
@@ -210,6 +267,7 @@ class Maturity19BandEvidencePanel(QWidget):
         self._bands.setRowCount(0)
         self._excluded.setRowCount(0)
         self._reconciliation.setRowCount(0)
+        self._rate_review.setRowCount(0)
         self._status.setText(f"XML {cutoff:%d/%m/%Y}: {message}. Sin datos reutilizados.")
 
     def _finish_worker(self) -> None:
@@ -220,12 +278,33 @@ class Maturity19BandEvidencePanel(QWidget):
             self._button.setEnabled(True)
 
     @staticmethod
-    def _append(table: QTableWidget, values: tuple[str, ...]) -> None:
+    def _formatted_number(value: str) -> str:
+        try:
+            amount = Decimal(value)
+        except (InvalidOperation, ValueError):
+            return value
+        if not amount.is_finite():
+            return value
+        formatted = format(amount, ",f")
+        return formatted.replace(",", "_").replace(".", ",").replace("_", ".")
+
+    @classmethod
+    def _append(
+        cls,
+        table: QTableWidget,
+        values: tuple[str, ...],
+        *,
+        numeric_columns: tuple[int, ...] = (),
+        raw_details: str = "",
+    ) -> None:
         row = table.rowCount()
         table.insertRow(row)
         for index, value in enumerate(values):
-            item = QTableWidgetItem(value)
-            item.setToolTip(value)
-            if index >= 2:
+            display = cls._formatted_number(value) if index in numeric_columns else value
+            item = QTableWidgetItem(display)
+            item.setToolTip(
+                f"Valor XML: {value}" + (f"\\nCódigo original: {raw_details}" if raw_details else "")
+            )
+            if index in numeric_columns:
                 item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             table.setItem(row, index, item)
