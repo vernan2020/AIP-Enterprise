@@ -66,9 +66,7 @@ def test_audit_bands_only_observed_fixed_term_and_keeps_nmd_separate():
     assert result["source_records"] == 11
     assert result["observed_records"] == 2
     assert result["excluded_records"] == 9
-    reconciliation = {
-        entry["currency_code"]: entry for entry in result["currency_reconciliation"]
-    }
+    reconciliation = {entry["currency_code"]: entry for entry in result["currency_reconciliation"]}
     assert reconciliation["1"]["assigned_principal"] == "100.15"
     assert reconciliation["1"]["source_valid_principal"] == "520.15"
     assert reconciliation["1"]["excluded_valid_principal"] == "420"
