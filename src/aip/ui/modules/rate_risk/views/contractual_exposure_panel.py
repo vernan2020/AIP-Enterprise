@@ -139,7 +139,7 @@ class ContractualExposurePanel(QWidget):
         if cutoff != self._cutoff:
             return
         self._populate(results)
-        records = sum(int(result["records"]) for result in results)
+        records = sum(int(str(result["records"])) for result in results)
         self._status.setText(
             f"Auditoría XML completada · Corte {cutoff:%d/%m/%Y} · "
             f"{records:,} registros · sin cálculo VEP/ΔNII ni certificación 19 bandas."
