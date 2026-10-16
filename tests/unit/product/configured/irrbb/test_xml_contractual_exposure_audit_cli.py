@@ -26,53 +26,59 @@ class Reader:
 
     def iter_records(self, source):
         if source.key == "CREDIT":
-            yield SimpleNamespace(values={
-                "TipoOperacion": "3",
-                "TipoEstadoOperacionCrediticia": "1",
-                "TipoCuotaPrincipal": "",
-                "SaldoPrincipalOperacionCrediticia": "100.50",
-                "TipoMonedaOperacion": "CRC",
-                "FechaVencimiento": "2027-10-31",
-                "FechaProximoPagoPrincipal": "",
-                "FechaProximoPagoIntereses": "",
-                "IndicadorTipoTasa": "",
-            })
-            yield SimpleNamespace(values={
-                "TipoOperacion": "3",
-                "TipoEstadoOperacionCrediticia": "1",
-                "TipoCuotaPrincipal": "",
-                "SaldoPrincipalOperacionCrediticia": "20.25",
-                "TipoMonedaOperacion": "USD",
-                "FechaVencimiento": "2027-10-31",
-                "FechaProximoPagoPrincipal": "2026-10-15",
-                "FechaProximoPagoIntereses": "2026-10-15",
-                "IndicadorTipoTasa": "V",
-            })
+            yield SimpleNamespace(
+                values={
+                    "TipoOperacion": "3",
+                    "TipoEstadoOperacionCrediticia": "1",
+                    "TipoCuotaPrincipal": "",
+                    "SaldoPrincipalOperacionCrediticia": "100.50",
+                    "TipoMonedaOperacion": "CRC",
+                    "FechaVencimiento": "2027-10-31",
+                    "FechaProximoPagoPrincipal": "",
+                    "FechaProximoPagoIntereses": "",
+                    "IndicadorTipoTasa": "",
+                }
+            )
+            yield SimpleNamespace(
+                values={
+                    "TipoOperacion": "3",
+                    "TipoEstadoOperacionCrediticia": "1",
+                    "TipoCuotaPrincipal": "",
+                    "SaldoPrincipalOperacionCrediticia": "20.25",
+                    "TipoMonedaOperacion": "USD",
+                    "FechaVencimiento": "2027-10-31",
+                    "FechaProximoPagoPrincipal": "2026-10-15",
+                    "FechaProximoPagoIntereses": "2026-10-15",
+                    "IndicadorTipoTasa": "V",
+                }
+            )
         elif source.key == "BORROWING":
-            yield SimpleNamespace(values={
-                "TipoOperacionObligaciones": "99",
-                "TipoTasa": "F",
-                "SaldoPrincipal": "-5.0",
-                "TipoMonedaObligacion": "CRC",
-                "FechaVencimiento": "2027-09-01",
-                "FechaProximoPagoPrincipal": "",
-                "FechaProximoPagoInteres": "",
-            })
+            yield SimpleNamespace(
+                values={
+                    "TipoOperacionObligaciones": "99",
+                    "TipoTasa": "F",
+                    "SaldoPrincipal": "-5.0",
+                    "TipoMonedaObligacion": "CRC",
+                    "FechaVencimiento": "2027-09-01",
+                    "FechaProximoPagoPrincipal": "",
+                    "FechaProximoPagoInteres": "",
+                }
+            )
         else:
-            yield SimpleNamespace(values={
-                "TipoCuenta": "2",
-                "TipoOperacionObligaciones": "1",
-                "TipoTasa": "V",
-                "SaldoPrincipal": "200",
-                "TipoMonedaObligacion": "CRC",
-            })
+            yield SimpleNamespace(
+                values={
+                    "TipoCuenta": "2",
+                    "TipoOperacionObligaciones": "1",
+                    "TipoTasa": "V",
+                    "SaldoPrincipal": "200",
+                    "TipoMonedaObligacion": "CRC",
+                }
+            )
 
 
 def test_audit_keeps_currency_codes_separate_and_preserves_decimal() -> None:
     result = audit(Reader(), date(2026, 9, 30))
-    assert [source["source"] for source in result] == [
-        "CREDIT", "BORROWING", "CAPTACIONES"
-    ]
+    assert [source["source"] for source in result] == ["CREDIT", "BORROWING", "CAPTACIONES"]
     credit_groups = result[0]["groups"]
     assert len(credit_groups) == 2
     crc = next(group for group in credit_groups if group["currency_code"] == "CRC")
