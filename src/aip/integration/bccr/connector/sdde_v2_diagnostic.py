@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from time import perf_counter
 from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
 
@@ -81,11 +82,13 @@ def run(argv: list[str] | None = None) -> int:
         today = date.today()
         start = (today - timedelta(days=args.days)).strftime("%Y/%m/%d")
         end = today.strftime("%Y/%m/%d")
+        report["window"] = {"from": start, "to": end}
         for code in args.codes:
+            started = perf_counter()
             try:
                 response = client.fetch_series(indicator_code=code, from_date=start, to_date=end)
                 observation = _latest_valid_observation(response, code)
-                record = {"code": code, "status": "LIVE_OK" if observation else "NO_OBSERVATIONS"}
+                record = {"code": code, "status": "LIVE_OK" if observation else "NO_OBSERVATIONS", "elapsed_ms": round((perf_counter() - started) * 1000)}
                 if observation is not None:
                     record.update(observation)
                 report["indicators"].append(record)
@@ -104,6 +107,7 @@ def run(argv: list[str] | None = None) -> int:
                 report["indicators"].append(
                     {
                         "code": code,
+                        "elapsed_ms": round((perf_counter() - started) * 1000),
                         "status": "HTTP_ERROR" if http_status else "ERROR",
                         "http_status": http_status,
                         "type": type(exc).__name__,
