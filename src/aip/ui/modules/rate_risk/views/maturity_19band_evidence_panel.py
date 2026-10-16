@@ -303,7 +303,8 @@ class Maturity19BandEvidencePanel(QWidget):
             display = cls._formatted_number(value) if index in numeric_columns else value
             item = QTableWidgetItem(display)
             item.setToolTip(
-                f"Valor XML: {value}" + (f"\\nCódigo original: {raw_details}" if raw_details else "")
+                f"Valor XML: {value}"
+                + (f"\\nCódigo original: {raw_details}" if raw_details else "")
             )
             if index in numeric_columns:
                 item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
