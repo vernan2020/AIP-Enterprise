@@ -14,7 +14,7 @@ class Reader:
         return SimpleNamespace(
             key=key,
             path=Path(key + ".xml"),
-            header=SimpleNamespace(id_entidad="3004045138"),
+            header=SimpleNamespace(id_entidad="3004045138", periodo=date(2026, 9, 1)),
         )
 
     def iter_records(self, source):
