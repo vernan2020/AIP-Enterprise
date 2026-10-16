@@ -18,6 +18,9 @@ from aip.product.configured.configuration.configured_source_config import (
 from aip.product.configured.configuration.institutional_paths import (
     expand_environment_path,
 )
+from aip.product.configured.irrbb.investment_master_discovery import (
+    find_exact_cutoff_master,
+)
 from aip.product.configured.irrbb.xml_confia_source import (
     XML_CONFIA_SOURCE_STEMS,
     XMLConfiaMonthlySourceReader,
@@ -49,6 +52,20 @@ def preflight(
             else "DISABLED"
         ),
         "scope": "Directory only; latest master and certification not assessed",
+    }
+    investment_status, match_count = find_exact_cutoff_master(
+        folder.portfolio_root if folder.enabled else None,
+        folder.portfolio_master_pattern,
+        cutoff,
+    )
+    sources["investment_master_cutoff"] = {
+        "status": investment_status,
+        "matching_file_count": match_count,
+        "scope": (
+            "Exact-cutoff master candidate only; contents, position mapping, "
+            "source certification and cash flows not verified. XML investment "
+            "source is reconciliation only."
+        ),
     }
     sources["icl_root"] = {
         "status": _path_status(folder.icl_root) if folder.enabled else "DISABLED",
