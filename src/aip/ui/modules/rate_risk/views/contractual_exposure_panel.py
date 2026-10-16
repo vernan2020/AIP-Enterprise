@@ -108,9 +108,10 @@ class ContractualExposurePanel(QWidget):
         layout.addLayout(header)
 
         note = QLabel(
-            "Evidencia agregada y de solo lectura. Los saldos se mantienen en "
-            "la moneda indicada por el XML, sin tipo de cambio ni sumas entre "
-            "monedas. Las fechas faltantes no se sustituyen por vencimientos "
+            "Evidencia agregada y de solo lectura. La moneda se muestra con "
+            "su código XML original (ej.: 1), SIN inferir equivalencia CRC/USD. "
+            "Sin tipo de cambio ni sumas entre monedas. Importes completos en "
+            "el tooltip; las fechas faltantes no se sustituyen por vencimientos "
             "supuestos. No son flujos, GAP de 19 bandas, ΔNII ni ΔVEP."
         )
         note.setWordWrap(True)
@@ -190,7 +191,8 @@ class ContractualExposurePanel(QWidget):
         records = sum(int(str(result["records"])) for result in results)
         self._status.setText(
             f"Auditoría XML completada · Corte {cutoff:%d/%m/%Y} · "
-            f"{records:,} registros · sin cálculo VEP/ΔNII ni certificación 19 bandas."
+            f"{self._grouped_number(records)} registros · "
+            "sin cálculo VEP/ΔNII ni certificación 19 bandas."
         )
 
     def _receive_error(self, cutoff: date, message: str) -> None:
