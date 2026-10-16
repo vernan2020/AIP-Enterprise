@@ -11,9 +11,7 @@ from aip.product.configured.configuration.institutional_paths import (
 )
 
 
-def find_exact_cutoff_master(
-    root: str | None, pattern: str, cutoff: date
-) -> tuple[str, int]:
+def find_exact_cutoff_master(root: str | None, pattern: str, cutoff: date) -> tuple[str, int]:
     """Return safe status and candidate count; never return private paths."""
     if not root:
         return "UNCONFIGURED", 0
