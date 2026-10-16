@@ -9,9 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import subprocess
-import sys
 import time
 from datetime import date
 from pathlib import Path
@@ -25,14 +23,15 @@ CHECKS = (
     ("TERM_MATURITY_19", "DIAGNOSTICAR_RTILB_BANDEO_19_EVIDENCIA.cmd"),
 )
 
-SUCCESS_STATUSES = {
-    "LOCAL_SOURCE_PREFLIGHT_ONLY",
-    "VALIDATED",
-    "COVERAGE_INSPECTED",
-    "AGGREGATE_GAPS_INSPECTED",
-    "AGGREGATE_EXPOSURE_AUDITED",
-    "MATURITY_EVIDENCE_ONLY_NOT_IRRBB_GAP",
+EXPECTED_STATUS = {
+    "GLOBAL_SOURCES": "LOCAL_SOURCE_PREFLIGHT_ONLY",
+    "SIX_BAND_XML": "VALIDATED",
+    "CONTRACTUAL_COVERAGE": "COVERAGE_INSPECTED",
+    "CONTRACTUAL_PRODUCTS": "AGGREGATE_GAPS_INSPECTED",
+    "CONTRACTUAL_EXPOSURE": "AGGREGATE_EXPOSURE_AUDITED",
+    "TERM_MATURITY_19": "MATURITY_EVIDENCE_ONLY_NOT_IRRBB_GAP",
 }
+SUCCESS_STATUSES = frozenset(EXPECTED_STATUS.values())
 
 
 def _safe_status(stdout: str) -> str:
@@ -86,7 +85,7 @@ def execute_suite(root: Path, cutoff: date, *, timeout_seconds: int = 600) -> di
                 "check": name,
                 "result": (
                     "PASSED_EVIDENCE_ONLY"
-                    if child.returncode == 0 and status in SUCCESS_STATUSES
+                    if child.returncode == 0 and status == EXPECTED_STATUS[name]
                     else "BLOCKED"
                 ),
                 "status": status,
