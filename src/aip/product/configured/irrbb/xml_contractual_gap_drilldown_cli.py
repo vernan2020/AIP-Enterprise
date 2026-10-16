@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
-from collections import defaultdict
+from typing import TypedDict
 from datetime import date
 from xml.etree.ElementTree import ParseError
 
@@ -16,6 +16,11 @@ from aip.product.configured.irrbb.xml_confia_source import (
 )
 from aip.product.configured.irrbb.xml_contractual_coverage import REQUIRED_FIELDS
 from aip.product.demo.configuration.environment_loader import EnvironmentLoader
+
+class _GroupCounts(TypedDict):
+    records: int
+    missing: dict[str, int]
+
 
 GROUP_FIELDS = {
     "CREDIT": ("TipoOperacion", "TipoEstadoOperacionCrediticia", "TipoCuotaPrincipal"),
@@ -40,12 +45,15 @@ def summarize(reader: XMLConfiaMonthlySourceReader, cutoff: date) -> list[dict]:
         if expected_period is not None and period != expected_period:
             raise ValueError("Inconsistent period across contractual XML sources")
         expected_period = period
-        grouped = defaultdict(lambda: {"records": 0, "missing": defaultdict(int)})
+        grouped: dict[tuple[str, ...], _GroupCounts] = {}
         for record in reader.iter_records(source):
             group_key = tuple(
                 record.values.get(field, "").strip() or "(VACIO)" for field in categories
             )
-            group = grouped[group_key]
+            group = grouped.setdefault(
+                group_key,
+                {"records": 0, "missing": {field: 0 for field in REQUIRED_FIELDS[key]}},
+            )
             group["records"] += 1
             for field in REQUIRED_FIELDS[key]:
                 if not record.values.get(field, "").strip():
