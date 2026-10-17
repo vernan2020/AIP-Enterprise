@@ -129,7 +129,7 @@ class InvestmentMasterEvidencePanel(QWidget):
         return table
 
     def _add_group(
-        self, table: QTableWidget, values: tuple[str, ...], *, amount_index: int
+        self, table: QTableWidget, values: tuple[str, ...]
     ) -> None:
         row = table.rowCount()
         table.insertRow(row)
@@ -228,8 +228,7 @@ class InvestmentMasterEvidencePanel(QWidget):
                     str(record["positions"]),
                     str(record["source_principal"]),
                 ),
-                amount_index=3,
-            )
+             )
         exclusions = report.get("maturity_exclusions", [])
         explanations = {
             "MISSING_NATIVE_CURRENCY": "Falta moneda original",
@@ -249,8 +248,7 @@ class InvestmentMasterEvidencePanel(QWidget):
                     str(record["positions"]),
                     str(record["valid_source_principal"]),
                 ),
-                amount_index=3,
-            )
+             )
 
     def _receive_error(self, cutoff: date, message: str) -> None:
         if cutoff != self._cutoff:
