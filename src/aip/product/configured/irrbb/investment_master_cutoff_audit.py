@@ -193,13 +193,9 @@ def inspect_investment_master_cutoff(
                 "source_currency": currency,
                 "ordinal": ordinal,
                 "band": label,
-                "positions": int(
-                    bands.get((currency, ordinal, label), {}).get("positions", 0)
-                ),
+                "positions": int(bands.get((currency, ordinal, label), {}).get("positions", 0)),
                 "source_principal": str(
-                    bands.get((currency, ordinal, label), {}).get(
-                        "source_principal", Decimal(0)
-                    )
+                    bands.get((currency, ordinal, label), {}).get("source_principal", Decimal(0))
                 ),
             }
             for currency in native_currencies
