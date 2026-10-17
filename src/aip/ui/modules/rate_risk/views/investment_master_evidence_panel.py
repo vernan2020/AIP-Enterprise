@@ -136,8 +136,10 @@ class InvestmentMasterEvidencePanel(QWidget):
             f"· {report['rejected_rows']} filas rechazadas · "
             f"{report['warning_count']} advertencias"
         )
-        blocking = report.get("blocking_requirements", [])
-        pending = report.get("not_assessed_requirements", [])
+        blocking_data = report.get("blocking_requirements", [])
+        pending_data = report.get("not_assessed_requirements", [])
+        blocking = blocking_data if isinstance(blocking_data, list) else []
+        pending = pending_data if isinstance(pending_data, list) else []
         self._certification.setText(
             f"Certificación: {report['certification_status']} · "
             f"{len(blocking)} requisitos bloqueados · "
