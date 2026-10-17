@@ -34,6 +34,24 @@ def _report() -> dict[str, object]:
                 "valid_source_principal": "0",
             }
         ],
+        "maturity_reconciliation": [
+            {
+                "source_currency": "CRC",
+                "eligible_source_principal": "1234567.89",
+                "observed_principal": "1234567.89",
+                "excluded_valid_principal": "0",
+                "difference": "0",
+                "status": "RECONCILED_SOURCE_CURRENCY",
+            },
+            {
+                "source_currency": "(SIN MONEDA NATIVA)",
+                "eligible_source_principal": "500",
+                "observed_principal": "0",
+                "excluded_valid_principal": "500",
+                "difference": "0",
+                "status": "BLOCKED_NATIVE_CURRENCY",
+            },
+        ],
         "currencies": [
             {
                 "source_currency": "CRC",
@@ -71,6 +89,9 @@ def test_investment_panel_shows_real_source_currency_and_certification(qt_app):
         assert panel._bands.item(0, 1).text() == "4. 3 a 6 meses"
         assert panel._bands.item(0, 3).text() == "1.234.567,89"
         assert panel._excluded.rowCount() == 1
+        assert panel._reconciliation.rowCount() == 2
+        assert panel._reconciliation.item(0, 1).text() == "1.234.567,89"
+        assert "Bloqueada" in panel._reconciliation.item(1, 5).text()
         assert "Falta moneda" in panel._excluded.item(0, 1).text()
         assert "BLOCKED" in panel._certification.text()
         assert "Sin GAP" in panel._certification.text()
@@ -88,6 +109,7 @@ def test_investment_panel_does_not_reuse_previous_cutoff(qt_app):
         assert panel._table.rowCount() == 0
         assert panel._bands.rowCount() == 0
         assert panel._excluded.rowCount() == 0
+        assert panel._reconciliation.rowCount() == 0
         assert "15/10/2026" in panel._status.text()
     finally:
         panel.close()
