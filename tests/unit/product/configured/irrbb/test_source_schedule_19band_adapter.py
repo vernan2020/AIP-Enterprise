@@ -467,9 +467,7 @@ def test_breakdown_separates_principal_interest_and_cumulative_by_currency():
         _perimeter_source(segment="CAPTACIONES"),
         _perimeter_source(segment="BORROWING", currency=Currency.USD),
     )
-    consolidated = consolidate_four_certified_sources(
-        cutoff_date=CUTOFF, sources=sources
-    )
+    consolidated = consolidate_four_certified_sources(cutoff_date=CUTOFF, sources=sources)
     report = breakdown_four_sources(consolidated)
     assert not report.publishable_regulatory_gap
     assert report.status == "CONTRACTUAL_BREAKDOWN_ONLY_NOT_REGULATORY_GAP"
@@ -490,9 +488,7 @@ def test_breakdown_refuses_unrecognized_cashflow_type():
     )
     original = consolidate_four_certified_sources(cutoff_date=CUTOFF, sources=sources)
     prior = original.flows[0]
-    unknown = replace(
-        prior, cashflow=replace(prior.cashflow, flow_type="ESTIMATED_OTHER")
-    )
+    unknown = replace(prior, cashflow=replace(prior.cashflow, flow_type="ESTIMATED_OTHER"))
     changed = replace(original, flows=(unknown, *original.flows[1:]))
     with pytest.raises(ValueError, match="Unsupported contractual flow type"):
         breakdown_four_sources(changed)
@@ -502,11 +498,7 @@ def test_certification_cannot_be_applied_before_its_effective_date():
     certification = _certification()
     future = replace(
         certification,
-        profile=replace(
-            certification.profile, effective_from=date(2027, 1, 1)
-        ),
+        profile=replace(certification.profile, effective_from=date(2027, 1, 1)),
     )
     with pytest.raises(ValueError, match="Future-dated source certification"):
-        bridge_certified_fixed_schedules(
-            snapshot=_snapshot(), certification=future
-        )
+        bridge_certified_fixed_schedules(snapshot=_snapshot(), certification=future)
