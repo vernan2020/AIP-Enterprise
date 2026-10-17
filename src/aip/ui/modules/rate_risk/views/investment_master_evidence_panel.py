@@ -128,9 +128,7 @@ class InvestmentMasterEvidencePanel(QWidget):
         table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         return table
 
-    def _add_group(
-        self, table: QTableWidget, values: tuple[str, ...]
-    ) -> None:
+    def _add_group(self, table: QTableWidget, values: tuple[str, ...]) -> None:
         row = table.rowCount()
         table.insertRow(row)
         for index, value in enumerate(values):
@@ -139,7 +137,7 @@ class InvestmentMasterEvidencePanel(QWidget):
             if index >= 2:
                 item.setTextAlignment(
                     Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
-                )
+               )
             table.setItem(row, index, item)
 
     def set_cutoff(self, cutoff: date) -> None:
@@ -213,7 +211,7 @@ class InvestmentMasterEvidencePanel(QWidget):
                 if col:
                     item.setTextAlignment(
                         Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
-                    )
+                   )
                 self._table.setItem(row, col, item)
 
         bands = report.get("maturity_bands", [])
@@ -227,8 +225,8 @@ class InvestmentMasterEvidencePanel(QWidget):
                     f'{record["ordinal"]}. {record["band"]}',
                     str(record["positions"]),
                     str(record["source_principal"]),
-                ),
-             )
+               ),
+            )
         exclusions = report.get("maturity_exclusions", [])
         explanations = {
             "MISSING_NATIVE_CURRENCY": "Falta moneda original",
@@ -247,8 +245,8 @@ class InvestmentMasterEvidencePanel(QWidget):
                     explanations.get(code, code),
                     str(record["positions"]),
                     str(record["valid_source_principal"]),
-                ),
-             )
+               ),
+            )
 
     def _receive_error(self, cutoff: date, message: str) -> None:
         if cutoff != self._cutoff:
