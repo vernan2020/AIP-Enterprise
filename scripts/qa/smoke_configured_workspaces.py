@@ -67,6 +67,7 @@ def main() -> int:
                         "GAP SUGEF · 19 bandas",
                         "Bandeo 19 · evidencia",
                         "XML contractual · auditoría",
+                        "Inversiones · Maestro",
                     ):
                         if needed not in tab_text:
                             raise RuntimeError("required RTILB tab missing")
