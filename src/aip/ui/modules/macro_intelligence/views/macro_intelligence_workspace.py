@@ -1106,6 +1106,7 @@ class MacroIntelligenceWorkspace(QWidget):
         if source == "ML":
             self._load_ml_projection(code)
             return
+        self._pending_forecast_code = None
         if code not in self._INSTITUTIONAL_DRIVERS:
             self._projection_note.setText(
                 "Este indicador no forma parte del escenario institucional aprobado. "
@@ -1124,8 +1125,6 @@ class MacroIntelligenceWorkspace(QWidget):
             return
         self._forecast_loading = True
         self._pending_forecast_code = None
-        self._driver_combo.setEnabled(False)
-        self._projection_source_combo.setEnabled(False)
         self._projection_note.setText(
             f"Calculando ensemble ML para {self._driver_combo.currentText()} · "
             "backtesting rolling 1/3/6/12M..."
@@ -1142,6 +1141,9 @@ class MacroIntelligenceWorkspace(QWidget):
             self._ml_projection_failed("Resultado inesperado del motor ML")
             return
         self._ml_projection = result
+        if str(self._projection_source_combo.currentData()) != "ML" or str(self._driver_combo.currentData()) != result.indicator_code:
+            self._finish_ml_projection()
+            return
         if result.points:
             self._projection_chart.set_ml_forecast(result)
             origin = result.forecast_origin.strftime("%d/%m/%Y") if result.forecast_origin else "-"
@@ -1166,6 +1168,9 @@ class MacroIntelligenceWorkspace(QWidget):
 
     @Slot(str)
     def _ml_projection_failed(self, message: str) -> None:
+        if str(self._projection_source_combo.currentData()) != "ML":
+            self._finish_ml_projection()
+            return
         self._projection_chart.set_ml_forecast(
             MacroForecastLabViewModel(
                 indicator_code=str(self._driver_combo.currentData() or "TPM"),
@@ -1179,12 +1184,10 @@ class MacroIntelligenceWorkspace(QWidget):
     def _finish_ml_projection(self) -> None:
         self._forecast_loading = False
         self._forecast_worker = None
-        self._driver_combo.setEnabled(True)
-        self._projection_source_combo.setEnabled(True)
         pending = self._pending_forecast_code
         self._pending_forecast_code = None
-        if pending is not None:
-            QTimer.singleShot(0, lambda: self._load_ml_projection(pending))
+        if pending is not None and str(self._projection_source_combo.currentData()) == "ML":
+            QTimer.singleShot(0, lambda: self._load_ml_projection(str(self._driver_combo.currentData() or pending)))
 
     def _scheduled_refresh_on_open(self) -> None:
         # First startup refresh is unconditional; the persisted snapshot

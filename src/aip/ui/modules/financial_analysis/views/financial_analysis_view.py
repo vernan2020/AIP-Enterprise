@@ -259,7 +259,7 @@ class FinancialAnalysisView(QWidget):
         source.setObjectName("sugefSourcePanel")
         source_layout = QGridLayout(source)
         source_layout.setContentsMargins(8, 4, 8, 4)
-        self._source_status = QLabel("SUGEF · fuente no configurada")
+        self._source_status = QLabel("SUGEF · carga pendiente")
         self._source_status.setWordWrap(True)
         self._source_status.setTextInteractionFlags(
             Qt.TextInteractionFlag.TextSelectableByMouse
@@ -1168,6 +1168,7 @@ class FinancialAnalysisView(QWidget):
             )
             return
         self._loading = True
+        self._source_status.setText("SUGEF · consultando fuente oficial y caché local…")
         self._refresh_button.setEnabled(False)
         worker = _FinancialLoadWorker(self._presenter, entity_id, force_refresh)
         worker.signals.completed.connect(self._load_completed, Qt.ConnectionType.QueuedConnection)

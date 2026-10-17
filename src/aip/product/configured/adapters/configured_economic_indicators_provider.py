@@ -21,14 +21,11 @@ from aip.integration.bccr.configuration.bccr_config import (
 from aip.integration.bccr.connector.cache import (
     BCCRCache,
 )
-from aip.integration.bccr.connector.rest_client import (
-    BCCRRestClient,
+from aip.integration.bccr.connector.sdde_v2_client import (
+    SDDEv2Client,
 )
 from aip.integration.bccr.normalization.economic_series_parser import (
     BCCREconomicSeriesParser,
-)
-from aip.integration.bccr.providers.select_official_transport import (
-    select_official_bccr_transport,
 )
 from aip.integration.economic.official_indicator_mappings import (
     build_official_indicator_mapper,
@@ -86,10 +83,9 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
     ) -> None:
         self._bccr_config = bccr_config
 
-        self._client = BCCRRestClient(
-            config=bccr_config,
-            provider=select_official_bccr_transport(),
-        )
+        # New SDDE REST implementation. Existing identity fields and bearer
+        # are read from the protected runtime config; never duplicated here.
+        self._client = SDDEv2Client(config=bccr_config)
 
         self._mapper = build_official_indicator_mapper()
 
