@@ -74,10 +74,7 @@ def test_workspace_integrates_investment_master_tab(qt_app):
         valuation_date_provider=lambda: date(2026, 9, 30), controller=None
     )
     try:
-        text = [
-            workspace.view._tabs.tabText(i)
-            for i in range(workspace.view._tabs.count())
-        ]
+        text = [workspace.view._tabs.tabText(i) for i in range(workspace.view._tabs.count())]
         assert "Inversiones · Maestro" in text
         assert "Bandeo 19 · evidencia" in text
     finally:
