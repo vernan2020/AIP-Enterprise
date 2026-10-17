@@ -277,9 +277,11 @@ class InvestmentMasterEvidencePanel(QWidget):
             display_status = (
                 "Bloqueada: moneda sin equivalencia confirmada"
                 if status_code == "BLOCKED_NATIVE_CURRENCY"
-                else "Principal original conciliado"
-                if status_code == "RECONCILED_SOURCE_CURRENCY"
-                else status_code
+                else (
+                    "Principal original conciliado"
+                    if status_code == "RECONCILED_SOURCE_CURRENCY"
+                    else status_code
+                )
             )
             self._add_group(
                 self._reconciliation,
