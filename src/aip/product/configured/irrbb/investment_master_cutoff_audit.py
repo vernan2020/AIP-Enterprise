@@ -121,6 +121,9 @@ def inspect_investment_master_cutoff(
         else:
             group["principal_records"] += 1
             group["source_principal"] += principal
+        if principal is not None:
+            # Preserve positive numeric values under their original source code.
+            # A missing/unsupported currency remains excluded, never inferred.
             eligible_amounts[currency] += principal
 
         if raw_currency not in {"CRC", "USD"}:
@@ -138,7 +141,7 @@ def inspect_investment_master_cutoff(
 
         discarded = excluded[(currency, reason)]
         discarded["positions"] += 1
-        if principal is not None and raw_currency in {"CRC", "USD"}:
+        if principal is not None:
             discarded["valid_source_principal"] += principal
 
     observed_amounts: dict[str, Decimal] = defaultdict(Decimal)
@@ -157,6 +160,19 @@ def inspect_investment_master_cutoff(
     ) != len(reading.normalized_positions):
         raise ValueError("Investment maturity classification count is incomplete")
 
+    canonical_labels = (
+        (1, "Overnight"),
+        *(
+            (ordinal, label)
+            for ordinal, (_months, _bucket, label) in enumerate(
+                IRRBBTimeBucketService._MONTH_BUCKETS, start=2
+            )
+        ),
+        (19, "Más de 20 años"),
+    )
+    native_currencies = tuple(
+        sorted(currency for currency in grouped if currency in {"CRC", "USD"})
+    )
     return {
         "status": "INVESTMENT_MASTER_SOURCE_INSPECTED_NOT_CERTIFIED",
         "cutoff": cutoff.isoformat(),
@@ -177,10 +193,17 @@ def inspect_investment_master_cutoff(
                 "source_currency": currency,
                 "ordinal": ordinal,
                 "band": label,
-                "positions": int(group["positions"]),
-                "source_principal": str(group["source_principal"]),
+                "positions": int(
+                    bands.get((currency, ordinal, label), {}).get("positions", 0)
+                ),
+                "source_principal": str(
+                    bands.get((currency, ordinal, label), {}).get(
+                        "source_principal", Decimal(0)
+                    )
+                ),
             }
-            for (currency, ordinal, label), group in sorted(bands.items())
+            for currency in native_currencies
+            for ordinal, label in canonical_labels
         ],
         "maturity_exclusions": [
             {
@@ -198,6 +221,11 @@ def inspect_investment_master_cutoff(
                 "observed_principal": str(observed_amounts[currency]),
                 "excluded_valid_principal": str(excluded_amounts[currency]),
                 "difference": "0",
+                "status": (
+                    "RECONCILED_SOURCE_CURRENCY"
+                    if currency in {"CRC", "USD"}
+                    else "BLOCKED_NATIVE_CURRENCY"
+                ),
             }
             for currency in sorted(eligible_amounts)
         ],
@@ -215,7 +243,10 @@ def inspect_investment_master_cutoff(
         ],
         "note": (
             "Observed institutional master maturity buckets, not cashflow schedules, repricing or 19-band GAP. "
-            "No FX conversion. Source-column principal only; other balance fields are not substituted. "
+            "No FX conversion. Unsupported or missing currency codes are excluded, and their "
+            "numeric source balances must not be interpreted as CRC or USD. "
+            "All nineteen empty or occupied bands are shown for each supported source currency. "
+            "Source-column principal only; other balance fields are not substituted. "
             "The cutoff comes from the filename and is not independently certified."
         ),
     }
