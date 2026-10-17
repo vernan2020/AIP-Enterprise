@@ -64,10 +64,7 @@ def test_real_reader_audits_exact_cutoff_and_does_not_assume_crc_for_blank_curre
     assert "CON001" not in str(result)
     assert "CR00001" not in str(result)
     assert len(result["maturity_bands"]) == 38
-    bands = {
-        (row["source_currency"], row["ordinal"]): row
-        for row in result["maturity_bands"]
-    }
+    bands = {(row["source_currency"], row["ordinal"]): row for row in result["maturity_bands"]}
     assert bands[("CRC", 4)]["source_principal"] == "125.75"
     assert bands[("USD", 4)]["source_principal"] == "72.25"
     assert bands[("CRC", 4)]["positions"] == 1
