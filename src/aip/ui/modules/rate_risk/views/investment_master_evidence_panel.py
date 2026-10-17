@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -98,13 +99,56 @@ class InvestmentMasterEvidencePanel(QWidget):
         self._table.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
         self._table.verticalHeader().setVisible(False)
         self._table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        layout.addWidget(self._table, 1)
+        self._tabs = QTabWidget()
+        self._tabs.setObjectName("rateRiskInvestmentEvidenceTabs")
+        self._tabs.addTab(self._table, "Posiciones por moneda")
+        self._bands = self._create_table(
+            ("Moneda", "Banda de vencimiento", "Posiciones", "Principal fuente"),
+            "rateRiskInvestmentObservedBandsTable",
+        )
+        self._excluded = self._create_table(
+            ("Moneda", "Motivo sin asignación", "Posiciones", "Principal fuente válido"),
+            "rateRiskInvestmentMaturityExclusionsTable",
+        )
+        self._tabs.addTab(self._bands, "19 bandas · vencimiento")
+        self._tabs.addTab(self._excluded, "Sin bandeo · motivo")
+        layout.addWidget(self._tabs, 1)
+
+    @staticmethod
+    def _create_table(headers: tuple[str, ...], object_name: str) -> QTableWidget:
+        table = QTableWidget(0, len(headers))
+        table.setObjectName(object_name)
+        table.setHorizontalHeaderLabels(headers)
+        table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        table.setAlternatingRowColors(True)
+        table.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
+        table.setWordWrap(False)
+        table.verticalHeader().setVisible(False)
+        table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        return table
+
+    def _add_group(
+        self, table: QTableWidget, values: tuple[str, ...], *, amount_index: int
+    ) -> None:
+        row = table.rowCount()
+        table.insertRow(row)
+        for index, value in enumerate(values):
+            item = QTableWidgetItem(self._format_number(value) if index >= 2 else value)
+            item.setToolTip(f"Valor de origen: {value}")
+            if index >= 2:
+                item.setTextAlignment(
+                    Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+                )
+            table.setItem(row, index, item)
 
     def set_cutoff(self, cutoff: date) -> None:
         if self._cutoff == cutoff:
             return
         self._cutoff = cutoff
         self._table.setRowCount(0)
+        self._bands.setRowCount(0)
+        self._excluded.setRowCount(0)
         self._status.setText(f"Maestro {cutoff:%d/%m/%Y} · auditoría pendiente")
         self._certification.setText("Certificación de origen: pendiente")
 
@@ -125,6 +169,8 @@ class InvestmentMasterEvidencePanel(QWidget):
         if cutoff != self._cutoff:
             return
         self._table.setRowCount(0)
+        self._bands.setRowCount(0)
+        self._excluded.setRowCount(0)
         status = str(report.get("status", "UNAVAILABLE"))
         if status != "INVESTMENT_MASTER_SOURCE_INSPECTED_NOT_CERTIFIED":
             self._status.setText(f"Maestro {cutoff:%d/%m/%Y}: {status}. Sin datos reemplazados.")
@@ -170,10 +216,48 @@ class InvestmentMasterEvidencePanel(QWidget):
                     )
                 self._table.setItem(row, col, item)
 
+        bands = report.get("maturity_bands", [])
+        for record in bands if isinstance(bands, list) else []:
+            if not isinstance(record, dict):
+                continue
+            self._add_group(
+                self._bands,
+                (
+                    str(record["source_currency"]),
+                    f'{record["ordinal"]}. {record["band"]}',
+                    str(record["positions"]),
+                    str(record["source_principal"]),
+                ),
+                amount_index=3,
+            )
+        exclusions = report.get("maturity_exclusions", [])
+        explanations = {
+            "MISSING_NATIVE_CURRENCY": "Falta moneda original",
+            "UNSUPPORTED_CURRENCY": "Moneda sin catálogo confirmado",
+            "INVALID_OR_MISSING_SOURCE_PRINCIPAL": "Falta principal válido",
+            "MISSING_OR_PAST_MATURITY": "Sin vencimiento vigente",
+        }
+        for record in exclusions if isinstance(exclusions, list) else []:
+            if not isinstance(record, dict):
+                continue
+            code = str(record["reason"])
+            self._add_group(
+                self._excluded,
+                (
+                    str(record["source_currency"]),
+                    explanations.get(code, code),
+                    str(record["positions"]),
+                    str(record["valid_source_principal"]),
+                ),
+                amount_index=3,
+            )
+
     def _receive_error(self, cutoff: date, message: str) -> None:
         if cutoff != self._cutoff:
             return
         self._table.setRowCount(0)
+        self._bands.setRowCount(0)
+        self._excluded.setRowCount(0)
         self._status.setText(message)
         self._certification.setText("Certificación: bloqueada")
 
