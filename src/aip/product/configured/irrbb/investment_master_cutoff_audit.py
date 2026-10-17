@@ -11,6 +11,7 @@ from datetime import date
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
+from aip.domain.irrbb.services.time_bucket_service import IRRBBTimeBucketService
 from aip.product.configured.configuration.configured_source_config import FolderWatchSourceConfig
 from aip.product.configured.irrbb.investment_master_discovery import (
     resolve_exact_cutoff_master,
@@ -89,6 +90,13 @@ def inspect_investment_master_cutoff(
             "maturity_missing_or_past": 0,
         }
     )
+    bands: dict[tuple[str, int, str], dict[str, int | Decimal]] = defaultdict(
+        lambda: {"positions": 0, "source_principal": Decimal(0)}
+    )
+    excluded: dict[tuple[str, str], dict[str, int | Decimal]] = defaultdict(
+        lambda: {"positions": 0, "valid_source_principal": Decimal(0)}
+    )
+    eligible_amounts: dict[str, Decimal] = defaultdict(Decimal)
     for position in reading.normalized_positions:
         raw_currency = str(position.get("source_currency") or "").strip().upper()
         # The general portfolio reader may fill a missing currency with CRC.
@@ -113,6 +121,44 @@ def inspect_investment_master_cutoff(
         else:
             group["principal_records"] += 1
             group["source_principal"] += principal
+            eligible_amounts[currency] += principal
+
+        if raw_currency not in {"CRC", "USD"}:
+            reason = "MISSING_NATIVE_CURRENCY" if not raw_currency else "UNSUPPORTED_CURRENCY"
+        elif principal is None:
+            reason = "INVALID_OR_MISSING_SOURCE_PRINCIPAL"
+        elif not isinstance(maturity, date) or maturity < cutoff:
+            reason = "MISSING_OR_PAST_MATURITY"
+        else:
+            assignment = IRRBBTimeBucketService.assign(
+                valuation_date=cutoff, risk_date=maturity
+            )
+            assigned = bands[(currency, assignment.ordinal, assignment.label)]
+            assigned["positions"] += 1
+            assigned["source_principal"] += principal
+            continue
+
+        discarded = excluded[(currency, reason)]
+        discarded["positions"] += 1
+        if principal is not None and raw_currency in {"CRC", "USD"}:
+            discarded["valid_source_principal"] += principal
+
+    observed_amounts: dict[str, Decimal] = defaultdict(Decimal)
+    excluded_amounts: dict[str, Decimal] = defaultdict(Decimal)
+    for (currency, _ordinal, _label), band in bands.items():
+        observed_amounts[currency] += band["source_principal"]
+    for (currency, _reason), entry in excluded.items():
+        excluded_amounts[currency] += entry["valid_source_principal"]
+    if any(
+        observed_amounts[currency] + excluded_amounts[currency] != amount
+        for currency, amount in eligible_amounts.items()
+    ):
+        raise ValueError("Investment maturity principal does not reconcile by native currency")
+    if sum(band["positions"] for band in bands.values()) + sum(
+        item["positions"] for item in excluded.values()
+    ) != len(reading.normalized_positions):
+        raise ValueError("Investment maturity classification count is incomplete")
+
     return {
         "status": "INVESTMENT_MASTER_SOURCE_INSPECTED_NOT_CERTIFIED",
         "cutoff": cutoff.isoformat(),
@@ -128,6 +174,36 @@ def inspect_investment_master_cutoff(
         "blocking_requirements": list(certification.blocking_requirement_ids),
         "not_assessed_requirements": list(certification.not_assessed_requirement_ids),
         "certified": False,
+        "maturity_bands": [
+            {
+                "source_currency": currency,
+                "ordinal": ordinal,
+                "band": label,
+                "positions": int(group["positions"]),
+                "source_principal": str(group["source_principal"]),
+            }
+            for (currency, ordinal, label), group in sorted(bands.items())
+        ],
+        "maturity_exclusions": [
+            {
+                "source_currency": currency,
+                "reason": reason,
+                "positions": int(item["positions"]),
+                "valid_source_principal": str(item["valid_source_principal"]),
+            }
+            for (currency, reason), item in sorted(excluded.items())
+        ],
+        "maturity_reconciliation": [
+            {
+                "source_currency": currency,
+                "eligible_source_principal": str(eligible_amounts[currency]),
+                "observed_principal": str(observed_amounts[currency]),
+                "excluded_valid_principal": str(excluded_amounts[currency]),
+                "difference": "0",
+            }
+            for currency in sorted(eligible_amounts)
+        ],
+        "certified": False,
         "currencies": [
             {
                 "source_currency": currency,
@@ -141,7 +217,7 @@ def inspect_investment_master_cutoff(
             for currency, group in sorted(grouped.items())
         ],
         "note": (
-            "Observed institutional master positions, not cashflow schedules or 19-band GAP. "
+            "Observed institutional master maturity buckets, not cashflow schedules, repricing or 19-band GAP. "
             "No FX conversion. Source-column principal only; other balance fields are not substituted. "
             "The cutoff comes from the filename and is not independently certified."
         ),
