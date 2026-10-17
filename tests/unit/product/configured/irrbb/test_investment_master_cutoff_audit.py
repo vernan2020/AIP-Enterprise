@@ -32,9 +32,15 @@ def _root(tmp_path, *, day="30-09-2026"):
             "Tasa Nominal",
         )
     )
-    sheet.append(("CR00001", "Gobierno", "CON001", "CRC", date(2027, 1, 1), 125.75, 125.5, 126, "A", 0.05))
-    sheet.append(("CR00002", "Gobierno", "CON002", None, date(2028, 1, 1), 500, 500, 500, "B", 0.05))
-    sheet.append(("US00003", "Gobierno", "CON003", "USD", date(2027, 3, 1), 72.25, 72, 73, "C", 0.04))
+    sheet.append(
+        ("CR00001", "Gobierno", "CON001", "CRC", date(2027, 1, 1), 125.75, 125.5, 126, "A", 0.05)
+    )
+    sheet.append(
+        ("CR00002", "Gobierno", "CON002", None, date(2028, 1, 1), 500, 500, 500, "B", 0.05)
+    )
+    sheet.append(
+        ("US00003", "Gobierno", "CON003", "USD", date(2027, 3, 1), 72.25, 72, 73, "C", 0.04)
+    )
     workbook.save(folder / f"{day}.xlsx")
     return FolderWatchSourceConfig(
         enabled=True,
@@ -45,9 +51,7 @@ def _root(tmp_path, *, day="30-09-2026"):
 
 def test_real_reader_audits_exact_cutoff_and_does_not_assume_crc_for_blank_currency(tmp_path):
     folder = _root(tmp_path)
-    result = inspect_investment_master_cutoff(
-        cutoff=date(2026, 9, 30), folder=folder
-    )
+    result = inspect_investment_master_cutoff(cutoff=date(2026, 9, 30), folder=folder)
     assert result["status"] == "INVESTMENT_MASTER_SOURCE_INSPECTED_NOT_CERTIFIED"
     assert result["accepted_positions"] == 3
     assert result["certified"] is False
@@ -63,21 +67,15 @@ def test_real_reader_audits_exact_cutoff_and_does_not_assume_crc_for_blank_curre
 
 def test_master_never_falls_back_to_prior_cutoff(tmp_path):
     folder = _root(tmp_path, day="29-09-2026")
-    result = inspect_investment_master_cutoff(
-        cutoff=date(2026, 9, 30), folder=folder
-    )
+    result = inspect_investment_master_cutoff(cutoff=date(2026, 9, 30), folder=folder)
     assert result["status"] == "EXACT_CUTOFF_MASTER_NOT_FOUND"
     assert result["certified"] is False
 
 
 def test_master_blocks_ambiguous_same_day_files(tmp_path):
     folder = _root(tmp_path)
-    master = (
-        tmp_path / "Inversiones" / "2026" / "maestro" / "09" / "30-09-2026.xlsx"
-    )
+    master = tmp_path / "Inversiones" / "2026" / "maestro" / "09" / "30-09-2026.xlsx"
     master.with_suffix(".xls").write_bytes(b"not a trusted workbook")
-    result = inspect_investment_master_cutoff(
-        cutoff=date(2026, 9, 30), folder=folder
-    )
+    result = inspect_investment_master_cutoff(cutoff=date(2026, 9, 30), folder=folder)
     assert result["status"] == "AMBIGUOUS_MASTER_FILES"
     assert result["matching_master_count"] == 2
