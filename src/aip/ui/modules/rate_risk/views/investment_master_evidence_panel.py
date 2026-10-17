@@ -80,7 +80,8 @@ class InvestmentMasterEvidencePanel(QWidget):
             "No se usa el XML de inversiones para sustituir posiciones. "
             "Se muestran importes originales sin convertir moneda. "
             "La fecha del archivo, los saldos y los vencimientos NO certifican "
-            "cronogramas de cupones ni GAP RTILB de 19 bandas."
+            "cronogramas de cupones ni GAP RTILB de 19 bandas. Los importes "
+            "sin moneda nativa son valores numéricos sin unidad atribuible."
         )
         note.setWordWrap(True)
         layout.addWidget(note)
@@ -110,8 +111,20 @@ class InvestmentMasterEvidencePanel(QWidget):
             ("Moneda", "Motivo sin asignación", "Posiciones", "Principal fuente válido"),
             "rateRiskInvestmentMaturityExclusionsTable",
         )
+        self._reconciliation = self._create_table(
+            (
+                "Moneda de origen",
+                "Principal numérico original",
+                "Asignado a bandas",
+                "Excluido",
+                "Diferencia",
+                "Estado",
+            ),
+            "rateRiskInvestmentNativeCurrencyReconciliationTable",
+        )
         self._tabs.addTab(self._bands, "19 bandas · vencimiento")
         self._tabs.addTab(self._excluded, "Sin bandeo · motivo")
+        self._tabs.addTab(self._reconciliation, "Conciliación por moneda")
         layout.addWidget(self._tabs, 1)
 
     @staticmethod
@@ -128,13 +141,21 @@ class InvestmentMasterEvidencePanel(QWidget):
         table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         return table
 
-    def _add_group(self, table: QTableWidget, values: tuple[str, ...]) -> None:
+    def _add_group(
+        self,
+        table: QTableWidget,
+        values: tuple[str, ...],
+        *,
+        numeric_columns: tuple[int, ...] = (2, 3),
+    ) -> None:
         row = table.rowCount()
         table.insertRow(row)
         for index, value in enumerate(values):
-            item = QTableWidgetItem(self._format_number(value) if index >= 2 else value)
+            item = QTableWidgetItem(
+                self._format_number(value) if index in numeric_columns else value
+            )
             item.setToolTip(f"Valor de origen: {value}")
-            if index >= 2:
+            if index in numeric_columns:
                 item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             table.setItem(row, index, item)
 
@@ -145,6 +166,7 @@ class InvestmentMasterEvidencePanel(QWidget):
         self._table.setRowCount(0)
         self._bands.setRowCount(0)
         self._excluded.setRowCount(0)
+        self._reconciliation.setRowCount(0)
         self._status.setText(f"Maestro {cutoff:%d/%m/%Y} · auditoría pendiente")
         self._certification.setText("Certificación de origen: pendiente")
 
@@ -167,6 +189,7 @@ class InvestmentMasterEvidencePanel(QWidget):
         self._table.setRowCount(0)
         self._bands.setRowCount(0)
         self._excluded.setRowCount(0)
+        self._reconciliation.setRowCount(0)
         status = str(report.get("status", "UNAVAILABLE"))
         if status != "INVESTMENT_MASTER_SOURCE_INSPECTED_NOT_CERTIFIED":
             self._status.setText(f"Maestro {cutoff:%d/%m/%Y}: {status}. Sin datos reemplazados.")
@@ -246,12 +269,38 @@ class InvestmentMasterEvidencePanel(QWidget):
                 ),
             )
 
+        reconciliation = report.get("maturity_reconciliation", [])
+        for record in reconciliation if isinstance(reconciliation, list) else []:
+            if not isinstance(record, dict):
+                continue
+            status_code = str(record.get("status", "UNCONFIRMED"))
+            display_status = (
+                "Bloqueada: moneda sin equivalencia confirmada"
+                if status_code == "BLOCKED_NATIVE_CURRENCY"
+                else "Principal original conciliado"
+                if status_code == "RECONCILED_SOURCE_CURRENCY"
+                else status_code
+            )
+            self._add_group(
+                self._reconciliation,
+                (
+                    str(record["source_currency"]),
+                    str(record["eligible_source_principal"]),
+                    str(record["observed_principal"]),
+                    str(record["excluded_valid_principal"]),
+                    str(record["difference"]),
+                    display_status,
+                ),
+                numeric_columns=(1, 2, 3, 4),
+            )
+
     def _receive_error(self, cutoff: date, message: str) -> None:
         if cutoff != self._cutoff:
             return
         self._table.setRowCount(0)
         self._bands.setRowCount(0)
         self._excluded.setRowCount(0)
+        self._reconciliation.setRowCount(0)
         self._status.setText(message)
         self._certification.setText("Certificación: bloqueada")
 
