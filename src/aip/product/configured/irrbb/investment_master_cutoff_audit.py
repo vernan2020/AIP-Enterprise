@@ -65,9 +65,7 @@ def inspect_investment_master_cutoff(
             "certified": False,
         }
     source_reader = reader or InstitutionalPortfolioMasterReader()
-    reading = source_reader.read(
-        source_path, valuation_date_override=cutoff, diagnostic_mode=False
-    )
+    reading = source_reader.read(source_path, valuation_date_override=cutoff, diagnostic_mode=False)
     if reading.source_status == "UNAVAILABLE" or not reading.normalized_positions:
         return {
             "status": "INVESTMENT_MASTER_UNREADABLE",
