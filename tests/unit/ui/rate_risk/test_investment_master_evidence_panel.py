@@ -17,6 +17,23 @@ def _report() -> dict[str, object]:
         "certification_status": "BLOCKED",
         "blocking_requirements": ["INV-PRINCIPAL"],
         "not_assessed_requirements": ["INV-CASHFLOWS"],
+        "maturity_bands": [
+            {
+                "source_currency": "CRC",
+                "ordinal": 4,
+                "band": "3 a 6 meses",
+                "positions": 2,
+                "source_principal": "1234567.89",
+            }
+        ],
+        "maturity_exclusions": [
+            {
+                "source_currency": "(SIN MONEDA NATIVA)",
+                "reason": "MISSING_NATIVE_CURRENCY",
+                "positions": 1,
+                "valid_source_principal": "0",
+            }
+        ],
         "currencies": [
             {
                 "source_currency": "CRC",
@@ -50,6 +67,11 @@ def test_investment_panel_shows_real_source_currency_and_certification(qt_app):
         assert panel._table.item(0, 2).text() == "1.234.567,89"
         assert panel._table.item(1, 0).text() == "(SIN MONEDA NATIVA)"
         assert panel._table.item(1, 4).text() == "1"
+        assert panel._bands.rowCount() == 1
+        assert panel._bands.item(0, 1).text() == "4. 3 a 6 meses"
+        assert panel._bands.item(0, 3).text() == "1.234.567,89"
+        assert panel._excluded.rowCount() == 1
+        assert "Falta moneda" in panel._excluded.item(0, 1).text()
         assert "BLOCKED" in panel._certification.text()
         assert "Sin GAP" in panel._certification.text()
     finally:
@@ -64,6 +86,8 @@ def test_investment_panel_does_not_reuse_previous_cutoff(qt_app):
         panel.set_cutoff(date(2026, 10, 15))
         panel._receive_result(date(2026, 9, 30), _report())
         assert panel._table.rowCount() == 0
+        assert panel._bands.rowCount() == 0
+        assert panel._excluded.rowCount() == 0
         assert "15/10/2026" in panel._status.text()
     finally:
         panel.close()
