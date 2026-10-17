@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.qa.apply_preview_patch import UpdateRejected, install
+from scripts.qa.apply_preview_patch import UpdateRejected, install, validate_path
 from scripts.qa.build_preview_patch import allowed
 
 
@@ -98,7 +98,10 @@ def test_safe_source_is_packaged() -> None:
     assert allowed("src/aip/domain/model.py")
     assert allowed("scripts/qa/diagnose_official_feeds.py")
     assert allowed("run_aip_ux_preview.cmd")
+    assert allowed("DIAGNOSTICAR_RTILB_XML.cmd")
+    assert validate_path("DIAGNOSTICAR_RTILB_XML.cmd").as_posix() == ("DIAGNOSTICAR_RTILB_XML.cmd")
     assert not allowed("secrets.txt")
+    assert not allowed("DIAGNOSTICAR_NO_AUTORIZADO.cmd")
 
 
 def test_cmd_launcher_quotes_non_trailing_package_directory() -> None:
