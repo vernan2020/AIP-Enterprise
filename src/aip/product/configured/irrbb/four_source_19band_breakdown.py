@@ -105,6 +105,4 @@ def breakdown_four_sources(
         raise ValueError("Incomplete source-flow breakdown")
     if sum(row.flow_count for row in results) != len(original):
         raise ValueError("Source-flow breakdown counts do not reconcile")
-    return Contractual19BandBreakdown(
-        rows=tuple(results), cutoff=evidence.cutoff_date.isoformat()
-    )
+    return Contractual19BandBreakdown(rows=tuple(results), cutoff=evidence.cutoff_date.isoformat())
