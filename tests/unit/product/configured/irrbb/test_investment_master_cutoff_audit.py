@@ -63,6 +63,24 @@ def test_real_reader_audits_exact_cutoff_and_does_not_assume_crc_for_blank_curre
     assert amounts["(SIN MONEDA NATIVA)"]["source_principal"] == "0"
     assert "CON001" not in str(result)
     assert "CR00001" not in str(result)
+    bands = {row["source_currency"]: row for row in result["maturity_bands"]}
+    assert bands["CRC"]["source_principal"] == "125.75"
+    assert bands["USD"]["source_principal"] == "72.25"
+    assert bands["CRC"]["positions"] == 1
+    assert bands["CRC"]["ordinal"] == 4
+    exclusions = result["maturity_exclusions"]
+    assert exclusions == [
+        {
+            "source_currency": "(SIN MONEDA NATIVA)",
+            "reason": "MISSING_NATIVE_CURRENCY",
+            "positions": 1,
+            "valid_source_principal": "0",
+        }
+    ]
+    recon = {item["source_currency"]: item for item in result["maturity_reconciliation"]}
+    assert recon["CRC"]["observed_principal"] == "125.75"
+    assert recon["CRC"]["difference"] == "0"
+    assert recon["USD"]["excluded_valid_principal"] == "0"
 
 
 def test_master_never_falls_back_to_prior_cutoff(tmp_path):
@@ -79,3 +97,24 @@ def test_master_blocks_ambiguous_same_day_files(tmp_path):
     result = inspect_investment_master_cutoff(cutoff=date(2026, 9, 30), folder=folder)
     assert result["status"] == "AMBIGUOUS_MASTER_FILES"
     assert result["matching_master_count"] == 2
+
+
+def test_investment_maturity_invalid_date_excludes_valid_principal(tmp_path):
+    folder = _root(tmp_path)
+    filename = tmp_path / "Inversiones" / "2026" / "maestro" / "09" / "30-09-2026.xlsx"
+    from openpyxl import load_workbook
+
+    workbook = load_workbook(filename)
+    sheet = workbook.active
+    sheet.cell(row=2, column=5).value = date(2026, 9, 1)
+    workbook.save(filename)
+    report = inspect_investment_master_cutoff(cutoff=date(2026, 9, 30), folder=folder)
+    assert not any(row["source_currency"] == "CRC" for row in report["maturity_bands"])
+    excluded = [row for row in report["maturity_exclusions"] if row["source_currency"] == "CRC"]
+    assert len(excluded) == 1
+    assert excluded[0]["reason"] == "MISSING_OR_PAST_MATURITY"
+    assert excluded[0]["valid_source_principal"] == "125.75"
+    recon = [row for row in report["maturity_reconciliation"] if row["source_currency"] == "CRC"]
+    assert recon[0]["eligible_source_principal"] == "125.75"
+    assert recon[0]["observed_principal"] == "0"
+    assert recon[0]["excluded_valid_principal"] == "125.75"
