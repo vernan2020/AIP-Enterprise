@@ -97,9 +97,7 @@ class InvestmentMasterEvidencePanel(QWidget):
         self._table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self._table.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
         self._table.verticalHeader().setVisible(False)
-        self._table.horizontalHeader().setSectionResizeMode(
-            QHeaderView.ResizeMode.Stretch
-        )
+        self._table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         layout.addWidget(self._table, 1)
 
     def set_cutoff(self, cutoff: date) -> None:
@@ -129,9 +127,7 @@ class InvestmentMasterEvidencePanel(QWidget):
         self._table.setRowCount(0)
         status = str(report.get("status", "UNAVAILABLE"))
         if status != "INVESTMENT_MASTER_SOURCE_INSPECTED_NOT_CERTIFIED":
-            self._status.setText(
-                f"Maestro {cutoff:%d/%m/%Y}: {status}. Sin datos reemplazados."
-            )
+            self._status.setText(f"Maestro {cutoff:%d/%m/%Y}: {status}. Sin datos reemplazados.")
             self._certification.setText("Certificación: no disponible")
             return
 
