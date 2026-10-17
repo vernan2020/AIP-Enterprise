@@ -64,7 +64,8 @@ def inspect_investment_master_cutoff(
             "matching_master_count": candidates,
             "certified": False,
         }
-    reading = (reader or InstitutionalPortfolioMasterReader()).read(
+    source_reader = reader or InstitutionalPortfolioMasterReader()
+    reading = source_reader.read(
         source_path, valuation_date_override=cutoff, diagnostic_mode=False
     )
     if reading.source_status == "UNAVAILABLE" or not reading.normalized_positions:
@@ -77,6 +78,9 @@ def inspect_investment_master_cutoff(
     certification = InvestmentMasterSourceEvidenceAssessor.assess(reading)
     source_columns = reading.detected_column_mapping
     principal_header = source_columns.get("principal_balance")
+    # The reader stores source_values under *normalized* source headers, while
+    # detected_column_mapping preserves the workbook's original header spelling.
+    principal_key = source_reader._normalize_header(principal_header) if principal_header else None
     grouped: dict[str, dict[str, int | Decimal]] = defaultdict(
         lambda: {
             "positions": 0,
@@ -101,8 +105,8 @@ def inspect_investment_master_cutoff(
             group["maturity_missing_or_past"] += 1
         source_values = position.get("source_values")
         source_value = (
-            source_values.get(principal_header)
-            if principal_header and isinstance(source_values, dict)
+            source_values.get(principal_key)
+            if principal_key and isinstance(source_values, dict)
             else None
         )
         principal = _source_number(source_value)
