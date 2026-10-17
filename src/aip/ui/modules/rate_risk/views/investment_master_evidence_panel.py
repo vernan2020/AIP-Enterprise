@@ -135,9 +135,7 @@ class InvestmentMasterEvidencePanel(QWidget):
             item = QTableWidgetItem(self._format_number(value) if index >= 2 else value)
             item.setToolTip(f"Valor de origen: {value}")
             if index >= 2:
-                item.setTextAlignment(
-                    Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
-               )
+                item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             table.setItem(row, index, item)
 
     def set_cutoff(self, cutoff: date) -> None:
@@ -211,7 +209,7 @@ class InvestmentMasterEvidencePanel(QWidget):
                 if col:
                     item.setTextAlignment(
                         Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
-                   )
+                    )
                 self._table.setItem(row, col, item)
 
         bands = report.get("maturity_bands", [])
@@ -225,7 +223,7 @@ class InvestmentMasterEvidencePanel(QWidget):
                     f'{record["ordinal"]}. {record["band"]}',
                     str(record["positions"]),
                     str(record["source_principal"]),
-               ),
+                ),
             )
         exclusions = report.get("maturity_exclusions", [])
         explanations = {
@@ -245,7 +243,7 @@ class InvestmentMasterEvidencePanel(QWidget):
                     explanations.get(code, code),
                     str(record["positions"]),
                     str(record["valid_source_principal"]),
-               ),
+                ),
             )
 
     def _receive_error(self, cutoff: date, message: str) -> None:
