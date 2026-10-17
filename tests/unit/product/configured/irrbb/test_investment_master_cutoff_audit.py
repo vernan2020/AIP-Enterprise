@@ -114,7 +114,12 @@ def test_investment_maturity_invalid_date_excludes_valid_principal(tmp_path):
     sheet.cell(row=2, column=5).value = date(2026, 9, 1)
     workbook.save(filename)
     report = inspect_investment_master_cutoff(cutoff=date(2026, 9, 30), folder=folder)
-    assert not any(row["source_currency"] == "CRC" for row in report["maturity_bands"])
+    crc_bands = [
+        row for row in report["maturity_bands"] if row["source_currency"] == "CRC"
+    ]
+    assert len(crc_bands) == 19
+    assert all(row["source_principal"] == "0" for row in crc_bands)
+    assert all(row["positions"] == 0 for row in crc_bands)
     excluded = [row for row in report["maturity_exclusions"] if row["source_currency"] == "CRC"]
     assert len(excluded) == 1
     assert excluded[0]["reason"] == "MISSING_OR_PAST_MATURITY"
