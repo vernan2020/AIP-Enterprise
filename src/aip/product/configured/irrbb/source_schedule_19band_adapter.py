@@ -79,6 +79,8 @@ def bridge_certified_fixed_schedules(
         or certification.not_assessed_requirement_ids != certified.not_assessed_requirement_ids
     ):
         raise ValueError("Source certification is not READY or is inconsistent")
+    if certification.profile.effective_from > snapshot.cutoff_date:
+        raise ValueError("Future-dated source certification cannot govern this cutoff")
     if not snapshot.position_records or not snapshot.source_references:
         raise ValueError("Certified snapshot needs positions and source lineage")
     if snapshot.mapping_failures or snapshot.source_exclusions:
