@@ -130,9 +130,7 @@ def inspect_investment_master_cutoff(
         elif not isinstance(maturity, date) or maturity < cutoff:
             reason = "MISSING_OR_PAST_MATURITY"
         else:
-            assignment = IRRBBTimeBucketService.assign(
-                valuation_date=cutoff, risk_date=maturity
-            )
+            assignment = IRRBBTimeBucketService.assign(valuation_date=cutoff, risk_date=maturity)
             assigned = bands[(currency, assignment.ordinal, assignment.label)]
             assigned["positions"] += 1
             assigned["source_principal"] += principal
