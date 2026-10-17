@@ -49,7 +49,6 @@ def resolve_exact_cutoff_master(
     return "EXACT_CUTOFF_MASTER_FOUND_NOT_CERTIFIED", candidates[0], 1
 
 
-
 def find_exact_cutoff_master(root: str | None, pattern: str, cutoff: date) -> tuple[str, int]:
     """Preserve the existing safe, path-free discovery contract."""
     status, _path, count = resolve_exact_cutoff_master(root, pattern, cutoff)
