@@ -31,7 +31,11 @@ def _source_number(raw: object) -> Decimal | None:
         return None
     value = value.replace(" ", "")
     if "," in value and "." in value:
-        value = value.replace(".", "").replace(",", ".") if value.rfind(",") > value.rfind(".") else value.replace(",", "")
+        value = (
+            value.replace(".", "").replace(",", ".")
+            if value.rfind(",") > value.rfind(".")
+            else value.replace(",", "")
+        )
     elif "," in value:
         value = value.replace(",", ".")
     try:
