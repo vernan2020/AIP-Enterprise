@@ -496,3 +496,17 @@ def test_breakdown_refuses_unrecognized_cashflow_type():
     changed = replace(original, flows=(unknown, *original.flows[1:]))
     with pytest.raises(ValueError, match="Unsupported contractual flow type"):
         breakdown_four_sources(changed)
+
+
+def test_certification_cannot_be_applied_before_its_effective_date():
+    certification = _certification()
+    future = replace(
+        certification,
+        profile=replace(
+            certification.profile, effective_from=date(2027, 1, 1)
+        ),
+    )
+    with pytest.raises(ValueError, match="Future-dated source certification"):
+        bridge_certified_fixed_schedules(
+            snapshot=_snapshot(), certification=future
+        )
