@@ -203,7 +203,6 @@ def inspect_investment_master_cutoff(
             }
             for currency in sorted(eligible_amounts)
         ],
-        "certified": False,
         "currencies": [
             {
                 "source_currency": currency,
