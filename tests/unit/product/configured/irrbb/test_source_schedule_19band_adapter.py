@@ -30,6 +30,9 @@ from aip.domain.irrbb.models import (
     RateType,
 )
 from aip.domain.irrbb.sugef_standard_gap import SugefGapScheduleRecord
+from aip.product.configured.irrbb.four_source_19band_breakdown import (
+    breakdown_four_sources,
+)
 from aip.product.configured.irrbb.four_source_19band_consolidation import (
     SourceSchedulePerimeter,
     consolidate_four_certified_sources,
@@ -455,3 +458,41 @@ def test_four_source_consolidation_blocks_incomplete_source_certification():
     sources[2] = replace(source, certification=blocked)
     with pytest.raises(ValueError, match="not READY"):
         consolidate_four_certified_sources(cutoff_date=CUTOFF, sources=sources)
+
+
+def test_breakdown_separates_principal_interest_and_cumulative_by_currency():
+    sources = (
+        _perimeter_source(segment="CREDIT"),
+        _perimeter_source(segment="INVESTMENT", currency=Currency.USD),
+        _perimeter_source(segment="CAPTACIONES"),
+        _perimeter_source(segment="BORROWING", currency=Currency.USD),
+    )
+    consolidated = consolidate_four_certified_sources(
+        cutoff_date=CUTOFF, sources=sources
+    )
+    report = breakdown_four_sources(consolidated)
+    assert not report.publishable_regulatory_gap
+    assert report.status == "CONTRACTUAL_BREAKDOWN_ONLY_NOT_REGULATORY_GAP"
+    assert len(report.rows) == 38
+    assert sum(row.flow_count for row in report.rows) == 8
+    assert sum(row.principal_assets for row in report.rows) == Decimal("200.30")
+    assert sum(row.interest_assets for row in report.rows) == Decimal("5.00")
+    assert sum(row.principal_liabilities for row in report.rows) == Decimal("200.30")
+    assert sum(row.interest_liabilities for row in report.rows) == Decimal("5.00")
+    assert all(row.cumulative_net == 0 for row in report.rows)
+    assert set(row.currency for row in report.rows) == {Currency.CRC, Currency.USD}
+
+
+def test_breakdown_refuses_unrecognized_cashflow_type():
+    sources = tuple(
+        _perimeter_source(segment=segment)
+        for segment in ("CREDIT", "INVESTMENT", "CAPTACIONES", "BORROWING")
+    )
+    original = consolidate_four_certified_sources(cutoff_date=CUTOFF, sources=sources)
+    prior = original.flows[0]
+    unknown = replace(
+        prior, cashflow=replace(prior.cashflow, flow_type="ESTIMATED_OTHER")
+    )
+    changed = replace(original, flows=(unknown, *original.flows[1:]))
+    with pytest.raises(ValueError, match="Unsupported contractual flow type"):
+        breakdown_four_sources(changed)
