@@ -25,6 +25,7 @@ def test_global_suite_runs_each_configured_diagnostic_with_same_cutoff(
         "AGGREGATE_GAPS_INSPECTED",
         "AGGREGATE_EXPOSURE_AUDITED",
         "MATURITY_EVIDENCE_ONLY_NOT_IRRBB_GAP",
+        "INVESTMENT_MASTER_SOURCE_INSPECTED_NOT_CERTIFIED",
     )
     called = []
 
