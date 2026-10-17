@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from aip.domain.irrbb.models import BankingBookSide
+from aip.domain.irrbb.services.time_bucket_service import IRRBBTimeBucketService
 from aip.product.configured.irrbb.four_source_19band_consolidation import (
     ConsolidatedSourceEvidence,
 )
@@ -56,13 +57,9 @@ def breakdown_four_sources(
     for item in evidence.evidence.rows:
         if item.ordinal not in range(1, 20):
             raise ValueError("Noncanonical time band in consolidated evidence")
-    from aip.domain.irrbb.services.time_bucket_service import IRRBBTimeBucketService
-
     # The source aggregator has already checked duplicate events, direction and dates.
-    # Use the *original* flows to separate principal from interest without approximations.
-    from aip.product.configured.irrbb.contractual_cashflow_19band import EvidencedFlow
-
-    original: tuple[EvidencedFlow, ...] = evidence.flows
+    # Use the original flows to separate principal from interest without approximations.
+    original = evidence.flows
     for item in original:
         event = item.cashflow
         kind = event.flow_type.strip().upper()
