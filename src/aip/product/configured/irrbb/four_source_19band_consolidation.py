@@ -64,7 +64,12 @@ class ConsolidatedSourceEvidence:
     reconciliation: tuple[SourcePrincipalReconciliation, ...]
     positions_by_segment: tuple[tuple[str, int], ...]
     flows_by_segment: tuple[tuple[str, int], ...]
+    flows: tuple[EvidencedFlow, ...]
     status: str = "FOUR_SOURCE_FIXED_SCHEDULE_EVIDENCE_NOT_CERTIFIED_GAP"
+
+    def __post_init__(self) -> None:
+        if self.evidence.total_flows != len(self.flows):
+            raise ValueError("Consolidation must retain all traced source flows")
 
     @property
     def publishable_regulatory_gap(self) -> bool:
@@ -164,4 +169,5 @@ def consolidate_four_certified_sources(
         reconciliation=tuple(reconciliations),
         positions_by_segment=tuple(positions_by_segment),
         flows_by_segment=tuple(flows_by_segment),
+        flows=tuple(all_flows),
     )
