@@ -217,15 +217,20 @@ class InvestmentMasterEvidencePanel(QWidget):
             f"{len(pending)} pendientes. Sin GAP ni ΔEVE/ΔNII."
         )
         mappings = report.get("source_currency_mappings", [])
-        aliases = [
-            f'{item["source_currency"]} → {item["normalized_currency"]}: '
-            f'{item["positions"]} posiciones, sin conversión cambiaria'
-            for item in mappings
-            if isinstance(item, dict) and item.get("mapping_status") == "EXPLICIT_ALIAS"
-        ] if isinstance(mappings, list) else []
+        aliases = (
+            [
+                f'{item["source_currency"]} → {item["normalized_currency"]}: '
+                f'{item["positions"]} posiciones, sin conversión cambiaria'
+                for item in mappings
+                if isinstance(item, dict) and item.get("mapping_status") == "EXPLICIT_ALIAS"
+            ]
+            if isinstance(mappings, list)
+            else []
+        )
         self._currency_mapping.setText(
             "Equivalencias explícitas del Maestro: " + "; ".join(aliases)
-            if aliases else "Monedas del Maestro: sin equivalencias explícitas aplicadas"
+            if aliases
+            else "Monedas del Maestro: sin equivalencias explícitas aplicadas"
         )
         groups = report.get("currencies", [])
         for group in groups if isinstance(groups, list) else []:
