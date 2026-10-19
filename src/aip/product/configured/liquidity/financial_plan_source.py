@@ -36,8 +36,18 @@ _NONCASH = frozenset(
 )
 _PARAMETER_ONLY = frozenset({"Tasa EML"})
 _MONTHS = (
-    "ene-26", "feb-26", "mar-26", "abr-26", "may-26", "jun-26",
-    "jul-26", "ago-26", "sept-26", "oct-26", "nov-26", "dic-26",
+    "ene-26",
+    "feb-26",
+    "mar-26",
+    "abr-26",
+    "may-26",
+    "jun-26",
+    "jul-26",
+    "ago-26",
+    "sept-26",
+    "oct-26",
+    "nov-26",
+    "dic-26",
 )
 
 # Approved business-plan source IDs are classifications, NOT model approvals.
@@ -165,7 +175,10 @@ def read_financial_plan_assumptions(
         if headers[13] != "Total 2026":
             raise ValueError("Plan annual total column is missing")
         if tuple(matrix.cell(4, col).value for col in range(1, 5)) != (
-            "ID", "Actividad", "Rubro", "Supuesto / Driver"
+            "ID",
+            "Actividad",
+            "Rubro",
+            "Supuesto / Driver",
         ):
             raise ValueError("Plan matrix headers do not match configured layout")
 
@@ -250,7 +263,9 @@ def read_financial_plan_assumptions(
             annual = _decimal(calendar.cell(row, 14).value)
             if driver in _DIRECT_MONTHLY or driver in _NONCASH:
                 if annual is None or annual != sum(monthly_values, Decimal(0)):
-                    raise ValueError("Plan monthly calendar does not reconcile annual total: " + driver)
+                    raise ValueError(
+                        "Plan monthly calendar does not reconcile annual total: " + driver
+                    )
             elif annual is not None:
                 warnings.append("Parameter row contains an unexpected annual cash total")
         if set(_DIRECT_MONTHLY) - seen:

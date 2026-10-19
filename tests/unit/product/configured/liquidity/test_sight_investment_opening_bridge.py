@@ -35,8 +35,6 @@ def _record() -> VerifiedSightInvestmentBalance:
     )
 
 
-
-
 def _approved(proof: VerifiedSightInvestmentBalance) -> dict:
     original = InvestmentXMLRecordEvidence(
         source_reference=proof.source_record_reference,
@@ -74,6 +72,7 @@ def _approved(proof: VerifiedSightInvestmentBalance) -> dict:
         "opening_reconciliation_reference": "CONFIRMED-NOT-IN-ICL-OPENING",
     }
 
+
 def test_only_verified_available_funds_are_added_once_without_fx():
     proof = _record()
     result = add_verified_sight_investments_to_opening(
@@ -82,9 +81,7 @@ def test_only_verified_available_funds_are_added_once_without_fx():
         source_accounts=[proof],
         **_approved(proof),
     )
-    assert dict(result.opening_by_currency) == {
-        "CRC": Decimal("2000"), "USD": Decimal("70")
-    }
+    assert dict(result.opening_by_currency) == {"CRC": Decimal("2000"), "USD": Decimal("70")}
     assert result.included_xml_accounts == 1
     assert dict(result.added_by_currency)["USD"] == Decimal("60")
     assert result.status == "OPENING_XML_SIGHT_FUNDS_VERIFIED_NO_FUTURE_CASHFLOW"
@@ -94,13 +91,15 @@ def test_blocks_premature_available_dates_and_unreconciled_duplicates():
     proof = _record()
     with pytest.raises(ValueError, match="withdrawal"):
         add_verified_sight_investments_to_opening(
-            cutoff=CUTOFF, existing_opening={},
+            cutoff=CUTOFF,
+            existing_opening={},
             source_accounts=[replace(proof, withdrawal_available_date=CUTOFF + timedelta(days=1))],
             **_approved(proof),
         )
     with pytest.raises(ValueError, match="duplicated"):
         add_verified_sight_investments_to_opening(
-            cutoff=CUTOFF, existing_opening={},
+            cutoff=CUTOFF,
+            existing_opening={},
             source_accounts=[proof],
             existing_source_references=frozenset({proof.source_record_reference}),
             **_approved(proof),
@@ -133,36 +132,39 @@ def test_sight_opening_rejects_non_audited_unclassified_or_overlapping_xml():
     approved = _approved(proof)
     with pytest.raises(ValueError, match="native-currency"):
         add_verified_sight_investments_to_opening(
-            cutoff=CUTOFF, existing_opening={}, source_accounts=[proof],
+            cutoff=CUTOFF,
+            existing_opening={},
+            source_accounts=[proof],
             **{**approved, "approved_currency_mapping": {"2": "CRC"}},
         )
     with pytest.raises(ValueError, match="audited XML"):
         add_verified_sight_investments_to_opening(
-            cutoff=CUTOFF, existing_opening={},
+            cutoff=CUTOFF,
+            existing_opening={},
             source_accounts=[replace(proof, xml_principal=Decimal("110"))],
             **approved,
         )
     audit = approved["source_audit"]
     unresolved = replace(
         audit,
-        records=(replace(
-            audit.records[0], master_reconciliation="POSSIBLE_MASTER_OVERLAP_ISIN"
-        ),),
+        records=(replace(audit.records[0], master_reconciliation="POSSIBLE_MASTER_OVERLAP_ISIN"),),
     )
     with pytest.raises(ValueError, match="unresolved overlap"):
         add_verified_sight_investments_to_opening(
-            cutoff=CUTOFF, existing_opening={}, source_accounts=[proof],
+            cutoff=CUTOFF,
+            existing_opening={},
+            source_accounts=[proof],
             **{**approved, "source_audit": unresolved},
         )
     unapproved = replace(
         audit,
-        records=(replace(
-            audit.records[0], classification="NOT_APPROVED_FOR_CURRENT_ACCOUNT"
-        ),),
+        records=(replace(audit.records[0], classification="NOT_APPROVED_FOR_CURRENT_ACCOUNT"),),
     )
     with pytest.raises(ValueError, match="not approved"):
         add_verified_sight_investments_to_opening(
-            cutoff=CUTOFF, existing_opening={}, source_accounts=[proof],
+            cutoff=CUTOFF,
+            existing_opening={},
+            source_accounts=[proof],
             **{**approved, "source_audit": unapproved},
         )
 
@@ -172,13 +174,18 @@ def test_sight_opening_blocks_missing_opening_reconciliation_and_duplicate_xml_i
     approved = _approved(proof)
     with pytest.raises(ValueError, match="reconciliation"):
         add_verified_sight_investments_to_opening(
-            cutoff=CUTOFF, existing_opening={}, source_accounts=[proof],
+            cutoff=CUTOFF,
+            existing_opening={},
+            source_accounts=[proof],
             **{**approved, "opening_reconciliation_reference": ""},
         )
     with pytest.raises(ValueError, match="Repeated XML"):
         add_verified_sight_investments_to_opening(
-            cutoff=CUTOFF, existing_opening={}, source_accounts=[proof],
-            **{**approved, "source_audit": replace(
-                approved["source_audit"], repeated_record_ids=1
-            )},
+            cutoff=CUTOFF,
+            existing_opening={},
+            source_accounts=[proof],
+            **{
+                **approved,
+                "source_audit": replace(approved["source_audit"], repeated_record_ids=1),
+            },
         )

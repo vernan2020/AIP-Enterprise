@@ -126,9 +126,7 @@ def calculate_funding_headroom(
                 projected_liquidity_before_financing=initial,
                 uncovered_shortfall=shortage,
                 shortfall_after_potential_draw=(
-                    max(Decimal(0), shortage - available)
-                    if shortage is not None
-                    else None
+                    max(Decimal(0), shortage - available) if shortage is not None else None
                 ),
             )
         )

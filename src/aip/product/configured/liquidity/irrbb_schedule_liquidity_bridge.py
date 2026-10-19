@@ -50,10 +50,16 @@ def adapt_certified_irrbb_schedule(
         )
         if (
             area == LiquidityBalanceArea.ASSET
-            and (source.side != BankingBookSide.ASSET or source.direction != CashFlowDirection.RECEIVABLE)
+            and (
+                source.side != BankingBookSide.ASSET
+                or source.direction != CashFlowDirection.RECEIVABLE
+            )
         ) or (
             area == LiquidityBalanceArea.LIABILITY
-            and (source.side != BankingBookSide.LIABILITY or source.direction != CashFlowDirection.PAYABLE)
+            and (
+                source.side != BankingBookSide.LIABILITY
+                or source.direction != CashFlowDirection.PAYABLE
+            )
         ):
             raise ValueError("Inconsistent contractual source and liquidity direction")
         events.append(

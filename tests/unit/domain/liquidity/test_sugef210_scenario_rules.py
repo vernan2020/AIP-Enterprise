@@ -62,7 +62,9 @@ def test_governed_scenario_preserves_currency_and_feeds_cashflow_ladder():
     assert result.flows[0].amount == Decimal("12.0000")
     assert result.flows[0].currency == "CRC"
     ladder = project_sugef210(
-        cutoff=CUTOFF, scenario="COMBINED", flows=result.flows,
+        cutoff=CUTOFF,
+        scenario="COMBINED",
+        flows=result.flows,
         opening_liquidity={"CRC": Decimal("80")},
         assumptions=result.assumptions,
     )
@@ -79,26 +81,34 @@ def test_unapproved_rule_is_blocked_not_silently_activated():
 def test_scenario_cannot_reuse_missing_cutoff_or_already_scheduled_exposure():
     with pytest.raises(ValueError, match="already included"):
         generate_approved_scenario_events(
-            cutoff=CUTOFF, scenario="COMBINED",
-            exposures=[_balance()], rules=[_rule()],
+            cutoff=CUTOFF,
+            scenario="COMBINED",
+            exposures=[_balance()],
+            rules=[_rule()],
             contractually_scheduled_exposure_refs=frozenset({_balance().reference}),
         )
     with pytest.raises(ValueError, match="cutoff"):
         generate_approved_scenario_events(
-            cutoff=CUTOFF, scenario="COMBINED",
+            cutoff=CUTOFF,
+            scenario="COMBINED",
             exposures=[replace(_balance(), source_cutoff=date(2026, 8, 31))],
             rules=[_rule()],
         )
     with pytest.raises(ValueError, match="different scenario"):
         generate_approved_scenario_events(
-            cutoff=CUTOFF, scenario="SYSTEMIC", exposures=[_balance()], rules=[_rule()],
+            cutoff=CUTOFF,
+            scenario="SYSTEMIC",
+            exposures=[_balance()],
+            rules=[_rule()],
         )
 
 
 def test_zero_behavioral_factor_emits_no_fake_cashflow():
     result = generate_approved_scenario_events(
-        cutoff=CUTOFF, scenario="BASE",
-        exposures=[_balance()], rules=[replace(_rule("BASE"), factor=Decimal(0))],
+        cutoff=CUTOFF,
+        scenario="BASE",
+        exposures=[_balance()],
+        rules=[replace(_rule("BASE"), factor=Decimal(0))],
     )
     assert result.flows == ()
     assert len(result.assumptions) == 1

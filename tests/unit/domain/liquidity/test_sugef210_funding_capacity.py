@@ -27,9 +27,12 @@ def _projection():
         scenario="BASE",
         flows=[
             LiquidityProjectionFlow(
-                reference="DEPOSIT-PAYMENT", source="CERTIFIED-DEPOSIT-LEDGER",
-                currency="CRC", payment_date=CUTOFF + timedelta(days=1),
-                amount=Decimal("80"), side=LiquidityFlowSide.OUTFLOW,
+                reference="DEPOSIT-PAYMENT",
+                source="CERTIFIED-DEPOSIT-LEDGER",
+                currency="CRC",
+                payment_date=CUTOFF + timedelta(days=1),
+                amount=Decimal("80"),
+                side=LiquidityFlowSide.OUTFLOW,
                 area=LiquidityBalanceArea.LIABILITY,
                 evidence=LiquidityEvidence.CONTRACTUAL,
             )
@@ -41,8 +44,11 @@ def _projection():
 
 def _facility():
     return ConfirmedFundingFacility(
-        reference="LINE-01", currency="CRC", available_net_amount=Decimal("40"),
-        evidence_cutoff=CUTOFF, drawable_from=CUTOFF,
+        reference="LINE-01",
+        currency="CRC",
+        available_net_amount=Decimal("40"),
+        evidence_cutoff=CUTOFF,
+        drawable_from=CUTOFF,
         expires_on=CUTOFF + timedelta(days=365),
         financing_approval="ALCO-FINANCING-LIMIT-2026-09",
         source_reference="FINANCING-CONTRACT-2026",

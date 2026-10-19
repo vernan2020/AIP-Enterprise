@@ -56,11 +56,18 @@ class ApprovedFinancialPlanAllocation:
     explicitly_approved: bool
 
     def __post_init__(self) -> None:
-        if not all((
-            self.driver, self.source_sha256, self.assumption_id,
-            self.approval_reference, self.plan_document_version, self.rationale,
-            self.treasury_reconciliation_reference, self.nonduplication_reference,
-        )):
+        if not all(
+            (
+                self.driver,
+                self.source_sha256,
+                self.assumption_id,
+                self.approval_reference,
+                self.plan_document_version,
+                self.rationale,
+                self.treasury_reconciliation_reference,
+                self.nonduplication_reference,
+            )
+        ):
             raise ValueError("Plan allocation lacks institutional audit evidence")
         if not self.explicitly_approved:
             raise ValueError("Financial plan allocation is pending institutional approval")
@@ -80,9 +87,12 @@ class ApprovedFinancialPlanAllocation:
         ):
             raise ValueError("Plan allocation amount or reconciled overlap is invalid")
         if self.currency == "USD":
-            if (self.fx_crc_per_usd is None or
-                not self.fx_crc_per_usd.is_finite() or
-                self.fx_crc_per_usd <= 0 or not self.fx_reference):
+            if (
+                self.fx_crc_per_usd is None
+                or not self.fx_crc_per_usd.is_finite()
+                or self.fx_crc_per_usd <= 0
+                or not self.fx_reference
+            ):
                 raise ValueError("USD plan allocation needs approved CRC FX conversion evidence")
         elif self.fx_crc_per_usd is not None:
             raise ValueError("CRC plan event must not embed a currency conversion")
@@ -116,7 +126,8 @@ def build_approved_financial_plan_events(
     if scenario not in _SCENARIOS:
         raise ValueError("Unsupported scenario")
     candidates = {
-        _plan_key(row): row for row in audit.monthly_inputs
+        _plan_key(row): row
+        for row in audit.monthly_inputs
         if row.classification == "PLANNED_POTENTIAL_CASHFLOW"
     }
     covered_crc: dict[tuple[str, int, int], Decimal] = defaultdict(Decimal)
@@ -129,7 +140,10 @@ def build_approved_financial_plan_events(
         source_row = candidates.get(key)
         if source_row is None:
             raise ValueError("Plan driver is noncash, unsupported or absent from monthly calendar")
-        if source_row.source_sha256 != approval.source_sha256 or audit.sha256 != approval.source_sha256:
+        if (
+            source_row.source_sha256 != approval.source_sha256
+            or audit.sha256 != approval.source_sha256
+        ):
             raise ValueError("Plan source hash changed after institutional approval")
         if approval.scenario != scenario:
             raise ValueError("Planning approval belongs to a different scenario")
@@ -164,7 +178,9 @@ def build_approved_financial_plan_events(
         gross_equivalent = approval.incremental_native_amount * fx
         covered_crc[key] += gross_equivalent + approval.overlap_crc_amount
         if covered_crc[key] > source_row.reported_value * _MILLION:
-            raise ValueError("Allocated plan and overlapping contract exceed monthly planning budget")
+            raise ValueError(
+                "Allocated plan and overlapping contract exceed monthly planning budget"
+            )
         events.append(
             LiquidityProjectionFlow(
                 reference=(
@@ -186,6 +202,9 @@ def build_approved_financial_plan_events(
             )
         )
     return ApprovedFinancialPlanEvents(
-        cutoff=cutoff, scenario=scenario, events=tuple(events),
-        assumptions=tuple(assumptions.values()), source_sha256=audit.sha256,
+        cutoff=cutoff,
+        scenario=scenario,
+        events=tuple(events),
+        assumptions=tuple(assumptions.values()),
+        source_sha256=audit.sha256,
     )

@@ -91,7 +91,8 @@ def add_verified_sight_investments_to_opening(
         if source_audit.cutoff != cutoff:
             raise ValueError("XML audit cutoff differs from opening cutoff")
         if (source_audit.xml_month.year, source_audit.xml_month.month) != (
-            cutoff.year, cutoff.month
+            cutoff.year,
+            cutoff.month,
         ):
             raise ValueError("XML audit reporting month differs from opening cutoff")
         if source_audit.repeated_record_ids:
@@ -130,14 +131,17 @@ def add_verified_sight_investments_to_opening(
         if origin.classification != "APPROVED_CURRENT_ACCOUNT_CANDIDATE":
             raise ValueError("XML accounting account is not approved for sight liquidity")
         if origin.master_reconciliation not in {
-            "UNMATCHED_ID_NOT_PROOF_OF_NEW_BALANCE", "NO_IDENTIFIER_UNRESOLVED"
+            "UNMATCHED_ID_NOT_PROOF_OF_NEW_BALANCE",
+            "NO_IDENTIFIER_UNRESOLVED",
         }:
             raise ValueError("XML record has unresolved overlap or Master not loaded")
 
         if entry.cutoff != cutoff:
             raise ValueError("Investment account cutoff differs from liquidity projection")
         if entry.withdrawal_available_date > cutoff:
-            raise ValueError("Current account funds cannot be counted before withdrawal availability")
+            raise ValueError(
+                "Current account funds cannot be counted before withdrawal availability"
+            )
         if entry.source_record_reference in seen:
             raise ValueError("Investment account is duplicated in Master or opening liquidity")
         seen.add(entry.source_record_reference)

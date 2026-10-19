@@ -69,8 +69,13 @@ class LiquidityAssumption:
 
     def __post_init__(self) -> None:
         if not all(
-            (self.assumption_id, self.rationale, self.approval_reference,
-             self.source_reference, self.scenario)
+            (
+                self.assumption_id,
+                self.rationale,
+                self.approval_reference,
+                self.source_reference,
+                self.scenario,
+            )
         ):
             raise ValueError("Assumption requires rationale, approval, source and scenario")
         if self.valid_from > self.valid_to:
@@ -135,9 +140,7 @@ def sugef210_windows(cutoff: date) -> tuple[LiquidityWindow, ...]:
     for day in range(1, 8):
         bands.append((f"D{day:02}", f"Día {day}", day, day, "DAILY"))
     for first, last in ((8, 14), (15, 21), (22, 28), (29, 30)):
-        bands.append(
-            (f"W{first:02}_{last:02}", f"Días {first}–{last}", first, last, "WEEKLY")
-        )
+        bands.append((f"W{first:02}_{last:02}", f"Días {first}–{last}", first, last, "WEEKLY"))
     bands.extend(
         (
             ("M01", "Días 31–60", 31, 60, "MONTHLY"),
@@ -212,8 +215,12 @@ def project_sugef210(
     coverage = set(source_areas_covered)
     if not coverage.issubset(set(LiquidityBalanceArea)):
         raise ValueError("Unknown source coverage area")
-    required = {LiquidityBalanceArea.ASSET, LiquidityBalanceArea.LIABILITY,
-                LiquidityBalanceArea.OFF_BALANCE, LiquidityBalanceArea.BUSINESS_EVENT}
+    required = {
+        LiquidityBalanceArea.ASSET,
+        LiquidityBalanceArea.LIABILITY,
+        LiquidityBalanceArea.OFF_BALANCE,
+        LiquidityBalanceArea.BUSINESS_EVENT,
+    }
     windows = sugef210_windows(cutoff)
     horizon_end = windows[-1].end
     projected: list[LiquidityProjectionRow] = []
@@ -223,14 +230,16 @@ def project_sugef210(
         running = Decimal(0)
         for window in windows:
             included = tuple(
-                e for e in events
+                e
+                for e in events
                 if e.currency == currency and window.start <= e.payment_date <= window.end
             )
+
             def subtotal(area: LiquidityBalanceArea, side: LiquidityFlowSide) -> Decimal:
                 return sum(
-                    (e.amount for e in included if e.area == area and e.side == side),
-                    Decimal(0)
+                    (e.amount for e in included if e.area == area and e.side == side), Decimal(0)
                 )
+
             asset_in = subtotal(LiquidityBalanceArea.ASSET, LiquidityFlowSide.INFLOW)
             asset_out = subtotal(LiquidityBalanceArea.ASSET, LiquidityFlowSide.OUTFLOW)
             liability_in = subtotal(LiquidityBalanceArea.LIABILITY, LiquidityFlowSide.INFLOW)
@@ -240,25 +249,36 @@ def project_sugef210(
             business_in = subtotal(LiquidityBalanceArea.BUSINESS_EVENT, LiquidityFlowSide.INFLOW)
             business_out = subtotal(LiquidityBalanceArea.BUSINESS_EVENT, LiquidityFlowSide.OUTFLOW)
             net = (
-                asset_in + liability_in + off_in + business_in
-                - asset_out - liability_out - off_out - business_out
+                asset_in
+                + liability_in
+                + off_in
+                + business_in
+                - asset_out
+                - liability_out
+                - off_out
+                - business_out
             )
             running += net
             initial = opening.get(currency)
             projected.append(
                 LiquidityProjectionRow(
-                    window=window, currency=currency,
-                    asset_inflows=asset_in, liability_outflows=liability_out,
-                    asset_outflows=asset_out, liability_inflows=liability_in,
-                    other_inflows=business_in, other_outflows=business_out,
-                    off_balance_inflows=off_in, off_balance_outflows=off_out,
-                    net_flow=net, accumulated_flow=running,
+                    window=window,
+                    currency=currency,
+                    asset_inflows=asset_in,
+                    liability_outflows=liability_out,
+                    asset_outflows=asset_out,
+                    liability_inflows=liability_in,
+                    other_inflows=business_in,
+                    other_outflows=business_out,
+                    off_balance_inflows=off_in,
+                    off_balance_outflows=off_out,
+                    net_flow=net,
+                    accumulated_flow=running,
                     opening_liquidity=initial,
                     projected_liquidity=initial + running if initial is not None else None,
                     event_count=len(included),
                     financing_need=(
-                        max(Decimal(0), -(initial + running))
-                        if initial is not None else None
+                        max(Decimal(0), -(initial + running)) if initial is not None else None
                     ),
                 )
             )
@@ -270,20 +290,27 @@ def project_sugef210(
     opening_proofs = opening_certification_references or {}
     unattested = tuple(
         sorted(
-            area.value for area in required
+            area.value
+            for area in required
             if area in coverage and not str(area_proofs.get(area) or "").strip()
         )
     )
     unattested_opening = tuple(
-        currency for currency in ("CRC", "USD")
+        currency
+        for currency in ("CRC", "USD")
         if currency in opening and not str(opening_proofs.get(currency) or "").strip()
     )
     complete = not (missing or missing_opening or unattested or unattested_opening)
     return LiquidityProjectionResult(
-        cutoff=cutoff, scenario=scenario, windows=windows, rows=tuple(projected),
+        cutoff=cutoff,
+        scenario=scenario,
+        windows=windows,
+        rows=tuple(projected),
         status="COMPLETE_GOVERNED_PROJECTION" if complete else "PARTIAL_EVIDENCE_NOT_CERTIFIED",
-        source_flow_count=len(events), missing_source_areas=missing,
-        opening_liquidity_missing=missing_opening, assumption_ids=tuple(sorted(policies)),
+        source_flow_count=len(events),
+        missing_source_areas=missing,
+        opening_liquidity_missing=missing_opening,
+        assumption_ids=tuple(sorted(policies)),
         excluded_out_of_horizon=outside,
         off_balance_source_covered=LiquidityBalanceArea.OFF_BALANCE in coverage,
         unattested_areas=unattested,

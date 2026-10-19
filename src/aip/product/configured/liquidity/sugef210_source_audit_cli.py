@@ -92,9 +92,12 @@ def inspect_xml_investment_source(cutoff: date) -> dict[str, object]:
                         "currency": currency,
                         "principal_maturing": str(
                             sum(
-                                (flow.amount for flow in principal.flows
-                                 if flow.currency == currency
-                                 and window.start <= flow.payment_date <= window.end),
+                                (
+                                    flow.amount
+                                    for flow in principal.flows
+                                    if flow.currency == currency
+                                    and window.start <= flow.payment_date <= window.end
+                                ),
                                 0,
                             )
                         ),

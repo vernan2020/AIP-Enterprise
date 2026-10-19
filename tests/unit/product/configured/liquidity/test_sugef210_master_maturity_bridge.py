@@ -114,7 +114,9 @@ def test_original_master_reader_normalized_keys_are_respected():
         "fecha vencimiento": "2026-10-31",
     }
     result = build_master_principal_evidence(
-        cutoff=CUTOFF, master_sha256=SHA, positions=(row,),
+        cutoff=CUTOFF,
+        master_sha256=SHA,
+        positions=(row,),
         principal_source_header="Saldo Principal",
         maturity_source_header="Fecha Vencimiento",
     )
@@ -131,7 +133,9 @@ def test_header_accents_do_not_discard_original_contractual_cells():
         "fecha vencimiento": "2026-10-31",
     }
     result = build_master_principal_evidence(
-        cutoff=CUTOFF, master_sha256=SHA, positions=(row,),
+        cutoff=CUTOFF,
+        master_sha256=SHA,
+        positions=(row,),
         principal_source_header="SÁLDO PRÍNCIPAL",
         maturity_source_header="Fécha Véncimiento",
     )

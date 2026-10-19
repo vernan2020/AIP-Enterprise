@@ -28,10 +28,15 @@ class _Reader:
         assert key == "INVESTMENT"
         assert cutoff_date == CUTOFF
         return XMLConfiaResolvedSource(
-            key=key, path=self.path,
+            key=key,
+            path=self.path,
             header=XMLConfiaHeader(
-                clase_dato="INV", archivo="INVESTMENT", periodo=date(2026, 9, 1),
-                id_entidad="3004045138", tipo_carga="1", tipo_moneda="1"
+                clase_dato="INV",
+                archivo="INVESTMENT",
+                periodo=date(2026, 9, 1),
+                id_entidad="3004045138",
+                tipo_carga="1",
+                tipo_moneda="1",
             ),
         )
 
@@ -46,7 +51,8 @@ class _Reader:
 
 def _record(identity: str, account: str, currency: str, principal: str, isin: str = ""):
     return XMLConfiaRecord(
-        record_id=identity, action="1",
+        record_id=identity,
+        action="1",
         values={
             "CuentaContablePrincipal": account,
             "TipoMonedaValorFacial": currency,
@@ -66,7 +72,8 @@ def test_xml_account_inventory_does_not_assume_demand_or_count_matched_master(tm
         tmp_path / "Crediticio_InversionesActivas.xml",
     )
     result = audit_investment_current_accounts(
-        reader=r, cutoff=CUTOFF,
+        reader=r,
+        cutoff=CUTOFF,
         policy=InvestmentCurrentAccountPolicy(
             approved_account_codes=frozenset({"C100"}),
             approval_reference="ALCO-2026-09-ACCOUNT-CLASSIFICATION",
@@ -88,7 +95,8 @@ def test_xml_account_inventory_does_not_assume_demand_or_count_matched_master(tm
 def test_xml_accounts_require_approved_code_and_do_not_infer_cash(tmp_path):
     reader = _Reader((_record("1", "102030", "1", "1000"),), tmp_path / "inv.xml")
     result = audit_investment_current_accounts(
-        reader=reader, cutoff=CUTOFF,
+        reader=reader,
+        cutoff=CUTOFF,
         policy=InvestmentCurrentAccountPolicy(
             approved_account_codes=frozenset(), approval_reference=""
         ),
@@ -107,7 +115,8 @@ def test_xml_invalid_principal_is_audited_without_creating_liquidity(tmp_path):
         tmp_path / "inv.xml",
     )
     result = audit_investment_current_accounts(
-        reader=r, cutoff=CUTOFF,
+        reader=r,
+        cutoff=CUTOFF,
         policy=InvestmentCurrentAccountPolicy(frozenset(), ""),
     )
     assert result.invalid_source_principal == 2
@@ -118,7 +127,8 @@ def test_xml_invalid_principal_is_audited_without_creating_liquidity(tmp_path):
 def test_each_xml_record_retains_original_account_instrument_and_reconciliation(tmp_path):
     records = (
         XMLConfiaRecord(
-            record_id="X1", action="1",
+            record_id="X1",
+            action="1",
             values={
                 "CuentaContablePrincipal": "CC-001",
                 "TipoMonedaValorFacial": "2",
@@ -129,7 +139,8 @@ def test_each_xml_record_retains_original_account_instrument_and_reconciliation(
             },
         ),
         XMLConfiaRecord(
-            record_id="X1", action="1",
+            record_id="X1",
+            action="1",
             values={
                 "CuentaContablePrincipal": "CC-001",
                 "TipoMonedaValorFacial": "2",
@@ -173,7 +184,8 @@ def test_missing_master_does_not_infer_xml_investments_outside_master(tmp_path):
 
 def test_confia_no_isin_sentinel_is_not_a_security_match(tmp_path):
     real_shape = XMLConfiaRecord(
-        record_id="7", action="insertar",
+        record_id="7",
+        action="insertar",
         values={
             "CuentaContablePrincipal": "11302100",
             "TipoMonedaValorFacial": "1",

@@ -67,8 +67,12 @@ class ApprovedScenarioRule:
             raise ValueError("Unsupported liquidity scenario")
         if not all(
             (
-                self.reference, self.exposure_category, self.rationale,
-                self.approval_reference, self.source_reference, self.version,
+                self.reference,
+                self.exposure_category,
+                self.rationale,
+                self.approval_reference,
+                self.source_reference,
+                self.version,
             )
         ):
             raise ValueError("Scenario rule requires full auditable provenance")
@@ -82,7 +86,10 @@ class ApprovedScenarioRule:
             raise ValueError("Scenario approval or validity chronology is inconsistent")
         if self.area == LiquidityBalanceArea.ASSET and self.flow_side != LiquidityFlowSide.INFLOW:
             raise ValueError("Recovery rules must record asset inflows")
-        if self.area == LiquidityBalanceArea.LIABILITY and self.flow_side != LiquidityFlowSide.OUTFLOW:
+        if (
+            self.area == LiquidityBalanceArea.LIABILITY
+            and self.flow_side != LiquidityFlowSide.OUTFLOW
+        ):
             raise ValueError("Liability runoff must record outflows")
 
 
@@ -168,6 +175,9 @@ def generate_approved_scenario_events(
                 )
             )
     return ScenarioGeneratedEvidence(
-        cutoff=cutoff, scenario=scenario, flows=tuple(flows),
-        assumptions=tuple(policies), matched_exposure_count=len(matched),
+        cutoff=cutoff,
+        scenario=scenario,
+        flows=tuple(flows),
+        assumptions=tuple(policies),
+        matched_exposure_count=len(matched),
     )

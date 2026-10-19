@@ -65,9 +65,7 @@ class _SUGEF210FinancialPlanWorker(QThread):
 
     def run(self) -> None:
         try:
-            evidence = read_financial_plan_assumptions(
-                self._source_path, cutoff=self._cutoff
-            )
+            evidence = read_financial_plan_assumptions(self._source_path, cutoff=self._cutoff)
         except Exception as exc:
             self.failed.emit(type(exc).__name__)
             return
@@ -78,21 +76,47 @@ class SUGEF210ProjectionPanel(QWidget):
     """Liquidity horizon framework + REAL source coverage, no DEMO waterfall."""
 
     _PLAN_HEADERS = (
-        "Mes", "Supuesto / Driver", "Valor 2026 (¢ millones ref.)",
-        "Área", "Sentido", "Tratamiento", "Celda fuente",
+        "Mes",
+        "Supuesto / Driver",
+        "Valor 2026 (¢ millones ref.)",
+        "Área",
+        "Sentido",
+        "Tratamiento",
+        "Celda fuente",
     )
     _PLAN_PARAMETER_HEADERS = (
-        "ID", "Parámetro / actividad", "Valor", "Unidad",
-        "Periodicidad", "Tipo", "Ref. Plan", "Tratamiento Liquidez", "Celda fuente",
+        "ID",
+        "Parámetro / actividad",
+        "Valor",
+        "Unidad",
+        "Periodicidad",
+        "Tipo",
+        "Ref. Plan",
+        "Tratamiento Liquidez",
+        "Celda fuente",
     )
     _WINDOW_HEADERS = (
-        "Horizonte", "Desde", "Hasta", "Apertura", "CRC neto", "USD neto",
-        "Estado", "Principal Maestro CRC*", "Principal Maestro USD*",
+        "Horizonte",
+        "Desde",
+        "Hasta",
+        "Apertura",
+        "CRC neto",
+        "USD neto",
+        "Estado",
+        "Principal Maestro CRC*",
+        "Principal Maestro USD*",
     )
     _DETAIL_HEADERS = (
-        "Referencia XML", "ID original", "Cuenta", "Moneda origen",
-        "Saldo principal", "Id instrumento", "ISIN", "Serie",
-        "Conciliación con Maestro", "Clasificación",
+        "Referencia XML",
+        "ID original",
+        "Cuenta",
+        "Moneda origen",
+        "Saldo principal",
+        "Id instrumento",
+        "ISIN",
+        "Serie",
+        "Conciliación con Maestro",
+        "Clasificación",
     )
     _SOURCE_HEADERS = (
         "Cuenta XML",
@@ -154,8 +178,7 @@ class SUGEF210ProjectionPanel(QWidget):
         )
         self._status.setWordWrap(True)
         self._status.setStyleSheet(
-            "padding:8px; background:#EAF3FA; color:#174E78;"
-            "border-radius:6px; font-weight:600;"
+            "padding:8px; background:#EAF3FA; color:#174E78;" "border-radius:6px; font-weight:600;"
         )
         main.addWidget(self._status)
         self._plan_status = QLabel(
@@ -175,9 +198,7 @@ class SUGEF210ProjectionPanel(QWidget):
         self._records = self._table(self._DETAIL_HEADERS, "sugef210XMLRecordEvidence")
         splitter.addWidget(self._records)
         self._planning_tabs = QTabWidget()
-        self._plan_months = self._table(
-            self._PLAN_HEADERS, "sugef210FinancialPlanMonthlyEvidence"
-        )
+        self._plan_months = self._table(self._PLAN_HEADERS, "sugef210FinancialPlanMonthlyEvidence")
         self._plan_parameters = self._table(
             self._PLAN_PARAMETER_HEADERS, "sugef210FinancialPlanParameters"
         )
@@ -221,9 +242,7 @@ class SUGEF210ProjectionPanel(QWidget):
             item = QTableWidgetItem(value)
             item.setToolTip(value)
             if col in (2, 3, 5, 6):
-                item.setTextAlignment(
-                    Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
-                )
+                item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             table.setItem(row, col, item)
 
     def _fill_windows(self) -> None:
@@ -243,7 +262,6 @@ class SUGEF210ProjectionPanel(QWidget):
                     "N/D",
                 ),
             )
-
 
     def _fill_master_maturities(self, report: dict[str, object]) -> None:
         """Show dated original principal evidence, never mislabel it net cash."""
@@ -267,9 +285,7 @@ class SUGEF210ProjectionPanel(QWidget):
                     "Principal con fecha de vencimiento verificable en Maestro. "
                     "NO representa una entrada líquida certificada ni incluye cupones."
                 )
-                item.setTextAlignment(
-                    Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
-                )
+                item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
                 self._windows.setItem(index, column, item)
 
     def _on_date_changed(self, value: QDate) -> None:
@@ -311,9 +327,7 @@ class SUGEF210ProjectionPanel(QWidget):
         self._export.setEnabled(False)
         status = str(report.get("status", "BLOCKED"))
         if status != "ACCOUNT_LEVEL_EVIDENCE_ONLY_NO_AVAILABLE_CASH":
-            self._status.setText(
-                f"Fuente de inversiones no utilizable para inspección: {status}"
-            )
+            self._status.setText(f"Fuente de inversiones no utilizable para inspección: {status}")
             return
         self._fill_master_maturities(report)
         for group in report.get("accounts", []):
@@ -370,8 +384,6 @@ class SUGEF210ProjectionPanel(QWidget):
                 f"BLOCKED_SOURCE_READ ({category}). Sin sustituir información ni mostrar flujos."
             )
 
-
-
     def select_financial_plan(self) -> None:
         """Read local institutional workbook without copying it into the Git repository."""
         if self._plan_worker is not None:
@@ -392,16 +404,12 @@ class SUGEF210ProjectionPanel(QWidget):
             "Leyendo la matriz institucional en modo seguro. "
             "No se registrarán importes como flujos contractuales."
         )
-        worker.completed.connect(
-            lambda evidence: self._receive_financial_plan(cutoff, evidence)
-        )
+        worker.completed.connect(lambda evidence: self._receive_financial_plan(cutoff, evidence))
         worker.failed.connect(lambda reason: self._financial_plan_error(cutoff, reason))
         worker.finished.connect(self._release_plan_worker)
         worker.start()
 
-    def _receive_financial_plan(
-        self, cutoff: date, evidence: FinancialPlanSourceAudit
-    ) -> None:
+    def _receive_financial_plan(self, cutoff: date, evidence: FinancialPlanSourceAudit) -> None:
         if cutoff != self._cutoff:
             return
         self._plan_audit = evidence
@@ -424,10 +432,15 @@ class SUGEF210ProjectionPanel(QWidget):
             self._append(
                 self._plan_parameters,
                 (
-                    str(param.plan_id), param.name,
+                    str(param.plan_id),
+                    param.name,
                     param.value if param.value is not None else "N/D",
-                    param.unit, param.periodicity, param.cashflow_type,
-                    param.plan_reference, param.liquidity_role, param.source_cell,
+                    param.unit,
+                    param.periodicity,
+                    param.cashflow_type,
+                    param.plan_reference,
+                    param.liquidity_role,
+                    param.source_cell,
                 ),
             )
         next_months = sum(
@@ -480,9 +493,16 @@ class SUGEF210ProjectionPanel(QWidget):
         metadata.title = "Control"
         report = self._report
         for key in (
-            "cutoff", "xml_month", "xml_source", "entity_id", "sha256",
-            "master_review_status", "master_positions_read", "xml_records_read",
-            "invalid_source_principal", "missing_account_codes",
+            "cutoff",
+            "xml_month",
+            "xml_source",
+            "entity_id",
+            "sha256",
+            "master_review_status",
+            "master_positions_read",
+            "xml_records_read",
+            "invalid_source_principal",
+            "missing_account_codes",
             "repeated_source_record_ids",
         ):
             metadata.append((key, str(report.get(key, "N/D"))))
@@ -496,8 +516,12 @@ class SUGEF210ProjectionPanel(QWidget):
 
         accounts = workbook.create_sheet("Cuentas XML")
         account_keys = (
-            "account_code", "currency_source_code", "record_count",
-            "source_principal", "classification", "master_isin_matches",
+            "account_code",
+            "currency_source_code",
+            "record_count",
+            "source_principal",
+            "classification",
+            "master_isin_matches",
             "unverified_master_overlap",
         )
         accounts.append(account_keys)
@@ -516,10 +540,20 @@ class SUGEF210ProjectionPanel(QWidget):
 
         records = workbook.create_sheet("Detalle conciliación")
         record_keys = (
-            "source_reference", "raw_record_id", "record_ordinal", "action",
-            "account_code", "currency_source_code", "source_principal_raw",
-            "source_principal", "instrument_id", "isin", "series",
-            "classification", "master_reconciliation", "withdrawable_amount",
+            "source_reference",
+            "raw_record_id",
+            "record_ordinal",
+            "action",
+            "account_code",
+            "currency_source_code",
+            "source_principal_raw",
+            "source_principal",
+            "instrument_id",
+            "isin",
+            "series",
+            "classification",
+            "master_reconciliation",
+            "withdrawable_amount",
         )
         records.append(record_keys)
         for row in report.get("record_evidence", []):
