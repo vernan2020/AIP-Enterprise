@@ -109,6 +109,7 @@ def import_approved_xml_contractual_payments(
     expected_ledger_sha256: str,
     approved_xml_sha256: dict[str, str],
     approved_currency_codes: dict[str, str],
+    approved_term_deposit_codes: frozenset[str] = frozenset(),
     source_payment_approval: str,
     settlement_approval: str,
     nonduplication_reference: str,
@@ -155,6 +156,8 @@ def import_approved_xml_contractual_payments(
     if len(rows) > 250000:
         raise ValueError("Contractual payment ledger exceeds approved size")
 
+    if approved_term_deposit_codes and any(not item.strip() for item in approved_term_deposit_codes):
+        raise ValueError("Blank approved term-deposit source classification")
     by_key: dict[str, tuple[dict[int, Any], str]] = {}
     selected_sources = {_require(row.get("source_key"), "source_key") for row in rows}
     if not selected_sources.issubset(_SUPPORTED) or selected_sources != set(approved_xml_sha256):
@@ -185,6 +188,11 @@ def import_approved_xml_contractual_payments(
         if _require(row.get("source_record_id"), "source_record_id") != original.record_id:
             raise ValueError("Contractual record identity differs from original CONFIA XML")
         values = original.values
+        if key == "CAPTACIONES" and (
+            not approved_term_deposit_codes
+            or (values.get("TipoCuenta") or "").strip() not in approved_term_deposit_codes
+        ):
+            raise ValueError("Demand deposits cannot be converted into term maturities")
         source_balance_field, source_currency_field = _PRINCIPAL_FIELDS[key]
         native_currency_code = _require(row.get("original_currency_code"), "original_currency_code")
         currency = _require(row.get("currency"), "currency")
