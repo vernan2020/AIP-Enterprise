@@ -15,7 +15,6 @@ from aip.domain.liquidity.cashflow.services.sugef210_projection import (
     sugef210_windows,
 )
 
-
 CUTOFF = date(2026, 9, 30)
 
 
