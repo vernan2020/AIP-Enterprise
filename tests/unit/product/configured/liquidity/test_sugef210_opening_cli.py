@@ -41,6 +41,8 @@ def _session() -> ConfiguredOpeningSession:
 def test_json_diagnostic_preserves_partial_amounts_and_separate_currencies():
     report = summarize_session(_session())
     assert report["not_a_regulatory_cashflow_certification"] is True
+    assert report["document_hash_is_not_a_bank_signature"] is True
+    assert report["projection_status"] == "PARTIAL_EVIDENCE_NOT_CERTIFIED"
     assert len(report["windows"]) == 34
     assert report["windows"][0]["currency"] == "CRC"
     assert report["windows"][0]["cash_inflow_asset"] is None
