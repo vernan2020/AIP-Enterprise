@@ -21,3 +21,12 @@ def test_history_view_uses_modern_card_and_control_properties(qt_app) -> None:
     style = view.styleSheet()
     assert 'QGroupBox[historyCard="true"]' in style
     assert 'QComboBox[historyControl="true"]' in style
+
+
+def test_duration_history_has_no_institutional_objective_line(qt_app) -> None:
+    view = PortfolioHistoryView()
+
+    chart = view._charts["duration"]
+
+    assert chart._reference_value is None
+    assert chart._reference_label == "Referencia"
