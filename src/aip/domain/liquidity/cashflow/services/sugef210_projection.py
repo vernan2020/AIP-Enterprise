@@ -107,6 +107,7 @@ class LiquidityProjectionRow:
     opening_liquidity: Decimal | None
     projected_liquidity: Decimal | None
     event_count: int
+    financing_need: Decimal | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -122,6 +123,8 @@ class LiquidityProjectionResult:
     assumption_ids: tuple[str, ...]
     excluded_out_of_horizon: int
     off_balance_source_covered: bool
+    unattested_areas: tuple[str, ...] = ()
+    unattested_opening_currencies: tuple[str, ...] = ()
 
     @property
     def certified_comprehensive(self) -> bool:
@@ -173,6 +176,8 @@ def project_sugef210(
     opening_liquidity: dict[str, Decimal] | None,
     assumptions: Iterable[LiquidityAssumption] = (),
     source_areas_covered: Iterable[LiquidityBalanceArea] = (),
+    source_certification_references: dict[LiquidityBalanceArea, str] | None = None,
+    opening_certification_references: dict[str, str] | None = None,
 ) -> LiquidityProjectionResult:
     """Project without numerical substitution for missing institutional sources.
 
@@ -253,13 +258,29 @@ def project_sugef210(
                     opening_liquidity=initial,
                     projected_liquidity=initial + running if initial is not None else None,
                     event_count=len(included),
+                    financing_need=(
+                        max(Decimal(0), -(initial + running))
+                        if initial is not None else None
+                    ),
                 )
             )
     missing = tuple(sorted(area.value for area in required - coverage))
     missing_opening = tuple(ccy for ccy in ("CRC", "USD") if ccy not in opening)
-    # Structural full coverage must be asserted by adapter after source checks,
-    # never inferred from transactions merely being present.
-    complete = not missing and not missing_opening
+    # Area labels alone are not proof. Require distinct, nonblank attestations
+    # for all covered sources and independently verified opening balances.
+    area_proofs = source_certification_references or {}
+    opening_proofs = opening_certification_references or {}
+    unattested = tuple(
+        sorted(
+            area.value for area in required
+            if area in coverage and not str(area_proofs.get(area) or "").strip()
+        )
+    )
+    unattested_opening = tuple(
+        currency for currency in ("CRC", "USD")
+        if currency in opening and not str(opening_proofs.get(currency) or "").strip()
+    )
+    complete = not (missing or missing_opening or unattested or unattested_opening)
     return LiquidityProjectionResult(
         cutoff=cutoff, scenario=scenario, windows=windows, rows=tuple(projected),
         status="COMPLETE_GOVERNED_PROJECTION" if complete else "PARTIAL_EVIDENCE_NOT_CERTIFIED",
@@ -267,4 +288,6 @@ def project_sugef210(
         opening_liquidity_missing=missing_opening, assumption_ids=tuple(sorted(policies)),
         excluded_out_of_horizon=outside,
         off_balance_source_covered=LiquidityBalanceArea.OFF_BALANCE in coverage,
+        unattested_areas=unattested,
+        unattested_opening_currencies=unattested_opening,
     )
