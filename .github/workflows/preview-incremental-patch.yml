@@ -5,6 +5,7 @@ on:
     branches:
       - release/core-v1.0
       - feature/ux-v4-5-1-performance-responsiveness
+      - feature/ux-v451-rtilb-xml-integration
     paths:
       - "src/**"
       - "scripts/**"
@@ -12,6 +13,7 @@ on:
       - "run_aip_ux_preview.cmd"
       - "DIAGNOSTICAR_BCCR_SUGEF.cmd"
       - "DIAGNOSTICAR_RTILB_XML.cmd"
+      - "DIAGNOSTICAR_BCCR_V2.cmd"
       - "AUDITAR_FUENTES_CONFIGURADAS.cmd"
       - "INSPECCIONAR_HISTORICOS_PREVIEW.cmd"
       - "pyproject.toml"
@@ -23,7 +25,7 @@ permissions:
 
 jobs:
   verified-preview-package:
-    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'feature/ux-v4-5-1-performance-responsiveness' || github.head_ref == 'feature/ux-v451-rtilb-xml-integration'
+    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'feature/ux-v4-5-1-performance-responsiveness' || github.head_ref == 'feature/ux-v451-rtilb-xml-integration' || github.head_ref == 'feature/bccr-sdde-v2-macro'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
