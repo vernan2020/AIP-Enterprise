@@ -23,6 +23,9 @@ from aip.product.configured.liquidity.investment_current_account_xml_audit impor
     InvestmentCurrentAccountPolicy,
     audit_investment_current_accounts,
 )
+from aip.product.configured.liquidity.sugef210_dated_xml_contracts import (
+    import_approved_xml_contractual_payments,
+)
 from aip.product.configured.liquidity.sugef210_approved_master_principal import (
     ApprovedMasterPrincipalPosition,
     admit_approved_master_principal,
@@ -55,6 +58,7 @@ class ConfiguredOpeningSession:
     bank_support_sha256: str
     bank_document_sha256: str
     master_principal_events_approved: int = 0
+    xml_contractual_events_approved: int = 0
     status: str = "PARTIAL_DOCUMENTED_OPENING_NOT_COMPLETE_FORECAST"
 
 
@@ -277,11 +281,42 @@ def run_configured_sight_opening(
             expected_master_sha256=actual_master_hash,
             records=approved,
         )
+    xml_contractual = None
+    contract_policy = policy.get("xml_contractual_schedule")
+    if contract_policy is not None:
+        if not isinstance(contract_policy, dict):
+            raise ValueError("XML contractual schedule approval must be structured")
+        ledger_path = Path(_required_text(contract_policy, "ledger_file"))
+        if not ledger_path.is_absolute() or ledger_path.resolve() in {
+            approval_path.resolve(), support_path.resolve(), master_path.resolve(),
+            raw_support.resolve(),
+        }:
+            raise ValueError("Original dated payment ledger must be independent of source inputs")
+        xml_hashes = contract_policy.get("approved_xml_sha256")
+        currency_codes = contract_policy.get("approved_currency_codes")
+        term_codes = contract_policy.get("approved_term_deposit_codes", [])
+        if not isinstance(xml_hashes, dict) or not isinstance(currency_codes, dict):
+            raise ValueError("Dated XML source hashes and original currency mapping required")
+        if not isinstance(term_codes, list) or any(not isinstance(code, str) for code in term_codes):
+            raise ValueError("Approved term-deposit account type codes must be a list")
+        xml_contractual = import_approved_xml_contractual_payments(
+            reader=reader,
+            cutoff=cutoff,
+            ledger_file=ledger_path,
+            expected_ledger_sha256=_required_text(contract_policy, "ledger_sha256"),
+            approved_xml_sha256=xml_hashes,
+            approved_currency_codes=currency_codes,
+            approved_term_deposit_codes=frozenset(term_codes),
+            source_payment_approval=_required_text(contract_policy, "source_payment_approval"),
+            settlement_approval=_required_text(contract_policy, "settlement_approval"),
+            nonduplication_reference=_required_text(contract_policy, "nonduplication_reference"),
+        )
     assembly = assemble_partial_institutional_projection(
         cutoff=cutoff,
         scenario=scenario,
         master=admitted_master,
         master_maturity_recognition_reference=principal_reference,
+        approved_xml_schedule=xml_contractual,
         verified_sight_opening=verified,
         opening_by_currency=reconciled_opening,
         opening_certifications=certifications,
@@ -291,10 +326,12 @@ def run_configured_sight_opening(
     )
     if assembly.projection.certified_comprehensive:
         raise ValueError("Partial investment session cannot certify integral cashflows")
-    if assembly.projection.source_flow_count != (
-        len(admitted_master.flows) if admitted_master is not None else 0
-    ):
-        raise ValueError("Investment Master events did not reconcile to approved source")
+    expected_events = (
+        (len(admitted_master.flows) if admitted_master is not None else 0)
+        + (len(xml_contractual.events) if xml_contractual is not None else 0)
+    )
+    if assembly.projection.source_flow_count != expected_events:
+        raise ValueError("Master and XML source payment events did not reconcile")
     return ConfiguredOpeningSession(
         cutoff=cutoff,
         scenario=scenario,
@@ -305,5 +342,8 @@ def run_configured_sight_opening(
         bank_document_sha256=bank_hash,
         master_principal_events_approved=(
             len(admitted_master.flows) if admitted_master is not None else 0
+        ),
+        xml_contractual_events_approved=(
+            len(xml_contractual.events) if xml_contractual is not None else 0
         ),
     )
