@@ -114,3 +114,59 @@ def test_xml_invalid_principal_is_audited_without_creating_liquidity(tmp_path):
     assert result.invalid_source_principal == 2
     assert result.missing_account_codes == 1
     assert result.cash_available_today is None
+
+
+def test_each_xml_record_retains_original_account_instrument_and_reconciliation(tmp_path):
+    records = (
+        XMLConfiaRecord(
+            record_id="X1", action="1",
+            values={
+                "CuentaContablePrincipal": "CC-001",
+                "TipoMonedaValorFacial": "2",
+                "SaldoPrincipal": "175.13",
+                "IdInstrumento": "INV-34",
+                "CodISIN": "CR000000001",
+                "SerieInstrumento": "SER-19",
+            },
+        ),
+        XMLConfiaRecord(
+            record_id="X1", action="1",
+            values={
+                "CuentaContablePrincipal": "CC-001",
+                "TipoMonedaValorFacial": "2",
+                "SaldoPrincipal": "250",
+                "IdInstrumento": "CC-ONLY",
+                "CodISIN": "",
+                "SerieInstrumento": "",
+            },
+        ),
+    )
+    audit = audit_investment_current_accounts(
+        reader=_Reader(records, tmp_path / "investment.xml"),
+        cutoff=CUTOFF,
+        policy=InvestmentCurrentAccountPolicy(
+            frozenset({"CC-001"}), "ALCO-APPROVED-CLASSIFICATION"
+        ),
+        master_isins=frozenset({"CR000000001"}),
+        master_loaded=True,
+    )
+    assert audit.records_read == len(audit.records) == 2
+    assert audit.repeated_record_ids == 1
+    assert audit.records[0].account_code == "CC-001"
+    assert audit.records[0].currency_source_code == "2"
+    assert audit.records[0].principal == Decimal("175.13")
+    assert audit.records[0].instrument_id == "INV-34"
+    assert audit.records[0].master_reconciliation == "POSSIBLE_MASTER_OVERLAP_ISIN"
+    assert audit.records[1].master_reconciliation == "UNMATCHED_ID_NOT_PROOF_OF_NEW_BALANCE"
+    assert audit.records[0].source_reference != audit.records[1].source_reference
+    assert all(e.withdrawable_amount is None for e in audit.records)
+
+
+def test_missing_master_does_not_infer_xml_investments_outside_master(tmp_path):
+    audit = audit_investment_current_accounts(
+        reader=_Reader((_record("R1", "CC-02", "1", "150", "NEW_ISIN"),), tmp_path / "inv.xml"),
+        cutoff=CUTOFF,
+        policy=InvestmentCurrentAccountPolicy(frozenset(), ""),
+    )
+    assert audit.records[0].master_reconciliation == "MASTER_NOT_LOADED"
+    assert audit.cash_available_today is None
