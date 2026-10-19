@@ -153,6 +153,10 @@ def test_governed_projection_updates_only_verified_currency_and_resets_on_scenar
         assert not result.certified_comprehensive
         panel.present_governed_projection(result)
         assert panel._windows.item(12, 4).text() == "125"
+        assert panel._governed_flow_details.rowCount() == 34
+        assert panel._governed_flow_details.item(12, 2).text() == "125"
+        assert panel._governed_flow_details.item(12, 5).text() == "0"
+        assert panel._governed_flow_details.item(17 + 12, 2).text() == "N/D"
         assert panel._windows.item(13, 4).text() == "N/D"
         assert panel._windows.item(12, 5).text() == "N/D"
         assert panel._windows.item(12, 9).text() == "135"
@@ -163,6 +167,7 @@ def test_governed_projection_updates_only_verified_currency_and_resets_on_scenar
         panel._scenario.setCurrentText("SYSTEMIC")
         assert panel._governed_projection is None
         assert panel._windows.item(12, 4).text() == "N/D"
+        assert panel._governed_flow_details.rowCount() == 0
         with pytest.raises(ValueError, match="cutoff/scenario"):
             panel.present_governed_projection(result)
     finally:
