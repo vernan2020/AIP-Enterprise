@@ -166,6 +166,21 @@ def assemble_partial_institutional_projection(
             not sight.xml_sha256 or not sight.opening_reconciliation_reference
         ):
             raise ValueError("Sight XML hash and reconciliation reference are mandatory")
+        if sight.included_xml_accounts and (
+            sight.opening_reconciliation_reference != opening_nonduplication_reference
+        ):
+            raise ValueError("Sight source and opening cash reconciliation references differ")
+        source_totals = dict(sight.added_by_currency)
+        if len(source_totals) != len(sight.added_by_currency) or any(
+            amount < 0 or not amount.is_finite()
+            for amount in source_totals.values()
+        ):
+            raise ValueError("Sight source additions are not a valid currency reconciliation")
+        if any(
+            amount > dict(sight.opening_by_currency).get(currency, Decimal(0))
+            for currency, amount in source_totals.items()
+        ):
+            raise ValueError("Approved sight additions exceed bank-reconciled opening cash")
         if any(source in already_in_opening for source in sight.included_source_references):
             raise ValueError("Sight account already exists in opening balance")
         if any(
