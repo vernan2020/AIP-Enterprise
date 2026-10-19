@@ -97,13 +97,10 @@ def read_approved_sight_manifest(
     classification_reference = _text(document, "account_classification_approval")
     mapping_approval = _text(document, "currency_mapping_approval_reference")
     reconciliation = _text(document, "opening_reconciliation_reference")
-    if (
-        not opening_certifications
-        or any(
-            not isinstance(opening_certifications.get(currency), str)
-            or not opening_certifications[currency].strip()
-            for currency in bank_reconciled_opening
-        )
+    if not opening_certifications or any(
+        not isinstance(opening_certifications.get(currency), str)
+        or not opening_certifications[currency].strip()
+        for currency in bank_reconciled_opening
     ):
         raise ValueError("Independent currency-specific bank opening certification required")
     if any(currency not in {"CRC", "USD"} for currency in bank_reconciled_opening):
@@ -118,9 +115,7 @@ def read_approved_sight_manifest(
         or not isinstance(mapping, dict)
         or not mapping
         or any(
-            not isinstance(code, str)
-            or not code.strip()
-            or currency not in {"CRC", "USD"}
+            not isinstance(code, str) or not code.strip() or currency not in {"CRC", "USD"}
             for code, currency in mapping.items()
         )
         or not isinstance(rows, list)

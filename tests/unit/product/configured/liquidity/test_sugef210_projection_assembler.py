@@ -236,17 +236,18 @@ def test_sight_opening_requires_matching_icl_reconciliation_and_available_cash()
     )
     with pytest.raises(ValueError, match="references differ"):
         assemble_partial_institutional_projection(
-            cutoff=CUTOFF, scenario="BASE", verified_sight_opening=sight,
+            cutoff=CUTOFF,
+            scenario="BASE",
+            verified_sight_opening=sight,
             opening_by_currency={"CRC": Decimal("100"), "USD": Decimal("30")},
             opening_certifications={"CRC": "BANK-CRC", "USD": "BANK-USD"},
             opening_nonduplication_reference="OTHER-RECONCILIATION",
         )
     with pytest.raises(ValueError, match="exceed bank-reconciled"):
         assemble_partial_institutional_projection(
-            cutoff=CUTOFF, scenario="BASE",
-            verified_sight_opening=replace(
-                sight, added_by_currency=(("USD", Decimal("60")),)
-            ),
+            cutoff=CUTOFF,
+            scenario="BASE",
+            verified_sight_opening=replace(sight, added_by_currency=(("USD", Decimal("60")),)),
             opening_by_currency={"CRC": Decimal("100"), "USD": Decimal("30")},
             opening_certifications={"CRC": "BANK-CRC", "USD": "BANK-USD"},
             opening_nonduplication_reference="BANK-ICL-202609",

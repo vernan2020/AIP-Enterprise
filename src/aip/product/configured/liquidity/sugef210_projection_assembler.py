@@ -172,8 +172,7 @@ def assemble_partial_institutional_projection(
             raise ValueError("Sight source and opening cash reconciliation references differ")
         source_totals = dict(sight.added_by_currency)
         if len(source_totals) != len(sight.added_by_currency) or any(
-            amount < 0 or not amount.is_finite()
-            for amount in source_totals.values()
+            amount < 0 or not amount.is_finite() for amount in source_totals.values()
         ):
             raise ValueError("Sight source additions are not a valid currency reconciliation")
         if any(

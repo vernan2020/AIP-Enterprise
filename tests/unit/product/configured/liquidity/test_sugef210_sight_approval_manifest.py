@@ -17,7 +17,6 @@ from aip.product.configured.liquidity.sugef210_sight_approval_manifest import (
     read_approved_sight_manifest,
 )
 
-
 CUTOFF = date(2026, 9, 30)
 
 
@@ -94,9 +93,7 @@ def _read(tmp_path, audit, doc):
 def test_manifest_matches_original_xml_and_adds_only_releasable_balance(tmp_path):
     audit = _xml_audit()
     result = _read(tmp_path, audit, _manifest(audit))
-    assert dict(result.opening_by_currency) == {
-        "CRC": Decimal("1000"), "USD": Decimal("85.25")
-    }
+    assert dict(result.opening_by_currency) == {"CRC": Decimal("1000"), "USD": Decimal("85.25")}
     assert result.included_source_references == (audit.records[0].source_reference,)
     assert result.xml_sha256 == "b" * 64
     assert result.opening_reconciliation_reference == "TEST-TREASURY-ICL-RECON"
@@ -112,8 +109,11 @@ def test_manifest_rejects_hash_drift_and_duplicate_keys(tmp_path):
     name.write_text('{"schema":"SUGEF210_SIGHT_OPENING_V1","schema":"override"}')
     with pytest.raises(ValueError, match="Duplicated approval"):
         read_approved_sight_manifest(
-            manifest_path=name, cutoff=CUTOFF, source_audit=audit,
-            bank_reconciled_opening={}, opening_certifications={"CRC": "BANK"},
+            manifest_path=name,
+            cutoff=CUTOFF,
+            source_audit=audit,
+            bank_reconciled_opening={},
+            opening_certifications={"CRC": "BANK"},
         )
 
 
@@ -140,14 +140,14 @@ def test_manifest_blocks_unapproved_accounts_and_possible_master_overlap(tmp_pat
     with pytest.raises(ValueError, match="not included"):
         _read(tmp_path, audit, invalid)
     unresolved = replace(
-        audit, records=(replace(audit.records[0],
-                               master_reconciliation="POSSIBLE_MASTER_OVERLAP_ISIN"),)
+        audit,
+        records=(replace(audit.records[0], master_reconciliation="POSSIBLE_MASTER_OVERLAP_ISIN"),),
     )
     with pytest.raises(ValueError, match="overlap"):
         _read(tmp_path, unresolved, _manifest(unresolved))
     unapproved = replace(
-        audit, records=(replace(audit.records[0],
-                               classification="NOT_APPROVED_FOR_CURRENT_ACCOUNT"),)
+        audit,
+        records=(replace(audit.records[0], classification="NOT_APPROVED_FOR_CURRENT_ACCOUNT"),),
     )
     with pytest.raises(ValueError, match="not approved"):
         _read(tmp_path, unapproved, _manifest(unapproved))
