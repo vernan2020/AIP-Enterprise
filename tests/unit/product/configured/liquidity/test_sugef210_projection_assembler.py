@@ -17,14 +17,14 @@ from aip.domain.liquidity.cashflow.services.sugef210_projection import (
 from aip.product.configured.liquidity.irrbb_schedule_liquidity_bridge import (
     LiquiditySourceBridgeResult,
 )
+from aip.product.configured.liquidity.sight_investment_opening_bridge import (
+    SightOpeningLiquidityResult,
+)
 from aip.product.configured.liquidity.sugef210_master_maturity_bridge import (
     MasterPrincipalEvidence,
 )
 from aip.product.configured.liquidity.sugef210_projection_assembler import (
     assemble_partial_institutional_projection,
-)
-from aip.product.configured.liquidity.sight_investment_opening_bridge import (
-    SightOpeningLiquidityResult,
 )
 
 CUTOFF = date(2026, 9, 30)
@@ -205,14 +205,18 @@ def test_verified_sight_investment_reconciles_only_opening_not_future_cashflow()
     assert not result.projection.certified_comprehensive
     with pytest.raises(ValueError, match="reconcile exactly"):
         assemble_partial_institutional_projection(
-            cutoff=CUTOFF, scenario="BASE", verified_sight_opening=sight,
+            cutoff=CUTOFF,
+            scenario="BASE",
+            verified_sight_opening=sight,
             opening_by_currency={"CRC": Decimal("100"), "USD": Decimal("10")},
             opening_certifications={"CRC": "BANK-CRC", "USD": "BANK-USD"},
             opening_nonduplication_reference="BANK-ICL-NONDOUBLECOUNT",
         )
     with pytest.raises(ValueError, match="already exists"):
         assemble_partial_institutional_projection(
-            cutoff=CUTOFF, scenario="BASE", verified_sight_opening=sight,
+            cutoff=CUTOFF,
+            scenario="BASE",
+            verified_sight_opening=sight,
             opening_by_currency={"CRC": Decimal("100"), "USD": Decimal("30")},
             opening_certifications={"CRC": "BANK-CRC", "USD": "BANK-USD"},
             opening_nonduplication_reference="BANK-ICL-NONDOUBLECOUNT",

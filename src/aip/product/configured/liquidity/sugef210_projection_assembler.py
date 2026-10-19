@@ -29,11 +29,11 @@ from aip.product.configured.liquidity.financial_plan_cashflow_bridge import (
 from aip.product.configured.liquidity.irrbb_schedule_liquidity_bridge import (
     LiquiditySourceBridgeResult,
 )
-from aip.product.configured.liquidity.sugef210_master_maturity_bridge import (
-    MasterPrincipalEvidence,
-)
 from aip.product.configured.liquidity.sight_investment_opening_bridge import (
     SightOpeningLiquidityResult,
+)
+from aip.product.configured.liquidity.sugef210_master_maturity_bridge import (
+    MasterPrincipalEvidence,
 )
 
 
@@ -163,14 +163,15 @@ def assemble_partial_institutional_projection(
         if len(set(sight.included_source_references)) != len(sight.included_source_references):
             raise ValueError("Sight investment account appears more than once")
         if sight.included_xml_accounts and (
-            not sight.xml_sha256
-            or not sight.opening_reconciliation_reference
+            not sight.xml_sha256 or not sight.opening_reconciliation_reference
         ):
             raise ValueError("Sight XML hash and reconciliation reference are mandatory")
         if any(source in already_in_opening for source in sight.included_source_references):
             raise ValueError("Sight account already exists in opening balance")
-        if any(source in {event.reference for group in groups for event in group[1]}
-               for source in sight.included_source_references):
+        if any(
+            source in {event.reference for group in groups for event in group[1]}
+            for source in sight.included_source_references
+        ):
             raise ValueError("Sight investment duplicates a scheduled event")
         if opening_by_currency is None or opening_by_currency != dict(sight.opening_by_currency):
             raise ValueError("Opening cash must reconcile exactly to the verified sight bridge")
