@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import json
 from datetime import date
-from decimal import Decimal
 
 from aip.product.configured.liquidity.sugef210_opening_session import (
     ConfiguredOpeningSession,
