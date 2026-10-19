@@ -16,7 +16,6 @@ from aip.product.configured.liquidity.investment_current_account_xml_audit impor
     audit_investment_current_accounts,
 )
 
-
 CUTOFF = date(2026, 9, 30)
 
 
