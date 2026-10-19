@@ -54,3 +54,13 @@ La aplicación lee nuevamente los XML CONFÍA y el Maestro **del corte exacto** 
 Opcionalmente, el JSON de autorizaciones de inversiones puede incluir `master_principal_authorization` con `master_sha256`, `approval_reference` y `approved_principal_records`. Cada registro contiene `cashflow_reference` exactamente igual a la referencia producida por el lector del Maestro, `payment_date` ISO, `original_principal` como texto decimal, `currency`, `settlement_availability_reference`, `restriction_clearance_reference` y `nonduplication_reference` únicos.
 
 Se vuelve a leer el Maestro **original del mismo corte**; cada título debe conciliar importe principal, fecha contractual, moneda y SHA-256. Los títulos sin autorización individual se excluyen, nunca se reconocen por defecto; no se estiman cupones ni se usa el valor de mercado como principal. Los vencimientos autorizados se muestran como entradas futuras del activo en su banda diaria/semanal/mensual/trimestral correspondiente, siempre identificando la proyección como **parcial**.
+
+## Ejecución directa desde CMD en Windows
+
+Con el ZIP incremental instalado de forma segura en `C:\\Proyectos\\AIP-V451-PREVIEW`, ejecute desde la raíz PREVIEW:
+
+```bat
+DIAGNOSTICAR_LIQUIDEZ_SUGEF210_FLUJO.cmd --cutoff 2026-09-30 --scenario BASE --approval "RUTA_DEL_MANIFIESTO_APROBADO.json" --bank "RUTA_DE_CONCILIACION_TESORERIA_ICL.json"
+```
+
+El comando usa únicamente el entorno `CONFIGURED`, el XML institucional, el Maestro de fecha exacta y los soportes conservados localmente. Produce un JSON de **34 filas** (17 bandas por CRC/USD), informa fuentes faltantes y deja como `null` los flujos de bandas no documentadas. Un resultado de ejecución exitoso no constituye certificación regulatoria. Un error de fuente u aprobación retorna código 2 y una categoría, sin imprimir rutas internas ni secretos.
