@@ -109,6 +109,11 @@ def assemble_partial_institutional_projection(
             areas.add(LiquidityBalanceArea.ASSET)
         missing.append("INVESTMENT_COUPONS_AND_UNRESOLVED_MATURITIES")
 
+    if contractual is not None and approved_xml_schedule is not None:
+        raise ValueError(
+            "Certified four-source contractual schedule and selected XML payments "
+            "overlap the same credit, deposit and borrowing source perimeter"
+        )
     if contractual is None:
         missing.extend(("CREDIT_PAYMENTS", "DEPOSIT_PAYMENTS", "BORROWING_PAYMENTS"))
     else:
