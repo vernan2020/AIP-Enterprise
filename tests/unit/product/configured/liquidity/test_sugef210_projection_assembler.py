@@ -222,3 +222,32 @@ def test_verified_sight_investment_reconciles_only_opening_not_future_cashflow()
             opening_nonduplication_reference="BANK-ICL-NONDOUBLECOUNT",
             already_in_opening=frozenset({"XML:INV-0001"}),
         )
+
+
+def test_sight_opening_requires_matching_icl_reconciliation_and_available_cash():
+    sight = SightOpeningLiquidityResult(
+        cutoff=CUTOFF,
+        opening_by_currency=(("CRC", Decimal("100")), ("USD", Decimal("30"))),
+        included_xml_accounts=1,
+        added_by_currency=(("CRC", Decimal("0")), ("USD", Decimal("20"))),
+        included_source_references=("XML:INV-0001",),
+        xml_sha256="e" * 64,
+        opening_reconciliation_reference="BANK-ICL-202609",
+    )
+    with pytest.raises(ValueError, match="references differ"):
+        assemble_partial_institutional_projection(
+            cutoff=CUTOFF, scenario="BASE", verified_sight_opening=sight,
+            opening_by_currency={"CRC": Decimal("100"), "USD": Decimal("30")},
+            opening_certifications={"CRC": "BANK-CRC", "USD": "BANK-USD"},
+            opening_nonduplication_reference="OTHER-RECONCILIATION",
+        )
+    with pytest.raises(ValueError, match="exceed bank-reconciled"):
+        assemble_partial_institutional_projection(
+            cutoff=CUTOFF, scenario="BASE",
+            verified_sight_opening=replace(
+                sight, added_by_currency=(("USD", Decimal("60")),)
+            ),
+            opening_by_currency={"CRC": Decimal("100"), "USD": Decimal("30")},
+            opening_certifications={"CRC": "BANK-CRC", "USD": "BANK-USD"},
+            opening_nonduplication_reference="BANK-ICL-202609",
+        )
