@@ -40,6 +40,39 @@ _MONTHS = (
     "jul-26", "ago-26", "sept-26", "oct-26", "nov-26", "dic-26",
 )
 
+# Approved business-plan source IDs are classifications, NOT model approvals.
+_PLAN_LIQUIDITY_ROLES = {
+    1: "SCENARIO_FX_REFERENCE_NOT_OFFICIAL_SPOT",
+    2: "RATE_DRIVER_NOT_CASH",
+    3: "RATE_DRIVER_NOT_CASH",
+    4: "RATE_DRIVER_NOT_CASH",
+    5: "NEW_LENDING_RATE_PASS_THROUGH",
+    6: "NEW_DEPOSIT_RATE_PASS_THROUGH",
+    7: "INTEREST_BUDGET_NOT_CONTRACTUAL_CASH",
+    9: "INVESTMENT_INTEREST_BUDGET_AVOID_MASTER_DUPLICATION",
+    10: "REINVESTMENT_YIELD_REQUIRES_APPROVED_TRADE_SCENARIO",
+    14: "DEPOSIT_INTEREST_BUDGET_AVOID_CONTRACT_DUPLICATION",
+    15: "CRC_NEW_TERM_DEPOSIT_RATE_DRIVER",
+    16: "USD_NEW_TERM_DEPOSIT_RATE_DRIVER",
+    17: "BORROWING_INTEREST_BUDGET_AVOID_SCHEDULE_DUPLICATION",
+    25: "INCLUDED_IN_OPERATING_EXPENSES_DUPLICATE_GUARD",
+    26: "INCLUDED_IN_OPERATING_EXPENSES_DUPLICATE_GUARD",
+    30: "NONCASH_PROVISION_EXCLUDED",
+    31: "NONCASH_PROVISION_EXCLUDED",
+    34: "GROSS_CREDIT_DISBURSEMENT_PLANNING",
+    35: "USD_LOAN_SHARE_NOT_CERTIFIED_CURRENCY_SPLIT",
+    37: "NONCASH_WRITE_OFF_EXCLUDED",
+    38: "IMPLICIT_PRINCIPAL_RECOVERY_NOT_CONTRACTUAL",
+    40: "INVESTMENT_MATURITY_BUDGET_AVOID_MASTER_DUPLICATION",
+    42: "EML_RATE_RESTRICTION_REQUIRES_BASE_BALANCES",
+    43: "EML_RATE_RESTRICTION_REQUIRES_BASE_BALANCES",
+    44: "EML_REQUIRED_RESERVE_NOT_SPENDABLE_CASH",
+    49: "NEW_TERM_DEPOSIT_ISSUANCE_AVOID_RENEWAL_DUPLICATION",
+    50: "DEPOSIT_RENEWAL_ASSUMPTION_PENDING_APPROVAL",
+    52: "BORROWING_AMORTIZATION_AVOID_SCHEDULE_DUPLICATION",
+    55: "NONCASH_EXCESS_CAPITALIZATION_EXCLUDED",
+}
+
 
 @dataclass(frozen=True, slots=True)
 class PlanParameter:
@@ -52,6 +85,7 @@ class PlanParameter:
     plan_reference: str
     source_cell: str
     observation: str
+    liquidity_role: str = "PLAN_REFERENCE_NOT_DATED_CASH"
 
 
 @dataclass(frozen=True, slots=True)
@@ -159,15 +193,19 @@ def read_financial_plan_assumptions(
                     plan_reference=str(matrix.cell(row, 11).value or ""),
                     source_cell=f"'Matriz Supuestos'!E{row}",
                     observation=str(matrix.cell(row, 12).value or ""),
+                    liquidity_role=_PLAN_LIQUIDITY_ROLES.get(
+                        ident, "PLAN_REFERENCE_NOT_DATED_CASH"
+                    ),
                 )
             )
 
         monthly: list[MonthlyFinancialPlanInput] = []
         seen: set[str] = set()
         warnings: list[str] = []
+        known_drivers = frozenset(_DIRECT_MONTHLY) | _NONCASH | _PARAMETER_ONLY
         for row in range(4, calendar.max_row + 1):
             driver = str(calendar.cell(row, 1).value or "").strip()
-            if driver not in _DIRECT_MONTHLY | dict.fromkeys(_NONCASH | _PARAMETER_ONLY):
+            if driver not in known_drivers:
                 continue
             if driver in seen:
                 raise ValueError("Duplicate source calendar driver: " + driver)
@@ -210,7 +248,7 @@ def read_financial_plan_assumptions(
                     )
                 )
             annual = _decimal(calendar.cell(row, 14).value)
-            if driver in _DIRECT_MONTHLY | dict.fromkeys(_NONCASH):
+            if driver in _DIRECT_MONTHLY or driver in _NONCASH:
                 if annual is None or annual != sum(monthly_values, Decimal(0)):
                     raise ValueError("Plan monthly calendar does not reconcile annual total: " + driver)
             elif annual is not None:
