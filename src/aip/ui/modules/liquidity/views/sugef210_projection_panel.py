@@ -387,6 +387,9 @@ class SUGEF210ProjectionPanel(QWidget):
             raise ValueError("Projection cutoff/scenario does not match active Liquidez view")
         self._invalidate_governed_projection()
         self._governed_projection = result
+        if self._report is not None:
+            self._fill_master_maturities(self._report)
+        self._export.setEnabled(True)
         has_events = {
             currency: any(row.event_count > 0 for row in result.rows if row.currency == currency)
             for currency in ("CRC", "USD")
@@ -639,7 +642,7 @@ class SUGEF210ProjectionPanel(QWidget):
 
     def export_reconciliation(self) -> None:
         """Export real audit evidence; never classify a balance as cash."""
-        if self._report is None:
+        if self._report is None and self._governed_projection is None:
             return
         selected, _filter = QFileDialog.getSaveFileName(
             self,
@@ -655,7 +658,7 @@ class SUGEF210ProjectionPanel(QWidget):
         metadata = workbook.active
         assert metadata is not None
         metadata.title = "Control"
-        report = self._report
+        report = self._report or {}
         for key in (
             "cutoff",
             "xml_month",
@@ -671,12 +674,57 @@ class SUGEF210ProjectionPanel(QWidget):
         ):
             metadata.append((key, str(report.get(key, "N/D"))))
         metadata.append(("disponibilidad_certificada", "NO"))
-        metadata.append(("flujo_integral_certificado", "NO"))
+        projection = self._governed_projection
+        metadata.append((
+            "flujo_integral_certificado",
+            "SI" if projection is not None and projection.certified_comprehensive else "NO",
+        ))
+        if projection is not None:
+            metadata.append(("escenario", projection.scenario))
+            metadata.append(("eventos_documentados", str(projection.source_flow_count)))
+            metadata.append(("estado_proyeccion", projection.status))
+            metadata.append(("fuentes_faltantes", ", ".join(projection.missing_source_areas)))
+            metadata.append(("supuestos_trazables", ", ".join(projection.assumption_ids)))
         metadata.append(("nota", "Identificadores no prueban titularidad ni retiro disponible"))
 
         def safe(value: object) -> str:
             content = "" if value is None else str(value)
             return "'" + content if content.startswith(("=", "+", "-", "@")) else content
+
+        if projection is not None:
+            projected = workbook.create_sheet("Flujo proyectado 365d")
+            projected.append((
+                "Escenario", "Corte", "Horizonte", "Desde", "Hasta", "Moneda",
+                "Entradas activos", "Salidas activos", "Entradas pasivos",
+                "Salidas pasivos", "Entradas fuera balance", "Salidas fuera balance",
+                "Entradas negocio", "Salidas negocio", "Neto parcial",
+                "GAP acumulado parcial", "Disponibilidades iniciales",
+                "Saldo proyectado parcial", "Necesidad financiación parcial",
+                "Estado",
+            ))
+            for item in projection.rows:
+                projected.append(tuple(safe(value) for value in (
+                    projection.scenario,
+                    projection.cutoff.isoformat(),
+                    item.window.label,
+                    item.window.start.isoformat(),
+                    item.window.end.isoformat(),
+                    item.currency,
+                    item.asset_inflows,
+                    item.asset_outflows,
+                    item.liability_inflows,
+                    item.liability_outflows,
+                    item.off_balance_inflows,
+                    item.off_balance_outflows,
+                    item.other_inflows,
+                    item.other_outflows,
+                    item.net_flow if projection.source_flow_count else "N/D",
+                    item.accumulated_flow if projection.source_flow_count else "N/D",
+                    item.opening_liquidity if item.opening_liquidity is not None else "N/D",
+                    item.projected_liquidity if item.projected_liquidity is not None else "N/D",
+                    item.financing_need if item.financing_need is not None else "N/D",
+                    projection.status,
+                )))
 
         perimeter = workbook.create_sheet("Fuentes contractuales XML")
         perimeter.append(self._XML_PERIMETER_HEADERS)
