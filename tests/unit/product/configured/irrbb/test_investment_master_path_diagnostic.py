@@ -69,3 +69,16 @@ def test_multiple_strict_candidates_remain_ambiguous(tmp_path):
     assert report["strict_discovery_status"] == "AMBIGUOUS_MASTER_FILES"
     assert report["strict_matching_count"] == 2
     assert report["recommendation"] == "RESOLVE_MULTIPLE_STRICT_CUTOFF_MASTERS"
+
+
+def test_configured_spanish_month_pattern_uses_actual_institutional_folder(tmp_path):
+    _touch(tmp_path, "Inversiones/2026/maestro/setiembre/30-09-2026.xls")
+    report = inspect_master_paths(
+        root=str(tmp_path),
+        pattern=r"Inversiones\{year}\maestro\{month_name_es}\*.xls*",
+        cutoff=CUTOFF,
+    )
+    assert report["strict_discovery_status"] == "EXACT_CUTOFF_MASTER_FOUND_NOT_CERTIFIED"
+    assert report["strict_matching_count"] == 1
+    assert report["recommendation"] == "EXECUTE_EXISTING_INVESTMENT_AUDIT"
+    assert report["financially_certified"] is False
