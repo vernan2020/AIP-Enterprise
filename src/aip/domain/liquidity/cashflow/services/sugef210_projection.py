@@ -14,6 +14,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import Iterable
 
+
 class LiquidityFlowSide(str, Enum):
     INFLOW = "INFLOW"
     OUTFLOW = "OUTFLOW"
