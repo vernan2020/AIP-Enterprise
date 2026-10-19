@@ -4,8 +4,8 @@ from dataclasses import replace
 from datetime import date
 from decimal import Decimal
 
-from openpyxl import Workbook
 import pytest
+from openpyxl import Workbook
 
 from aip.domain.liquidity.cashflow.services.sugef210_projection import (
     LiquidityBalanceArea,
