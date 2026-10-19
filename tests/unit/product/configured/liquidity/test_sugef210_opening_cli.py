@@ -50,6 +50,7 @@ def test_json_diagnostic_preserves_partial_amounts_and_separate_currencies():
     assert report["windows"][17]["currency"] == "USD"
     assert report["windows"][17]["balance_partial"] == "15"
     assert report["source_flows_included"] == 0
+    assert report["reconciliation_by_source_and_currency"] == []
 
 
 def test_cli_reports_protected_error_category_not_private_filepath(monkeypatch, capsys):
