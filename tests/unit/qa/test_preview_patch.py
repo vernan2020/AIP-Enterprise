@@ -104,6 +104,9 @@ def test_safe_source_is_packaged() -> None:
     assert validate_path("DIAGNOSTICAR_LIQUIDEZ_SUGEF210_XML_INVERSIONES.cmd").as_posix() == (
         "DIAGNOSTICAR_LIQUIDEZ_SUGEF210_XML_INVERSIONES.cmd"
     )
+    assert validate_path("DIAGNOSTICAR_LIQUIDEZ_SUGEF210_PLAN.cmd").as_posix() == (
+        "DIAGNOSTICAR_LIQUIDEZ_SUGEF210_PLAN.cmd"
+    )
     assert validate_path("DIAGNOSTICAR_RTILB_XML.cmd").as_posix() == ("DIAGNOSTICAR_RTILB_XML.cmd")
     assert not allowed("secrets.txt")
     assert not allowed("DIAGNOSTICAR_NO_AUTORIZADO.cmd")
