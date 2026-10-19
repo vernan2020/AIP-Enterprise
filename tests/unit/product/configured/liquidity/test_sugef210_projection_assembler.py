@@ -169,9 +169,7 @@ def test_offbalance_requires_external_certification_and_exact_contracts():
 
 def test_master_principal_must_reconcile_before_any_cash_recognition():
     original = _master(_event("MASTER-TEST-01", 31, "120"))
-    inconsistent = replace(
-        original, principal_by_currency=(("CRC", Decimal("119")),)
-    )
+    inconsistent = replace(original, principal_by_currency=(("CRC", Decimal("119")),))
     with pytest.raises(ValueError, match="does not reconcile"):
         assemble_partial_institutional_projection(
             cutoff=CUTOFF,
