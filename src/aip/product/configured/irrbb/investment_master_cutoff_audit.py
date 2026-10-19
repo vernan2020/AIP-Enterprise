@@ -46,6 +46,16 @@ def _source_number(raw: object) -> Decimal | None:
     return amount if amount.is_finite() and amount >= 0 else None
 
 
+# Approved in this RTILB source adapter only. The source spelling remains
+# reported independently and no conversion or currency inference is performed.
+_EXPLICIT_MASTER_CURRENCY_ALIASES = {"DOLAR": "USD"}
+_ALIAS_RULE_VERSION = "INV-MASTER-CURRENCY-ALIASES-V1"
+
+
+def _audit_currency(raw_code: str) -> str:
+    return _EXPLICIT_MASTER_CURRENCY_ALIASES.get(raw_code, raw_code or "(SIN MONEDA NATIVA)")
+
+
 def inspect_investment_master_cutoff(
     *,
     cutoff: date,
@@ -97,11 +107,17 @@ def inspect_investment_master_cutoff(
         lambda: {"positions": 0, "valid_source_principal": Decimal(0)}
     )
     eligible_amounts: dict[str, Decimal] = defaultdict(Decimal)
+    original_codes: dict[tuple[str, str], dict[str, int | Decimal]] = defaultdict(
+        lambda: {"positions": 0, "source_principal": Decimal(0)}
+    )
     for position in reading.normalized_positions:
         raw_currency = str(position.get("source_currency") or "").strip().upper()
-        # The general portfolio reader may fill a missing currency with CRC.
-        # That fallback MUST NOT become financial RTILB evidence.
-        currency = raw_currency or "(SIN MONEDA NATIVA)"
+        # Never use the portfolio reader's default CRC when the source lacks currency.
+        # Recognize only the explicitly controlled DOLAR -> USD alias.
+        currency = _audit_currency(raw_currency)
+        original_currency = raw_currency or "(SIN MONEDA NATIVA)"
+        source_code = original_codes[(original_currency, currency)]
+        source_code["positions"] += 1
         group = grouped[currency]
         group["positions"] += 1
         maturity = position.get("maturity_date")
@@ -116,6 +132,8 @@ def inspect_investment_master_cutoff(
             else None
         )
         principal = _source_number(source_value)
+        if principal is not None:
+            source_code["source_principal"] += principal
         if principal is None or not raw_currency:
             group["principal_missing"] += 1
         else:
@@ -126,12 +144,14 @@ def inspect_investment_master_cutoff(
             # A missing/unsupported currency remains excluded, never inferred.
             eligible_amounts[currency] += principal
 
-        if raw_currency not in {"CRC", "USD"}:
+        if currency not in {"CRC", "USD"}:
             reason = "MISSING_NATIVE_CURRENCY" if not raw_currency else "UNSUPPORTED_CURRENCY"
         elif principal is None:
             reason = "INVALID_OR_MISSING_SOURCE_PRINCIPAL"
-        elif not isinstance(maturity, date) or maturity < cutoff:
-            reason = "MISSING_OR_PAST_MATURITY"
+        elif not isinstance(maturity, date):
+            reason = "MISSING_OR_INVALID_MATURITY"
+        elif maturity < cutoff:
+            reason = "PAST_MATURITY"
         else:
             assignment = IRRBBTimeBucketService.assign(valuation_date=cutoff, risk_date=maturity)
             assigned = bands[(currency, assignment.ordinal, assignment.label)]
@@ -188,6 +208,25 @@ def inspect_investment_master_cutoff(
         "blocking_requirements": list(certification.blocking_requirement_ids),
         "not_assessed_requirements": list(certification.not_assessed_requirement_ids),
         "certified": False,
+        "currency_mapping_rule": _ALIAS_RULE_VERSION,
+        "source_currency_mappings": [
+            {
+                "source_currency": original,
+                "normalized_currency": canonical,
+                "mapping_status": (
+                    "EXPLICIT_ALIAS"
+                    if original in _EXPLICIT_MASTER_CURRENCY_ALIASES
+                    else "EXACT_SOURCE_CODE"
+                    if canonical in {"CRC", "USD"}
+                    else "MISSING_SOURCE_CODE"
+                    if original == "(SIN MONEDA NATIVA)"
+                    else "UNSUPPORTED_SOURCE_CODE"
+                ),
+                "positions": int(group["positions"]),
+                "source_principal": str(group["source_principal"]),
+            }
+            for (original, canonical), group in sorted(original_codes.items())
+        ],
         "maturity_bands": [
             {
                 "source_currency": currency,
@@ -239,8 +278,9 @@ def inspect_investment_master_cutoff(
         ],
         "note": (
             "Observed institutional master maturity buckets, not cashflow schedules, repricing or 19-band GAP. "
-            "No FX conversion. Unsupported or missing currency codes are excluded, and their "
-            "numeric source balances must not be interpreted as CRC or USD. "
+            "No FX conversion. DOLAR is explicitly mapped to USD by rule "
+            "INV-MASTER-CURRENCY-ALIASES-V1 with original source spelling preserved; "
+            "unsupported or missing source codes remain excluded. "
             "All nineteen empty or occupied bands are shown for each supported source currency. "
             "Source-column principal only; other balance fields are not substituted. "
             "The cutoff comes from the filename and is not independently certified."
