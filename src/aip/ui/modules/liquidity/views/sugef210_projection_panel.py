@@ -203,7 +203,7 @@ class SUGEF210ProjectionPanel(QWidget):
                 "QLabel { color:white; background:transparent; }"
             )
             kpi_layout = QVBoxLayout(frame)
-            title = QLabel(f"Saldo proyectado a 365 días · {currency}")
+            title = QLabel(f"Saldo proyectado parcial a 365 días · {currency}")
             title.setStyleSheet("font-weight:600; font-size:10pt;")
             amount = QLabel("N/D")
             amount.setStyleSheet("font-size:18pt; font-weight:700;")
@@ -420,7 +420,12 @@ class SUGEF210ProjectionPanel(QWidget):
                 raise ValueError("Unrecognized projected liquidity band position")
             net_column = 4 if row.currency == "CRC" else 5
             balance_column = 9 if row.currency == "CRC" else 10
-            net = str(row.net_flow) if has_events[row.currency] else "N/D"
+            net = (
+                str(row.net_flow)
+                if (row.event_count > 0 or result.certified_comprehensive)
+                and has_events[row.currency]
+                else "N/D"
+            )
             balance = str(row.projected_liquidity) if row.projected_liquidity is not None else "N/D"
             net_item = QTableWidgetItem(net)
             net_item.setToolTip(
@@ -740,15 +745,15 @@ class SUGEF210ProjectionPanel(QWidget):
                             item.window.start.isoformat(),
                             item.window.end.isoformat(),
                             item.currency,
-                            item.asset_inflows,
-                            item.asset_outflows,
-                            item.liability_inflows,
-                            item.liability_outflows,
-                            item.off_balance_inflows,
-                            item.off_balance_outflows,
-                            item.other_inflows,
-                            item.other_outflows,
-                            item.net_flow if projection.source_flow_count else "N/D",
+                            (item.asset_inflows if item.event_count > 0 or projection.certified_comprehensive else "N/D"),
+                            (item.asset_outflows if item.event_count > 0 or projection.certified_comprehensive else "N/D"),
+                            (item.liability_inflows if item.event_count > 0 or projection.certified_comprehensive else "N/D"),
+                            (item.liability_outflows if item.event_count > 0 or projection.certified_comprehensive else "N/D"),
+                            (item.off_balance_inflows if item.event_count > 0 or projection.certified_comprehensive else "N/D"),
+                            (item.off_balance_outflows if item.event_count > 0 or projection.certified_comprehensive else "N/D"),
+                            (item.other_inflows if item.event_count > 0 or projection.certified_comprehensive else "N/D"),
+                            (item.other_outflows if item.event_count > 0 or projection.certified_comprehensive else "N/D"),
+                            item.net_flow if item.event_count > 0 or projection.certified_comprehensive else "N/D",
                             item.accumulated_flow if projection.source_flow_count else "N/D",
                             item.opening_liquidity if item.opening_liquidity is not None else "N/D",
                             (
