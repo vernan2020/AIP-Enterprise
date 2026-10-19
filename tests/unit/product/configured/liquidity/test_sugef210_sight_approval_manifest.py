@@ -151,3 +151,17 @@ def test_manifest_blocks_unapproved_accounts_and_possible_master_overlap(tmp_pat
     )
     with pytest.raises(ValueError, match="not approved"):
         _read(tmp_path, unapproved, _manifest(unapproved))
+
+
+def test_manifest_requires_bank_certification_of_new_native_currency(tmp_path):
+    audit = _xml_audit()
+    filename = tmp_path / "approved.json"
+    filename.write_text(json.dumps(_manifest(audit)), encoding="utf-8")
+    with pytest.raises(ValueError, match="separately certified bank"):
+        read_approved_sight_manifest(
+            manifest_path=filename,
+            cutoff=CUTOFF,
+            source_audit=audit,
+            bank_reconciled_opening={"CRC": Decimal("1000")},
+            opening_certifications={"CRC": "TEST-BANK-CRC"},
+        )
