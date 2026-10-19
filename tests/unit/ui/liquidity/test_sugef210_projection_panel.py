@@ -4,8 +4,8 @@ from datetime import date, timedelta
 from decimal import Decimal
 
 import pytest
-from PySide6.QtCore import QDate
 from openpyxl import load_workbook
+from PySide6.QtCore import QDate
 
 from aip.domain.liquidity.cashflow.services.sugef210_projection import (
     LiquidityBalanceArea,
@@ -160,7 +160,9 @@ def test_governed_projection_updates_only_verified_currency_and_resets_on_scenar
         panel.close()
 
 
-def test_governed_partial_projection_can_export_without_xml_inventory(qt_app, tmp_path, monkeypatch):
+def test_governed_partial_projection_can_export_without_xml_inventory(
+    qt_app, tmp_path, monkeypatch
+):
     panel = SUGEF210ProjectionPanel()
     try:
         cutoff = date(2026, 9, 30)
