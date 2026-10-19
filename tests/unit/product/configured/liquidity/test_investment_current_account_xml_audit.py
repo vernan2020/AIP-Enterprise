@@ -170,3 +170,35 @@ def test_missing_master_does_not_infer_xml_investments_outside_master(tmp_path):
     )
     assert audit.records[0].master_reconciliation == "MASTER_NOT_LOADED"
     assert audit.cash_available_today is None
+
+
+def test_confia_no_isin_sentinel_is_not_a_security_match(tmp_path):
+    real_shape = XMLConfiaRecord(
+        record_id="7", action="insertar",
+        values={
+            "CuentaContablePrincipal": "11302100",
+            "TipoMonedaValorFacial": "1",
+            "SaldoPrincipal": "6400000000",
+            "ClasificacionInstrumento": "5",
+            "IdInstrumento": "81725109826173223",
+            "SerieInstrumento": "",
+            "CodISIN": "NO",
+            "FechaVencimiento": "",
+        },
+    )
+    audit = audit_investment_current_accounts(
+        reader=_Reader((real_shape,), tmp_path / "Crediticio_InversionesActivas.xml"),
+        cutoff=CUTOFF,
+        policy=InvestmentCurrentAccountPolicy(frozenset(), ""),
+        master_isins=frozenset({"NO"}),
+        master_loaded=True,
+    )
+    row = audit.records[0]
+    assert row.isin == ""
+    assert row.instrument_classification_original == "5"
+    assert row.maturity_original == ""
+    assert row.master_reconciliation == "UNMATCHED_ID_NOT_PROOF_OF_NEW_BALANCE"
+    assert audit.groups[0].master_identifier_matches == 0
+    assert audit.groups[0].records_without_maturity == 1
+    assert audit.groups[0].classification_five_count == 1
+    assert audit.cash_available_today is None
