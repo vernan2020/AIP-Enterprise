@@ -141,6 +141,8 @@ def inspect_xml_investment_source(cutoff: date) -> dict[str, object]:
                 "classification": g.classification,
                 "master_isin_matches": g.master_identifier_matches,
                 "unverified_master_overlap": g.unverified_master_overlap,
+                "records_without_maturity": g.records_without_maturity,
+                "classification_five_count": g.classification_five_count,
             }
             for g in audit.groups
         ],
@@ -155,6 +157,8 @@ def inspect_xml_investment_source(cutoff: date) -> dict[str, object]:
                 "source_principal_raw": row.raw_principal,
                 "source_principal": str(row.principal) if row.principal is not None else None,
                 "instrument_id": row.instrument_id,
+                "instrument_classification_original": row.instrument_classification_original,
+                "maturity_original": row.maturity_original,
                 "isin": row.isin,
                 "series": row.series,
                 "classification": row.classification,
