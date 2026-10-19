@@ -15,6 +15,10 @@ from aip.product.configured.liquidity.investment_current_account_xml_audit impor
     InvestmentCurrentAccountPolicy,
     audit_investment_current_accounts,
 )
+from aip.product.configured.liquidity.sugef210_xml_perimeter_audit import (
+    audit_xml_liquidity_perimeters,
+    summarize_xml_liquidity_perimeters,
+)
 from aip.product.configured.liquidity.sugef210_master_maturity_bridge import (
     build_master_principal_evidence,
 )
@@ -108,8 +112,10 @@ def inspect_xml_investment_source(cutoff: date) -> dict[str, object]:
                 ],
             }
 
+    source_reader = XMLConfiaMonthlySourceReader(confia.root)
+    perimeters = audit_xml_liquidity_perimeters(reader=source_reader, cutoff=cutoff)
     audit = audit_investment_current_accounts(
-        reader=XMLConfiaMonthlySourceReader(confia.root),
+        reader=source_reader,
         cutoff=cutoff,
         policy=InvestmentCurrentAccountPolicy(
             approved_account_codes=frozenset(),
@@ -127,6 +133,7 @@ def inspect_xml_investment_source(cutoff: date) -> dict[str, object]:
         "entity_id": audit.entity_id,
         "sha256": audit.xml_sha256,
         "master_review_status": master_status,
+        "contractual_source_inventory": summarize_xml_liquidity_perimeters(perimeters),
         "master_isin_references": len(master_isins),
         "master_positions_read": master_position_count,
         "master_series_references": len(master_series),

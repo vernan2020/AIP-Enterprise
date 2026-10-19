@@ -75,6 +75,14 @@ class _SUGEF210FinancialPlanWorker(QThread):
 class SUGEF210ProjectionPanel(QWidget):
     """Liquidity horizon framework + REAL source coverage, no DEMO waterfall."""
 
+    _XML_PERIMETER_HEADERS = (
+        "Fuente",
+        "Archivo",
+        "Registros",
+        "Saldos por moneda de origen (NO flujos)",
+        "Fechas contractuales presentes / ausentes / inválidas",
+        "Estado de calidad",
+    )
     _PLAN_HEADERS = (
         "Mes",
         "Supuesto / Driver",
@@ -204,6 +212,10 @@ class SUGEF210ProjectionPanel(QWidget):
         )
         self._planning_tabs.addTab(self._plan_months, "Plan financiero · calendario")
         self._planning_tabs.addTab(self._plan_parameters, "Plan financiero · supuestos")
+        self._xml_perimeters = self._table(
+            self._XML_PERIMETER_HEADERS, "sugef210ContractualXMLPerimeters"
+        )
+        self._planning_tabs.addTab(self._xml_perimeters, "Cartera · captaciones · obligaciones")
         splitter.addWidget(self._planning_tabs)
         splitter.setSizes([235, 150, 210, 220])
         main.addWidget(splitter, 1)
@@ -288,6 +300,35 @@ class SUGEF210ProjectionPanel(QWidget):
                 item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
                 self._windows.setItem(index, column, item)
 
+    def _fill_contractual_xml_perimeters(self, report: dict[str, object]) -> None:
+        self._xml_perimeters.setRowCount(0)
+        raw = report.get("contractual_source_inventory")
+        rows = raw if isinstance(raw, (tuple, list)) else ()
+        for entry in rows:
+            if not isinstance(entry, dict):
+                continue
+            native = entry.get("source_currency_balances_not_cashflows")
+            balances = native if isinstance(native, dict) else {}
+            dates = entry.get("dates")
+            date_rows = dates if isinstance(dates, (tuple, list)) else ()
+            date_text = "; ".join(
+                f"{item.get('field')}: {item.get('valid')}/{item.get('missing')}/"
+                f"{item.get('invalid')}"
+                for item in date_rows
+                if isinstance(item, dict)
+            )
+            self._append(
+                self._xml_perimeters,
+                (
+                    str(entry.get("source_key") or "N/D"),
+                    str(entry.get("file") or "NO DISPONIBLE"),
+                    str(entry.get("records") if entry.get("file") else "N/D"),
+                    ", ".join(f"{key}: {value}" for key, value in balances.items()) or "N/D",
+                    date_text or "N/D",
+                    str(entry.get("status") or "SIN CERTIFICACIÓN"),
+                ),
+            )
+
     def _on_date_changed(self, value: QDate) -> None:
         selected_date = value.toPython()
         if not isinstance(selected_date, date):
@@ -295,6 +336,7 @@ class SUGEF210ProjectionPanel(QWidget):
         self._cutoff = selected_date
         self._accounts.setRowCount(0)
         self._records.setRowCount(0)
+        self._xml_perimeters.setRowCount(0)
         self._report = None
         self._export.setEnabled(False)
         self._plan_audit = None
@@ -333,6 +375,7 @@ class SUGEF210ProjectionPanel(QWidget):
             self._status.setText(f"Fuente de inversiones no utilizable para inspección: {status}")
             return
         self._fill_master_maturities(report)
+        self._fill_contractual_xml_perimeters(report)
         for group in (report.get("accounts") if isinstance(report.get("accounts"), (list, tuple)) else ()):
             if not isinstance(group, dict):
                 continue
@@ -381,6 +424,7 @@ class SUGEF210ProjectionPanel(QWidget):
         if cutoff == self._cutoff:
             self._accounts.setRowCount(0)
             self._records.setRowCount(0)
+            self._xml_perimeters.setRowCount(0)
             self._report = None
             self._export.setEnabled(False)
             self._status.setText(
@@ -516,6 +560,18 @@ class SUGEF210ProjectionPanel(QWidget):
         def safe(value: object) -> str:
             content = "" if value is None else str(value)
             return "'" + content if content.startswith(("=", "+", "-", "@")) else content
+
+        perimeter = workbook.create_sheet("Fuentes contractuales XML")
+        perimeter.append(self._XML_PERIMETER_HEADERS)
+        for index in range(self._xml_perimeters.rowCount()):
+            perimeter.append(
+                tuple(
+                    safe(self._xml_perimeters.item(index, column).text())
+                    if self._xml_perimeters.item(index, column) is not None
+                    else ""
+                    for column in range(len(self._XML_PERIMETER_HEADERS))
+                )
+            )
 
         accounts = workbook.create_sheet("Cuentas XML")
         account_keys = (

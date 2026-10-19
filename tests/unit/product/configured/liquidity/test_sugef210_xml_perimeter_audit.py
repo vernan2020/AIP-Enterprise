@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import date
 from pathlib import Path
+from decimal import Decimal
 
 from aip.product.configured.irrbb.xml_confia_source import (
     XMLConfiaHeader,
@@ -88,9 +89,7 @@ def test_real_xml_shapes_are_audited_without_cash_booking():
     ]
     credit, deposits, borrowing, maturity = reports
     assert credit.records == 1
-    assert credit.native_balances == (("1", 75.50),) or str(
-        credit.native_balances[0][1]
-    ) == "75.50"
+    assert credit.native_balances == (("1", Decimal("75.50")),)
     assert ("FechaProximoPagoIntereses", 0, 0, 1) in credit.date_counts
     assert deposits.records == 2
     assert deposits.invalid_balance == 1

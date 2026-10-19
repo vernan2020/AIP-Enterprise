@@ -66,3 +66,38 @@ def test_existing_liquidity_page_includes_sugef210_tab(qt_app):
         assert view._projection_sugef210._windows.rowCount() == 17
     finally:
         view.close()
+
+
+def test_contractual_xml_source_status_not_a_payment_schedule(qt_app):
+    panel = SUGEF210ProjectionPanel()
+    try:
+        panel._date.setDate(QDate(2026, 9, 30))
+        panel._receive(
+            panel._cutoff,
+            {
+                "status": "ACCOUNT_LEVEL_EVIDENCE_ONLY_NO_AVAILABLE_CASH",
+                "xml_records_read": 0,
+                "accounts": [],
+                "record_evidence": [],
+                "contractual_source_inventory": [
+                    {
+                        "source_key": "CREDIT",
+                        "file": "NEC2024_Operaciones_5103.Nuevo.xml",
+                        "records": 2,
+                        "source_currency_balances_not_cashflows": {"1": "100.00"},
+                        "dates": [{"field": "FechaVencimiento", "valid": 1,
+                                   "missing": 1, "invalid": 0}],
+                        "status": "SOURCE_FIELDS_INSPECTED_NOT_A_PAYMENT_SCHEDULE",
+                    },
+                    {"source_key": "CAPTACIONES", "file": None,
+                     "status": "SOURCE_UNAVAILABLE_NOT_ASSUMED_ZERO"},
+                ],
+            },
+        )
+        assert panel._xml_perimeters.rowCount() == 2
+        assert "NO flujos" in panel._XML_PERIMETER_HEADERS[3]
+        assert panel._xml_perimeters.item(0, 3).text() == "1: 100.00"
+        assert panel._xml_perimeters.item(1, 2).text() == "N/D"
+        assert panel._windows.item(0, 4).text() == "N/D"
+    finally:
+        panel.close()

@@ -183,7 +183,8 @@ def audit_xml_liquidity_perimeters(
                 missing_currency=missing_currency,
                 missing_account=missing_account,
                 date_counts=tuple(
-                    (name, *counts) for name, counts in sorted(date_counts.items())
+                    (name, counts[0], counts[1], counts[2])
+                    for name, counts in sorted(date_counts.items())
                 ),
                 native_balances=tuple(sorted(native_balances.items())),
                 original_categories=tuple(sorted(categories.items())),
