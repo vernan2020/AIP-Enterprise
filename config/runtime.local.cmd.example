@@ -11,11 +11,14 @@ REM set "AIP_LLM_MODEL=gpt-5.6"
 REM set "AIP_LLM_TIMEOUT_SECONDS=45"
 REM set "AIP_LLM_MAX_OUTPUT_TOKENS=1400"
 
-REM BCCR live API credentials. Leave unset to use the persisted local-history
-REM fallback when available.
+REM BCCR live SDDE REST API. Current official base:
+REM https://apim.bccr.fi.cr/SDDE/api/Bccr.GE.SDDE.Publico.Indicadores.API
+REM A Bearer token generated in BCCR Indicadores Economicos -> Mi Perfil is required.
+REM Leave the token unset only when a populated persisted local-history fallback exists.
+REM set "AIP_BCCR_BASE_URL=https://apim.bccr.fi.cr"
 REM set "AIP_BCCR_NAME=YOUR_REGISTERED_NAME"
 REM set "AIP_BCCR_EMAIL=YOUR_REGISTERED_EMAIL"
-REM set "AIP_BCCR_TOKEN=YOUR_BCCR_TOKEN"
+REM set "AIP_BCCR_TOKEN=YOUR_BCCR_BEARER_TOKEN"
 
 REM Optional explicit source overrides. Normally EnvironmentLoader resolves the
 REM institutional Windows paths automatically.

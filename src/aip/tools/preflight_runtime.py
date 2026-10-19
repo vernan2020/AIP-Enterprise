@@ -28,6 +28,10 @@ def _env_flag(name: str) -> bool:
     return os.getenv(name, "").strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _bccr_live_status(token: str | None) -> str:
+    return "READY" if token and token.strip() else "TOKEN MISSING · LOCAL-HISTORY FALLBACK"
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Validate AIP configured runtime readiness")
     parser.add_argument(
@@ -202,7 +206,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"ICL root: {sources.folder_watch.icl_root}")
     print(f"Vector path: {sources.vector.path}")
     print(f"BCCR base URL: {sources.bccr.base_url}")
-    print(f"BCCR credentials: {'SET' if sources.bccr.token else 'LOCAL-HISTORY FALLBACK'}")
+    print(f"BCCR live API: {_bccr_live_status(sources.bccr.token)}")
 
     failures: list[str] = []
     if config.execution_mode != "CONFIGURED":
