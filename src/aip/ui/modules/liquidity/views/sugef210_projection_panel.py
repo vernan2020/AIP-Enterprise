@@ -14,8 +14,8 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDateEdit,
     QFileDialog,
-    QHBoxLayout,
     QFrame,
+    QHBoxLayout,
     QHeaderView,
     QLabel,
     QPushButton,
@@ -396,18 +396,19 @@ class SUGEF210ProjectionPanel(QWidget):
             if row.window.key not in {window.key for window in result.windows}:
                 raise ValueError("Unrecognized projected liquidity band")
             index = next(
-                (number for number, window in enumerate(result.windows)
-                 if window.key == row.window.key), None
+                (
+                    number
+                    for number, window in enumerate(result.windows)
+                    if window.key == row.window.key
+                ),
+                None,
             )
             if index is None or index >= self._windows.rowCount():
                 raise ValueError("Unrecognized projected liquidity band position")
             net_column = 4 if row.currency == "CRC" else 5
             balance_column = 9 if row.currency == "CRC" else 10
             net = str(row.net_flow) if has_events[row.currency] else "N/D"
-            balance = (
-                str(row.projected_liquidity)
-                if row.projected_liquidity is not None else "N/D"
-            )
+            balance = str(row.projected_liquidity) if row.projected_liquidity is not None else "N/D"
             net_item = QTableWidgetItem(net)
             net_item.setToolTip(
                 "Suma de eventos documentados en esta banda; las fuentes faltantes "
@@ -421,9 +422,11 @@ class SUGEF210ProjectionPanel(QWidget):
             )
             self._windows.setItem(index, balance_column, balance_item)
             self._windows.setItem(
-                index, 6, QTableWidgetItem(
+                index,
+                6,
+                QTableWidgetItem(
                     "CERTIFICADO" if result.certified_comprehensive else "PARCIAL - N/D"
-                )
+                ),
             )
             if index == self._windows.rowCount() - 1:
                 latest[row.currency] = balance

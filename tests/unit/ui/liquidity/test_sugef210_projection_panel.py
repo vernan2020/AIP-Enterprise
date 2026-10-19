@@ -13,7 +13,6 @@ from aip.domain.liquidity.cashflow.services.sugef210_projection import (
     LiquidityProjectionFlow,
     project_sugef210,
 )
-
 from aip.ui.modules.liquidity.views.liquidity_view import LiquidityView
 from aip.ui.modules.liquidity.views.sugef210_projection_panel import (
     SUGEF210ProjectionPanel,
@@ -97,12 +96,16 @@ def test_contractual_xml_source_status_not_a_payment_schedule(qt_app):
                         "file": "NEC2024_Operaciones_5103.Nuevo.xml",
                         "records": 2,
                         "source_currency_balances_not_cashflows": {"1": "100.00"},
-                        "dates": [{"field": "FechaVencimiento", "valid": 1,
-                                   "missing": 1, "invalid": 0}],
+                        "dates": [
+                            {"field": "FechaVencimiento", "valid": 1, "missing": 1, "invalid": 0}
+                        ],
                         "status": "SOURCE_FIELDS_INSPECTED_NOT_A_PAYMENT_SCHEDULE",
                     },
-                    {"source_key": "CAPTACIONES", "file": None,
-                     "status": "SOURCE_UNAVAILABLE_NOT_ASSUMED_ZERO"},
+                    {
+                        "source_key": "CAPTACIONES",
+                        "file": None,
+                        "status": "SOURCE_UNAVAILABLE_NOT_ASSUMED_ZERO",
+                    },
                 ],
             },
         )
