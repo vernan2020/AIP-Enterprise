@@ -28,12 +28,12 @@ from PySide6.QtWidgets import (
 from aip.domain.liquidity.cashflow.services.sugef210_projection import (
     sugef210_windows,
 )
-from aip.product.configured.liquidity.sugef210_source_audit_cli import (
-    inspect_xml_investment_source,
-)
 from aip.product.configured.liquidity.financial_plan_source import (
     FinancialPlanSourceAudit,
     read_financial_plan_assumptions,
+)
+from aip.product.configured.liquidity.sugef210_source_audit_cli import (
+    inspect_xml_investment_source,
 )
 
 
