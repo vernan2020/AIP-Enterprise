@@ -83,7 +83,7 @@ class SUGEF210ProjectionPanel(QWidget):
     )
     _PLAN_PARAMETER_HEADERS = (
         "ID", "Parámetro / actividad", "Valor", "Unidad",
-        "Periodicidad", "Tipo", "Ref. Plan", "Celda fuente",
+        "Periodicidad", "Tipo", "Ref. Plan", "Tratamiento Liquidez", "Celda fuente",
     )
     _WINDOW_HEADERS = (
         "Horizonte", "Desde", "Hasta", "Apertura", "CRC neto", "USD neto",
@@ -427,7 +427,7 @@ class SUGEF210ProjectionPanel(QWidget):
                     str(param.plan_id), param.name,
                     param.value if param.value is not None else "N/D",
                     param.unit, param.periodicity, param.cashflow_type,
-                    param.plan_reference, param.source_cell,
+                    param.plan_reference, param.liquidity_role, param.source_cell,
                 ),
             )
         next_months = sum(
