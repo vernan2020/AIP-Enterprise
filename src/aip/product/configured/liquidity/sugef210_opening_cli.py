@@ -42,9 +42,7 @@ def summarize_session(session: ConfiguredOpeningSession) -> dict[str, object]:
                 "events_received": item.received_events,
                 "events_within_365_days": item.events_inside_horizon,
                 "events_after_365_days": item.events_after_horizon,
-                "native_amount_within_365_days": str(
-                    item.principal_or_flow_total_inside_horizon
-                ),
+                "native_amount_within_365_days": str(item.principal_or_flow_total_inside_horizon),
                 "status": item.status,
             }
             for item in session.assembly.source_reconciliations

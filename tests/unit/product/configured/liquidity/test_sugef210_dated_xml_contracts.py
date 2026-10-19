@@ -193,9 +193,7 @@ def test_mixed_institution_entities_are_rejected(monkeypatch, tmp_path):
         def resolve_source(self, *, key, cutoff_date):
             original = super().resolve_source(key=key, cutoff_date=cutoff_date)
             if key == "BORROWING":
-                return replace(
-                    original, header=replace(original.header, id_entidad="OTHER-ENTITY")
-                )
+                return replace(original, header=replace(original.header, id_entidad="OTHER-ENTITY"))
             return original
 
     monkeypatch.setattr(modules[__name__], "Reader", MixedReader)

@@ -167,11 +167,10 @@ def import_approved_xml_contractual_payments(
     source_entity_ids: set[str] = set()
     for key in sorted(selected_sources):
         original = reader.resolve_source(key=key, cutoff_date=cutoff)
-        if (
-            (original.header.periodo.year, original.header.periodo.month)
-            != (cutoff.year, cutoff.month)
-            or not original.header.id_entidad.strip()
-        ):
+        if (original.header.periodo.year, original.header.periodo.month) != (
+            cutoff.year,
+            cutoff.month,
+        ) or not original.header.id_entidad.strip():
             raise ValueError("Original source entity and requested reporting month mismatch")
         source_entity_ids.add(original.header.id_entidad)
         if len(source_entity_ids) != 1:

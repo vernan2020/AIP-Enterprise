@@ -297,8 +297,10 @@ def test_individually_approved_xml_credit_and_term_deposit_appear_in_native_31_6
 def test_certified_rtilb_and_selected_confia_contracts_cannot_duplicate_same_cash():
     observed = _event("CREDIT-REAL-APPROVED", 31, "120")
     selected = ApprovedXMLContractualSchedule(
-        cutoff=CUTOFF, events=(observed,),
-        source_hashes=(("CREDIT", "a" * 64),), ledger_sha256="b" * 64,
+        cutoff=CUTOFF,
+        events=(observed,),
+        source_hashes=(("CREDIT", "a" * 64),),
+        ledger_sha256="b" * 64,
         included_source_records=(("CREDIT", 1),),
     )
     four_source = LiquiditySourceBridgeResult(
@@ -308,6 +310,8 @@ def test_certified_rtilb_and_selected_confia_contracts_cannot_duplicate_same_cas
     )
     with pytest.raises(ValueError, match="overlap"):
         assemble_partial_institutional_projection(
-            cutoff=CUTOFF, scenario="BASE", contractual=four_source,
+            cutoff=CUTOFF,
+            scenario="BASE",
+            contractual=four_source,
             approved_xml_schedule=selected,
         )
