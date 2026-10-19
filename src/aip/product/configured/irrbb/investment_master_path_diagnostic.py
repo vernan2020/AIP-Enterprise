@@ -17,6 +17,7 @@ from aip.product.configured.configuration.institutional_paths import (
     expand_environment_path,
 )
 from aip.product.configured.irrbb.investment_master_discovery import (
+    expand_cutoff_master_pattern,
     resolve_exact_cutoff_master,
 )
 from aip.product.demo.configuration.environment_loader import EnvironmentLoader
@@ -74,18 +75,12 @@ def inspect_master_paths(*, root: str | None, pattern: str, cutoff: date) -> dic
         return report
     report["root_exists"] = True
     try:
-        relative = pattern.format(
-            year=cutoff.year, month=f"{cutoff.month:02d}", day=f"{cutoff.day:02d}"
-        ).replace("\\", "/")
-        relative_path = Path(relative)
-        if relative_path.is_absolute() or ".." in relative_path.parts:
-            report["recommendation"] = "CORRECT_INVALID_MASTER_PATTERN"
-            return report
+        relative_path = expand_cutoff_master_pattern(pattern, cutoff)
         report["matching_glob_file_count"] = sum(
             Path(path).is_file() and Path(path).suffix.lower() in _EXTENSION_SET
             for path in glob(str(base / relative_path))
         )
-    except (OSError, ValueError, KeyError):
+    except (OSError, ValueError, KeyError, IndexError):
         report["recommendation"] = "CORRECT_INVALID_MASTER_PATTERN"
         return report
 
