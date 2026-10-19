@@ -99,6 +99,13 @@ def test_explicit_assumptions_off_balance_and_currency_separation():
         opening_liquidity={"CRC": Decimal("50"), "USD": Decimal("10")},
         assumptions=[policy],
         source_areas_covered=list(LiquidityBalanceArea),
+        source_certification_references={
+            area: f"TEST-SOURCE-EVIDENCE-{area.value}"
+            for area in LiquidityBalanceArea
+        },
+        opening_certification_references={
+            "CRC": "TEST-OPENING-CRC", "USD": "TEST-OPENING-USD"
+        },
     )
     assert result.certified_comprehensive
     assert len(result.rows) == 34
@@ -149,3 +156,28 @@ def test_rejects_duplicate_cashflows_historical_and_unsupported_currency():
         )
     with pytest.raises(ValueError, match="currency"):
         _flow("EUR", 1, "10", currency="EUR")
+
+
+def test_complete_area_flags_without_attestations_do_not_certify_projection():
+    result = project_sugef210(
+        cutoff=CUTOFF, scenario="BASE", flows=[],
+        opening_liquidity={"CRC": Decimal("10"), "USD": Decimal("12")},
+        source_areas_covered=list(LiquidityBalanceArea),
+    )
+    assert result.status == "PARTIAL_EVIDENCE_NOT_CERTIFIED"
+    assert len(result.unattested_areas) == 4
+    assert result.unattested_opening_currencies == ("CRC", "USD")
+    assert all(row.financing_need is not None for row in result.rows)
+
+
+def test_financing_need_requires_real_opening_balance():
+    result = project_sugef210(
+        cutoff=CUTOFF, scenario="BASE",
+        flows=[_flow("L2", 1, "75",
+            area=LiquidityBalanceArea.LIABILITY,
+            side=LiquidityFlowSide.OUTFLOW)],
+        opening_liquidity={"CRC": Decimal("20")},
+    )
+    assert result.rows[1].projected_liquidity == Decimal("-55")
+    assert result.rows[1].financing_need == Decimal("55")
+    assert all(row.financing_need is None for row in result.rows if row.currency == "USD")
