@@ -26,6 +26,9 @@ def summarize_session(session: ConfiguredOpeningSession) -> dict[str, object]:
         "bank_document_sha256": session.bank_document_sha256,
         "sight_accounts_verified": session.sight_records_approved,
         "master_principal_events_approved": session.master_principal_events_approved,
+        "credit_deposits_borrowing_payment_events_approved": (
+            session.xml_contractual_events_approved
+        ),
         "source_flows_included": result.source_flow_count,
         "not_a_regulatory_cashflow_certification": True,
         "document_hash_is_not_a_bank_signature": True,
@@ -40,6 +43,15 @@ def summarize_session(session: ConfiguredOpeningSession) -> dict[str, object]:
                 "end": row.window.end.isoformat(),
                 "documented_event_count": row.event_count,
                 "cash_inflow_asset": str(row.asset_inflows) if row.event_count else None,
+                "cash_outflow_liability": (
+                    str(row.liability_outflows) if row.event_count else None
+                ),
+                "cash_inflow_liability": (
+                    str(row.liability_inflows) if row.event_count else None
+                ),
+                "cash_outflow_asset": (
+                    str(row.asset_outflows) if row.event_count else None
+                ),
                 "net_documented": str(row.net_flow) if row.event_count else None,
                 "opening": (
                     str(row.opening_liquidity) if row.opening_liquidity is not None else None
