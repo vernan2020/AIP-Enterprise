@@ -236,3 +236,18 @@ def test_cutoff_and_source_currency_attestation_fail_closed(monkeypatch, tmp_pat
             approval_manifest=approval,
             bank_support_manifest=bank,
         )
+
+
+def test_bank_icl_document_cannot_be_the_investment_master(monkeypatch, tmp_path):
+    _configure(monkeypatch, tmp_path)
+    approval, bank = _files(tmp_path)
+    original_master = tmp_path / "exact-cutoff-master.xlsx"
+    content = json.loads(bank.read_text(encoding="utf-8"))
+    content["bank_or_icl_source_file"] = str(original_master)
+    content["bank_or_icl_source_sha256"] = hashlib.sha256(original_master.read_bytes()).hexdigest()
+    bank.write_text(json.dumps(content), encoding="utf-8")
+    with pytest.raises(ValueError, match="independent of approvals and Master"):
+        run_configured_sight_opening(
+            cutoff=CUTOFF, scenario="BASE", approval_manifest=approval,
+            bank_support_manifest=bank,
+        )
