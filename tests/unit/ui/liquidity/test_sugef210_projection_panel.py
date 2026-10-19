@@ -286,21 +286,30 @@ def test_governed_master_cashflow_displays_contract_date_without_inferred_coupon
             evidence=LiquidityEvidence.CONTRACTUAL,
         )
         admitted = MasterPrincipalEvidence(
-            cutoff=cutoff, master_sha256="c" * 64, positions_read=1,
-            flows=(master_event,), excluded=(),
+            cutoff=cutoff,
+            master_sha256="c" * 64,
+            positions_read=1,
+            flows=(master_event,),
+            excluded=(),
             principal_by_currency=(("CRC", Decimal("120")),),
         )
         assembly = assemble_partial_institutional_projection(
-            cutoff=cutoff, scenario="BASE", master=admitted,
+            cutoff=cutoff,
+            scenario="BASE",
+            master=admitted,
             master_maturity_recognition_reference="TEST-CUSTODIAN-SETTLEMENT",
             opening_by_currency={"CRC": Decimal("1000"), "USD": Decimal("85.25")},
             opening_certifications={"CRC": "TEST-CRC", "USD": "TEST-USD"},
             opening_nonduplication_reference="TEST-ICL-RECON",
         )
         session = ConfiguredOpeningSession(
-            cutoff=cutoff, scenario="BASE", assembly=assembly,
-            sight_records_approved=1, sight_source_sha256="a" * 64,
-            bank_support_sha256="b" * 64, bank_document_sha256="d" * 64,
+            cutoff=cutoff,
+            scenario="BASE",
+            assembly=assembly,
+            sight_records_approved=1,
+            sight_source_sha256="a" * 64,
+            bank_support_sha256="b" * 64,
+            bank_document_sha256="d" * 64,
             master_principal_events_approved=1,
         )
         panel._receive_governed_opening(cutoff, "BASE", session)
