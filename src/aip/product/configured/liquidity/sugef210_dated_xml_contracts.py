@@ -156,7 +156,9 @@ def import_approved_xml_contractual_payments(
     if len(rows) > 250000:
         raise ValueError("Contractual payment ledger exceeds approved size")
 
-    if approved_term_deposit_codes and any(not item.strip() for item in approved_term_deposit_codes):
+    if approved_term_deposit_codes and any(
+        not item.strip() for item in approved_term_deposit_codes
+    ):
         raise ValueError("Blank approved term-deposit source classification")
     by_key: dict[str, tuple[dict[int, Any], str]] = {}
     selected_sources = {_require(row.get("source_key"), "source_key") for row in rows}
@@ -231,10 +233,7 @@ def import_approved_xml_contractual_payments(
         if identifier in observed_payments or identifier in already_booked_references:
             raise ValueError("Duplicated contractual event or existing cash opening")
         observed_payments.add(identifier)
-        area = (
-            LiquidityBalanceArea.ASSET if key == "CREDIT"
-            else LiquidityBalanceArea.LIABILITY
-        )
+        area = LiquidityBalanceArea.ASSET if key == "CREDIT" else LiquidityBalanceArea.LIABILITY
         payments.append(
             LiquidityProjectionFlow(
                 reference=identifier,

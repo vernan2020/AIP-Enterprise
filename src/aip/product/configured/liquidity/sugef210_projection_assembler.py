@@ -26,14 +26,14 @@ from aip.domain.liquidity.cashflow.services.sugef210_scenario_rules import (
 from aip.product.configured.liquidity.financial_plan_cashflow_bridge import (
     ApprovedFinancialPlanEvents,
 )
-from aip.product.configured.liquidity.sugef210_dated_xml_contracts import (
-    ApprovedXMLContractualSchedule,
-)
 from aip.product.configured.liquidity.irrbb_schedule_liquidity_bridge import (
     LiquiditySourceBridgeResult,
 )
 from aip.product.configured.liquidity.sight_investment_opening_bridge import (
     SightOpeningLiquidityResult,
+)
+from aip.product.configured.liquidity.sugef210_dated_xml_contracts import (
+    ApprovedXMLContractualSchedule,
 )
 from aip.product.configured.liquidity.sugef210_master_maturity_bridge import (
     MasterPrincipalEvidence,

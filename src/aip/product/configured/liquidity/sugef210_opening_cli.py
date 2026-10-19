@@ -46,12 +46,8 @@ def summarize_session(session: ConfiguredOpeningSession) -> dict[str, object]:
                 "cash_outflow_liability": (
                     str(row.liability_outflows) if row.event_count else None
                 ),
-                "cash_inflow_liability": (
-                    str(row.liability_inflows) if row.event_count else None
-                ),
-                "cash_outflow_asset": (
-                    str(row.asset_outflows) if row.event_count else None
-                ),
+                "cash_inflow_liability": (str(row.liability_inflows) if row.event_count else None),
+                "cash_outflow_asset": (str(row.asset_outflows) if row.event_count else None),
                 "net_documented": str(row.net_flow) if row.event_count else None,
                 "opening": (
                     str(row.opening_liquidity) if row.opening_liquidity is not None else None

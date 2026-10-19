@@ -20,10 +20,19 @@ from aip.product.configured.liquidity.sugef210_dated_xml_contracts import (
 
 CUTOFF = date(2026, 9, 30)
 HEADERS = (
-    "source_key", "source_ordinal", "source_record_id", "account_code",
-    "original_currency_code", "currency", "original_principal",
-    "maturity_date", "payment_reference", "payment_date", "flow_type",
-    "amount", "availability_reference",
+    "source_key",
+    "source_ordinal",
+    "source_record_id",
+    "account_code",
+    "original_currency_code",
+    "currency",
+    "original_principal",
+    "maturity_date",
+    "payment_reference",
+    "payment_date",
+    "flow_type",
+    "amount",
+    "availability_reference",
 )
 SRC = {
     "CREDIT": {
@@ -60,8 +69,12 @@ class Reader:
             key=key,
             path=self.root / (key + ".xml"),
             header=XMLConfiaHeader(
-                clase_dato="1", archivo=key, periodo=date(2026, 9, 1),
-                id_entidad="TEST", tipo_carga="1", tipo_moneda="1",
+                clase_dato="1",
+                archivo=key,
+                periodo=date(2026, 9, 1),
+                id_entidad="TEST",
+                tipo_carga="1",
+                tipo_moneda="1",
             ),
         )
 
@@ -84,19 +97,19 @@ def _row(key, *, payment="P1", flow_type="PRINCIPAL", amount=None):
         "source_ordinal": "1",
         "source_record_id": "SRC-" + key,
         "account_code": raw["CuentaContablePrincipal"],
-        "original_currency_code": raw["TipoMonedaOperacion"] if key == "CREDIT"
-        else raw["TipoMonedaObligacion"],
+        "original_currency_code": (
+            raw["TipoMonedaOperacion"] if key == "CREDIT" else raw["TipoMonedaObligacion"]
+        ),
         "currency": "USD" if key == "CAPTACIONES" else "CRC",
-        "original_principal": raw["SaldoPrincipalOperacionCrediticia"] if key == "CREDIT"
-        else raw["SaldoPrincipal"],
+        "original_principal": (
+            raw["SaldoPrincipalOperacionCrediticia"] if key == "CREDIT" else raw["SaldoPrincipal"]
+        ),
         "maturity_date": "2027-09-30",
         "payment_reference": payment,
         "payment_date": (CUTOFF + timedelta(days=31)).isoformat(),
         "flow_type": flow_type,
-        "amount": amount or (
-            raw["SaldoPrincipalOperacionCrediticia"]
-            if key == "CREDIT" else raw["SaldoPrincipal"]
-        ),
+        "amount": amount
+        or (raw["SaldoPrincipalOperacionCrediticia"] if key == "CREDIT" else raw["SaldoPrincipal"]),
         "availability_reference": "TEST-CUSTODIAN-CONTRACT-" + key,
     }
 
@@ -109,7 +122,9 @@ def _import(tmp_path, rows, *, approve_terms=frozenset({"TERM"})):
         writer.writeheader()
         writer.writerows(rows)
     return import_approved_xml_contractual_payments(
-        reader=reader, cutoff=CUTOFF, ledger_file=ledger,
+        reader=reader,
+        cutoff=CUTOFF,
+        ledger_file=ledger,
         expected_ledger_sha256=Reader.sha256(ledger),
         approved_xml_sha256={
             key: Reader.sha256(tmp_path / (key + ".xml"))
@@ -137,11 +152,14 @@ def test_three_xml_perimeters_preserve_original_native_cash_dates_and_sides(tmp_
 
 
 def test_full_principal_reconciliation_allows_separate_contractual_coupon(tmp_path):
-    result = _import(tmp_path, [
-        _row("CREDIT", amount="125", payment="PRIN-A"),
-        _row("CREDIT", amount="75", payment="PRIN-B"),
-        _row("CREDIT", flow_type="INTEREST", amount="5.5", payment="COUPON"),
-    ])
+    result = _import(
+        tmp_path,
+        [
+            _row("CREDIT", amount="125", payment="PRIN-A"),
+            _row("CREDIT", amount="75", payment="PRIN-B"),
+            _row("CREDIT", flow_type="INTEREST", amount="5.5", payment="COUPON"),
+        ],
+    )
     assert len(result.events) == 3
     assert sum(x.amount for x in result.events) == 205.5
 
