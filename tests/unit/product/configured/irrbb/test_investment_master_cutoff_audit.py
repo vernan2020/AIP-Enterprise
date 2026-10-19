@@ -183,9 +183,7 @@ def test_dolar_source_alias_is_audited_as_usd_without_exchange_rate(tmp_path):
     assert grouped["USD"]["source_principal"] == "572.25"
     usd_bands = [item for item in result["maturity_bands"] if item["source_currency"] == "USD"]
     assert len(usd_bands) == 19
-    assert sum(
-        Decimal(item["source_principal"]) for item in usd_bands
-    ) == Decimal("572.25")
+    assert sum(Decimal(item["source_principal"]) for item in usd_bands) == Decimal("572.25")
     recon = {item["source_currency"]: item for item in result["maturity_reconciliation"]}
     assert recon["USD"]["difference"] == "0"
     assert recon["USD"]["observed_principal"] == "572.25"
@@ -204,8 +202,7 @@ def test_dolar_alias_keeps_past_and_missing_maturities_excluded(tmp_path):
     workbook.save(filename)
     result = inspect_investment_master_cutoff(cutoff=date(2026, 9, 30), folder=folder)
     exclusions = {
-        (item["source_currency"], item["reason"]): item
-        for item in result["maturity_exclusions"]
+        (item["source_currency"], item["reason"]): item for item in result["maturity_exclusions"]
     }
     assert exclusions[("USD", "MISSING_OR_INVALID_MATURITY")]["positions"] == 1
     assert exclusions[("USD", "MISSING_OR_INVALID_MATURITY")]["valid_source_principal"] == "500"
