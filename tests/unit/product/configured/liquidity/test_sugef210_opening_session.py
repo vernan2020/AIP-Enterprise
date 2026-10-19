@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from pathlib import Path
 from types import SimpleNamespace
@@ -247,6 +247,87 @@ def test_bank_icl_document_cannot_be_the_investment_master(monkeypatch, tmp_path
     content["bank_or_icl_source_sha256"] = hashlib.sha256(original_master.read_bytes()).hexdigest()
     bank.write_text(json.dumps(content), encoding="utf-8")
     with pytest.raises(ValueError, match="independent of approvals and Master"):
+        run_configured_sight_opening(
+            cutoff=CUTOFF, scenario="BASE", approval_manifest=approval,
+            bank_support_manifest=bank,
+        )
+
+
+def test_approved_original_master_principal_generates_real_dated_inflow(
+    monkeypatch, tmp_path
+):
+    _configure(monkeypatch, tmp_path)
+    from aip.product.configured.liquidity import sugef210_opening_session as module
+
+    approval, bank = _files(tmp_path)
+    source = tmp_path / "exact-cutoff-master.xlsx"
+    digest = hashlib.sha256(source.read_bytes()).hexdigest()
+    maturity = CUTOFF + timedelta(days=31)
+
+    class RealMasterRecord:
+        @staticmethod
+        def read(*_args, **_kwargs):
+            return SimpleNamespace(
+                source_status="HEALTHY",
+                detected_column_mapping={
+                    "principal_balance": "Saldo Principal",
+                    "maturity_date": "Fecha Vencimiento",
+                },
+                normalized_positions=[{
+                    "isin": "UNRELATED-TEST-ISIN",
+                    "series": "UNRELATED-TEST-SERIES",
+                    "source_currency": "CRC",
+                    "source_row": "ROW-3",
+                    "maturity_date": maturity,
+                    "source_values": {
+                        "saldo principal": "120",
+                        "fecha vencimiento": maturity.isoformat(),
+                    },
+                }],
+            )
+
+    monkeypatch.setattr(module, "InstitutionalPortfolioMasterReader", RealMasterRecord)
+    doc = json.loads(approval.read_text(encoding="utf-8"))
+    doc["master_principal_authorization"] = {
+        "master_sha256": digest,
+        "approval_reference": "TEST-TREASURY-PRINCIPAL",
+        "approved_principal_records": [{
+            "cashflow_reference": f"MASTER:{digest}:ROW-3:PRINCIPAL",
+            "payment_date": maturity.isoformat(),
+            "original_principal": "120",
+            "currency": "CRC",
+            "settlement_availability_reference": "TEST-BANK-CUSTODIAN",
+            "restriction_clearance_reference": "TEST-UNENCUMBERED",
+            "nonduplication_reference": "TEST-INVESTMENT-NONDUP",
+        }],
+    }
+    approval.write_text(json.dumps(doc), encoding="utf-8")
+    result = run_configured_sight_opening(
+        cutoff=CUTOFF, scenario="BASE", approval_manifest=approval,
+        bank_support_manifest=bank,
+    )
+    assert result.master_principal_events_approved == 1
+    assert result.assembly.projection.source_flow_count == 1
+    assert result.assembly.projection.rows[12].asset_inflows == Decimal("120")
+    assert result.assembly.projection.rows[12].projected_liquidity == Decimal("1120")
+    assert result.assembly.projection.rows[17 + 12].projected_liquidity == Decimal("85.25")
+    assert not result.assembly.projection.certified_comprehensive
+    assert "INVESTMENT_COUPONS_AND_UNRESOLVED_MATURITIES" in (
+        result.assembly.missing_institutional_evidence
+    )
+
+
+def test_master_principal_without_original_source_hash_is_blocked(monkeypatch, tmp_path):
+    _configure(monkeypatch, tmp_path)
+    approval, bank = _files(tmp_path)
+    document = json.loads(approval.read_text(encoding="utf-8"))
+    document["master_principal_authorization"] = {
+        "master_sha256": "0" * 64,
+        "approval_reference": "TEST-TREASURY-PRINCIPAL",
+        "approved_principal_records": [{"cashflow_reference": "NONEXISTENT"}],
+    }
+    approval.write_text(json.dumps(document), encoding="utf-8")
+    with pytest.raises(ValueError, match="no longer matches actual Master"):
         run_configured_sight_opening(
             cutoff=CUTOFF, scenario="BASE", approval_manifest=approval,
             bank_support_manifest=bank,
