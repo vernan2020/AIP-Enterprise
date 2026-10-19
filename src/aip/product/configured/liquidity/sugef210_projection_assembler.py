@@ -107,10 +107,7 @@ def assemble_partial_institutional_projection(
         if contractual.source_status != "CERTIFIED_CONTRACTUAL_DATES_ONLY_OFFBALANCE_NOT_INCLUDED":
             raise ValueError("Contractual schedule lacks certified source-date evidence")
         if master_maturity_recognition_reference and master is not None:
-            if any(
-                item.reference.startswith("INVESTMENT:")
-                for item in contractual.cashflows
-            ):
+            if any(item.reference.startswith("INVESTMENT:") for item in contractual.cashflows):
                 raise ValueError("Master principal and contractual investments may overlap")
         groups.append(
             ("CERTIFIED_DATED_SOURCE_SCHEDULE", contractual.cashflows, contractual.source_status)
@@ -146,9 +143,7 @@ def assemble_partial_institutional_projection(
             for event in outside
         ):
             raise ValueError("Only contractually evidenced off-balance events can be imported")
-        groups.append(
-            ("CERTIFIED_OFF_BALANCE", outside, off_balance_certification_reference)
-        )
+        groups.append(("CERTIFIED_OFF_BALANCE", outside, off_balance_certification_reference))
         areas.add(LiquidityBalanceArea.OFF_BALANCE)
     else:
         missing.append("OFF_BALANCE_COMMITMENT_COVERAGE_NOT_CERTIFIED")
@@ -157,8 +152,7 @@ def assemble_partial_institutional_projection(
         if not opening_nonduplication_reference:
             raise ValueError("Opening liquidity requires independent nonduplication review")
         if not opening_certifications or any(
-            not opening_certifications.get(currency)
-            for currency in opening_by_currency
+            not opening_certifications.get(currency) for currency in opening_by_currency
         ):
             raise ValueError("Opening cash lacks verified source/currency certification")
     else:

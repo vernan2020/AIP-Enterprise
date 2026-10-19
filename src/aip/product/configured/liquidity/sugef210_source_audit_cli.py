@@ -15,12 +15,12 @@ from aip.product.configured.liquidity.investment_current_account_xml_audit impor
     InvestmentCurrentAccountPolicy,
     audit_investment_current_accounts,
 )
+from aip.product.configured.liquidity.sugef210_master_maturity_bridge import (
+    build_master_principal_evidence,
+)
 from aip.product.configured.liquidity.sugef210_xml_perimeter_audit import (
     audit_xml_liquidity_perimeters,
     summarize_xml_liquidity_perimeters,
-)
-from aip.product.configured.liquidity.sugef210_master_maturity_bridge import (
-    build_master_principal_evidence,
 )
 from aip.product.configured.readers.institutional_portfolio_master_reader import (
     InstitutionalPortfolioMasterReader,

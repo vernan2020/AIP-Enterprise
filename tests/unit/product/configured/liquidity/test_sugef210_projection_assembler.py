@@ -23,7 +23,6 @@ from aip.product.configured.liquidity.sugef210_projection_assembler import (
     assemble_partial_institutional_projection,
 )
 
-
 CUTOFF = date(2026, 9, 30)
 
 

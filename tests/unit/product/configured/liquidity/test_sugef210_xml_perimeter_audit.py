@@ -16,7 +16,6 @@ from aip.product.configured.liquidity.sugef210_xml_perimeter_audit import (
     summarize_xml_liquidity_perimeters,
 )
 
-
 CUTOFF = date(2026, 9, 30)
 
 
@@ -34,7 +33,8 @@ class Reader:
     def iter_records(self, source: XMLConfiaResolvedSource):
         if source.key == "CREDIT":
             yield XMLConfiaRecord(
-                "1", "insertar",
+                "1",
+                "insertar",
                 {
                     "SaldoPrincipalOperacionCrediticia": "75.50",
                     "TipoMonedaOperacion": "1",
@@ -46,7 +46,8 @@ class Reader:
             )
         if source.key == "CAPTACIONES":
             yield XMLConfiaRecord(
-                "2", "insertar",
+                "2",
+                "insertar",
                 {
                     "SaldoPrincipal": "150",
                     "TipoMonedaObligacion": "2",
@@ -55,7 +56,8 @@ class Reader:
                 },
             )
             yield XMLConfiaRecord(
-                "3", "insertar",
+                "3",
+                "insertar",
                 {
                     "SaldoPrincipal": "unreadable",
                     "TipoMonedaObligacion": "2",
@@ -66,7 +68,8 @@ class Reader:
             )
         if source.key == "BORROWING":
             yield XMLConfiaRecord(
-                "4", "insertar",
+                "4",
+                "insertar",
                 {
                     "SaldoPrincipal": "800",
                     "TipoMonedaObligacion": "1",
@@ -84,9 +87,7 @@ class Reader:
 
 def test_real_xml_shapes_are_audited_without_cash_booking():
     reports = audit_xml_liquidity_perimeters(reader=Reader(), cutoff=CUTOFF)
-    assert [r.key for r in reports] == [
-        "CREDIT", "CAPTACIONES", "BORROWING", "BORROWING_MATURITY"
-    ]
+    assert [r.key for r in reports] == ["CREDIT", "CAPTACIONES", "BORROWING", "BORROWING_MATURITY"]
     credit, deposits, borrowing, maturity = reports
     assert credit.records == 1
     assert credit.native_balances == (("1", Decimal("75.50")),)

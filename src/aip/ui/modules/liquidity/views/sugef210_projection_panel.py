@@ -286,7 +286,11 @@ class SUGEF210ProjectionPanel(QWidget):
             (str(row.get("key")), str(row.get("currency"))): str(
                 row.get("principal_maturing", "N/D")
             )
-            for row in (maturity.get("maturity_windows") if isinstance(maturity.get("maturity_windows"), (list, tuple)) else ())
+            for row in (
+                maturity.get("maturity_windows")
+                if isinstance(maturity.get("maturity_windows"), (list, tuple))
+                else ()
+            )
             if isinstance(row, dict)
         }
         for index, window in enumerate(sugef210_windows(self._cutoff)):
@@ -376,7 +380,9 @@ class SUGEF210ProjectionPanel(QWidget):
             return
         self._fill_master_maturities(report)
         self._fill_contractual_xml_perimeters(report)
-        for group in (report.get("accounts") if isinstance(report.get("accounts"), (list, tuple)) else ()):
+        for group in (
+            report.get("accounts") if isinstance(report.get("accounts"), (list, tuple)) else ()
+        ):
             if not isinstance(group, dict):
                 continue
             self._append(
@@ -391,7 +397,11 @@ class SUGEF210ProjectionPanel(QWidget):
                     str(group["unverified_master_overlap"]),
                 ),
             )
-        for record in (report.get("record_evidence") if isinstance(report.get("record_evidence"), (list, tuple)) else ()):
+        for record in (
+            report.get("record_evidence")
+            if isinstance(report.get("record_evidence"), (list, tuple))
+            else ()
+        ):
             if not isinstance(record, dict):
                 continue
             self._append(
@@ -566,9 +576,11 @@ class SUGEF210ProjectionPanel(QWidget):
         for index in range(self._xml_perimeters.rowCount()):
             perimeter.append(
                 tuple(
-                    safe(self._xml_perimeters.item(index, column).text())
-                    if self._xml_perimeters.item(index, column) is not None
-                    else ""
+                    (
+                        safe(self._xml_perimeters.item(index, column).text())
+                        if self._xml_perimeters.item(index, column) is not None
+                        else ""
+                    )
                     for column in range(len(self._XML_PERIMETER_HEADERS))
                 )
             )
@@ -584,7 +596,9 @@ class SUGEF210ProjectionPanel(QWidget):
             "unverified_master_overlap",
         )
         accounts.append(account_keys)
-        for row in (report.get("accounts") if isinstance(report.get("accounts"), (list, tuple)) else ()):
+        for row in (
+            report.get("accounts") if isinstance(report.get("accounts"), (list, tuple)) else ()
+        ):
             if isinstance(row, dict):
                 accounts.append(tuple(safe(row.get(field)) for field in account_keys))
 
@@ -593,7 +607,11 @@ class SUGEF210ProjectionPanel(QWidget):
             schedule = workbook.create_sheet("Vencimientos Maestro")
             keys = ("key", "from", "to", "currency", "principal_maturing", "status")
             schedule.append(keys)
-            for item in (maturity.get("maturity_windows") if isinstance(maturity.get("maturity_windows"), (list, tuple)) else ()):
+            for item in (
+                maturity.get("maturity_windows")
+                if isinstance(maturity.get("maturity_windows"), (list, tuple))
+                else ()
+            ):
                 if isinstance(item, dict):
                     schedule.append(tuple(safe(item.get(key)) for key in keys))
 
@@ -615,7 +633,11 @@ class SUGEF210ProjectionPanel(QWidget):
             "withdrawable_amount",
         )
         records.append(record_keys)
-        for row in (report.get("record_evidence") if isinstance(report.get("record_evidence"), (list, tuple)) else ()):
+        for row in (
+            report.get("record_evidence")
+            if isinstance(report.get("record_evidence"), (list, tuple))
+            else ()
+        ):
             if isinstance(row, dict):
                 records.append(tuple(safe(row.get(field)) for field in record_keys))
         for sheet in workbook:
