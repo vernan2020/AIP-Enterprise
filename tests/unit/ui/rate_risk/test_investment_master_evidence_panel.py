@@ -17,6 +17,15 @@ def _report() -> dict[str, object]:
         "certification_status": "BLOCKED",
         "blocking_requirements": ["INV-PRINCIPAL"],
         "not_assessed_requirements": ["INV-CASHFLOWS"],
+        "source_currency_mappings": [
+            {
+                "source_currency": "DOLAR",
+                "normalized_currency": "USD",
+                "mapping_status": "EXPLICIT_ALIAS",
+                "positions": 1,
+                "source_principal": "500",
+            }
+        ],
         "maturity_bands": [
             {
                 "source_currency": "CRC",
@@ -93,6 +102,7 @@ def test_investment_panel_shows_real_source_currency_and_certification(qt_app):
         assert panel._reconciliation.item(0, 1).text() == "1.234.567,89"
         assert "Bloqueada" in panel._reconciliation.item(1, 5).text()
         assert "Falta moneda" in panel._excluded.item(0, 1).text()
+        assert "DOLAR → USD: 1 posiciones" in panel._currency_mapping.text()
         assert "BLOCKED" in panel._certification.text()
         assert "Sin GAP" in panel._certification.text()
     finally:
