@@ -108,8 +108,8 @@ def admit_approved_master_principal(
         excluded=excluded,
         principal_by_currency=totals,
     )
-    if len(result.flows) != len(approvals) or result.positions_read != len(
-        result.flows
-    ) + len(result.excluded):
+    if len(result.flows) != len(approvals) or result.positions_read != len(result.flows) + len(
+        result.excluded
+    ):
         raise ValueError("Approved Master principal positions did not reconcile")
     return result

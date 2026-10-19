@@ -248,14 +248,14 @@ def test_bank_icl_document_cannot_be_the_investment_master(monkeypatch, tmp_path
     bank.write_text(json.dumps(content), encoding="utf-8")
     with pytest.raises(ValueError, match="independent of approvals and Master"):
         run_configured_sight_opening(
-            cutoff=CUTOFF, scenario="BASE", approval_manifest=approval,
+            cutoff=CUTOFF,
+            scenario="BASE",
+            approval_manifest=approval,
             bank_support_manifest=bank,
         )
 
 
-def test_approved_original_master_principal_generates_real_dated_inflow(
-    monkeypatch, tmp_path
-):
+def test_approved_original_master_principal_generates_real_dated_inflow(monkeypatch, tmp_path):
     _configure(monkeypatch, tmp_path)
     from aip.product.configured.liquidity import sugef210_opening_session as module
 
@@ -273,17 +273,19 @@ def test_approved_original_master_principal_generates_real_dated_inflow(
                     "principal_balance": "Saldo Principal",
                     "maturity_date": "Fecha Vencimiento",
                 },
-                normalized_positions=[{
-                    "isin": "UNRELATED-TEST-ISIN",
-                    "series": "UNRELATED-TEST-SERIES",
-                    "source_currency": "CRC",
-                    "source_row": "ROW-3",
-                    "maturity_date": maturity,
-                    "source_values": {
-                        "saldo principal": "120",
-                        "fecha vencimiento": maturity.isoformat(),
-                    },
-                }],
+                normalized_positions=[
+                    {
+                        "isin": "UNRELATED-TEST-ISIN",
+                        "series": "UNRELATED-TEST-SERIES",
+                        "source_currency": "CRC",
+                        "source_row": "ROW-3",
+                        "maturity_date": maturity,
+                        "source_values": {
+                            "saldo principal": "120",
+                            "fecha vencimiento": maturity.isoformat(),
+                        },
+                    }
+                ],
             )
 
     monkeypatch.setattr(module, "InstitutionalPortfolioMasterReader", RealMasterRecord)
@@ -291,19 +293,23 @@ def test_approved_original_master_principal_generates_real_dated_inflow(
     doc["master_principal_authorization"] = {
         "master_sha256": digest,
         "approval_reference": "TEST-TREASURY-PRINCIPAL",
-        "approved_principal_records": [{
-            "cashflow_reference": f"MASTER:{digest}:ROW-3:PRINCIPAL",
-            "payment_date": maturity.isoformat(),
-            "original_principal": "120",
-            "currency": "CRC",
-            "settlement_availability_reference": "TEST-BANK-CUSTODIAN",
-            "restriction_clearance_reference": "TEST-UNENCUMBERED",
-            "nonduplication_reference": "TEST-INVESTMENT-NONDUP",
-        }],
+        "approved_principal_records": [
+            {
+                "cashflow_reference": f"MASTER:{digest}:ROW-3:PRINCIPAL",
+                "payment_date": maturity.isoformat(),
+                "original_principal": "120",
+                "currency": "CRC",
+                "settlement_availability_reference": "TEST-BANK-CUSTODIAN",
+                "restriction_clearance_reference": "TEST-UNENCUMBERED",
+                "nonduplication_reference": "TEST-INVESTMENT-NONDUP",
+            }
+        ],
     }
     approval.write_text(json.dumps(doc), encoding="utf-8")
     result = run_configured_sight_opening(
-        cutoff=CUTOFF, scenario="BASE", approval_manifest=approval,
+        cutoff=CUTOFF,
+        scenario="BASE",
+        approval_manifest=approval,
         bank_support_manifest=bank,
     )
     assert result.master_principal_events_approved == 1
@@ -329,6 +335,8 @@ def test_master_principal_without_original_source_hash_is_blocked(monkeypatch, t
     approval.write_text(json.dumps(document), encoding="utf-8")
     with pytest.raises(ValueError, match="no longer matches actual Master"):
         run_configured_sight_opening(
-            cutoff=CUTOFF, scenario="BASE", approval_manifest=approval,
+            cutoff=CUTOFF,
+            scenario="BASE",
+            approval_manifest=approval,
             bank_support_manifest=bank,
         )
