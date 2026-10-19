@@ -42,9 +42,7 @@ def test_iso_filename_is_reported_without_being_substituted(tmp_path):
     _touch(tmp_path, "Inversiones/2026/maestro/09/2026-09-30.xlsx")
     found = inspect_master_paths(root=str(tmp_path), pattern=PATTERN, cutoff=CUTOFF)
     assert found["strict_discovery_status"] == "EXACT_CUTOFF_MASTER_NOT_FOUND"
-    assert found["alternate_cutoff_candidates"] == [
-        "Inversiones/2026/maestro/09/2026-09-30.xlsx"
-    ]
+    assert found["alternate_cutoff_candidates"] == ["Inversiones/2026/maestro/09/2026-09-30.xlsx"]
 
 
 def test_neither_earlier_cutoff_nor_unrelated_spreadsheet_is_used(tmp_path):
