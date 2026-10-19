@@ -1,5 +1,7 @@
 name: One-shot SUGEF210 Black Formatting
 
+# Refresh formatting for the governed projection UI and Excel export.
+
 on:
   push:
     branches:
