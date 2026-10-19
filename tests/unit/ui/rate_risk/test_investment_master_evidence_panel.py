@@ -43,6 +43,18 @@ def _report() -> dict[str, object]:
                 "valid_source_principal": "0",
             }
         ],
+        "maturity_exception_rows": [
+            {
+                "excel_row": 17,
+                "source_currency": "DOLAR",
+                "normalized_currency": "USD",
+                "reason": "MISSING_OR_INVALID_MATURITY",
+                "source_date_state": "SOURCE_DATE_PLACEHOLDER",
+                "parsed_maturity": None,
+                "source_principal": "500",
+                "principal_valid": True,
+            }
+        ],
         "maturity_reconciliation": [
             {
                 "source_currency": "CRC",
@@ -98,6 +110,12 @@ def test_investment_panel_shows_real_source_currency_and_certification(qt_app):
         assert panel._bands.item(0, 1).text() == "4. 3 a 6 meses"
         assert panel._bands.item(0, 3).text() == "1.234.567,89"
         assert panel._excluded.rowCount() == 1
+        assert panel._maturity_details.rowCount() == 1
+        assert panel._maturity_details.item(0, 0).text() == "17"
+        assert panel._maturity_details.item(0, 1).text() == "DOLAR"
+        assert panel._maturity_details.item(0, 2).text() == "USD"
+        assert "marcador" in panel._maturity_details.item(0, 4).text().lower()
+        assert panel._maturity_details.item(0, 5).text() == "500"
         assert panel._reconciliation.rowCount() == 2
         assert panel._reconciliation.item(0, 1).text() == "1.234.567,89"
         assert "Bloqueada" in panel._reconciliation.item(1, 5).text()
@@ -119,6 +137,7 @@ def test_investment_panel_does_not_reuse_previous_cutoff(qt_app):
         assert panel._table.rowCount() == 0
         assert panel._bands.rowCount() == 0
         assert panel._excluded.rowCount() == 0
+        assert panel._maturity_details.rowCount() == 0
         assert panel._reconciliation.rowCount() == 0
         assert "15/10/2026" in panel._status.text()
     finally:
