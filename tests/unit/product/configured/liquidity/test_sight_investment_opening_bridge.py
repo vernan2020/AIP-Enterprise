@@ -84,6 +84,9 @@ def test_only_verified_available_funds_are_added_once_without_fx():
     assert dict(result.opening_by_currency) == {"CRC": Decimal("2000"), "USD": Decimal("70")}
     assert result.included_xml_accounts == 1
     assert dict(result.added_by_currency)["USD"] == Decimal("60")
+    assert result.included_source_references == (proof.source_record_reference,)
+    assert result.xml_sha256 == proof.xml_sha256
+    assert result.opening_reconciliation_reference == "CONFIRMED-NOT-IN-ICL-OPENING"
     assert result.status == "OPENING_XML_SIGHT_FUNDS_VERIFIED_NO_FUTURE_CASHFLOW"
 
 

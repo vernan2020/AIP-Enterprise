@@ -65,6 +65,9 @@ class SightOpeningLiquidityResult:
     included_xml_accounts: int
     added_by_currency: tuple[tuple[str, Decimal], ...]
     status: str = "OPENING_XML_SIGHT_FUNDS_VERIFIED_NO_FUTURE_CASHFLOW"
+    included_source_references: tuple[str, ...] = ()
+    xml_sha256: str | None = None
+    opening_reconciliation_reference: str | None = None
 
 
 def add_verified_sight_investments_to_opening(
@@ -154,4 +157,7 @@ def add_verified_sight_investments_to_opening(
         opening_by_currency=tuple(sorted(opening.items())),
         included_xml_accounts=len(records),
         added_by_currency=tuple(sorted(added.items())),
+        included_source_references=tuple(entry.source_record_reference for entry in records),
+        xml_sha256=source_audit.xml_sha256 if records and source_audit is not None else None,
+        opening_reconciliation_reference=opening_reconciliation_reference if records else None,
     )

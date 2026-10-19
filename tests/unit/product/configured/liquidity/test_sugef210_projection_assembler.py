@@ -23,6 +23,9 @@ from aip.product.configured.liquidity.sugef210_master_maturity_bridge import (
 from aip.product.configured.liquidity.sugef210_projection_assembler import (
     assemble_partial_institutional_projection,
 )
+from aip.product.configured.liquidity.sight_investment_opening_bridge import (
+    SightOpeningLiquidityResult,
+)
 
 CUTOFF = date(2026, 9, 30)
 
@@ -175,4 +178,43 @@ def test_master_principal_must_reconcile_before_any_cash_recognition():
             cutoff=CUTOFF,
             scenario="BASE",
             master=inconsistent,
+        )
+
+
+def test_verified_sight_investment_reconciles_only_opening_not_future_cashflow():
+    sight = SightOpeningLiquidityResult(
+        cutoff=CUTOFF,
+        opening_by_currency=(("CRC", Decimal("100")), ("USD", Decimal("30"))),
+        included_xml_accounts=1,
+        added_by_currency=(("CRC", Decimal("0")), ("USD", Decimal("20"))),
+        included_source_references=("XML:INV-0001",),
+        xml_sha256="e" * 64,
+        opening_reconciliation_reference="BANK-ICL-NONDOUBLECOUNT",
+    )
+    result = assemble_partial_institutional_projection(
+        cutoff=CUTOFF,
+        scenario="BASE",
+        verified_sight_opening=sight,
+        opening_by_currency={"CRC": Decimal("100"), "USD": Decimal("30")},
+        opening_certifications={"CRC": "BANK-CRC", "USD": "BANK-USD"},
+        opening_nonduplication_reference="BANK-ICL-NONDOUBLECOUNT",
+    )
+    assert result.projection.source_flow_count == 0
+    assert result.projection.rows[17].opening_liquidity == Decimal("30")
+    assert result.projection.rows[17].projected_liquidity == Decimal("30")
+    assert not result.projection.certified_comprehensive
+    with pytest.raises(ValueError, match="reconcile exactly"):
+        assemble_partial_institutional_projection(
+            cutoff=CUTOFF, scenario="BASE", verified_sight_opening=sight,
+            opening_by_currency={"CRC": Decimal("100"), "USD": Decimal("10")},
+            opening_certifications={"CRC": "BANK-CRC", "USD": "BANK-USD"},
+            opening_nonduplication_reference="BANK-ICL-NONDOUBLECOUNT",
+        )
+    with pytest.raises(ValueError, match="already exists"):
+        assemble_partial_institutional_projection(
+            cutoff=CUTOFF, scenario="BASE", verified_sight_opening=sight,
+            opening_by_currency={"CRC": Decimal("100"), "USD": Decimal("30")},
+            opening_certifications={"CRC": "BANK-CRC", "USD": "BANK-USD"},
+            opening_nonduplication_reference="BANK-ICL-NONDOUBLECOUNT",
+            already_in_opening=frozenset({"XML:INV-0001"}),
         )

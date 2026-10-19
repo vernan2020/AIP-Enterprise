@@ -32,6 +32,9 @@ from aip.product.configured.liquidity.irrbb_schedule_liquidity_bridge import (
 from aip.product.configured.liquidity.sugef210_master_maturity_bridge import (
     MasterPrincipalEvidence,
 )
+from aip.product.configured.liquidity.sight_investment_opening_bridge import (
+    SightOpeningLiquidityResult,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,6 +68,7 @@ def assemble_partial_institutional_projection(
     off_balance_flows: Iterable[LiquidityProjectionFlow] = (),
     off_balance_certification_reference: str | None = None,
     opening_by_currency: dict[str, Decimal] | None = None,
+    verified_sight_opening: SightOpeningLiquidityResult | None = None,
     opening_certifications: dict[str, str] | None = None,
     opening_nonduplication_reference: str | None = None,
     already_in_opening: frozenset[str] = frozenset(),
@@ -147,6 +151,29 @@ def assemble_partial_institutional_projection(
         areas.add(LiquidityBalanceArea.OFF_BALANCE)
     else:
         missing.append("OFF_BALANCE_COMMITMENT_COVERAGE_NOT_CERTIFIED")
+
+    if verified_sight_opening is not None:
+        sight = verified_sight_opening
+        if sight.cutoff != cutoff:
+            raise ValueError("Sight investment opening cutoff differs from projection")
+        if sight.status != "OPENING_XML_SIGHT_FUNDS_VERIFIED_NO_FUTURE_CASHFLOW":
+            raise ValueError("Sight investment approval is not an opening-cash certification")
+        if sight.included_xml_accounts != len(sight.included_source_references):
+            raise ValueError("Sight investment opening lacks individual source reconciliation")
+        if len(set(sight.included_source_references)) != len(sight.included_source_references):
+            raise ValueError("Sight investment account appears more than once")
+        if sight.included_xml_accounts and (
+            not sight.xml_sha256
+            or not sight.opening_reconciliation_reference
+        ):
+            raise ValueError("Sight XML hash and reconciliation reference are mandatory")
+        if any(source in already_in_opening for source in sight.included_source_references):
+            raise ValueError("Sight account already exists in opening balance")
+        if any(source in {event.reference for group in groups for event in group[1]}
+               for source in sight.included_source_references):
+            raise ValueError("Sight investment duplicates a scheduled event")
+        if opening_by_currency is None or opening_by_currency != dict(sight.opening_by_currency):
+            raise ValueError("Opening cash must reconcile exactly to the verified sight bridge")
 
     if opening_by_currency:
         if not opening_nonduplication_reference:
