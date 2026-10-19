@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import hashlib
+from dataclasses import replace
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -183,3 +184,33 @@ def test_reject_duplicate_event_and_unverified_source_maturity(tmp_path):
         _import(tmp_path, [_row("CREDIT"), _row("CREDIT")])
     with pytest.raises(ValueError, match="maturity differs"):
         _import(tmp_path, [{**_row("BORROWING"), "maturity_date": "2027-10-01"}])
+
+
+def test_mixed_institution_entities_are_rejected(monkeypatch, tmp_path):
+    from sys import modules
+
+    class MixedReader(Reader):
+        def resolve_source(self, *, key, cutoff_date):
+            original = super().resolve_source(key=key, cutoff_date=cutoff_date)
+            if key == "BORROWING":
+                return replace(
+                    original, header=replace(original.header, id_entidad="OTHER-ENTITY")
+                )
+            return original
+
+    monkeypatch.setattr(modules[__name__], "Reader", MixedReader)
+    with pytest.raises(ValueError, match="different reporting entities"):
+        _import(tmp_path, [_row("CREDIT"), _row("BORROWING")])
+
+
+def test_original_xml_duplicate_record_ids_block_cash(monkeypatch, tmp_path):
+    from sys import modules
+
+    class DuplicateReader(Reader):
+        def iter_records(self, source):
+            yield from super().iter_records(source)
+            yield from super().iter_records(source)
+
+    monkeypatch.setattr(modules[__name__], "Reader", DuplicateReader)
+    with pytest.raises(ValueError, match="ambiguous record IDs"):
+        _import(tmp_path, [_row("CREDIT")])
