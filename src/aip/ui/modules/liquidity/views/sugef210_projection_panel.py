@@ -652,7 +652,9 @@ class SUGEF210ProjectionPanel(QWidget):
         self.present_governed_projection(session.assembly.projection)
         self._opening_status.setText(
             f"Caja inicial documentada: {session.sight_records_approved} inversiones "
-            f"a la vista revisadas contra XML/Maestro. "
+            f"a la vista revisadas contra XML/Maestro; "
+            f"{session.master_principal_events_approved} vencimientos de principal del Maestro "
+            "autorizados por instrumento (no incluye cupones). "
             f"XML SHA256 {session.sight_source_sha256[:12]}…; "
             f"respaldo bancario SHA256 {session.bank_document_sha256[:12]}…. "
             "Proyección PARCIAL: aún faltan cronogramas contractuales y contingencias. "
