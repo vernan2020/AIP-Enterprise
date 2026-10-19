@@ -7,7 +7,7 @@
 - Día 0: caja intradía y capacidad de financiación diaria.
 - Días 1–7: apertura diaria.
 - Días 8–30: apertura semanal, en cuatro tramos no solapados: 8–14, 15–21, 22–28 y 29–30.
-- Después del día 30: dos ventanas mensuales calendario y después trimestres hasta cumplir un año.
+- Después del día 30: días 31–60, 61–90, 91–180, 181–270 y 271–365; son intervalos fijos de días desde el corte (no cierres mensuales calendario).
 
 ## Matriz de fuentes institucionales
 
@@ -37,3 +37,14 @@ El reporte debe conservar CRC y USD separados, mostrar entradas y salidas por pe
 ## Pendiente para uso institucional
 
 Integrar cronogramas realmente certificados de cartera, inversiones, captaciones y obligaciones; acreditar fondos a la vista, clasificar compromisos contingentes, confirmar caja y facilidades, probar corte real, conciliar y aprobar gobierno de supuestos. Hasta entonces, no publicar flujo integral como certificado.
+
+## Validación real de caja inicial — PREVIEW
+
+El módulo **Liquidez → Flujo proyectado · SUGEF 2-10** incorpora la opción **Validar caja inicial XML + Tesorería/ICL**. Se seleccionan dos documentos locales separados, sin cargar ninguno al repositorio GitHub:
+
+1. Autorización de inversiones a la vista en JSON (`SUGEF210_SIGHT_OPENING_V1`), con `cutoff`, `xml_sha256`, `approved_account_codes`, `approved_currency_mapping`, `account_classification_approval`, `currency_mapping_approval_reference`, `opening_reconciliation_reference` y `approved_records`. Cada registro aprobado identifica la referencia XML, cuenta contable, moneda, principal XML, saldo realmente disponible, fecha de retiro, soporte de disponibilidad, no duplicación y liberación de restricciones.
+2. Conciliación de Tesorería/ICL en JSON (`SUGEF210_BANK_OPENING_V1`) para el mismo corte, con `bank_opening_excluding_sight` (importes como cadenas decimales originales CRC y USD, **sin incluir** las inversiones que se agregarán después), `opening_certifications` en ambas monedas, `opening_reconciliation_reference`, `bank_or_icl_source_file` (ruta absoluta del documento de respaldo) y `bank_or_icl_source_sha256` (SHA-256 del archivo respaldatorio original).
+
+La aplicación lee nuevamente los XML CONFÍA y el Maestro **del corte exacto** desde su configuración institucional. No acepta Maestro faltante, duplicado, con lectura no saludable, fuente XML con principal/cuentas inválidas ni diferencias de hash o período. Las entradas se verifican individualmente, se suman al saldo inicial solo después de pasar todos los controles y **no se suman como entradas futuras**. Si el escenario o corte cambia, la proyección cargada queda invalidada.
+
+**Límite importante:** disponer de un archivo JSON con referencias de aprobación y un hash de respaldo no demuestra por sí mismo la autenticidad de firmas ni reconcilia automáticamente las cifras internas de un extracto bancario. Tesorería debe validar esos extremos y autorizar la conciliación original de manera independiente. Por esa razón, la proyección permanece expresamente **PARCIAL**, incluso si todas las inversiones a la vista pasan las validaciones del sistema; aún requieren integración los cronogramas de créditos, captaciones, obligaciones, inversiones con cupón, contingentes y supuestos aprobados.
