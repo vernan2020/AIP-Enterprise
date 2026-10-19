@@ -108,8 +108,9 @@ def audit_investment_current_accounts(
             item["principal"] += principal
         if isin and isin in master_isins:
             item["matched"] += 1
-        elif not isin:
-            # No verified linkage to Master: never declare it 'not duplicated'.
+        else:
+            # No proven linkage to Master: absence of a matching ISIN alone
+            # does not establish that the position is absent from the Master.
             item["uncertain"] += 1
     groups = tuple(
         InvestmentXMLAccountGroup(
