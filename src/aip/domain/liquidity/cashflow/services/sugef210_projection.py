@@ -1,25 +1,18 @@
 """SUGEF 2-10 projected liquidity ladder, distinct from regulatory IRRBB GAP.
 
-Daily 0..7, weekly 8..30, two calendar-month windows and quarterly to one year.
+Daily 0..7, weekly 8..30, fixed monthly 31..60 and 61..90,
+then quarterly 91..180, 181..270 and 271..365.
 No inferred deposit runs, renewal rates, off-balance calls or sight availability.
 Every stressed event requires a documented, approved assumption.
 """
 
 from __future__ import annotations
 
-from calendar import monthrange
 from dataclasses import dataclass
 from datetime import date, timedelta
 from decimal import Decimal
 from enum import Enum
 from typing import Iterable
-
-def _add_calendar_months(day: date, months: int) -> date:
-    year, month = divmod(day.year * 12 + day.month - 1 + months, 12)
-    month += 1
-    return date(year, month, min(day.day, monthrange(year, month)[1]))
-
-
 
 class LiquidityFlowSide(str, Enum):
     INFLOW = "INFLOW"
@@ -132,36 +125,37 @@ class LiquidityProjectionResult:
 
 
 def sugef210_windows(cutoff: date) -> tuple[LiquidityWindow, ...]:
-    """Non-overlapping, contiguous through one calendar year; day zero is today."""
-    intervals: list[tuple[str, str, date, date, str]] = []
-    intervals.append(("D00", "Hoy · capacidad intradía", cutoff, cutoff, "DAILY"))
+    """Contiguous fixed regulatory horizons from day zero through day 365."""
+    bands: list[tuple[str, str, int, int, str]] = [
+        ("D00", "Hoy · capacidad intradía", 0, 0, "DAILY")
+    ]
     for day in range(1, 8):
-        target = cutoff + timedelta(days=day)
-        intervals.append((f"D{day:02}", f"Día {day}", target, target, "DAILY"))
+        bands.append((f"D{day:02}", f"Día {day}", day, day, "DAILY"))
     for first, last in ((8, 14), (15, 21), (22, 28), (29, 30)):
-        intervals.append((
-            f"W{first:02}_{last:02}", f"Días {first}–{last}",
-            cutoff + timedelta(days=first),
-            cutoff + timedelta(days=last), "WEEKLY"
-        ))
-    # Following two rolling CALENDAR months start after the first 30 days.
-    boundaries = (cutoff + timedelta(days=30), _add_calendar_months(cutoff, 2),
-                  _add_calendar_months(cutoff, 3),
-                  _add_calendar_months(cutoff, 6),
-                  _add_calendar_months(cutoff, 9),
-                  _add_calendar_months(cutoff, 12))
-    if boundaries[1] <= boundaries[0]:
-        raise ValueError("Invalid calendar monthly boundary at cutoff")
-    for idx, (first, last) in enumerate(zip(boundaries, boundaries[1:]), 1):
-        freq = "MONTHLY" if idx <= 2 else "QUARTERLY"
-        intervals.append((
-            f"M{idx:02}" if idx <= 2 else f"Q{idx-2:02}",
-            f"Mes {idx}" if idx <= 2 else f"Trimestre {idx-2}",
-            first + timedelta(days=1), last, freq
-        ))
-    windows = tuple(LiquidityWindow(*values) for values in intervals)
-    if windows[0].start != cutoff or windows[-1].end != _add_calendar_months(cutoff, 12):
-        raise ValueError("Projection year boundaries not reconciled")
+        bands.append(
+            (f"W{first:02}_{last:02}", f"Días {first}–{last}", first, last, "WEEKLY")
+        )
+    bands.extend(
+        (
+            ("M01", "Días 31–60", 31, 60, "MONTHLY"),
+            ("M02", "Días 61–90", 61, 90, "MONTHLY"),
+            ("Q01", "Días 91–180", 91, 180, "QUARTERLY"),
+            ("Q02", "Días 181–270", 181, 270, "QUARTERLY"),
+            ("Q03", "Días 271–365", 271, 365, "QUARTERLY"),
+        )
+    )
+    windows = tuple(
+        LiquidityWindow(
+            key=key,
+            label=label,
+            start=cutoff + timedelta(days=first),
+            end=cutoff + timedelta(days=last),
+            frequency=frequency,
+        )
+        for key, label, first, last, frequency in bands
+    )
+    if windows[0].start != cutoff or windows[-1].end != cutoff + timedelta(days=365):
+        raise ValueError("Projection must end exactly at day 365")
     for previous, next_window in zip(windows, windows[1:]):
         if next_window.start != previous.end + timedelta(days=1):
             raise ValueError("Projected liquidity horizon contains overlap or gap")

@@ -56,7 +56,10 @@ def test_horizons_include_intraday_seven_days_four_weeks_months_and_quarters():
     assert windows[8].start == date(2026, 10, 8)
     assert windows[11].end == date(2026, 10, 30)
     assert windows[12].start == date(2026, 10, 31)
-    assert windows[12].end == date(2026, 11, 30)
+    assert windows[12].end == CUTOFF + timedelta(days=60)
+    assert windows[13].end == CUTOFF + timedelta(days=90)
+    assert windows[14].end == CUTOFF + timedelta(days=180)
+    assert windows[15].end == CUTOFF + timedelta(days=270)
     assert windows[-1].end == date(2027, 9, 30)
     assert all(
         left.end + timedelta(days=1) == right.start
@@ -70,7 +73,7 @@ def test_horizons_include_intraday_seven_days_four_weeks_months_and_quarters():
 )
 def test_calendar_boundaries_always_contiguous(cutoff):
     windows = sugef210_windows(cutoff)
-    assert windows[-1].end.year == cutoff.year + 1
+    assert windows[-1].end == cutoff + timedelta(days=365)
     assert all(
         left.end + timedelta(days=1) == right.start
         for left, right in zip(windows, windows[1:])
@@ -181,3 +184,30 @@ def test_financing_need_requires_real_opening_balance():
     assert result.rows[1].projected_liquidity == Decimal("-55")
     assert result.rows[1].financing_need == Decimal("55")
     assert all(row.financing_need is None for row in result.rows if row.currency == "USD")
+
+@pytest.mark.parametrize(
+    "day,index",
+    [
+        (0, 0), (7, 7), (8, 8), (30, 11), (31, 12),
+        (60, 12), (61, 13), (90, 13), (91, 14),
+        (180, 14), (181, 15), (270, 15), (271, 16), (365, 16),
+    ],
+)
+def test_fixed_day_boundaries_even_for_leap_year(day, index):
+    cutoff = date(2028, 2, 29)
+    target = cutoff + timedelta(days=day)
+    windows = sugef210_windows(cutoff)
+    assert [
+        ix for ix, window in enumerate(windows)
+        if window.start <= target <= window.end
+    ] == [index]
+
+
+def test_day_366_is_excluded_and_not_reassigned_to_last_window():
+    result = project_sugef210(
+        cutoff=CUTOFF, scenario="BASE",
+        flows=[_flow("DAY366", 366, "100")],
+        opening_liquidity=None,
+    )
+    assert result.excluded_out_of_horizon == 1
+    assert all(row.net_flow == 0 for row in result.rows)

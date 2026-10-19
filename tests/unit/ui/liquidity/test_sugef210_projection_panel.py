@@ -17,6 +17,8 @@ def test_sugef210_panel_shows_compliant_horizons_without_demo_amounts(qt_app):
         assert panel._windows.item(0, 5).text() == "N/D"
         assert panel._windows.item(8, 1).text() == "08/10/2026"
         assert panel._windows.item(11, 2).text() == "30/10/2026"
+        assert panel._windows.item(12, 2).text() == "29/11/2026"
+        assert panel._windows.item(13, 2).text() == "29/12/2026"
         assert panel._windows.item(16, 2).text() == "30/09/2027"
         assert panel._accounts.rowCount() == 0
     finally:

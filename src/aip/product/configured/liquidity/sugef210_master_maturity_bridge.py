@@ -10,6 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal, InvalidOperation
+import re
+import unicodedata
 from typing import Any, Iterable
 
 from aip.domain.liquidity.cashflow.services.sugef210_projection import (
@@ -52,6 +54,18 @@ def _currency(raw: str) -> str | None:
     return None
 
 
+def _normalized_header(header: str) -> str:
+    """Match normalized source_values keys produced by the institutional reader."""
+    cleaned = header.replace("\ufeff", "").replace("\u00a0", " ").replace("_", " ")
+    cleaned = re.sub(r"[\u200b\u200c\u200d\ufeff\u2060]", "", cleaned)
+    ascii_text = (
+        unicodedata.normalize("NFKD", cleaned.strip().lower())
+        .encode("ascii", "ignore")
+        .decode("ascii")
+    )
+    return re.sub(r"\\s+", " ", re.sub(r"[^a-z0-9]+", " ", ascii_text)).strip()
+
+
 def _principal(raw: Any) -> Decimal | None:
     if raw is None or isinstance(raw, bool):
         return None
@@ -82,13 +96,23 @@ def build_master_principal_evidence(
     for ordinal, position in enumerate(rows, start=1):
         raw_row = str(position.get("source_row") or ordinal)
         source_values = position.get("source_values")
-        native = source_values if isinstance(source_values, dict) else {}
+        native = (
+            {_normalized_header(str(key)): value for key, value in source_values.items()}
+            if isinstance(source_values, dict)
+            else {}
+        )
         original_currency = str(position.get("source_currency") or "")
         currency = _currency(original_currency)
         maturity = position.get("maturity_date")
-        raw_amount = native.get(principal_source_header) if principal_source_header else None
+        raw_amount = (
+            native.get(_normalized_header(principal_source_header))
+            if principal_source_header
+            else None
+        )
         amount = _principal(raw_amount)
-        has_date = bool(maturity_source_header and native.get(maturity_source_header))
+        has_date = bool(
+            maturity_source_header and native.get(_normalized_header(maturity_source_header))
+        )
         reason = ""
         if currency is None:
             reason = "CURRENCY_NOT_CERTIFIED"

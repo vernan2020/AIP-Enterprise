@@ -105,3 +105,35 @@ def test_missing_native_header_blocks_numeric_normalization_fallback():
     )
     assert len(evidence.flows) == 0
     assert evidence.excluded[0].reason == "PRINCIPAL_ORIGINAL_CELL_UNVERIFIED"
+
+
+def test_original_master_reader_normalized_keys_are_respected():
+    row = _row(11, currency="DOLAR", principal="430.55")
+    row["source_values"] = {
+        "saldo principal": "430.55",
+        "fecha vencimiento": "2026-10-31",
+    }
+    result = build_master_principal_evidence(
+        cutoff=CUTOFF, master_sha256=SHA, positions=(row,),
+        principal_source_header="Saldo Principal",
+        maturity_source_header="Fecha Vencimiento",
+    )
+    assert len(result.flows) == 1
+    assert result.flows[0].amount == Decimal("430.55")
+    assert result.flows[0].currency == "USD"
+    assert not result.excluded
+
+
+def test_header_accents_do_not_discard_original_contractual_cells():
+    row = _row(12, currency="COLONES", principal="91.25")
+    row["source_values"] = {
+        "saldo principal": "91.25",
+        "fecha vencimiento": "2026-10-31",
+    }
+    result = build_master_principal_evidence(
+        cutoff=CUTOFF, master_sha256=SHA, positions=(row,),
+        principal_source_header="SÁLDO PRÍNCIPAL",
+        maturity_source_header="Fécha Véncimiento",
+    )
+    assert len(result.flows) == 1
+    assert result.flows[0].currency == "CRC"
