@@ -43,6 +43,8 @@ class InvestmentXMLRecordEvidence:
     raw_principal: str
     principal: Decimal | None
     instrument_id: str
+    instrument_classification_original: str
+    maturity_original: str
     isin: str
     series: str
     classification: str
@@ -59,6 +61,8 @@ class InvestmentXMLAccountGroup:
     classification: str
     master_identifier_matches: int
     unverified_master_overlap: int
+    records_without_maturity: int = 0
+    classification_five_count: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -114,6 +118,8 @@ def audit_investment_current_accounts(
             "principal": Decimal(0),
             "matched": 0,
             "uncertain": 0,
+            "no_maturity": 0,
+            "class_five": 0,
         }
     )
     details: list[InvestmentXMLRecordEvidence] = []
@@ -128,7 +134,11 @@ def audit_investment_current_accounts(
         currency = (values.get("TipoMonedaValorFacial") or "").strip().upper()
         raw_principal = (values.get("SaldoPrincipal") or "").strip()
         principal = _amount(raw_principal)
-        isin = (values.get("CodISIN") or "").strip().upper()
+        isin_original = (values.get("CodISIN") or "").strip().upper()
+        # Actual CONFÍA XML uses "NO" to mean absence of an ISIN.
+        isin = "" if isin_original in {"NO", "N/A", "NA", "0", "SIN ISIN"} else isin_original
+        instrument_class = (values.get("ClasificacionInstrumento") or "").strip()
+        maturity_original = (values.get("FechaVencimiento") or "").strip()
         series = (values.get("SerieInstrumento") or "").strip().upper()
         instrument_id = (values.get("IdInstrumento") or "").strip()
         raw_id = record.record_id.strip()
@@ -163,6 +173,10 @@ def audit_investment_current_accounts(
         group["records"] += 1
         if principal is not None:
             group["principal"] += principal
+        if not maturity_original:
+            group["no_maturity"] += 1
+        if instrument_class == "5":
+            group["class_five"] += 1
         if match_isin:
             group["matched"] += 1
         else:
@@ -181,6 +195,8 @@ def audit_investment_current_accounts(
                 raw_principal=raw_principal,
                 principal=principal,
                 instrument_id=instrument_id,
+                instrument_classification_original=instrument_class,
+                maturity_original=maturity_original,
                 isin=isin,
                 series=series,
                 classification=classification,
@@ -201,6 +217,8 @@ def audit_investment_current_accounts(
             ),
             master_identifier_matches=int(stats["matched"]),
             unverified_master_overlap=int(stats["uncertain"]),
+            records_without_maturity=int(stats["no_maturity"]),
+            classification_five_count=int(stats["class_five"]),
         )
         for (account, currency), stats in sorted(groups.items())
     )
