@@ -135,8 +135,10 @@ def run_configured_sight_opening(
     ):
         raise ValueError("Bank/ICL and sight manifest nonduplication approvals differ")
     accounts = policy.get("approved_account_codes")
-    if not isinstance(accounts, list) or not accounts or any(
-        not isinstance(item, str) or not item.strip() for item in accounts
+    if (
+        not isinstance(accounts, list)
+        or not accounts
+        or any(not isinstance(item, str) or not item.strip() for item in accounts)
     ):
         raise ValueError("Institutionally approved account codes are required")
     if len(set(accounts)) != len(accounts):

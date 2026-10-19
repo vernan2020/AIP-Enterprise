@@ -36,12 +36,18 @@ def _sample_audit() -> InvestmentXMLCurrentAccountAudit:
         records=(
             InvestmentXMLRecordEvidence(
                 source_reference="TEST:2026-09-01:INVESTMENT:ROW-00000001",
-                raw_record_id="1", record_ordinal=1, action="1",
-                account_code="9990", currency_source_code="2",
-                raw_principal="200.00", principal=Decimal("200.00"),
+                raw_record_id="1",
+                record_ordinal=1,
+                action="1",
+                account_code="9990",
+                currency_source_code="2",
+                raw_principal="200.00",
+                principal=Decimal("200.00"),
                 instrument_id="TEST-001",
-                instrument_classification_original="5", maturity_original="",
-                isin="", series="",
+                instrument_classification_original="5",
+                maturity_original="",
+                isin="",
+                series="",
                 classification="APPROVED_CURRENT_ACCOUNT_CANDIDATE",
                 master_reconciliation="UNMATCHED_ID_NOT_PROOF_OF_NEW_BALANCE",
             ),
@@ -55,34 +61,48 @@ def _files(tmp_path: Path) -> tuple[Path, Path]:
     digest = hashlib.sha256(original.read_bytes()).hexdigest()
     approval = tmp_path / "sight-approval.json"
     bank = tmp_path / "bank-opening.json"
-    approval.write_text(json.dumps({
-        "schema": "SUGEF210_SIGHT_OPENING_V1",
-        "cutoff": CUTOFF.isoformat(),
-        "xml_sha256": "a" * 64,
-        "account_classification_approval": "TEST-ALCO-AUTHORIZATION",
-        "currency_mapping_approval_reference": "TEST-ORIGINAL-CURRENCY-CATALOG",
-        "opening_reconciliation_reference": "TEST-TREASURY-ICL-NONDOUBLE",
-        "approved_account_codes": ["9990"],
-        "approved_currency_mapping": {"2": "USD"},
-        "approved_records": [{
-            "source_record_reference": "TEST:2026-09-01:INVESTMENT:ROW-00000001",
-            "accounting_account": "9990", "currency": "USD",
-            "xml_principal": "200.00", "confirmed_available": "75.25",
-            "withdrawal_available_date": CUTOFF.isoformat(),
-            "availability_evidence": "TEST-BANK-VALIDATION",
-            "nonduplication_reconciliation": "TEST-NOT-ALREADY-IN-ICL",
-            "restriction_clearance_reference": "TEST-RESTRICTION-CLEARED",
-        }],
-    }), encoding="utf-8")
-    bank.write_text(json.dumps({
-        "schema": "SUGEF210_BANK_OPENING_V1",
-        "cutoff": CUTOFF.isoformat(),
-        "bank_opening_excluding_sight": {"CRC": "1000", "USD": "10"},
-        "opening_certifications": {"CRC": "TEST-BANK-CRC", "USD": "TEST-BANK-USD"},
-        "opening_reconciliation_reference": "TEST-TREASURY-ICL-NONDOUBLE",
-        "bank_or_icl_source_file": str(original),
-        "bank_or_icl_source_sha256": digest,
-    }), encoding="utf-8")
+    approval.write_text(
+        json.dumps(
+            {
+                "schema": "SUGEF210_SIGHT_OPENING_V1",
+                "cutoff": CUTOFF.isoformat(),
+                "xml_sha256": "a" * 64,
+                "account_classification_approval": "TEST-ALCO-AUTHORIZATION",
+                "currency_mapping_approval_reference": "TEST-ORIGINAL-CURRENCY-CATALOG",
+                "opening_reconciliation_reference": "TEST-TREASURY-ICL-NONDOUBLE",
+                "approved_account_codes": ["9990"],
+                "approved_currency_mapping": {"2": "USD"},
+                "approved_records": [
+                    {
+                        "source_record_reference": "TEST:2026-09-01:INVESTMENT:ROW-00000001",
+                        "accounting_account": "9990",
+                        "currency": "USD",
+                        "xml_principal": "200.00",
+                        "confirmed_available": "75.25",
+                        "withdrawal_available_date": CUTOFF.isoformat(),
+                        "availability_evidence": "TEST-BANK-VALIDATION",
+                        "nonduplication_reconciliation": "TEST-NOT-ALREADY-IN-ICL",
+                        "restriction_clearance_reference": "TEST-RESTRICTION-CLEARED",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    bank.write_text(
+        json.dumps(
+            {
+                "schema": "SUGEF210_BANK_OPENING_V1",
+                "cutoff": CUTOFF.isoformat(),
+                "bank_opening_excluding_sight": {"CRC": "1000", "USD": "10"},
+                "opening_certifications": {"CRC": "TEST-BANK-CRC", "USD": "TEST-BANK-USD"},
+                "opening_reconciliation_reference": "TEST-TREASURY-ICL-NONDOUBLE",
+                "bank_or_icl_source_file": str(original),
+                "bank_or_icl_source_sha256": digest,
+            }
+        ),
+        encoding="utf-8",
+    )
     return approval, bank
 
 
@@ -95,7 +115,8 @@ def _configure(monkeypatch, tmp_path):
             return SimpleNamespace(
                 xml_confia=SimpleNamespace(enabled=True, root=str(tmp_path)),
                 folder_watch=SimpleNamespace(
-                    enabled=True, portfolio_root=str(tmp_path),
+                    enabled=True,
+                    portfolio_root=str(tmp_path),
                     portfolio_master_pattern="*.xlsx",
                 ),
             )
@@ -112,13 +133,15 @@ def _configure(monkeypatch, tmp_path):
     master_file.write_bytes(b"test-only-master")
     monkeypatch.setattr(module, "EnvironmentLoader", Loader)
     monkeypatch.setattr(
-        module, "resolve_exact_cutoff_master",
+        module,
+        "resolve_exact_cutoff_master",
         lambda *_args: ("EXACT", master_file, 1),
     )
     monkeypatch.setattr(module, "InstitutionalPortfolioMasterReader", Master)
     monkeypatch.setattr(module, "XMLConfiaMonthlySourceReader", lambda _root: object())
-    monkeypatch.setattr(module, "audit_investment_current_accounts",
-                        lambda **_kwargs: _sample_audit())
+    monkeypatch.setattr(
+        module, "audit_investment_current_accounts", lambda **_kwargs: _sample_audit()
+    )
 
 
 def test_real_source_session_wires_verified_xml_sight_to_partial_365_day_engine(
@@ -127,7 +150,9 @@ def test_real_source_session_wires_verified_xml_sight_to_partial_365_day_engine(
     _configure(monkeypatch, tmp_path)
     approval, bank = _files(tmp_path)
     result = run_configured_sight_opening(
-        cutoff=CUTOFF, scenario="BASE", approval_manifest=approval,
+        cutoff=CUTOFF,
+        scenario="BASE",
+        approval_manifest=approval,
         bank_support_manifest=bank,
     )
     assert result.sight_records_approved == 1
@@ -147,7 +172,9 @@ def test_corrupt_bank_evidence_blocks_original_xml_from_opening(monkeypatch, tmp
     bank.write_text(json.dumps(content))
     with pytest.raises(ValueError, match="hash"):
         run_configured_sight_opening(
-            cutoff=CUTOFF, scenario="BASE", approval_manifest=approval,
+            cutoff=CUTOFF,
+            scenario="BASE",
+            approval_manifest=approval,
             bank_support_manifest=bank,
         )
 
@@ -157,7 +184,9 @@ def test_bank_approval_must_be_separate_and_matching(monkeypatch, tmp_path):
     approval, bank = _files(tmp_path)
     with pytest.raises(ValueError, match="separate"):
         run_configured_sight_opening(
-            cutoff=CUTOFF, scenario="BASE", approval_manifest=approval,
+            cutoff=CUTOFF,
+            scenario="BASE",
+            approval_manifest=approval,
             bank_support_manifest=approval,
         )
     content = json.loads(bank.read_text())
@@ -165,7 +194,9 @@ def test_bank_approval_must_be_separate_and_matching(monkeypatch, tmp_path):
     bank.write_text(json.dumps(content))
     with pytest.raises(ValueError, match="nonduplication"):
         run_configured_sight_opening(
-            cutoff=CUTOFF, scenario="BASE", approval_manifest=approval,
+            cutoff=CUTOFF,
+            scenario="BASE",
+            approval_manifest=approval,
             bank_support_manifest=bank,
         )
 
@@ -175,12 +206,12 @@ def test_missing_master_prevents_on_demand_balance_acceptance(monkeypatch, tmp_p
     approval, bank = _files(tmp_path)
     from aip.product.configured.liquidity import sugef210_opening_session as module
 
-    monkeypatch.setattr(
-        module, "resolve_exact_cutoff_master", lambda *_args: ("MISSING", None, 0)
-    )
+    monkeypatch.setattr(module, "resolve_exact_cutoff_master", lambda *_args: ("MISSING", None, 0))
     with pytest.raises(ValueError, match="Master unavailable"):
         run_configured_sight_opening(
-            cutoff=CUTOFF, scenario="BASE", approval_manifest=approval,
+            cutoff=CUTOFF,
+            scenario="BASE",
+            approval_manifest=approval,
             bank_support_manifest=bank,
         )
 
@@ -190,14 +221,18 @@ def test_cutoff_and_source_currency_attestation_fail_closed(monkeypatch, tmp_pat
     approval, bank = _files(tmp_path)
     with pytest.raises(ValueError, match="cutoff"):
         run_configured_sight_opening(
-            cutoff=date(2026, 10, 31), scenario="BASE",
-            approval_manifest=approval, bank_support_manifest=bank,
+            cutoff=date(2026, 10, 31),
+            scenario="BASE",
+            approval_manifest=approval,
+            bank_support_manifest=bank,
         )
     content = json.loads(bank.read_text())
     content["opening_certifications"] = {"CRC": "TEST-CERT"}
     bank.write_text(json.dumps(content))
     with pytest.raises(ValueError, match="Both CRC and USD"):
         run_configured_sight_opening(
-            cutoff=CUTOFF, scenario="BASE",
-            approval_manifest=approval, bank_support_manifest=bank,
+            cutoff=CUTOFF,
+            scenario="BASE",
+            approval_manifest=approval,
+            bank_support_manifest=bank,
         )

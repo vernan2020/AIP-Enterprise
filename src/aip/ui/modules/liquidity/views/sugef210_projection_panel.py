@@ -35,12 +35,12 @@ from aip.product.configured.liquidity.financial_plan_source import (
     FinancialPlanSourceAudit,
     read_financial_plan_assumptions,
 )
-from aip.product.configured.liquidity.sugef210_source_audit_cli import (
-    inspect_xml_investment_source,
-)
 from aip.product.configured.liquidity.sugef210_opening_session import (
     ConfiguredOpeningSession,
     run_configured_sight_opening,
+)
+from aip.product.configured.liquidity.sugef210_source_audit_cli import (
+    inspect_xml_investment_source,
 )
 
 
@@ -83,9 +83,7 @@ class _SUGEF210OpeningWorker(QThread):
     completed = Signal(object)
     failed = Signal(str)
 
-    def __init__(
-        self, cutoff: date, scenario: str, approval_path: str, bank_path: str
-    ) -> None:
+    def __init__(self, cutoff: date, scenario: str, approval_path: str, bank_path: str) -> None:
         super().__init__()
         self._cutoff = cutoff
         self._scenario = scenario
