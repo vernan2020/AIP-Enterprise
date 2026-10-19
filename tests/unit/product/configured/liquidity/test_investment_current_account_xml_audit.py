@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
@@ -77,7 +78,7 @@ def test_xml_account_inventory_does_not_assume_demand_or_count_matched_master(tm
     assert result.cash_available_today is None
     assert result.records_read == 3
     accounts = {(x.account_code, x.currency_source_code): x for x in result.groups}
-    assert accounts[("C100", "1")].principal == 300.15
+    assert accounts[("C100", "1")].principal == Decimal("300.15")
     assert accounts[("C100", "1")].master_identifier_matches == 1
     assert accounts[("C100", "1")].unverified_master_overlap == 1
     assert accounts[("C100", "1")].classification == "APPROVED_CURRENT_ACCOUNT_CANDIDATE"
