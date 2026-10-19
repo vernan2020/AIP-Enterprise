@@ -42,7 +42,6 @@ def expand_cutoff_master_pattern(pattern: str, cutoff: date) -> Path:
     return path
 
 
-
 def resolve_exact_cutoff_master(
     root: str | None, pattern: str, cutoff: date
 ) -> tuple[str, Path | None, int]:
