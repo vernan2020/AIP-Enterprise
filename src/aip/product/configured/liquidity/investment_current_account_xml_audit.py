@@ -1,8 +1,8 @@
-"""Read-only XML CONFÍA investment current-account discovery for Liquidity.
+"""Read-only, record-level reconciliation of CONFÍA XML investments with Master.
 
-No assumption that a security or an investment account is an available-on-demand
-balance. Account classification is governed by an explicitly approved list; the
-raw XML alone lacks proof of withdrawability or settlement on day zero.
+An unmatched identifier is NOT proof of an investment outside the Master;
+a matching ISIN is NOT proof of a duplicate accounting position. Neither
+result licenses cash or HQLA recognition without an independent approval.
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from aip.product.configured.irrbb.xml_confia_source import XMLConfiaMonthlySourc
 
 @dataclass(frozen=True, slots=True)
 class InvestmentCurrentAccountPolicy:
-    """Approved account codes only, no wildcard prefixes or inferred liquidity."""
+    """Explicitly approved accounting codes; never infer an on-demand account."""
 
     approved_account_codes: frozenset[str]
     approval_reference: str
@@ -28,6 +28,26 @@ class InvestmentCurrentAccountPolicy:
             raise ValueError("Investment current-account classification requires approval")
         if any(not code.strip() for code in self.approved_account_codes):
             raise ValueError("Blank account code is forbidden")
+
+
+@dataclass(frozen=True, slots=True)
+class InvestmentXMLRecordEvidence:
+    """Original source references, without inferred availability or FX conversion."""
+
+    source_reference: str
+    raw_record_id: str
+    record_ordinal: int
+    action: str
+    account_code: str
+    currency_source_code: str
+    raw_principal: str
+    principal: Decimal | None
+    instrument_id: str
+    isin: str
+    series: str
+    classification: str
+    master_reconciliation: str
+    withdrawable_amount: None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,11 +72,13 @@ class InvestmentXMLCurrentAccountAudit:
     groups: tuple[InvestmentXMLAccountGroup, ...]
     invalid_source_principal: int
     missing_account_codes: int
+    records: tuple[InvestmentXMLRecordEvidence, ...] = ()
+    repeated_record_ids: int = 0
     status: str = "ACCOUNT_LEVEL_EVIDENCE_ONLY_NO_AVAILABLE_CASH"
 
     @property
     def cash_available_today(self) -> None:
-        """Availability must be validated separately, never inferred from XML."""
+        """No cash recognition is authorized by inventory or identifier matching."""
         return None
 
 
@@ -65,10 +87,10 @@ def _amount(value: str) -> Decimal | None:
     if not raw:
         return None
     try:
-        d = Decimal(raw)
+        amount = Decimal(raw)
     except InvalidOperation:
         return None
-    return d if d.is_finite() and d >= 0 else None
+    return amount if amount.is_finite() and amount >= 0 else None
 
 
 def audit_investment_current_accounts(
@@ -77,10 +99,16 @@ def audit_investment_current_accounts(
     cutoff: date,
     policy: InvestmentCurrentAccountPolicy,
     master_isins: frozenset[str] = frozenset(),
+    master_series: frozenset[str] = frozenset(),
+    master_loaded: bool = False,
 ) -> InvestmentXMLCurrentAccountAudit:
-    """Account-code inventory and duplicate evidence, not liquidity booking."""
+    """Audit all XML records and segregate overlap evidence from bookable funds."""
     source = reader.resolve_source(key="INVESTMENT", cutoff_date=cutoff)
-    account_groups: dict[tuple[str, str], dict[str, Decimal | int]] = defaultdict(
+    digest = reader.sha256(source.path)
+    known_isins = {identifier.strip().upper() for identifier in master_isins}
+    known_series = {identifier.strip().upper() for identifier in master_series}
+    master_has_evidence = master_loaded or bool(known_isins or known_series)
+    groups: dict[tuple[str, str], dict[str, Decimal | int]] = defaultdict(
         lambda: {
             "records": 0,
             "principal": Decimal(0),
@@ -88,31 +116,79 @@ def audit_investment_current_accounts(
             "uncertain": 0,
         }
     )
+    details: list[InvestmentXMLRecordEvidence] = []
+    seen_record_ids: set[str] = set()
+    duplicated_ids = 0
     malformed = 0
-    account_missing = 0
-    records = 0
-    for record in reader.iter_records(source):
-        records += 1
+    missing_accounts = 0
+
+    for ordinal, record in enumerate(reader.iter_records(source), start=1):
         values = record.values
         account = (values.get("CuentaContablePrincipal") or "").strip()
         currency = (values.get("TipoMonedaValorFacial") or "").strip().upper()
-        principal = _amount(values.get("SaldoPrincipal") or "")
+        raw_principal = (values.get("SaldoPrincipal") or "").strip()
+        principal = _amount(raw_principal)
+        isin = (values.get("CodISIN") or "").strip().upper()
+        series = (values.get("SerieInstrumento") or "").strip().upper()
+        instrument_id = (values.get("IdInstrumento") or "").strip()
+        raw_id = record.record_id.strip()
+        if raw_id and raw_id in seen_record_ids:
+            duplicated_ids += 1
+        if raw_id:
+            seen_record_ids.add(raw_id)
         if not account:
-            account_missing += 1
+            missing_accounts += 1
         if principal is None:
             malformed += 1
-        isin = (values.get("CodISIN") or "").strip().upper()
-        item = account_groups[(account or "(SIN CUENTA)", currency or "(SIN MONEDA)")]
-        item["records"] += 1
-        if principal is not None:
-            item["principal"] += principal
-        if isin and isin in master_isins:
-            item["matched"] += 1
+        match_isin = bool(isin and isin in known_isins)
+        match_series = bool(series and series in known_series)
+        if principal is None or not account or not currency:
+            reconciliation = "INVALID_XML_FIELDS"
+        elif not master_has_evidence:
+            reconciliation = "MASTER_NOT_LOADED"
+        elif match_isin:
+            reconciliation = "POSSIBLE_MASTER_OVERLAP_ISIN"
+        elif match_series:
+            reconciliation = "POSSIBLE_MASTER_OVERLAP_SERIES"
+        elif isin or series or instrument_id:
+            reconciliation = "UNMATCHED_ID_NOT_PROOF_OF_NEW_BALANCE"
         else:
-            # No proven linkage to Master: absence of a matching ISIN alone
-            # does not establish that the position is absent from the Master.
-            item["uncertain"] += 1
-    groups = tuple(
+            reconciliation = "NO_IDENTIFIER_UNRESOLVED"
+        classification = (
+            "APPROVED_CURRENT_ACCOUNT_CANDIDATE"
+            if account in policy.approved_account_codes
+            else "NOT_APPROVED_FOR_CURRENT_ACCOUNT"
+        )
+        group = groups[(account or "(SIN CUENTA)", currency or "(SIN MONEDA)")]
+        group["records"] += 1
+        if principal is not None:
+            group["principal"] += principal
+        if match_isin:
+            group["matched"] += 1
+        else:
+            group["uncertain"] += 1
+        details.append(
+            InvestmentXMLRecordEvidence(
+                source_reference=(
+                    f"{source.header.id_entidad}:{source.header.periodo.isoformat()}:"
+                    f"INVESTMENT:ROW-{ordinal:08d}"
+                ),
+                raw_record_id=raw_id,
+                record_ordinal=ordinal,
+                action=record.action,
+                account_code=account,
+                currency_source_code=currency,
+                raw_principal=raw_principal,
+                principal=principal,
+                instrument_id=instrument_id,
+                isin=isin,
+                series=series,
+                classification=classification,
+                master_reconciliation=reconciliation,
+            )
+        )
+
+    account_groups = tuple(
         InvestmentXMLAccountGroup(
             account_code=account,
             currency_source_code=currency,
@@ -126,12 +202,18 @@ def audit_investment_current_accounts(
             master_identifier_matches=int(stats["matched"]),
             unverified_master_overlap=int(stats["uncertain"]),
         )
-        for (account, currency), stats in sorted(account_groups.items())
+        for (account, currency), stats in sorted(groups.items())
     )
     return InvestmentXMLCurrentAccountAudit(
-        cutoff=cutoff, xml_month=source.header.periodo,
-        xml_sha256=reader.sha256(source.path),
-        xml_filename=source.path.name, entity_id=source.header.id_entidad,
-        records_read=records, groups=groups,
-        invalid_source_principal=malformed, missing_account_codes=account_missing,
+        cutoff=cutoff,
+        xml_month=source.header.periodo,
+        xml_sha256=digest,
+        xml_filename=source.path.name,
+        entity_id=source.header.id_entidad,
+        records_read=len(details),
+        groups=account_groups,
+        invalid_source_principal=malformed,
+        missing_account_codes=missing_accounts,
+        records=tuple(details),
+        repeated_record_ids=duplicated_ids,
     )
