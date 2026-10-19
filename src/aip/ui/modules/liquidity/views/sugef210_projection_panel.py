@@ -1,0 +1,238 @@
+"""Configured-only SUGEF 2-10 liquidity planning panel.
+
+Reads institutional XML investment source on demand. It NEVER shows example
+numbers and does not pretend incomplete source coverage is a complete forecast.
+"""
+
+from __future__ import annotations
+
+from datetime import date
+
+from PySide6.QtCore import QDate, Qt, QThread, Signal
+from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QDateEdit,
+    QHBoxLayout,
+    QHeaderView,
+    QLabel,
+    QPushButton,
+    QSplitter,
+    QTableWidget,
+    QTableWidgetItem,
+    QVBoxLayout,
+    QWidget,
+)
+
+from aip.domain.liquidity.cashflow.services.sugef210_projection import (
+    sugef210_windows,
+)
+from aip.product.configured.liquidity.sugef210_source_audit_cli import (
+    inspect_xml_investment_source,
+)
+
+
+class _SUGEF210SourceWorker(QThread):
+    completed = Signal(object)
+    failed = Signal(str)
+
+    def __init__(self, cutoff: date) -> None:
+        super().__init__()
+        self._cutoff = cutoff
+
+    def run(self) -> None:
+        try:
+            report = inspect_xml_investment_source(self._cutoff)
+        except Exception as exc:  # UI must fail closed and never leak paths/tokens
+            self.failed.emit(type(exc).__name__)
+            return
+        self.completed.emit(report)
+
+
+class SUGEF210ProjectionPanel(QWidget):
+    """Liquidity horizon framework + REAL source coverage, no DEMO waterfall."""
+
+    _WINDOW_HEADERS = ("Horizonte", "Desde", "Hasta", "Apertura", "CRC neto", "USD neto", "Estado")
+    _SOURCE_HEADERS = (
+        "Cuenta XML",
+        "Moneda XML",
+        "Registros",
+        "Principal XML",
+        "Clasificación",
+        "Coincide ISIN",
+        "Sin conciliación",
+    )
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.setObjectName("sugef210LiquidityProjectionPanel")
+        self._worker: _SUGEF210SourceWorker | None = None
+        self._cutoff = date.today()
+        main = QVBoxLayout(self)
+        main.setContentsMargins(10, 10, 10, 10)
+        main.setSpacing(8)
+
+        heading = QLabel("FLUJO PROYECTADO DE FONDOS · SUGEF 2-10")
+        heading.setStyleSheet("font-size:14pt; font-weight:700; color:#064F87;")
+        main.addWidget(heading)
+        explanation = QLabel(
+            "Horizontes diarios 0–7, semanales 8–30, mensuales y trimestrales "
+            "hasta un año. Activos, pasivos, fuera de balance y eventos de negocio; "
+            "la proyección requiere flujos contractuales, saldos iniciales y "
+            "supuestos institucionales aprobados. Sin datos DEMO."
+        )
+        explanation.setWordWrap(True)
+        main.addWidget(explanation)
+
+        controls = QHBoxLayout()
+        controls.addWidget(QLabel("Corte institucional:"))
+        self._date = QDateEdit()
+        self._date.setCalendarPopup(True)
+        self._date.setDisplayFormat("dd/MM/yyyy")
+        self._date.setDate(QDate(self._cutoff.year, self._cutoff.month, self._cutoff.day))
+        self._date.dateChanged.connect(self._on_date_changed)
+        controls.addWidget(self._date)
+        self._button = QPushButton("Inspeccionar XML de inversiones")
+        self._button.clicked.connect(self.run_source_audit)
+        controls.addWidget(self._button)
+        controls.addStretch(1)
+        main.addLayout(controls)
+
+        self._status = QLabel(
+            "Proyección integral no certificada. Seleccione corte y audite XML real."
+        )
+        self._status.setWordWrap(True)
+        self._status.setStyleSheet(
+            "padding:8px; background:#EAF3FA; color:#174E78;"
+            "border-radius:6px; font-weight:600;"
+        )
+        main.addWidget(self._status)
+
+        splitter = QSplitter(Qt.Orientation.Vertical)
+        self._windows = self._table(self._WINDOW_HEADERS, "sugef210LiquidityWindows")
+        self._accounts = self._table(self._SOURCE_HEADERS, "sugef210InvestmentXMLAccounts")
+        splitter.addWidget(self._windows)
+        splitter.addWidget(self._accounts)
+        splitter.setSizes([320, 220])
+        main.addWidget(splitter, 1)
+        self._fill_windows()
+
+        note = QLabel(
+            "Importante: Crediticio_InversionesActivas.xml se utiliza para detectar "
+            "inversiones en cuentas corrientes no incluidas en el Maestro. "
+            "Sus saldos no son ingresos futuros ni caja disponible hasta "
+            "confirmar cuenta contable, conciliación, restricciones y retiro efectivo. "
+            "CRC y USD permanecen separados. Los eventos fuera de balance requieren fuente "
+            "independiente y los supuestos deben estar documentados y aprobados."
+        )
+        note.setWordWrap(True)
+        main.addWidget(note)
+
+    @staticmethod
+    def _table(headers: tuple[str, ...], name: str) -> QTableWidget:
+        table = QTableWidget(0, len(headers))
+        table.setObjectName(name)
+        table.setHorizontalHeaderLabels(headers)
+        table.setAlternatingRowColors(True)
+        table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        table.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
+        table.setWordWrap(False)
+        table.verticalHeader().setVisible(False)
+        table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        return table
+
+    @staticmethod
+    def _append(table: QTableWidget, values: tuple[str, ...]) -> None:
+        row = table.rowCount()
+        table.insertRow(row)
+        for col, value in enumerate(values):
+            item = QTableWidgetItem(value)
+            item.setToolTip(value)
+            if col in (2, 3, 5, 6):
+                item.setTextAlignment(
+                    Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+                )
+            table.setItem(row, col, item)
+
+    def _fill_windows(self) -> None:
+        self._windows.setRowCount(0)
+        for window in sugef210_windows(self._cutoff):
+            self._append(
+                self._windows,
+                (
+                    window.label,
+                    window.start.strftime("%d/%m/%Y"),
+                    window.end.strftime("%d/%m/%Y"),
+                    window.frequency,
+                    "N/D",
+                    "N/D",
+                    "Fuente incompleta",
+                ),
+            )
+
+    def _on_date_changed(self, value: QDate) -> None:
+        self._cutoff = value.toPython()
+        self._accounts.setRowCount(0)
+        self._status.setText(
+            "Corte cambiado: auditoría pendiente. No se reutilizan cifras del corte anterior."
+        )
+        self._fill_windows()
+
+    def run_source_audit(self) -> None:
+        if self._worker is not None:
+            return
+        requested_cutoff = self._cutoff
+        worker = _SUGEF210SourceWorker(requested_cutoff)
+        self._worker = worker
+        self._button.setEnabled(False)
+        self._status.setText("Consultando XML institucional; no se calculan flujos sin evidencia…")
+        worker.completed.connect(lambda report: self._receive(requested_cutoff, report))
+        worker.failed.connect(lambda category: self._error(requested_cutoff, category))
+        worker.finished.connect(self._release_worker)
+        worker.start()
+
+    def _receive(self, cutoff: date, report: dict[str, object]) -> None:
+        if cutoff != self._cutoff:
+            return
+        self._accounts.setRowCount(0)
+        status = str(report.get("status", "BLOCKED"))
+        if status != "ACCOUNT_LEVEL_EVIDENCE_ONLY_NO_AVAILABLE_CASH":
+            self._status.setText(
+                f"Fuente de inversiones no utilizable para inspección: {status}"
+            )
+            return
+        for group in report.get("accounts", []):
+            if not isinstance(group, dict):
+                continue
+            self._append(
+                self._accounts,
+                (
+                    str(group["account_code"]),
+                    str(group["currency_source_code"]),
+                    str(group["record_count"]),
+                    str(group["source_principal"]),
+                    str(group["classification"]),
+                    str(group["master_isin_matches"]),
+                    str(group["unverified_master_overlap"]),
+                ),
+            )
+        self._status.setText(
+            f"XML inversiones: {report.get('xml_records_read', 0)} registros; "
+            f"{self._accounts.rowCount()} cuentas/monedas inspeccionadas. "
+            "Disponibilidad a la vista: NO CERTIFICADA. "
+            "Flujo integral: pendiente de fuentes y supuestos institucionales."
+        )
+
+    def _error(self, cutoff: date, category: str) -> None:
+        if cutoff == self._cutoff:
+            self._accounts.setRowCount(0)
+            self._status.setText(
+                f"BLOCKED_SOURCE_READ ({category}). Sin sustituir información ni mostrar flujos."
+            )
+
+    def _release_worker(self) -> None:
+        worker = self._worker
+        if worker is not None and worker.isFinished():
+            self._worker = None
+            worker.deleteLater()
+            self._button.setEnabled(True)
