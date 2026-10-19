@@ -398,7 +398,10 @@ def test_real_session_loads_approved_external_contract_ledger_and_native_credit_
         @staticmethod
         def resolve_source(*, key, cutoff_date):
             assert key == "CREDIT" and cutoff_date == CUTOFF
-            return SimpleNamespace(path=xml)
+            return SimpleNamespace(
+                path=xml,
+                header=SimpleNamespace(periodo=date(2026, 9, 1), id_entidad="TEST"),
+            )
 
         @staticmethod
         def iter_records(_source):
