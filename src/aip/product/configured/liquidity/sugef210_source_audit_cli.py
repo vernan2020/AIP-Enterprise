@@ -6,6 +6,7 @@ import argparse
 import json
 from datetime import date
 
+from aip.domain.liquidity.cashflow.services.sugef210_projection import sugef210_windows
 from aip.product.configured.irrbb.investment_master_discovery import (
     resolve_exact_cutoff_master,
 )
@@ -17,7 +18,6 @@ from aip.product.configured.liquidity.investment_current_account_xml_audit impor
 from aip.product.configured.liquidity.sugef210_master_maturity_bridge import (
     build_master_principal_evidence,
 )
-from aip.domain.liquidity.cashflow.services.sugef210_projection import sugef210_windows
 from aip.product.configured.readers.institutional_portfolio_master_reader import (
     InstitutionalPortfolioMasterReader,
 )
