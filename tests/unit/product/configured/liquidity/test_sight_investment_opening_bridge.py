@@ -15,7 +15,6 @@ from aip.product.configured.liquidity.sight_investment_opening_bridge import (
     add_verified_sight_investments_to_opening,
 )
 
-
 CUTOFF = date(2026, 9, 30)
 
 
