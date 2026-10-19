@@ -15,6 +15,10 @@ from aip.domain.liquidity.cashflow.services.sugef210_projection import (
     LiquidityProjectionFlow,
     project_sugef210,
 )
+from aip.product.configured.liquidity.sugef210_opening_session import ConfiguredOpeningSession
+from aip.product.configured.liquidity.sugef210_projection_assembler import (
+    assemble_partial_institutional_projection,
+)
 from aip.ui.modules.liquidity.views.liquidity_view import LiquidityView
 from aip.ui.modules.liquidity.views.sugef210_projection_panel import (
     SUGEF210ProjectionPanel,
@@ -212,5 +216,52 @@ def test_governed_projection_rejects_incomplete_horizon_and_currency_rows(qt_app
         with pytest.raises(ValueError, match="do not reconcile"):
             panel.present_governed_projection(replace(correct, rows=correct.rows[:-1]))
         assert panel._windows.item(12, 4).text() == "N/D"
+    finally:
+        panel.close()
+
+
+def test_ui_loads_governed_opening_as_partial_waterfall_and_does_not_reuse_cutoff(qt_app):
+    panel = SUGEF210ProjectionPanel()
+    try:
+        cutoff = date(2026, 9, 30)
+        panel._date.setDate(QDate(2026, 9, 30))
+        assembly = assemble_partial_institutional_projection(
+            cutoff=cutoff,
+            scenario="BASE",
+            opening_by_currency={"CRC": Decimal("1000"), "USD": Decimal("85.25")},
+            opening_certifications={"CRC": "TEST-ICL-CRC", "USD": "TEST-ICL-USD"},
+            opening_nonduplication_reference="TEST-ICL-SIGHT-VALIDATION",
+        )
+        session = ConfiguredOpeningSession(
+            cutoff=cutoff,
+            scenario="BASE",
+            assembly=assembly,
+            sight_records_approved=1,
+            sight_source_sha256="a" * 64,
+            bank_support_sha256="b" * 64,
+            bank_document_sha256="c" * 64,
+        )
+        panel._receive_governed_opening(cutoff, "BASE", session)
+        assert panel._governed_projection is assembly.projection
+        assert panel._projected_kpis["CRC"].text() == "1000"
+        assert panel._projected_kpis["USD"].text() == "85.25"
+        assert "Proyección PARCIAL" in panel._opening_status.text()
+        assert panel._windows.item(12, 4).text() == "N/D"
+        panel._date.setDate(QDate(2026, 10, 31))
+        assert panel._governed_projection is None
+        assert panel._projected_kpis["USD"].text() == "N/D"
+        panel._receive_governed_opening(cutoff, "BASE", session)
+        assert panel._governed_projection is None
+    finally:
+        panel.close()
+
+
+def test_opening_UI_error_never_books_current_accounts(qt_app):
+    panel = SUGEF210ProjectionPanel()
+    try:
+        panel._date.setDate(QDate(2026, 9, 30))
+        panel._governed_opening_error(panel._cutoff, "BASE", "ValueError")
+        assert "BLOCKED_GOVERNED_OPENING" in panel._opening_status.text()
+        assert panel._windows.item(0, 9).text() == "N/D"
     finally:
         panel.close()
