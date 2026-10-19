@@ -10,6 +10,38 @@ from aip.product.configured.configuration.institutional_paths import (
     expand_environment_path,
 )
 
+# Folder naming is configured explicitly; never infer a different portfolio.
+_SPANISH_MONTH_NAMES = (
+    "enero",
+    "febrero",
+    "marzo",
+    "abril",
+    "mayo",
+    "junio",
+    "julio",
+    "agosto",
+    "setiembre",
+    "octubre",
+    "noviembre",
+    "diciembre",
+)
+
+
+def expand_cutoff_master_pattern(pattern: str, cutoff: date) -> Path:
+    """Expand supported placeholders, including Costa Rican month folder names."""
+    relative = pattern.format(
+        year=cutoff.year,
+        month=f"{cutoff.month:02d}",
+        day=f"{cutoff.day:02d}",
+        month_name_es=_SPANISH_MONTH_NAMES[cutoff.month - 1],
+        month_es=_SPANISH_MONTH_NAMES[cutoff.month - 1],
+    ).replace("\\", "/")
+    path = Path(relative)
+    if path.is_absolute() or ".." in path.parts:
+        raise ValueError("Master source pattern must stay inside configured root")
+    return path
+
+
 
 def resolve_exact_cutoff_master(
     root: str | None, pattern: str, cutoff: date
@@ -23,13 +55,8 @@ def resolve_exact_cutoff_master(
     if not pattern:
         return "PATTERN_UNCONFIGURED", None, 0
     try:
-        relative = pattern.format(
-            year=cutoff.year, month=f"{cutoff.month:02d}", day=f"{cutoff.day:02d}"
-        ).replace("\\", "/")
-    except (KeyError, ValueError):
-        return "INVALID_PATTERN", None, 0
-    pattern_path = Path(relative)
-    if pattern_path.is_absolute() or ".." in pattern_path.parts:
+        pattern_path = expand_cutoff_master_pattern(pattern, cutoff)
+    except (KeyError, ValueError, IndexError):
         return "INVALID_PATTERN", None, 0
     exact_stamp = f"{cutoff.day:02d}-{cutoff.month:02d}-{cutoff.year}"
     try:
