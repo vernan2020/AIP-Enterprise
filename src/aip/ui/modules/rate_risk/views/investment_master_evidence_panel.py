@@ -127,7 +127,20 @@ class InvestmentMasterEvidencePanel(QWidget):
             "rateRiskInvestmentNativeCurrencyReconciliationTable",
         )
         self._tabs.addTab(self._bands, "19 bandas · vencimiento")
+        self._maturity_details = self._create_table(
+            (
+                "Fila Excel",
+                "Moneda origen",
+                "Moneda RTILB",
+                "Diagnóstico vencimiento",
+                "Estado celda",
+                "Principal origen",
+                "Fecha interpretada",
+            ),
+            "rateRiskInvestmentMaturityExceptionRows",
+        )
         self._tabs.addTab(self._excluded, "Sin bandeo · motivo")
+        self._tabs.addTab(self._maturity_details, "Vencimientos por revisar")
         self._tabs.addTab(self._reconciliation, "Conciliación por moneda")
         layout.addWidget(self._tabs, 1)
 
@@ -170,6 +183,7 @@ class InvestmentMasterEvidencePanel(QWidget):
         self._table.setRowCount(0)
         self._bands.setRowCount(0)
         self._excluded.setRowCount(0)
+        self._maturity_details.setRowCount(0)
         self._reconciliation.setRowCount(0)
         self._status.setText(f"Maestro {cutoff:%d/%m/%Y} · auditoría pendiente")
         self._certification.setText("Certificación de origen: pendiente")
@@ -194,6 +208,7 @@ class InvestmentMasterEvidencePanel(QWidget):
         self._table.setRowCount(0)
         self._bands.setRowCount(0)
         self._excluded.setRowCount(0)
+        self._maturity_details.setRowCount(0)
         self._reconciliation.setRowCount(0)
         status = str(report.get("status", "UNAVAILABLE"))
         if status != "INVESTMENT_MASTER_SOURCE_INSPECTED_NOT_CERTIFIED":
@@ -293,6 +308,38 @@ class InvestmentMasterEvidencePanel(QWidget):
                 ),
             )
 
+        maturity_details = report.get("maturity_exception_rows", [])
+        date_states = {
+            "SOURCE_COLUMN_ABSENT": "Sin columna de vencimiento",
+            "SOURCE_EMPTY": "Celda vacía",
+            "SOURCE_DATE_PLACEHOLDER": "Fecha marcador/sentinela",
+            "SOURCE_DATE_UNPARSEABLE": "Fecha sin formato reconocido",
+            "PARSED_DATE": "Fecha interpretada",
+        }
+        exclusions = {
+            "MISSING_OR_INVALID_MATURITY": "Vencimiento no interpretable",
+            "PAST_MATURITY": "Anterior al corte",
+        }
+        for entry in maturity_details if isinstance(maturity_details, list) else []:
+            if not isinstance(entry, dict):
+                continue
+            self._add_group(
+                self._maturity_details,
+                (
+                    str(entry.get("excel_row", "")),
+                    str(entry.get("source_currency", "")),
+                    str(entry.get("normalized_currency", "")),
+                    exclusions.get(str(entry.get("reason", "")), str(entry.get("reason", ""))),
+                    date_states.get(
+                        str(entry.get("source_date_state", "")),
+                        str(entry.get("source_date_state", "")),
+                    ),
+                    str(entry.get("source_principal") or ""),
+                    str(entry.get("parsed_maturity") or "Sin fecha interpretable"),
+                ),
+                numeric_columns=(0, 5),
+            )
+
         reconciliation = report.get("maturity_reconciliation", [])
         for record in reconciliation if isinstance(reconciliation, list) else []:
             if not isinstance(record, dict):
@@ -326,6 +373,7 @@ class InvestmentMasterEvidencePanel(QWidget):
         self._table.setRowCount(0)
         self._bands.setRowCount(0)
         self._excluded.setRowCount(0)
+        self._maturity_details.setRowCount(0)
         self._reconciliation.setRowCount(0)
         self._status.setText(message)
         self._certification.setText("Certificación: bloqueada")
