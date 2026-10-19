@@ -57,8 +57,6 @@ def test_sugef210_xml_inventory_visible_but_not_available_cash(qt_app):
 
 
 def test_existing_liquidity_page_includes_sugef210_tab(qt_app):
-    from aip.ui.modules.liquidity.views.liquidity_view import LiquidityView
-
     view = LiquidityView()
     try:
         names = [view._tabs.tabText(i) for i in range(view._tabs.count())]
