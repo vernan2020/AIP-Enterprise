@@ -206,17 +206,11 @@ def test_governed_projection_rejects_incomplete_horizon_and_currency_rows(qt_app
     try:
         cutoff = date(2026, 9, 30)
         panel._date.setDate(QDate(2026, 9, 30))
-        correct = project_sugef210(
-            cutoff=cutoff, scenario="BASE", flows=(), opening_liquidity=None
-        )
+        correct = project_sugef210(cutoff=cutoff, scenario="BASE", flows=(), opening_liquidity=None)
         with pytest.raises(ValueError, match="fixed SUGEF210"):
-            panel.present_governed_projection(
-                replace(correct, windows=correct.windows[:-1])
-            )
+            panel.present_governed_projection(replace(correct, windows=correct.windows[:-1]))
         with pytest.raises(ValueError, match="do not reconcile"):
-            panel.present_governed_projection(
-                replace(correct, rows=correct.rows[:-1])
-            )
+            panel.present_governed_projection(replace(correct, rows=correct.rows[:-1]))
         assert panel._windows.item(12, 4).text() == "N/D"
     finally:
         panel.close()

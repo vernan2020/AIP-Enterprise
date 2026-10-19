@@ -388,9 +388,7 @@ class SUGEF210ProjectionPanel(QWidget):
         if result.windows != sugef210_windows(self._cutoff):
             raise ValueError("Projection horizons differ from fixed SUGEF210 365-day bands")
         expected = {
-            (window.key, currency)
-            for window in result.windows
-            for currency in ("CRC", "USD")
+            (window.key, currency) for window in result.windows for currency in ("CRC", "USD")
         }
         observed = {(row.window.key, row.currency) for row in result.rows}
         if observed != expected or len(result.rows) != len(expected):
@@ -745,15 +743,51 @@ class SUGEF210ProjectionPanel(QWidget):
                             item.window.start.isoformat(),
                             item.window.end.isoformat(),
                             item.currency,
-                            (item.asset_inflows if item.event_count > 0 or projection.certified_comprehensive else "N/D"),
-                            (item.asset_outflows if item.event_count > 0 or projection.certified_comprehensive else "N/D"),
-                            (item.liability_inflows if item.event_count > 0 or projection.certified_comprehensive else "N/D"),
-                            (item.liability_outflows if item.event_count > 0 or projection.certified_comprehensive else "N/D"),
-                            (item.off_balance_inflows if item.event_count > 0 or projection.certified_comprehensive else "N/D"),
-                            (item.off_balance_outflows if item.event_count > 0 or projection.certified_comprehensive else "N/D"),
-                            (item.other_inflows if item.event_count > 0 or projection.certified_comprehensive else "N/D"),
-                            (item.other_outflows if item.event_count > 0 or projection.certified_comprehensive else "N/D"),
-                            item.net_flow if item.event_count > 0 or projection.certified_comprehensive else "N/D",
+                            (
+                                item.asset_inflows
+                                if item.event_count > 0 or projection.certified_comprehensive
+                                else "N/D"
+                            ),
+                            (
+                                item.asset_outflows
+                                if item.event_count > 0 or projection.certified_comprehensive
+                                else "N/D"
+                            ),
+                            (
+                                item.liability_inflows
+                                if item.event_count > 0 or projection.certified_comprehensive
+                                else "N/D"
+                            ),
+                            (
+                                item.liability_outflows
+                                if item.event_count > 0 or projection.certified_comprehensive
+                                else "N/D"
+                            ),
+                            (
+                                item.off_balance_inflows
+                                if item.event_count > 0 or projection.certified_comprehensive
+                                else "N/D"
+                            ),
+                            (
+                                item.off_balance_outflows
+                                if item.event_count > 0 or projection.certified_comprehensive
+                                else "N/D"
+                            ),
+                            (
+                                item.other_inflows
+                                if item.event_count > 0 or projection.certified_comprehensive
+                                else "N/D"
+                            ),
+                            (
+                                item.other_outflows
+                                if item.event_count > 0 or projection.certified_comprehensive
+                                else "N/D"
+                            ),
+                            (
+                                item.net_flow
+                                if item.event_count > 0 or projection.certified_comprehensive
+                                else "N/D"
+                            ),
                             item.accumulated_flow if projection.source_flow_count else "N/D",
                             item.opening_liquidity if item.opening_liquidity is not None else "N/D",
                             (
