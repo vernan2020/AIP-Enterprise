@@ -5,6 +5,7 @@ from decimal import Decimal
 
 import pytest
 from PySide6.QtCore import QDate
+from openpyxl import load_workbook
 
 from aip.domain.liquidity.cashflow.services.sugef210_projection import (
     LiquidityBalanceArea,
@@ -155,5 +156,41 @@ def test_governed_projection_updates_only_verified_currency_and_resets_on_scenar
         assert panel._windows.item(12, 4).text() == "N/D"
         with pytest.raises(ValueError, match="cutoff/scenario"):
             panel.present_governed_projection(result)
+    finally:
+        panel.close()
+
+
+def test_governed_partial_projection_can_export_without_xml_inventory(qt_app, tmp_path, monkeypatch):
+    panel = SUGEF210ProjectionPanel()
+    try:
+        cutoff = date(2026, 9, 30)
+        panel._date.setDate(QDate(2026, 9, 30))
+        result = project_sugef210(
+            cutoff=cutoff,
+            scenario="BASE",
+            flows=(),
+            opening_liquidity=None,
+        )
+        panel.present_governed_projection(result)
+        destination = tmp_path / "sugef210_only_partially_supported.xlsx"
+        monkeypatch.setattr(
+            "aip.ui.modules.liquidity.views.sugef210_projection_panel."
+            "QFileDialog.getSaveFileName",
+            lambda *_args, **_kwargs: (str(destination), "Excel (*.xlsx)"),
+        )
+        panel.export_reconciliation()
+        assert destination.is_file()
+        workbook = load_workbook(destination, read_only=True, data_only=True)
+        try:
+            assert "Flujo proyectado 365d" in workbook.sheetnames
+            projection = workbook["Flujo proyectado 365d"]
+            assert projection.max_row == 35
+            assert projection.cell(2, 6).value == "CRC"
+            assert projection.cell(2, 15).value == "N/D"
+            metadata = dict(workbook["Control"].iter_rows(values_only=True))
+            assert metadata["flujo_integral_certificado"] == "NO"
+            assert metadata["escenario"] == "BASE"
+        finally:
+            workbook.close()
     finally:
         panel.close()
