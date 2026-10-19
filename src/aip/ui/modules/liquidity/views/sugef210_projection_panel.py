@@ -12,6 +12,7 @@ from PySide6.QtCore import QDate, Qt, QThread, Signal
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QDateEdit,
+    QFileDialog,
     QHBoxLayout,
     QHeaderView,
     QLabel,
@@ -52,6 +53,11 @@ class SUGEF210ProjectionPanel(QWidget):
     """Liquidity horizon framework + REAL source coverage, no DEMO waterfall."""
 
     _WINDOW_HEADERS = ("Horizonte", "Desde", "Hasta", "Apertura", "CRC neto", "USD neto", "Estado")
+    _DETAIL_HEADERS = (
+        "Referencia XML", "ID original", "Cuenta", "Moneda origen",
+        "Saldo principal", "Id instrumento", "ISIN", "Serie",
+        "Conciliación con Maestro", "Clasificación",
+    )
     _SOURCE_HEADERS = (
         "Cuenta XML",
         "Moneda XML",
@@ -66,6 +72,7 @@ class SUGEF210ProjectionPanel(QWidget):
         super().__init__()
         self.setObjectName("sugef210LiquidityProjectionPanel")
         self._worker: _SUGEF210SourceWorker | None = None
+        self._report: dict[str, object] | None = None
         self._cutoff = date.today()
         main = QVBoxLayout(self)
         main.setContentsMargins(10, 10, 10, 10)
@@ -94,6 +101,10 @@ class SUGEF210ProjectionPanel(QWidget):
         self._button = QPushButton("Inspeccionar XML de inversiones")
         self._button.clicked.connect(self.run_source_audit)
         controls.addWidget(self._button)
+        self._export = QPushButton("Exportar conciliación a Excel")
+        self._export.setEnabled(False)
+        self._export.clicked.connect(self.export_reconciliation)
+        controls.addWidget(self._export)
         controls.addStretch(1)
         main.addLayout(controls)
 
@@ -112,7 +123,9 @@ class SUGEF210ProjectionPanel(QWidget):
         self._accounts = self._table(self._SOURCE_HEADERS, "sugef210InvestmentXMLAccounts")
         splitter.addWidget(self._windows)
         splitter.addWidget(self._accounts)
-        splitter.setSizes([320, 220])
+        self._records = self._table(self._DETAIL_HEADERS, "sugef210XMLRecordEvidence")
+        splitter.addWidget(self._records)
+        splitter.setSizes([260, 180, 250])
         main.addWidget(splitter, 1)
         self._fill_windows()
 
@@ -173,6 +186,9 @@ class SUGEF210ProjectionPanel(QWidget):
     def _on_date_changed(self, value: QDate) -> None:
         self._cutoff = value.toPython()
         self._accounts.setRowCount(0)
+        self._records.setRowCount(0)
+        self._report = None
+        self._export.setEnabled(False)
         self._status.setText(
             "Corte cambiado: auditoría pendiente. No se reutilizan cifras del corte anterior."
         )
@@ -195,6 +211,9 @@ class SUGEF210ProjectionPanel(QWidget):
         if cutoff != self._cutoff:
             return
         self._accounts.setRowCount(0)
+        self._records.setRowCount(0)
+        self._report = None
+        self._export.setEnabled(False)
         status = str(report.get("status", "BLOCKED"))
         if status != "ACCOUNT_LEVEL_EVIDENCE_ONLY_NO_AVAILABLE_CASH":
             self._status.setText(
@@ -216,9 +235,31 @@ class SUGEF210ProjectionPanel(QWidget):
                     str(group["unverified_master_overlap"]),
                 ),
             )
+        for record in report.get("record_evidence", []):
+            if not isinstance(record, dict):
+                continue
+            self._append(
+                self._records,
+                (
+                    str(record.get("source_reference") or ""),
+                    str(record.get("raw_record_id") or ""),
+                    str(record.get("account_code") or ""),
+                    str(record.get("currency_source_code") or ""),
+                    str(record.get("source_principal") or "N/D"),
+                    str(record.get("instrument_id") or ""),
+                    str(record.get("isin") or ""),
+                    str(record.get("series") or ""),
+                    str(record.get("master_reconciliation") or ""),
+                    str(record.get("classification") or ""),
+                ),
+            )
+        self._report = report
+        self._export.setEnabled(True)
         self._status.setText(
             f"XML inversiones: {report.get('xml_records_read', 0)} registros; "
-            f"{self._accounts.rowCount()} cuentas/monedas inspeccionadas. "
+            f"{self._accounts.rowCount()} cuentas/monedas inspeccionadas; "
+            f"{self._records.rowCount()} registros trazables. "
+            f"Maestro: {report.get('master_review_status', 'N/D')}. "
             "Disponibilidad a la vista: NO CERTIFICADA. "
             "Flujo integral: pendiente de fuentes y supuestos institucionales."
         )
@@ -226,9 +267,84 @@ class SUGEF210ProjectionPanel(QWidget):
     def _error(self, cutoff: date, category: str) -> None:
         if cutoff == self._cutoff:
             self._accounts.setRowCount(0)
+            self._records.setRowCount(0)
+            self._report = None
+            self._export.setEnabled(False)
             self._status.setText(
                 f"BLOCKED_SOURCE_READ ({category}). Sin sustituir información ni mostrar flujos."
             )
+
+
+    def export_reconciliation(self) -> None:
+        """Export real audit evidence; never classify a balance as cash."""
+        if self._report is None:
+            return
+        selected, _filter = QFileDialog.getSaveFileName(
+            self,
+            "Exportar auditoría XML–Maestro",
+            f"SUGEF210_Conciliacion_{self._cutoff.isoformat()}.xlsx",
+            "Excel (*.xlsx)",
+        )
+        if not selected:
+            return
+        from openpyxl import Workbook
+
+        workbook = Workbook()
+        metadata = workbook.active
+        assert metadata is not None
+        metadata.title = "Control"
+        report = self._report
+        for key in (
+            "cutoff", "xml_month", "xml_source", "entity_id", "sha256",
+            "master_review_status", "master_positions_read", "xml_records_read",
+            "invalid_source_principal", "missing_account_codes",
+            "repeated_source_record_ids",
+        ):
+            metadata.append((key, str(report.get(key, "N/D"))))
+        metadata.append(("disponibilidad_certificada", "NO"))
+        metadata.append(("flujo_integral_certificado", "NO"))
+        metadata.append(("nota", "Identificadores no prueban titularidad ni retiro disponible"))
+
+        def safe(value: object) -> str:
+            content = "" if value is None else str(value)
+            return "'" + content if content.startswith(("=", "+", "-", "@")) else content
+
+        accounts = workbook.create_sheet("Cuentas XML")
+        account_keys = (
+            "account_code", "currency_source_code", "record_count",
+            "source_principal", "classification", "master_isin_matches",
+            "unverified_master_overlap",
+        )
+        accounts.append(account_keys)
+        for row in report.get("accounts", []):
+            if isinstance(row, dict):
+                accounts.append(tuple(safe(row.get(field)) for field in account_keys))
+
+        records = workbook.create_sheet("Detalle conciliación")
+        record_keys = (
+            "source_reference", "raw_record_id", "record_ordinal", "action",
+            "account_code", "currency_source_code", "source_principal_raw",
+            "source_principal", "instrument_id", "isin", "series",
+            "classification", "master_reconciliation", "withdrawable_amount",
+        )
+        records.append(record_keys)
+        for row in report.get("record_evidence", []):
+            if isinstance(row, dict):
+                records.append(tuple(safe(row.get(field)) for field in record_keys))
+        for sheet in workbook:
+            sheet.freeze_panes = "A2"
+            sheet.auto_filter.ref = sheet.dimensions
+        try:
+            workbook.save(selected)
+        except OSError as exc:
+            self._status.setText(
+                f"Exportación bloqueada: {type(exc).__name__}. XML y Maestro sin cambios."
+            )
+            return
+        self._status.setText(
+            "Conciliación exportada en Excel. Disponibilidad de caja y "
+            "diferencias de portafolio pendientes de certificación."
+        )
 
     def _release_worker(self) -> None:
         worker = self._worker
