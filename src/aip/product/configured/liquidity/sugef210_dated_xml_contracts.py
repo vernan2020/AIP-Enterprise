@@ -164,13 +164,27 @@ def import_approved_xml_contractual_payments(
     selected_sources = {_require(row.get("source_key"), "source_key") for row in rows}
     if not selected_sources.issubset(_SUPPORTED) or selected_sources != set(approved_xml_sha256):
         raise ValueError("Selected XML contractual sources and approved hashes disagree")
+    source_entity_ids: set[str] = set()
     for key in sorted(selected_sources):
         original = reader.resolve_source(key=key, cutoff_date=cutoff)
+        if (
+            (original.header.periodo.year, original.header.periodo.month)
+            != (cutoff.year, cutoff.month)
+            or not original.header.id_entidad.strip()
+        ):
+            raise ValueError("Original source entity and requested reporting month mismatch")
+        source_entity_ids.add(original.header.id_entidad)
+        if len(source_entity_ids) != 1:
+            raise ValueError("Contractual sources belong to different reporting entities")
         actual_hash = reader.sha256(original.path)
         if actual_hash != approved_xml_sha256[key].lower():
             raise ValueError("Original CONFIA XML source hash changed after approval")
         indexed: dict[int, Any] = {}
+        raw_ids: set[str] = set()
         for ordinal, item in enumerate(reader.iter_records(original), 1):
+            if not item.record_id.strip() or item.record_id in raw_ids:
+                raise ValueError("Original contractual XML contains ambiguous record IDs")
+            raw_ids.add(item.record_id)
             indexed[ordinal] = item
         by_key[key] = indexed, actual_hash
 
