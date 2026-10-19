@@ -213,3 +213,44 @@ def test_dolar_alias_keeps_past_and_missing_maturities_excluded(tmp_path):
     assert recon["USD"]["observed_principal"] == "0"
     assert recon["USD"]["excluded_valid_principal"] == "572.25"
     assert recon["USD"]["difference"] == "0"
+
+
+def test_maturity_exception_rows_preserve_excel_references_without_guessing_dates(tmp_path):
+    folder = _root(tmp_path)
+    filename = tmp_path / "Inversiones" / "2026" / "maestro" / "09" / "30-09-2026.xlsx"
+    from openpyxl import load_workbook
+
+    workbook = load_workbook(filename)
+    sheet = workbook.active
+    sheet.cell(row=2, column=5).value = "SIN PLAZO"
+    sheet.cell(row=3, column=4).value = "DOLAR"
+    sheet.cell(row=3, column=5).value = "1900-01-01"
+    sheet.cell(row=4, column=5).value = date(2026, 9, 1)
+    workbook.save(filename)
+
+    result = inspect_investment_master_cutoff(
+        cutoff=date(2026, 9, 30), folder=folder
+    )
+    assert result["status"] == "INVESTMENT_MASTER_SOURCE_INSPECTED_NOT_CERTIFIED"
+    assert result["maturity_date_column_detected"] is True
+    details = {row["excel_row"]: row for row in result["maturity_exception_rows"]}
+    assert set(details) == {2, 3, 4}
+    assert details[2]["source_currency"] == "CRC"
+    assert details[2]["source_date_state"] == "SOURCE_DATE_UNPARSEABLE"
+    assert details[2]["parsed_maturity"] is None
+    assert details[2]["source_principal"] == "125.75"
+    assert details[3]["source_currency"] == "DOLAR"
+    assert details[3]["normalized_currency"] == "USD"
+    assert details[3]["source_date_state"] == "SOURCE_DATE_PLACEHOLDER"
+    assert details[3]["source_principal"] == "500"
+    assert details[4]["source_date_state"] == "PARSED_DATE"
+    assert details[4]["parsed_maturity"] == "2026-09-01"
+    assert details[4]["reason"] == "PAST_MATURITY"
+    assert details[4]["source_principal"] == "72.25"
+    assert all("isin" not in record and "contract_number" not in record for record in details.values())
+    reconciliations = {
+        row["source_currency"]: row for row in result["maturity_reconciliation"]
+    }
+    assert reconciliations["CRC"]["difference"] == "0"
+    assert reconciliations["USD"]["difference"] == "0"
+    assert reconciliations["USD"]["excluded_valid_principal"] == "572.25"
