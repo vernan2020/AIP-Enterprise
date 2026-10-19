@@ -101,6 +101,8 @@ class LiquidityProjectionRow:
     projected_liquidity: Decimal | None
     event_count: int
     financing_need: Decimal | None = None
+    asset_outflows: Decimal = Decimal(0)
+    liability_inflows: Decimal = Decimal(0)
 
 
 @dataclass(frozen=True, slots=True)
@@ -202,11 +204,6 @@ def project_sugef210(
                 raise ValueError("Assumption missing or approved for a different scenario")
             if not policy.valid_from <= cutoff <= policy.valid_to:
                 raise ValueError("Liquidity assumption is outside approval validity")
-        if event.area == LiquidityBalanceArea.ASSET and event.side != LiquidityFlowSide.INFLOW:
-            raise ValueError("Asset cash flows must be recorded as inflows")
-        if event.area == LiquidityBalanceArea.LIABILITY and event.side != LiquidityFlowSide.OUTFLOW:
-            raise ValueError("Liability cash flows must be recorded as outflows")
-
     opening = dict(opening_liquidity or {})
     for currency, amount in opening.items():
         if currency not in {"CRC", "USD"} or not amount.is_finite() or amount < 0:
@@ -234,18 +231,24 @@ def project_sugef210(
                     Decimal(0)
                 )
             asset_in = subtotal(LiquidityBalanceArea.ASSET, LiquidityFlowSide.INFLOW)
+            asset_out = subtotal(LiquidityBalanceArea.ASSET, LiquidityFlowSide.OUTFLOW)
+            liability_in = subtotal(LiquidityBalanceArea.LIABILITY, LiquidityFlowSide.INFLOW)
             liability_out = subtotal(LiquidityBalanceArea.LIABILITY, LiquidityFlowSide.OUTFLOW)
             off_in = subtotal(LiquidityBalanceArea.OFF_BALANCE, LiquidityFlowSide.INFLOW)
             off_out = subtotal(LiquidityBalanceArea.OFF_BALANCE, LiquidityFlowSide.OUTFLOW)
             business_in = subtotal(LiquidityBalanceArea.BUSINESS_EVENT, LiquidityFlowSide.INFLOW)
             business_out = subtotal(LiquidityBalanceArea.BUSINESS_EVENT, LiquidityFlowSide.OUTFLOW)
-            net = asset_in + off_in + business_in - liability_out - off_out - business_out
+            net = (
+                asset_in + liability_in + off_in + business_in
+                - asset_out - liability_out - off_out - business_out
+            )
             running += net
             initial = opening.get(currency)
             projected.append(
                 LiquidityProjectionRow(
                     window=window, currency=currency,
                     asset_inflows=asset_in, liability_outflows=liability_out,
+                    asset_outflows=asset_out, liability_inflows=liability_in,
                     other_inflows=business_in, other_outflows=business_out,
                     off_balance_inflows=off_in, off_balance_outflows=off_out,
                     net_flow=net, accumulated_flow=running,
