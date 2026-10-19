@@ -5,6 +5,7 @@ on:
     branches:
       - release/core-v1.0
       - feature/ux-v4-5-1-performance-responsiveness
+      - feature/ux-v451-rtilb-xml-integration
     paths:
       - "src/**"
       - "scripts/**"
@@ -23,7 +24,7 @@ permissions:
 
 jobs:
   verified-preview-package:
-    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'feature/ux-v4-5-1-performance-responsiveness' || github.head_ref == 'feature/ux-v451-rtilb-xml-integration'
+    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'feature/ux-v4-5-1-performance-responsiveness' || github.head_ref == 'feature/ux-v451-rtilb-xml-integration' || github.head_ref == 'feature/liquidity-sugef210-projected-cashflows'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
