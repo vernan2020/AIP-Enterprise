@@ -1,6 +1,6 @@
 name: One-shot SUGEF210 Black Formatting
 
-# Refresh formatting for the governed projection UI, Excel and N/D flow controls.
+# Normalize strict mypy-safe XML table evidence and Excel source formatting.
 
 on:
   push:
