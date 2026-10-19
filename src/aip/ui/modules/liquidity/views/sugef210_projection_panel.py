@@ -148,6 +148,13 @@ class SUGEF210ProjectionPanel(QWidget):
         "Saldo proyectado CRC†",
         "Saldo proyectado USD†",
     )
+    _GOVERNED_FLOW_DETAIL_HEADERS = (
+        "Banda", "Moneda", "Cobro activos", "Pago activos",
+        "Entrada pasivos", "Pago pasivos", "Entradas contingentes",
+        "Salidas contingentes", "Entradas negocio", "Salidas negocio",
+        "Neto parcial", "GAP acumulado parcial", "Saldo parcial",
+        "Eventos documentados", "Certificación",
+    )
     _DETAIL_HEADERS = (
         "Referencia XML",
         "ID original",
@@ -292,6 +299,10 @@ class SUGEF210ProjectionPanel(QWidget):
             self._XML_PERIMETER_HEADERS, "sugef210ContractualXMLPerimeters"
         )
         self._planning_tabs.addTab(self._xml_perimeters, "Cartera · captaciones · obligaciones")
+        self._governed_flow_details = self._table(
+            self._GOVERNED_FLOW_DETAIL_HEADERS, "sugef210GovernedFlowBreakdown"
+        )
+        self._planning_tabs.addTab(self._governed_flow_details, "Detalle de flujo · fuentes")
         splitter.addWidget(self._planning_tabs)
         splitter.setSizes([235, 150, 210, 220])
         main.addWidget(splitter, 1)
@@ -419,6 +430,7 @@ class SUGEF210ProjectionPanel(QWidget):
 
     def _invalidate_governed_projection(self) -> None:
         self._governed_projection = None
+        self._governed_flow_details.setRowCount(0)
         self._fill_windows()
         for amount in self._projected_kpis.values():
             amount.setText("N/D")
@@ -437,6 +449,7 @@ class SUGEF210ProjectionPanel(QWidget):
             raise ValueError("Projection currencies and horizon rows do not reconcile")
         self._invalidate_governed_projection()
         self._governed_projection = result
+        self._fill_governed_flow_details(result)
         if self._report is not None:
             self._fill_master_maturities(self._report)
         self._export.setEnabled(True)
@@ -496,6 +509,35 @@ class SUGEF210ProjectionPanel(QWidget):
             f"{result.excluded_out_of_horizon} fuera de 365 días. "
             f"Estado: {result.status}. N/D indica datos aún no certificados."
         )
+
+    def _fill_governed_flow_details(self, result: LiquidityProjectionResult) -> None:
+        self._governed_flow_details.setRowCount(0)
+        for row in result.rows:
+            available = row.event_count > 0 or result.certified_comprehensive
+            source_amounts = (
+                row.asset_inflows,
+                row.asset_outflows,
+                row.liability_inflows,
+                row.liability_outflows,
+                row.off_balance_inflows,
+                row.off_balance_outflows,
+                row.other_inflows,
+                row.other_outflows,
+            )
+            values = (
+                row.window.label,
+                row.currency,
+                *(str(amount) if available else "N/D" for amount in source_amounts),
+                str(row.net_flow) if available else "N/D",
+                str(row.accumulated_flow) if result.source_flow_count else "N/D",
+                (
+                    str(row.projected_liquidity)
+                    if row.projected_liquidity is not None else "N/D"
+                ),
+                str(row.event_count),
+                "INTEGRAL" if result.certified_comprehensive else "PARCIAL",
+            )
+            self._append(self._governed_flow_details, values)
 
     def _on_date_changed(self, value: QDate) -> None:
         selected_date = value.toPython()
