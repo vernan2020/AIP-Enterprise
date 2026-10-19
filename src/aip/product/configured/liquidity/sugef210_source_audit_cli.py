@@ -28,6 +28,8 @@ def inspect_xml_investment_source(cutoff: date) -> dict[str, object]:
 
     master_status = "MASTER_NOT_CONFIGURED"
     master_isins: frozenset[str] = frozenset()
+    master_series: frozenset[str] = frozenset()
+    master_position_count: int | None = None
     folder = config.folder_watch
     if folder.enabled:
         status, master_path, count = resolve_exact_cutoff_master(
@@ -45,6 +47,12 @@ def inspect_xml_investment_source(cutoff: date) -> dict[str, object]:
                 for item in read.normalized_positions
                 if str(item.get("isin") or "").strip()
             )
+            master_series = frozenset(
+                str(item.get("series") or "").strip().upper()
+                for item in read.normalized_positions
+                if str(item.get("series") or "").strip()
+            )
+            master_position_count = len(read.normalized_positions)
             master_status = "MASTER_EXACT_CUTOFF_READ"
 
     audit = audit_investment_current_accounts(
@@ -55,6 +63,8 @@ def inspect_xml_investment_source(cutoff: date) -> dict[str, object]:
             approval_reference="",
         ),
         master_isins=master_isins,
+        master_series=master_series,
+        master_loaded=master_position_count is not None,
     )
     return {
         "status": audit.status,
@@ -65,6 +75,9 @@ def inspect_xml_investment_source(cutoff: date) -> dict[str, object]:
         "sha256": audit.xml_sha256,
         "master_review_status": master_status,
         "master_isin_references": len(master_isins),
+        "master_positions_read": master_position_count,
+        "master_series_references": len(master_series),
+        "repeated_source_record_ids": audit.repeated_record_ids,
         "xml_records_read": audit.records_read,
         "invalid_source_principal": audit.invalid_source_principal,
         "missing_account_codes": audit.missing_account_codes,
@@ -79,6 +92,25 @@ def inspect_xml_investment_source(cutoff: date) -> dict[str, object]:
                 "unverified_master_overlap": g.unverified_master_overlap,
             }
             for g in audit.groups
+        ],
+        "record_evidence": [
+            {
+                "source_reference": row.source_reference,
+                "raw_record_id": row.raw_record_id,
+                "record_ordinal": row.record_ordinal,
+                "action": row.action,
+                "account_code": row.account_code,
+                "currency_source_code": row.currency_source_code,
+                "source_principal_raw": row.raw_principal,
+                "source_principal": str(row.principal) if row.principal is not None else None,
+                "instrument_id": row.instrument_id,
+                "isin": row.isin,
+                "series": row.series,
+                "classification": row.classification,
+                "master_reconciliation": row.master_reconciliation,
+                "withdrawable_amount": None,
+            }
+            for row in audit.records
         ],
         "current_account_cash_usable_today": None,
         "liquidity_projection_ready": False,
