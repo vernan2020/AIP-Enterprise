@@ -355,23 +355,40 @@ def test_real_session_loads_approved_external_contract_ledger_and_native_credit_
     xml_hash = hashlib.sha256(xml.read_bytes()).hexdigest()
     ledger = tmp_path / "institutional-credit-ledger.csv"
     fields = (
-        "source_key", "source_ordinal", "source_record_id", "account_code",
-        "original_currency_code", "currency", "original_principal",
-        "maturity_date", "payment_reference", "payment_date", "flow_type",
-        "amount", "availability_reference",
+        "source_key",
+        "source_ordinal",
+        "source_record_id",
+        "account_code",
+        "original_currency_code",
+        "currency",
+        "original_principal",
+        "maturity_date",
+        "payment_reference",
+        "payment_date",
+        "flow_type",
+        "amount",
+        "availability_reference",
     )
     with ledger.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields)
         writer.writeheader()
-        writer.writerow({
-            "source_key": "CREDIT", "source_ordinal": "1",
-            "source_record_id": "CREDIT-1", "account_code": "131",
-            "original_currency_code": "1", "currency": "CRC",
-            "original_principal": "120", "maturity_date": "2027-09-30",
-            "payment_reference": "P1", "payment_date": "2026-10-31",
-            "flow_type": "PRINCIPAL", "amount": "120",
-            "availability_reference": "TEST-LEDGER-BANK-SETTLEMENT",
-        })
+        writer.writerow(
+            {
+                "source_key": "CREDIT",
+                "source_ordinal": "1",
+                "source_record_id": "CREDIT-1",
+                "account_code": "131",
+                "original_currency_code": "1",
+                "currency": "CRC",
+                "original_principal": "120",
+                "maturity_date": "2027-09-30",
+                "payment_reference": "P1",
+                "payment_date": "2026-10-31",
+                "flow_type": "PRINCIPAL",
+                "amount": "120",
+                "availability_reference": "TEST-LEDGER-BANK-SETTLEMENT",
+            }
+        )
     ledger_hash = hashlib.sha256(ledger.read_bytes()).hexdigest()
 
     class Reader:
@@ -385,12 +402,15 @@ def test_real_session_loads_approved_external_contract_ledger_and_native_credit_
 
         @staticmethod
         def iter_records(_source):
-            yield SimpleNamespace(record_id="CREDIT-1", values={
-                "SaldoPrincipalOperacionCrediticia": "120",
-                "TipoMonedaOperacion": "1",
-                "CuentaContablePrincipal": "131",
-                "FechaVencimiento": "30/09/2027",
-            })
+            yield SimpleNamespace(
+                record_id="CREDIT-1",
+                values={
+                    "SaldoPrincipalOperacionCrediticia": "120",
+                    "TipoMonedaOperacion": "1",
+                    "CuentaContablePrincipal": "131",
+                    "FechaVencimiento": "30/09/2027",
+                },
+            )
 
         @staticmethod
         def sha256(path):
@@ -399,7 +419,8 @@ def test_real_session_loads_approved_external_contract_ledger_and_native_credit_
     monkeypatch.setattr(module, "XMLConfiaMonthlySourceReader", Reader)
     document = json.loads(approval.read_text(encoding="utf-8"))
     document["xml_contractual_schedule"] = {
-        "ledger_file": str(ledger), "ledger_sha256": ledger_hash,
+        "ledger_file": str(ledger),
+        "ledger_sha256": ledger_hash,
         "approved_xml_sha256": {"CREDIT": xml_hash},
         "approved_currency_codes": {"1": "CRC"},
         "approved_term_deposit_codes": [],
@@ -409,7 +430,9 @@ def test_real_session_loads_approved_external_contract_ledger_and_native_credit_
     }
     approval.write_text(json.dumps(document), encoding="utf-8")
     result = run_configured_sight_opening(
-        cutoff=CUTOFF, scenario="BASE", approval_manifest=approval,
+        cutoff=CUTOFF,
+        scenario="BASE",
+        approval_manifest=approval,
         bank_support_manifest=bank,
     )
     assert result.xml_contractual_events_approved == 1

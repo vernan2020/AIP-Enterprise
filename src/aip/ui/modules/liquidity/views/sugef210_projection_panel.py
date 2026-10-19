@@ -149,11 +149,21 @@ class SUGEF210ProjectionPanel(QWidget):
         "Saldo proyectado USD†",
     )
     _GOVERNED_FLOW_DETAIL_HEADERS = (
-        "Banda", "Moneda", "Cobro activos", "Pago activos",
-        "Entrada pasivos", "Pago pasivos", "Entradas contingentes",
-        "Salidas contingentes", "Entradas negocio", "Salidas negocio",
-        "Neto parcial", "GAP acumulado parcial", "Saldo parcial",
-        "Eventos documentados", "Certificación",
+        "Banda",
+        "Moneda",
+        "Cobro activos",
+        "Pago activos",
+        "Entrada pasivos",
+        "Pago pasivos",
+        "Entradas contingentes",
+        "Salidas contingentes",
+        "Entradas negocio",
+        "Salidas negocio",
+        "Neto parcial",
+        "GAP acumulado parcial",
+        "Saldo parcial",
+        "Eventos documentados",
+        "Certificación",
     )
     _DETAIL_HEADERS = (
         "Referencia XML",
@@ -530,10 +540,7 @@ class SUGEF210ProjectionPanel(QWidget):
                 *(str(amount) if available else "N/D" for amount in source_amounts),
                 str(row.net_flow) if available else "N/D",
                 str(row.accumulated_flow) if result.source_flow_count else "N/D",
-                (
-                    str(row.projected_liquidity)
-                    if row.projected_liquidity is not None else "N/D"
-                ),
+                (str(row.projected_liquidity) if row.projected_liquidity is not None else "N/D"),
                 str(row.event_count),
                 "INTEGRAL" if result.certified_comprehensive else "PARCIAL",
             )
