@@ -56,6 +56,30 @@ def _audit_currency(raw_code: str) -> str:
     return _EXPLICIT_MASTER_CURRENCY_ALIASES.get(raw_code, raw_code or "(SIN MONEDA NATIVA)")
 
 
+def _maturity_source_state(
+    raw_value: object, parsed_maturity: date | None, *, column_present: bool
+) -> str:
+    """Do not convert an unvalidated source date into a contractual maturity."""
+    if not column_present:
+        return "SOURCE_COLUMN_ABSENT"
+    if parsed_maturity is not None:
+        return "PARSED_DATE"
+    original = str(raw_value or "").strip()
+    if not original:
+        return "SOURCE_EMPTY"
+    if original.lower() in {
+        "0",
+        "0.0",
+        "01/01/1900",
+        "1/1/1900",
+        "1900-01-01",
+        "1900-1-1",
+        "1899-12-31",
+    }:
+        return "SOURCE_DATE_PLACEHOLDER"
+    return "SOURCE_DATE_UNPARSEABLE"
+
+
 def inspect_investment_master_cutoff(
     *,
     cutoff: date,
@@ -90,6 +114,8 @@ def inspect_investment_master_cutoff(
     # The reader stores source_values under *normalized* source headers, while
     # detected_column_mapping preserves the workbook's original header spelling.
     principal_key = source_reader._normalize_header(principal_header) if principal_header else None
+    maturity_header = source_columns.get("maturity_date")
+    maturity_key = source_reader._normalize_header(maturity_header) if maturity_header else None
     grouped: dict[str, dict[str, int | Decimal]] = defaultdict(
         lambda: {
             "positions": 0,
@@ -107,6 +133,7 @@ def inspect_investment_master_cutoff(
         lambda: {"positions": 0, "valid_source_principal": Decimal(0)}
     )
     eligible_amounts: dict[str, Decimal] = defaultdict(Decimal)
+    maturity_exception_rows: list[dict[str, object]] = []
     original_codes: dict[tuple[str, str], dict[str, int | Decimal]] = defaultdict(
         lambda: {"positions": 0, "source_principal": Decimal(0)}
     )
@@ -163,6 +190,29 @@ def inspect_investment_master_cutoff(
         discarded["positions"] += 1
         if principal is not None:
             discarded["valid_source_principal"] += principal
+        if reason in {"MISSING_OR_INVALID_MATURITY", "PAST_MATURITY"}:
+            raw_maturity = (
+                source_values.get(maturity_key)
+                if maturity_key and isinstance(source_values, dict)
+                else None
+            )
+            source_state = _maturity_source_state(
+                raw_maturity, maturity, column_present=maturity_key is not None
+            )
+            maturity_exception_rows.append(
+                {
+                    "excel_row": position.get("source_row"),
+                    "source_currency": raw_currency or "(SIN MONEDA NATIVA)",
+                    "normalized_currency": currency,
+                    "reason": reason,
+                    "source_date_state": source_state,
+                    "parsed_maturity": (
+                        maturity.isoformat() if isinstance(maturity, date) else None
+                    ),
+                    "source_principal": str(principal) if principal is not None else None,
+                    "principal_valid": principal is not None,
+                }
+            )
 
     observed_amounts: dict[str, Decimal] = defaultdict(Decimal)
     excluded_amounts: dict[str, Decimal] = defaultdict(Decimal)
@@ -244,6 +294,14 @@ def inspect_investment_master_cutoff(
             for currency in native_currencies
             for ordinal, label in canonical_labels
         ],
+        "maturity_date_column_detected": maturity_header is not None,
+        "maturity_exception_rows": sorted(
+            maturity_exception_rows,
+            key=lambda row: (
+                str(row["normalized_currency"]),
+                int(row["excel_row"]) if isinstance(row["excel_row"], int) else 0,
+            ),
+        ),
         "maturity_exclusions": [
             {
                 "source_currency": currency,
@@ -286,6 +344,8 @@ def inspect_investment_master_cutoff(
             "INV-MASTER-CURRENCY-ALIASES-V1 with original source spelling preserved; "
             "unsupported or missing source codes remain excluded. "
             "All nineteen empty or occupied bands are shown for each supported source currency. "
+            "Maturity exceptions retain Excel row references and technical source-date "
+            "states; dates are never inferred from remaining tenor. "
             "Source-column principal only; other balance fields are not substituted. "
             "The cutoff comes from the filename and is not independently certified."
         ),
