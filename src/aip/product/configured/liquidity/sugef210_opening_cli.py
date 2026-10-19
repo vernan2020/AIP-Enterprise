@@ -28,6 +28,8 @@ def summarize_session(session: ConfiguredOpeningSession) -> dict[str, object]:
         "master_principal_events_approved": session.master_principal_events_approved,
         "source_flows_included": result.source_flow_count,
         "not_a_regulatory_cashflow_certification": True,
+        "document_hash_is_not_a_bank_signature": True,
+        "projection_status": result.status,
         "missing_areas": list(result.missing_source_areas),
         "missing_evidence": list(session.assembly.missing_institutional_evidence),
         "windows": [
