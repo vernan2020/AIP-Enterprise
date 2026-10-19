@@ -233,12 +233,12 @@ def read_financial_plan_assumptions(
             monthly_values: list[Decimal] = []
             for month in range(1, 13):
                 raw = calendar.cell(row, month + 1).value
-                value = _decimal(raw)
-                if value is None:
+                monthly_amount = _decimal(raw)
+                if monthly_amount is None:
                     raise ValueError(f"Missing or invalid plan driver: {driver} month {month}")
-                if value < 0:
+                if monthly_amount < 0:
                     raise ValueError("Monthly budget inputs cannot be negative")
-                monthly_values.append(value)
+                monthly_values.append(monthly_amount)
                 status = classification
                 if area is not None:
                     if date(2026, month, 1) <= date(cutoff.year, cutoff.month, 1):
@@ -251,7 +251,7 @@ def read_financial_plan_assumptions(
                         year=2026,
                         month=month,
                         reporting_currency="CRC_MILLION_EQUIVALENT",
-                        reported_value=value,
+                        reported_value=monthly_amount,
                         source_cell=f"'Calendario mensual'!{chr(ord('B') + month - 1)}{row}",
                         source_sha256=source_sha,
                         area=area,

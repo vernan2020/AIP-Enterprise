@@ -274,7 +274,7 @@ class SUGEF210ProjectionPanel(QWidget):
             (str(row.get("key")), str(row.get("currency"))): str(
                 row.get("principal_maturing", "N/D")
             )
-            for row in maturity.get("maturity_windows", [])
+            for row in (maturity.get("maturity_windows") if isinstance(maturity.get("maturity_windows"), (list, tuple)) else ())
             if isinstance(row, dict)
         }
         for index, window in enumerate(sugef210_windows(self._cutoff)):
@@ -289,7 +289,10 @@ class SUGEF210ProjectionPanel(QWidget):
                 self._windows.setItem(index, column, item)
 
     def _on_date_changed(self, value: QDate) -> None:
-        self._cutoff = value.toPython()
+        selected_date = value.toPython()
+        if not isinstance(selected_date, date):
+            raise TypeError("La fecha de corte seleccionada no es válida")
+        self._cutoff = selected_date
         self._accounts.setRowCount(0)
         self._records.setRowCount(0)
         self._report = None
@@ -330,7 +333,7 @@ class SUGEF210ProjectionPanel(QWidget):
             self._status.setText(f"Fuente de inversiones no utilizable para inspección: {status}")
             return
         self._fill_master_maturities(report)
-        for group in report.get("accounts", []):
+        for group in (report.get("accounts") if isinstance(report.get("accounts"), (list, tuple)) else ()):
             if not isinstance(group, dict):
                 continue
             self._append(
@@ -345,7 +348,7 @@ class SUGEF210ProjectionPanel(QWidget):
                     str(group["unverified_master_overlap"]),
                 ),
             )
-        for record in report.get("record_evidence", []):
+        for record in (report.get("record_evidence") if isinstance(report.get("record_evidence"), (list, tuple)) else ()):
             if not isinstance(record, dict):
                 continue
             self._append(
@@ -525,7 +528,7 @@ class SUGEF210ProjectionPanel(QWidget):
             "unverified_master_overlap",
         )
         accounts.append(account_keys)
-        for row in report.get("accounts", []):
+        for row in (report.get("accounts") if isinstance(report.get("accounts"), (list, tuple)) else ()):
             if isinstance(row, dict):
                 accounts.append(tuple(safe(row.get(field)) for field in account_keys))
 
@@ -534,7 +537,7 @@ class SUGEF210ProjectionPanel(QWidget):
             schedule = workbook.create_sheet("Vencimientos Maestro")
             keys = ("key", "from", "to", "currency", "principal_maturing", "status")
             schedule.append(keys)
-            for item in maturity.get("maturity_windows", []):
+            for item in (maturity.get("maturity_windows") if isinstance(maturity.get("maturity_windows"), (list, tuple)) else ()):
                 if isinstance(item, dict):
                     schedule.append(tuple(safe(item.get(key)) for key in keys))
 
@@ -556,7 +559,7 @@ class SUGEF210ProjectionPanel(QWidget):
             "withdrawable_amount",
         )
         records.append(record_keys)
-        for row in report.get("record_evidence", []):
+        for row in (report.get("record_evidence") if isinstance(report.get("record_evidence"), (list, tuple)) else ()):
             if isinstance(row, dict):
                 records.append(tuple(safe(row.get(field)) for field in record_keys))
         for sheet in workbook:

@@ -209,7 +209,7 @@ def audit_investment_current_accounts(
             account_code=account,
             currency_source_code=currency,
             record_count=int(stats["records"]),
-            principal=stats["principal"],
+            principal=Decimal(stats["principal"]),
             classification=(
                 "APPROVED_CURRENT_ACCOUNT_CANDIDATE"
                 if account in policy.approved_account_codes

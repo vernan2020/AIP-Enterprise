@@ -203,10 +203,10 @@ def project_sugef210(
         if event.payment_date < cutoff:
             raise ValueError("Historical flow cannot be rolled forward to day zero")
         if event.evidence == LiquidityEvidence.GOVERNED_ASSUMPTION:
-            policy = policies.get(event.assumption_id or "")
-            if policy is None or policy.scenario != scenario:
+            approved_policy = policies.get(event.assumption_id or "")
+            if approved_policy is None or approved_policy.scenario != scenario:
                 raise ValueError("Assumption missing or approved for a different scenario")
-            if not policy.valid_from <= cutoff <= policy.valid_to:
+            if not approved_policy.valid_from <= cutoff <= approved_policy.valid_to:
                 raise ValueError("Liquidity assumption is outside approval validity")
     opening = dict(opening_liquidity or {})
     for currency, amount in opening.items():

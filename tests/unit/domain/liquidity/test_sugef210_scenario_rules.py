@@ -94,7 +94,7 @@ def test_scenario_cannot_reuse_missing_cutoff_or_already_scheduled_exposure():
             exposures=[replace(_balance(), source_cutoff=date(2026, 8, 31))],
             rules=[_rule()],
         )
-    with pytest.raises(ValueError, match="different scenario"):
+    with pytest.raises(ValueError, match="another scenario"):
         generate_approved_scenario_events(
             cutoff=CUTOFF,
             scenario="SYSTEMIC",
