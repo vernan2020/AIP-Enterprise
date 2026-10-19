@@ -15,6 +15,9 @@ from aip.domain.liquidity.cashflow.services.sugef210_projection import (
     LiquidityProjectionFlow,
     project_sugef210,
 )
+from aip.product.configured.liquidity.sugef210_master_maturity_bridge import (
+    MasterPrincipalEvidence,
+)
 from aip.product.configured.liquidity.sugef210_opening_session import ConfiguredOpeningSession
 from aip.product.configured.liquidity.sugef210_projection_assembler import (
     assemble_partial_institutional_projection,
@@ -263,5 +266,49 @@ def test_opening_UI_error_never_books_current_accounts(qt_app):
         panel._governed_opening_error(panel._cutoff, "BASE", "ValueError")
         assert "BLOCKED_GOVERNED_OPENING" in panel._opening_status.text()
         assert panel._windows.item(0, 9).text() == "N/D"
+    finally:
+        panel.close()
+
+
+def test_governed_master_cashflow_displays_contract_date_without_inferred_coupons(qt_app):
+    panel = SUGEF210ProjectionPanel()
+    try:
+        cutoff = date(2026, 9, 30)
+        panel._date.setDate(QDate(2026, 9, 30))
+        master_event = LiquidityProjectionFlow(
+            reference="MASTER:" + "c" * 64 + ":ROW-3:PRINCIPAL",
+            source="TEST-MASTER-ORIGINAL-CELL",
+            currency="CRC",
+            payment_date=cutoff + timedelta(days=31),
+            amount=Decimal("120"),
+            side=LiquidityFlowSide.INFLOW,
+            area=LiquidityBalanceArea.ASSET,
+            evidence=LiquidityEvidence.CONTRACTUAL,
+        )
+        admitted = MasterPrincipalEvidence(
+            cutoff=cutoff, master_sha256="c" * 64, positions_read=1,
+            flows=(master_event,), excluded=(),
+            principal_by_currency=(("CRC", Decimal("120")),),
+        )
+        assembly = assemble_partial_institutional_projection(
+            cutoff=cutoff, scenario="BASE", master=admitted,
+            master_maturity_recognition_reference="TEST-CUSTODIAN-SETTLEMENT",
+            opening_by_currency={"CRC": Decimal("1000"), "USD": Decimal("85.25")},
+            opening_certifications={"CRC": "TEST-CRC", "USD": "TEST-USD"},
+            opening_nonduplication_reference="TEST-ICL-RECON",
+        )
+        session = ConfiguredOpeningSession(
+            cutoff=cutoff, scenario="BASE", assembly=assembly,
+            sight_records_approved=1, sight_source_sha256="a" * 64,
+            bank_support_sha256="b" * 64, bank_document_sha256="d" * 64,
+            master_principal_events_approved=1,
+        )
+        panel._receive_governed_opening(cutoff, "BASE", session)
+        assert panel._windows.item(12, 4).text() == "120"
+        assert panel._windows.item(12, 9).text() == "1120"
+        assert panel._windows.item(12, 5).text() == "N/D"
+        assert panel._projected_kpis["CRC"].text() == "1120"
+        assert "1 vencimientos de principal" in panel._opening_status.text()
+        assert "PARCIAL" in panel._windows.item(12, 6).text()
     finally:
         panel.close()
