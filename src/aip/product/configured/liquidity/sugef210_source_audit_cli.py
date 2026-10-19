@@ -14,6 +14,10 @@ from aip.product.configured.liquidity.investment_current_account_xml_audit impor
     InvestmentCurrentAccountPolicy,
     audit_investment_current_accounts,
 )
+from aip.product.configured.liquidity.sugef210_master_maturity_bridge import (
+    build_master_principal_evidence,
+)
+from aip.domain.liquidity.cashflow.services.sugef210_projection import sugef210_windows
 from aip.product.configured.readers.institutional_portfolio_master_reader import (
     InstitutionalPortfolioMasterReader,
 )
@@ -30,6 +34,7 @@ def inspect_xml_investment_source(cutoff: date) -> dict[str, object]:
     master_isins: frozenset[str] = frozenset()
     master_series: frozenset[str] = frozenset()
     master_position_count: int | None = None
+    maturity_evidence: dict[str, object] | None = None
     folder = config.folder_watch
     if folder.enabled:
         status, master_path, count = resolve_exact_cutoff_master(
@@ -54,6 +59,51 @@ def inspect_xml_investment_source(cutoff: date) -> dict[str, object]:
             )
             master_position_count = len(read.normalized_positions)
             master_status = "MASTER_EXACT_CUTOFF_READ"
+            principal = build_master_principal_evidence(
+                cutoff=cutoff,
+                master_sha256=XMLConfiaMonthlySourceReader.sha256(master_path),
+                positions=read.normalized_positions,
+                principal_source_header=read.detected_column_mapping.get("principal_balance"),
+                maturity_source_header=read.detected_column_mapping.get("maturity_date"),
+            )
+            windows = sugef210_windows(cutoff)
+            maturity_evidence = {
+                "status": principal.status,
+                "coverage_complete": False,
+                "positions_read": principal.positions_read,
+                "principal_maturity_events": len(principal.flows),
+                "excluded_count": len(principal.excluded),
+                "principal_by_currency": {
+                    currency: str(amount) for currency, amount in principal.principal_by_currency
+                },
+                "excluded": [
+                    {
+                        "source_row": e.row,
+                        "reason": e.reason,
+                        "source_currency": e.currency_original,
+                    }
+                    for e in principal.excluded
+                ],
+                "maturity_windows": [
+                    {
+                        "key": window.key,
+                        "from": window.start.isoformat(),
+                        "to": window.end.isoformat(),
+                        "currency": currency,
+                        "principal_maturing": str(
+                            sum(
+                                (flow.amount for flow in principal.flows
+                                 if flow.currency == currency
+                                 and window.start <= flow.payment_date <= window.end),
+                                0,
+                            )
+                        ),
+                        "status": "MATURITY_ONLY_NOT_CERTIFIED_CASH_INFLOW",
+                    }
+                    for currency in ("CRC", "USD")
+                    for window in windows
+                ],
+            }
 
     audit = audit_investment_current_accounts(
         reader=XMLConfiaMonthlySourceReader(confia.root),
@@ -78,6 +128,7 @@ def inspect_xml_investment_source(cutoff: date) -> dict[str, object]:
         "master_positions_read": master_position_count,
         "master_series_references": len(master_series),
         "repeated_source_record_ids": audit.repeated_record_ids,
+        "master_maturity_evidence": maturity_evidence,
         "xml_records_read": audit.records_read,
         "invalid_source_principal": audit.invalid_source_principal,
         "missing_account_codes": audit.missing_account_codes,
