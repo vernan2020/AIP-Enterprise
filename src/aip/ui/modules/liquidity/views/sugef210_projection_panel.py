@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
     QSplitter,
     QTableWidget,
     QTableWidgetItem,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -29,6 +30,10 @@ from aip.domain.liquidity.cashflow.services.sugef210_projection import (
 )
 from aip.product.configured.liquidity.sugef210_source_audit_cli import (
     inspect_xml_investment_source,
+)
+from aip.product.configured.liquidity.financial_plan_source import (
+    FinancialPlanSourceAudit,
+    read_financial_plan_assumptions,
 )
 
 
@@ -49,9 +54,37 @@ class _SUGEF210SourceWorker(QThread):
         self.completed.emit(report)
 
 
+class _SUGEF210FinancialPlanWorker(QThread):
+    completed = Signal(object)
+    failed = Signal(str)
+
+    def __init__(self, cutoff: date, source_path: str) -> None:
+        super().__init__()
+        self._cutoff = cutoff
+        self._source_path = source_path
+
+    def run(self) -> None:
+        try:
+            evidence = read_financial_plan_assumptions(
+                self._source_path, cutoff=self._cutoff
+            )
+        except Exception as exc:
+            self.failed.emit(type(exc).__name__)
+            return
+        self.completed.emit(evidence)
+
+
 class SUGEF210ProjectionPanel(QWidget):
     """Liquidity horizon framework + REAL source coverage, no DEMO waterfall."""
 
+    _PLAN_HEADERS = (
+        "Mes", "Supuesto / Driver", "Valor 2026 (¢ millones ref.)",
+        "Área", "Sentido", "Tratamiento", "Celda fuente",
+    )
+    _PLAN_PARAMETER_HEADERS = (
+        "ID", "Parámetro / actividad", "Valor", "Unidad",
+        "Periodicidad", "Tipo", "Ref. Plan", "Celda fuente",
+    )
     _WINDOW_HEADERS = (
         "Horizonte", "Desde", "Hasta", "Apertura", "CRC neto", "USD neto",
         "Estado", "Principal Maestro CRC*", "Principal Maestro USD*",
@@ -76,6 +109,8 @@ class SUGEF210ProjectionPanel(QWidget):
         self.setObjectName("sugef210LiquidityProjectionPanel")
         self._worker: _SUGEF210SourceWorker | None = None
         self._report: dict[str, object] | None = None
+        self._plan_worker: _SUGEF210FinancialPlanWorker | None = None
+        self._plan_audit: FinancialPlanSourceAudit | None = None
         self._cutoff = date.today()
         main = QVBoxLayout(self)
         main.setContentsMargins(10, 10, 10, 10)
@@ -108,6 +143,9 @@ class SUGEF210ProjectionPanel(QWidget):
         self._export.setEnabled(False)
         self._export.clicked.connect(self.export_reconciliation)
         controls.addWidget(self._export)
+        self._plan_button = QPushButton("Cargar planificación financiera 2026")
+        self._plan_button.clicked.connect(self.select_financial_plan)
+        controls.addWidget(self._plan_button)
         controls.addStretch(1)
         main.addLayout(controls)
 
@@ -120,6 +158,14 @@ class SUGEF210ProjectionPanel(QWidget):
             "border-radius:6px; font-weight:600;"
         )
         main.addWidget(self._status)
+        self._plan_status = QLabel(
+            "Plan financiero: archivo no cargado. Sus supuestos NO se activan automáticamente."
+        )
+        self._plan_status.setWordWrap(True)
+        self._plan_status.setStyleSheet(
+            "padding:7px; background:#EDF4FA; color:#064F87; border-radius:6px;"
+        )
+        main.addWidget(self._plan_status)
 
         splitter = QSplitter(Qt.Orientation.Vertical)
         self._windows = self._table(self._WINDOW_HEADERS, "sugef210LiquidityWindows")
@@ -128,7 +174,17 @@ class SUGEF210ProjectionPanel(QWidget):
         splitter.addWidget(self._accounts)
         self._records = self._table(self._DETAIL_HEADERS, "sugef210XMLRecordEvidence")
         splitter.addWidget(self._records)
-        splitter.setSizes([260, 180, 250])
+        self._planning_tabs = QTabWidget()
+        self._plan_months = self._table(
+            self._PLAN_HEADERS, "sugef210FinancialPlanMonthlyEvidence"
+        )
+        self._plan_parameters = self._table(
+            self._PLAN_PARAMETER_HEADERS, "sugef210FinancialPlanParameters"
+        )
+        self._planning_tabs.addTab(self._plan_months, "Plan financiero · calendario")
+        self._planning_tabs.addTab(self._plan_parameters, "Plan financiero · supuestos")
+        splitter.addWidget(self._planning_tabs)
+        splitter.setSizes([235, 150, 210, 220])
         main.addWidget(splitter, 1)
         self._fill_windows()
 
@@ -222,6 +278,12 @@ class SUGEF210ProjectionPanel(QWidget):
         self._records.setRowCount(0)
         self._report = None
         self._export.setEnabled(False)
+        self._plan_audit = None
+        self._plan_months.setRowCount(0)
+        self._plan_parameters.setRowCount(0)
+        self._plan_status.setText(
+            "Plan del corte anterior invalidado. Volver a cargar para este corte."
+        )
         self._status.setText(
             "Corte cambiado: auditoría pendiente. No se reutilizan cifras del corte anterior."
         )
@@ -308,6 +370,95 @@ class SUGEF210ProjectionPanel(QWidget):
                 f"BLOCKED_SOURCE_READ ({category}). Sin sustituir información ni mostrar flujos."
             )
 
+
+
+    def select_financial_plan(self) -> None:
+        """Read local institutional workbook without copying it into the Git repository."""
+        if self._plan_worker is not None:
+            return
+        source_path, _file_filter = QFileDialog.getOpenFileName(
+            self,
+            "Seleccionar Matriz de Supuestos del Flujo de Efectivo 2026",
+            "",
+            "Excel (*.xlsx)",
+        )
+        if not source_path:
+            return
+        cutoff = self._cutoff
+        worker = _SUGEF210FinancialPlanWorker(cutoff, source_path)
+        self._plan_worker = worker
+        self._plan_button.setEnabled(False)
+        self._plan_status.setText(
+            "Leyendo la matriz institucional en modo seguro. "
+            "No se registrarán importes como flujos contractuales."
+        )
+        worker.completed.connect(
+            lambda evidence: self._receive_financial_plan(cutoff, evidence)
+        )
+        worker.failed.connect(lambda reason: self._financial_plan_error(cutoff, reason))
+        worker.finished.connect(self._release_plan_worker)
+        worker.start()
+
+    def _receive_financial_plan(
+        self, cutoff: date, evidence: FinancialPlanSourceAudit
+    ) -> None:
+        if cutoff != self._cutoff:
+            return
+        self._plan_audit = evidence
+        self._plan_months.setRowCount(0)
+        self._plan_parameters.setRowCount(0)
+        for row in evidence.monthly_inputs:
+            self._append(
+                self._plan_months,
+                (
+                    f"{row.month:02d}/{row.year}",
+                    row.driver,
+                    str(row.reported_value),
+                    str(row.area or "NO EFECTIVO / PARÁMETRO"),
+                    str(row.side or "—"),
+                    row.status,
+                    row.source_cell,
+                ),
+            )
+        for param in evidence.parameters:
+            self._append(
+                self._plan_parameters,
+                (
+                    str(param.plan_id), param.name,
+                    param.value if param.value is not None else "N/D",
+                    param.unit, param.periodicity, param.cashflow_type,
+                    param.plan_reference, param.source_cell,
+                ),
+            )
+        next_months = sum(
+            row.period_start > date(cutoff.year, cutoff.month, 1)
+            and row.classification == "PLANNED_POTENTIAL_CASHFLOW"
+            for row in evidence.monthly_inputs
+        )
+        self._plan_status.setText(
+            f"Plan {evidence.plan_year}: {len(evidence.parameters)} supuestos, "
+            f"{next_months} importes mensuales futuros identificados. "
+            f"SHA256: {evidence.sha256[:16]}… "
+            "Datos de referencia en ¢ millones; NO son CRC efectivo ni USD certificado. "
+            "Pendientes: aprobación, fecha, moneda original y no duplicación."
+        )
+
+    def _financial_plan_error(self, cutoff: date, reason: str) -> None:
+        if cutoff != self._cutoff:
+            return
+        self._plan_audit = None
+        self._plan_months.setRowCount(0)
+        self._plan_parameters.setRowCount(0)
+        self._plan_status.setText(
+            f"BLOCKED_FINANCIAL_PLAN_{reason}: no se incorporaron proyecciones."
+        )
+
+    def _release_plan_worker(self) -> None:
+        worker = self._plan_worker
+        if worker is not None and worker.isFinished():
+            self._plan_worker = None
+            worker.deleteLater()
+            self._plan_button.setEnabled(True)
 
     def export_reconciliation(self) -> None:
         """Export real audit evidence; never classify a balance as cash."""
