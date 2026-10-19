@@ -1,0 +1,69 @@
+name: One-shot SUGEF210 Black Formatting
+
+on:
+  push:
+    branches:
+      - feature/liquidity-sugef210-projected-cashflows
+    paths:
+      - ".github/workflows/sugef210-one-shot-black-format.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  format-liquidity-source-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/liquidity-sugef210-projected-cashflows
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install deterministic formatting tools
+        run: python -m pip install black ruff
+      - name: Format only SUGEF210 feature files with zero financial formula changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=(
+            src/aip/domain/liquidity/cashflow/services/sugef210_funding_capacity.py
+            src/aip/domain/liquidity/cashflow/services/sugef210_scenario_rules.py
+            src/aip/domain/liquidity/cashflow/services/sugef210_projection.py
+            src/aip/product/configured/liquidity/irrbb_schedule_liquidity_bridge.py
+            src/aip/product/configured/liquidity/financial_plan_cashflow_bridge.py
+            src/aip/product/configured/liquidity/sugef210_financial_plan_cli.py
+            src/aip/product/configured/liquidity/sight_investment_opening_bridge.py
+            src/aip/product/configured/liquidity/financial_plan_source.py
+            src/aip/product/configured/liquidity/sugef210_source_audit_cli.py
+            src/aip/ui/modules/liquidity/views/sugef210_projection_panel.py
+            tests/unit/domain/liquidity/test_sugef210_funding_capacity.py
+            tests/unit/domain/liquidity/test_sugef210_scenario_rules.py
+            tests/unit/domain/liquidity/test_sugef210_projection.py
+            tests/unit/product/configured/irrbb/test_investment_master_cutoff_audit.py
+            tests/unit/product/configured/liquidity/test_sight_investment_opening_bridge.py
+            tests/unit/product/configured/liquidity/test_financial_plan_source.py
+            tests/unit/product/configured/liquidity/test_investment_current_account_xml_audit.py
+            tests/unit/product/configured/liquidity/test_sugef210_master_maturity_bridge.py
+          )
+          black "${files[@]}"
+          ruff check --select I --fix "${files[@]}"
+          black "${files[@]}"
+          black --check "${files[@]}"
+          ruff check "${files[@]}"
+          python -m compileall -q src/aip/domain/liquidity src/aip/product/configured/liquidity
+      - name: Commit formatting only to the noncertified feature branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/aip/domain/liquidity/cashflow/services/sugef210_funding_capacity.py src/aip/domain/liquidity/cashflow/services/sugef210_scenario_rules.py src/aip/domain/liquidity/cashflow/services/sugef210_projection.py src/aip/product/configured/liquidity/irrbb_schedule_liquidity_bridge.py src/aip/product/configured/liquidity/financial_plan_cashflow_bridge.py src/aip/product/configured/liquidity/sugef210_financial_plan_cli.py src/aip/product/configured/liquidity/sight_investment_opening_bridge.py src/aip/product/configured/liquidity/financial_plan_source.py src/aip/product/configured/liquidity/sugef210_source_audit_cli.py src/aip/ui/modules/liquidity/views/sugef210_projection_panel.py tests/unit/domain/liquidity/test_sugef210_funding_capacity.py tests/unit/domain/liquidity/test_sugef210_scenario_rules.py tests/unit/domain/liquidity/test_sugef210_projection.py tests/unit/product/configured/irrbb/test_investment_master_cutoff_audit.py tests/unit/product/configured/liquidity/test_sight_investment_opening_bridge.py tests/unit/product/configured/liquidity/test_financial_plan_source.py tests/unit/product/configured/liquidity/test_investment_current_account_xml_audit.py tests/unit/product/configured/liquidity/test_sugef210_master_maturity_bridge.py
+          if git diff --cached --quiet; then
+            echo "Formatting already compliant."
+            exit 0
+          fi
+          git commit -m "style(liquidity): black and Ruff import normalization for SUGEF210 feature"
+          git push origin HEAD:feature/liquidity-sugef210-projected-cashflows
