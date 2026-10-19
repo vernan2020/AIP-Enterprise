@@ -14,6 +14,9 @@ from aip.domain.liquidity.cashflow.services.sugef210_projection import (
     LiquidityFlowSide,
     LiquidityProjectionFlow,
 )
+from aip.product.configured.liquidity.sugef210_dated_xml_contracts import (
+    ApprovedXMLContractualSchedule,
+)
 from aip.product.configured.liquidity.irrbb_schedule_liquidity_bridge import (
     LiquiditySourceBridgeResult,
 )
@@ -252,3 +255,33 @@ def test_sight_opening_requires_matching_icl_reconciliation_and_available_cash()
             opening_certifications={"CRC": "BANK-CRC", "USD": "BANK-USD"},
             opening_nonduplication_reference="BANK-ICL-202609",
         )
+
+
+def test_individually_approved_xml_credit_and_term_deposit_appear_in_native_31_60_band():
+    events = (
+        _event("XML_CONTRACT:CREDIT:HASH:1:PAY-A", 31, "100"),
+        _event("XML_CONTRACT:CAPTACIONES:HASH:1:PAY-B", 31, "30",
+               currency="USD", area=LiquidityBalanceArea.LIABILITY),
+    )
+    approved = ApprovedXMLContractualSchedule(
+        cutoff=CUTOFF,
+        events=events,
+        source_hashes=(("CREDIT", "a" * 64), ("CAPTACIONES", "b" * 64)),
+        ledger_sha256="c" * 64,
+        included_source_records=(("CREDIT", 1), ("CAPTACIONES", 1)),
+    )
+    result = assemble_partial_institutional_projection(
+        cutoff=CUTOFF, scenario="BASE", approved_xml_schedule=approved,
+        opening_by_currency={"CRC": Decimal("1000"), "USD": Decimal("70")},
+        opening_certifications={"CRC": "TEST-CRC", "USD": "TEST-USD"},
+        opening_nonduplication_reference="TEST-ICL-OPENING",
+    )
+    assert result.projection.rows[12].net_flow == Decimal("100")
+    assert result.projection.rows[12].projected_liquidity == Decimal("1100")
+    assert result.projection.rows[17 + 12].net_flow == Decimal("-30")
+    assert result.projection.rows[17 + 12].projected_liquidity == Decimal("40")
+    assert result.projection.source_flow_count == 2
+    assert "UNSELECTED_CREDIT_DEPOSIT_AND_BORROWING_SOURCE_RECORDS" in (
+        result.missing_institutional_evidence
+    )
+    assert not result.projection.certified_comprehensive
