@@ -26,6 +26,9 @@ from aip.domain.liquidity.cashflow.services.sugef210_scenario_rules import (
 from aip.product.configured.liquidity.financial_plan_cashflow_bridge import (
     ApprovedFinancialPlanEvents,
 )
+from aip.product.configured.liquidity.sugef210_dated_xml_contracts import (
+    ApprovedXMLContractualSchedule,
+)
 from aip.product.configured.liquidity.irrbb_schedule_liquidity_bridge import (
     LiquiditySourceBridgeResult,
 )
@@ -63,6 +66,7 @@ def assemble_partial_institutional_projection(
     master: MasterPrincipalEvidence | None = None,
     master_maturity_recognition_reference: str | None = None,
     contractual: LiquiditySourceBridgeResult | None = None,
+    approved_xml_schedule: ApprovedXMLContractualSchedule | None = None,
     approved_plan: ApprovedFinancialPlanEvents | None = None,
     approved_behavioral: ScenarioGeneratedEvidence | None = None,
     off_balance_flows: Iterable[LiquidityProjectionFlow] = (),
@@ -117,6 +121,19 @@ def assemble_partial_institutional_projection(
             ("CERTIFIED_DATED_SOURCE_SCHEDULE", contractual.cashflows, contractual.source_status)
         )
         areas.update(contractual.covered_balance_areas)
+
+    if approved_xml_schedule is not None:
+        source_events = approved_xml_schedule.events
+        if approved_xml_schedule.cutoff != cutoff:
+            raise ValueError("Contractual XML payment ledger cutoff does not match projection")
+        if approved_xml_schedule.status != "SELECTED_SOURCE_DATED_PAYMENTS_NOT_COMPLETE_PERIMETER":
+            raise ValueError("Source contractual payments have unapproved coverage status")
+        if not source_events or not approved_xml_schedule.source_hashes:
+            raise ValueError("Source payment ledger has no reconciled XML cash events")
+        groups.append(("APPROVED_XML_DATED_CONTRACTS", source_events, approved_xml_schedule.status))
+        areas.update(event.area for event in source_events)
+        # Individual validated rows do not attest the entire asset or liability perimeter.
+        missing.append("UNSELECTED_CREDIT_DEPOSIT_AND_BORROWING_SOURCE_RECORDS")
 
     if approved_plan is not None:
         if approved_plan.cutoff != cutoff or approved_plan.scenario != scenario:
