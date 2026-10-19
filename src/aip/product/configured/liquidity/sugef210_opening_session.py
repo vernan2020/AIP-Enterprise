@@ -23,6 +23,13 @@ from aip.product.configured.liquidity.investment_current_account_xml_audit impor
     InvestmentCurrentAccountPolicy,
     audit_investment_current_accounts,
 )
+from aip.product.configured.liquidity.sugef210_approved_master_principal import (
+    ApprovedMasterPrincipalPosition,
+    admit_approved_master_principal,
+)
+from aip.product.configured.liquidity.sugef210_master_maturity_bridge import (
+    build_master_principal_evidence,
+)
 from aip.product.configured.liquidity.sugef210_projection_assembler import (
     InstitutionalLiquidityAssembly,
     assemble_partial_institutional_projection,
@@ -47,6 +54,7 @@ class ConfiguredOpeningSession:
     sight_source_sha256: str
     bank_support_sha256: str
     bank_document_sha256: str
+    master_principal_events_approved: int = 0
     status: str = "PARTIAL_DOCUMENTED_OPENING_NOT_COMPLETE_FORECAST"
 
 
@@ -217,9 +225,61 @@ def run_configured_sight_opening(
         opening_certifications=certifications,
     )
     reconciled_opening = dict(verified.opening_by_currency)
+    admitted_master = None
+    principal_reference = None
+    principal_authorization = policy.get("master_principal_authorization")
+    if principal_authorization is not None:
+        if not isinstance(principal_authorization, dict):
+            raise ValueError("Master principal authorization must be a structured record")
+        actual_master_hash = _hash_local(master_path)
+        if _required_text(principal_authorization, "master_sha256") != actual_master_hash:
+            raise ValueError("Master principal approval no longer matches actual Master")
+        principal_reference = _required_text(principal_authorization, "approval_reference")
+        raw_principals = principal_authorization.get("approved_principal_records")
+        if not isinstance(raw_principals, list) or not raw_principals:
+            raise ValueError("Approved Master principal must list original individual events")
+        source_principal = build_master_principal_evidence(
+            cutoff=cutoff,
+            master_sha256=actual_master_hash,
+            positions=read.normalized_positions,
+            principal_source_header=read.detected_column_mapping.get("principal_balance"),
+            maturity_source_header=read.detected_column_mapping.get("maturity_date"),
+        )
+        approved = []
+        for record in raw_principals:
+            if not isinstance(record, dict):
+                raise ValueError("Master principal approval row is not structured")
+            try:
+                settlement_date = date.fromisoformat(_required_text(record, "payment_date"))
+            except ValueError as exc:
+                raise ValueError("Invalid approved principal settlement date") from exc
+            approved.append(
+                ApprovedMasterPrincipalPosition(
+                    cashflow_reference=_required_text(record, "cashflow_reference"),
+                    payment_date=settlement_date,
+                    original_principal=_original_amount(record.get("original_principal")),
+                    currency=_required_text(record, "currency"),
+                    approval_reference=principal_reference,
+                    settlement_availability_reference=_required_text(
+                        record, "settlement_availability_reference"
+                    ),
+                    restriction_clearance_reference=_required_text(
+                        record, "restriction_clearance_reference"
+                    ),
+                    nonduplication_reference=_required_text(record, "nonduplication_reference"),
+                )
+            )
+        admitted_master = admit_approved_master_principal(
+            source=source_principal,
+            cutoff=cutoff,
+            expected_master_sha256=actual_master_hash,
+            records=approved,
+        )
     assembly = assemble_partial_institutional_projection(
         cutoff=cutoff,
         scenario=scenario,
+        master=admitted_master,
+        master_maturity_recognition_reference=principal_reference,
         verified_sight_opening=verified,
         opening_by_currency=reconciled_opening,
         opening_certifications=certifications,
@@ -227,8 +287,12 @@ def run_configured_sight_opening(
             support, "opening_reconciliation_reference"
         ),
     )
-    if assembly.projection.certified_comprehensive or assembly.projection.source_flow_count:
-        raise ValueError("Sight-only session cannot certify contractual future cashflows")
+    if assembly.projection.certified_comprehensive:
+        raise ValueError("Partial investment session cannot certify integral cashflows")
+    if assembly.projection.source_flow_count != (
+        len(admitted_master.flows) if admitted_master is not None else 0
+    ):
+        raise ValueError("Investment Master events did not reconcile to approved source")
     return ConfiguredOpeningSession(
         cutoff=cutoff,
         scenario=scenario,
@@ -237,4 +301,7 @@ def run_configured_sight_opening(
         sight_source_sha256=audited.xml_sha256,
         bank_support_sha256=_hash_local(support_path),
         bank_document_sha256=bank_hash,
+        master_principal_events_approved=(
+            len(admitted_master.flows) if admitted_master is not None else 0
+        ),
     )
