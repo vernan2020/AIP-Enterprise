@@ -38,6 +38,10 @@ from aip.product.configured.liquidity.financial_plan_source import (
 from aip.product.configured.liquidity.sugef210_source_audit_cli import (
     inspect_xml_investment_source,
 )
+from aip.product.configured.liquidity.sugef210_opening_session import (
+    ConfiguredOpeningSession,
+    run_configured_sight_opening,
+)
 
 
 class _SUGEF210SourceWorker(QThread):
@@ -73,6 +77,33 @@ class _SUGEF210FinancialPlanWorker(QThread):
             self.failed.emit(type(exc).__name__)
             return
         self.completed.emit(evidence)
+
+
+class _SUGEF210OpeningWorker(QThread):
+    completed = Signal(object)
+    failed = Signal(str)
+
+    def __init__(
+        self, cutoff: date, scenario: str, approval_path: str, bank_path: str
+    ) -> None:
+        super().__init__()
+        self._cutoff = cutoff
+        self._scenario = scenario
+        self._approval_path = approval_path
+        self._bank_path = bank_path
+
+    def run(self) -> None:
+        try:
+            result = run_configured_sight_opening(
+                cutoff=self._cutoff,
+                scenario=self._scenario,
+                approval_manifest=self._approval_path,
+                bank_support_manifest=self._bank_path,
+            )
+        except Exception as exc:
+            self.failed.emit(type(exc).__name__)
+            return
+        self.completed.emit(result)
 
 
 class SUGEF210ProjectionPanel(QWidget):
@@ -147,6 +178,7 @@ class SUGEF210ProjectionPanel(QWidget):
         self._worker: _SUGEF210SourceWorker | None = None
         self._report: dict[str, object] | None = None
         self._plan_worker: _SUGEF210FinancialPlanWorker | None = None
+        self._opening_worker: _SUGEF210OpeningWorker | None = None
         self._plan_audit: FinancialPlanSourceAudit | None = None
         self._governed_projection: LiquidityProjectionResult | None = None
         self._cutoff = date.today()
@@ -190,6 +222,10 @@ class SUGEF210ProjectionPanel(QWidget):
         self._plan_button = QPushButton("Cargar planificación financiera 2026")
         self._plan_button.clicked.connect(self.select_financial_plan)
         controls.addWidget(self._plan_button)
+        self._opening_button = QPushButton("Validar caja inicial XML + Tesorería/ICL")
+        self._opening_button.setObjectName("sugef210LoadApprovedOpening")
+        self._opening_button.clicked.connect(self.select_governed_opening)
+        controls.addWidget(self._opening_button)
         controls.addStretch(1)
         main.addLayout(controls)
 
@@ -230,6 +266,15 @@ class SUGEF210ProjectionPanel(QWidget):
             "padding:7px; background:#EDF4FA; color:#064F87; border-radius:6px;"
         )
         main.addWidget(self._plan_status)
+        self._opening_status = QLabel(
+            "Caja inicial: sin conciliación aprobada de inversiones a la vista. "
+            "Ningún saldo XML se añade automáticamente."
+        )
+        self._opening_status.setWordWrap(True)
+        self._opening_status.setStyleSheet(
+            "padding:7px; background:#EDF4FA; color:#064F87; border-radius:6px;"
+        )
+        main.addWidget(self._opening_status)
 
         splitter = QSplitter(Qt.Orientation.Vertical)
         self._windows = self._table(self._WINDOW_HEADERS, "sugef210LiquidityWindows")
@@ -368,6 +413,7 @@ class SUGEF210ProjectionPanel(QWidget):
 
     def _on_scenario_changed(self, _scenario: str) -> None:
         self._invalidate_governed_projection()
+        self._opening_status.setText("Escenario cambiado: validar de nuevo caja inicial.")
         self._status.setText(
             "Escenario cambiado: sus flujos deben estar aprobados por separado. "
             "Proyección anterior invalidada; los datos pendientes permanecen N/D."
@@ -470,6 +516,9 @@ class SUGEF210ProjectionPanel(QWidget):
         self._plan_status.setText(
             "Plan del corte anterior invalidado. Volver a cargar para este corte."
         )
+        self._opening_status.setText(
+            "Corte cambiado: autorizaciones y conciliaciones de caja anteriores inválidas."
+        )
         self._status.setText(
             "Corte cambiado: auditoría pendiente. No se reutilizan cifras del corte anterior."
         )
@@ -478,6 +527,8 @@ class SUGEF210ProjectionPanel(QWidget):
     def run_source_audit(self) -> None:
         if self._worker is not None:
             return
+        self._invalidate_governed_projection()
+        self._opening_status.setText("Auditoría actualizada: volver a validar caja inicial.")
         requested_cutoff = self._cutoff
         worker = _SUGEF210SourceWorker(requested_cutoff)
         self._worker = worker
@@ -559,6 +610,71 @@ class SUGEF210ProjectionPanel(QWidget):
             self._status.setText(
                 f"BLOCKED_SOURCE_READ ({category}). Sin sustituir información ni mostrar flujos."
             )
+
+    def select_governed_opening(self) -> None:
+        """Run real configured Master/XML and two separate institutional approvals."""
+        if self._opening_worker is not None:
+            return
+        approval, _kind = QFileDialog.getOpenFileName(
+            self, "Autorización de inversiones a la vista SUGEF210", "", "JSON (*.json)"
+        )
+        if not approval:
+            return
+        bank, _kind = QFileDialog.getOpenFileName(
+            self, "Conciliación de caja Tesorería/ICL SUGEF210", "", "JSON (*.json)"
+        )
+        if not bank:
+            return
+        cutoff = self._cutoff
+        scenario = self._scenario.currentText()
+        self._invalidate_governed_projection()
+        self._opening_button.setEnabled(False)
+        self._opening_status.setText(
+            "Validando XML real, Maestro, cuenta a la vista y respaldo bancario. "
+            "No se aceptan saldos sin trazabilidad."
+        )
+        worker = _SUGEF210OpeningWorker(cutoff, scenario, approval, bank)
+        self._opening_worker = worker
+        worker.completed.connect(
+            lambda session: self._receive_governed_opening(cutoff, scenario, session)
+        )
+        worker.failed.connect(
+            lambda category: self._governed_opening_error(cutoff, scenario, category)
+        )
+        worker.finished.connect(self._release_opening_worker)
+        worker.start()
+
+    def _receive_governed_opening(
+        self, cutoff: date, scenario: str, session: ConfiguredOpeningSession
+    ) -> None:
+        if cutoff != self._cutoff or scenario != self._scenario.currentText():
+            return
+        if session.cutoff != cutoff or session.scenario != scenario:
+            raise ValueError("Loaded opening cutoff or scenario does not match the request")
+        self.present_governed_projection(session.assembly.projection)
+        self._opening_status.setText(
+            f"Caja inicial documentada: {session.sight_records_approved} inversiones "
+            f"a la vista revisadas contra XML/Maestro. "
+            f"XML SHA256 {session.sight_source_sha256[:12]}…; "
+            f"respaldo bancario SHA256 {session.bank_document_sha256[:12]}…. "
+            "Proyección PARCIAL: aún faltan cronogramas contractuales y contingencias. "
+            "La herramienta no verifica por sí sola firmas ni cifras de certificados bancarios."
+        )
+
+    def _governed_opening_error(self, cutoff: date, scenario: str, category: str) -> None:
+        if cutoff != self._cutoff or scenario != self._scenario.currentText():
+            return
+        self._invalidate_governed_projection()
+        self._opening_status.setText(
+            f"BLOCKED_GOVERNED_OPENING ({category}). No se incorporó caja XML."
+        )
+
+    def _release_opening_worker(self) -> None:
+        worker = self._opening_worker
+        if worker is not None and worker.isFinished():
+            self._opening_worker = None
+            worker.deleteLater()
+            self._opening_button.setEnabled(True)
 
     def select_financial_plan(self) -> None:
         """Read local institutional workbook without copying it into the Git repository."""
