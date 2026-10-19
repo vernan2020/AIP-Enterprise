@@ -1,5 +1,7 @@
 name: One-shot SUGEF210 Black Formatting
 
+# Normalize latest contractual cashflow importer, session and native detail UI.
+
 # Normalize approved source manifest parsing, signed bank opening and duplicate safeguards.
 
 on:
