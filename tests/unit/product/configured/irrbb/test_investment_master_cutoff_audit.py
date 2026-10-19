@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
+from decimal import Decimal
 
 from openpyxl import Workbook
 
@@ -120,7 +121,7 @@ def test_investment_maturity_invalid_date_excludes_valid_principal(tmp_path):
     assert all(row["positions"] == 0 for row in crc_bands)
     excluded = [row for row in report["maturity_exclusions"] if row["source_currency"] == "CRC"]
     assert len(excluded) == 1
-    assert excluded[0]["reason"] == "MISSING_OR_PAST_MATURITY"
+    assert excluded[0]["reason"] == "PAST_MATURITY"
     assert excluded[0]["valid_source_principal"] == "125.75"
     recon = [row for row in report["maturity_reconciliation"] if row["source_currency"] == "CRC"]
     assert recon[0]["eligible_source_principal"] == "125.75"
@@ -155,3 +156,63 @@ def test_unrecognized_source_currency_preserves_excluded_numeric_principal(tmp_p
         and item["valid_source_principal"] == "500"
         for item in result["maturity_exclusions"]
     )
+
+
+def test_dolar_source_alias_is_audited_as_usd_without_exchange_rate(tmp_path):
+    folder = _root(tmp_path)
+    filename = tmp_path / "Inversiones" / "2026" / "maestro" / "09" / "30-09-2026.xlsx"
+    from openpyxl import load_workbook
+
+    workbook = load_workbook(filename)
+    sheet = workbook.active
+    sheet.cell(row=3, column=4).value = "DOLAR"
+    workbook.save(filename)
+
+    result = inspect_investment_master_cutoff(cutoff=date(2026, 9, 30), folder=folder)
+    assert result["certified"] is False
+    assert result["currency_mapping_rule"] == "INV-MASTER-CURRENCY-ALIASES-V1"
+    original = {row["source_currency"]: row for row in result["source_currency_mappings"]}
+    assert original["DOLAR"]["normalized_currency"] == "USD"
+    assert original["DOLAR"]["mapping_status"] == "EXPLICIT_ALIAS"
+    assert original["DOLAR"]["positions"] == 1
+    assert original["DOLAR"]["source_principal"] == "500"
+    assert original["USD"]["mapping_status"] == "EXACT_SOURCE_CODE"
+    assert all(item["reason"] != "UNSUPPORTED_CURRENCY" for item in result["maturity_exclusions"])
+    grouped = {item["source_currency"]: item for item in result["currencies"]}
+    assert grouped["USD"]["positions"] == 2
+    assert grouped["USD"]["source_principal"] == "572.25"
+    usd_bands = [item for item in result["maturity_bands"] if item["source_currency"] == "USD"]
+    assert len(usd_bands) == 19
+    assert sum(
+        Decimal(item["source_principal"]) for item in usd_bands
+    ) == Decimal("572.25")
+    recon = {item["source_currency"]: item for item in result["maturity_reconciliation"]}
+    assert recon["USD"]["difference"] == "0"
+    assert recon["USD"]["observed_principal"] == "572.25"
+
+
+def test_dolar_alias_keeps_past_and_missing_maturities_excluded(tmp_path):
+    folder = _root(tmp_path)
+    filename = tmp_path / "Inversiones" / "2026" / "maestro" / "09" / "30-09-2026.xlsx"
+    from openpyxl import load_workbook
+
+    workbook = load_workbook(filename)
+    sheet = workbook.active
+    sheet.cell(row=3, column=4).value = "DOLAR"
+    sheet.cell(row=3, column=5).value = None
+    sheet.cell(row=4, column=5).value = date(2026, 9, 1)
+    workbook.save(filename)
+    result = inspect_investment_master_cutoff(cutoff=date(2026, 9, 30), folder=folder)
+    exclusions = {
+        (item["source_currency"], item["reason"]): item
+        for item in result["maturity_exclusions"]
+    }
+    assert exclusions[("USD", "MISSING_OR_INVALID_MATURITY")]["positions"] == 1
+    assert exclusions[("USD", "MISSING_OR_INVALID_MATURITY")]["valid_source_principal"] == "500"
+    assert exclusions[("USD", "PAST_MATURITY")]["positions"] == 1
+    assert exclusions[("USD", "PAST_MATURITY")]["valid_source_principal"] == "72.25"
+    recon = {row["source_currency"]: row for row in result["maturity_reconciliation"]}
+    assert recon["USD"]["eligible_source_principal"] == "572.25"
+    assert recon["USD"]["observed_principal"] == "0"
+    assert recon["USD"]["excluded_valid_principal"] == "572.25"
+    assert recon["USD"]["difference"] == "0"
