@@ -11,9 +11,11 @@ from datetime import date
 from PySide6.QtCore import QDate, Qt, QThread, Signal
 from PySide6.QtWidgets import (
     QAbstractItemView,
+    QComboBox,
     QDateEdit,
     QFileDialog,
     QHBoxLayout,
+    QFrame,
     QHeaderView,
     QLabel,
     QPushButton,
@@ -26,6 +28,7 @@ from PySide6.QtWidgets import (
 )
 
 from aip.domain.liquidity.cashflow.services.sugef210_projection import (
+    LiquidityProjectionResult,
     sugef210_windows,
 )
 from aip.product.configured.liquidity.financial_plan_source import (
@@ -113,6 +116,8 @@ class SUGEF210ProjectionPanel(QWidget):
         "Estado",
         "Principal Maestro CRC*",
         "Principal Maestro USD*",
+        "Saldo proyectado CRC†",
+        "Saldo proyectado USD†",
     )
     _DETAIL_HEADERS = (
         "Referencia XML",
@@ -143,6 +148,7 @@ class SUGEF210ProjectionPanel(QWidget):
         self._report: dict[str, object] | None = None
         self._plan_worker: _SUGEF210FinancialPlanWorker | None = None
         self._plan_audit: FinancialPlanSourceAudit | None = None
+        self._governed_projection: LiquidityProjectionResult | None = None
         self._cutoff = date.today()
         main = QVBoxLayout(self)
         main.setContentsMargins(10, 10, 10, 10)
@@ -168,6 +174,12 @@ class SUGEF210ProjectionPanel(QWidget):
         self._date.setDate(QDate(self._cutoff.year, self._cutoff.month, self._cutoff.day))
         self._date.dateChanged.connect(self._on_date_changed)
         controls.addWidget(self._date)
+        controls.addWidget(QLabel("Escenario:"))
+        self._scenario = QComboBox()
+        self._scenario.setObjectName("sugef210ScenarioSelection")
+        self._scenario.addItems(("BASE", "IDIOSYNCRATIC", "SYSTEMIC", "COMBINED"))
+        self._scenario.currentTextChanged.connect(self._on_scenario_changed)
+        controls.addWidget(self._scenario)
         self._button = QPushButton("Inspeccionar XML de inversiones")
         self._button.clicked.connect(self.run_source_audit)
         controls.addWidget(self._button)
@@ -180,6 +192,27 @@ class SUGEF210ProjectionPanel(QWidget):
         controls.addWidget(self._plan_button)
         controls.addStretch(1)
         main.addLayout(controls)
+
+        kpi_bar = QHBoxLayout()
+        self._projected_kpis: dict[str, QLabel] = {}
+        for currency in ("CRC", "USD"):
+            frame = QFrame()
+            frame.setObjectName(f"sugef210LiquidityKpi{currency}")
+            frame.setStyleSheet(
+                "QFrame { background-color:#07569A; border-radius:8px; } "
+                "QLabel { color:white; background:transparent; }"
+            )
+            kpi_layout = QVBoxLayout(frame)
+            title = QLabel(f"Saldo proyectado a 365 días · {currency}")
+            title.setStyleSheet("font-weight:600; font-size:10pt;")
+            amount = QLabel("N/D")
+            amount.setStyleSheet("font-size:18pt; font-weight:700;")
+            amount.setObjectName(f"sugef210BalanceKpi{currency}")
+            kpi_layout.addWidget(title)
+            kpi_layout.addWidget(amount)
+            kpi_bar.addWidget(frame, 1)
+            self._projected_kpis[currency] = amount
+        main.addLayout(kpi_bar)
 
         self._status = QLabel(
             "Proyección integral no certificada. Seleccione corte y audite XML real."
@@ -272,6 +305,8 @@ class SUGEF210ProjectionPanel(QWidget):
                     "Fuente incompleta",
                     "N/D",
                     "N/D",
+                    "N/D",
+                    "N/D",
                 ),
             )
 
@@ -333,11 +368,80 @@ class SUGEF210ProjectionPanel(QWidget):
                 ),
             )
 
+    def _on_scenario_changed(self, _scenario: str) -> None:
+        self._invalidate_governed_projection()
+        self._status.setText(
+            "Escenario cambiado: sus flujos deben estar aprobados por separado. "
+            "Proyección anterior invalidada; los datos pendientes permanecen N/D."
+        )
+
+    def _invalidate_governed_projection(self) -> None:
+        self._governed_projection = None
+        self._fill_windows()
+        for amount in self._projected_kpis.values():
+            amount.setText("N/D")
+
+    def present_governed_projection(self, result: LiquidityProjectionResult) -> None:
+        """Present only a caller-supplied governed run, never create assumptions."""
+        if result.cutoff != self._cutoff or result.scenario != self._scenario.currentText():
+            raise ValueError("Projection cutoff/scenario does not match active Liquidez view")
+        self._invalidate_governed_projection()
+        self._governed_projection = result
+        has_events = {
+            currency: any(row.event_count > 0 for row in result.rows if row.currency == currency)
+            for currency in ("CRC", "USD")
+        }
+        latest: dict[str, str] = {"CRC": "N/D", "USD": "N/D"}
+        for row in result.rows:
+            if row.window.key not in {window.key for window in result.windows}:
+                raise ValueError("Unrecognized projected liquidity band")
+            index = next(
+                (number for number, window in enumerate(result.windows)
+                 if window.key == row.window.key), None
+            )
+            if index is None or index >= self._windows.rowCount():
+                raise ValueError("Unrecognized projected liquidity band position")
+            net_column = 4 if row.currency == "CRC" else 5
+            balance_column = 9 if row.currency == "CRC" else 10
+            net = str(row.net_flow) if has_events[row.currency] else "N/D"
+            balance = (
+                str(row.projected_liquidity)
+                if row.projected_liquidity is not None else "N/D"
+            )
+            net_item = QTableWidgetItem(net)
+            net_item.setToolTip(
+                "Suma de eventos documentados en esta banda; las fuentes faltantes "
+                "no se interpretan como cero. No representa cobertura integral."
+            )
+            self._windows.setItem(index, net_column, net_item)
+            balance_item = QTableWidgetItem(balance)
+            balance_item.setToolTip(
+                "Saldo inicial verificado más eventos documentados; "
+                "excluye capacidad potencial de financiamiento."
+            )
+            self._windows.setItem(index, balance_column, balance_item)
+            self._windows.setItem(
+                index, 6, QTableWidgetItem(
+                    "CERTIFICADO" if result.certified_comprehensive else "PARCIAL - N/D"
+                )
+            )
+            if index == self._windows.rowCount() - 1:
+                latest[row.currency] = balance
+        for currency, label in self._projected_kpis.items():
+            label.setText(latest[currency])
+        self._status.setText(
+            f"Escenario {result.scenario}, corte {result.cutoff.isoformat()}: "
+            f"{result.source_flow_count} eventos documentados; "
+            f"{result.excluded_out_of_horizon} fuera de 365 días. "
+            f"Estado: {result.status}. N/D indica datos aún no certificados."
+        )
+
     def _on_date_changed(self, value: QDate) -> None:
         selected_date = value.toPython()
         if not isinstance(selected_date, date):
             raise TypeError("La fecha de corte seleccionada no es válida")
         self._cutoff = selected_date
+        self._invalidate_governed_projection()
         self._accounts.setRowCount(0)
         self._records.setRowCount(0)
         self._xml_perimeters.setRowCount(0)
