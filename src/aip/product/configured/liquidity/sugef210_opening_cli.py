@@ -40,14 +40,10 @@ def summarize_session(session: ConfiguredOpeningSession) -> dict[str, object]:
                 "cash_inflow_asset": str(row.asset_inflows) if row.event_count else None,
                 "net_documented": str(row.net_flow) if row.event_count else None,
                 "opening": (
-                    str(row.opening_liquidity)
-                    if row.opening_liquidity is not None
-                    else None
+                    str(row.opening_liquidity) if row.opening_liquidity is not None else None
                 ),
                 "balance_partial": (
-                    str(row.projected_liquidity)
-                    if row.projected_liquidity is not None
-                    else None
+                    str(row.projected_liquidity) if row.projected_liquidity is not None else None
                 ),
                 "funding_need_partial": (
                     str(row.financing_need) if row.financing_need is not None else None

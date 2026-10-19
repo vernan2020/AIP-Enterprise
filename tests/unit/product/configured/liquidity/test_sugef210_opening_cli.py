@@ -21,15 +21,20 @@ from aip.product.configured.liquidity.sugef210_projection_assembler import (
 def _session() -> ConfiguredOpeningSession:
     cutoff = date(2026, 9, 30)
     assembled = assemble_partial_institutional_projection(
-        cutoff=cutoff, scenario="BASE",
+        cutoff=cutoff,
+        scenario="BASE",
         opening_by_currency={"CRC": Decimal("100"), "USD": Decimal("15")},
         opening_certifications={"CRC": "TEST-ICL-CRC", "USD": "TEST-ICL-USD"},
         opening_nonduplication_reference="TEST-ICL-NONDOUBLE",
     )
     return ConfiguredOpeningSession(
-        cutoff=cutoff, scenario="BASE", assembly=assembled,
-        sight_records_approved=1, sight_source_sha256="a" * 64,
-        bank_support_sha256="b" * 64, bank_document_sha256="c" * 64,
+        cutoff=cutoff,
+        scenario="BASE",
+        assembly=assembled,
+        sight_records_approved=1,
+        sight_source_sha256="a" * 64,
+        bank_support_sha256="b" * 64,
+        bank_document_sha256="c" * 64,
     )
 
 
@@ -52,10 +57,18 @@ def test_cli_reports_protected_error_category_not_private_filepath(monkeypatch, 
         raise ValueError("Sensitive file location C:/Private/Bank/data.xlsx")
 
     monkeypatch.setattr(cli, "run_configured_sight_opening", reject)
-    status = main([
-        "--cutoff", "2026-09-30", "--scenario", "BASE",
-        "--approval", "C:/Private/approval.json", "--bank", "C:/Private/bank.json",
-    ])
+    status = main(
+        [
+            "--cutoff",
+            "2026-09-30",
+            "--scenario",
+            "BASE",
+            "--approval",
+            "C:/Private/approval.json",
+            "--bank",
+            "C:/Private/bank.json",
+        ]
+    )
     assert status == 2
     output = json.loads(capsys.readouterr().out)
     assert output["status"] == "BLOCKED_INSTITUTIONAL_EVIDENCE"
@@ -63,16 +76,22 @@ def test_cli_reports_protected_error_category_not_private_filepath(monkeypatch, 
     assert "Private" not in json.dumps(output)
 
 
-def test_cli_success_emits_structured_17_band_native_currency_waterfall(
-    monkeypatch, capsys
-):
+def test_cli_success_emits_structured_17_band_native_currency_waterfall(monkeypatch, capsys):
     from aip.product.configured.liquidity import sugef210_opening_cli as cli
 
     monkeypatch.setattr(cli, "run_configured_sight_opening", lambda **kwargs: _session())
-    status = main([
-        "--cutoff", "2026-09-30", "--scenario", "BASE",
-        "--approval", "approved.json", "--bank", "opening.json",
-    ])
+    status = main(
+        [
+            "--cutoff",
+            "2026-09-30",
+            "--scenario",
+            "BASE",
+            "--approval",
+            "approved.json",
+            "--bank",
+            "opening.json",
+        ]
+    )
     assert status == 0
     payload = json.loads(capsys.readouterr().out)
     assert len(payload["windows"]) == 34
