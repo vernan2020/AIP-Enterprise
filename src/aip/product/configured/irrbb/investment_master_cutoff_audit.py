@@ -216,11 +216,15 @@ def inspect_investment_master_cutoff(
                 "mapping_status": (
                     "EXPLICIT_ALIAS"
                     if original in _EXPLICIT_MASTER_CURRENCY_ALIASES
-                    else "EXACT_SOURCE_CODE"
-                    if canonical in {"CRC", "USD"}
-                    else "MISSING_SOURCE_CODE"
-                    if original == "(SIN MONEDA NATIVA)"
-                    else "UNSUPPORTED_SOURCE_CODE"
+                    else (
+                        "EXACT_SOURCE_CODE"
+                        if canonical in {"CRC", "USD"}
+                        else (
+                            "MISSING_SOURCE_CODE"
+                            if original == "(SIN MONEDA NATIVA)"
+                            else "UNSUPPORTED_SOURCE_CODE"
+                        )
+                    )
                 ),
                 "positions": int(group["positions"]),
                 "source_principal": str(group["source_principal"]),
