@@ -1,6 +1,18 @@
 from __future__ import annotations
 
+from datetime import date, timedelta
+from decimal import Decimal
+
+import pytest
 from PySide6.QtCore import QDate
+
+from aip.domain.liquidity.cashflow.services.sugef210_projection import (
+    LiquidityBalanceArea,
+    LiquidityEvidence,
+    LiquidityFlowSide,
+    LiquidityProjectionFlow,
+    project_sugef210,
+)
 
 from aip.ui.modules.liquidity.views.liquidity_view import LiquidityView
 from aip.ui.modules.liquidity.views.sugef210_projection_panel import (
@@ -99,5 +111,46 @@ def test_contractual_xml_source_status_not_a_payment_schedule(qt_app):
         assert panel._xml_perimeters.item(0, 3).text() == "1: 100.00"
         assert panel._xml_perimeters.item(1, 2).text() == "N/D"
         assert panel._windows.item(0, 4).text() == "N/D"
+    finally:
+        panel.close()
+
+
+def test_governed_projection_updates_only_verified_currency_and_resets_on_scenario(qt_app):
+    panel = SUGEF210ProjectionPanel()
+    try:
+        cutoff = date(2026, 9, 30)
+        panel._date.setDate(QDate(2026, 9, 30))
+        flow = LiquidityProjectionFlow(
+            reference="CONTRACT-CREDIT-TEST-001",
+            source="TEST-ONLY",
+            currency="CRC",
+            payment_date=cutoff + timedelta(days=31),
+            amount=Decimal("125"),
+            side=LiquidityFlowSide.INFLOW,
+            area=LiquidityBalanceArea.ASSET,
+            evidence=LiquidityEvidence.CONTRACTUAL,
+        )
+        result = project_sugef210(
+            cutoff=cutoff,
+            scenario="BASE",
+            flows=(flow,),
+            opening_liquidity={"CRC": Decimal("10")},
+            source_areas_covered=(LiquidityBalanceArea.ASSET,),
+            opening_certification_references={"CRC": "ACCOUNT-RECON-TEST"},
+        )
+        assert not result.certified_comprehensive
+        panel.present_governed_projection(result)
+        assert panel._windows.item(12, 4).text() == "125"
+        assert panel._windows.item(12, 5).text() == "N/D"
+        assert panel._windows.item(12, 9).text() == "135"
+        assert panel._windows.item(12, 10).text() == "N/D"
+        assert panel._projected_kpis["CRC"].text() == "135"
+        assert panel._projected_kpis["USD"].text() == "N/D"
+        assert "PARCIAL" in panel._windows.item(12, 6).text()
+        panel._scenario.setCurrentText("SYSTEMIC")
+        assert panel._governed_projection is None
+        assert panel._windows.item(12, 4).text() == "N/D"
+        with pytest.raises(ValueError, match="cutoff/scenario"):
+            panel.present_governed_projection(result)
     finally:
         panel.close()
