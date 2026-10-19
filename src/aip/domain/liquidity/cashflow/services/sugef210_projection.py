@@ -7,13 +7,18 @@ Every stressed event requires a documented, approved assumption.
 
 from __future__ import annotations
 
+from calendar import monthrange
 from dataclasses import dataclass
 from datetime import date, timedelta
 from decimal import Decimal
 from enum import Enum
 from typing import Iterable
 
-from dateutil.relativedelta import relativedelta
+def _add_calendar_months(day: date, months: int) -> date:
+    year, month = divmod(day.year * 12 + day.month - 1 + months, 12)
+    month += 1
+    return date(year, month, min(day.day, monthrange(year, month)[1]))
+
 
 
 class LiquidityFlowSide(str, Enum):
@@ -137,11 +142,11 @@ def sugef210_windows(cutoff: date) -> tuple[LiquidityWindow, ...]:
             cutoff + timedelta(days=last), "WEEKLY"
         ))
     # Following two rolling CALENDAR months start after the first 30 days.
-    boundaries = (cutoff + timedelta(days=30), cutoff + relativedelta(months=2),
-                  cutoff + relativedelta(months=3),
-                  cutoff + relativedelta(months=6),
-                  cutoff + relativedelta(months=9),
-                  cutoff + relativedelta(months=12))
+    boundaries = (cutoff + timedelta(days=30), _add_calendar_months(cutoff, 2),
+                  _add_calendar_months(cutoff, 3),
+                  _add_calendar_months(cutoff, 6),
+                  _add_calendar_months(cutoff, 9),
+                  _add_calendar_months(cutoff, 12))
     if boundaries[1] <= boundaries[0]:
         raise ValueError("Invalid calendar monthly boundary at cutoff")
     for idx, (first, last) in enumerate(zip(boundaries, boundaries[1:]), 1):
@@ -152,7 +157,7 @@ def sugef210_windows(cutoff: date) -> tuple[LiquidityWindow, ...]:
             first + timedelta(days=1), last, freq
         ))
     windows = tuple(LiquidityWindow(*values) for values in intervals)
-    if windows[0].start != cutoff or windows[-1].end != cutoff + relativedelta(years=1):
+    if windows[0].start != cutoff or windows[-1].end != _add_calendar_months(cutoff, 12):
         raise ValueError("Projection year boundaries not reconciled")
     for previous, next_window in zip(windows, windows[1:]):
         if next_window.start != previous.end + timedelta(days=1):
