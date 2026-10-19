@@ -46,9 +46,7 @@ def _contains_exact_cutoff(stem: str, cutoff: date) -> bool:
     )
 
 
-def inspect_master_paths(
-    *, root: str | None, pattern: str, cutoff: date
-) -> dict[str, object]:
+def inspect_master_paths(*, root: str | None, pattern: str, cutoff: date) -> dict[str, object]:
     """Describe discovery coverage without trusting any alternative Master."""
     status, _selected, count = resolve_exact_cutoff_master(root, pattern, cutoff)
     report: dict[str, object] = {
@@ -131,7 +129,9 @@ def inspect_master_paths(
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Diagnóstico sin escrituras del Maestro de inversiones")
+    parser = argparse.ArgumentParser(
+        description="Diagnóstico sin escrituras del Maestro de inversiones"
+    )
     parser.add_argument("--cutoff", default="2026-09-30")
     args = parser.parse_args(argv)
     try:
