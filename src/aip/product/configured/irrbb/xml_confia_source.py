@@ -18,7 +18,7 @@ _XML_MONTH_NAMES = {
     6: "JUNIO",
     7: "JULIO",
     8: "AGOSTO",
-    9: "SEPTIEMBRE",
+    9: "SETIEMBRE",
     10: "OCTUBRE",
     11: "NOVIEMBRE",
     12: "DICIEMBRE",
@@ -79,6 +79,15 @@ class XMLConfiaMonthlySourceReader:
         if resolved is None:
             raise ValueError("could not resolve XML CONFÍA month directory")
         path = Path(resolved)
+        if cutoff_date.month == 9:
+            alternate = path.with_name("09-SEPTIEMBRE")
+            existing = [candidate for candidate in (path, alternate) if candidate.is_dir()]
+            if len(existing) > 1:
+                raise ValueError(
+                    "Multiple September XML CONFÍA month folders; explicit selection required"
+                )
+            if existing:
+                return existing[0]
         if not path.is_dir():
             raise FileNotFoundError(f"XML CONFÍA month directory not found: {path}")
         return path
@@ -162,7 +171,7 @@ class XMLConfiaMonthlySourceReader:
             for item in month_directory.iterdir()
             if item.is_file()
             and item.suffix.casefold() == ".xml"
-            and item.stem.casefold() == stem.casefold()
+            and item.stem.casefold() in {stem.casefold(), f"{stem}.nuevo".casefold()}
         )
         if not candidates:
             raise FileNotFoundError(

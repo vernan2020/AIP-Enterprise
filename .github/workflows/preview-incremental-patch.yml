@@ -4,12 +4,14 @@ on:
   pull_request:
     branches:
       - release/core-v1.0
+      - feature/ux-v4-5-1-performance-responsiveness
     paths:
       - "src/**"
       - "scripts/**"
       - "run_aip_configured.cmd"
       - "run_aip_ux_preview.cmd"
       - "DIAGNOSTICAR_BCCR_SUGEF.cmd"
+      - "DIAGNOSTICAR_RTILB_XML.cmd"
       - "AUDITAR_FUENTES_CONFIGURADAS.cmd"
       - "INSPECCIONAR_HISTORICOS_PREVIEW.cmd"
       - "pyproject.toml"
@@ -21,7 +23,7 @@ permissions:
 
 jobs:
   verified-preview-package:
-    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'feature/ux-v4-5-1-performance-responsiveness'
+    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'feature/ux-v4-5-1-performance-responsiveness' || github.head_ref == 'feature/ux-v451-rtilb-xml-integration'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

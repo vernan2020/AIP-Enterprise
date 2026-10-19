@@ -21,6 +21,7 @@ ROOT_FILES = frozenset(
         "run_aip_configured.cmd",
         "run_aip_ux_preview.cmd",
         "DIAGNOSTICAR_BCCR_SUGEF.cmd",
+        "DIAGNOSTICAR_RTILB_XML.cmd",
         "AUDITAR_FUENTES_CONFIGURADAS.cmd",
         "INSPECCIONAR_HISTORICOS_PREVIEW.cmd",
     }

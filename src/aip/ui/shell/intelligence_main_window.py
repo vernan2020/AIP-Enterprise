@@ -73,10 +73,30 @@ class FinancialIntelligenceMainWindow(MainWindow):
                 RunIRRBBAnalysis,
             )
             from aip.core.container import ServiceNotRegisteredError
+            from aip.product.configured.configuration.configured_source_config import (
+                ConfiguredSourceConfig,
+            )
+            from aip.product.configured.configuration.institutional_paths import (
+                expand_environment_path,
+            )
+            from aip.product.configured.irrbb.regulatory_financial_xml import (
+                RegulatoryFinancialXMLReader,
+            )
             from aip.ui.modules.rate_risk.controllers import RateRiskWorkspaceController
             from aip.ui.modules.rate_risk.views import RateRiskWorkspace
 
             controller: RateRiskWorkspaceController | None = None
+            regulatory_xml_reader: RegulatoryFinancialXMLReader | None = None
+            try:
+                configured_sources = self._demo_factory.container.resolve(ConfiguredSourceConfig)
+            except ServiceNotRegisteredError:
+                pass
+            else:
+                xml_config = configured_sources.xml_confia
+                if xml_config.enabled and xml_config.root:
+                    root = expand_environment_path(xml_config.root)
+                    if root:
+                        regulatory_xml_reader = RegulatoryFinancialXMLReader(root)
             try:
                 analysis = self._demo_factory.container.resolve(RunIRRBBAnalysis)
                 request_provider = self._demo_factory.container.resolve(
@@ -93,6 +113,7 @@ class FinancialIntelligenceMainWindow(MainWindow):
             return (
                 RateRiskWorkspace(
                     controller=controller,
+                    regulatory_xml_reader=regulatory_xml_reader,
                     valuation_date_provider=lambda: self._valuation_context.valuation_date,
                 ),
                 "Riesgo de Tasas · RTILB",

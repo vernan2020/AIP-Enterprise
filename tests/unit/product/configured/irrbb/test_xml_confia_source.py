@@ -142,3 +142,45 @@ def test_xml_confia_configuration_round_trips_without_hardcoded_user_path() -> N
     assert rebuilt.xml_confia.root == config.xml_confia.root
     assert "RMESEN" not in rebuilt.xml_confia.root
     assert safe["xml_confia"]["enabled"] is True
+
+
+def test_resolves_september_credit_nuevo_variant_and_rejects_ambiguous_files(
+    tmp_path: Path,
+) -> None:
+    month = tmp_path / "2026" / "09-SEPTIEMBRE"
+    month.mkdir(parents=True)
+    stem = XML_CONFIA_SOURCE_STEMS["CREDIT"]
+    nuevo = month / f"{stem}.Nuevo.xml"
+    nuevo.write_text(_xml(periodo="01/09/2026", archivo="5103"), encoding="latin-1")
+    reader = XMLConfiaMonthlySourceReader(str(tmp_path))
+    result = reader.resolve_source(key="CREDIT", cutoff_date=date(2026, 9, 30))
+    assert result.path == nuevo
+    assert result.header.periodo == date(2026, 9, 1)
+
+    (month / f"{stem}.xml").write_text(
+        _xml(periodo="01/09/2026", archivo="5103"), encoding="latin-1"
+    )
+    with pytest.raises(ValueError, match="multiple XML CONFÍA files"):
+        reader.resolve_source(key="CREDIT", cutoff_date=date(2026, 9, 30))
+
+
+def test_september_setiembre_folder_resolves(tmp_path: Path) -> None:
+    month = tmp_path / "2026" / "09-SETIEMBRE"
+    month.mkdir(parents=True)
+    reader = XMLConfiaMonthlySourceReader(str(tmp_path))
+    assert reader.resolve_month_directory(date(2026, 9, 30)) == month
+
+
+def test_september_septiembre_folder_remains_compatible(tmp_path: Path) -> None:
+    month = tmp_path / "2026" / "09-SEPTIEMBRE"
+    month.mkdir(parents=True)
+    reader = XMLConfiaMonthlySourceReader(str(tmp_path))
+    assert reader.resolve_month_directory(date(2026, 9, 30)) == month
+
+
+def test_both_september_spellings_fail_ambiguous(tmp_path: Path) -> None:
+    root = tmp_path / "2026"
+    (root / "09-SETIEMBRE").mkdir(parents=True)
+    (root / "09-SEPTIEMBRE").mkdir()
+    with pytest.raises(ValueError, match="Multiple September"):
+        XMLConfiaMonthlySourceReader(str(tmp_path)).resolve_month_directory(date(2026, 9, 30))
