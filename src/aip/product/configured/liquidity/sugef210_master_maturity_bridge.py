@@ -7,11 +7,11 @@ treat unfunded/illiquid investments as day-zero cash.
 
 from __future__ import annotations
 
+import re
+import unicodedata
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal, InvalidOperation
-import re
-import unicodedata
 from typing import Any, Iterable
 
 from aip.domain.liquidity.cashflow.services.sugef210_projection import (
@@ -63,7 +63,7 @@ def _normalized_header(header: str) -> str:
         .encode("ascii", "ignore")
         .decode("ascii")
     )
-    return re.sub(r"\\s+", " ", re.sub(r"[^a-z0-9]+", " ", ascii_text)).strip()
+    return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9]+", " ", ascii_text)).strip()
 
 
 def _principal(raw: Any) -> Decimal | None:
