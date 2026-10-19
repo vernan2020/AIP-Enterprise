@@ -201,8 +201,10 @@ def run_configured_sight_opening(
     raw_support = Path(_required_text(support, "bank_or_icl_source_file"))
     if not raw_support.is_absolute() or not raw_support.is_file():
         raise ValueError("Original bank/ICL source document must exist locally")
-    if raw_support.resolve() in {approval_path.resolve(), support_path.resolve()}:
-        raise ValueError("Bank document must be independent of the approval manifests")
+    if raw_support.resolve() in {
+        approval_path.resolve(), support_path.resolve(), master_path.resolve()
+    }:
+        raise ValueError("Bank document must be independent of approvals and Master")
     expected_hash = _required_text(support, "bank_or_icl_source_sha256")
     bank_hash = _hash_local(raw_support)
     if len(expected_hash) != 64 or expected_hash.lower() != bank_hash:
