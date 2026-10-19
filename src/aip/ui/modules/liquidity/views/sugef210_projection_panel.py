@@ -52,7 +52,10 @@ class _SUGEF210SourceWorker(QThread):
 class SUGEF210ProjectionPanel(QWidget):
     """Liquidity horizon framework + REAL source coverage, no DEMO waterfall."""
 
-    _WINDOW_HEADERS = ("Horizonte", "Desde", "Hasta", "Apertura", "CRC neto", "USD neto", "Estado")
+    _WINDOW_HEADERS = (
+        "Horizonte", "Desde", "Hasta", "Apertura", "CRC neto", "USD neto",
+        "Estado", "Principal Maestro CRC*", "Principal Maestro USD*",
+    )
     _DETAIL_HEADERS = (
         "Referencia XML", "ID original", "Cuenta", "Moneda origen",
         "Saldo principal", "Id instrumento", "ISIN", "Serie",
@@ -180,8 +183,38 @@ class SUGEF210ProjectionPanel(QWidget):
                     "N/D",
                     "N/D",
                     "Fuente incompleta",
+                    "N/D",
+                    "N/D",
                 ),
             )
+
+
+    def _fill_master_maturities(self, report: dict[str, object]) -> None:
+        """Show dated original principal evidence, never mislabel it net cash."""
+        maturity = report.get("master_maturity_evidence")
+        if not isinstance(maturity, dict):
+            return
+        if maturity.get("status") != "MASTER_PRINCIPAL_ONLY_PARTIAL_LIQUIDITY_EVIDENCE":
+            return
+        amounts = {
+            (str(row.get("key")), str(row.get("currency"))): str(
+                row.get("principal_maturing", "N/D")
+            )
+            for row in maturity.get("maturity_windows", [])
+            if isinstance(row, dict)
+        }
+        for index, window in enumerate(sugef210_windows(self._cutoff)):
+            for column, currency in ((7, "CRC"), (8, "USD")):
+                value = amounts.get((window.key, currency), "N/D")
+                item = QTableWidgetItem(value)
+                item.setToolTip(
+                    "Principal con fecha de vencimiento verificable en Maestro. "
+                    "NO representa una entrada líquida certificada ni incluye cupones."
+                )
+                item.setTextAlignment(
+                    Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+                )
+                self._windows.setItem(index, column, item)
 
     def _on_date_changed(self, value: QDate) -> None:
         self._cutoff = value.toPython()
@@ -220,6 +253,7 @@ class SUGEF210ProjectionPanel(QWidget):
                 f"Fuente de inversiones no utilizable para inspección: {status}"
             )
             return
+        self._fill_master_maturities(report)
         for group in report.get("accounts", []):
             if not isinstance(group, dict):
                 continue
@@ -319,6 +353,15 @@ class SUGEF210ProjectionPanel(QWidget):
         for row in report.get("accounts", []):
             if isinstance(row, dict):
                 accounts.append(tuple(safe(row.get(field)) for field in account_keys))
+
+        maturity = report.get("master_maturity_evidence")
+        if isinstance(maturity, dict):
+            schedule = workbook.create_sheet("Vencimientos Maestro")
+            keys = ("key", "from", "to", "currency", "principal_maturing", "status")
+            schedule.append(keys)
+            for item in maturity.get("maturity_windows", []):
+                if isinstance(item, dict):
+                    schedule.append(tuple(safe(item.get(key)) for key in keys))
 
         records = workbook.create_sheet("Detalle conciliación")
         record_keys = (
