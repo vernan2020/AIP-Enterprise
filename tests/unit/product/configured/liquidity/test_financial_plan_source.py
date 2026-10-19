@@ -4,8 +4,8 @@ from dataclasses import replace
 from datetime import date
 from decimal import Decimal
 
-import pytest
 from openpyxl import Workbook
+import pytest
 
 from aip.domain.liquidity.cashflow.services.sugef210_projection import (
     LiquidityBalanceArea,
@@ -18,7 +18,6 @@ from aip.product.configured.liquidity.financial_plan_cashflow_bridge import (
 from aip.product.configured.liquidity.financial_plan_source import (
     read_financial_plan_assumptions,
 )
-
 
 CUTOFF = date(2026, 9, 30)
 MONTHS = (
