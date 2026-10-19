@@ -12,8 +12,8 @@ from aip.domain.liquidity.cashflow.services.sugef210_funding_capacity import (
 )
 from aip.domain.liquidity.cashflow.services.sugef210_projection import (
     LiquidityBalanceArea,
-    LiquidityFlowSide,
     LiquidityEvidence,
+    LiquidityFlowSide,
     LiquidityProjectionFlow,
     project_sugef210,
 )
