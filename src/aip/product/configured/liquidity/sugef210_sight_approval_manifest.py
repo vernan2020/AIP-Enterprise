@@ -150,7 +150,7 @@ def read_approved_sight_manifest(
         )
     if len(set(row.source_record_reference for row in verified)) != len(verified):
         raise ValueError("Repeated source record in sight approval manifest")
-    return add_verified_sight_investments_to_opening(
+    opening_result = add_verified_sight_investments_to_opening(
         cutoff=cutoff,
         existing_opening=bank_reconciled_opening,
         source_accounts=verified,
@@ -160,3 +160,10 @@ def read_approved_sight_manifest(
         opening_reconciliation_reference=reconciliation,
         existing_source_references=already_in_opening,
     )
+    if any(
+        not isinstance(opening_certifications.get(currency), str)
+        or not opening_certifications[currency].strip()
+        for currency, _amount in opening_result.opening_by_currency
+    ):
+        raise ValueError("Sight cash currency lacks a separately certified bank balance")
+    return opening_result
