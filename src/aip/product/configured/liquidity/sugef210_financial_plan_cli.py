@@ -58,9 +58,10 @@ def main(argv: list[str] | None = None) -> int:
                 "unit": parameter.unit,
                 "source_cell": parameter.source_cell,
                 "plan_reference": parameter.plan_reference,
+                "liquidity_role": parameter.liquidity_role,
             }
             for parameter in report.parameters
-            if parameter.plan_id in {1, 35, 38, 49, 50}
+            if parameter.plan_id in {1, 9, 34, 35, 38, 40, 42, 43, 44, 49, 50}
         ],
         "warnings": list(report.observations),
         "liquidity_cashflows_added": 0,
