@@ -89,6 +89,10 @@ class InvestmentMasterEvidencePanel(QWidget):
         self._certification.setObjectName("rateRiskInvestmentMasterCertification")
         self._certification.setWordWrap(True)
         layout.addWidget(self._certification)
+        self._currency_mapping = QLabel("Monedas del Maestro: pendientes de revisar")
+        self._currency_mapping.setObjectName("rateRiskInvestmentSourceCurrencyMapping")
+        self._currency_mapping.setWordWrap(True)
+        layout.addWidget(self._currency_mapping)
 
         self._table = QTableWidget(0, len(self._HEADERS))
         self._table.setObjectName("rateRiskInvestmentMasterEvidenceTable")
@@ -169,6 +173,7 @@ class InvestmentMasterEvidencePanel(QWidget):
         self._reconciliation.setRowCount(0)
         self._status.setText(f"Maestro {cutoff:%d/%m/%Y} · auditoría pendiente")
         self._certification.setText("Certificación de origen: pendiente")
+        self._currency_mapping.setText("Monedas del Maestro: pendientes de revisar")
 
     def run_audit(self) -> None:
         if self._cutoff is None or self._worker is not None:
@@ -194,6 +199,7 @@ class InvestmentMasterEvidencePanel(QWidget):
         if status != "INVESTMENT_MASTER_SOURCE_INSPECTED_NOT_CERTIFIED":
             self._status.setText(f"Maestro {cutoff:%d/%m/%Y}: {status}. Sin datos reemplazados.")
             self._certification.setText("Certificación: no disponible")
+            self._currency_mapping.setText("Monedas del Maestro: no verificadas")
             return
 
         self._status.setText(
@@ -209,6 +215,17 @@ class InvestmentMasterEvidencePanel(QWidget):
             f"Certificación: {report['certification_status']} · "
             f"{len(blocking)} requisitos bloqueados · "
             f"{len(pending)} pendientes. Sin GAP ni ΔEVE/ΔNII."
+        )
+        mappings = report.get("source_currency_mappings", [])
+        aliases = [
+            f'{item["source_currency"]} → {item["normalized_currency"]}: '
+            f'{item["positions"]} posiciones, sin conversión cambiaria'
+            for item in mappings
+            if isinstance(item, dict) and item.get("mapping_status") == "EXPLICIT_ALIAS"
+        ] if isinstance(mappings, list) else []
+        self._currency_mapping.setText(
+            "Equivalencias explícitas del Maestro: " + "; ".join(aliases)
+            if aliases else "Monedas del Maestro: sin equivalencias explícitas aplicadas"
         )
         groups = report.get("currencies", [])
         for group in groups if isinstance(groups, list) else []:
@@ -254,6 +271,8 @@ class InvestmentMasterEvidencePanel(QWidget):
             "UNSUPPORTED_CURRENCY": "Moneda sin catálogo confirmado",
             "INVALID_OR_MISSING_SOURCE_PRINCIPAL": "Falta principal válido",
             "MISSING_OR_PAST_MATURITY": "Sin vencimiento vigente",
+            "MISSING_OR_INVALID_MATURITY": "Vencimiento ausente o inválido",
+            "PAST_MATURITY": "Vencimiento anterior al corte",
         }
         for record in exclusions if isinstance(exclusions, list) else []:
             if not isinstance(record, dict):
@@ -305,6 +324,7 @@ class InvestmentMasterEvidencePanel(QWidget):
         self._reconciliation.setRowCount(0)
         self._status.setText(message)
         self._certification.setText("Certificación: bloqueada")
+        self._currency_mapping.setText("Monedas del Maestro: sin verificar")
 
     def _finish_worker(self) -> None:
         worker = self._worker
