@@ -385,6 +385,16 @@ class SUGEF210ProjectionPanel(QWidget):
         """Present only a caller-supplied governed run, never create assumptions."""
         if result.cutoff != self._cutoff or result.scenario != self._scenario.currentText():
             raise ValueError("Projection cutoff/scenario does not match active Liquidez view")
+        if result.windows != sugef210_windows(self._cutoff):
+            raise ValueError("Projection horizons differ from fixed SUGEF210 365-day bands")
+        expected = {
+            (window.key, currency)
+            for window in result.windows
+            for currency in ("CRC", "USD")
+        }
+        observed = {(row.window.key, row.currency) for row in result.rows}
+        if observed != expected or len(result.rows) != len(expected):
+            raise ValueError("Projection currencies and horizon rows do not reconcile")
         self._invalidate_governed_projection()
         self._governed_projection = result
         if self._report is not None:
