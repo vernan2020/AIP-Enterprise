@@ -554,7 +554,12 @@ class SUGEF210ProjectionPanel(QWidget):
             values = (
                 row.window.label,
                 row.currency,
-                *(str(amount) if available else "N/D" for amount in source_amounts),
+                *(
+                    str(amount)
+                    if amount != 0 or result.certified_comprehensive
+                    else "N/D"
+                    for amount in source_amounts
+                ),
                 str(row.net_flow) if available else "N/D",
                 str(row.accumulated_flow) if result.source_flow_count else "N/D",
                 (str(row.projected_liquidity) if row.projected_liquidity is not None else "N/D"),
@@ -951,42 +956,42 @@ class SUGEF210ProjectionPanel(QWidget):
                             item.currency,
                             (
                                 item.asset_inflows
-                                if item.event_count > 0 or projection.certified_comprehensive
+                                if item.asset_inflows != 0 or projection.certified_comprehensive
                                 else "N/D"
                             ),
                             (
                                 item.asset_outflows
-                                if item.event_count > 0 or projection.certified_comprehensive
+                                if item.asset_outflows != 0 or projection.certified_comprehensive
                                 else "N/D"
                             ),
                             (
                                 item.liability_inflows
-                                if item.event_count > 0 or projection.certified_comprehensive
+                                if item.liability_inflows != 0 or projection.certified_comprehensive
                                 else "N/D"
                             ),
                             (
                                 item.liability_outflows
-                                if item.event_count > 0 or projection.certified_comprehensive
+                                if item.liability_outflows != 0 or projection.certified_comprehensive
                                 else "N/D"
                             ),
                             (
                                 item.off_balance_inflows
-                                if item.event_count > 0 or projection.certified_comprehensive
+                                if item.off_balance_inflows != 0 or projection.certified_comprehensive
                                 else "N/D"
                             ),
                             (
                                 item.off_balance_outflows
-                                if item.event_count > 0 or projection.certified_comprehensive
+                                if item.off_balance_outflows != 0 or projection.certified_comprehensive
                                 else "N/D"
                             ),
                             (
                                 item.other_inflows
-                                if item.event_count > 0 or projection.certified_comprehensive
+                                if item.other_inflows != 0 or projection.certified_comprehensive
                                 else "N/D"
                             ),
                             (
                                 item.other_outflows
-                                if item.event_count > 0 or projection.certified_comprehensive
+                                if item.other_outflows != 0 or projection.certified_comprehensive
                                 else "N/D"
                             ),
                             (
