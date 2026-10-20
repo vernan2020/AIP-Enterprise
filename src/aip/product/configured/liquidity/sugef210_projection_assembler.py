@@ -152,10 +152,22 @@ def assemble_partial_institutional_projection(
     if approved_behavioral is not None:
         if approved_behavioral.cutoff != cutoff or approved_behavioral.scenario != scenario:
             raise ValueError("Behavioral approval cut-off or scenario is inconsistent")
+        if approved_behavioral.status != "APPROVED_SCENARIO_EVENTS_ONLY_NOT_FULL_COVERAGE":
+            raise ValueError("Scenario source is not approved for the selected cashflow cutoff")
+        if any(
+            event.evidence != LiquidityEvidence.GOVERNED_ASSUMPTION
+            for event in approved_behavioral.flows
+        ):
+            raise ValueError("Scenario event is not linked to a governed assumption")
         groups.append(
             ("APPROVED_SCENARIO_EVENTS", approved_behavioral.flows, approved_behavioral.status)
         )
         assumptions.extend(approved_behavioral.assumptions)
+        if not any(
+            event.area == LiquidityBalanceArea.LIABILITY
+            for event in approved_behavioral.flows
+        ):
+            missing.append("DEPOSIT_RUNOFF_AND_OTHER_BEHAVIORAL_ASSUMPTIONS_NOT_APPROVED")
     else:
         missing.append("DEPOSIT_RUNOFF_AND_OTHER_BEHAVIORAL_ASSUMPTIONS_NOT_APPROVED")
 
