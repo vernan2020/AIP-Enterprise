@@ -306,4 +306,4 @@ def test_crc_and_usd_same_original_account_support_distinct_authorized_runoff(tm
     assert [flow.amount for flow in usd] == [Decimal("20.00"), Decimal("30.00")]
     assert len(crc) == 1 and crc[0].amount == Decimal("8.00")
     assert all(flow.area.value == "LIABILITY" for flow in result.evidence.flows)
-    assert not result.evidence.status.endswith("FULL_COVERAGE")
+    assert result.evidence.status == "APPROVED_SCENARIO_EVENTS_ONLY_NOT_FULL_COVERAGE"
