@@ -67,13 +67,19 @@ def _policy(tmp_path):
         "approved_sight_account_codes": ["TEST-210"],
         "approved_sight_type_codes": ["SIGHT"],
         "approved_currency_codes": {"2": "USD"},
+        "approved_native_balance_reconciliation": [{
+            "account_code": "TEST-210", "type_code": "SIGHT",
+            "currency_source_code": "2", "currency": "USD",
+            "source_record_count": 1, "original_native_balance": "100",
+            "reconciliation_reference": "TEST-TREASURY-ACCOUNT-USD",
+        }],
         "classification_approval": "TEST-CLASSIFICATION-APPROVAL",
         "currency_mapping_approval": "TEST-NATIVE-CURRENCY-APPROVAL",
         "nonduplication_approval": "TEST-NOT-IN-CONTRACTUAL-SCHEDULE",
         "approved_rules": [
             {
                 "reference": "TEST-RUNOFF-D02",
-                "exposure_category": "SIGHT:TEST-210:SIGHT",
+                "exposure_category": "SIGHT:TEST-210:SIGHT:USD",
                 "factor": "0.20",
                 "projection_day": 2,
                 "rationale": "TEST APPROVAL ONLY",
@@ -87,7 +93,7 @@ def _policy(tmp_path):
             },
             {
                 "reference": "TEST-RUNOFF-W14",
-                "exposure_category": "SIGHT:TEST-210:SIGHT",
+                "exposure_category": "SIGHT:TEST-210:SIGHT:USD",
                 "factor": "0.30",
                 "projection_day": 14,
                 "rationale": "TEST APPROVAL ONLY",
@@ -122,6 +128,9 @@ def test_real_xml_selected_demand_amounts_become_governed_outflows_only(tmp_path
     assert result.excluded_xml_records == 1
     assert dict(result.source_native_balances)["USD"] == Decimal("100")
     assert result.included_source_ordinals == frozenset({1})
+    assert result.reconciled_native_groups == (
+        ("TEST-210", "SIGHT", "2", 1, Decimal("100")),
+    )
     assert result.evidence.matched_exposure_count == 1
     assert result.evidence.status == "APPROVED_SCENARIO_EVENTS_ONLY_NOT_FULL_COVERAGE"
     assert len(result.evidence.flows) == 2
@@ -160,14 +169,20 @@ def test_term_deposits_and_certified_payment_records_cannot_double_count(tmp_pat
     with pytest.raises(ValueError, match="scheduled contractual"):
         _read(reader, approval, contractually_scheduled_ordinals=frozenset({1}))
     doc["approved_sight_type_codes"] = ["FIXED-TERM"]
+    doc["approved_native_balance_reconciliation"] = [{
+        "account_code": "TEST-210", "type_code": "FIXED-TERM",
+        "currency_source_code": "2", "currency": "USD",
+        "source_record_count": 1, "original_native_balance": "300",
+        "reconciliation_reference": "TEST-ALCO-RECLASSIFICATION-REQUIRED",
+    }]
     doc["approved_rules"] = [
-        {**item, "exposure_category": "SIGHT:TEST-210:FIXED-TERM"} for item in doc["approved_rules"]
+        {**item, "exposure_category": "SIGHT:TEST-210:FIXED-TERM:USD"}
+        for item in doc["approved_rules"]
     ]
     approval.write_text(json.dumps(doc), encoding="utf-8")
-    forbidden = _read(reader, approval)
-    assert forbidden.included_source_ordinals == frozenset({2})
-    # Original type codes are only classifications; this test requires a separate
-    # approved sight-type catalog, not a rule generated from missing maturity.
+    # Classification is externally approved, not inferred from maturity.
+    verified = _read(reader, approval)
+    assert verified.included_source_ordinals == frozenset({2})
 
 
 def test_cumulative_percentage_cannot_exceed_original_demand_balance(tmp_path):
@@ -198,4 +213,39 @@ def test_malformed_balances_missing_catalog_approval_and_missing_row_source(tmp_
     doc["xml_sha256"] = ""
     approval.write_text(json.dumps(doc), encoding="utf-8")
     with pytest.raises(ValueError, match="Missing approved"):
+        _read(reader, approval)
+
+
+def test_native_balance_and_record_count_must_match_independently_approved_group(tmp_path):
+    reader, approval, doc = _policy(tmp_path)
+    approved = doc["approved_native_balance_reconciliation"][0]
+    approved["original_native_balance"] = "101"
+    approval.write_text(json.dumps(doc), encoding="utf-8")
+    with pytest.raises(ValueError, match="do not reconcile exactly"):
+        _read(reader, approval)
+    approved["original_native_balance"] = "100"
+    approved["source_record_count"] = 2
+    approval.write_text(json.dumps(doc), encoding="utf-8")
+    with pytest.raises(ValueError, match="do not reconcile exactly"):
+        _read(reader, approval)
+    del doc["approved_native_balance_reconciliation"]
+    approval.write_text(json.dumps(doc), encoding="utf-8")
+    with pytest.raises(ValueError, match="native balance reconciliation is mandatory"):
+        _read(reader, approval)
+
+
+def test_xml_account_type_cross_product_cannot_include_unapproved_currency(tmp_path):
+    reader, approval, doc = _policy(tmp_path)
+    doc["approved_sight_type_codes"] = ["SIGHT", "FIXED-TERM"]
+    approval.write_text(json.dumps(doc), encoding="utf-8")
+    with pytest.raises(ValueError, match="lacks independent reconciliation"):
+        _read(reader, approval)
+
+
+def test_sight_rules_must_bind_a_specific_native_currency(tmp_path):
+    reader, approval, doc = _policy(tmp_path)
+    for rule in doc["approved_rules"]:
+        rule["exposure_category"] = "SIGHT:TEST-210:SIGHT"
+    approval.write_text(json.dumps(doc), encoding="utf-8")
+    with pytest.raises(ValueError, match="category does not match"):
         _read(reader, approval)
