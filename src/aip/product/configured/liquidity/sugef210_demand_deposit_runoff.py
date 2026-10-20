@@ -197,8 +197,8 @@ def read_approved_demand_deposit_runoff(
         if ordinal in contractually_scheduled_ordinals:
             raise ValueError("Demand-deposit record already has scheduled contractual payments")
         currency_code = _required(values.get("TipoMonedaObligacion"), "original currency code")
-        currency = codes.get(currency_code)
-        if currency is None:
+        native_currency = codes.get(currency_code)
+        if not isinstance(native_currency, str) or native_currency not in {"CRC", "USD"}:
             raise ValueError("Original demand-deposit currency lacks approved mapping")
         source_balance = _amount(values.get("SaldoPrincipal"))
         native_key = (account, sight_type, currency_code)
@@ -212,8 +212,8 @@ def read_approved_demand_deposit_runoff(
         if reference in already_in_opening:
             raise ValueError("Demand-deposit source was already recognized in opening")
         included.add(ordinal)
-        native_totals[currency] += source_balance
-        category = f"SIGHT:{account}:{sight_type}:{currency}"
+        native_totals[native_currency] += source_balance
+        category = f"SIGHT:{account}:{sight_type}:{native_currency}"
         categories.add(category)
         if not source_balance:
             continue
@@ -225,7 +225,7 @@ def read_approved_demand_deposit_runoff(
                     f"CLASSIFICATION:{classification}:CURRENCY:{currency_approval}"
                 ),
                 source_cutoff=cutoff,
-                currency=currency,
+                currency=native_currency,
                 amount=source_balance,
                 category=category,
                 nonduplication_reference=f"{nonduplication}:{ordinal}:{record.record_id}",
