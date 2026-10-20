@@ -555,9 +555,7 @@ class SUGEF210ProjectionPanel(QWidget):
                 row.window.label,
                 row.currency,
                 *(
-                    str(amount)
-                    if amount != 0 or result.certified_comprehensive
-                    else "N/D"
+                    str(amount) if amount != 0 or result.certified_comprehensive else "N/D"
                     for amount in source_amounts
                 ),
                 str(row.net_flow) if available else "N/D",
@@ -971,17 +969,20 @@ class SUGEF210ProjectionPanel(QWidget):
                             ),
                             (
                                 item.liability_outflows
-                                if item.liability_outflows != 0 or projection.certified_comprehensive
+                                if item.liability_outflows != 0
+                                or projection.certified_comprehensive
                                 else "N/D"
                             ),
                             (
                                 item.off_balance_inflows
-                                if item.off_balance_inflows != 0 or projection.certified_comprehensive
+                                if item.off_balance_inflows != 0
+                                or projection.certified_comprehensive
                                 else "N/D"
                             ),
                             (
                                 item.off_balance_outflows
-                                if item.off_balance_outflows != 0 or projection.certified_comprehensive
+                                if item.off_balance_outflows != 0
+                                or projection.certified_comprehensive
                                 else "N/D"
                             ),
                             (
