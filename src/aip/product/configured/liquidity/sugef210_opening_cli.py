@@ -34,6 +34,17 @@ def summarize_session(session: ConfiguredOpeningSession) -> dict[str, object]:
         "demand_deposit_accounts_reviewed": session.demand_deposit_accounts_reviewed,
         "demand_deposit_runoff_events_approved": (session.demand_deposit_runoff_events_approved),
         "demand_deposit_xml_sha256": session.demand_deposit_source_sha256,
+        "demand_deposit_reconciled_source_groups": [
+            {
+                "account_code": account,
+                "type_code": source_type,
+                "original_currency_code": currency_code,
+                "source_record_count": count,
+                "original_native_balance": str(balance),
+            }
+            for account, source_type, currency_code, count, balance
+            in session.demand_deposit_native_reconciliations
+        ],
         "source_flows_included": result.source_flow_count,
         "not_a_regulatory_cashflow_certification": True,
         "document_hash_is_not_a_bank_signature": True,
