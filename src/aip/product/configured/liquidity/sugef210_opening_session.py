@@ -15,6 +15,9 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
 
+from aip.domain.liquidity.cashflow.services.sugef210_scenario_rules import (
+    ScenarioGeneratedEvidence,
+)
 from aip.product.configured.irrbb.investment_master_discovery import (
     resolve_exact_cutoff_master,
 )
@@ -26,6 +29,9 @@ from aip.product.configured.liquidity.investment_current_account_xml_audit impor
 from aip.product.configured.liquidity.sugef210_approved_master_principal import (
     ApprovedMasterPrincipalPosition,
     admit_approved_master_principal,
+)
+from aip.product.configured.liquidity.sugef210_demand_deposit_runoff import (
+    read_approved_demand_deposit_runoff,
 )
 from aip.product.configured.liquidity.sugef210_dated_xml_contracts import (
     import_approved_xml_contractual_payments,
@@ -64,6 +70,9 @@ class ConfiguredOpeningSession:
     xml_contractual_events_approved: int = 0
     contingent_scenario_events_approved: int = 0
     offbalance_commitments_reviewed: int = 0
+    demand_deposit_accounts_reviewed: int = 0
+    demand_deposit_runoff_events_approved: int = 0
+    demand_deposit_source_sha256: str | None = None
     status: str = "PARTIAL_DOCUMENTED_OPENING_NOT_COMPLETE_FORECAST"
 
 
@@ -354,13 +363,66 @@ def run_configured_sight_opening(
             ),
             already_in_opening=frozenset(verified.included_source_references),
         )
+    demand_runoff = None
+    demand_policy = policy.get("demand_deposit_runoff")
+    if demand_policy is not None:
+        if not isinstance(demand_policy, dict):
+            raise ValueError("Demand-deposit scenario authorization must be structured")
+        demand_approval = Path(_required_text(demand_policy, "approval_file"))
+        used_paths = {
+            approval_path.resolve(), support_path.resolve(), master_path.resolve(),
+            raw_support.resolve(),
+        }
+        if contract_policy is not None:
+            used_paths.add(ledger_path.resolve())
+        if contingent_policy is not None:
+            used_paths.add(register_file.resolve())
+            used_paths.add(policy_file.resolve())
+        if not demand_approval.is_absolute() or demand_approval.resolve() in used_paths:
+            raise ValueError("Sight runoff approval must be independent of source files")
+        fixed_deposits = frozenset(
+            ordinal
+            for key, ordinal in (
+                xml_contractual.included_source_records
+                if xml_contractual is not None else ()
+            )
+            if key == "CAPTACIONES"
+        )
+        demand_runoff = read_approved_demand_deposit_runoff(
+            reader=reader,
+            cutoff=cutoff,
+            scenario=scenario,
+            approval_file=demand_approval,
+            contractually_scheduled_ordinals=fixed_deposits,
+            already_in_opening=frozenset(verified.included_source_references),
+        )
+    approved_scenarios = tuple(
+        evidence
+        for evidence in (
+            offbalance.evidence if offbalance is not None else None,
+            demand_runoff.evidence if demand_runoff is not None else None,
+        )
+        if evidence is not None
+    )
+    governed_scenario = None
+    if approved_scenarios:
+        governed_scenario = ScenarioGeneratedEvidence(
+            cutoff=cutoff,
+            scenario=scenario,
+            flows=tuple(event for piece in approved_scenarios for event in piece.flows),
+            assumptions=tuple(
+                assumption for piece in approved_scenarios
+                for assumption in piece.assumptions
+            ),
+            matched_exposure_count=sum(piece.matched_exposure_count for piece in approved_scenarios),
+        )
     assembly = assemble_partial_institutional_projection(
         cutoff=cutoff,
         scenario=scenario,
         master=admitted_master,
         master_maturity_recognition_reference=principal_reference,
         approved_xml_schedule=xml_contractual,
-        approved_behavioral=offbalance.evidence if offbalance is not None else None,
+        approved_behavioral=governed_scenario,
         verified_sight_opening=verified,
         opening_by_currency=reconciled_opening,
         opening_certifications=certifications,
@@ -374,6 +436,7 @@ def run_configured_sight_opening(
         (len(admitted_master.flows) if admitted_master is not None else 0)
         + (len(xml_contractual.events) if xml_contractual is not None else 0)
         + (len(offbalance.evidence.flows) if offbalance is not None else 0)
+        + (len(demand_runoff.evidence.flows) if demand_runoff is not None else 0)
     )
     if assembly.projection.source_flow_count != expected_events:
         raise ValueError("Master and XML source payment events did not reconcile")
@@ -396,5 +459,14 @@ def run_configured_sight_opening(
         ),
         offbalance_commitments_reviewed=(
             offbalance.commitments_checked if offbalance is not None else 0
+        ),
+        demand_deposit_accounts_reviewed=(
+            demand_runoff.approved_accounts_seen if demand_runoff is not None else 0
+        ),
+        demand_deposit_runoff_events_approved=(
+            len(demand_runoff.evidence.flows) if demand_runoff is not None else 0
+        ),
+        demand_deposit_source_sha256=(
+            demand_runoff.xml_sha256 if demand_runoff is not None else None
         ),
     )
