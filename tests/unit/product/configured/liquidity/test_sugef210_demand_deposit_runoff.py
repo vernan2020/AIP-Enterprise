@@ -47,6 +47,7 @@ class SourceReader:
                 "TipoCuenta": "FIXED-TERM",
                 "TipoMonedaObligacion": "2",
                 "SaldoPrincipal": "300",
+                "FechaVencimiento": "30/09/2027",
             },
         )
 
@@ -180,9 +181,8 @@ def test_term_deposits_and_certified_payment_records_cannot_double_count(tmp_pat
         for item in doc["approved_rules"]
     ]
     approval.write_text(json.dumps(doc), encoding="utf-8")
-    # Classification is externally approved, not inferred from maturity.
-    verified = _read(reader, approval)
-    assert verified.included_source_ordinals == frozenset({2})
+    with pytest.raises(ValueError, match="Contractually dated deposit"):
+        _read(reader, approval)
 
 
 def test_cumulative_percentage_cannot_exceed_original_demand_balance(tmp_path):
