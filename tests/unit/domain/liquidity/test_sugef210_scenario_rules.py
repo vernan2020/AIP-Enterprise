@@ -112,3 +112,26 @@ def test_zero_behavioral_factor_emits_no_fake_cashflow():
     )
     assert result.flows == ()
     assert len(result.assumptions) == 1
+
+
+def test_multiple_approved_runoff_days_cannot_withdraw_over_original_exposure():
+    first = replace(_rule(), factor=Decimal("0.30"), projection_day=1)
+    second = replace(
+        _rule(), reference="ALCO-RUNOFF-002", factor=Decimal("0.45"), projection_day=8
+    )
+    valid = generate_approved_scenario_events(
+        cutoff=CUTOFF, scenario="COMBINED", exposures=[_balance()],
+        rules=[first, second],
+    )
+    assert len(valid.flows) == 2
+    assert sum(item.amount for item in valid.flows) == Decimal("75.0000")
+    with pytest.raises(ValueError, match="Cumulative scenario factors"):
+        generate_approved_scenario_events(
+            cutoff=CUTOFF, scenario="COMBINED", exposures=[_balance()],
+            rules=[first, replace(second, factor=Decimal("0.71"))],
+        )
+    with pytest.raises(ValueError, match="Duplicate scenario date"):
+        generate_approved_scenario_events(
+            cutoff=CUTOFF, scenario="COMBINED", exposures=[_balance()],
+            rules=[first, replace(second, projection_day=1)],
+        )
