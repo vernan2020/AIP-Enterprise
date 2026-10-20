@@ -8,6 +8,7 @@ from datetime import date
 from decimal import Decimal
 from pathlib import Path
 from types import SimpleNamespace
+from types import SimpleNamespace
 
 import pytest
 
@@ -257,3 +258,52 @@ def test_sight_rules_must_bind_a_specific_native_currency(tmp_path):
     approval.write_text(json.dumps(doc), encoding="utf-8")
     with pytest.raises(ValueError, match="category does not match"):
         _read(reader, approval)
+
+
+def test_crc_and_usd_same_original_account_support_distinct_authorized_runoff(tmp_path):
+    reader, approval, doc = _policy(tmp_path)
+    original_iter = reader.iter_records
+
+    def two_currency_rows(source):
+        yield from original_iter(source)
+        yield SimpleNamespace(
+            record_id="TEST-210-SIGHT-CRC-3",
+            values={
+                "CuentaContablePrincipal": "TEST-210",
+                "TipoCuenta": "SIGHT",
+                "TipoMonedaObligacion": "1",
+                "SaldoPrincipal": "80",
+            },
+        )
+
+    reader.iter_records = two_currency_rows
+    doc["approved_currency_codes"] = {"1": "CRC", "2": "USD"}
+    doc["approved_native_balance_reconciliation"].append({
+        "account_code": "TEST-210",
+        "type_code": "SIGHT",
+        "currency_source_code": "1",
+        "currency": "CRC",
+        "source_record_count": 1,
+        "original_native_balance": "80",
+        "reconciliation_reference": "TEST-INDEPENDENT-CRC-ACCOUNT-CONTROL",
+    })
+    doc["approved_rules"].append({
+        **doc["approved_rules"][0],
+        "reference": "TEST-CRC-D02",
+        "exposure_category": "SIGHT:TEST-210:SIGHT:CRC",
+        "factor": "0.10",
+        "approval_reference": "TEST-ALCO-CRC",
+    })
+    approval.write_text(json.dumps(doc), encoding="utf-8")
+    result = _read(reader, approval)
+    assert result.approved_accounts_seen == 2
+    assert len(result.reconciled_native_groups) == 2
+    assert dict(result.source_native_balances) == {
+        "CRC": Decimal("80"), "USD": Decimal("100")
+    }
+    usd = [flow for flow in result.evidence.flows if flow.currency == "USD"]
+    crc = [flow for flow in result.evidence.flows if flow.currency == "CRC"]
+    assert [flow.amount for flow in usd] == [Decimal("20.00"), Decimal("30.00")]
+    assert len(crc) == 1 and crc[0].amount == Decimal("8.00")
+    assert all(flow.area.value == "LIABILITY" for flow in result.evidence.flows)
+    assert not result.evidence.status.endswith("FULL_COVERAGE")
