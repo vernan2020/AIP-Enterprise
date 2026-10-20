@@ -110,3 +110,5 @@ El cálculo produce salidas `LIABILITY / OUTFLOW / GOVERNED_ASSUMPTION`, siempre
 ### Auditoría visible del XML 210 y retención del estado parcial
 
 Después de cargar el flujo en **Liquidez → Flujo proyectado · SUGEF 2-10**, la pestaña **Conciliación captaciones vista** exhibe, para cada combinación de cuenta contable, clasificación y código original de moneda, el número de registros y el saldo nativo conciliado, junto al hash del XML que respalda esa verificación. La salida CMD añade `demand_deposit_reconciled_source_groups` al JSON para revisión por Tesorería y Riesgos. Ninguna fila se marca como cobertura integral. Si se cambia el corte o escenario, la información de aprobación anterior se invalida y se elimina de la tabla.
+
+La exportación Excel de la conciliación incorpora la hoja **Captaciones vista XML210**, con esos mismos campos, sin aplicar tipo de cambio a importes nativos. Cuando el XML no fue autorizado o la proyección no fue cargada, la hoja permanece únicamente con encabezados: **sin datos no equivale a saldo cero**. La pestaña y la exportación reflejan estrictamente el corte y el escenario activos.
