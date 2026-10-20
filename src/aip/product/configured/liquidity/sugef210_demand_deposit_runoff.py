@@ -185,6 +185,8 @@ def read_approved_demand_deposit_runoff(
         if account not in accounts or sight_type not in types:
             excluded += 1
             continue
+        if (values.get("FechaVencimiento") or "").strip():
+            raise ValueError("Contractually dated deposit cannot be reclassified as sight runoff")
         if not record.record_id.strip() or record.record_id in seen_ids:
             raise ValueError("Approved sight XML contains absent or repeated source IDs")
         seen_ids.add(record.record_id)
