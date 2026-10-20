@@ -136,8 +136,7 @@ def generate_approved_scenario_events(
     seen_category_day: set[tuple[str, int]] = set()
     for rule in approved:
         approved_factor_by_category[rule.exposure_category] = (
-            approved_factor_by_category.get(rule.exposure_category, Decimal(0))
-            + rule.factor
+            approved_factor_by_category.get(rule.exposure_category, Decimal(0)) + rule.factor
         )
         if approved_factor_by_category[rule.exposure_category] > Decimal(1):
             raise ValueError("Cumulative scenario factors exceed original exposure")

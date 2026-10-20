@@ -107,11 +107,10 @@ def read_approved_demand_deposit_runoff(
     entity = _required(document.get("entity_id"), "entity_id")
     expected_hash = _required(document.get("xml_sha256"), "xml_sha256")
     source = reader.resolve_source(key="CAPTACIONES", cutoff_date=cutoff)
-    if (
-        source.header.id_entidad != entity
-        or (source.header.periodo.year, source.header.periodo.month)
-        != (cutoff.year, cutoff.month)
-    ):
+    if source.header.id_entidad != entity or (
+        source.header.periodo.year,
+        source.header.periodo.month,
+    ) != (cutoff.year, cutoff.month):
         raise ValueError("Demand-deposit XML entity or source period does not match approval")
     original_hash = reader.sha256(source.path)
     if len(expected_hash) != 64 or expected_hash.lower() != original_hash:
@@ -121,17 +120,25 @@ def read_approved_demand_deposit_runoff(
     types = document.get("approved_sight_type_codes")
     codes = document.get("approved_currency_codes")
     if (
-        not isinstance(accounts, list) or not accounts
-        or not isinstance(types, list) or not types
-        or not isinstance(codes, dict) or not codes
+        not isinstance(accounts, list)
+        or not accounts
+        or not isinstance(types, list)
+        or not types
+        or not isinstance(codes, dict)
+        or not codes
         or any(not isinstance(code, str) or not code.strip() for code in accounts + types)
-        or len(set(accounts)) != len(accounts) or len(set(types)) != len(types)
-        or any(not isinstance(code, str) or not code.strip() or currency not in {"CRC", "USD"}
-               for code, currency in codes.items())
+        or len(set(accounts)) != len(accounts)
+        or len(set(types)) != len(types)
+        or any(
+            not isinstance(code, str) or not code.strip() or currency not in {"CRC", "USD"}
+            for code, currency in codes.items()
+        )
     ):
         raise ValueError("Demand-deposit original account, type and currency catalogs required")
     classification = _required(document.get("classification_approval"), "classification_approval")
-    currency_approval = _required(document.get("currency_mapping_approval"), "currency_mapping_approval")
+    currency_approval = _required(
+        document.get("currency_mapping_approval"), "currency_mapping_approval"
+    )
     nonduplication = _required(document.get("nonduplication_approval"), "nonduplication_approval")
     rule_items = document.get("approved_rules")
     if not isinstance(rule_items, list) or not rule_items:

@@ -27,9 +27,7 @@ class SourceReader:
         assert key == "CAPTACIONES" and cutoff_date == CUTOFF
         return SimpleNamespace(
             path=self.xml,
-            header=SimpleNamespace(
-                periodo=date(2026, 9, 1), id_entidad="TEST-INSTITUTION"
-            ),
+            header=SimpleNamespace(periodo=date(2026, 9, 1), id_entidad="TEST-INSTITUTION"),
         )
 
     def iter_records(self, _source):
@@ -109,8 +107,11 @@ def _policy(tmp_path):
 
 def _read(reader, policy, **kwargs):
     return read_approved_demand_deposit_runoff(
-        reader=reader, cutoff=CUTOFF, scenario="SYSTEMIC",
-        approval_file=policy, **kwargs,
+        reader=reader,
+        cutoff=CUTOFF,
+        scenario="SYSTEMIC",
+        approval_file=policy,
+        **kwargs,
     )
 
 
@@ -125,11 +126,10 @@ def test_real_xml_selected_demand_amounts_become_governed_outflows_only(tmp_path
     assert result.evidence.status == "APPROVED_SCENARIO_EVENTS_ONLY_NOT_FULL_COVERAGE"
     assert len(result.evidence.flows) == 2
     assert [event.payment_date for event in result.evidence.flows] == [
-        date(2026, 10, 2), date(2026, 10, 14)
+        date(2026, 10, 2),
+        date(2026, 10, 14),
     ]
-    assert [event.amount for event in result.evidence.flows] == [
-        Decimal("20.00"), Decimal("30.00")
-    ]
+    assert [event.amount for event in result.evidence.flows] == [Decimal("20.00"), Decimal("30.00")]
     assert all(event.currency == "USD" for event in result.evidence.flows)
     assert all(event.area.value == "LIABILITY" for event in result.evidence.flows)
     assert all(event.side.value == "OUTFLOW" for event in result.evidence.flows)
@@ -161,8 +161,7 @@ def test_term_deposits_and_certified_payment_records_cannot_double_count(tmp_pat
         _read(reader, approval, contractually_scheduled_ordinals=frozenset({1}))
     doc["approved_sight_type_codes"] = ["FIXED-TERM"]
     doc["approved_rules"] = [
-        {**item, "exposure_category": "SIGHT:TEST-210:FIXED-TERM"}
-        for item in doc["approved_rules"]
+        {**item, "exposure_category": "SIGHT:TEST-210:FIXED-TERM"} for item in doc["approved_rules"]
     ]
     approval.write_text(json.dumps(doc), encoding="utf-8")
     forbidden = _read(reader, approval)

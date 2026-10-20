@@ -30,11 +30,11 @@ from aip.product.configured.liquidity.sugef210_approved_master_principal import 
     ApprovedMasterPrincipalPosition,
     admit_approved_master_principal,
 )
-from aip.product.configured.liquidity.sugef210_demand_deposit_runoff import (
-    read_approved_demand_deposit_runoff,
-)
 from aip.product.configured.liquidity.sugef210_dated_xml_contracts import (
     import_approved_xml_contractual_payments,
+)
+from aip.product.configured.liquidity.sugef210_demand_deposit_runoff import (
+    read_approved_demand_deposit_runoff,
 )
 from aip.product.configured.liquidity.sugef210_master_maturity_bridge import (
     build_master_principal_evidence,
@@ -370,7 +370,9 @@ def run_configured_sight_opening(
             raise ValueError("Demand-deposit scenario authorization must be structured")
         demand_approval = Path(_required_text(demand_policy, "approval_file"))
         used_paths = {
-            approval_path.resolve(), support_path.resolve(), master_path.resolve(),
+            approval_path.resolve(),
+            support_path.resolve(),
+            master_path.resolve(),
             raw_support.resolve(),
         }
         if contract_policy is not None:
@@ -383,8 +385,7 @@ def run_configured_sight_opening(
         fixed_deposits = frozenset(
             ordinal
             for key, ordinal in (
-                xml_contractual.included_source_records
-                if xml_contractual is not None else ()
+                xml_contractual.included_source_records if xml_contractual is not None else ()
             )
             if key == "CAPTACIONES"
         )
@@ -411,10 +412,11 @@ def run_configured_sight_opening(
             scenario=scenario,
             flows=tuple(event for piece in approved_scenarios for event in piece.flows),
             assumptions=tuple(
-                assumption for piece in approved_scenarios
-                for assumption in piece.assumptions
+                assumption for piece in approved_scenarios for assumption in piece.assumptions
             ),
-            matched_exposure_count=sum(piece.matched_exposure_count for piece in approved_scenarios),
+            matched_exposure_count=sum(
+                piece.matched_exposure_count for piece in approved_scenarios
+            ),
         )
     assembly = assemble_partial_institutional_projection(
         cutoff=cutoff,

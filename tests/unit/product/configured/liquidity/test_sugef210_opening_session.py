@@ -555,9 +555,7 @@ def test_separately_governed_offbalance_drawdown_enters_correct_usd_window(monke
         )
 
 
-def test_configured_demand_deposit_xml_210_runoff_enters_usd_daily_band(
-    monkeypatch, tmp_path
-):
+def test_configured_demand_deposit_xml_210_runoff_enters_usd_daily_band(monkeypatch, tmp_path):
     _configure(monkeypatch, tmp_path)
     from aip.product.configured.liquidity import sugef210_opening_session as module
 
@@ -596,38 +594,47 @@ def test_configured_demand_deposit_xml_210_runoff_enters_usd_daily_band(
 
     monkeypatch.setattr(module, "XMLConfiaMonthlySourceReader", Reader)
     policy = tmp_path / "approved-sight-runoff.json"
-    policy.write_text(json.dumps({
-        "schema": "SUGEF210_DEMAND_RUNOFF_V1",
-        "cutoff": CUTOFF.isoformat(),
-        "scenario": "SYSTEMIC",
-        "entity_id": "TEST-INSTITUTION",
-        "xml_sha256": source_hash,
-        "approved_sight_account_codes": ["TEST-CURRENT-ACCOUNT"],
-        "approved_sight_type_codes": ["SIGHT"],
-        "approved_currency_codes": {"2": "USD"},
-        "classification_approval": "TEST-ALCO-SIGHT-CODES",
-        "currency_mapping_approval": "TEST-ALCO-NATIVE-USD",
-        "nonduplication_approval": "TEST-NOT-IN-TERM-CASHFLOWS",
-        "approved_rules": [{
-            "reference": "TEST-ALCO-SIGHT-D02",
-            "exposure_category": "SIGHT:TEST-CURRENT-ACCOUNT:SIGHT",
-            "factor": "0.15",
-            "projection_day": 2,
-            "rationale": "TEST-ONLY-CERTIFIED-CATEGORY-SCENARIO",
-            "approval_reference": "TEST-ALCO-SYSTEMIC",
-            "source_reference": "TEST-DATED-RUNOFF-SERIES",
-            "version": "V1",
-            "approved_on": "2026-09-01",
-            "valid_from": "2026-09-01",
-            "valid_to": "2026-12-31",
-            "explicitly_approved": True,
-        }],
-    }), encoding="utf-8")
+    policy.write_text(
+        json.dumps(
+            {
+                "schema": "SUGEF210_DEMAND_RUNOFF_V1",
+                "cutoff": CUTOFF.isoformat(),
+                "scenario": "SYSTEMIC",
+                "entity_id": "TEST-INSTITUTION",
+                "xml_sha256": source_hash,
+                "approved_sight_account_codes": ["TEST-CURRENT-ACCOUNT"],
+                "approved_sight_type_codes": ["SIGHT"],
+                "approved_currency_codes": {"2": "USD"},
+                "classification_approval": "TEST-ALCO-SIGHT-CODES",
+                "currency_mapping_approval": "TEST-ALCO-NATIVE-USD",
+                "nonduplication_approval": "TEST-NOT-IN-TERM-CASHFLOWS",
+                "approved_rules": [
+                    {
+                        "reference": "TEST-ALCO-SIGHT-D02",
+                        "exposure_category": "SIGHT:TEST-CURRENT-ACCOUNT:SIGHT",
+                        "factor": "0.15",
+                        "projection_day": 2,
+                        "rationale": "TEST-ONLY-CERTIFIED-CATEGORY-SCENARIO",
+                        "approval_reference": "TEST-ALCO-SYSTEMIC",
+                        "source_reference": "TEST-DATED-RUNOFF-SERIES",
+                        "version": "V1",
+                        "approved_on": "2026-09-01",
+                        "valid_from": "2026-09-01",
+                        "valid_to": "2026-12-31",
+                        "explicitly_approved": True,
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
     doc = json.loads(authorization.read_text(encoding="utf-8"))
     doc["demand_deposit_runoff"] = {"approval_file": str(policy)}
     authorization.write_text(json.dumps(doc), encoding="utf-8")
     session = run_configured_sight_opening(
-        cutoff=CUTOFF, scenario="SYSTEMIC", approval_manifest=authorization,
+        cutoff=CUTOFF,
+        scenario="SYSTEMIC",
+        approval_manifest=authorization,
         bank_support_manifest=bank,
     )
     assert session.demand_deposit_accounts_reviewed == 1
@@ -641,6 +648,8 @@ def test_configured_demand_deposit_xml_210_runoff_enters_usd_daily_band(
     assert not session.assembly.projection.certified_comprehensive
     with pytest.raises(ValueError, match="another scenario"):
         run_configured_sight_opening(
-            cutoff=CUTOFF, scenario="BASE", approval_manifest=authorization,
+            cutoff=CUTOFF,
+            scenario="BASE",
+            approval_manifest=authorization,
             bank_support_manifest=bank,
         )

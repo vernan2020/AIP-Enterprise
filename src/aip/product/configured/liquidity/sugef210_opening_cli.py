@@ -32,9 +32,7 @@ def summarize_session(session: ConfiguredOpeningSession) -> dict[str, object]:
         "offbalance_commitments_reviewed": session.offbalance_commitments_reviewed,
         "governed_offbalance_scenario_events": (session.contingent_scenario_events_approved),
         "demand_deposit_accounts_reviewed": session.demand_deposit_accounts_reviewed,
-        "demand_deposit_runoff_events_approved": (
-            session.demand_deposit_runoff_events_approved
-        ),
+        "demand_deposit_runoff_events_approved": (session.demand_deposit_runoff_events_approved),
         "demand_deposit_xml_sha256": session.demand_deposit_source_sha256,
         "source_flows_included": result.source_flow_count,
         "not_a_regulatory_cashflow_certification": True,
