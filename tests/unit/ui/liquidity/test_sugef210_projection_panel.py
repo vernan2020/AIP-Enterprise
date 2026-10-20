@@ -159,7 +159,7 @@ def test_governed_projection_updates_only_verified_currency_and_resets_on_scenar
         assert panel._windows.item(12, 4).text() == "125"
         assert panel._governed_flow_details.rowCount() == 34
         assert panel._governed_flow_details.item(12, 2).text() == "125"
-        assert panel._governed_flow_details.item(12, 5).text() == "0"
+        assert panel._governed_flow_details.item(12, 5).text() == "N/D"
         assert panel._governed_flow_details.item(17 + 12, 2).text() == "N/D"
         assert panel._windows.item(13, 4).text() == "N/D"
         assert panel._windows.item(12, 5).text() == "N/D"
@@ -174,6 +174,58 @@ def test_governed_projection_updates_only_verified_currency_and_resets_on_scenar
         assert panel._governed_flow_details.rowCount() == 0
         with pytest.raises(ValueError, match="cutoff/scenario"):
             panel.present_governed_projection(result)
+    finally:
+        panel.close()
+
+
+def test_partial_xml_cashflow_excel_masks_unverified_other_source_zeros(
+    qt_app, tmp_path, monkeypatch
+):
+    panel = SUGEF210ProjectionPanel()
+    try:
+        cutoff = date(2026, 9, 30)
+        panel._date.setDate(QDate(2026, 9, 30))
+        credit = LiquidityProjectionFlow(
+            reference="TEST-ORIGINAL-CREDIT-SETTLEMENT",
+            source="TEST-CONTRACTUAL-CREDIT-DOCUMENT",
+            currency="CRC",
+            payment_date=cutoff + timedelta(days=31),
+            amount=Decimal("125"),
+            side=LiquidityFlowSide.INFLOW,
+            area=LiquidityBalanceArea.ASSET,
+            evidence=LiquidityEvidence.CONTRACTUAL,
+        )
+        projection = project_sugef210(
+            cutoff=cutoff,
+            scenario="BASE",
+            flows=(credit,),
+            opening_liquidity={"CRC": Decimal("10")},
+        )
+        panel.present_governed_projection(projection)
+        assert panel._governed_flow_details.item(12, 2).text() == "125"
+        assert panel._governed_flow_details.item(12, 5).text() == "N/D"
+        assert panel._governed_flow_details.item(12, 7).text() == "N/D"
+        destination = tmp_path / "only_approved_sources.xlsx"
+        monkeypatch.setattr(
+            "aip.ui.modules.liquidity.views.sugef210_projection_panel."
+            "QFileDialog.getSaveFileName",
+            lambda *_args, **_kwargs: (str(destination), "Excel (*.xlsx)"),
+        )
+        panel.export_reconciliation()
+        assert destination.is_file()
+        workbook = load_workbook(destination, read_only=True, data_only=True)
+        try:
+            sheet = workbook["Flujo proyectado 365d"]
+            # CRC starts at Excel row 2, then 31-60d at zero-based band index 12.
+            row = 2 + 12
+            assert sheet.cell(row, 7).value == "125"
+            assert sheet.cell(row, 8).value == "N/D"
+            assert sheet.cell(row, 10).value == "N/D"
+            assert sheet.cell(row, 12).value == "N/D"
+            assert sheet.cell(row, 15).value == "125"
+            assert sheet.cell(row, 20).value == "PARTIAL_EVIDENCE_NOT_CERTIFIED"
+        finally:
+            workbook.close()
     finally:
         panel.close()
 
