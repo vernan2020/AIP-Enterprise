@@ -313,6 +313,18 @@ class SUGEF210ProjectionPanel(QWidget):
             self._GOVERNED_FLOW_DETAIL_HEADERS, "sugef210GovernedFlowBreakdown"
         )
         self._planning_tabs.addTab(self._governed_flow_details, "Detalle de flujo · fuentes")
+        self._demand_deposit_reconciliation = self._table(
+            (
+                "Cuenta contable XML210", "Tipo original", "Código moneda original",
+                "Registros conciliados", "Saldo nativo conciliado",
+                "Estado", "SHA256 fuente",
+            ),
+            "sugef210DemandDepositOriginalCurrencyReconciliation",
+        )
+        self._planning_tabs.addTab(
+            self._demand_deposit_reconciliation,
+            "Conciliación captaciones vista",
+        )
         splitter.addWidget(self._planning_tabs)
         splitter.setSizes([235, 150, 210, 220])
         main.addWidget(splitter, 1)
@@ -441,6 +453,7 @@ class SUGEF210ProjectionPanel(QWidget):
     def _invalidate_governed_projection(self) -> None:
         self._governed_projection = None
         self._governed_flow_details.setRowCount(0)
+        self._demand_deposit_reconciliation.setRowCount(0)
         self._fill_windows()
         for amount in self._projected_kpis.values():
             amount.setText("N/D")
@@ -699,6 +712,22 @@ class SUGEF210ProjectionPanel(QWidget):
         if session.cutoff != cutoff or session.scenario != scenario:
             raise ValueError("Loaded opening cutoff or scenario does not match the request")
         self.present_governed_projection(session.assembly.projection)
+        self._demand_deposit_reconciliation.setRowCount(0)
+        for account, original_type, native_code, count, original_balance in (
+            session.demand_deposit_native_reconciliations
+        ):
+            self._append(
+                self._demand_deposit_reconciliation,
+                (
+                    account,
+                    original_type,
+                    native_code,
+                    str(count),
+                    str(original_balance),
+                    "ORIGEN CONCILIADO · COBERTURA PARCIAL",
+                    session.demand_deposit_source_sha256 or "N/D",
+                ),
+            )
         self._opening_status.setText(
             f"Caja inicial documentada: {session.sight_records_approved} inversiones "
             f"a la vista revisadas contra XML/Maestro; "
