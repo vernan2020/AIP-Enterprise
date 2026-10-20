@@ -539,6 +539,12 @@ def test_separately_governed_offbalance_drawdown_enters_correct_usd_window(monke
     assert usd_day7.projected_liquidity == Decimal("50.25")
     assert session.assembly.projection.rows[7].off_balance_outflows == 0
     assert session.assembly.projection.status == "PARTIAL_EVIDENCE_NOT_CERTIFIED"
+    assert "DEPOSIT_RUNOFF_AND_OTHER_BEHAVIORAL_ASSUMPTIONS_NOT_APPROVED" in (
+        session.assembly.missing_institutional_evidence
+    )
+    assert "OFF_BALANCE_COMMITMENT_COVERAGE_NOT_CERTIFIED" in (
+        session.assembly.missing_institutional_evidence
+    )
     assert not session.assembly.projection.certified_comprehensive
     with pytest.raises(ValueError, match="policy scenario differs"):
         run_configured_sight_opening(
