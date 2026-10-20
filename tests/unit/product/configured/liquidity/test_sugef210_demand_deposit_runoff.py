@@ -8,7 +8,6 @@ from datetime import date
 from decimal import Decimal
 from pathlib import Path
 from types import SimpleNamespace
-from types import SimpleNamespace
 
 import pytest
 
@@ -278,29 +277,31 @@ def test_crc_and_usd_same_original_account_support_distinct_authorized_runoff(tm
 
     reader.iter_records = two_currency_rows
     doc["approved_currency_codes"] = {"1": "CRC", "2": "USD"}
-    doc["approved_native_balance_reconciliation"].append({
-        "account_code": "TEST-210",
-        "type_code": "SIGHT",
-        "currency_source_code": "1",
-        "currency": "CRC",
-        "source_record_count": 1,
-        "original_native_balance": "80",
-        "reconciliation_reference": "TEST-INDEPENDENT-CRC-ACCOUNT-CONTROL",
-    })
-    doc["approved_rules"].append({
-        **doc["approved_rules"][0],
-        "reference": "TEST-CRC-D02",
-        "exposure_category": "SIGHT:TEST-210:SIGHT:CRC",
-        "factor": "0.10",
-        "approval_reference": "TEST-ALCO-CRC",
-    })
+    doc["approved_native_balance_reconciliation"].append(
+        {
+            "account_code": "TEST-210",
+            "type_code": "SIGHT",
+            "currency_source_code": "1",
+            "currency": "CRC",
+            "source_record_count": 1,
+            "original_native_balance": "80",
+            "reconciliation_reference": "TEST-INDEPENDENT-CRC-ACCOUNT-CONTROL",
+        }
+    )
+    doc["approved_rules"].append(
+        {
+            **doc["approved_rules"][0],
+            "reference": "TEST-CRC-D02",
+            "exposure_category": "SIGHT:TEST-210:SIGHT:CRC",
+            "factor": "0.10",
+            "approval_reference": "TEST-ALCO-CRC",
+        }
+    )
     approval.write_text(json.dumps(doc), encoding="utf-8")
     result = _read(reader, approval)
     assert result.approved_accounts_seen == 2
     assert len(result.reconciled_native_groups) == 2
-    assert dict(result.source_native_balances) == {
-        "CRC": Decimal("80"), "USD": Decimal("100")
-    }
+    assert dict(result.source_native_balances) == {"CRC": Decimal("80"), "USD": Decimal("100")}
     usd = [flow for flow in result.evidence.flows if flow.currency == "USD"]
     crc = [flow for flow in result.evidence.flows if flow.currency == "CRC"]
     assert [flow.amount for flow in usd] == [Decimal("20.00"), Decimal("30.00")]
