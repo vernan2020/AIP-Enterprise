@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from datetime import date
 from decimal import Decimal
 
@@ -99,3 +100,27 @@ def test_cli_success_emits_structured_17_band_native_currency_waterfall(monkeypa
     payload = json.loads(capsys.readouterr().out)
     assert len(payload["windows"]) == 34
     assert payload["status"] == "PARTIAL_DOCUMENTED_OPENING_NOT_COMPLETE_FORECAST"
+
+
+def test_cmd_exposes_approved_native_xml210_account_reconciliation_without_fx():
+    session = replace(
+        _session(),
+        demand_deposit_accounts_reviewed=2,
+        demand_deposit_runoff_events_approved=3,
+        demand_deposit_source_sha256="d" * 64,
+        demand_deposit_native_reconciliations=(
+            ("TEST-210", "SIGHT", "1", 1, Decimal("80.00")),
+            ("TEST-210", "SIGHT", "2", 1, Decimal("100.00")),
+        ),
+    )
+    payload = summarize_session(session)
+    assert payload["demand_deposit_accounts_reviewed"] == 2
+    assert payload["demand_deposit_runoff_events_approved"] == 3
+    assert payload["demand_deposit_xml_sha256"] == "d" * 64
+    groups = payload["demand_deposit_reconciled_source_groups"]
+    assert len(groups) == 2
+    assert groups[0]["original_currency_code"] == "1"
+    assert groups[0]["original_native_balance"] == "80.00"
+    assert groups[1]["original_currency_code"] == "2"
+    assert groups[1]["original_native_balance"] == "100.00"
+    assert payload["not_a_regulatory_cashflow_certification"] is True
