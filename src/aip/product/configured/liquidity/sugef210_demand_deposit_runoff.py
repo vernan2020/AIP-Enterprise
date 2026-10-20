@@ -38,6 +38,7 @@ class DemandDepositRunoffIntake:
     excluded_xml_records: int
     source_native_balances: tuple[tuple[str, Decimal], ...]
     included_source_ordinals: frozenset[int]
+    reconciled_native_groups: tuple[tuple[str, str, str, int, Decimal], ...] = ()
     status: str = "APPROVED_SELECTED_DEMAND_DEPOSITS_NOT_COMPLETE_COVERAGE"
 
 
@@ -144,12 +145,39 @@ def read_approved_demand_deposit_runoff(
     if not isinstance(rule_items, list) or not rule_items:
         raise ValueError("Demand-deposit runoffs require approved dated scenario rules")
 
+    source_reconciliation = document.get("approved_native_balance_reconciliation")
+    if not isinstance(source_reconciliation, list) or not source_reconciliation:
+        raise ValueError("Approved independent native balance reconciliation is mandatory")
+    expected: dict[tuple[str, str, str], tuple[int, Decimal]] = {}
+    for entry in source_reconciliation:
+        if not isinstance(entry, dict):
+            raise ValueError("Native deposit reconciliation must contain structured account records")
+        account = _required(entry.get("account_code"), "reconciled account")
+        sight_type = _required(entry.get("type_code"), "reconciled type")
+        original_code = _required(entry.get("currency_source_code"), "reconciled currency")
+        currency = _required(entry.get("currency"), "reconciled ISO currency")
+        _required(entry.get("reconciliation_reference"), "independent reconciliation reference")
+        count = entry.get("source_record_count")
+        if type(count) is not int or count <= 0:
+            raise ValueError("Source reconciliation requires a positive record count")
+        amount = _amount(entry.get("original_native_balance"))
+        key = (account, sight_type, original_code)
+        if (
+            key in expected
+            or account not in accounts
+            or sight_type not in types
+            or codes.get(original_code) != currency
+        ):
+            raise ValueError("Native account/type/currency reconciliation is duplicated or unapproved")
+        expected[key] = (count, amount)
+
     exposures: list[ReconciledBehavioralExposure] = []
     native_totals = {"CRC": Decimal(0), "USD": Decimal(0)}
     included: set[int] = set()
     seen_ids: set[str] = set()
     excluded = 0
     categories: set[str] = set()
+    actual: dict[tuple[str, str, str], tuple[int, Decimal]] = {}
     for ordinal, record in enumerate(reader.iter_records(source), start=1):
         values = record.values
         account = (values.get("CuentaContablePrincipal") or "").strip()
@@ -167,12 +195,17 @@ def read_approved_demand_deposit_runoff(
         if currency is None:
             raise ValueError("Original demand-deposit currency lacks approved mapping")
         source_balance = _amount(values.get("SaldoPrincipal"))
+        native_key = (account, sight_type, currency_code)
+        if native_key not in expected:
+            raise ValueError("Selected source account/type/currency lacks independent reconciliation")
+        record_count, prior_total = actual.get(native_key, (0, Decimal(0)))
+        actual[native_key] = (record_count + 1, prior_total + source_balance)
         reference = f"CONFIA210:SIGHT:{original_hash}:{ordinal}:{record.record_id}"
         if reference in already_in_opening:
             raise ValueError("Demand-deposit source was already recognized in opening")
         included.add(ordinal)
         native_totals[currency] += source_balance
-        category = f"SIGHT:{account}:{sight_type}"
+        category = f"SIGHT:{account}:{sight_type}:{currency}"
         categories.add(category)
         if not source_balance:
             continue
@@ -194,6 +227,11 @@ def read_approved_demand_deposit_runoff(
         raise ValueError("Demand-deposit XML changed during reconciliation")
     if not included:
         raise ValueError("No approved demand-deposit source accounts match actual XML")
+    if actual != expected:
+        raise ValueError(
+            "Approved demand-deposit record counts and native balance totals "
+            "do not reconcile exactly to source XML 210"
+        )
 
     approved: list[ApprovedScenarioRule] = []
     covered: set[str] = set()
@@ -247,4 +285,9 @@ def read_approved_demand_deposit_runoff(
         excluded_xml_records=excluded,
         source_native_balances=tuple(sorted(native_totals.items())),
         included_source_ordinals=frozenset(included),
+        reconciled_native_groups=tuple(
+            (account, sight_type, currency_code, actual[key][0], actual[key][1])
+            for key in sorted(actual)
+            for account, sight_type, currency_code in (key,)
+        ),
     )
