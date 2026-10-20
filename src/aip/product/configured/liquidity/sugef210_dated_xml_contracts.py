@@ -262,8 +262,8 @@ def import_approved_xml_contractual_payments(
                 evidence=LiquidityEvidence.CONTRACTUAL,
             )
         )
-    for key, (original_principal, _maturity, _currency) in contract_details.items():
-        if contract_principal[key] != original_principal:
+    for record_identity, (original_principal, _maturity, _currency) in contract_details.items():
+        if contract_principal[record_identity] != original_principal:
             raise ValueError("Scheduled principal does not reconcile to original XML exposure")
     return ApprovedXMLContractualSchedule(
         cutoff=cutoff,
