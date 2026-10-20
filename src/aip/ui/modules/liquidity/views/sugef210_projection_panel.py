@@ -1020,11 +1020,11 @@ class SUGEF210ProjectionPanel(QWidget):
             )
         )
         for row_index in range(self._demand_deposit_reconciliation.rowCount()):
-            cells: list[str] = []
+            native_cells: list[str] = []
             for column in range(self._demand_deposit_reconciliation.columnCount()):
                 cell = self._demand_deposit_reconciliation.item(row_index, column)
-                cells.append(safe(cell.text()) if cell is not None else "")
-            sight_sheet.append(tuple(cells))
+                native_cells.append(safe(cell.text()) if cell is not None else "")
+            sight_sheet.append(tuple(native_cells))
 
         perimeter = workbook.create_sheet("Fuentes contractuales XML")
         perimeter.append(self._XML_PERIMETER_HEADERS)
