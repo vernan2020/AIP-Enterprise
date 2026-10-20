@@ -203,6 +203,8 @@ def test_governed_partial_projection_can_export_without_xml_inventory(
         workbook = load_workbook(destination, read_only=True, data_only=True)
         try:
             assert "Flujo proyectado 365d" in workbook.sheetnames
+            assert "Captaciones vista XML210" in workbook.sheetnames
+            assert workbook["Captaciones vista XML210"].max_row == 1
             projection = workbook["Flujo proyectado 365d"]
             assert projection.max_row == 35
             assert projection.cell(2, 6).value == "CRC"
@@ -232,7 +234,9 @@ def test_governed_projection_rejects_incomplete_horizon_and_currency_rows(qt_app
         panel.close()
 
 
-def test_ui_loads_governed_opening_as_partial_waterfall_and_does_not_reuse_cutoff(qt_app):
+def test_ui_loads_governed_opening_as_partial_waterfall_and_does_not_reuse_cutoff(
+    qt_app, tmp_path, monkeypatch
+):
     panel = SUGEF210ProjectionPanel()
     try:
         cutoff = date(2026, 9, 30)
@@ -266,6 +270,25 @@ def test_ui_loads_governed_opening_as_partial_waterfall_and_does_not_reuse_cutof
         assert panel._demand_deposit_reconciliation.item(0, 2).text() == "2"
         assert panel._demand_deposit_reconciliation.item(0, 4).text() == "100.00"
         assert "PARCIAL" in panel._demand_deposit_reconciliation.item(0, 5).text()
+        destination = tmp_path / "reconciliation_XML210.xlsx"
+        monkeypatch.setattr(
+            "aip.ui.modules.liquidity.views.sugef210_projection_panel."
+            "QFileDialog.getSaveFileName",
+            lambda *_args, **_kwargs: (str(destination), "Excel (*.xlsx)"),
+        )
+        panel.export_reconciliation()
+        assert destination.is_file()
+        workbook = load_workbook(destination, read_only=True, data_only=True)
+        try:
+            assert "Captaciones vista XML210" in workbook.sheetnames
+            sheet = workbook["Captaciones vista XML210"]
+            assert sheet.max_row == 2
+            assert sheet.cell(2, 1).value == "TEST-210"
+            assert sheet.cell(2, 3).value == "2"
+            assert sheet.cell(2, 5).value == "100.00"
+            assert "PARCIAL" in sheet.cell(2, 6).value
+        finally:
+            workbook.close()
         assert panel._projected_kpis["CRC"].text() == "1000"
         assert panel._projected_kpis["USD"].text() == "85.25"
         assert "Proyección PARCIAL" in panel._opening_status.text()
