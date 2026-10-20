@@ -315,9 +315,13 @@ class SUGEF210ProjectionPanel(QWidget):
         self._planning_tabs.addTab(self._governed_flow_details, "Detalle de flujo · fuentes")
         self._demand_deposit_reconciliation = self._table(
             (
-                "Cuenta contable XML210", "Tipo original", "Código moneda original",
-                "Registros conciliados", "Saldo nativo conciliado",
-                "Estado", "SHA256 fuente",
+                "Cuenta contable XML210",
+                "Tipo original",
+                "Código moneda original",
+                "Registros conciliados",
+                "Saldo nativo conciliado",
+                "Estado",
+                "SHA256 fuente",
             ),
             "sugef210DemandDepositOriginalCurrencyReconciliation",
         )
@@ -713,9 +717,13 @@ class SUGEF210ProjectionPanel(QWidget):
             raise ValueError("Loaded opening cutoff or scenario does not match the request")
         self.present_governed_projection(session.assembly.projection)
         self._demand_deposit_reconciliation.setRowCount(0)
-        for account, original_type, native_code, count, original_balance in (
-            session.demand_deposit_native_reconciliations
-        ):
+        for (
+            account,
+            original_type,
+            native_code,
+            count,
+            original_balance,
+        ) in session.demand_deposit_native_reconciliations:
             self._append(
                 self._demand_deposit_reconciliation,
                 (
