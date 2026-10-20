@@ -1,6 +1,6 @@
 name: One-shot SUGEF210 Black Formatting
 
-# Normalize off-balance contingent source/approvals, session checks, and GUI scenario tests.
+# Normalize account/type/currency source reconciliation and governed sight-deposit runoff tests.
 
 # Normalize approved source manifest parsing, signed bank opening and duplicate safeguards.
 
