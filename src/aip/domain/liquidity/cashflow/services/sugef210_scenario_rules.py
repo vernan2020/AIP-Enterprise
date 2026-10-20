@@ -130,6 +130,22 @@ def generate_approved_scenario_events(
         seen_exposures.add(exposure.reference)
         used_reconciliations.add(exposure.nonduplication_reference)
 
+    # Scenario rules may have multiple explicit dates. Their cumulative
+    # withdrawal/call fraction can never exceed original available exposure.
+    approved_factor_by_category: dict[str, Decimal] = {}
+    seen_category_day: set[tuple[str, int]] = set()
+    for rule in approved:
+        approved_factor_by_category[rule.exposure_category] = (
+            approved_factor_by_category.get(rule.exposure_category, Decimal(0))
+            + rule.factor
+        )
+        if approved_factor_by_category[rule.exposure_category] > Decimal(1):
+            raise ValueError("Cumulative scenario factors exceed original exposure")
+        key = (rule.exposure_category, rule.projection_day)
+        if key in seen_category_day:
+            raise ValueError("Duplicate scenario date for the same exposure category")
+        seen_category_day.add(key)
+
     seen_rules: set[str] = set()
     flows: list[LiquidityProjectionFlow] = []
     policies: list[LiquidityAssumption] = []
