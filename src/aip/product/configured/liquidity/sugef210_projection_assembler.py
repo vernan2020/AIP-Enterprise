@@ -164,8 +164,7 @@ def assemble_partial_institutional_projection(
         )
         assumptions.extend(approved_behavioral.assumptions)
         if not any(
-            event.area == LiquidityBalanceArea.LIABILITY
-            for event in approved_behavioral.flows
+            event.area == LiquidityBalanceArea.LIABILITY for event in approved_behavioral.flows
         ):
             missing.append("DEPOSIT_RUNOFF_AND_OTHER_BEHAVIORAL_ASSUMPTIONS_NOT_APPROVED")
     else:

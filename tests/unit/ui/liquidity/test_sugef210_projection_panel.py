@@ -9,9 +9,9 @@ from openpyxl import load_workbook
 from PySide6.QtCore import QDate
 
 from aip.domain.liquidity.cashflow.services.sugef210_projection import (
+    LiquidityAssumption,
     LiquidityBalanceArea,
     LiquidityEvidence,
-    LiquidityAssumption,
     LiquidityFlowSide,
     LiquidityProjectionFlow,
     project_sugef210,
@@ -360,20 +360,30 @@ def test_offbalance_approved_systemic_stress_visible_as_usd_outflow_not_cash(qt_
             assumption_id=policy_id,
         )
         scenario = ScenarioGeneratedEvidence(
-            cutoff=cutoff, scenario="SYSTEMIC", flows=(drawdown,),
-            assumptions=(policy,), matched_exposure_count=1,
+            cutoff=cutoff,
+            scenario="SYSTEMIC",
+            flows=(drawdown,),
+            assumptions=(policy,),
+            matched_exposure_count=1,
         )
         assembly = assemble_partial_institutional_projection(
-            cutoff=cutoff, scenario="SYSTEMIC", approved_behavioral=scenario,
+            cutoff=cutoff,
+            scenario="SYSTEMIC",
+            approved_behavioral=scenario,
             opening_by_currency={"CRC": Decimal("1000"), "USD": Decimal("85.25")},
             opening_certifications={"CRC": "TEST-BANK-CRC", "USD": "TEST-BANK-USD"},
             opening_nonduplication_reference="TEST-NO-ICL-OVERLAP",
         )
         session = ConfiguredOpeningSession(
-            cutoff=cutoff, scenario="SYSTEMIC", assembly=assembly,
-            sight_records_approved=1, sight_source_sha256="a" * 64,
-            bank_support_sha256="b" * 64, bank_document_sha256="c" * 64,
-            contingent_scenario_events_approved=1, offbalance_commitments_reviewed=1,
+            cutoff=cutoff,
+            scenario="SYSTEMIC",
+            assembly=assembly,
+            sight_records_approved=1,
+            sight_source_sha256="a" * 64,
+            bank_support_sha256="b" * 64,
+            bank_document_sha256="c" * 64,
+            contingent_scenario_events_approved=1,
+            offbalance_commitments_reviewed=1,
         )
         panel._receive_governed_opening(cutoff, "SYSTEMIC", session)
         assert panel._governed_flow_details.rowCount() == 34
