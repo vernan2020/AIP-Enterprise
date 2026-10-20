@@ -174,6 +174,7 @@ def read_governed_offbalance_scenario(
     verified_totals = {"CRC": Decimal(0), "USD": Decimal(0)}
     seen_references: set[str] = set()
     categories: set[str] = set()
+    earliest_expiration_by_category: dict[str, date] = {}
     for row in rows:
         name = _required(row.get("commitment_reference"), "commitment_reference")
         account = _required(row.get("account_code"), "account_code")
@@ -201,6 +202,12 @@ def read_governed_offbalance_scenario(
         if remaining != committed - utilized - restricted:
             raise ValueError("Available undrawn exposure fails source limit reconciliation")
         categories.add(category)
+        if category not in earliest_expiration_by_category:
+            earliest_expiration_by_category[category] = expires
+        else:
+            earliest_expiration_by_category[category] = min(
+                earliest_expiration_by_category[category], expires
+            )
         verified_totals[native_currency] += remaining
         candidates.append(
             ReconciledBehavioralExposure(
@@ -228,7 +235,13 @@ def read_governed_offbalance_scenario(
         day = item.get("projection_day")
         if type(day) is not int:
             raise ValueError("Off-balance utilization projection day must be an integer")
+        if not 0 <= day <= 365:
+            raise ValueError("Off-balance scenario must fit fixed 365-day horizon")
+        if cutoff.toordinal() + day > earliest_expiration_by_category[category].toordinal():
+            raise ValueError("Contingent drawdown cannot occur after commitment expiration")
         factor = _amount(item.get("factor"))
+        if factor > 1:
+            raise ValueError("Off-balance stress factor must not exceed 100 percent")
         parameters.append(
             ApprovedScenarioRule(
                 reference=_required(item.get("reference"), "rule reference"),
