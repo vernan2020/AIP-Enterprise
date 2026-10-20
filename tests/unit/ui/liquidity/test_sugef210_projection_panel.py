@@ -11,9 +11,13 @@ from PySide6.QtCore import QDate
 from aip.domain.liquidity.cashflow.services.sugef210_projection import (
     LiquidityBalanceArea,
     LiquidityEvidence,
+    LiquidityAssumption,
     LiquidityFlowSide,
     LiquidityProjectionFlow,
     project_sugef210,
+)
+from aip.domain.liquidity.cashflow.services.sugef210_scenario_rules import (
+    ScenarioGeneratedEvidence,
 )
 from aip.product.configured.liquidity.sugef210_master_maturity_bridge import (
     MasterPrincipalEvidence,
@@ -324,5 +328,63 @@ def test_governed_master_cashflow_displays_contract_date_without_inferred_coupon
         assert panel._projected_kpis["CRC"].text() == "1120"
         assert "1 vencimientos de principal" in panel._opening_status.text()
         assert "PARCIAL" in panel._windows.item(12, 6).text()
+    finally:
+        panel.close()
+
+
+def test_offbalance_approved_systemic_stress_visible_as_usd_outflow_not_cash(qt_app):
+    panel = SUGEF210ProjectionPanel()
+    try:
+        cutoff = date(2026, 9, 30)
+        panel._date.setDate(QDate(2026, 9, 30))
+        panel._scenario.setCurrentText("SYSTEMIC")
+        policy_id = "SUGEF210:SYSTEMIC:TEST-OFFBALANCE:V1"
+        policy = LiquidityAssumption(
+            assumption_id=policy_id,
+            rationale="TEST-ONLY-APPROVED-CONTINGENCY",
+            approval_reference="TEST-ALCO-OFFBALANCE",
+            valid_from=cutoff,
+            valid_to=date(2026, 12, 31),
+            source_reference="TEST-SIGNED-OFF-CONTRACT-REGISTRY",
+            scenario="SYSTEMIC",
+        )
+        drawdown = LiquidityProjectionFlow(
+            reference="BEHAVIORAL:" + policy_id + ":TEST-UNDRAWN-LINE",
+            source="TEST-ONLY-REGISTER-SHA:NOT-CASH",
+            currency="USD",
+            payment_date=cutoff + timedelta(days=7),
+            amount=Decimal("35"),
+            side=LiquidityFlowSide.OUTFLOW,
+            area=LiquidityBalanceArea.OFF_BALANCE,
+            evidence=LiquidityEvidence.GOVERNED_ASSUMPTION,
+            assumption_id=policy_id,
+        )
+        scenario = ScenarioGeneratedEvidence(
+            cutoff=cutoff, scenario="SYSTEMIC", flows=(drawdown,),
+            assumptions=(policy,), matched_exposure_count=1,
+        )
+        assembly = assemble_partial_institutional_projection(
+            cutoff=cutoff, scenario="SYSTEMIC", approved_behavioral=scenario,
+            opening_by_currency={"CRC": Decimal("1000"), "USD": Decimal("85.25")},
+            opening_certifications={"CRC": "TEST-BANK-CRC", "USD": "TEST-BANK-USD"},
+            opening_nonduplication_reference="TEST-NO-ICL-OVERLAP",
+        )
+        session = ConfiguredOpeningSession(
+            cutoff=cutoff, scenario="SYSTEMIC", assembly=assembly,
+            sight_records_approved=1, sight_source_sha256="a" * 64,
+            bank_support_sha256="b" * 64, bank_document_sha256="c" * 64,
+            contingent_scenario_events_approved=1, offbalance_commitments_reviewed=1,
+        )
+        panel._receive_governed_opening(cutoff, "SYSTEMIC", session)
+        assert panel._governed_flow_details.rowCount() == 34
+        assert panel._governed_flow_details.item(17 + 7, 7).text() == "35"
+        assert panel._governed_flow_details.item(7, 7).text() == "N/D"
+        assert panel._windows.item(7, 10).text() == "50.25"
+        assert panel._projected_kpis["USD"].text() == "50.25"
+        assert "SYSTEMIC aprobado" in panel._opening_status.text()
+        assert "PARCIAL" in panel._windows.item(7, 6).text()
+        panel._scenario.setCurrentText("BASE")
+        assert panel._governed_projection is None
+        assert panel._governed_flow_details.rowCount() == 0
     finally:
         panel.close()
