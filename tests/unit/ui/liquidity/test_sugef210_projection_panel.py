@@ -252,9 +252,20 @@ def test_ui_loads_governed_opening_as_partial_waterfall_and_does_not_reuse_cutof
             sight_source_sha256="a" * 64,
             bank_support_sha256="b" * 64,
             bank_document_sha256="c" * 64,
+            demand_deposit_accounts_reviewed=1,
+            demand_deposit_runoff_events_approved=2,
+            demand_deposit_source_sha256="e" * 64,
+            demand_deposit_native_reconciliations=(
+                ("TEST-210", "SIGHT", "2", 1, Decimal("100.00")),
+            ),
         )
         panel._receive_governed_opening(cutoff, "BASE", session)
         assert panel._governed_projection is assembly.projection
+        assert panel._demand_deposit_reconciliation.rowCount() == 1
+        assert panel._demand_deposit_reconciliation.item(0, 0).text() == "TEST-210"
+        assert panel._demand_deposit_reconciliation.item(0, 2).text() == "2"
+        assert panel._demand_deposit_reconciliation.item(0, 4).text() == "100.00"
+        assert "PARCIAL" in panel._demand_deposit_reconciliation.item(0, 5).text()
         assert panel._projected_kpis["CRC"].text() == "1000"
         assert panel._projected_kpis["USD"].text() == "85.25"
         assert "Proyección PARCIAL" in panel._opening_status.text()
@@ -262,6 +273,7 @@ def test_ui_loads_governed_opening_as_partial_waterfall_and_does_not_reuse_cutof
         panel._date.setDate(QDate(2026, 10, 31))
         assert panel._governed_projection is None
         assert panel._projected_kpis["USD"].text() == "N/D"
+        assert panel._demand_deposit_reconciliation.rowCount() == 0
         panel._receive_governed_opening(cutoff, "BASE", session)
         assert panel._governed_projection is None
     finally:
