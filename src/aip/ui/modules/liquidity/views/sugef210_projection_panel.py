@@ -1007,6 +1007,25 @@ class SUGEF210ProjectionPanel(QWidget):
                     )
                 )
 
+        sight_sheet = workbook.create_sheet("Captaciones vista XML210")
+        sight_sheet.append(
+            (
+                "Cuenta contable",
+                "Tipo original",
+                "Código moneda XML",
+                "Registros conciliados",
+                "Saldo original (sin convertir)",
+                "Estado de cobertura",
+                "SHA256 de XML 210",
+            )
+        )
+        for row_index in range(self._demand_deposit_reconciliation.rowCount()):
+            cells: list[str] = []
+            for column in range(self._demand_deposit_reconciliation.columnCount()):
+                cell = self._demand_deposit_reconciliation.item(row_index, column)
+                cells.append(safe(cell.text()) if cell is not None else "")
+            sight_sheet.append(tuple(cells))
+
         perimeter = workbook.create_sheet("Fuentes contractuales XML")
         perimeter.append(self._XML_PERIMETER_HEADERS)
         for index in range(self._xml_perimeters.rowCount()):
