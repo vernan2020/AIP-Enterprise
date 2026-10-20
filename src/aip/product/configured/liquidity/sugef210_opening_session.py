@@ -73,9 +73,7 @@ class ConfiguredOpeningSession:
     demand_deposit_accounts_reviewed: int = 0
     demand_deposit_runoff_events_approved: int = 0
     demand_deposit_source_sha256: str | None = None
-    demand_deposit_native_reconciliations: (
-        tuple[tuple[str, str, str, int, Decimal], ...]
-    ) = ()
+    demand_deposit_native_reconciliations: tuple[tuple[str, str, str, int, Decimal], ...] = ()
     status: str = "PARTIAL_DOCUMENTED_OPENING_NOT_COMPLETE_FORECAST"
 
 

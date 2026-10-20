@@ -42,8 +42,7 @@ def summarize_session(session: ConfiguredOpeningSession) -> dict[str, object]:
                 "source_record_count": count,
                 "original_native_balance": str(balance),
             }
-            for account, source_type, currency_code, count, balance
-            in session.demand_deposit_native_reconciliations
+            for account, source_type, currency_code, count, balance in session.demand_deposit_native_reconciliations
         ],
         "source_flows_included": result.source_flow_count,
         "not_a_regulatory_cashflow_certification": True,

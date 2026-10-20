@@ -68,12 +68,17 @@ def _policy(tmp_path):
         "approved_sight_account_codes": ["TEST-210"],
         "approved_sight_type_codes": ["SIGHT"],
         "approved_currency_codes": {"2": "USD"},
-        "approved_native_balance_reconciliation": [{
-            "account_code": "TEST-210", "type_code": "SIGHT",
-            "currency_source_code": "2", "currency": "USD",
-            "source_record_count": 1, "original_native_balance": "100",
-            "reconciliation_reference": "TEST-TREASURY-ACCOUNT-USD",
-        }],
+        "approved_native_balance_reconciliation": [
+            {
+                "account_code": "TEST-210",
+                "type_code": "SIGHT",
+                "currency_source_code": "2",
+                "currency": "USD",
+                "source_record_count": 1,
+                "original_native_balance": "100",
+                "reconciliation_reference": "TEST-TREASURY-ACCOUNT-USD",
+            }
+        ],
         "classification_approval": "TEST-CLASSIFICATION-APPROVAL",
         "currency_mapping_approval": "TEST-NATIVE-CURRENCY-APPROVAL",
         "nonduplication_approval": "TEST-NOT-IN-CONTRACTUAL-SCHEDULE",
@@ -129,9 +134,7 @@ def test_real_xml_selected_demand_amounts_become_governed_outflows_only(tmp_path
     assert result.excluded_xml_records == 1
     assert dict(result.source_native_balances)["USD"] == Decimal("100")
     assert result.included_source_ordinals == frozenset({1})
-    assert result.reconciled_native_groups == (
-        ("TEST-210", "SIGHT", "2", 1, Decimal("100")),
-    )
+    assert result.reconciled_native_groups == (("TEST-210", "SIGHT", "2", 1, Decimal("100")),)
     assert result.evidence.matched_exposure_count == 1
     assert result.evidence.status == "APPROVED_SCENARIO_EVENTS_ONLY_NOT_FULL_COVERAGE"
     assert len(result.evidence.flows) == 2
@@ -170,12 +173,17 @@ def test_term_deposits_and_certified_payment_records_cannot_double_count(tmp_pat
     with pytest.raises(ValueError, match="scheduled contractual"):
         _read(reader, approval, contractually_scheduled_ordinals=frozenset({1}))
     doc["approved_sight_type_codes"] = ["FIXED-TERM"]
-    doc["approved_native_balance_reconciliation"] = [{
-        "account_code": "TEST-210", "type_code": "FIXED-TERM",
-        "currency_source_code": "2", "currency": "USD",
-        "source_record_count": 1, "original_native_balance": "300",
-        "reconciliation_reference": "TEST-ALCO-RECLASSIFICATION-REQUIRED",
-    }]
+    doc["approved_native_balance_reconciliation"] = [
+        {
+            "account_code": "TEST-210",
+            "type_code": "FIXED-TERM",
+            "currency_source_code": "2",
+            "currency": "USD",
+            "source_record_count": 1,
+            "original_native_balance": "300",
+            "reconciliation_reference": "TEST-ALCO-RECLASSIFICATION-REQUIRED",
+        }
+    ]
     doc["approved_rules"] = [
         {**item, "exposure_category": "SIGHT:TEST-210:FIXED-TERM:USD"}
         for item in doc["approved_rules"]

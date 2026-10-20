@@ -151,7 +151,9 @@ def read_approved_demand_deposit_runoff(
     expected: dict[tuple[str, str, str], tuple[int, Decimal]] = {}
     for entry in source_reconciliation:
         if not isinstance(entry, dict):
-            raise ValueError("Native deposit reconciliation must contain structured account records")
+            raise ValueError(
+                "Native deposit reconciliation must contain structured account records"
+            )
         account = _required(entry.get("account_code"), "reconciled account")
         sight_type = _required(entry.get("type_code"), "reconciled type")
         original_code = _required(entry.get("currency_source_code"), "reconciled currency")
@@ -168,7 +170,9 @@ def read_approved_demand_deposit_runoff(
             or sight_type not in types
             or codes.get(original_code) != currency
         ):
-            raise ValueError("Native account/type/currency reconciliation is duplicated or unapproved")
+            raise ValueError(
+                "Native account/type/currency reconciliation is duplicated or unapproved"
+            )
         expected[key] = (count, amount)
 
     exposures: list[ReconciledBehavioralExposure] = []
@@ -199,7 +203,9 @@ def read_approved_demand_deposit_runoff(
         source_balance = _amount(values.get("SaldoPrincipal"))
         native_key = (account, sight_type, currency_code)
         if native_key not in expected:
-            raise ValueError("Selected source account/type/currency lacks independent reconciliation")
+            raise ValueError(
+                "Selected source account/type/currency lacks independent reconciliation"
+            )
         record_count, prior_total = actual.get(native_key, (0, Decimal(0)))
         actual[native_key] = (record_count + 1, prior_total + source_balance)
         reference = f"CONFIA210:SIGHT:{original_hash}:{ordinal}:{record.record_id}"
