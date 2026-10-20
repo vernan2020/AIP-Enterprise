@@ -242,11 +242,11 @@ def test_native_balance_and_record_count_must_match_independently_approved_group
         _read(reader, approval)
 
 
-def test_xml_account_type_cross_product_cannot_include_unapproved_currency(tmp_path):
+def test_xml_account_type_catalog_never_reclassifies_fixed_term_maturity(tmp_path):
     reader, approval, doc = _policy(tmp_path)
     doc["approved_sight_type_codes"] = ["SIGHT", "FIXED-TERM"]
     approval.write_text(json.dumps(doc), encoding="utf-8")
-    with pytest.raises(ValueError, match="lacks independent reconciliation"):
+    with pytest.raises(ValueError, match="Contractually dated deposit"):
         _read(reader, approval)
 
 
