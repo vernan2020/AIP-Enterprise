@@ -17,10 +17,18 @@ from aip.product.configured.liquidity.sugef210_offbalance_scenario_source import
 CUTOFF = date(2026, 9, 30)
 SCENARIO = "SYSTEMIC"
 _HEADERS = (
-    "commitment_reference", "account_code", "original_currency_code",
-    "native_currency", "committed_limit", "already_disbursed", "restricted_amount",
-    "available_undrawn", "expiration_date", "category",
-    "nonduplication_reference", "source_evidence_reference",
+    "commitment_reference",
+    "account_code",
+    "original_currency_code",
+    "native_currency",
+    "committed_limit",
+    "already_disbursed",
+    "restricted_amount",
+    "available_undrawn",
+    "expiration_date",
+    "category",
+    "nonduplication_reference",
+    "source_evidence_reference",
 )
 
 
@@ -29,20 +37,22 @@ def _files(tmp_path, *, exp="2027-02-01"):
     with register.open("w", encoding="utf-8", newline="") as stream:
         w = csv.DictWriter(stream, fieldnames=_HEADERS)
         w.writeheader()
-        w.writerow({
-            "commitment_reference": "SOURCE-LOC-1",
-            "account_code": "OFFBAL-TEST-01",
-            "original_currency_code": "2",
-            "native_currency": "USD",
-            "committed_limit": "1000.00",
-            "already_disbursed": "200.00",
-            "restricted_amount": "100.00",
-            "available_undrawn": "700.00",
-            "expiration_date": exp,
-            "category": "FIRM_LINE",
-            "nonduplication_reference": "BANK-TEST-OFFBAL-1",
-            "source_evidence_reference": "BANK-DOCUMENT-TEST-1",
-        })
+        w.writerow(
+            {
+                "commitment_reference": "SOURCE-LOC-1",
+                "account_code": "OFFBAL-TEST-01",
+                "original_currency_code": "2",
+                "native_currency": "USD",
+                "committed_limit": "1000.00",
+                "already_disbursed": "200.00",
+                "restricted_amount": "100.00",
+                "available_undrawn": "700.00",
+                "expiration_date": exp,
+                "category": "FIRM_LINE",
+                "nonduplication_reference": "BANK-TEST-OFFBAL-1",
+                "source_evidence_reference": "BANK-DOCUMENT-TEST-1",
+            }
+        )
     register_hash = hashlib.sha256(register.read_bytes()).hexdigest()
     approval = tmp_path / "governed-scenario.json"
     doc = {
@@ -55,20 +65,22 @@ def _files(tmp_path, *, exp="2027-02-01"):
         "classification_approval": "TEST-LEGAL-FIRM-COMMITMENT",
         "currency_mapping_approval": "TEST-TREASURY-CURRENCY",
         "nonduplication_approval": "TEST-BANK-RECON-ICL",
-        "approved_rules": [{
-            "reference": "TEST-UTILIZATION-SYSTEMIC",
-            "exposure_category": "FIRM_LINE",
-            "factor": "0.25",
-            "projection_day": 7,
-            "rationale": "TEST ONLY; separately reviewed exposure-based stress",
-            "approval_reference": "TEST-ALCO-SCENARIO-202609",
-            "source_reference": "TEST-RISK-POLICY-DOCUMENT",
-            "version": "2026.09",
-            "approved_on": "2026-09-01",
-            "valid_from": "2026-09-01",
-            "valid_to": "2026-12-31",
-            "explicitly_approved": True,
-        }],
+        "approved_rules": [
+            {
+                "reference": "TEST-UTILIZATION-SYSTEMIC",
+                "exposure_category": "FIRM_LINE",
+                "factor": "0.25",
+                "projection_day": 7,
+                "rationale": "TEST ONLY; separately reviewed exposure-based stress",
+                "approval_reference": "TEST-ALCO-SCENARIO-202609",
+                "source_reference": "TEST-RISK-POLICY-DOCUMENT",
+                "version": "2026.09",
+                "approved_on": "2026-09-01",
+                "valid_from": "2026-09-01",
+                "valid_to": "2026-12-31",
+                "explicitly_approved": True,
+            }
+        ],
     }
     approval.write_text(json.dumps(doc), encoding="utf-8")
     return register, approval, doc
@@ -76,8 +88,11 @@ def _files(tmp_path, *, exp="2027-02-01"):
 
 def _run(register, approval, **kwargs):
     return read_governed_offbalance_scenario(
-        cutoff=CUTOFF, scenario=SCENARIO, source_csv=register,
-        approval_json=approval, **kwargs,
+        cutoff=CUTOFF,
+        scenario=SCENARIO,
+        source_csv=register,
+        approval_json=approval,
+        **kwargs,
     )
 
 
@@ -146,7 +161,8 @@ def test_no_double_counting_with_opening_or_contractual_schedules(tmp_path):
         _run(source, approval, already_in_opening=frozenset({"SOURCE-LOC-1"}))
     with pytest.raises(ValueError, match="already appears"):
         _run(
-            source, approval,
+            source,
+            approval,
             existing_contractual_source_refs=frozenset({"SOURCE-LOC-1"}),
         )
 

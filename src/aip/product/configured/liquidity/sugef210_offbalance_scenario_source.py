@@ -140,17 +140,22 @@ def read_governed_offbalance_scenario(
     if _required(document.get("source_sha256"), "source_sha256").lower() != actual_sha:
         raise ValueError("Off-balance register hash no longer matches approved source")
     original_codes = document.get("approved_currency_codes")
-    if not isinstance(original_codes, dict) or not original_codes or any(
-        not isinstance(key, str)
-        or not key.strip()
-        or value not in {"CRC", "USD"}
-        for key, value in original_codes.items()
+    if (
+        not isinstance(original_codes, dict)
+        or not original_codes
+        or any(
+            not isinstance(key, str) or not key.strip() or value not in {"CRC", "USD"}
+            for key, value in original_codes.items()
+        )
     ):
         raise ValueError("Off-balance native currency mapping has no approved evidence")
     valid_account_codes = document.get("approved_account_codes")
-    if not isinstance(valid_account_codes, list) or not valid_account_codes or any(
-        not isinstance(code, str) or not code.strip() for code in valid_account_codes
-    ) or len(set(valid_account_codes)) != len(valid_account_codes):
+    if (
+        not isinstance(valid_account_codes, list)
+        or not valid_account_codes
+        or any(not isinstance(code, str) or not code.strip() for code in valid_account_codes)
+        or len(set(valid_account_codes)) != len(valid_account_codes)
+    ):
         raise ValueError("Approved off-balance accounting accounts are required")
     _required(document.get("classification_approval"), "classification approval")
     _required(document.get("nonduplication_approval"), "nonduplication approval")

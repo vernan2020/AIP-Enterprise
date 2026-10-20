@@ -30,9 +30,7 @@ def summarize_session(session: ConfiguredOpeningSession) -> dict[str, object]:
             session.xml_contractual_events_approved
         ),
         "offbalance_commitments_reviewed": session.offbalance_commitments_reviewed,
-        "governed_offbalance_scenario_events": (
-            session.contingent_scenario_events_approved
-        ),
+        "governed_offbalance_scenario_events": (session.contingent_scenario_events_approved),
         "source_flows_included": result.source_flow_count,
         "not_a_regulatory_cashflow_certification": True,
         "document_hash_is_not_a_bank_signature": True,

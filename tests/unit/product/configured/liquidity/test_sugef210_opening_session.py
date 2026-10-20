@@ -447,58 +447,88 @@ def test_real_session_loads_approved_external_contract_ledger_and_native_credit_
     assert not result.assembly.projection.certified_comprehensive
 
 
-def test_separately_governed_offbalance_drawdown_enters_correct_usd_window(
-    monkeypatch, tmp_path
-):
+def test_separately_governed_offbalance_drawdown_enters_correct_usd_window(monkeypatch, tmp_path):
     _configure(monkeypatch, tmp_path)
     authorization, bank = _files(tmp_path)
     register = tmp_path / "offbalance-real-source.csv"
     with register.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=(
-            "commitment_reference", "account_code", "original_currency_code",
-            "native_currency", "committed_limit", "already_disbursed",
-            "restricted_amount", "available_undrawn", "expiration_date",
-            "category", "nonduplication_reference", "source_evidence_reference",
-        ))
+        writer = csv.DictWriter(
+            handle,
+            fieldnames=(
+                "commitment_reference",
+                "account_code",
+                "original_currency_code",
+                "native_currency",
+                "committed_limit",
+                "already_disbursed",
+                "restricted_amount",
+                "available_undrawn",
+                "expiration_date",
+                "category",
+                "nonduplication_reference",
+                "source_evidence_reference",
+            ),
+        )
         writer.writeheader()
-        writer.writerow({
-            "commitment_reference": "TEST-LINE-REAL-001",
-            "account_code": "TEST-OFFBALANCE-ACCOUNT",
-            "original_currency_code": "2", "native_currency": "USD",
-            "committed_limit": "100", "already_disbursed": "20",
-            "restricted_amount": "10", "available_undrawn": "70",
-            "expiration_date": "2027-01-31", "category": "CREDIT-LINES",
-            "nonduplication_reference": "TEST-NONDUP-SCHEDULE-OFFBAL",
-            "source_evidence_reference": "TEST-LEGAL-REGISTRY",
-        })
+        writer.writerow(
+            {
+                "commitment_reference": "TEST-LINE-REAL-001",
+                "account_code": "TEST-OFFBALANCE-ACCOUNT",
+                "original_currency_code": "2",
+                "native_currency": "USD",
+                "committed_limit": "100",
+                "already_disbursed": "20",
+                "restricted_amount": "10",
+                "available_undrawn": "70",
+                "expiration_date": "2027-01-31",
+                "category": "CREDIT-LINES",
+                "nonduplication_reference": "TEST-NONDUP-SCHEDULE-OFFBAL",
+                "source_evidence_reference": "TEST-LEGAL-REGISTRY",
+            }
+        )
     policy_file = tmp_path / "approved-offbalance.json"
-    policy_file.write_text(json.dumps({
-        "schema": "SUGEF210_OFFBALANCE_SCENARIO_V1",
-        "cutoff": CUTOFF.isoformat(), "scenario": "SYSTEMIC",
-        "source_sha256": hashlib.sha256(register.read_bytes()).hexdigest(),
-        "approved_currency_codes": {"2": "USD"},
-        "approved_account_codes": ["TEST-OFFBALANCE-ACCOUNT"],
-        "classification_approval": "TEST-LEGAL-CLASSIFICATION",
-        "nonduplication_approval": "TEST-ICL-REGISTRY",
-        "currency_mapping_approval": "TEST-CURRENCY-MAP",
-        "approved_rules": [{
-            "reference": "TEST-SYSTEMIC-CALL",
-            "exposure_category": "CREDIT-LINES",
-            "factor": "0.5", "projection_day": 7,
-            "rationale": "Institutional approval fixture only",
-            "approval_reference": "TEST-ALCO-MINUTE",
-            "source_reference": "TEST-RISK-RULE", "version": "V1",
-            "approved_on": "2026-09-01", "valid_from": "2026-09-01",
-            "valid_to": "2026-12-31", "explicitly_approved": True,
-        }],
-    }), encoding="utf-8")
+    policy_file.write_text(
+        json.dumps(
+            {
+                "schema": "SUGEF210_OFFBALANCE_SCENARIO_V1",
+                "cutoff": CUTOFF.isoformat(),
+                "scenario": "SYSTEMIC",
+                "source_sha256": hashlib.sha256(register.read_bytes()).hexdigest(),
+                "approved_currency_codes": {"2": "USD"},
+                "approved_account_codes": ["TEST-OFFBALANCE-ACCOUNT"],
+                "classification_approval": "TEST-LEGAL-CLASSIFICATION",
+                "nonduplication_approval": "TEST-ICL-REGISTRY",
+                "currency_mapping_approval": "TEST-CURRENCY-MAP",
+                "approved_rules": [
+                    {
+                        "reference": "TEST-SYSTEMIC-CALL",
+                        "exposure_category": "CREDIT-LINES",
+                        "factor": "0.5",
+                        "projection_day": 7,
+                        "rationale": "Institutional approval fixture only",
+                        "approval_reference": "TEST-ALCO-MINUTE",
+                        "source_reference": "TEST-RISK-RULE",
+                        "version": "V1",
+                        "approved_on": "2026-09-01",
+                        "valid_from": "2026-09-01",
+                        "valid_to": "2026-12-31",
+                        "explicitly_approved": True,
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
     doc = json.loads(authorization.read_text(encoding="utf-8"))
     doc["offbalance_scenario"] = {
-        "register_file": str(register), "approval_file": str(policy_file),
+        "register_file": str(register),
+        "approval_file": str(policy_file),
     }
     authorization.write_text(json.dumps(doc), encoding="utf-8")
     session = run_configured_sight_opening(
-        cutoff=CUTOFF, scenario="SYSTEMIC", approval_manifest=authorization,
+        cutoff=CUTOFF,
+        scenario="SYSTEMIC",
+        approval_manifest=authorization,
         bank_support_manifest=bank,
     )
     assert session.offbalance_commitments_reviewed == 1
@@ -512,6 +542,8 @@ def test_separately_governed_offbalance_drawdown_enters_correct_usd_window(
     assert not session.assembly.projection.certified_comprehensive
     with pytest.raises(ValueError, match="policy scenario differs"):
         run_configured_sight_opening(
-            cutoff=CUTOFF, scenario="BASE", approval_manifest=authorization,
+            cutoff=CUTOFF,
+            scenario="BASE",
+            approval_manifest=authorization,
             bank_support_manifest=bank,
         )

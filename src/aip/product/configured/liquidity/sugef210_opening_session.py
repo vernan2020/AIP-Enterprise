@@ -30,11 +30,11 @@ from aip.product.configured.liquidity.sugef210_approved_master_principal import 
 from aip.product.configured.liquidity.sugef210_dated_xml_contracts import (
     import_approved_xml_contractual_payments,
 )
-from aip.product.configured.liquidity.sugef210_offbalance_scenario_source import (
-    read_governed_offbalance_scenario,
-)
 from aip.product.configured.liquidity.sugef210_master_maturity_bridge import (
     build_master_principal_evidence,
+)
+from aip.product.configured.liquidity.sugef210_offbalance_scenario_source import (
+    read_governed_offbalance_scenario,
 )
 from aip.product.configured.liquidity.sugef210_projection_assembler import (
     InstitutionalLiquidityAssembly,
@@ -328,7 +328,9 @@ def run_configured_sight_opening(
         register_file = Path(_required_text(contingent_policy, "register_file"))
         policy_file = Path(_required_text(contingent_policy, "approval_file"))
         used_inputs = {
-            approval_path.resolve(), support_path.resolve(), master_path.resolve(),
+            approval_path.resolve(),
+            support_path.resolve(),
+            master_path.resolve(),
             raw_support.resolve(),
         }
         if contract_policy is not None:
@@ -347,9 +349,8 @@ def run_configured_sight_opening(
             source_csv=register_file,
             approval_json=policy_file,
             existing_contractual_source_refs=frozenset(
-                event.reference for event in (
-                    xml_contractual.events if xml_contractual is not None else ()
-                )
+                event.reference
+                for event in (xml_contractual.events if xml_contractual is not None else ())
             ),
             already_in_opening=frozenset(verified.included_source_references),
         )
