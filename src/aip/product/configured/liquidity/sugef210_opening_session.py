@@ -30,6 +30,9 @@ from aip.product.configured.liquidity.sugef210_approved_master_principal import 
 from aip.product.configured.liquidity.sugef210_dated_xml_contracts import (
     import_approved_xml_contractual_payments,
 )
+from aip.product.configured.liquidity.sugef210_offbalance_scenario_source import (
+    read_governed_offbalance_scenario,
+)
 from aip.product.configured.liquidity.sugef210_master_maturity_bridge import (
     build_master_principal_evidence,
 )
@@ -59,6 +62,8 @@ class ConfiguredOpeningSession:
     bank_document_sha256: str
     master_principal_events_approved: int = 0
     xml_contractual_events_approved: int = 0
+    contingent_scenario_events_approved: int = 0
+    offbalance_commitments_reviewed: int = 0
     status: str = "PARTIAL_DOCUMENTED_OPENING_NOT_COMPLETE_FORECAST"
 
 
@@ -315,12 +320,46 @@ def run_configured_sight_opening(
             settlement_approval=_required_text(contract_policy, "settlement_approval"),
             nonduplication_reference=_required_text(contract_policy, "nonduplication_reference"),
         )
+    offbalance = None
+    contingent_policy = policy.get("offbalance_scenario")
+    if contingent_policy is not None:
+        if not isinstance(contingent_policy, dict):
+            raise ValueError("Off-balance approvals must specify structured evidence")
+        register_file = Path(_required_text(contingent_policy, "register_file"))
+        policy_file = Path(_required_text(contingent_policy, "approval_file"))
+        used_inputs = {
+            approval_path.resolve(), support_path.resolve(), master_path.resolve(),
+            raw_support.resolve(),
+        }
+        if contract_policy is not None:
+            used_inputs.add(ledger_path.resolve())
+        if (
+            not register_file.is_absolute()
+            or not policy_file.is_absolute()
+            or register_file.resolve() in used_inputs
+            or policy_file.resolve() in used_inputs
+            or register_file.resolve() == policy_file.resolve()
+        ):
+            raise ValueError("Off-balance register and approval must be independent source files")
+        offbalance = read_governed_offbalance_scenario(
+            cutoff=cutoff,
+            scenario=scenario,
+            source_csv=register_file,
+            approval_json=policy_file,
+            existing_contractual_source_refs=frozenset(
+                event.reference for event in (
+                    xml_contractual.events if xml_contractual is not None else ()
+                )
+            ),
+            already_in_opening=frozenset(verified.included_source_references),
+        )
     assembly = assemble_partial_institutional_projection(
         cutoff=cutoff,
         scenario=scenario,
         master=admitted_master,
         master_maturity_recognition_reference=principal_reference,
         approved_xml_schedule=xml_contractual,
+        approved_behavioral=offbalance.evidence if offbalance is not None else None,
         verified_sight_opening=verified,
         opening_by_currency=reconciled_opening,
         opening_certifications=certifications,
@@ -330,8 +369,10 @@ def run_configured_sight_opening(
     )
     if assembly.projection.certified_comprehensive:
         raise ValueError("Partial investment session cannot certify integral cashflows")
-    expected_events = (len(admitted_master.flows) if admitted_master is not None else 0) + (
-        len(xml_contractual.events) if xml_contractual is not None else 0
+    expected_events = (
+        (len(admitted_master.flows) if admitted_master is not None else 0)
+        + (len(xml_contractual.events) if xml_contractual is not None else 0)
+        + (len(offbalance.evidence.flows) if offbalance is not None else 0)
     )
     if assembly.projection.source_flow_count != expected_events:
         raise ValueError("Master and XML source payment events did not reconcile")
@@ -348,5 +389,11 @@ def run_configured_sight_opening(
         ),
         xml_contractual_events_approved=(
             len(xml_contractual.events) if xml_contractual is not None else 0
+        ),
+        contingent_scenario_events_approved=(
+            len(offbalance.evidence.flows) if offbalance is not None else 0
+        ),
+        offbalance_commitments_reviewed=(
+            offbalance.commitments_checked if offbalance is not None else 0
         ),
     )
