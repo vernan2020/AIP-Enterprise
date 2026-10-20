@@ -605,13 +605,22 @@ def test_configured_demand_deposit_xml_210_runoff_enters_usd_daily_band(monkeypa
                 "approved_sight_account_codes": ["TEST-CURRENT-ACCOUNT"],
                 "approved_sight_type_codes": ["SIGHT"],
                 "approved_currency_codes": {"2": "USD"},
+                "approved_native_balance_reconciliation": [{
+                    "account_code": "TEST-CURRENT-ACCOUNT",
+                    "type_code": "SIGHT",
+                    "currency_source_code": "2",
+                    "currency": "USD",
+                    "source_record_count": 1,
+                    "original_native_balance": "200.00",
+                    "reconciliation_reference": "TEST-GL-210-USD",
+                }],
                 "classification_approval": "TEST-ALCO-SIGHT-CODES",
                 "currency_mapping_approval": "TEST-ALCO-NATIVE-USD",
                 "nonduplication_approval": "TEST-NOT-IN-TERM-CASHFLOWS",
                 "approved_rules": [
                     {
                         "reference": "TEST-ALCO-SIGHT-D02",
-                        "exposure_category": "SIGHT:TEST-CURRENT-ACCOUNT:SIGHT",
+                        "exposure_category": "SIGHT:TEST-CURRENT-ACCOUNT:SIGHT:USD",
                         "factor": "0.15",
                         "projection_day": 2,
                         "rationale": "TEST-ONLY-CERTIFIED-CATEGORY-SCENARIO",
