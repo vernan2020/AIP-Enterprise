@@ -705,10 +705,14 @@ class SUGEF210ProjectionPanel(QWidget):
             f"{session.master_principal_events_approved} vencimientos de principal del Maestro "
             "autorizados por instrumento (no incluye cupones); "
             f"{session.xml_contractual_events_approved} pagos individuales "
-            "documentados de cartera, captaciones y obligaciones. "
+            "documentados de cartera, captaciones y obligaciones; "
+            f"{session.offbalance_commitments_reviewed} compromisos contingentes revisados, "
+            f"{session.contingent_scenario_events_approved} desembolsos potenciales "
+            f"calculados bajo escenario {session.scenario} aprobado. "
             f"XML SHA256 {session.sight_source_sha256[:12]}…; "
             f"respaldo bancario SHA256 {session.bank_document_sha256[:12]}…. "
-            "Proyección PARCIAL: aún faltan cronogramas contractuales y contingencias. "
+            "Proyección PARCIAL: contingencias y cronogramas no seleccionados "
+            "permanecen sin cobertura integral. "
             "La herramienta no verifica por sí sola firmas ni cifras de certificados bancarios."
         )
 
