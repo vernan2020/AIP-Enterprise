@@ -158,7 +158,7 @@ def test_demand_source_hash_currency_and_scenario_are_not_inferred(tmp_path):
     reader, approval, doc = _policy(tmp_path)
     doc["approved_currency_codes"] = {"1": "CRC"}
     approval.write_text(json.dumps(doc), encoding="utf-8")
-    with pytest.raises(ValueError, match="lacks approved mapping"):
+    with pytest.raises(ValueError, match="Native account/type/currency reconciliation"):
         _read(reader, approval)
     reader, approval, doc = _policy(tmp_path)
     doc["scenario"] = "BASE"
@@ -210,7 +210,7 @@ def test_malformed_balances_missing_catalog_approval_and_missing_row_source(tmp_
     reader, approval, doc = _policy(tmp_path)
     doc["approved_sight_account_codes"] = ["NOT-A-REAL-APPROVED-ACCOUNT"]
     approval.write_text(json.dumps(doc), encoding="utf-8")
-    with pytest.raises(ValueError, match="No approved demand-deposit source accounts"):
+    with pytest.raises(ValueError, match="Native account/type/currency reconciliation"):
         _read(reader, approval)
     reader, approval, doc = _policy(tmp_path)
     doc["approved_rules"][0]["explicitly_approved"] = False
