@@ -455,6 +455,22 @@ class FinancialAnalysisPresenter:
             score_audit_status=score_audit.status if score_audit is not None else "SIN EVALUACIÓN",
             score_audit_summary=score_audit_summary,
             score_audit_warning=score_audit_warning,
+            score_matrix_summary=(
+                "Contraste matriz agosto 2026 (mismo corte): "
+                + (
+                    f"{snapshot.reference_matrix_score:,.4f} "
+                    f"({snapshot.reference_matrix_grade})"
+                    if snapshot.reference_matrix_score is not None
+                    else "Sin nota reproducible"
+                )
+                + " · " + snapshot.reference_matrix_coverage
+                + (
+                    f" · Máximo cohorte: {snapshot.reference_matrix_maximum:,.4f}"
+                    if snapshot.reference_matrix_maximum is not None
+                    else ""
+                )
+            ),
+            score_matrix_notes="\n".join(snapshot.reference_matrix_diagnostics),
             indicator_reconciliations=reconciliations,
             rating_diagnostics=rating.diagnostics if rating is not None else (),
             diagnostics=snapshot.diagnostics,
