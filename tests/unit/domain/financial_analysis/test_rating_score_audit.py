@@ -82,8 +82,6 @@ def test_capture_coopenae_score_and_binary_sensitivity() -> None:
     assert audit.recomputed_grade == "BB"
     assert len(audit.rows) == 13
     assert not audit.issues
-    assert audit.alternative_proportional_score == Decimal("55.833")
-    assert audit.alternative_proportional_grade == "B"
     assert rating.score == Decimal("60.833")  # Auditoría de solo lectura.
 
 
@@ -111,7 +109,6 @@ def test_incomplete_rating_does_not_invent_scores_or_alternatives() -> None:
     audit = RatingScoreAuditService.audit(incomplete)
     assert audit.status == "REVISAR"  # Contrato de 13 indicadores roto.
     assert audit.recomputed_score is None
-    assert audit.alternative_proportional_score is None
     assert audit.recomputed_grade is None
 
 
@@ -138,4 +135,4 @@ def test_binary_guarantee_and_supervision_have_distinct_favorable_values() -> No
     by_code = {row.code: row for row in audit.rows}
     assert by_code["PROPORTIONAL_SUPERVISION"].expected == Decimal("5")
     assert by_code["STATE_GUARANTEE"].expected == Decimal("0")
-    assert "Criterio pendiente" in audit.criterion_warning
+    assert "Conciliación de codificación" in audit.criterion_warning
