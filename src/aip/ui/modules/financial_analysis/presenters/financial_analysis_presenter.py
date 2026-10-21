@@ -535,7 +535,7 @@ class FinancialAnalysisPresenter:
             score_audit_summary=score_audit_summary,
             score_audit_warning=score_audit_warning,
             score_matrix_summary=(
-                "Contraste matriz agosto 2026 (mismo corte): "
+                "Perfil Excel agosto 2026 (recalculado al corte SUGEF): "
                 + (
                     (
                         f"{snapshot.reference_matrix_score:,.4f} "
