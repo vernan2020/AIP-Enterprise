@@ -764,9 +764,7 @@ class FinancialAnalysisView(QWidget):
         cohort_header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         cohort_header.setSectionResizeMode(5, QHeaderView.ResizeMode.Stretch)
         for column in (1, 2, 3, 4):
-            cohort_header.setSectionResizeMode(
-                column, QHeaderView.ResizeMode.ResizeToContents
-            )
+            cohort_header.setSectionResizeMode(column, QHeaderView.ResizeMode.ResizeToContents)
         cohort_layout.addWidget(self._matrix_cohort_table, 1)
         self._rating_content_tabs.addTab(cohort, "Cohorte metodológica")
 
@@ -1205,7 +1203,8 @@ class FinancialAnalysisView(QWidget):
 
         self._score_audit_summary.setText(view_model.score_audit_summary)
         self._matrix_cohort_summary.setText(
-            view_model.score_matrix_summary + " · Pares identificados: "
+            view_model.score_matrix_summary
+            + " · Pares identificados: "
             + str(len(view_model.score_matrix_peer_rows))
         )
         self._matrix_cohort_summary.setToolTip(view_model.score_matrix_notes)
