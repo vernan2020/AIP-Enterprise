@@ -6,8 +6,8 @@ from datetime import date
 from decimal import Decimal
 
 from aip.domain.financial_analysis.matrix_sugef_adapter import (
-    MatrixSUGEFAdapter,
     REFERENCE_AUGUST_2026_CODES,
+    MatrixSUGEFAdapter,
 )
 from aip.domain.financial_analysis.models import (
     FinancialEntity,
