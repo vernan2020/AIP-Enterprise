@@ -651,12 +651,12 @@ class FinancialAnalysisView(QWidget):
         audit_header = QHBoxLayout()
         self._score_audit_summary = QLabel("Sin nota para verificar")
         self._score_audit_summary.setWordWrap(True)
-        self._score_audit_summary.setStyleSheet(
-            "font-weight:700; color:#314A5E; font-size:11px;"
-        )
+        self._score_audit_summary.setStyleSheet("font-weight:700; color:#314A5E; font-size:11px;")
         audit_header.addWidget(self._score_audit_summary, 1)
         audit_export = QPushButton("Exportar auditoría CSV")
-        audit_export.setToolTip("Exporta los 13 indicadores, pesos, factores y diferencias para Excel.")
+        audit_export.setToolTip(
+            "Exporta los 13 indicadores, pesos, factores y diferencias para Excel."
+        )
         audit_export.clicked.connect(
             lambda: save_table_csv_dialog(self, self._score_audit_table, "auditoria_08ME14-01.csv")
         )
@@ -680,17 +680,28 @@ class FinancialAnalysisView(QWidget):
 
         self._score_audit_table = self._table(
             [
-                "Indicador", "Valor", "P15", "Punto medio", "P85", "Dirección",
-                "Nivel comprobado", "Pts.", "Peso", "Factor", "Esperado",
-                "AIP", "Diferencia", "Estado", "Cuenta fuente", "Regla aplicada",
+                "Indicador",
+                "Valor",
+                "P15",
+                "Punto medio",
+                "P85",
+                "Dirección",
+                "Nivel comprobado",
+                "Pts.",
+                "Peso",
+                "Factor",
+                "Esperado",
+                "AIP",
+                "Diferencia",
+                "Estado",
+                "Cuenta fuente",
+                "Regla aplicada",
             ]
         )
         audit_table_header = self._score_audit_table.horizontalHeader()
         audit_table_header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         for column in range(1, 16):
-            audit_table_header.setSectionResizeMode(
-                column, QHeaderView.ResizeMode.ResizeToContents
-            )
+            audit_table_header.setSectionResizeMode(column, QHeaderView.ResizeMode.ResizeToContents)
         audit_layout.addWidget(self._score_audit_table, 1)
         self._rating_content_tabs.addTab(audit, "Auditoría del puntaje")
 
@@ -1135,10 +1146,22 @@ class FinancialAnalysisView(QWidget):
         self._score_audit_table.setRowCount(len(view_model.score_audit_rows))
         for row_index, row in enumerate(view_model.score_audit_rows):
             audit_values = (
-                row.indicator, row.value, row.p15, row.midpoint, row.p85,
-                row.direction, row.level, row.points, row.weight, row.factor,
-                row.expected, row.reported, row.difference, row.status,
-                row.source, row.rule,
+                row.indicator,
+                row.value,
+                row.p15,
+                row.midpoint,
+                row.p85,
+                row.direction,
+                row.level,
+                row.points,
+                row.weight,
+                row.factor,
+                row.expected,
+                row.reported,
+                row.difference,
+                row.status,
+                row.source,
+                row.rule,
             )
             for column, value in enumerate(audit_values):
                 item = QTableWidgetItem(value)
