@@ -148,7 +148,7 @@ def test_inconsistent_event_lineage_rejected_by_operator_preflight(monkeypatch):
         raise AssertionError("Invalid institutional source count was accepted")
 
 
-def test_self_test_checks_live_qt_tabs_and_never_loads_contractual_sources(monkeypatch, qt_app):
+def test_self_test_checks_live_qt_tabs_and_never_loads_contractual_sources(monkeypatch):
     _configured(monkeypatch)
     monkeypatch.setattr(
         readiness,
@@ -164,7 +164,7 @@ def test_self_test_checks_live_qt_tabs_and_never_loads_contractual_sources(monke
     assert result["projection_regulatorily_certified"] is False
 
 
-def test_self_test_refuses_source_arguments_and_demo_configuration(monkeypatch, qt_app, capsys):
+def test_self_test_refuses_source_arguments_and_demo_configuration(monkeypatch, capsys):
     import pytest
 
     _configured(monkeypatch)
