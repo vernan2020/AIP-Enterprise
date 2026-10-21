@@ -51,9 +51,7 @@ def test_reference_floors_negative_roa_and_roe_p15_to_zero() -> None:
 
 def test_reference_explicit_profitability_weights_are_667_not_20_divided_by_3() -> None:
     result = MatrixReferenceRatingService.evaluate(tuple(_entity(i) for i in range(4)))
-    weights = {
-        row.code: row.weight for row in result.entities[0].indicators
-    }
+    weights = {row.code: row.weight for row in result.entities[0].indicators}
     assert weights["MARGIN_INTERMEDIATION"] == Decimal("6.67")
     assert weights["ROA"] == Decimal("6.67")
     assert weights["ROE"] == Decimal("6.67")
@@ -70,15 +68,8 @@ def test_reference_explicit_profitability_weights_are_667_not_20_divided_by_3() 
         ("46.0450", "CC"),
     ),
 )
-def test_reference_classification_depends_on_monthly_maximum(
-    score: str, expected: str
-) -> None:
-    assert (
-        MatrixReferenceRatingService.grade(
-            Decimal(score), Decimal("86.675")
-        )
-        == expected
-    )
+def test_reference_classification_depends_on_monthly_maximum(score: str, expected: str) -> None:
+    assert MatrixReferenceRatingService.grade(Decimal(score), Decimal("86.675")) == expected
 
 
 def test_missing_liquidity_must_not_receive_unapproved_full_points() -> None:
@@ -92,8 +83,7 @@ def test_missing_liquidity_must_not_receive_unapproved_full_points() -> None:
         cohort, documented_liquidity_exceptions=frozenset({"0"})
     )
     row = next(
-        item for item in documented.entities[0].indicators
-        if item.code == "LIQUIDITY_COVERAGE"
+        item for item in documented.entities[0].indicators if item.code == "LIQUIDITY_COVERAGE"
     )
     assert row.contribution == Decimal("10")
     assert row.origin == "EXCEPCION_EXCEL_DOCUMENTADA"
