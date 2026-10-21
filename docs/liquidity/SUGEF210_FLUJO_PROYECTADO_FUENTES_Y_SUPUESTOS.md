@@ -306,3 +306,22 @@ institucional antes de seleccionar los dos documentos de autorización.
 La carga inicial nunca activa caja ni flujos por el solo hecho de identificar
 un mes cerrado.
 
+### Autoprueba sin acceso a información institucional
+
+Después de instalar el parche, en CMD ejecutar:
+
+```bat
+cd /d C:\Proyectos\AIP-V451-PREVIEW
+VERIFICAR_LIQUIDEZ_SUGEF210_OPERATIVO.cmd --self-test
+```
+
+El verificador comprueba la capacidad de iniciar el panel Qt real, las 17 bandas
+SUGEF 2-10, la disponibilidad de las pestañas de conciliación y trazabilidad,
+y que los indicadores estén en **N/D** antes de cargar información. No lee
+archivos de Tesorería, Maestro ni XML y nunca genera importes. El resultado
+`RUNTIME_SELFTEST_OK` significa que el módulo gráfico está correctamente
+instalado, **no** que el cálculo con fuentes reales o la integridad de los
+insumos institucionales esté certificado. `BLOCKED_RUNTIME_SELFTEST`
+separa un problema de instalación o dependencias de la falta de fuentes.
+Después ejecutar `--cutoff 2026-09-30` para validar el origen real.
+

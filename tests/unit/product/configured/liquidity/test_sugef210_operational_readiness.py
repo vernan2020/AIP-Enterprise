@@ -146,3 +146,38 @@ def test_inconsistent_event_lineage_rejected_by_operator_preflight(monkeypatch):
         assert "partial contract" in str(exc)
     else:
         raise AssertionError("Invalid institutional source count was accepted")
+
+
+def test_self_test_checks_live_qt_tabs_and_never_loads_contractual_sources(
+    monkeypatch, qt_app
+):
+    _configured(monkeypatch)
+    monkeypatch.setattr(
+        readiness,
+        "inspect_xml_investment_source",
+        lambda *_args: (_ for _ in ()).throw(AssertionError("no institutional read")),
+    )
+    assert readiness.main(["--self-test"]) == 0
+    result = readiness.verify_runtime_without_institutional_data()
+    assert result["status"] == "RUNTIME_SELFTEST_OK"
+    assert result["window_count"] == 17
+    assert result["expected_currency_rows"] == 34
+    assert result["institutional_files_read"] is False
+    assert result["projection_regulatorily_certified"] is False
+
+
+def test_self_test_refuses_source_arguments_and_demo_configuration(
+    monkeypatch, qt_app, capsys
+):
+    import pytest
+
+    _configured(monkeypatch)
+    with pytest.raises(SystemExit) as exc:
+        readiness.main(["--self-test", "--cutoff", "2026-09-30"])
+    assert exc.value.code == 2
+
+    monkeypatch.setenv("AIP_DEMO_MODE_ENABLED", "true")
+    assert readiness.main(["--self-test"]) == 2
+    status = capsys.readouterr().out
+    assert "BLOCKED_NOT_CONFIGURED" in status
+

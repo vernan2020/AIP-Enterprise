@@ -119,11 +119,69 @@ def evaluate_readiness(
     return basic
 
 
+def verify_runtime_without_institutional_data() -> dict[str, Any]:
+    """Smoke the installed GUI and its 17 windows without touching configured sources."""
+    from aip.domain.liquidity.cashflow.services.sugef210_projection import (
+        sugef210_windows,
+    )
+
+    # Called from a dedicated CMD process, never from inside the live desktop.
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PySide6.QtWidgets import QApplication, QTabWidget
+
+    from aip.ui.modules.liquidity.views.sugef210_projection_panel import (
+        SUGEF210ProjectionPanel,
+    )
+
+    created_app = QApplication.instance() is None
+    app = QApplication.instance() or QApplication([])
+    panel: SUGEF210ProjectionPanel | None = None
+    try:
+        panel = SUGEF210ProjectionPanel()
+        windows = sugef210_windows(panel._cutoff)
+        if len(windows) != 17 or panel._windows.rowCount() != 17:
+            raise ValueError("Liquidity band definitions are not ready")
+        tabs = panel.findChildren(QTabWidget)
+        names = {tab.tabText(index) for tab in tabs for index in range(tab.count())}
+        required = {
+            "Conciliación inversiones",
+            "Trazabilidad por operación",
+            "Conciliación captaciones vista",
+        }
+        if not required.issubset(names):
+            raise ValueError("Required SUGEF210 reconciliation tabs unavailable")
+        if panel._governed_projection is not None:
+            raise ValueError("Runtime test must not populate institutional cashflows")
+        if any(label.text() != "N/D" for label in panel._projected_kpis.values()):
+            raise ValueError("Runtime test must not populate liquidity KPIs")
+        return {
+            "status": "RUNTIME_SELFTEST_OK",
+            "execution_mode": "CONFIGURED",
+            "source_cutoff_evaluated": False,
+            "institutional_files_read": False,
+            "projection_regulatorily_certified": False,
+            "window_count": len(windows),
+            "expected_currency_rows": 34,
+            "reconciliation_tabs_available": True,
+            "native_currencies": ["CRC", "USD"],
+        }
+    finally:
+        if panel is not None:
+            panel.close()
+        if created_app:
+            app.quit()
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="AIP PREVIEW CONFIGURED: real XML/Master preflight and governed SUGEF210"
     )
-    parser.add_argument("--cutoff", required=True, help="YYYY-MM-DD")
+    parser.add_argument("--cutoff", help="YYYY-MM-DD")
+    parser.add_argument(
+        "--self-test",
+        action="store_true",
+        help="Validate installed Qt GUI and 17 SUGEF210 bands without institutional sources",
+    )
     parser.add_argument(
         "--scenario",
         choices=("BASE", "IDIOSYNCRATIC", "SYSTEMIC", "COMBINED"),
@@ -132,25 +190,48 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--approval")
     parser.add_argument("--bank")
     args = parser.parse_args(argv)
-    try:
-        cutoff = date.fromisoformat(args.cutoff)
-    except ValueError:
-        parser.error("--cutoff must use YYYY-MM-DD")
-    try:
-        outcome = evaluate_readiness(
-            cutoff=cutoff,
-            scenario=args.scenario,
-            approval=args.approval,
-            bank=args.bank,
-        )
-    except (OSError, ValueError, TypeError, KeyError) as exc:
-        outcome = {
-            "status": "BLOCKED_INSTITUTIONAL_EVIDENCE",
-            "cutoff": cutoff.isoformat(),
-            "scenario": args.scenario,
-            "error_type": type(exc).__name__,
-            "private_paths_and_values_redacted": True,
-        }
+    if args.self_test:
+        if args.cutoff or args.approval or args.bank:
+            parser.error("--self-test cannot be combined with institutional source arguments")
+        if (
+            os.environ.get("AIP_EXECUTION_MODE", "").upper() != "CONFIGURED"
+            or os.environ.get("AIP_DEMO_MODE_ENABLED", "").lower() not in {"false", "0"}
+        ):
+            outcome = {
+                "status": "BLOCKED_NOT_CONFIGURED",
+                "private_paths_and_values_redacted": True,
+            }
+        else:
+            try:
+                outcome = verify_runtime_without_institutional_data()
+            except Exception as exc:
+                outcome = {
+                    "status": "BLOCKED_RUNTIME_SELFTEST",
+                    "error_type": type(exc).__name__,
+                    "private_paths_and_values_redacted": True,
+                }
+    else:
+        if args.cutoff is None:
+            parser.error("--cutoff is required unless --self-test is selected")
+        try:
+            cutoff = date.fromisoformat(args.cutoff)
+        except ValueError:
+            parser.error("--cutoff must use YYYY-MM-DD")
+        try:
+            outcome = evaluate_readiness(
+                cutoff=cutoff,
+                scenario=args.scenario,
+                approval=args.approval,
+                bank=args.bank,
+            )
+        except (OSError, ValueError, TypeError, KeyError) as exc:
+            outcome = {
+                "status": "BLOCKED_INSTITUTIONAL_EVIDENCE",
+                "cutoff": cutoff.isoformat(),
+                "scenario": args.scenario,
+                "error_type": type(exc).__name__,
+                "private_paths_and_values_redacted": True,
+            }
     print(json.dumps(outcome, ensure_ascii=False, indent=2))
     return 2 if str(outcome["status"]).startswith("BLOCKED") else 0
 
