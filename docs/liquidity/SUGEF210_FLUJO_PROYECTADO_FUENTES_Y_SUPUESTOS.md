@@ -150,3 +150,37 @@ presupuesto se incorpora al flujo proyectado. Incluso con asignaciones aprobadas
 el resultado permanece **PARCIAL** y se informa el número de eventos añadidos y el
 hash del Plan Financiero en el diagnóstico CMD. La autenticidad material de firmas
 y la reconciliación de los documentos de origen son controles institucionales externos.
+
+## Cupones de inversiones — cronograma fechado de custodia
+
+La proyección configurada admite ahora, de manera **opcional**, `investment_coupon_schedule`
+en el manifiesto de apertura ya existente `SUGEF210_SIGHT_OPENING_V1`, con
+`ledger_file`, `approval_file` y `custodian_document_file` (rutas institucionales
+absolutas y distintas entre sí y de todas las demás fuentes del corte).
+
+- El ledger es CSV UTF-8 con exactamente las columnas
+  `master_principal_reference,payment_reference,payment_date,currency,amount,settlement_reference,nonduplication_reference`.
+  La referencia principal corresponde a `MASTER:<SHA256>:<fila>:PRINCIPAL` tal como la
+  produce el lector **original** del Maestro; no representa un cobro de principal.
+- La autorización JSON independiente tiene el esquema
+  `SUGEF210_MASTER_COUPONS_V1`, `cutoff`, `master_sha256`, `ledger_sha256`,
+  `custodian_document_sha256`, `custodian_approval_reference`,
+  `treasury_settlement_approval`, `nonduplication_approval` y
+  `approved_payment_records`. Cada pago aprobado repite exactamente sus siete
+  campos del CSV y añade `explicitly_approved=true`.
+- Se verifica el mismo Maestro real del corte, identificador de fila original, moneda
+  nativa y vida contractual del instrumento. El cupón tiene que tener fecha posterior
+  al corte y no posterior al vencimiento original. Importes y fechas se **leen del
+  cronograma de custodia** y se reconcilian contra la autorización; **nunca** se
+  calculan usando TIR, tasa nominal, precio, duración o periodicidades supuestas.
+- Hashes, referencias duplicadas, aprobaciones parciales, importes no finitos, fechas
+  inconsistentes y documentos cruzados se rechazan. Se releen los hashes antes
+  de finalizar para detectar modificaciones durante la conciliación.
+- Los cupones se reportan como `ASSET/INFLOW/CONTRACTUAL`, por moneda original,
+  dentro de las 17 bandas del mismo motor, también en Excel y diagnóstico CMD.
+  Un cupón **no** sustituye un vencimiento de principal y no se contabiliza
+  adicionalmente como caja inicial. El flujo resultante permanece **PARCIAL**.
+- La autorización textual y un SHA-256 no autentican por sí mismos la firma de
+  Tesorería o Custodia: el comprobante original debe verificarse institucionalmente.
+  Solo los registros autorizados quedan incorporados; otros cupones siguen `N/D`
+  en la evaluación de cobertura.
