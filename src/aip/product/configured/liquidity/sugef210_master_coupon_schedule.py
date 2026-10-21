@@ -152,13 +152,13 @@ def read_approved_master_coupons(
     _required(authorization.get("nonduplication_approval"), "nonduplication_approval")
     ledger_hash = _check_document(
         ledger_path,
-        authorization.get("ledger_sha256"),
+        _required(authorization.get("ledger_sha256"), "ledger_sha256"),
         max_bytes=_MAX_LEDGER,
         name="Coupon ledger",
     )
     custody_hash = _check_document(
         custody_path,
-        authorization.get("custodian_document_sha256"),
+        _required(authorization.get("custodian_document_sha256"), "custodian_document_sha256"),
         max_bytes=_MAX_CUSTODY,
         name="Custodian supporting document",
     )
