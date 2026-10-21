@@ -212,6 +212,11 @@ class FinancialAnalysisSnapshot:
     market_composition: tuple[MarketCompositionSeries, ...] = field(default_factory=tuple)
     peer_ratings: tuple[EntityRatingSummary, ...] = field(default_factory=tuple)
     rating: EntityFinancialRating | None = None
+    reference_matrix_score: Decimal | None = None
+    reference_matrix_grade: str | None = None
+    reference_matrix_maximum: Decimal | None = None
+    reference_matrix_coverage: str = "Sin cotejo"
+    reference_matrix_diagnostics: tuple[str, ...] = field(default_factory=tuple)
     indicator_reconciliations: tuple[FinancialIndicatorReconciliation, ...] = field(
         default_factory=tuple
     )
