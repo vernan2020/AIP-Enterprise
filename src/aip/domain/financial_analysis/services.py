@@ -15,6 +15,7 @@ from aip.domain.financial_analysis.models import (
     EntityFinancialSummary,
     EntityRatingSummary,
     FinancialAnalysisSnapshot,
+    MatrixReferenceBreakdown,
     FinancialEntity,
     FinancialMetric,
     FinancialMetricHistoryPoint,
@@ -139,6 +140,7 @@ class FinancialAnalysisService:
         reference_maximum = None
         reference_coverage = "Cohorte de referencia no disponible"
         reference_diagnostics: tuple[str, ...] = ()
+        reference_indicators: tuple[MatrixReferenceBreakdown, ...] = ()
         try:
             reference, absent_entities = MatrixSUGEFAdapter.validate_reference_cohort(
                 operational_lines, effective_date
@@ -150,6 +152,20 @@ class FinancialAnalysisService:
             if selected_reference is not None:
                 reference_score = selected_reference.score
                 reference_grade = selected_reference.grade
+                reference_indicators = tuple(
+                    MatrixReferenceBreakdown(
+                        code=item.code,
+                        value=item.value,
+                        p15=item.p15,
+                        midpoint=item.midpoint,
+                        p85=item.p85,
+                        weight=item.weight,
+                        contribution=item.contribution,
+                        level=item.level,
+                        origin=item.origin,
+                    )
+                    for item in selected_reference.indicators
+                )
             reference_maximum = reference.score_maximum
             reference_coverage = (
                 f"{len(reference.entities)}/38 entidades de matriz, "
@@ -222,6 +238,7 @@ class FinancialAnalysisService:
             reference_matrix_maximum=reference_maximum,
             reference_matrix_coverage=reference_coverage,
             reference_matrix_diagnostics=reference_diagnostics,
+            reference_matrix_indicators=reference_indicators,
             indicator_reconciliations=reconciliations,
             diagnostics=tuple(coverage_diagnostics),
             source_files=source_files,
