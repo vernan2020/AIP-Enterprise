@@ -360,3 +360,66 @@ def test_event_audit_reconciles_signed_cash_by_currency_band_and_after_horizon()
     assert assembled.projection.rows[12].net_flow == Decimal("87.75")
     assert assembled.projection.excluded_out_of_horizon == 1
     assert not assembled.projection.certified_comprehensive
+
+
+def test_large_native_event_ledger_reconciles_all_34_bands_and_preserves_decimals():
+    """Scale case: no rounding, cross-currency netting or omitted source events."""
+    events = tuple(
+        _event(
+            f"LEDGER-ORIGINAL-{n:05d}",
+            1 + n % 365,
+            "0.01",
+            currency="CRC" if n % 2 == 0 else "USD",
+            area=(
+                LiquidityBalanceArea.ASSET
+                if n % 3
+                else LiquidityBalanceArea.LIABILITY
+            ),
+        )
+        for n in range(2040)
+    ) + (_event("LEDGER-AFTER-365", 366, "2.99", currency="USD"),)
+    scheduled = LiquiditySourceBridgeResult(
+        cashflows=events,
+        covered_balance_areas=frozenset(
+            {LiquidityBalanceArea.ASSET, LiquidityBalanceArea.LIABILITY}
+        ),
+        source_status="CERTIFIED_CONTRACTUAL_DATES_ONLY_OFFBALANCE_NOT_INCLUDED",
+    )
+    result = assemble_partial_institutional_projection(
+        cutoff=CUTOFF,
+        scenario="BASE",
+        contractual=scheduled,
+        opening_by_currency={"CRC": Decimal("1.00"), "USD": Decimal("2.00")},
+        opening_certifications={"CRC": "TEST-ICL-CRC", "USD": "TEST-ICL-USD"},
+        opening_nonduplication_reference="TEST-OPENING-UNIQUE",
+    )
+    assert len(result.audited_events) == 2041
+    assert result.projection.source_flow_count == 2041
+    assert result.projection.excluded_out_of_horizon == 1
+    for row in result.projection.rows:
+        candidates = tuple(
+            event
+            for event in events
+            if event.currency == row.currency
+            and row.window.start <= event.payment_date <= row.window.end
+        )
+        assert row.event_count == len(candidates)
+        assert row.asset_inflows == sum(
+            (
+                event.amount
+                for event in candidates
+                if event.area == LiquidityBalanceArea.ASSET
+            ),
+            Decimal(0),
+        )
+        assert row.liability_outflows == sum(
+            (
+                event.amount
+                for event in candidates
+                if event.area == LiquidityBalanceArea.LIABILITY
+            ),
+            Decimal(0),
+        )
+    assert result.audited_events[-1].band_key == "OUTSIDE_365D"
+    assert not result.projection.certified_comprehensive
+
