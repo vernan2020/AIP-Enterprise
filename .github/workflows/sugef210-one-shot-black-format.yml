@@ -4,6 +4,7 @@ name: One-shot SUGEF210 Black Formatting
 
 # Normalize approved source manifest parsing, signed bank opening and duplicate safeguards.
 # Normalize the independently approved financial plan overlay and regression tests.
+# Normalize custody-evidenced investment coupons without modifying certified formulas.
 
 on:
   push:
@@ -51,6 +52,7 @@ jobs:
             src/aip/product/configured/liquidity/sugef210_demand_deposit_runoff.py
             src/aip/product/configured/liquidity/sugef210_dated_xml_contracts.py
             src/aip/product/configured/liquidity/sugef210_approved_master_principal.py
+            src/aip/product/configured/liquidity/sugef210_master_coupon_schedule.py
             src/aip/product/configured/liquidity/sugef210_opening_cli.py
             src/aip/ui/modules/liquidity/views/sugef210_projection_panel.py
             tests/unit/domain/liquidity/test_sugef210_funding_capacity.py
@@ -69,6 +71,7 @@ jobs:
             tests/unit/product/configured/liquidity/test_sugef210_demand_deposit_runoff.py
             tests/unit/product/configured/liquidity/test_sugef210_dated_xml_contracts.py
             tests/unit/product/configured/liquidity/test_sugef210_approved_master_principal.py
+            tests/unit/product/configured/liquidity/test_sugef210_master_coupon_schedule.py
             tests/unit/product/configured/liquidity/test_sugef210_opening_cli.py
             tests/unit/ui/liquidity/test_sugef210_projection_panel.py
           )
@@ -85,6 +88,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/aip/domain/liquidity/cashflow/services/sugef210_funding_capacity.py src/aip/domain/liquidity/cashflow/services/sugef210_scenario_rules.py src/aip/domain/liquidity/cashflow/services/sugef210_projection.py src/aip/product/configured/liquidity/irrbb_schedule_liquidity_bridge.py src/aip/product/configured/liquidity/financial_plan_cashflow_bridge.py src/aip/product/configured/liquidity/sugef210_financial_plan_cli.py src/aip/product/configured/liquidity/sight_investment_opening_bridge.py src/aip/product/configured/liquidity/financial_plan_source.py src/aip/product/configured/liquidity/sugef210_source_audit_cli.py src/aip/ui/modules/liquidity/views/sugef210_projection_panel.py tests/unit/domain/liquidity/test_sugef210_funding_capacity.py tests/unit/domain/liquidity/test_sugef210_scenario_rules.py tests/unit/domain/liquidity/test_sugef210_projection.py tests/unit/product/configured/irrbb/test_investment_master_cutoff_audit.py tests/unit/product/configured/liquidity/test_sight_investment_opening_bridge.py tests/unit/product/configured/liquidity/test_financial_plan_source.py tests/unit/product/configured/liquidity/test_investment_current_account_xml_audit.py tests/unit/product/configured/liquidity/test_sugef210_master_maturity_bridge.py src/aip/product/configured/liquidity/sugef210_xml_perimeter_audit.py src/aip/product/configured/liquidity/sugef210_projection_assembler.py src/aip/product/configured/liquidity/sugef210_sight_approval_manifest.py src/aip/product/configured/liquidity/sugef210_opening_session.py src/aip/product/configured/liquidity/sugef210_offbalance_scenario_source.py src/aip/product/configured/liquidity/sugef210_demand_deposit_runoff.py src/aip/product/configured/liquidity/sugef210_dated_xml_contracts.py src/aip/product/configured/liquidity/sugef210_approved_master_principal.py src/aip/product/configured/liquidity/sugef210_opening_cli.py tests/unit/product/configured/liquidity/test_sugef210_opening_cli.py tests/unit/product/configured/liquidity/test_sugef210_approved_master_principal.py tests/unit/product/configured/liquidity/test_sugef210_opening_session.py tests/unit/product/configured/liquidity/test_sugef210_offbalance_scenario_source.py tests/unit/product/configured/liquidity/test_sugef210_demand_deposit_runoff.py tests/unit/product/configured/liquidity/test_sugef210_dated_xml_contracts.py tests/unit/product/configured/liquidity/test_sugef210_sight_approval_manifest.py tests/unit/product/configured/liquidity/test_sugef210_xml_perimeter_audit.py tests/unit/product/configured/liquidity/test_sugef210_projection_assembler.py tests/unit/ui/liquidity/test_sugef210_projection_panel.py
+          git add src/aip/product/configured/liquidity/sugef210_master_coupon_schedule.py tests/unit/product/configured/liquidity/test_sugef210_master_coupon_schedule.py
           if git diff --cached --quiet; then
             echo "Formatting already compliant."
             exit 0
