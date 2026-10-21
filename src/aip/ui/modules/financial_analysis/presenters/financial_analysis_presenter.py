@@ -5,6 +5,7 @@ from dataclasses import replace
 from datetime import date
 from decimal import Decimal, DivisionByZero, InvalidOperation
 
+from aip.domain.financial_analysis.rating_score_audit import RatingScoreAuditService
 from aip.domain.financial_analysis.models import (
     FinancialMetricHistorySeries,
     FinancialStatementLine,
@@ -30,6 +31,7 @@ from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model 
     PeerSummaryRow,
     RatingDimensionRow,
     RatingIndicatorRow,
+    RatingScoreAuditRow,
 )
 
 
@@ -366,6 +368,53 @@ class FinancialAnalysisPresenter:
             if rating is not None
             else ()
         )
+        score_audit = RatingScoreAuditService.audit(rating) if rating is not None else None
+        score_audit_rows = (
+            tuple(
+                RatingScoreAuditRow(
+                    indicator=item.label,
+                    value=cls._rating_value(item.value, item.direction.value),
+                    p15=cls._rating_value(item.p15, item.direction.value),
+                    midpoint=cls._rating_value(item.midpoint, item.direction.value),
+                    p85=cls._rating_value(item.p85, item.direction.value),
+                    direction=cls._direction_label(item.direction.value),
+                    level=cls._level_label(item.expected_level.value),
+                    points=str(item.points) if item.points is not None else "-",
+                    weight=f"{item.weight:,.3f}%",
+                    factor=f"{item.factor * Decimal('100'):,.0f}%" if item.factor is not None else "-",
+                    expected=f"{item.expected:,.3f}" if item.expected is not None else "-",
+                    reported=f"{item.reported:,.3f}" if item.reported is not None else "-",
+                    difference=f"{item.difference:+,.3f}" if item.difference is not None else "-",
+                    status=item.status,
+                    source=item.source,
+                    rule=item.rule,
+                )
+                for item in score_audit.rows
+            )
+            if score_audit is not None else ()
+        )
+        if score_audit is not None:
+            recomputed = (
+                f"{score_audit.recomputed_score:,.3f}"
+                if score_audit.recomputed_score is not None else "-"
+            )
+            score_audit_summary = (
+                f"Verificación: {score_audit.status} · Recalculado: {recomputed} "
+                f"· AIP: {rating.score:,.3f}" if rating.score is not None
+                else f"Verificación: {score_audit.status} · Recalculado: {recomputed} · Sin nota emitida"
+            )
+            if score_audit.issues:
+                score_audit_summary += " · " + " / ".join(score_audit.issues)
+            score_audit_warning = score_audit.criterion_warning
+            if score_audit.alternative_proportional_score is not None:
+                score_audit_warning += (
+                    f" Escenario alternativo: "
+                    f"{score_audit.alternative_proportional_score:,.3f} "
+                    f"({score_audit.alternative_proportional_grade})."
+                )
+        else:
+            score_audit_summary = "Sin calificación seleccionada"
+            score_audit_warning = ""
         reconciliations = tuple(
             IndicatorReconciliationRow(
                 indicator=item.label,
@@ -408,6 +457,10 @@ class FinancialAnalysisPresenter:
             ),
             rating_dimensions=rating_dimensions,
             rating_indicators=rating_indicators,
+            score_audit_rows=score_audit_rows,
+            score_audit_status=score_audit.status if score_audit is not None else "SIN EVALUACIÓN",
+            score_audit_summary=score_audit_summary,
+            score_audit_warning=score_audit_warning,
             indicator_reconciliations=reconciliations,
             rating_diagnostics=rating.diagnostics if rating is not None else (),
             diagnostics=snapshot.diagnostics,
