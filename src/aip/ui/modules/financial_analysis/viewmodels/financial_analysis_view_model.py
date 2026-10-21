@@ -206,6 +206,8 @@ class FinancialAnalysisViewModel:
     score_audit_status: str = "SIN EVALUACIÓN"
     score_audit_summary: str = "Sin calificación seleccionada"
     score_audit_warning: str = ""
+    score_matrix_summary: str = ""
+    score_matrix_notes: str = ""
     indicator_reconciliations: tuple[IndicatorReconciliationRow, ...] = field(default_factory=tuple)
     rating_diagnostics: tuple[str, ...] = field(default_factory=tuple)
     diagnostics: tuple[str, ...] = field(default_factory=tuple)
