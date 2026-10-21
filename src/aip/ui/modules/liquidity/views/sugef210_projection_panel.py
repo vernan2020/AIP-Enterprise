@@ -1130,17 +1130,17 @@ class SUGEF210ProjectionPanel(QWidget):
         investment_sheet = workbook.create_sheet("Conciliacion inversiones")
         investment_sheet.append(self._INVESTMENT_RECONCILIATION_HEADERS)
         for row_index in range(self._investment_reconciliation.rowCount()):
-            cells: list[str | int | Decimal] = []
+            investment_cells: list[str | int | Decimal] = []
             for column in range(self._investment_reconciliation.columnCount()):
                 item = self._investment_reconciliation.item(row_index, column)
                 raw = item.text() if item is not None else ""
                 if column in (3, 4) and raw != "N/D":
-                    cells.append(int(raw))
+                    investment_cells.append(int(raw))
                 elif column == 5 and raw != "N/D":
-                    cells.append(Decimal(raw))
+                    investment_cells.append(Decimal(raw))
                 else:
-                    cells.append(safe(raw))
-            investment_sheet.append(tuple(cells))
+                    investment_cells.append(safe(raw))
+            investment_sheet.append(tuple(investment_cells))
 
         sight_sheet = workbook.create_sheet("Captaciones vista XML210")
         sight_sheet.append(
