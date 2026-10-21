@@ -234,7 +234,6 @@ def test_partial_xml_cashflow_excel_masks_unverified_other_source_zeros(
         panel.close()
 
 
-
 def test_export_preserves_negative_gap_and_funding_need_as_numeric_cells(
     qt_app, tmp_path, monkeypatch
 ):
