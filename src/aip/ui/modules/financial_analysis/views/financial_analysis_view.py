@@ -653,6 +653,7 @@ class FinancialAnalysisView(QWidget):
         self._score_audit_summary.setWordWrap(True)
         self._score_audit_summary.setStyleSheet("font-weight:700; color:#314A5E; font-size:11px;")
         audit_header.addWidget(self._score_audit_summary, 1)
+        self._score_audit_table: QTableWidget
         audit_export = QPushButton("Exportar auditoría CSV")
         audit_export.setToolTip(
             "Exporta los 13 indicadores, pesos, factores y diferencias para Excel."
