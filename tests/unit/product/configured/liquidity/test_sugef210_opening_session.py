@@ -967,9 +967,7 @@ def test_configured_custodian_coupon_enters_partial_cashflow_without_inferred_pr
         )
 
 
-def test_master_mutation_during_read_blocks_sight_and_coupon_evidence(
-    monkeypatch, tmp_path
-):
+def test_master_mutation_during_read_blocks_sight_and_coupon_evidence(monkeypatch, tmp_path):
     _configure(monkeypatch, tmp_path)
     from aip.product.configured.liquidity import sugef210_opening_session as module
 
@@ -993,4 +991,3 @@ def test_master_mutation_during_read_blocks_sight_and_coupon_evidence(
             approval_manifest=approval,
             bank_support_manifest=bank,
         )
-

@@ -268,4 +268,3 @@ def test_same_master_coupon_date_cannot_be_counted_twice_under_new_reference(tmp
     approval.write_text(json.dumps(doc), encoding="utf-8")
     with pytest.raises(ValueError, match="Duplicate coupon cash date"):
         _read(ledger, approval, custody)
-
