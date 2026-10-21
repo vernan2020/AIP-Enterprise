@@ -168,6 +168,16 @@ class RatingScoreAuditRow:
 
 
 @dataclass(frozen=True, slots=True)
+class MatrixPeerAuditRow:
+    entity_id: str
+    name: str
+    status: str
+    score: str
+    grade: str
+    missing: str
+
+
+@dataclass(frozen=True, slots=True)
 class RatingMatrixComparisonRow:
     indicator: str
     value: str
@@ -224,6 +234,7 @@ class FinancialAnalysisViewModel:
     score_matrix_summary: str = ""
     score_matrix_notes: str = ""
     score_matrix_rows: tuple[RatingMatrixComparisonRow, ...] = field(default_factory=tuple)
+    score_matrix_peer_rows: tuple[MatrixPeerAuditRow, ...] = field(default_factory=tuple)
     indicator_reconciliations: tuple[IndicatorReconciliationRow, ...] = field(default_factory=tuple)
     rating_diagnostics: tuple[str, ...] = field(default_factory=tuple)
     diagnostics: tuple[str, ...] = field(default_factory=tuple)
