@@ -107,7 +107,10 @@ class MatrixSUGEFAdapter:
             matched[canonical] = entity.entity_id
         missing = tuple(code for code in REFERENCE_AUGUST_2026_CODES if code not in matched)
         # Return in benchmark order, independent of SUGEF API response order.
-        return tuple(matched[code] for code in REFERENCE_AUGUST_2026_CODES if code in matched), missing
+        return (
+            tuple(matched[code] for code in REFERENCE_AUGUST_2026_CODES if code in matched),
+            missing,
+        )
 
     @classmethod
     def extract(
