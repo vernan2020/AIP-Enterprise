@@ -193,10 +193,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.self_test:
         if args.cutoff or args.approval or args.bank:
             parser.error("--self-test cannot be combined with institutional source arguments")
-        if (
-            os.environ.get("AIP_EXECUTION_MODE", "").upper() != "CONFIGURED"
-            or os.environ.get("AIP_DEMO_MODE_ENABLED", "").lower() not in {"false", "0"}
-        ):
+        if os.environ.get("AIP_EXECUTION_MODE", "").upper() != "CONFIGURED" or os.environ.get(
+            "AIP_DEMO_MODE_ENABLED", ""
+        ).lower() not in {"false", "0"}:
             outcome = {
                 "status": "BLOCKED_NOT_CONFIGURED",
                 "private_paths_and_values_redacted": True,

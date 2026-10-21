@@ -148,9 +148,7 @@ def test_inconsistent_event_lineage_rejected_by_operator_preflight(monkeypatch):
         raise AssertionError("Invalid institutional source count was accepted")
 
 
-def test_self_test_checks_live_qt_tabs_and_never_loads_contractual_sources(
-    monkeypatch, qt_app
-):
+def test_self_test_checks_live_qt_tabs_and_never_loads_contractual_sources(monkeypatch, qt_app):
     _configured(monkeypatch)
     monkeypatch.setattr(
         readiness,
@@ -166,9 +164,7 @@ def test_self_test_checks_live_qt_tabs_and_never_loads_contractual_sources(
     assert result["projection_regulatorily_certified"] is False
 
 
-def test_self_test_refuses_source_arguments_and_demo_configuration(
-    monkeypatch, qt_app, capsys
-):
+def test_self_test_refuses_source_arguments_and_demo_configuration(monkeypatch, qt_app, capsys):
     import pytest
 
     _configured(monkeypatch)
@@ -180,4 +176,3 @@ def test_self_test_refuses_source_arguments_and_demo_configuration(
     assert readiness.main(["--self-test"]) == 2
     status = capsys.readouterr().out
     assert "BLOCKED_NOT_CONFIGURED" in status
-
