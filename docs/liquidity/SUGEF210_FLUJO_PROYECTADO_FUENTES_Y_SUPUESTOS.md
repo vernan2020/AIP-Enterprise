@@ -242,3 +242,56 @@ de fórmulas. La hoja Control registra el número de eventos exportados y
 mostrados. Cambios de corte/escenario invalidan los datos visibles y su
 exportación. No se modifica la fórmula del GAP ni se convierte una fuente
 parcial en certificación integral.
+
+## Instalación y ejecución de la herramienta REAL V4.5.1 (Windows CMD)
+
+**No se instala Git en Windows ni se fusiona el PR ni se modifica el release.**
+Usar exclusivamente el paquete ZIP incremental verificado por GitHub Actions
+en `C:\\Proyectos\\AIP-V451-PREVIEW`. El ZIP se descarga desde el workflow
+**AIP V4.5.1 Preview Incremental ZIP**, se extrae fuera de la instalación y
+se ejecuta `INSTALAR_PREVIEW.cmd --dry-run` para comprobar la integridad.
+Con AIP cerrado, `INSTALAR_PREVIEW.cmd` aplica los cambios con respaldo
+automático; no modifica `.venv`, fuentes de datos, credenciales ni DuckDB.
+
+Desde **CMD**, en la carpeta PREVIEW:
+
+```bat
+cd /d C:\Proyectos\AIP-V451-PREVIEW
+VERIFICAR_LIQUIDEZ_SUGEF210_OPERATIVO.cmd --cutoff 2026-09-30
+```
+
+La verificación de solo lectura confirma los XML CONFÍA y Maestro exacto
+del corte, sin proyectar caja no autorizada. `SOURCE_READY_APPROVALS_REQUIRED`
+significa **fuentes detectadas, pendiente la conciliación**; no significa
+flujo certificado. `BLOCKED_...` significa que se necesita corregir una
+fuente, corte o autorización.
+
+Con archivos reales **independientes y aprobados** por Tesorería/ALCO:
+
+```bat
+VERIFICAR_LIQUIDEZ_SUGEF210_OPERATIVO.cmd --cutoff 2026-09-30 --scenario BASE --approval "RUTA_AUTORIZACION_REAL.json" --bank "RUTA_CONCILIACION_ICL_REAL.json"
+```
+
+Una salida `PARTIAL_GOVERNED_PROJECTION` confirma que se ejecutó
+el motor sobre las 17 bandas/34 filas; `PARTIAL_OPENING_ONLY_NO_FUTURE_FLOWS`
+indica caja inicial, pero sin eventos contractuales aprobados.
+No se imprimen rutas internas, certificados bancarios, importes o tokens.
+
+Para abrir **la misma herramienta AIP**, sin demos:
+
+```bat
+INICIAR_AIP_LIQUIDEZ_SUGEF210.cmd
+```
+
+Navegar a **Liquidez → Flujo proyectado · SUGEF 2-10**. Usar
+**Inspeccionar XML de inversiones** para el inventario y
+**Validar caja inicial XML + Tesorería/ICL** para seleccionar los dos
+archivos institucionales. La interfaz incluye conciliación de inversiones,
+captaciones a la vista, cobertura de fuentes y trazabilidad por operación.
+Un estado **PARCIAL** es correcto mientras falte cualquier perímetro.
+Para corte o escenario distinto se necesitan autorizaciones específicas.
+
+**Control operativo:** no se declara producción validada con datos reales
+hasta ejecutar estos comandos en el equipo que contiene los XML, el Maestro,
+el soporte de ICL y las conciliaciones originales y revisar sus resultados.
+
