@@ -126,11 +126,7 @@ class MatrixReferenceRatingService:
             measures: list[MatrixIndicatorResult] = []
             for definition in definitions:
                 code = definition.code
-                weight = (
-                    Decimal("6.67")
-                    if code in _PROFITABILITY
-                    else definition.weight_percent
-                )
+                weight = Decimal("6.67") if code in _PROFITABILITY else definition.weight_percent
                 cutoff = cutoffs.get(code)
                 level = RatingLevel.UNAVAILABLE
                 origin = "DATOS_SUGEF"
@@ -138,14 +134,18 @@ class MatrixReferenceRatingService:
                 value = entity.indicators.get(code)
                 if code == "PROPORTIONAL_SUPERVISION":
                     value = (
-                        Decimal("1") if entity.regulation_full else Decimal("0")
-                    ) if entity.regulation_full is not None else None
+                        (Decimal("1") if entity.regulation_full else Decimal("0"))
+                        if entity.regulation_full is not None
+                        else None
+                    )
                     if value is not None:
                         contribution = weight if value == Decimal("1") else Decimal("0")
                 elif code == "STATE_GUARANTEE":
                     value = (
-                        Decimal("1") if entity.state_guarantee else Decimal("0")
-                    ) if entity.state_guarantee is not None else None
+                        (Decimal("1") if entity.state_guarantee else Decimal("0"))
+                        if entity.state_guarantee is not None
+                        else None
+                    )
                     if value is not None:
                         contribution = weight if value == Decimal("1") else Decimal("0")
                 elif cutoff is not None and value is not None:
@@ -163,32 +163,34 @@ class MatrixReferenceRatingService:
                     origin = "EXCEPCION_EXCEL_DOCUMENTADA"
                 if code in _BINARY and contribution is not None:
                     level = (
-                        RatingLevel.OUTSTANDING
-                        if contribution == weight
-                        else RatingLevel.CRITICAL
+                        RatingLevel.OUTSTANDING if contribution == weight else RatingLevel.CRITICAL
                     )
                     origin = "CATALOGO_INSTITUCIONAL"
                 measures.append(
                     MatrixIndicatorResult(
-                        code=code, value=value,
+                        code=code,
+                        value=value,
                         p15=cutoff[0] if cutoff is not None else None,
                         midpoint=cutoff[1] if cutoff is not None else None,
                         p85=cutoff[2] if cutoff is not None else None,
-                        level=level, weight=weight, contribution=contribution,
+                        level=level,
+                        weight=weight,
+                        contribution=contribution,
                         origin=origin,
                     )
                 )
-            missing = tuple(
-                measure.code for measure in measures
-                if measure.contribution is None
-            )
+            missing = tuple(measure.code for measure in measures if measure.contribution is None)
             score = (
                 sum(
-                    (measure.contribution for measure in measures
-                     if measure.contribution is not None),
+                    (
+                        measure.contribution
+                        for measure in measures
+                        if measure.contribution is not None
+                    ),
                     start=Decimal("0"),
                 ).quantize(_FOUR_DP)
-                if not missing else None
+                if not missing
+                else None
             )
             output.append(
                 MatrixEntityResult(
@@ -206,8 +208,11 @@ class MatrixReferenceRatingService:
             default=None,
         )
         completed = tuple(
-            replace(item, grade=cls.grade(item.score, maximum))
-            if item.score is not None and maximum is not None else item
+            (
+                replace(item, grade=cls.grade(item.score, maximum))
+                if item.score is not None and maximum is not None
+                else item
+            )
             for item in output
         )
         return MatrixCohortResult(
@@ -215,16 +220,12 @@ class MatrixReferenceRatingService:
             score_maximum=maximum,
             peer_counts=peer_counts,
             lower_cutoffs={
-                code: values[0] if values is not None else None
-                for code, values in cutoffs.items()
+                code: values[0] if values is not None else None for code, values in cutoffs.items()
             },
             upper_cutoffs={
-                code: values[2] if values is not None else None
-                for code, values in cutoffs.items()
+                code: values[2] if values is not None else None for code, values in cutoffs.items()
             },
-            incomplete_entities=tuple(
-                item.entity_id for item in completed if item.score is None
-            ),
+            incomplete_entities=tuple(item.entity_id for item in completed if item.score is None),
         )
 
     @staticmethod
