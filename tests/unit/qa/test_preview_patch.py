@@ -122,3 +122,16 @@ def test_cmd_launcher_quotes_non_trailing_package_directory() -> None:
     assert installer.count('--package-root "%AIP_PATCH_ROOT%."') == 2
     assert '--package-root "%AIP_PATCH_ROOT%"' not in installer
     assert '--preview-root "%AIP_PREVIEW_ROOT%"' in installer
+
+
+def test_real_liquidity_operator_cmd_files_are_preview_whitelisted() -> None:
+    for name in (
+        "VERIFICAR_LIQUIDEZ_SUGEF210_OPERATIVO.cmd",
+        "INICIAR_AIP_LIQUIDEZ_SUGEF210.cmd",
+    ):
+        assert allowed(name)
+        assert validate_path(name) == Path(name)
+    assert not allowed("config/runtime.local.cmd")
+    with pytest.raises(UpdateRejected, match="forbidden"):
+        validate_path("config/runtime.local.cmd")
+
