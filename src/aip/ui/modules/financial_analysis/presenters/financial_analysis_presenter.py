@@ -32,6 +32,7 @@ from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model 
     RatingDimensionRow,
     RatingIndicatorRow,
     RatingMatrixComparisonRow,
+    MatrixPeerAuditRow,
     RatingScoreAuditRow,
 )
 
@@ -472,6 +473,21 @@ class FinancialAnalysisPresenter:
             )
             for measure in snapshot.reference_matrix_indicators
         )
+        matrix_peer_rows = tuple(
+            MatrixPeerAuditRow(
+                entity_id=peer.entity_id,
+                name=peer.entity_name,
+                status=(
+                    "Completo; cohorte aún no homologada"
+                    if peer.score is not None and peer.grade is None
+                    else "Completo" if peer.score is not None else "Incompleto"
+                ),
+                score=f"{peer.score:,.4f}" if peer.score is not None else "-",
+                grade=peer.grade or "Suspendida",
+                missing=", ".join(peer.missing_indicators) if peer.missing_indicators else "-",
+            )
+            for peer in snapshot.reference_matrix_peers
+        )
         reconciliations = tuple(
             IndicatorReconciliationRow(
                 indicator=item.label,
@@ -549,6 +565,7 @@ class FinancialAnalysisPresenter:
             ),
             score_matrix_notes="\n".join(snapshot.reference_matrix_diagnostics),
             score_matrix_rows=matrix_rows,
+            score_matrix_peer_rows=matrix_peer_rows,
             indicator_reconciliations=reconciliations,
             rating_diagnostics=rating.diagnostics if rating is not None else (),
             diagnostics=snapshot.diagnostics,
