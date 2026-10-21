@@ -71,6 +71,8 @@ class MatrixCohortResult:
     lower_cutoffs: Mapping[str, Decimal | None]
     upper_cutoffs: Mapping[str, Decimal | None]
     incomplete_entities: tuple[str, ...]
+    classification_status: str
+    expected_cohort_size: int | None
 
 
 class MatrixReferenceRatingService:
@@ -86,6 +88,7 @@ class MatrixReferenceRatingService:
         entities: tuple[MatrixEntityInput, ...],
         *,
         documented_liquidity_exceptions: frozenset[str] = frozenset(),
+        required_cohort_size: int | None = None,
     ) -> MatrixCohortResult:
         """Evaluate one period; overrides require explicit named entity IDs.
 
@@ -95,6 +98,10 @@ class MatrixReferenceRatingService:
         """
         if len({entity.entity_id for entity in entities}) != len(entities):
             raise ValueError("La cohorte tiene identificadores de entidad duplicados.")
+        if required_cohort_size is not None and required_cohort_size < _MIN_PEERS:
+            raise ValueError("Tamaño exigido de cohorte incompatible con percentiles.")
+        if required_cohort_size is not None and len(entities) > required_cohort_size:
+            raise ValueError("La cohorte contiene más entidades que el universo aprobado.")
         identifiers = {entity.entity_id for entity in entities}
         if documented_liquidity_exceptions - identifiers:
             raise ValueError("Excepción de liquidez ajena a la cohorte.")
@@ -203,9 +210,19 @@ class MatrixReferenceRatingService:
                     missing=missing,
                 )
             )
-        maximum = max(
-            (item.score for item in output if item.score is not None),
-            default=None,
+        # A relative letter grade is only meaningful if every defined peer
+        # and every indicator has been evaluated. Withhold the cohort maximum
+        # and all letters rather than silently using a biased partial maximum.
+        if required_cohort_size is not None and len(output) != required_cohort_size:
+            classification_status = "COHORTE_INCOMPLETA"
+        elif any(item.score is None for item in output):
+            classification_status = "INDICADORES_INCOMPLETOS"
+        else:
+            classification_status = "APTA"
+        maximum = (
+            max(item.score for item in output if item.score is not None)
+            if classification_status == "APTA"
+            else None
         )
         completed = tuple(
             (
@@ -226,6 +243,8 @@ class MatrixReferenceRatingService:
                 code: values[2] if values is not None else None for code, values in cutoffs.items()
             },
             incomplete_entities=tuple(item.entity_id for item in completed if item.score is None),
+            classification_status=classification_status,
+            expected_cohort_size=required_cohort_size,
         )
 
     @staticmethod
