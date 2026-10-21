@@ -14,7 +14,7 @@ from dataclasses import dataclass, replace
 from decimal import Decimal
 from typing import Mapping
 
-from aip.domain.financial_analysis.models import RatingDirection, RatingLevel
+from aip.domain.financial_analysis.models import RatingLevel
 from aip.domain.financial_analysis.ratings import FinancialEntityRatingService
 
 _FOUR_DP = Decimal("0.0001")
