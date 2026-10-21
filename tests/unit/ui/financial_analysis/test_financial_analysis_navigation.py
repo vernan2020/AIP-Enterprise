@@ -9,6 +9,7 @@ from PySide6.QtWidgets import QTableWidgetItem
 from aip.domain.financial_analysis.models import (
     FinancialAnalysisSnapshot,
     MatrixReferenceBreakdown,
+    MatrixReferencePeer,
     RatingLevel,
 )
 from aip.ui.modules.financial_analysis.presenters.financial_analysis_presenter import (
@@ -69,6 +70,7 @@ def test_financial_analysis_exposes_methodology_rating_tab(qt_app) -> None:
         "Indicadores y dimensiones",
         "Reconciliación",
         "Auditoría del puntaje",
+        "Cohorte metodológica",
     ]
     assert view._rating_heading.text() == "Calificación interna 08ME14-01 · datos SUGEF"
     assert view._rating_methodology.text() == "Metodología: 08ME14-01"
@@ -445,3 +447,38 @@ def test_matrix_breakdown_is_projected_to_user_without_inventing_a_grade() -> No
     assert vm.score_matrix_rows[0].delta_points == "-"
     assert "Puntaje provisional" in vm.score_matrix_summary
     assert "categoría suspendida" in vm.score_matrix_summary
+
+
+def test_matrix_cohort_tab_reports_per_entity_missing_sugef_inputs(qt_app) -> None:
+    snapshot = FinancialAnalysisSnapshot(
+        status="PARTIAL",
+        cutoff_date=date(2026, 9, 30),
+        selected_entity=None,
+        reference_matrix_coverage="2/38 entidades · Estado: COHORTE_INCOMPLETA",
+        reference_matrix_peers=(
+            MatrixReferencePeer(
+                entity_id="101", entity_name="COOPENAE", score=Decimal("60.833"),
+                grade=None, missing_indicators=(), status="COMPLETE",
+            ),
+            MatrixReferencePeer(
+                entity_id="102", entity_name="BANCO X", score=None, grade=None,
+                missing_indicators=("ROA", "LIQUIDITY_COVERAGE"), status="INCOMPLETE",
+            ),
+        ),
+    )
+    vm = FinancialAnalysisPresenter._from_snapshot(snapshot)
+    assert len(vm.score_matrix_peer_rows) == 2
+    assert vm.score_matrix_peer_rows[0].grade == "Suspendida"
+    assert vm.score_matrix_peer_rows[1].missing == "ROA, LIQUIDITY_COVERAGE"
+    view = FinancialAnalysisView(presenter=_Presenter())  # type: ignore[arg-type]
+    try:
+        view.bind_view_model(vm)
+        table = view._matrix_cohort_table
+        assert table.rowCount() == 2
+        assert table.columnCount() == 6
+        assert table.item(0, 4).text() == "Suspendida"
+        assert table.item(1, 5).text() == "ROA, LIQUIDITY_COVERAGE"
+        assert "Pares identificados: 2" in view._matrix_cohort_summary.text()
+    finally:
+        view.close()
+        qt_app.processEvents()
