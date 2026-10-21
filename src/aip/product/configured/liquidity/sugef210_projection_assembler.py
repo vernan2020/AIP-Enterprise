@@ -128,9 +128,7 @@ def assemble_partial_institutional_projection(
             for event in coupon_source.events
         ):
             raise ValueError("Only custody-evidenced investment coupon receipts are admissible")
-        groups.append(
-            ("APPROVED_MASTER_COUPONS", coupon_source.events, coupon_source.status)
-        )
+        groups.append(("APPROVED_MASTER_COUPONS", coupon_source.events, coupon_source.status))
         areas.add(LiquidityBalanceArea.ASSET)
         missing.append("UNSELECTED_INVESTMENT_COUPONS_REMAIN_UNATTESTED")
 

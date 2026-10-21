@@ -94,9 +94,7 @@ def _pairs(values: list[tuple[str, Any]]) -> dict[str, Any]:
     return record
 
 
-def _check_document(
-    path: Path, expected: str, *, max_bytes: int, name: str
-) -> str:
+def _check_document(path: Path, expected: str, *, max_bytes: int, name: str) -> str:
     if not path.is_file() or not 0 < path.stat().st_size <= max_bytes:
         raise ValueError("Missing, empty or oversized " + name)
     expected = _required(expected, name + " hash").lower()
@@ -211,18 +209,28 @@ def read_approved_master_coupons(
                 if not cutoff < when <= master.payment_date:
                     raise ValueError("Coupon date is outside future Master instrument life")
                 amount = _amount(row["amount"])
-                reconciliation = _required(row["nonduplication_reference"], "nonduplication_reference")
+                reconciliation = _required(
+                    row["nonduplication_reference"], "nonduplication_reference"
+                )
                 settlement = _required(row["settlement_reference"], "settlement_reference")
-                if reconciliation in used_reconciliations or reconciliation in prohibited_nonduplication_refs:
+                if (
+                    reconciliation in used_reconciliations
+                    or reconciliation in prohibited_nonduplication_refs
+                ):
                     raise ValueError("Coupon payment reuses a cashflow reconciliation reference")
                 used_reconciliations.add(reconciliation)
                 if (
-                    _required(approved.get("master_principal_reference"), "approved master row") != origin
+                    _required(approved.get("master_principal_reference"), "approved master row")
+                    != origin
                     or _date(approved.get("payment_date"), "approved payment date") != when
                     or _required(approved.get("currency"), "approved currency") != currency
                     or _amount(approved.get("amount")) != amount
-                    or _required(approved.get("settlement_reference"), "approved settlement") != settlement
-                    or _required(approved.get("nonduplication_reference"), "approved nonduplication") != reconciliation
+                    or _required(approved.get("settlement_reference"), "approved settlement")
+                    != settlement
+                    or _required(
+                        approved.get("nonduplication_reference"), "approved nonduplication"
+                    )
+                    != reconciliation
                 ):
                     raise ValueError("Coupon ledger and individual authorized payment differ")
                 events.append(

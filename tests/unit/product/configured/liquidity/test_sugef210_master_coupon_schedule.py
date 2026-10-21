@@ -191,7 +191,9 @@ def test_invalid_source_date_currency_amount_and_double_count_fail_closed(
     )
     with pytest.raises(ValueError, match=error):
         _read(
-            ledger, approval, custody,
+            ledger,
+            approval,
+            custody,
             prohibited_nonduplication_refs=protected,
         )
 

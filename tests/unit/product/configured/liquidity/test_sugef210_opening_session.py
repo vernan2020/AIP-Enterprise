@@ -856,6 +856,7 @@ def test_governed_plan_missing_allocation_or_unapproved_scenario_never_books(mon
             bank_support_manifest=bank,
         )
 
+
 def test_configured_custodian_coupon_enters_partial_cashflow_without_inferred_principal(
     monkeypatch, tmp_path
 ):
@@ -940,12 +941,14 @@ def test_configured_custodian_coupon_enters_partial_cashflow_without_inferred_pr
     )
     assert session.master_coupon_events_approved == 1
     assert session.master_principal_events_approved == 0
-    assert session.master_coupon_ledger_sha256 == hashlib.sha256(
-        coupon_ledger.read_bytes()
-    ).hexdigest()
+    assert (
+        session.master_coupon_ledger_sha256
+        == hashlib.sha256(coupon_ledger.read_bytes()).hexdigest()
+    )
     assert session.assembly.projection.source_flow_count == 1
     row = next(
-        item for item in session.assembly.projection.rows
+        item
+        for item in session.assembly.projection.rows
         if item.currency == "USD" and item.window.key == "M01"
     )
     assert row.asset_inflows == Decimal("5.25")
@@ -962,4 +965,3 @@ def test_configured_custodian_coupon_enters_partial_cashflow_without_inferred_pr
             approval_manifest=sight,
             bank_support_manifest=bank,
         )
-
