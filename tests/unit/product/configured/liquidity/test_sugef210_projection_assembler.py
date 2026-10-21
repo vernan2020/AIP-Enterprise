@@ -315,3 +315,44 @@ def test_certified_rtilb_and_selected_confia_contracts_cannot_duplicate_same_cas
             contractual=four_source,
             approved_xml_schedule=selected,
         )
+
+
+def test_event_audit_reconciles_signed_cash_by_currency_band_and_after_horizon():
+    events = (
+        _event("TEST-CREDIT-CRC", 31, "120.50"),
+        _event("TEST-DEPOSIT-CRC", 31, "32.75", area=LiquidityBalanceArea.LIABILITY),
+        _event("TEST-AFTER-YEAR", 366, "33.25", currency="USD"),
+    )
+    schedule = LiquiditySourceBridgeResult(
+        cashflows=events,
+        covered_balance_areas=frozenset({
+            LiquidityBalanceArea.ASSET, LiquidityBalanceArea.LIABILITY,
+        }),
+        source_status="CERTIFIED_CONTRACTUAL_DATES_ONLY_OFFBALANCE_NOT_INCLUDED",
+    )
+    assembled = assemble_partial_institutional_projection(
+        cutoff=CUTOFF,
+        scenario="BASE",
+        contractual=schedule,
+        opening_by_currency={"CRC": Decimal("50"), "USD": Decimal("10")},
+        opening_certifications={"CRC": "TEST-BANK-CRC", "USD": "TEST-BANK-USD"},
+        opening_nonduplication_reference="TEST-OPENING",
+    )
+    ledger = assembled.audited_events
+    assert len(ledger) == assembled.projection.source_flow_count == 3
+    assert tuple(event.reference for event in ledger) == (
+        "TEST-CREDIT-CRC", "TEST-DEPOSIT-CRC", "TEST-AFTER-YEAR",
+    )
+    assert ledger[0].source_group == "CERTIFIED_DATED_SOURCE_SCHEDULE"
+    assert ledger[0].band_key == "M01"
+    assert ledger[0].horizon_status == "IN_365D"
+    assert ledger[0].native_amount == Decimal("120.50")
+    assert ledger[1].side == LiquidityFlowSide.OUTFLOW
+    assert ledger[1].native_amount == Decimal("32.75")
+    assert ledger[2].band_key == "OUTSIDE_365D"
+    assert ledger[2].horizon_status == "AFTER_365D"
+    assert ledger[2].native_amount == Decimal("33.25")
+    assert assembled.projection.rows[12].net_flow == Decimal("87.75")
+    assert assembled.projection.excluded_out_of_horizon == 1
+    assert not assembled.projection.certified_comprehensive
+

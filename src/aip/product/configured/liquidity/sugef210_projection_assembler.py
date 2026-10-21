@@ -16,9 +16,11 @@ from aip.domain.liquidity.cashflow.services.sugef210_projection import (
     LiquidityAssumption,
     LiquidityBalanceArea,
     LiquidityEvidence,
+    LiquidityFlowSide,
     LiquidityProjectionFlow,
     LiquidityProjectionResult,
     project_sugef210,
+    sugef210_windows,
 )
 from aip.domain.liquidity.cashflow.services.sugef210_scenario_rules import (
     ScenarioGeneratedEvidence,
@@ -55,10 +57,30 @@ class LiquiditySourceReconciliation:
 
 
 @dataclass(frozen=True, slots=True)
+class LiquidityAuditedCashEvent:
+    """An approved individual future cash event, with native monetary provenance."""
+
+    source_group: str
+    source_status: str
+    reference: str
+    source_reference: str
+    currency: str
+    payment_date: date
+    native_amount: Decimal
+    area: LiquidityBalanceArea
+    side: LiquidityFlowSide
+    evidence: LiquidityEvidence
+    assumption_id: str | None
+    band_key: str
+    horizon_status: str
+
+
+@dataclass(frozen=True, slots=True)
 class InstitutionalLiquidityAssembly:
     projection: LiquidityProjectionResult
     source_reconciliations: tuple[LiquiditySourceReconciliation, ...]
     missing_institutional_evidence: tuple[str, ...]
+    audited_events: tuple[LiquidityAuditedCashEvent, ...] = ()
     status: str = "PARTIAL_INSTITUTIONAL_LIQUIDITY_NOT_CERTIFIED"
 
 
@@ -257,7 +279,9 @@ def assemble_partial_institutional_projection(
         missing.append("OPENING_CASH_UNAVAILABLE_OR_NOT_CERTIFIED")
 
     all_events: list[LiquidityProjectionFlow] = []
+    audit: list[LiquidityAuditedCashEvent] = []
     reconciliations: list[LiquiditySourceReconciliation] = []
+    windows = sugef210_windows(cutoff)
     seen: set[str] = set()
     for source_name, flows, status in groups:
         for flow in flows:
@@ -269,6 +293,27 @@ def assemble_partial_institutional_projection(
             if flow.payment_date < cutoff:
                 raise ValueError("Historical source flow cannot enter projected liquidity")
             all_events.append(flow)
+            band_key = next(
+                (window.key for window in windows if window.start <= flow.payment_date <= window.end),
+                "OUTSIDE_365D",
+            )
+            audit.append(
+                LiquidityAuditedCashEvent(
+                    source_group=source_name,
+                    source_status=status,
+                    reference=flow.reference,
+                    source_reference=flow.source,
+                    currency=flow.currency,
+                    payment_date=flow.payment_date,
+                    native_amount=flow.amount,
+                    area=flow.area,
+                    side=flow.side,
+                    evidence=flow.evidence,
+                    assumption_id=flow.assumption_id,
+                    band_key=band_key,
+                    horizon_status="AFTER_365D" if band_key == "OUTSIDE_365D" else "IN_365D",
+                )
+            )
         for currency in ("CRC", "USD"):
             selected = tuple(flow for flow in flows if flow.currency == currency)
             inside = tuple(
@@ -307,10 +352,49 @@ def assemble_partial_institutional_projection(
     inside_count = sum(row.event_count for row in projection.rows)
     if inside_count + projection.excluded_out_of_horizon != len(all_events):
         raise ValueError("Projected horizon does not reconcile source event counts")
+    if len(audit) != projection.source_flow_count:
+        raise ValueError("Source event audit does not reconcile to engine event count")
+    if sum(item.horizon_status == "AFTER_365D" for item in audit) != projection.excluded_out_of_horizon:
+        raise ValueError("Out-of-horizon audit count differs from projected liquidity")
+    for row in projection.rows:
+        matched = tuple(
+            item for item in audit
+            if item.band_key == row.window.key and item.currency == row.currency
+        )
+        if len(matched) != row.event_count:
+            raise ValueError("Band audit event counts do not reconcile to projection")
+        categories = (
+            (LiquidityBalanceArea.ASSET, LiquidityFlowSide.INFLOW, row.asset_inflows),
+            (LiquidityBalanceArea.ASSET, LiquidityFlowSide.OUTFLOW, row.asset_outflows),
+            (LiquidityBalanceArea.LIABILITY, LiquidityFlowSide.INFLOW, row.liability_inflows),
+            (LiquidityBalanceArea.LIABILITY, LiquidityFlowSide.OUTFLOW, row.liability_outflows),
+            (LiquidityBalanceArea.OFF_BALANCE, LiquidityFlowSide.INFLOW, row.off_balance_inflows),
+            (LiquidityBalanceArea.OFF_BALANCE, LiquidityFlowSide.OUTFLOW, row.off_balance_outflows),
+            (LiquidityBalanceArea.BUSINESS_EVENT, LiquidityFlowSide.INFLOW, row.other_inflows),
+            (LiquidityBalanceArea.BUSINESS_EVENT, LiquidityFlowSide.OUTFLOW, row.other_outflows),
+        )
+        for area, direction, expected in categories:
+            observed_amount = sum(
+                (
+                    item.native_amount for item in matched
+                    if item.area == area and item.side == direction
+                ),
+                Decimal(0),
+            )
+            if observed_amount != expected:
+                raise ValueError("Band audit native amounts differ from projected sources")
     if projection.certified_comprehensive:
         raise ValueError("Partial assembly must never claim full regulatory certification")
     return InstitutionalLiquidityAssembly(
         projection=projection,
         source_reconciliations=tuple(reconciliations),
         missing_institutional_evidence=tuple(sorted(set(missing))),
+        audited_events=tuple(
+            sorted(
+                audit,
+                key=lambda item: (
+                    item.payment_date, item.currency, item.source_group, item.reference
+                ),
+            )
+        ),
     )
