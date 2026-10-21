@@ -191,3 +191,29 @@ invalida el corte. Por seguridad, se rechaza registrar más de un cupón para la
 misma fila original del Maestro y fecha de pago, aunque las referencias del
 ledger sean distintas. Las pruebas ficticias de estos rechazos se limitan al
 entorno automatizado, nunca al PREVIEW institucional.
+
+## Pestaña y Excel: conciliación de inversiones por moneda
+
+La interfaz **Liquidez → Flujo proyectado → Conciliación inversiones** presenta, por
+separado para **CRC y USD**, tres conceptos de distinta naturaleza:
+
+- **Inversiones a la vista XML:** importes originales admitidos **únicamente en la apertura**,
+  una vez aprobadas disponibilidad, ausencia de restricciones y conciliación con Maestro/ICL.
+  Nunca se presentan como cobros de inversión futuros.
+- **Principal del Maestro:** únicamente vencimientos individualmente aprobados, con
+  eventos y monto dentro de 365 días, y número de eventos posteriores al horizonte.
+- **Cupones de Custodia:** únicamente pagos documentados y aprobados con fechas
+  contractuales; separados del principal y sin derivar intereses de tasas o precios.
+
+Las filas incluyen estado de cobertura parcial y SHA-256 de la fuente aplicable.
+Cuando falta aprobación o desglose sustentado, el importe o conteo es **N/D**,
+nunca un cero fabricado. Si la autorización de origen corresponde a solo una moneda,
+los registros de la otra moneda muestran cero **solo dentro de esa fuente ya
+reconciliada**; ello no demuestra cobertura total del portafolio.
+
+La exportación añade la hoja **Conciliacion inversiones** con importes y
+conteos como celdas numéricas, y `N/D` como texto; el control de fórmulas de
+Excel impide que un identificador no confiable se ejecute como fórmula.
+El cambio de fecha o escenario invalida también esta pestaña. Antes de cargar
+el flujo se reconcilian los eventos de principal y cupones de la sesión contra
+los conteos originales del ensamblador; una discrepancia bloquea la visualización.
