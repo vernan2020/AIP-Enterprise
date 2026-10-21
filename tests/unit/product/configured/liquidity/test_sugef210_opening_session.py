@@ -855,3 +855,111 @@ def test_governed_plan_missing_allocation_or_unapproved_scenario_never_books(mon
             approval_manifest=sight,
             bank_support_manifest=bank,
         )
+
+def test_configured_custodian_coupon_enters_partial_cashflow_without_inferred_principal(
+    monkeypatch, tmp_path
+):
+    _configure(monkeypatch, tmp_path)
+    from aip.product.configured.liquidity import sugef210_opening_session as module
+
+    sight, bank = _files(tmp_path)
+    master = tmp_path / "exact-cutoff-master.xlsx"
+    master_hash = hashlib.sha256(master.read_bytes()).hexdigest()
+
+    class ActualMasterReader:
+        @staticmethod
+        def read(*_args, **_kwargs):
+            return SimpleNamespace(
+                source_status="HEALTHY",
+                normalized_positions=[
+                    {
+                        "source_row": 5,
+                        "source_currency": "DOLAR",
+                        "maturity_date": date(2026, 12, 31),
+                        "source_values": {
+                            "Saldo Principal": "100.00",
+                            "Fecha Vencimiento": "2026-12-31",
+                        },
+                        "isin": "TEST-MASTER-COUPON-ISIN",
+                        "series": "TEST-MASTER-COUPON-SERIES",
+                    }
+                ],
+                detected_column_mapping={
+                    "principal_balance": "Saldo Principal",
+                    "maturity_date": "Fecha Vencimiento",
+                },
+            )
+
+    monkeypatch.setattr(module, "InstitutionalPortfolioMasterReader", ActualMasterReader)
+    custody = tmp_path / "custody-original-document.pdf"
+    custody.write_bytes(b"UNIT-TEST-CUSTODY-ORIGINAL-NOT-REAL")
+    coupon_ledger = tmp_path / "dated-coupon-ledger.csv"
+    record = {
+        "master_principal_reference": f"MASTER:{master_hash}:5:PRINCIPAL",
+        "payment_reference": "TEST-COUPON-CASH-001",
+        "payment_date": "2026-10-31",
+        "currency": "USD",
+        "amount": "5.25",
+        "settlement_reference": "TEST-CUSTODIAN-PAYABLE-001",
+        "nonduplication_reference": "TEST-COUPON-20261031-NONDOUBLE",
+    }
+    headers = tuple(record)
+    with coupon_ledger.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=headers)
+        writer.writeheader()
+        writer.writerow(record)
+    coupon_approval = tmp_path / "coupons-approved.json"
+    coupon_approval.write_text(
+        json.dumps(
+            {
+                "schema": "SUGEF210_MASTER_COUPONS_V1",
+                "cutoff": CUTOFF.isoformat(),
+                "master_sha256": master_hash,
+                "ledger_sha256": hashlib.sha256(coupon_ledger.read_bytes()).hexdigest(),
+                "custodian_document_sha256": hashlib.sha256(custody.read_bytes()).hexdigest(),
+                "custodian_approval_reference": "TEST-CUSTODY-INDEPENDENT-APPROVAL",
+                "treasury_settlement_approval": "TEST-TREASURY-COUPON-APPROVAL",
+                "nonduplication_approval": "TEST-ALCO-NONDOUBLE",
+                "approved_payment_records": [{**record, "explicitly_approved": True}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    manifest = json.loads(sight.read_text(encoding="utf-8"))
+    manifest["investment_coupon_schedule"] = {
+        "ledger_file": str(coupon_ledger),
+        "approval_file": str(coupon_approval),
+        "custodian_document_file": str(custody),
+    }
+    sight.write_text(json.dumps(manifest), encoding="utf-8")
+    session = run_configured_sight_opening(
+        cutoff=CUTOFF,
+        scenario="BASE",
+        approval_manifest=sight,
+        bank_support_manifest=bank,
+    )
+    assert session.master_coupon_events_approved == 1
+    assert session.master_principal_events_approved == 0
+    assert session.master_coupon_ledger_sha256 == hashlib.sha256(
+        coupon_ledger.read_bytes()
+    ).hexdigest()
+    assert session.assembly.projection.source_flow_count == 1
+    row = next(
+        item for item in session.assembly.projection.rows
+        if item.currency == "USD" and item.window.key == "M01"
+    )
+    assert row.asset_inflows == Decimal("5.25")
+    assert row.projected_liquidity == Decimal("90.50")
+    assert session.assembly.projection.status == "PARTIAL_EVIDENCE_NOT_CERTIFIED"
+    assert session.assembly.status == "PARTIAL_INSTITUTIONAL_LIQUIDITY_NOT_CERTIFIED"
+
+    # An altered custody document invalidates the whole configured session.
+    custody.write_bytes(b"UNAPPROVED-SUBSTITUTION")
+    with pytest.raises(ValueError, match="Custodian supporting document SHA-256"):
+        run_configured_sight_opening(
+            cutoff=CUTOFF,
+            scenario="BASE",
+            approval_manifest=sight,
+            bank_support_manifest=bank,
+        )
+
