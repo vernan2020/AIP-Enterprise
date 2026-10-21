@@ -26,6 +26,9 @@ def summarize_session(session: ConfiguredOpeningSession) -> dict[str, object]:
         "bank_document_sha256": session.bank_document_sha256,
         "sight_accounts_verified": session.sight_records_approved,
         "master_principal_events_approved": session.master_principal_events_approved,
+        "master_coupon_events_approved": session.master_coupon_events_approved,
+        "master_coupon_ledger_sha256": session.master_coupon_ledger_sha256,
+        "master_coupon_custodian_sha256": session.master_coupon_custodian_sha256,
         "credit_deposits_borrowing_payment_events_approved": (
             session.xml_contractual_events_approved
         ),

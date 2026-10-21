@@ -35,6 +35,9 @@ from aip.product.configured.liquidity.sight_investment_opening_bridge import (
 from aip.product.configured.liquidity.sugef210_dated_xml_contracts import (
     ApprovedXMLContractualSchedule,
 )
+from aip.product.configured.liquidity.sugef210_master_coupon_schedule import (
+    ApprovedMasterCouponSchedule,
+)
 from aip.product.configured.liquidity.sugef210_master_maturity_bridge import (
     MasterPrincipalEvidence,
 )
@@ -68,6 +71,7 @@ def assemble_partial_institutional_projection(
     contractual: LiquiditySourceBridgeResult | None = None,
     approved_xml_schedule: ApprovedXMLContractualSchedule | None = None,
     approved_plan: ApprovedFinancialPlanEvents | None = None,
+    approved_investment_coupons: ApprovedMasterCouponSchedule | None = None,
     approved_behavioral: ScenarioGeneratedEvidence | None = None,
     off_balance_flows: Iterable[LiquidityProjectionFlow] = (),
     off_balance_certification_reference: str | None = None,
@@ -108,6 +112,27 @@ def assemble_partial_institutional_projection(
             groups.append(("MASTER_RECOGNIZED_PRINCIPAL", master.flows, master.status))
             areas.add(LiquidityBalanceArea.ASSET)
         missing.append("INVESTMENT_COUPONS_AND_UNRESOLVED_MATURITIES")
+
+    if approved_investment_coupons is not None:
+        coupon_source = approved_investment_coupons
+        if coupon_source.cutoff != cutoff:
+            raise ValueError("Approved coupon source cutoff differs from projection")
+        if not coupon_source.events or not coupon_source.ledger_sha256:
+            raise ValueError("Empty or non-evidenced custodian coupon schedule")
+        if master is not None and coupon_source.master_sha256 != master.master_sha256:
+            raise ValueError("Coupon evidence differs from admitted principal Master hash")
+        if any(
+            event.area != LiquidityBalanceArea.ASSET
+            or event.evidence != LiquidityEvidence.CONTRACTUAL
+            or event.side.value != "INFLOW"
+            for event in coupon_source.events
+        ):
+            raise ValueError("Only custody-evidenced investment coupon receipts are admissible")
+        groups.append(
+            ("APPROVED_MASTER_COUPONS", coupon_source.events, coupon_source.status)
+        )
+        areas.add(LiquidityBalanceArea.ASSET)
+        missing.append("UNSELECTED_INVESTMENT_COUPONS_REMAIN_UNATTESTED")
 
     if contractual is not None and approved_xml_schedule is not None:
         raise ValueError(

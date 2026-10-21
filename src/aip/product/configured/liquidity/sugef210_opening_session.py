@@ -39,6 +39,9 @@ from aip.product.configured.liquidity.sugef210_dated_xml_contracts import (
 from aip.product.configured.liquidity.sugef210_demand_deposit_runoff import (
     read_approved_demand_deposit_runoff,
 )
+from aip.product.configured.liquidity.sugef210_master_coupon_schedule import (
+    read_approved_master_coupons,
+)
 from aip.product.configured.liquidity.sugef210_master_maturity_bridge import (
     build_master_principal_evidence,
 )
@@ -70,6 +73,9 @@ class ConfiguredOpeningSession:
     bank_support_sha256: str
     bank_document_sha256: str
     master_principal_events_approved: int = 0
+    master_coupon_events_approved: int = 0
+    master_coupon_ledger_sha256: str | None = None
+    master_coupon_custodian_sha256: str | None = None
     xml_contractual_events_approved: int = 0
     contingent_scenario_events_approved: int = 0
     offbalance_commitments_reviewed: int = 0
@@ -253,6 +259,7 @@ def run_configured_sight_opening(
     reconciled_opening = dict(verified.opening_by_currency)
     admitted_master = None
     principal_reference = None
+    source_principal = None
     master_nonduplication_refs: set[str] = set()
     principal_authorization = policy.get("master_principal_authorization")
     if principal_authorization is not None:
@@ -405,6 +412,57 @@ def run_configured_sight_opening(
             contractually_scheduled_ordinals=fixed_deposits,
             already_in_opening=frozenset(verified.included_source_references),
         )
+    approved_coupons = None
+    coupon_policy = policy.get("investment_coupon_schedule")
+    if coupon_policy is not None:
+        if not isinstance(coupon_policy, dict):
+            raise ValueError("Custodian coupon authorization must be structured")
+        coupon_ledger = Path(_required_text(coupon_policy, "ledger_file"))
+        coupon_approval = Path(_required_text(coupon_policy, "approval_file"))
+        coupon_custody = Path(_required_text(coupon_policy, "custodian_document_file"))
+        other_sources = {
+            approval_path.resolve(),
+            support_path.resolve(),
+            master_path.resolve(),
+            raw_support.resolve(),
+        }
+        if contract_policy is not None:
+            other_sources.add(ledger_path.resolve())
+        if contingent_policy is not None:
+            other_sources.update((register_file.resolve(), policy_file.resolve()))
+        if demand_policy is not None:
+            other_sources.add(demand_approval.resolve())
+        coupon_paths = (coupon_ledger, coupon_approval, coupon_custody)
+        if (
+            any(not item.is_absolute() or item.resolve() in other_sources for item in coupon_paths)
+            or len({item.resolve() for item in coupon_paths}) != 3
+        ):
+            raise ValueError("Coupon approval, ledger and custody must use independent files")
+        master_hash = _hash_local(master_path)
+        if source_principal is None:
+            source_principal = build_master_principal_evidence(
+                cutoff=cutoff,
+                master_sha256=master_hash,
+                positions=read.normalized_positions,
+                principal_source_header=read.detected_column_mapping.get("principal_balance"),
+                maturity_source_header=read.detected_column_mapping.get("maturity_date"),
+            )
+        prohibited_refs = set(master_nonduplication_refs)
+        prohibited_refs.update(verified.included_source_references)
+        if xml_contractual is not None:
+            prohibited_refs.update(event.reference for event in xml_contractual.events)
+            prohibited_refs.update(event.source for event in xml_contractual.events)
+        if contract_policy is not None:
+            prohibited_refs.add(_required_text(contract_policy, "nonduplication_reference"))
+        approved_coupons = read_approved_master_coupons(
+            source=source_principal,
+            cutoff=cutoff,
+            master_sha256=master_hash,
+            ledger_file=coupon_ledger,
+            approval_file=coupon_approval,
+            custodian_document_file=coupon_custody,
+            prohibited_nonduplication_refs=frozenset(prohibited_refs),
+        )
     approved_scenarios = tuple(
         evidence
         for evidence in (
@@ -445,6 +503,10 @@ def run_configured_sight_opening(
             used_paths.update((register_file.resolve(), policy_file.resolve()))
         if demand_policy is not None:
             used_paths.add(demand_approval.resolve())
+        if coupon_policy is not None:
+            used_paths.update(
+                (coupon_ledger.resolve(), coupon_approval.resolve(), coupon_custody.resolve())
+            )
         if (
             not plan_source.is_absolute()
             or not plan_approval.is_absolute()
@@ -454,6 +516,8 @@ def run_configured_sight_opening(
         ):
             raise ValueError("Plan workbook and authorization must be independent source files")
         contractual_refs = set(master_nonduplication_refs)
+        if approved_coupons is not None:
+            contractual_refs.update(approved_coupons.nonduplication_references)
         if xml_contractual is not None:
             contractual_refs.update({event.reference for event in xml_contractual.events})
             contractual_refs.update({event.source for event in xml_contractual.events})
@@ -474,6 +538,7 @@ def run_configured_sight_opening(
         master_maturity_recognition_reference=principal_reference,
         approved_xml_schedule=xml_contractual,
         approved_plan=approved_plan,
+        approved_investment_coupons=approved_coupons,
         approved_behavioral=governed_scenario,
         verified_sight_opening=verified,
         opening_by_currency=reconciled_opening,
@@ -490,6 +555,7 @@ def run_configured_sight_opening(
         + (len(offbalance.evidence.flows) if offbalance is not None else 0)
         + (len(demand_runoff.evidence.flows) if demand_runoff is not None else 0)
         + (len(approved_plan.events) if approved_plan is not None else 0)
+        + (len(approved_coupons.events) if approved_coupons is not None else 0)
     )
     if assembly.projection.source_flow_count != expected_events:
         raise ValueError("Master and XML source payment events did not reconcile")
@@ -503,6 +569,15 @@ def run_configured_sight_opening(
         bank_document_sha256=bank_hash,
         master_principal_events_approved=(
             len(admitted_master.flows) if admitted_master is not None else 0
+        ),
+        master_coupon_events_approved=(
+            len(approved_coupons.events) if approved_coupons is not None else 0
+        ),
+        master_coupon_ledger_sha256=(
+            approved_coupons.ledger_sha256 if approved_coupons is not None else None
+        ),
+        master_coupon_custodian_sha256=(
+            approved_coupons.custodian_sha256 if approved_coupons is not None else None
         ),
         xml_contractual_events_approved=(
             len(xml_contractual.events) if xml_contractual is not None else 0
