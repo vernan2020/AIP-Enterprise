@@ -5,6 +5,7 @@ name: One-shot SUGEF210 Black Formatting
 # Normalize approved source manifest parsing, signed bank opening and duplicate safeguards.
 # Normalize the independently approved financial plan overlay and regression tests.
 # Normalize custody-evidenced investment coupons without modifying certified formulas.
+# Recheck coupon anti-double-counting and Master read-stability regression formatting.
 
 on:
   push:
