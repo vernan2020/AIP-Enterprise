@@ -739,6 +739,37 @@ class FinancialAnalysisView(QWidget):
         audit_layout.addWidget(self._matrix_comparison_table, 1)
         self._rating_content_tabs.addTab(audit, "Auditoría del puntaje")
 
+        cohort = QWidget()
+        cohort_layout = QVBoxLayout(cohort)
+        cohort_layout.setContentsMargins(8, 8, 8, 8)
+        cohort_layout.setSpacing(6)
+        cohort_actions = QHBoxLayout()
+        self._matrix_cohort_summary = QLabel("Sin datos de cohorte")
+        self._matrix_cohort_summary.setWordWrap(True)
+        cohort_actions.addWidget(self._matrix_cohort_summary, 1)
+        self._matrix_cohort_table: QTableWidget
+        cohort_export = QPushButton("Exportar cohorte CSV")
+        cohort_export.setToolTip("Exporta las entidades, notas y faltantes para Excel.")
+        cohort_export.clicked.connect(
+            lambda: save_table_csv_dialog(
+                self, self._matrix_cohort_table, "auditoria_cohorte_08ME14.csv"
+            )
+        )
+        cohort_actions.addWidget(cohort_export)
+        cohort_layout.addLayout(cohort_actions)
+        self._matrix_cohort_table = self._table(
+            ["Entidad SUGEF", "ID SUGEF", "Estado", "Puntaje", "Categoría", "Faltantes"]
+        )
+        cohort_header = self._matrix_cohort_table.horizontalHeader()
+        cohort_header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        cohort_header.setSectionResizeMode(5, QHeaderView.ResizeMode.Stretch)
+        for column in (1, 2, 3, 4):
+            cohort_header.setSectionResizeMode(
+                column, QHeaderView.ResizeMode.ResizeToContents
+            )
+        cohort_layout.addWidget(self._matrix_cohort_table, 1)
+        self._rating_content_tabs.addTab(cohort, "Cohorte metodológica")
+
         layout.addWidget(self._rating_content_tabs, 1)
 
         self._rating_notes = QLabel()
@@ -1173,6 +1204,22 @@ class FinancialAnalysisView(QWidget):
                 self._rating_indicator_table.setItem(row_index, column, item)
 
         self._score_audit_summary.setText(view_model.score_audit_summary)
+        self._matrix_cohort_summary.setText(
+            view_model.score_matrix_summary + " · Pares identificados: "
+            + str(len(view_model.score_matrix_peer_rows))
+        )
+        self._matrix_cohort_summary.setToolTip(view_model.score_matrix_notes)
+        self._matrix_cohort_table.setRowCount(len(view_model.score_matrix_peer_rows))
+        for index, peer in enumerate(view_model.score_matrix_peer_rows):
+            for column, value in enumerate(
+                (peer.name, peer.entity_id, peer.status, peer.score, peer.grade, peer.missing)
+            ):
+                cell = QTableWidgetItem(value)
+                if column == 3:
+                    cell.setTextAlignment(
+                        Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+                    )
+                self._matrix_cohort_table.setItem(index, column, cell)
         self._matrix_comparison_table.setRowCount(len(view_model.score_matrix_rows))
         for index, item in enumerate(view_model.score_matrix_rows):
             values = (
