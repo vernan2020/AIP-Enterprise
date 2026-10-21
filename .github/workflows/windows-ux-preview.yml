@@ -51,6 +51,12 @@ jobs:
           AIP_EXECUTION_MODE: CONFIGURED
           AIP_DEMO_MODE_ENABLED: 'false'
         run: python scripts/qa/smoke_configured_workspaces.py
+      - name: Self-test real SUGEF210 Qt panel without institutional data
+        env:
+          AIP_EXECUTION_MODE: CONFIGURED
+          AIP_DEMO_MODE_ENABLED: 'false'
+          QT_QPA_PLATFORM: offscreen
+        run: python -m aip.product.configured.liquidity.sugef210_operational_readiness --self-test
       - name: Open workspaces and capture screenshots
         run: python scripts/qa/capture_windows_preview.py
       - name: Upload screenshots
