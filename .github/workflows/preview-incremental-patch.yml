@@ -67,6 +67,9 @@ jobs:
               members = set(archive.namelist())
               assert "manifest.json" in members
               assert "INSTALAR_PREVIEW.cmd" in members
+              assert "payload/VERIFICAR_LIQUIDEZ_SUGEF210_OPERATIVO.cmd" in members
+              assert "payload/INICIAR_AIP_LIQUIDEZ_SUGEF210.cmd" in members
+              assert "payload/src/aip/product/configured/liquidity/sugef210_operational_readiness.py" in members
               manifest = json.loads(archive.read("manifest.json"))
               assert len(manifest["files"]) > 100
               for item in manifest["files"]:
