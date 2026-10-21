@@ -158,8 +158,9 @@ class FinancialAnalysisService:
             )
             notes = []
             if absent_entities:
-                notes.append("Entidades ausentes del universo homologado: "
-                             + ", ".join(absent_entities))
+                notes.append(
+                    "Entidades ausentes del universo homologado: " + ", ".join(absent_entities)
+                )
             if reference.classification_status != "APTA":
                 notes.append(
                     "Calificación matricial suspendida: el máximo de una cohorte "
