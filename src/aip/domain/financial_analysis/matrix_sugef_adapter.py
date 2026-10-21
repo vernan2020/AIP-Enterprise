@@ -162,5 +162,7 @@ class MatrixSUGEFAdapter:
         if len(ids) < 3:
             raise ValueError("Cohorte SUGEF insuficiente para calcular percentiles.")
         inputs = cls.extract(lines, cutoff_date=cutoff_date, cohort_ids=ids)
-        result = MatrixReferenceRatingService.evaluate(inputs)
+        result = MatrixReferenceRatingService.evaluate(
+            inputs, required_cohort_size=len(REFERENCE_AUGUST_2026_CODES)
+        )
         return result, missing
