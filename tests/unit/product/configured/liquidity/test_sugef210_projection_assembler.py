@@ -325,9 +325,12 @@ def test_event_audit_reconciles_signed_cash_by_currency_band_and_after_horizon()
     )
     schedule = LiquiditySourceBridgeResult(
         cashflows=events,
-        covered_balance_areas=frozenset({
-            LiquidityBalanceArea.ASSET, LiquidityBalanceArea.LIABILITY,
-        }),
+        covered_balance_areas=frozenset(
+            {
+                LiquidityBalanceArea.ASSET,
+                LiquidityBalanceArea.LIABILITY,
+            }
+        ),
         source_status="CERTIFIED_CONTRACTUAL_DATES_ONLY_OFFBALANCE_NOT_INCLUDED",
     )
     assembled = assemble_partial_institutional_projection(
@@ -341,7 +344,9 @@ def test_event_audit_reconciles_signed_cash_by_currency_band_and_after_horizon()
     ledger = assembled.audited_events
     assert len(ledger) == assembled.projection.source_flow_count == 3
     assert tuple(event.reference for event in ledger) == (
-        "TEST-CREDIT-CRC", "TEST-DEPOSIT-CRC", "TEST-AFTER-YEAR",
+        "TEST-CREDIT-CRC",
+        "TEST-DEPOSIT-CRC",
+        "TEST-AFTER-YEAR",
     )
     assert ledger[0].source_group == "CERTIFIED_DATED_SOURCE_SCHEDULE"
     assert ledger[0].band_key == "M01"
@@ -355,4 +360,3 @@ def test_event_audit_reconciles_signed_cash_by_currency_band_and_after_horizon()
     assert assembled.projection.rows[12].net_flow == Decimal("87.75")
     assert assembled.projection.excluded_out_of_horizon == 1
     assert not assembled.projection.certified_comprehensive
-

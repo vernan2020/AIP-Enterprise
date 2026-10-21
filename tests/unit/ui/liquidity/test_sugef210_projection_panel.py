@@ -811,4 +811,3 @@ def test_tampered_event_lineage_rejected_before_loading_projection(qt_app):
         assert panel._event_audit_table.rowCount() == 0
     finally:
         panel.close()
-

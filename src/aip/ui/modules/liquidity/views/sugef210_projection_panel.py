@@ -36,12 +36,12 @@ from aip.product.configured.liquidity.financial_plan_source import (
     FinancialPlanSourceAudit,
     read_financial_plan_assumptions,
 )
-from aip.product.configured.liquidity.sugef210_projection_assembler import (
-    LiquidityAuditedCashEvent,
-)
 from aip.product.configured.liquidity.sugef210_opening_session import (
     ConfiguredOpeningSession,
     run_configured_sight_opening,
+)
+from aip.product.configured.liquidity.sugef210_projection_assembler import (
+    LiquidityAuditedCashEvent,
 )
 from aip.product.configured.liquidity.sugef210_source_audit_cli import (
     inspect_xml_investment_source,
@@ -862,7 +862,10 @@ class SUGEF210ProjectionPanel(QWidget):
         projection = session.assembly.projection
         if len(events) != projection.source_flow_count:
             raise ValueError("Event lineage count differs from approved projection")
-        if sum(e.horizon_status == "AFTER_365D" for e in events) != projection.excluded_out_of_horizon:
+        if (
+            sum(e.horizon_status == "AFTER_365D" for e in events)
+            != projection.excluded_out_of_horizon
+        ):
             raise ValueError("Event lineage beyond 365 days differs from projection")
         if len({e.reference for e in events}) != len(events):
             raise ValueError("Duplicated institutional cash-event lineage")
@@ -880,18 +883,19 @@ class SUGEF210ProjectionPanel(QWidget):
                 ):
                     raise ValueError("Cash-event outside-horizon classification inconsistent")
             elif event.horizon_status == "IN_365D":
-                window = next(
-                    (w for w in projection.windows if w.key == event.band_key), None
-                )
+                window = next((w for w in projection.windows if w.key == event.band_key), None)
                 if window is None or not window.start <= event.payment_date <= window.end:
                     raise ValueError("Cash-event band classification inconsistent")
             else:
                 raise ValueError("Unknown cash-event horizon classification")
         for row in projection.rows:
-            if sum(
-                event.band_key == row.window.key and event.currency == row.currency
-                for event in events
-            ) != row.event_count:
+            if (
+                sum(
+                    event.band_key == row.window.key and event.currency == row.currency
+                    for event in events
+                )
+                != row.event_count
+            ):
                 raise ValueError("Event lineage does not reconcile to 34 projected bands")
         return events
 

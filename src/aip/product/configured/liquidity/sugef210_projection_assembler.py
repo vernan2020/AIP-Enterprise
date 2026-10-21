@@ -294,7 +294,11 @@ def assemble_partial_institutional_projection(
                 raise ValueError("Historical source flow cannot enter projected liquidity")
             all_events.append(flow)
             band_key = next(
-                (window.key for window in windows if window.start <= flow.payment_date <= window.end),
+                (
+                    window.key
+                    for window in windows
+                    if window.start <= flow.payment_date <= window.end
+                ),
                 "OUTSIDE_365D",
             )
             audit.append(
@@ -354,11 +358,15 @@ def assemble_partial_institutional_projection(
         raise ValueError("Projected horizon does not reconcile source event counts")
     if len(audit) != projection.source_flow_count:
         raise ValueError("Source event audit does not reconcile to engine event count")
-    if sum(item.horizon_status == "AFTER_365D" for item in audit) != projection.excluded_out_of_horizon:
+    if (
+        sum(item.horizon_status == "AFTER_365D" for item in audit)
+        != projection.excluded_out_of_horizon
+    ):
         raise ValueError("Out-of-horizon audit count differs from projected liquidity")
     for row in projection.rows:
         matched = tuple(
-            item for item in audit
+            item
+            for item in audit
             if item.band_key == row.window.key and item.currency == row.currency
         )
         if len(matched) != row.event_count:
@@ -376,7 +384,8 @@ def assemble_partial_institutional_projection(
         for area, direction, expected in categories:
             observed_amount = sum(
                 (
-                    item.native_amount for item in matched
+                    item.native_amount
+                    for item in matched
                     if item.area == area and item.side == direction
                 ),
                 Decimal(0),
@@ -393,7 +402,10 @@ def assemble_partial_institutional_projection(
             sorted(
                 audit,
                 key=lambda item: (
-                    item.payment_date, item.currency, item.source_group, item.reference
+                    item.payment_date,
+                    item.currency,
+                    item.source_group,
+                    item.reference,
                 ),
             )
         ),
