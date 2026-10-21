@@ -63,6 +63,11 @@ REFERENCE_AUGUST_2026_CODES: tuple[str, ...] = (
     "BANCO PROMERICA",
     "DAVIBANK",
 )
+# Public institution-name aliases found in the matrix's Parámetros sheet.
+# Reject arbitrary prefix matches, which could silently swap peer entities.
+REFERENCE_AUGUST_2026_ALIASES: dict[str, str] = {
+    "COOPEANDE NO 1": "COOPEANDE",
+}
 
 
 class MatrixSUGEFAdapter:
@@ -88,17 +93,21 @@ class MatrixSUGEFAdapter:
             if line.statement_date == cutoff_date
         }
         matched: dict[str, str] = {}
+        allowed = frozenset(REFERENCE_AUGUST_2026_CODES)
         for entity in entities.values():
-            stem = re.split(r"\s+[-–—]\s+", entity.name, maxsplit=1)[0]
+            # SUGEF names are generally "CÓDIGO - Razón social"; DAVIBANK
+            # also appears with no space before the hyphen.
+            stem = re.split(r"\s*[-–—]\s*", entity.name, maxsplit=1)[0]
             normalized = cls._code(stem)
-            for expected in REFERENCE_AUGUST_2026_CODES:
-                if normalized == expected or normalized.startswith(expected + " "):
-                    if expected in matched:
-                        raise ValueError(f"Duplicidad de catálogo: {expected}")
-                    matched[expected] = entity.entity_id
-                    break
+            canonical = REFERENCE_AUGUST_2026_ALIASES.get(normalized, normalized)
+            if canonical not in allowed:
+                continue
+            if canonical in matched:
+                raise ValueError(f"Duplicidad de catálogo: {canonical}")
+            matched[canonical] = entity.entity_id
         missing = tuple(code for code in REFERENCE_AUGUST_2026_CODES if code not in matched)
-        return tuple(matched.values()), missing
+        # Return in benchmark order, independent of SUGEF API response order.
+        return tuple(matched[code] for code in REFERENCE_AUGUST_2026_CODES if code in matched), missing
 
     @classmethod
     def extract(
