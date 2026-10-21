@@ -71,11 +71,13 @@ class RatingScoreAuditService:
     """Audita la nota usando las definiciones vigentes, sin escribir valores."""
 
     CRITERION_WARNING = (
-        "Conciliación de codificación: la matriz de referencia representa "
-        "1=regulación plena y 0=proporcional; AIP representa 0=no aplica "
-        "supervisión proporcional y 1=sí aplica. El significado económico "
-        "y los 5 puntos coinciden cuando el catálogo institucional es correcto. "
-        "Revisar la fuente binaria para cada entidad."
+        "Documento 08ME14-01 V01: sección 3.6.1 codifica 1=sí aplica "
+        "supervisión proporcional; nota de ponderación 4.3 codifica "
+        "1=regulación plena. Existe contradicción textual entre ambas "
+        "definiciones. AIP asigna 5 puntos a NO proporcional según su "
+        "catálogo; validar su respaldo institucional antes de certificar. "
+        "La escala 4.4 de la metodología es FIJA; la escala dinámica "
+        "de la matriz Excel es solo un escenario de conciliación."
     )
 
     @classmethod
