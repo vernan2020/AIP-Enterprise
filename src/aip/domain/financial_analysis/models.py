@@ -210,6 +210,16 @@ class MatrixReferenceBreakdown:
 
 
 @dataclass(frozen=True, slots=True)
+class MatrixReferencePeer:
+    entity_id: str
+    entity_name: str
+    score: Decimal | None
+    grade: str | None
+    missing_indicators: tuple[str, ...]
+    status: str
+
+
+@dataclass(frozen=True, slots=True)
 class FinancialAnalysisSnapshot:
     status: str
     cutoff_date: date | None
@@ -230,6 +240,7 @@ class FinancialAnalysisSnapshot:
     reference_matrix_maximum: Decimal | None = None
     reference_matrix_coverage: str = "Sin cotejo"
     reference_matrix_diagnostics: tuple[str, ...] = field(default_factory=tuple)
+    reference_matrix_peers: tuple[MatrixReferencePeer, ...] = field(default_factory=tuple)
     reference_matrix_indicators: tuple[MatrixReferenceBreakdown, ...] = field(default_factory=tuple)
     indicator_reconciliations: tuple[FinancialIndicatorReconciliation, ...] = field(
         default_factory=tuple
