@@ -730,9 +730,10 @@ class SUGEF210ProjectionPanel(QWidget):
         worker.finished.connect(self._release_opening_worker)
         worker.start()
 
-    def _fill_investment_reconciliation(self, session: ConfiguredOpeningSession) -> None:
-        """Separate signed-off opening investment cash from dated future coupons/principal."""
-        self._investment_reconciliation.setRowCount(0)
+    def _investment_reconciliation_rows(
+        self, session: ConfiguredOpeningSession
+    ) -> tuple[tuple[str, ...], ...]:
+        """Validate original-currency source evidence before updating the UI."""
         if (
             session.cutoff != self._cutoff
             or session.scenario != self._scenario.currentText()
@@ -770,10 +771,10 @@ class SUGEF210ProjectionPanel(QWidget):
             for currency, amount in sight_amounts.items()
         ) or len(sight_amounts) != len(session.sight_added_by_currency):
             raise ValueError("Original-currency sight investment additions invalid")
+        rows: list[tuple[str, ...]] = []
         for currency in ("CRC", "USD"):
             sight = sight_amounts.get(currency)
-            self._append(
-                self._investment_reconciliation,
+            rows.append(
                 (
                     "Inversiones a la vista XML",
                     "APERTURA · no flujo futuro",
@@ -798,8 +799,7 @@ class SUGEF210ProjectionPanel(QWidget):
                 ),
             ):
                 reconciled = by_source.get((name, currency))
-                self._append(
-                    self._investment_reconciliation,
+                rows.append(
                     (
                         name,
                         label,
@@ -814,6 +814,7 @@ class SUGEF210ProjectionPanel(QWidget):
                         digest if reconciled and digest else "N/D",
                     ),
                 )
+        return tuple(rows)
 
     def _receive_governed_opening(
         self, cutoff: date, scenario: str, session: ConfiguredOpeningSession
@@ -822,10 +823,12 @@ class SUGEF210ProjectionPanel(QWidget):
             return
         if session.cutoff != cutoff or session.scenario != scenario:
             raise ValueError("Loaded opening cutoff or scenario does not match the request")
-        # Validate the source/currency audit before changing the displayed waterfall.
-        self._fill_investment_reconciliation(session)
+        # Fail closed on source-level mismatches before changing the visible forecast.
+        investment_rows = self._investment_reconciliation_rows(session)
         self.present_governed_projection(session.assembly.projection)
-        self._fill_investment_reconciliation(session)
+        self._investment_reconciliation.setRowCount(0)
+        for values in investment_rows:
+            self._append(self._investment_reconciliation, values)
         self._demand_deposit_reconciliation.setRowCount(0)
         for (
             account,
