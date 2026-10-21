@@ -24,6 +24,7 @@ from aip.domain.financial_analysis.models import (
     MarketCompositionPoint,
     MarketCompositionSeries,
     MatrixReferenceBreakdown,
+    MatrixReferencePeer,
 )
 from aip.domain.financial_analysis.return_on_assets import ReturnOnAssetsService
 from aip.domain.financial_analysis.sugef_ratings import (
@@ -141,6 +142,7 @@ class FinancialAnalysisService:
         reference_coverage = "Cohorte de referencia no disponible"
         reference_diagnostics: tuple[str, ...] = ()
         reference_indicators: tuple[MatrixReferenceBreakdown, ...] = ()
+        reference_peers: tuple[MatrixReferencePeer, ...] = ()
         try:
             reference, absent_entities = MatrixSUGEFAdapter.validate_reference_cohort(
                 operational_lines, effective_date
@@ -166,6 +168,17 @@ class FinancialAnalysisService:
                     )
                     for item in selected_reference.indicators
                 )
+            reference_peers = tuple(
+                MatrixReferencePeer(
+                    entity_id=peer.entity_id,
+                    entity_name=peer.name,
+                    score=peer.score,
+                    grade=peer.grade,
+                    missing_indicators=peer.missing,
+                    status=peer.status,
+                )
+                for peer in reference.entities
+            )
             reference_maximum = reference.score_maximum
             reference_coverage = (
                 f"{len(reference.entities)}/38 entidades de matriz, "
@@ -239,6 +252,7 @@ class FinancialAnalysisService:
             reference_matrix_coverage=reference_coverage,
             reference_matrix_diagnostics=reference_diagnostics,
             reference_matrix_indicators=reference_indicators,
+            reference_matrix_peers=reference_peers,
             indicator_reconciliations=reconciliations,
             diagnostics=tuple(coverage_diagnostics),
             source_files=source_files,
