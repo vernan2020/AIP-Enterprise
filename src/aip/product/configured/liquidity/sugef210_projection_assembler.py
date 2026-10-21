@@ -366,9 +366,7 @@ def assemble_partial_institutional_projection(
     # Aggregate the admitted ledger once. Avoid rescanning every source event for
     # all 34 bands and eight types of liquidity flow (272 repeated traversals).
     audit_counts: dict[tuple[str, str], int] = {}
-    audit_amounts: dict[
-        tuple[str, str, LiquidityBalanceArea, LiquidityFlowSide], Decimal
-    ] = {}
+    audit_amounts: dict[tuple[str, str, LiquidityBalanceArea, LiquidityFlowSide], Decimal] = {}
     for item in audit:
         if item.horizon_status != "IN_365D":
             continue

@@ -370,11 +370,7 @@ def test_large_native_event_ledger_reconciles_all_34_bands_and_preserves_decimal
             1 + n % 365,
             "0.01",
             currency="CRC" if n % 2 == 0 else "USD",
-            area=(
-                LiquidityBalanceArea.ASSET
-                if n % 3
-                else LiquidityBalanceArea.LIABILITY
-            ),
+            area=(LiquidityBalanceArea.ASSET if n % 3 else LiquidityBalanceArea.LIABILITY),
         )
         for n in range(2040)
     ) + (_event("LEDGER-AFTER-365", 366, "2.99", currency="USD"),)
@@ -405,21 +401,12 @@ def test_large_native_event_ledger_reconciles_all_34_bands_and_preserves_decimal
         )
         assert row.event_count == len(candidates)
         assert row.asset_inflows == sum(
-            (
-                event.amount
-                for event in candidates
-                if event.area == LiquidityBalanceArea.ASSET
-            ),
+            (event.amount for event in candidates if event.area == LiquidityBalanceArea.ASSET),
             Decimal(0),
         )
         assert row.liability_outflows == sum(
-            (
-                event.amount
-                for event in candidates
-                if event.area == LiquidityBalanceArea.LIABILITY
-            ),
+            (event.amount for event in candidates if event.area == LiquidityBalanceArea.LIABILITY),
             Decimal(0),
         )
     assert result.audited_events[-1].band_key == "OUTSIDE_365D"
     assert not result.projection.certified_comprehensive
-

@@ -892,9 +892,7 @@ class SUGEF210ProjectionPanel(QWidget):
         # after the worker returns, without repeatedly scanning the full ledger.
         valid_windows = {window.key: window for window in projection.windows}
         audit_counts: dict[tuple[str, str], int] = {}
-        audit_amounts: dict[
-            tuple[str, str, LiquidityBalanceArea, LiquidityFlowSide], Decimal
-        ] = {}
+        audit_amounts: dict[tuple[str, str, LiquidityBalanceArea, LiquidityFlowSide], Decimal] = {}
         for event in events:
             if (
                 not event.native_amount.is_finite()
