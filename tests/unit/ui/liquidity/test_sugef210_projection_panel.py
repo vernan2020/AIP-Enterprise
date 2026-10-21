@@ -886,6 +886,7 @@ def test_readiness_hint_requires_exact_master_and_never_activates_opening(qt_app
     panel = SUGEF210ProjectionPanel()
     try:
         panel._date.setDate(QDate(2026, 9, 30))
+
         def inventory(master_status: str):
             return {
                 "status": "ACCOUNT_LEVEL_EVIDENCE_ONLY_NO_AVAILABLE_CASH",
@@ -894,6 +895,7 @@ def test_readiness_hint_requires_exact_master_and_never_activates_opening(qt_app
                 "accounts": [],
                 "master_review_status": master_status,
             }
+
         panel._receive(panel._cutoff, inventory("MASTER_NOT_CONFIGURED"))
         assert "Maestro exacto no validado" in panel._status.text()
         assert panel._governed_projection is None
@@ -903,4 +905,3 @@ def test_readiness_hint_requires_exact_master_and_never_activates_opening(qt_app
         assert panel._governed_projection is None
     finally:
         panel.close()
-
