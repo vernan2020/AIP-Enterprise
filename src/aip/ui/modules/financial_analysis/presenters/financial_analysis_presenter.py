@@ -468,7 +468,7 @@ class FinancialAnalysisPresenter:
                         f"({snapshot.reference_matrix_grade})"
                         if snapshot.reference_matrix_grade is not None
                         else f"Puntaje provisional {snapshot.reference_matrix_score:,.4f}; "
-                             "categoría suspendida"
+                        "categoría suspendida"
                     )
                     if snapshot.reference_matrix_score is not None
                     else "Sin puntaje ni categoría reproducible"
