@@ -381,7 +381,9 @@ class FinancialAnalysisPresenter:
                     level=cls._level_label(item.expected_level.value),
                     points=str(item.points) if item.points is not None else "-",
                     weight=f"{item.weight:,.3f}%",
-                    factor=f"{item.factor * Decimal('100'):,.0f}%" if item.factor is not None else "-",
+                    factor=(
+                        f"{item.factor * Decimal('100'):,.0f}%" if item.factor is not None else "-"
+                    ),
                     expected=f"{item.expected:,.3f}" if item.expected is not None else "-",
                     reported=f"{item.reported:,.3f}" if item.reported is not None else "-",
                     difference=f"{item.difference:+,.3f}" if item.difference is not None else "-",
@@ -391,16 +393,19 @@ class FinancialAnalysisPresenter:
                 )
                 for item in score_audit.rows
             )
-            if score_audit is not None else ()
+            if score_audit is not None
+            else ()
         )
         if score_audit is not None:
             recomputed = (
                 f"{score_audit.recomputed_score:,.3f}"
-                if score_audit.recomputed_score is not None else "-"
+                if score_audit.recomputed_score is not None
+                else "-"
             )
             score_audit_summary = (
                 f"Verificación: {score_audit.status} · Recalculado: {recomputed} "
-                f"· AIP: {rating.score:,.3f}" if rating.score is not None
+                f"· AIP: {rating.score:,.3f}"
+                if rating.score is not None
                 else f"Verificación: {score_audit.status} · Recalculado: {recomputed} · Sin nota emitida"
             )
             if score_audit.issues:
@@ -463,7 +468,8 @@ class FinancialAnalysisPresenter:
                     if snapshot.reference_matrix_score is not None
                     else "Sin nota reproducible"
                 )
-                + " · " + snapshot.reference_matrix_coverage
+                + " · "
+                + snapshot.reference_matrix_coverage
                 + (
                     f" · Máximo cohorte: {snapshot.reference_matrix_maximum:,.4f}"
                     if snapshot.reference_matrix_maximum is not None
