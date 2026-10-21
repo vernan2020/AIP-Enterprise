@@ -15,7 +15,6 @@ from aip.domain.financial_analysis.models import (
     EntityFinancialSummary,
     EntityRatingSummary,
     FinancialAnalysisSnapshot,
-    MatrixReferenceBreakdown,
     FinancialEntity,
     FinancialMetric,
     FinancialMetricHistoryPoint,
@@ -24,6 +23,7 @@ from aip.domain.financial_analysis.models import (
     FinancialStatementType,
     MarketCompositionPoint,
     MarketCompositionSeries,
+    MatrixReferenceBreakdown,
 )
 from aip.domain.financial_analysis.return_on_assets import ReturnOnAssetsService
 from aip.domain.financial_analysis.sugef_ratings import (
