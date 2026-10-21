@@ -415,14 +415,15 @@ class FinancialAnalysisPresenter:
         else:
             score_audit_summary = "Sin calificación seleccionada"
             score_audit_warning = ""
-        aip_indicators = {
-            item.code: item for item in rating.indicators
-        } if rating is not None else {}
+        aip_indicators = (
+            {item.code: item for item in rating.indicators} if rating is not None else {}
+        )
         matrix_rows = tuple(
             RatingMatrixComparisonRow(
                 indicator=(
                     aip_indicators[measure.code].label
-                    if measure.code in aip_indicators else measure.code
+                    if measure.code in aip_indicators
+                    else measure.code
                 ),
                 value=cls._rating_value(
                     measure.value,
@@ -437,7 +438,8 @@ class FinancialAnalysisPresenter:
                         aip_indicators[measure.code].percentile_15,
                         aip_indicators[measure.code].direction.value,
                     )
-                    if measure.code in aip_indicators else "-"
+                    if measure.code in aip_indicators
+                    else "-"
                 ),
                 matrix_p15=cls._rating_value(measure.p15, "HIGHER_IS_BETTER"),
                 aip_p85=(
@@ -445,7 +447,8 @@ class FinancialAnalysisPresenter:
                         aip_indicators[measure.code].percentile_85,
                         aip_indicators[measure.code].direction.value,
                     )
-                    if measure.code in aip_indicators else "-"
+                    if measure.code in aip_indicators
+                    else "-"
                 ),
                 matrix_p85=cls._rating_value(measure.p85, "HIGHER_IS_BETTER"),
                 matrix_weight=f"{measure.weight:,.3f}%",
@@ -456,8 +459,7 @@ class FinancialAnalysisPresenter:
                     else "-"
                 ),
                 matrix_points=(
-                    f"{measure.contribution:,.4f}"
-                    if measure.contribution is not None else "-"
+                    f"{measure.contribution:,.4f}" if measure.contribution is not None else "-"
                 ),
                 delta_points=(
                     f"{measure.contribution - aip_indicators[measure.code].contribution:+,.4f}"
@@ -535,7 +537,8 @@ class FinancialAnalysisPresenter:
                     f" · Diferencia matriz – AIP: "
                     f"{snapshot.reference_matrix_score - rating.score:+,.4f} puntos"
                     if snapshot.reference_matrix_score is not None
-                    and rating is not None and rating.score is not None
+                    and rating is not None
+                    and rating.score is not None
                     else ""
                 )
                 + (
