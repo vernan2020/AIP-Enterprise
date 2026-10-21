@@ -217,3 +217,28 @@ Excel impide que un identificador no confiable se ejecute como fórmula.
 El cambio de fecha o escenario invalida también esta pestaña. Antes de cargar
 el flujo se reconcilian los eventos de principal y cupones de la sesión contra
 los conteos originales del ensamblador; una discrepancia bloquea la visualización.
+
+## Auditoría individual por evento y banda (17 × 2)
+
+La sesión gobernada conserva cada evento reconocido del motor con la referencia
+individual de operación, grupo y referencia de la fuente, fecha, importe en
+moneda original, área contable, entrada/salida, evidencia, ID de supuesto
+aprobado y banda asignada. El estado `OUTSIDE_365D / AFTER_365D` identifica
+pagos posteriores al horizonte y evita asignarlos artificialmente al último
+trimestre. Los registros de inversiones a la vista añadidos a la apertura no
+son eventos futuros y **no** se incluyen en esta lista.
+
+Antes de presentar el resultado se verifican los 34 renglones: conteos exactos
+y ocho categorías (entradas/salidas de activos, pasivos, fuera de balance y
+negocio), en CRC y USD sin compensación entre monedas. Las diferencias
+bloquean el ensamblaje. La interfaz valida además referencia única, moneda,
+importe positivo, estado de horizonte y conteos antes de modificar el tablero.
+
+La pestaña **Trazabilidad por operación** muestra los primeros 300 flujos
+ordenados por fecha y moneda, para evitar latencia excesiva. La hoja Excel
+**Trazabilidad eventos** exporta **todos** los eventos admitidos, con importe
+original en celda numérica y referencias de origen escapadas contra inyección
+de fórmulas. La hoja Control registra el número de eventos exportados y
+mostrados. Cambios de corte/escenario invalidan los datos visibles y su
+exportación. No se modifica la fórmula del GAP ni se convierte una fuente
+parcial en certificación integral.
