@@ -5,11 +5,11 @@ from dataclasses import replace
 from datetime import date
 from decimal import Decimal, DivisionByZero, InvalidOperation
 
-from aip.domain.financial_analysis.rating_score_audit import RatingScoreAuditService
 from aip.domain.financial_analysis.models import (
     FinancialMetricHistorySeries,
     FinancialStatementLine,
 )
+from aip.domain.financial_analysis.rating_score_audit import RatingScoreAuditService
 from aip.product.configured.services.configured_financial_analysis_service import (
     ConfiguredFinancialAnalysisService,
     FinancialAnalysisApplicationSnapshot,
