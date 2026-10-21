@@ -158,7 +158,10 @@ def read_approved_master_coupons(
     )
     custody_hash = _check_document(
         custody_path,
-        _required(authorization.get("custodian_document_sha256"), "custodian_document_sha256"),
+        _required(
+            authorization.get("custodian_document_sha256"),
+            "custodian_document_sha256",
+        ),
         max_bytes=_MAX_CUSTODY,
         name="Custodian supporting document",
     )
