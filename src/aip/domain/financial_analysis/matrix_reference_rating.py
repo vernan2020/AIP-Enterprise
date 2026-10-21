@@ -1,7 +1,7 @@
 """Reproduce the August-2026 Excel 08ME14-01 valuation independently.
 
 The reference is the workbook "Matriz Evaluacion Indicadores AGOSTO 2026 2":
-P15/P85 inclusive interpolation; the lower ROA/ROE cutoff is floored at zero;
+P15/P85 inclusive interpolation; lower cutoffs of the three profitability ratios are floored at zero;
 three profitability weights are 6.67 points, not 20/3; classification uses the
 maximum completed entity score in the SAME cohort and month.
 
@@ -20,7 +20,7 @@ from aip.domain.financial_analysis.ratings import FinancialEntityRatingService
 _FOUR_DP = Decimal("0.0001")
 _MIN_PEERS = 3
 _PROFITABILITY = frozenset({"MARGIN_INTERMEDIATION", "ROA", "ROE"})
-_FLOORED_LOWER = frozenset({"ROA", "ROE"})
+_FLOORED_LOWER = frozenset({"MARGIN_INTERMEDIATION", "ROA", "ROE"})
 _BINARY = frozenset({"PROPORTIONAL_SUPERVISION", "STATE_GUARANTEE"})
 _FACTORS = {
     RatingLevel.OUTSTANDING: Decimal("1"),
