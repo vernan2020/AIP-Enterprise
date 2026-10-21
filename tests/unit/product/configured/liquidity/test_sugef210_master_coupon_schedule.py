@@ -229,6 +229,7 @@ def test_coupon_source_master_cutoff_and_document_independence(tmp_path):
             custodian_document_file=custody,
         )
 
+
 def test_custody_ledger_cannot_drop_approved_coupon_or_repeat_payment(tmp_path):
     ledger, approval, custody, row, doc = _source(tmp_path)
     doc["approved_payment_records"].append(
@@ -250,4 +251,3 @@ def test_custody_ledger_cannot_drop_approved_coupon_or_repeat_payment(tmp_path):
     approval.write_text(json.dumps(doc), encoding="utf-8")
     with pytest.raises(ValueError, match="Duplicate investment coupon payment reference"):
         _read(ledger, approval, custody)
-
