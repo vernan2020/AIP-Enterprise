@@ -190,7 +190,11 @@ class RatingScoreAuditService:
     @staticmethod
     def _recalculate(item, definition) -> tuple[RatingLevel, Decimal | None, str]:
         if item.direction is RatingDirection.BINARY:
-            rule = "Binario: aplica regulación plena (0)=5 puntos; garantía estatal (1)=5."
+            rule = (
+                "Sin supervisión proporcional (0) = aporte completo."
+                if item.code == "PROPORTIONAL_SUPERVISION"
+                else "Garantía del Estado (1) = aporte completo."
+            )
             if item.value not in (Decimal("0"), Decimal("1")) or definition is None:
                 return RatingLevel.UNAVAILABLE, None, rule
             factor = (
@@ -207,8 +211,12 @@ class RatingScoreAuditService:
             if item.direction is RatingDirection.HIGHER_IS_BETTER
             else "P15 / punto medio / P85; menor es mejor."
         )
-        if any(v is None for v in (item.value, item.percentile_15,
-                                    item.midpoint, item.percentile_85)):
+        if (
+            item.value is None
+            or item.percentile_15 is None
+            or item.midpoint is None
+            or item.percentile_85 is None
+        ):
             return RatingLevel.UNAVAILABLE, None, rule
         value = item.value
         lower = item.percentile_15
