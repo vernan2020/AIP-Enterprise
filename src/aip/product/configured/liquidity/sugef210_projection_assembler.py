@@ -363,13 +363,22 @@ def assemble_partial_institutional_projection(
         != projection.excluded_out_of_horizon
     ):
         raise ValueError("Out-of-horizon audit count differs from projected liquidity")
+    # Aggregate the admitted ledger once. Avoid rescanning every source event for
+    # all 34 bands and eight types of liquidity flow (272 repeated traversals).
+    audit_counts: dict[tuple[str, str], int] = {}
+    audit_amounts: dict[
+        tuple[str, str, LiquidityBalanceArea, LiquidityFlowSide], Decimal
+    ] = {}
+    for item in audit:
+        if item.horizon_status != "IN_365D":
+            continue
+        group = (item.currency, item.band_key)
+        audit_counts[group] = audit_counts.get(group, 0) + 1
+        key = (item.currency, item.band_key, item.area, item.side)
+        audit_amounts[key] = audit_amounts.get(key, Decimal(0)) + item.native_amount
     for row in projection.rows:
-        matched = tuple(
-            item
-            for item in audit
-            if item.band_key == row.window.key and item.currency == row.currency
-        )
-        if len(matched) != row.event_count:
+        group = (row.currency, row.window.key)
+        if audit_counts.get(group, 0) != row.event_count:
             raise ValueError("Band audit event counts do not reconcile to projection")
         categories = (
             (LiquidityBalanceArea.ASSET, LiquidityFlowSide.INFLOW, row.asset_inflows),
@@ -382,15 +391,8 @@ def assemble_partial_institutional_projection(
             (LiquidityBalanceArea.BUSINESS_EVENT, LiquidityFlowSide.OUTFLOW, row.other_outflows),
         )
         for area, direction, expected in categories:
-            observed_amount = sum(
-                (
-                    item.native_amount
-                    for item in matched
-                    if item.area == area and item.side == direction
-                ),
-                Decimal(0),
-            )
-            if observed_amount != expected:
+            key = (row.currency, row.window.key, area, direction)
+            if audit_amounts.get(key, Decimal(0)) != expected:
                 raise ValueError("Band audit native amounts differ from projected sources")
     if projection.certified_comprehensive:
         raise ValueError("Partial assembly must never claim full regulatory certification")

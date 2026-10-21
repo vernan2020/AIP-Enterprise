@@ -888,6 +888,13 @@ class SUGEF210ProjectionPanel(QWidget):
             raise ValueError("Event lineage beyond 365 days differs from projection")
         if len({e.reference for e in events}) != len(events):
             raise ValueError("Duplicated institutional cash-event lineage")
+        # O(events + 34 bands): retain a second fail-closed verification
+        # after the worker returns, without repeatedly scanning the full ledger.
+        valid_windows = {window.key: window for window in projection.windows}
+        audit_counts: dict[tuple[str, str], int] = {}
+        audit_amounts: dict[
+            tuple[str, str, LiquidityBalanceArea, LiquidityFlowSide], Decimal
+        ] = {}
         for event in events:
             if (
                 not event.native_amount.is_finite()
@@ -902,19 +909,17 @@ class SUGEF210ProjectionPanel(QWidget):
                 ):
                     raise ValueError("Cash-event outside-horizon classification inconsistent")
             elif event.horizon_status == "IN_365D":
-                window = next((w for w in projection.windows if w.key == event.band_key), None)
+                window = valid_windows.get(event.band_key)
                 if window is None or not window.start <= event.payment_date <= window.end:
                     raise ValueError("Cash-event band classification inconsistent")
+                count_key = (event.currency, event.band_key)
+                audit_counts[count_key] = audit_counts.get(count_key, 0) + 1
+                key = (event.currency, event.band_key, event.area, event.side)
+                audit_amounts[key] = audit_amounts.get(key, Decimal(0)) + event.native_amount
             else:
                 raise ValueError("Unknown cash-event horizon classification")
         for row in projection.rows:
-            if (
-                sum(
-                    event.band_key == row.window.key and event.currency == row.currency
-                    for event in events
-                )
-                != row.event_count
-            ):
+            if audit_counts.get((row.currency, row.window.key), 0) != row.event_count:
                 raise ValueError("Event lineage does not reconcile to 34 projected bands")
             categories = (
                 (LiquidityBalanceArea.ASSET, LiquidityFlowSide.INFLOW, row.asset_inflows),
@@ -939,18 +944,8 @@ class SUGEF210ProjectionPanel(QWidget):
                 ),
             )
             for area, direction, expected in categories:
-                observed = sum(
-                    (
-                        event.native_amount
-                        for event in events
-                        if event.band_key == row.window.key
-                        and event.currency == row.currency
-                        and event.area == area
-                        and event.side == direction
-                    ),
-                    Decimal(0),
-                )
-                if observed != expected:
+                key = (row.currency, row.window.key, area, direction)
+                if audit_amounts.get(key, Decimal(0)) != expected:
                     raise ValueError("Event lineage native amounts differ from projection")
         return events
 
