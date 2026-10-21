@@ -719,17 +719,23 @@ class FinancialAnalysisView(QWidget):
         audit_layout.addLayout(matrix_header)
         self._matrix_comparison_table = self._table(
             [
-                "Indicador", "Valor", "P15 AIP", "P15 Matriz",
-                "P85 AIP", "P85 Matriz", "Peso Matriz",
-                "Puntos AIP", "Puntos Matriz", "Diferencia", "Fuente Matriz",
+                "Indicador",
+                "Valor",
+                "P15 AIP",
+                "P15 Matriz",
+                "P85 AIP",
+                "P85 Matriz",
+                "Peso Matriz",
+                "Puntos AIP",
+                "Puntos Matriz",
+                "Diferencia",
+                "Fuente Matriz",
             ]
         )
         matrix_columns = self._matrix_comparison_table.horizontalHeader()
         matrix_columns.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         for column in range(1, 11):
-            matrix_columns.setSectionResizeMode(
-                column, QHeaderView.ResizeMode.ResizeToContents
-            )
+            matrix_columns.setSectionResizeMode(column, QHeaderView.ResizeMode.ResizeToContents)
         audit_layout.addWidget(self._matrix_comparison_table, 1)
         self._rating_content_tabs.addTab(audit, "Auditoría del puntaje")
 
@@ -1170,9 +1176,16 @@ class FinancialAnalysisView(QWidget):
         self._matrix_comparison_table.setRowCount(len(view_model.score_matrix_rows))
         for index, item in enumerate(view_model.score_matrix_rows):
             values = (
-                item.indicator, item.value, item.aip_p15, item.matrix_p15,
-                item.aip_p85, item.matrix_p85, item.matrix_weight,
-                item.aip_points, item.matrix_points, item.delta_points,
+                item.indicator,
+                item.value,
+                item.aip_p15,
+                item.matrix_p15,
+                item.aip_p85,
+                item.matrix_p85,
+                item.matrix_weight,
+                item.aip_points,
+                item.matrix_points,
+                item.delta_points,
                 item.matrix_origin,
             )
             for column, value in enumerate(values):
