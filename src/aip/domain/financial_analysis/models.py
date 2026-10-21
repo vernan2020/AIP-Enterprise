@@ -197,6 +197,19 @@ class FinancialAccountCatalogEntry:
 
 
 @dataclass(frozen=True, slots=True)
+class MatrixReferenceBreakdown:
+    code: str
+    value: Decimal | None
+    p15: Decimal | None
+    midpoint: Decimal | None
+    p85: Decimal | None
+    weight: Decimal
+    contribution: Decimal | None
+    level: RatingLevel
+    origin: str
+
+
+@dataclass(frozen=True, slots=True)
 class FinancialAnalysisSnapshot:
     status: str
     cutoff_date: date | None
@@ -217,6 +230,9 @@ class FinancialAnalysisSnapshot:
     reference_matrix_maximum: Decimal | None = None
     reference_matrix_coverage: str = "Sin cotejo"
     reference_matrix_diagnostics: tuple[str, ...] = field(default_factory=tuple)
+    reference_matrix_indicators: tuple[MatrixReferenceBreakdown, ...] = field(
+        default_factory=tuple
+    )
     indicator_reconciliations: tuple[FinancialIndicatorReconciliation, ...] = field(
         default_factory=tuple
     )
