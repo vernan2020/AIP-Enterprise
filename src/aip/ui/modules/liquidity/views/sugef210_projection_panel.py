@@ -7,6 +7,7 @@ numbers and does not pretend incomplete source coverage is a complete forecast.
 from __future__ import annotations
 
 from datetime import date
+from decimal import Decimal
 
 from PySide6.QtCore import QDate, Qt, QThread, Signal
 from PySide6.QtWidgets import (
@@ -911,7 +912,13 @@ class SUGEF210ProjectionPanel(QWidget):
             metadata.append(("supuestos_trazables", ", ".join(projection.assumption_ids)))
         metadata.append(("nota", "Identificadores no prueban titularidad ni retiro disponible"))
 
-        def safe(value: object) -> str:
+        def safe(value: object) -> str | Decimal:
+            # Preserve monetary values as numeric Excel cells, including negative GAPs.
+            # Escape only untrusted strings that Excel could interpret as formulas.
+            if isinstance(value, Decimal):
+                if not value.is_finite():
+                    raise ValueError("Nonfinite liquidity amount cannot be exported")
+                return value
             content = "" if value is None else str(value)
             return "'" + content if content.startswith(("=", "+", "-", "@")) else content
 
@@ -1026,7 +1033,7 @@ class SUGEF210ProjectionPanel(QWidget):
             )
         )
         for row_index in range(self._demand_deposit_reconciliation.rowCount()):
-            native_cells: list[str] = []
+            native_cells: list[str | Decimal] = []
             for column in range(self._demand_deposit_reconciliation.columnCount()):
                 cell = self._demand_deposit_reconciliation.item(row_index, column)
                 native_cells.append(safe(cell.text()) if cell is not None else "")
@@ -1035,7 +1042,7 @@ class SUGEF210ProjectionPanel(QWidget):
         perimeter = workbook.create_sheet("Fuentes contractuales XML")
         perimeter.append(self._XML_PERIMETER_HEADERS)
         for index in range(self._xml_perimeters.rowCount()):
-            cells: list[str] = []
+            cells: list[str | Decimal] = []
             for column in range(len(self._XML_PERIMETER_HEADERS)):
                 cell = self._xml_perimeters.item(index, column)
                 cells.append(safe(cell.text()) if cell is not None else "")

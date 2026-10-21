@@ -218,11 +218,71 @@ def test_partial_xml_cashflow_excel_masks_unverified_other_source_zeros(
             sheet = workbook["Flujo proyectado 365d"]
             # CRC starts at Excel row 2, then 31-60d at zero-based band index 12.
             row = 2 + 12
-            assert sheet.cell(row, 7).value == "125"
+            assert sheet.cell(row, 7).value == 125
+            assert sheet.cell(row, 7).data_type == "n"
             assert sheet.cell(row, 8).value == "N/D"
             assert sheet.cell(row, 10).value == "N/D"
             assert sheet.cell(row, 12).value == "N/D"
-            assert sheet.cell(row, 15).value == "125"
+            assert sheet.cell(row, 15).value == 125
+            assert sheet.cell(row, 15).data_type == "n"
+            assert sheet.cell(row, 17).value == 10
+            assert sheet.cell(row, 18).value == 135
+            assert sheet.cell(row, 20).value == "PARTIAL_EVIDENCE_NOT_CERTIFIED"
+        finally:
+            workbook.close()
+    finally:
+        panel.close()
+
+
+
+def test_export_preserves_negative_gap_and_funding_need_as_numeric_cells(
+    qt_app, tmp_path, monkeypatch
+):
+    panel = SUGEF210ProjectionPanel()
+    try:
+        cutoff = date(2026, 9, 30)
+        panel._date.setDate(QDate(2026, 9, 30))
+        outflow = LiquidityProjectionFlow(
+            reference="TEST-DATED-USD-DEPOSIT-OUTFLOW",
+            source="TEST-CONTRACTUAL-DEPOSIT-EVIDENCE",
+            currency="USD",
+            payment_date=cutoff + timedelta(days=2),
+            amount=Decimal("17.25"),
+            side=LiquidityFlowSide.OUTFLOW,
+            area=LiquidityBalanceArea.LIABILITY,
+            evidence=LiquidityEvidence.CONTRACTUAL,
+        )
+        projection = project_sugef210(
+            cutoff=cutoff,
+            scenario="BASE",
+            flows=(outflow,),
+            opening_liquidity={"USD": Decimal("10.00")},
+        )
+        panel.present_governed_projection(projection)
+        destination = tmp_path / "numeric_gap.xlsx"
+        monkeypatch.setattr(
+            "aip.ui.modules.liquidity.views.sugef210_projection_panel."
+            "QFileDialog.getSaveFileName",
+            lambda *_args, **_kwargs: (str(destination), "Excel (*.xlsx)"),
+        )
+        panel.export_reconciliation()
+        workbook = load_workbook(destination, read_only=True, data_only=True)
+        try:
+            sheet = workbook["Flujo proyectado 365d"]
+            # CRC occupies the first 17 bands, USD the subsequent 17.
+            row = 2 + 17 + 2
+            for column, amount in (
+                (10, 17.25),
+                (15, -17.25),
+                (16, -17.25),
+                (17, 10),
+                (18, -7.25),
+                (19, 7.25),
+            ):
+                cell = sheet.cell(row, column)
+                assert cell.value == amount
+                assert cell.data_type == "n"
+            assert sheet.cell(row, 7).value == "N/D"
             assert sheet.cell(row, 20).value == "PARTIAL_EVIDENCE_NOT_CERTIFIED"
         finally:
             workbook.close()
