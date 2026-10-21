@@ -256,15 +256,13 @@ class SUGEF210ProjectionPanel(QWidget):
         self._date = QDateEdit()
         self._date.setCalendarPopup(True)
         self._date.setDisplayFormat("dd/MM/yyyy")
+        self._date.setToolTip(
+            "Corte sugerido: último fin de mes calendario. "
+            "La disponibilidad del XML y Maestro debe confirmarse con fuentes reales."
+        )
         self._date.setDate(QDate(self._cutoff.year, self._cutoff.month, self._cutoff.day))
         self._date.dateChanged.connect(self._on_date_changed)
         controls.addWidget(self._date)
-        cutoff_hint = QLabel("Último fin de mes sugerido; confirme disponibilidad de fuentes")
-        cutoff_hint.setObjectName("sugef210CalendarCutoffHint")
-        cutoff_hint.setToolTip(
-            "La fecha sugerida es calendario, no confirma publicación de XML ni Maestro."
-        )
-        controls.addWidget(cutoff_hint)
         controls.addWidget(QLabel("Escenario:"))
         self._scenario = QComboBox()
         self._scenario.setObjectName("sugef210ScenarioSelection")

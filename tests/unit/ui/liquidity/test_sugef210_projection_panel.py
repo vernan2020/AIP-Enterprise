@@ -7,7 +7,6 @@ from decimal import Decimal
 import pytest
 from openpyxl import load_workbook
 from PySide6.QtCore import QDate
-from PySide6.QtWidgets import QLabel
 
 from aip.domain.liquidity.cashflow.services.sugef210_projection import (
     LiquidityAssumption,
@@ -877,11 +876,7 @@ def test_completed_month_default_is_calendar_hint_not_source_attestation(qt_app)
     panel = SUGEF210ProjectionPanel()
     try:
         assert panel._cutoff == last_completed_calendar_month_end(date.today())
-        label = panel.findChild(
-            QLabel, "sugef210CalendarCutoffHint"
-        )
-        assert label is not None
-        assert "no confirma" in label.toolTip()
+        assert "fuentes reales" in panel._date.toolTip()
         assert all(panel._windows.item(index, 4).text() == "N/D" for index in range(17))
     finally:
         panel.close()
