@@ -63,7 +63,7 @@ class MatrixSUGEFAdapter:
             stem = re.split(r"\s+[-–—]\s+", entity.name, maxsplit=1)[0]
             normalized = cls._code(stem)
             for expected in REFERENCE_AUGUST_2026_CODES:
-                if normalized == expected:
+                if normalized == expected or normalized.startswith(expected + " "):
                     if expected in matched:
                         raise ValueError(f"Duplicidad de catálogo: {expected}")
                     matched[expected] = entity.entity_id
