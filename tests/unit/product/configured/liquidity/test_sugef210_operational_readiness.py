@@ -25,7 +25,8 @@ def test_readiness_refuses_demo_without_even_reading_institutional_sources(monke
     monkeypatch.setenv("AIP_EXECUTION_MODE", "DEMO")
     monkeypatch.setenv("AIP_DEMO_MODE_ENABLED", "true")
     monkeypatch.setattr(
-        readiness, "inspect_xml_investment_source",
+        readiness,
+        "inspect_xml_investment_source",
         lambda cutoff: (_ for _ in ()).throw(AssertionError("Source should remain closed")),
     )
     result = readiness.evaluate_readiness(cutoff=CUTOFF, scenario="BASE")
@@ -36,7 +37,8 @@ def test_sources_ready_are_inventory_only_and_do_not_activate_cashflows(monkeypa
     _configured(monkeypatch)
     monkeypatch.setattr(readiness, "inspect_xml_investment_source", lambda _: INVENTORY)
     monkeypatch.setattr(
-        readiness, "run_configured_sight_opening",
+        readiness,
+        "run_configured_sight_opening",
         lambda **kwargs: (_ for _ in ()).throw(AssertionError("No ALCO approvals")),
     )
     result = readiness.evaluate_readiness(cutoff=CUTOFF, scenario="BASE")
@@ -58,9 +60,7 @@ def test_master_missing_or_only_one_approval_blocks(monkeypatch):
     assert result["status"] == "BLOCKED_MASTER_AT_CUTOFF"
 
     monkeypatch.setattr(readiness, "inspect_xml_investment_source", lambda _: INVENTORY)
-    result = readiness.evaluate_readiness(
-        cutoff=CUTOFF, scenario="BASE", approval="approved.json"
-    )
+    result = readiness.evaluate_readiness(cutoff=CUTOFF, scenario="BASE", approval="approved.json")
     assert result["status"] == "BLOCKED_APPROVAL_PAIR_REQUIRED"
 
 

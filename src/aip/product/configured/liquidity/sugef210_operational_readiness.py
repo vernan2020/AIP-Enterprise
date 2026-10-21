@@ -34,10 +34,9 @@ def evaluate_readiness(
     bank: str | Path | None = None,
 ) -> dict[str, Any]:
     """Return a source-backed operational gate, deliberately not a certification."""
-    if (
-        os.environ.get("AIP_EXECUTION_MODE", "").upper() != "CONFIGURED"
-        or os.environ.get("AIP_DEMO_MODE_ENABLED", "").lower() not in {"false", "0"}
-    ):
+    if os.environ.get("AIP_EXECUTION_MODE", "").upper() != "CONFIGURED" or os.environ.get(
+        "AIP_DEMO_MODE_ENABLED", ""
+    ).lower() not in {"false", "0"}:
         return {
             "status": "BLOCKED_NOT_CONFIGURED",
             "cutoff": cutoff.isoformat(),
@@ -104,11 +103,7 @@ def evaluate_readiness(
     basic["audited_individual_events"] = len(session.assembly.audited_events)
     basic["events_after_365_days"] = projection.excluded_out_of_horizon
     basic["opening_supported_currencies"] = sorted(
-        {
-            row.currency
-            for row in projection.rows
-            if row.opening_liquidity is not None
-        }
+        {row.currency for row in projection.rows if row.opening_liquidity is not None}
     )
     basic["source_reconciliations"] = [
         {
