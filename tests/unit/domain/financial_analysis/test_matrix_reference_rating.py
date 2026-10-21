@@ -147,3 +147,28 @@ def test_reference_cohort_size_parameter_is_strictly_checked() -> None:
         MatrixReferenceRatingService.evaluate(
             tuple(_entity(i) for i in range(4)), required_cohort_size=3
         )
+
+
+def test_zero_floor_also_applies_to_financial_intermediation_margin() -> None:
+    from dataclasses import replace
+
+    negative_margins = (
+        Decimal("-0.09"),
+        Decimal("-0.03"),
+        Decimal("0.02"),
+        Decimal("0.04"),
+    )
+    peers = tuple(
+        replace(
+            _entity(i),
+            indicators={
+                **_entity(i).indicators,
+                "MARGIN_INTERMEDIATION": negative_margins[i],
+            },
+        )
+        for i in range(4)
+    )
+    result = MatrixReferenceRatingService.evaluate(peers)
+    assert result.lower_cutoffs["MARGIN_INTERMEDIATION"] == Decimal("0")
+    assert result.lower_cutoffs["ROA"] == Decimal("0")
+    assert result.lower_cutoffs["ROE"] == Decimal("0")
