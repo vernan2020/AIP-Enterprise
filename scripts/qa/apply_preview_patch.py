@@ -59,6 +59,8 @@ def validate_path(name: str) -> Path:
                 "DIAGNOSTICAR_LIQUIDEZ_SUGEF210_XML_INVERSIONES.cmd",
                 "DIAGNOSTICAR_LIQUIDEZ_SUGEF210_PLAN.cmd",
                 "DIAGNOSTICAR_LIQUIDEZ_SUGEF210_FLUJO.cmd",
+        "VERIFICAR_LIQUIDEZ_SUGEF210_OPERATIVO.cmd",
+        "INICIAR_AIP_LIQUIDEZ_SUGEF210.cmd",
                 "AUDITAR_FUENTES_CONFIGURADAS.cmd",
                 "INSPECCIONAR_HISTORICOS_PREVIEW.cmd",
             }
