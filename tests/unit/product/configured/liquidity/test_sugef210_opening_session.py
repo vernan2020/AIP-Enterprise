@@ -965,3 +965,32 @@ def test_configured_custodian_coupon_enters_partial_cashflow_without_inferred_pr
             approval_manifest=sight,
             bank_support_manifest=bank,
         )
+
+
+def test_master_mutation_during_read_blocks_sight_and_coupon_evidence(
+    monkeypatch, tmp_path
+):
+    _configure(monkeypatch, tmp_path)
+    from aip.product.configured.liquidity import sugef210_opening_session as module
+
+    approval, bank = _files(tmp_path)
+    master = tmp_path / "exact-cutoff-master.xlsx"
+
+    class ModifiedMasterReader:
+        @staticmethod
+        def read(*_args, **_kwargs):
+            master.write_bytes(b"DIFFERENT-MASTER-AFTER-READ-STARTED")
+            return SimpleNamespace(
+                source_status="HEALTHY",
+                normalized_positions=[{"isin": "TEST-ISIN", "series": "TEST-SERIES"}],
+            )
+
+    monkeypatch.setattr(module, "InstitutionalPortfolioMasterReader", ModifiedMasterReader)
+    with pytest.raises(ValueError, match="Master changed while reading"):
+        run_configured_sight_opening(
+            cutoff=CUTOFF,
+            scenario="BASE",
+            approval_manifest=approval,
+            bank_support_manifest=bank,
+        )
+

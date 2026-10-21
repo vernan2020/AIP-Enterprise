@@ -182,6 +182,7 @@ def read_approved_master_coupons(
         raise ValueError("Original Master contains duplicate investment references")
     used_reconciliations: set[str] = set()
     encountered: set[str] = set()
+    seen_instrument_dates: set[tuple[str, date]] = set()
     events: list[LiquidityProjectionFlow] = []
     try:
         with ledger_path.open("r", encoding="utf-8-sig", newline="") as handle:
@@ -208,6 +209,12 @@ def read_approved_master_coupons(
                 when = _date(row["payment_date"], "payment_date")
                 if not cutoff < when <= master.payment_date:
                     raise ValueError("Coupon date is outside future Master instrument life")
+                instrument_date = (origin, when)
+                if instrument_date in seen_instrument_dates:
+                    raise ValueError(
+                        "Duplicate coupon cash date for the same original investment position"
+                    )
+                seen_instrument_dates.add(instrument_date)
                 amount = _amount(row["amount"])
                 reconciliation = _required(
                     row["nonduplication_reference"], "nonduplication_reference"

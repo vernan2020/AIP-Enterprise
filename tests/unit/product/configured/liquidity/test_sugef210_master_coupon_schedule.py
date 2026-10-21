@@ -251,3 +251,21 @@ def test_custody_ledger_cannot_drop_approved_coupon_or_repeat_payment(tmp_path):
     approval.write_text(json.dumps(doc), encoding="utf-8")
     with pytest.raises(ValueError, match="Duplicate investment coupon payment reference"):
         _read(ledger, approval, custody)
+
+
+def test_same_master_coupon_date_cannot_be_counted_twice_under_new_reference(tmp_path):
+    ledger, approval, custody, row, doc = _source(tmp_path)
+    second = {
+        **row,
+        "payment_reference": "TEST-SECOND-COUPON-REF",
+        "nonduplication_reference": "TEST-SECOND-RECONCILIATION",
+    }
+    with ledger.open("a", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=HEADERS)
+        writer.writerow(second)
+    doc["ledger_sha256"] = hashlib.sha256(ledger.read_bytes()).hexdigest()
+    doc["approved_payment_records"].append({**second, "explicitly_approved": True})
+    approval.write_text(json.dumps(doc), encoding="utf-8")
+    with pytest.raises(ValueError, match="Duplicate coupon cash date"):
+        _read(ledger, approval, custody)
+

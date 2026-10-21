@@ -193,11 +193,14 @@ def run_configured_sight_opening(
     )
     if master_path is None or count != 1:
         raise ValueError("Exact-cutoff Master unavailable or ambiguous: " + master_status)
+    master_source_hash = _hash_local(master_path)
     read = InstitutionalPortfolioMasterReader().read(
         master_path, valuation_date_override=cutoff, diagnostic_mode=False
     )
     if read.source_status != "HEALTHY" or not read.normalized_positions:
         raise ValueError("Investment Master cannot be used for duplicate review")
+    if _hash_local(master_path) != master_source_hash:
+        raise ValueError("Institutional Master changed while reading source positions")
     known_isins = frozenset(
         str(item.get("isin") or "").strip().upper()
         for item in read.normalized_positions
@@ -265,7 +268,7 @@ def run_configured_sight_opening(
     if principal_authorization is not None:
         if not isinstance(principal_authorization, dict):
             raise ValueError("Master principal authorization must be a structured record")
-        actual_master_hash = _hash_local(master_path)
+        actual_master_hash = master_source_hash
         if _required_text(principal_authorization, "master_sha256") != actual_master_hash:
             raise ValueError("Master principal approval no longer matches actual Master")
         principal_reference = _required_text(principal_authorization, "approval_reference")
@@ -438,7 +441,7 @@ def run_configured_sight_opening(
             or len({item.resolve() for item in coupon_paths}) != 3
         ):
             raise ValueError("Coupon approval, ledger and custody must use independent files")
-        master_hash = _hash_local(master_path)
+        master_hash = master_source_hash
         if source_principal is None:
             source_principal = build_master_principal_evidence(
                 cutoff=cutoff,
@@ -531,6 +534,8 @@ def run_configured_sight_opening(
             scenario=scenario,
             existing_contractual_reconciliation_refs=frozenset(contractual_refs),
         )
+    if _hash_local(master_path) != master_source_hash:
+        raise ValueError("Institutional Master changed during liquidity reconciliation")
     assembly = assemble_partial_institutional_projection(
         cutoff=cutoff,
         scenario=scenario,
