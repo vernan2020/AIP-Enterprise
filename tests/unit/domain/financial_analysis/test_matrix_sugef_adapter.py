@@ -41,7 +41,7 @@ def test_matched_cohort_uses_real_entity_ids_not_spreadsheet_aliases() -> None:
     ids, missing = MatrixSUGEFAdapter.select_reference_entities(
         rows, date(2026, 8, 31)
     )
-    assert ids == ("3000000002", "3000000001")
+    assert ids == ("3000000001", "3000000002")
     assert len(missing) == 36
     assert "BANCO CMB" in missing
 
