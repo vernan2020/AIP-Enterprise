@@ -671,6 +671,13 @@ class FinancialAnalysisView(QWidget):
         )
         audit_layout.addWidget(self._score_audit_warning)
 
+        self._score_matrix_summary = QLabel("Contraste matriz: sin datos")
+        self._score_matrix_summary.setWordWrap(True)
+        self._score_matrix_summary.setStyleSheet(
+            "color:#143C63; font-weight:600; font-size:11px; padding:5px 2px;"
+        )
+        audit_layout.addWidget(self._score_matrix_summary)
+
         self._score_audit_table = self._table(
             [
                 "Indicador", "Valor", "P15", "Punto medio", "P85", "Dirección",
@@ -1121,6 +1128,8 @@ class FinancialAnalysisView(QWidget):
                 self._rating_indicator_table.setItem(row_index, column, item)
 
         self._score_audit_summary.setText(view_model.score_audit_summary)
+        self._score_matrix_summary.setText(view_model.score_matrix_summary)
+        self._score_matrix_summary.setToolTip(view_model.score_matrix_notes)
         self._score_audit_warning.setText(view_model.score_audit_warning)
         self._score_audit_warning.setVisible(bool(view_model.score_audit_warning))
         self._score_audit_table.setRowCount(len(view_model.score_audit_rows))
