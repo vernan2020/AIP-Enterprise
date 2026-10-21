@@ -134,4 +134,3 @@ def test_real_liquidity_operator_cmd_files_are_preview_whitelisted() -> None:
     assert not allowed("config/runtime.local.cmd")
     with pytest.raises(UpdateRejected, match="forbidden"):
         validate_path("config/runtime.local.cmd")
-
