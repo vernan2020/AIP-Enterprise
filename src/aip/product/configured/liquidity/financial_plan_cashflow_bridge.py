@@ -8,6 +8,7 @@ already-scheduled contractual amounts before they can be booked.
 
 from __future__ import annotations
 
+import hashlib
 import json
 from collections import defaultdict
 from dataclasses import dataclass
@@ -15,6 +16,7 @@ from datetime import date
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any, Iterable
+from zipfile import BadZipFile
 
 from aip.domain.liquidity.cashflow.services.sugef210_projection import (
     LiquidityAssumption,
@@ -284,9 +286,21 @@ def read_approved_financial_plan_overlay(
     if _approved_text(document, "scenario") != scenario:
         raise ValueError("Financial plan authorization belongs to another scenario")
 
-    audit = read_financial_plan_assumptions(source, cutoff=cutoff)
-    if _approved_text(document, "source_sha256").lower() != audit.sha256:
+    # Compare the approved bytes before parsing. Invalid or substituted workbooks
+    # fail as a governed evidence error rather than an uncaught ZIP exception.
+    approved_hash = _approved_text(document, "source_sha256").lower()
+    if not source.is_file() or source.stat().st_size > 20_000_000:
+        raise ValueError("Financial plan workbook missing or oversized")
+    with source.open("rb") as handle:
+        original_hash = hashlib.file_digest(handle, "sha256").hexdigest()
+    if len(approved_hash) != 64 or approved_hash != original_hash:
         raise ValueError("Financial plan workbook hash changed since approval")
+    try:
+        audit = read_financial_plan_assumptions(source, cutoff=cutoff)
+    except BadZipFile as exc:
+        raise ValueError("Financial plan workbook is not a valid xlsx archive") from exc
+    if audit.sha256 != original_hash:
+        raise ValueError("Financial plan workbook changed during intake")
     if audit.plan_year != cutoff.year:
         raise ValueError("Financial plan year differs from projection cutoff")
     rows = document.get("allocations")
