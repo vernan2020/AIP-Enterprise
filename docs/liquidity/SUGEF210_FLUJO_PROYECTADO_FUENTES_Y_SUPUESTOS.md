@@ -184,3 +184,10 @@ absolutas y distintas entre sí y de todas las demás fuentes del corte).
   Tesorería o Custodia: el comprobante original debe verificarse institucionalmente.
   Solo los registros autorizados quedan incorporados; otros cupones siguen `N/D`
   en la evaluación de cobertura.
+
+**Controles adicionales de integridad:** el hash del Maestro se comprueba antes y
+después de la lectura y otra vez antes de ensamblar el flujo; cualquier cambio
+invalida el corte. Por seguridad, se rechaza registrar más de un cupón para la
+misma fila original del Maestro y fecha de pago, aunque las referencias del
+ledger sean distintas. Las pruebas ficticias de estos rechazos se limitan al
+entorno automatizado, nunca al PREVIEW institucional.
