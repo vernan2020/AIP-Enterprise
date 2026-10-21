@@ -38,9 +38,7 @@ def test_matched_cohort_uses_real_entity_ids_not_spreadsheet_aliases() -> None:
         _line("3000000002", "BANCO LAFISE - Banco Lafise S.A.", "ROE", "-0.01"),
         _line("unmatched", "ENTIDAD FUERA DEL UNIVERSO", "ROE", "0.04"),
     )
-    ids, missing = MatrixSUGEFAdapter.select_reference_entities(
-        rows, date(2026, 8, 31)
-    )
+    ids, missing = MatrixSUGEFAdapter.select_reference_entities(rows, date(2026, 8, 31))
     assert ids == ("3000000001", "3000000002")
     assert len(missing) == 36
     assert "BANCO CMB" in missing
@@ -49,7 +47,12 @@ def test_matched_cohort_uses_real_entity_ids_not_spreadsheet_aliases() -> None:
 def test_extract_keeps_missing_real_ratios_missing() -> None:
     rows = (
         _line("id1", "COOPENAE - Cooperativa Nacional de Educadores", "ROE", "0.06"),
-        _line("id1", "COOPENAE - Cooperativa Nacional de Educadores", "Aplica Supervisión Proporcional", "0"),
+        _line(
+            "id1",
+            "COOPENAE - Cooperativa Nacional de Educadores",
+            "Aplica Supervisión Proporcional",
+            "0",
+        ),
         _line("id1", "COOPENAE - Cooperativa Nacional de Educadores", "Garantía del Estado", "0"),
     )
     extraction = MatrixSUGEFAdapter.extract(
