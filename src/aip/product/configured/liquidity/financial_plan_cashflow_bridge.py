@@ -348,11 +348,9 @@ def read_approved_financial_plan_overlay(
                 explicitly_approved=item.get("explicitly_approved") is True,
             )
         )
-    if (
-        not source.is_file()
-        or read_financial_plan_assumptions(source, cutoff=cutoff).sha256 != audit.sha256
-    ):
-        raise ValueError("Financial plan workbook changed during authorization review")
+    with source.open("rb") as handle:
+        if hashlib.file_digest(handle, "sha256").hexdigest() != audit.sha256:
+            raise ValueError("Financial plan workbook changed during authorization review")
     return build_approved_financial_plan_events(
         audit=audit,
         cutoff=cutoff,
