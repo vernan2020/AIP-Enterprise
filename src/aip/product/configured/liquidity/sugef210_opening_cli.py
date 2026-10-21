@@ -29,6 +29,10 @@ def summarize_session(session: ConfiguredOpeningSession) -> dict[str, object]:
         "master_coupon_events_approved": session.master_coupon_events_approved,
         "master_coupon_ledger_sha256": session.master_coupon_ledger_sha256,
         "master_coupon_custodian_sha256": session.master_coupon_custodian_sha256,
+        "master_source_sha256": session.master_source_sha256,
+        "sight_added_by_currency": {
+            currency: str(amount) for currency, amount in session.sight_added_by_currency
+        },
         "credit_deposits_borrowing_payment_events_approved": (
             session.xml_contractual_events_approved
         ),

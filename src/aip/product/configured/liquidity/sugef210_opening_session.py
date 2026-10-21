@@ -76,6 +76,8 @@ class ConfiguredOpeningSession:
     master_coupon_events_approved: int = 0
     master_coupon_ledger_sha256: str | None = None
     master_coupon_custodian_sha256: str | None = None
+    master_source_sha256: str | None = None
+    sight_added_by_currency: tuple[tuple[str, Decimal], ...] = ()
     xml_contractual_events_approved: int = 0
     contingent_scenario_events_approved: int = 0
     offbalance_commitments_reviewed: int = 0
@@ -570,6 +572,8 @@ def run_configured_sight_opening(
         assembly=assembly,
         sight_records_approved=verified.included_xml_accounts,
         sight_source_sha256=audited.xml_sha256,
+        sight_added_by_currency=verified.added_by_currency,
+        master_source_sha256=master_source_hash,
         bank_support_sha256=_hash_local(support_path),
         bank_document_sha256=bank_hash,
         master_principal_events_approved=(

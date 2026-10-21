@@ -149,6 +149,16 @@ class SUGEF210ProjectionPanel(QWidget):
         "Saldo proyectado CRC†",
         "Saldo proyectado USD†",
     )
+    _INVESTMENT_RECONCILIATION_HEADERS = (
+        "Origen de inversión",
+        "Naturaleza",
+        "Moneda original",
+        "Eventos a 365 días",
+        "Eventos >365 días",
+        "Monto nativo a 365 días / apertura",
+        "Estado de cobertura",
+        "SHA256 respaldo",
+    )
     _GOVERNED_FLOW_DETAIL_HEADERS = (
         "Banda",
         "Moneda",
@@ -314,6 +324,13 @@ class SUGEF210ProjectionPanel(QWidget):
             self._GOVERNED_FLOW_DETAIL_HEADERS, "sugef210GovernedFlowBreakdown"
         )
         self._planning_tabs.addTab(self._governed_flow_details, "Detalle de flujo · fuentes")
+        self._investment_reconciliation = self._table(
+            self._INVESTMENT_RECONCILIATION_HEADERS,
+            "sugef210InvestmentOpeningPrincipalCouponReconciliation",
+        )
+        self._planning_tabs.addTab(
+            self._investment_reconciliation, "Conciliación inversiones"
+        )
         self._demand_deposit_reconciliation = self._table(
             (
                 "Cuenta contable XML210",
@@ -459,6 +476,7 @@ class SUGEF210ProjectionPanel(QWidget):
         self._governed_projection = None
         self._governed_flow_details.setRowCount(0)
         self._demand_deposit_reconciliation.setRowCount(0)
+        self._investment_reconciliation.setRowCount(0)
         self._fill_windows()
         for amount in self._projected_kpis.values():
             amount.setText("N/D")
@@ -712,6 +730,91 @@ class SUGEF210ProjectionPanel(QWidget):
         worker.finished.connect(self._release_opening_worker)
         worker.start()
 
+    def _fill_investment_reconciliation(self, session: ConfiguredOpeningSession) -> None:
+        """Separate signed-off opening investment cash from dated future coupons/principal."""
+        self._investment_reconciliation.setRowCount(0)
+        if (
+            session.cutoff != self._cutoff
+            or session.scenario != self._scenario.currentText()
+        ):
+            raise ValueError("Investment reconciliation cutoff/scenario mismatch")
+        by_source = {
+            (row.source_name, row.currency): row
+            for row in session.assembly.source_reconciliations
+            if row.source_name in {"MASTER_RECOGNIZED_PRINCIPAL", "APPROVED_MASTER_COUPONS"}
+        }
+        if len(by_source) != sum(
+            1
+            for row in session.assembly.source_reconciliations
+            if row.source_name in {"MASTER_RECOGNIZED_PRINCIPAL", "APPROVED_MASTER_COUPONS"}
+        ):
+            raise ValueError("Duplicated investment source/currency reconciliation")
+        source_counts = {
+            source: sum(
+                row.received_events
+                for (name, _currency), row in by_source.items()
+                if name == source
+            )
+            for source in ("MASTER_RECOGNIZED_PRINCIPAL", "APPROVED_MASTER_COUPONS")
+        }
+        if (
+            source_counts["MASTER_RECOGNIZED_PRINCIPAL"]
+            != session.master_principal_events_approved
+            or source_counts["APPROVED_MASTER_COUPONS"]
+            != session.master_coupon_events_approved
+        ):
+            raise ValueError("Investment event counts differ from source reconciliations")
+        sight_amounts = dict(session.sight_added_by_currency)
+        if any(
+            currency not in {"CRC", "USD"} or not amount.is_finite() or amount < 0
+            for currency, amount in sight_amounts.items()
+        ) or len(sight_amounts) != len(session.sight_added_by_currency):
+            raise ValueError("Original-currency sight investment additions invalid")
+        for currency in ("CRC", "USD"):
+            sight = sight_amounts.get(currency)
+            self._append(
+                self._investment_reconciliation,
+                (
+                    "Inversiones a la vista XML",
+                    "APERTURA · no flujo futuro",
+                    currency,
+                    "N/D",
+                    "N/D",
+                    str(sight) if sight is not None else "N/D",
+                    "APERTURA VERIFICADA · PARCIAL" if sight is not None else "N/D · SIN DESGLOSE",
+                    session.sight_source_sha256 if sight is not None else "N/D",
+                ),
+            )
+            for name, label, digest in (
+                (
+                    "MASTER_RECOGNIZED_PRINCIPAL",
+                    "Principal Maestro · futuro",
+                    session.master_source_sha256,
+                ),
+                (
+                    "APPROVED_MASTER_COUPONS",
+                    "Cupones Custodia · futuro",
+                    session.master_coupon_custodian_sha256,
+                ),
+            ):
+                reconciled = by_source.get((name, currency))
+                self._append(
+                    self._investment_reconciliation,
+                    (
+                        name,
+                        label,
+                        currency,
+                        str(reconciled.events_inside_horizon) if reconciled else "N/D",
+                        str(reconciled.events_after_horizon) if reconciled else "N/D",
+                        (
+                            str(reconciled.principal_or_flow_total_inside_horizon)
+                            if reconciled else "N/D"
+                        ),
+                        "PARCIAL · " + reconciled.status if reconciled else "N/D · NO INCORPORADO",
+                        digest if reconciled and digest else "N/D",
+                    ),
+                )
+
     def _receive_governed_opening(
         self, cutoff: date, scenario: str, session: ConfiguredOpeningSession
     ) -> None:
@@ -719,7 +822,10 @@ class SUGEF210ProjectionPanel(QWidget):
             return
         if session.cutoff != cutoff or session.scenario != scenario:
             raise ValueError("Loaded opening cutoff or scenario does not match the request")
+        # Validate the source/currency audit before changing the displayed waterfall.
+        self._fill_investment_reconciliation(session)
         self.present_governed_projection(session.assembly.projection)
+        self._fill_investment_reconciliation(session)
         self._demand_deposit_reconciliation.setRowCount(0)
         for (
             account,
@@ -1023,6 +1129,21 @@ class SUGEF210ProjectionPanel(QWidget):
                         )
                     )
                 )
+
+        investment_sheet = workbook.create_sheet("Conciliacion inversiones")
+        investment_sheet.append(self._INVESTMENT_RECONCILIATION_HEADERS)
+        for row_index in range(self._investment_reconciliation.rowCount()):
+            cells: list[str | int | Decimal] = []
+            for column in range(self._investment_reconciliation.columnCount()):
+                item = self._investment_reconciliation.item(row_index, column)
+                raw = item.text() if item is not None else ""
+                if column in (3, 4) and raw != "N/D":
+                    cells.append(int(raw))
+                elif column == 5 and raw != "N/D":
+                    cells.append(Decimal(raw))
+                else:
+                    cells.append(safe(raw))
+            investment_sheet.append(tuple(cells))
 
         sight_sheet = workbook.create_sheet("Captaciones vista XML210")
         sight_sheet.append(
