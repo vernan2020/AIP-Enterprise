@@ -3,6 +3,7 @@ name: One-shot SUGEF210 Black Formatting
 # Normalize partial cashflow N/D source coverage display and Excel regression.
 
 # Normalize approved source manifest parsing, signed bank opening and duplicate safeguards.
+# Normalize the independently approved financial plan overlay and regression tests.
 
 on:
   push:
