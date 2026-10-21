@@ -116,3 +116,37 @@ La exportación Excel de la conciliación incorpora la hoja **Captaciones vista 
 ### Datos desconocidos: distinguir cero certificado de fuente no disponible
 
 En el detalle de bandas y en la exportación **Flujo proyectado 365d**, un movimiento positivo documentado en un área no demuestra ausencia de movimientos en otra. Por eso, cuando la proyección es parcial, los subtotales nulos por **área y sentido** sin respaldo integral muestran `N/D` y no `0`, incluso cuando hay otros flujos documentados en esa misma banda y moneda. El GAP calculado sigue identificado como **parcial** y no sustituye el flujo institucional íntegro. Solo una proyección integral certificada permite presentar ceros de fuentes sin movimientos. Esta distinción también se verifica mediante pruebas automáticas de la pestaña de fuentes y del libro Excel, comparando un cobro de activo documentado contra pasivos y contingencias todavía no disponibles. No modificar este control con heurísticas ni completar fuentes no autorizadas con saldos XML.
+
+## Vinculación gobernada del Plan Financiero 2026 al flujo
+
+La sesión configurada ahora admite la sección opcional `financial_plan_scenario` dentro del
+manifiesto existente `SUGEF210_SIGHT_OPENING_V1`. Incluye únicamente las rutas absolutas
+locales `source_file` (libro institucional .xlsx) y `approval_file` (autorización independiente
+de Tesorería/ALCO). Ambos se conservan fuera de GitHub y no pueden coincidir entre sí, con el
+Maestro ni con otras fuentes o respaldos usados en la sesión.
+
+La autorización JSON tiene `schema="SUGEF210_FINANCIAL_PLAN_ALLOCATION_V1"`,
+`cutoff`, `scenario`, `source_sha256` y una lista no vacía `allocations`. Cada asignación
+identifica: `driver`, `year`, `month`, `payment_date`, `currency`,
+`incremental_native_amount`, `overlap_crc_amount`, `fx_crc_per_usd` (obligatorio
+únicamente para USD), `fx_reference`, `source_sha256`, `assumption_id`,
+`approval_reference`, `plan_document_version`, `rationale`,
+`treasury_reconciliation_reference`, `nonduplication_reference`,
+`valid_from`, `valid_to` y `explicitly_approved=true`.
+
+Los importes financieros de la matriz son **millones equivalentes CRC**, no importes
+contratados en una divisa. Por ello solo entra a las bandas la **porción incremental
+aprobada**, expresada en moneda original y conciliada con la asignación mensual,
+comprobando su equivalente CRC y el solapamiento reconocido. No se infiere reparto
+diario, tipo de cambio, renovación de depósitos ni conversión de presupuesto a efectivo.
+Los desembolsos de `Colocación bruta` generan salidas del activo; las emisiones nuevas
+CAP, entradas del pasivo. La conciliación rechaza referencias repetidas, fechas vencidas,
+autorizaciones de otros escenarios o cambios de SHA-256. Las asignaciones deben excluir
+los flujos ya recogidos en cronogramas contractuales mediante una conciliación de
+Tesorería documentada e independiente.
+
+Sin esta sección opcional, se mantiene el comportamiento anterior: ninguna cifra del
+presupuesto se incorpora al flujo proyectado. Incluso con asignaciones aprobadas,
+el resultado permanece **PARCIAL** y se informa el número de eventos añadidos y el
+hash del Plan Financiero en el diagnóstico CMD. La autenticidad material de firmas
+y la reconciliación de los documentos de origen son controles institucionales externos.
