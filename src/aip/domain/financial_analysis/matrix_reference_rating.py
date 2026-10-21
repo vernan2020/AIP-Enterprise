@@ -106,9 +106,9 @@ class MatrixReferenceRatingService:
             if definition.code in _BINARY:
                 continue
             values = tuple(
-                entity.indicators[definition.code]
+                value
                 for entity in entities
-                if entity.indicators.get(definition.code) is not None
+                if (value := entity.indicators.get(definition.code)) is not None
             )
             peer_counts[definition.code] = len(values)
             if len(values) < _MIN_PEERS:
