@@ -64,3 +64,33 @@ def test_extract_keeps_missing_real_ratios_missing() -> None:
     assert item.indicators["LIQUIDITY_COVERAGE"] is None
     assert item.regulation_full is True
     assert item.state_guarantee is False
+
+
+def test_workbook_institution_aliases_are_not_prefix_matches() -> None:
+    rows = (
+        _line("a", "COOPEANDE Nº 1 - Cooperativa de Ahorro y Crédito", "ROE", "0.06"),
+        _line("b", "DAVIBANK- DAVIBANK (COSTA RICA) S.A.", "ROE", "0.05"),
+        _line("c", "BANCO NACIONAL - Banco Nacional de Costa Rica", "ROE", "0.04"),
+        _line("d", "BANCO NACIONAL DE PRUEBA - Entidad no comparable", "ROE", "0.09"),
+    )
+    ids, missing = MatrixSUGEFAdapter.select_reference_entities(rows, date(2026, 8, 31))
+    assert ids == ("c", "a", "b")  # Authorized benchmark order, not API input order.
+    assert "COOPEANDE" not in missing
+    assert "DAVIBANK" not in missing
+    assert len(missing) == 35
+
+
+def test_all_38_reference_names_are_recognized_without_prefix_guessing() -> None:
+    rows = tuple(
+        _line(
+            str(i),
+            ("COOPEANDE Nº 1" if code == "COOPEANDE" else code)
+            + ("- Nombre completo" if code == "DAVIBANK" else " - Nombre completo"),
+            "ROE",
+            "0.05",
+        )
+        for i, code in enumerate(REFERENCE_AUGUST_2026_CODES)
+    )
+    ids, missing = MatrixSUGEFAdapter.select_reference_entities(rows, date(2026, 8, 31))
+    assert ids == tuple(str(i) for i in range(38))
+    assert missing == ()
