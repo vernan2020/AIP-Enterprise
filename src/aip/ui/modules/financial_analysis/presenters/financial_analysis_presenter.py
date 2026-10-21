@@ -463,10 +463,15 @@ class FinancialAnalysisPresenter:
             score_matrix_summary=(
                 "Contraste matriz agosto 2026 (mismo corte): "
                 + (
-                    f"{snapshot.reference_matrix_score:,.4f} "
-                    f"({snapshot.reference_matrix_grade})"
+                    (
+                        f"{snapshot.reference_matrix_score:,.4f} "
+                        f"({snapshot.reference_matrix_grade})"
+                        if snapshot.reference_matrix_grade is not None
+                        else f"Puntaje provisional {snapshot.reference_matrix_score:,.4f}; "
+                             "categoría suspendida"
+                    )
                     if snapshot.reference_matrix_score is not None
-                    else "Sin nota reproducible"
+                    else "Sin puntaje ni categoría reproducible"
                 )
                 + " · "
                 + snapshot.reference_matrix_coverage
