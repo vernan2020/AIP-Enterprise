@@ -13,6 +13,7 @@ from datetime import date
 from decimal import Decimal
 
 from aip.domain.financial_analysis.matrix_reference_rating import (
+    MatrixCohortResult,
     MatrixEntityInput,
     MatrixReferenceRatingService,
 )
@@ -125,7 +126,7 @@ class MatrixSUGEFAdapter:
         cls,
         lines: tuple[FinancialStatementLine, ...],
         cutoff_date: date,
-    ):
+    ) -> tuple[MatrixCohortResult, tuple[str, ...]]:
         ids, missing = cls.select_reference_entities(lines, cutoff_date)
         if len(ids) < 3:
             raise ValueError("Cohorte SUGEF insuficiente para calcular percentiles.")
