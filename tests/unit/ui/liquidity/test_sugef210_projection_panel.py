@@ -699,3 +699,116 @@ def test_investment_reconciliation_missing_evidence_stays_nd_and_inconsistent_co
         assert panel._governed_projection is None
     finally:
         panel.close()
+
+
+def test_event_lineage_ui_limits_rows_but_excel_exports_every_native_event(
+    qt_app, tmp_path, monkeypatch
+):
+    from aip.product.configured.liquidity.irrbb_schedule_liquidity_bridge import (
+        LiquiditySourceBridgeResult,
+    )
+
+    panel = SUGEF210ProjectionPanel()
+    try:
+        cutoff = date(2026, 9, 30)
+        panel._date.setDate(QDate(2026, 9, 30))
+        events = tuple(
+            LiquidityProjectionFlow(
+                reference=f"=TEST-EVENT-{number:03d}",
+                source=f"TEST-ORIGINAL-LEDGER-{number:03d}",
+                currency="USD",
+                payment_date=cutoff + timedelta(days=31 if number < 301 else 366),
+                amount=Decimal("1.25"),
+                side=LiquidityFlowSide.INFLOW,
+                area=LiquidityBalanceArea.ASSET,
+                evidence=LiquidityEvidence.CONTRACTUAL,
+            )
+            for number in range(302)
+        )
+        schedule = LiquiditySourceBridgeResult(
+            cashflows=events,
+            covered_balance_areas=frozenset({LiquidityBalanceArea.ASSET}),
+            source_status="CERTIFIED_CONTRACTUAL_DATES_ONLY_OFFBALANCE_NOT_INCLUDED",
+        )
+        assembly = assemble_partial_institutional_projection(
+            cutoff=cutoff,
+            scenario="BASE",
+            contractual=schedule,
+            opening_by_currency={"CRC": Decimal("100"), "USD": Decimal("25")},
+            opening_certifications={"CRC": "TEST-ICL-CRC", "USD": "TEST-ICL-USD"},
+            opening_nonduplication_reference="TEST-OPENING-NONDOUBLE",
+        )
+        session = ConfiguredOpeningSession(
+            cutoff=cutoff,
+            scenario="BASE",
+            assembly=assembly,
+            sight_records_approved=0,
+            sight_source_sha256="a" * 64,
+            bank_support_sha256="b" * 64,
+            bank_document_sha256="c" * 64,
+        )
+        panel._receive_governed_opening(cutoff, "BASE", session)
+        assert panel._event_audit_table.rowCount() == 300
+        assert len(panel._audited_events) == 302
+        assert panel._event_audit_table.item(0, 10).text() == "M01"
+        assert "300 de 302" in panel._status.text()
+        destination = tmp_path / "source-lineage.xlsx"
+        monkeypatch.setattr(
+            "aip.ui.modules.liquidity.views.sugef210_projection_panel."
+            "QFileDialog.getSaveFileName",
+            lambda *_args, **_kwargs: (str(destination), "Excel (*.xlsx)"),
+        )
+        panel.export_reconciliation()
+        workbook = load_workbook(destination, read_only=True, data_only=True)
+        try:
+            trace = workbook["Trazabilidad eventos"]
+            assert trace.max_row == 303
+            assert trace.cell(2, 2).value.startswith("'=TEST-EVENT-")
+            assert trace.cell(2, 6).value == 1.25
+            assert trace.cell(2, 6).data_type == "n"
+            assert trace.cell(303, 11).value == "OUTSIDE_365D"
+            assert trace.cell(303, 12).value == "AFTER_365D"
+            metadata = dict(workbook["Control"].iter_rows(values_only=True))
+            assert metadata["eventos_auditados_linea_a_linea"] == 302
+            assert metadata["eventos_mostrados_en_UI"] == 300
+            assert metadata["flujo_integral_certificado"] == "NO"
+        finally:
+            workbook.close()
+        panel._scenario.setCurrentText("SYSTEMIC")
+        assert not panel._audited_events
+        assert panel._event_audit_table.rowCount() == 0
+    finally:
+        panel.close()
+
+
+def test_tampered_event_lineage_rejected_before_loading_projection(qt_app):
+    panel = SUGEF210ProjectionPanel()
+    try:
+        cutoff = date(2026, 9, 30)
+        panel._date.setDate(QDate(2026, 9, 30))
+        assembled = assemble_partial_institutional_projection(
+            cutoff=cutoff,
+            scenario="BASE",
+            opening_by_currency={"CRC": Decimal(10), "USD": Decimal(5)},
+            opening_certifications={"CRC": "TEST-BANK-CRC", "USD": "TEST-BANK-USD"},
+            opening_nonduplication_reference="TEST-OPENING",
+        )
+        session = ConfiguredOpeningSession(
+            cutoff=cutoff,
+            scenario="BASE",
+            assembly=replace(
+                assembled,
+                projection=replace(assembled.projection, source_flow_count=1),
+            ),
+            sight_records_approved=0,
+            sight_source_sha256="a" * 64,
+            bank_support_sha256="b" * 64,
+            bank_document_sha256="c" * 64,
+        )
+        with pytest.raises(ValueError, match="Event lineage count"):
+            panel._receive_governed_opening(cutoff, "BASE", session)
+        assert panel._governed_projection is None
+        assert panel._event_audit_table.rowCount() == 0
+    finally:
+        panel.close()
+
