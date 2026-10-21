@@ -16,7 +16,6 @@ from aip.domain.financial_analysis.models import (
 from aip.domain.financial_analysis.rating_score_audit import RatingScoreAuditService
 from aip.domain.financial_analysis.ratings import FinancialEntityRatingService
 
-
 CUTOFF = date(2026, 9, 30)
 
 
