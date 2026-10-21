@@ -19,6 +19,9 @@ from aip.domain.liquidity.cashflow.services.sugef210_projection import (
 from aip.domain.liquidity.cashflow.services.sugef210_scenario_rules import (
     ScenarioGeneratedEvidence,
 )
+from aip.product.configured.liquidity.sugef210_master_coupon_schedule import (
+    ApprovedMasterCouponSchedule,
+)
 from aip.product.configured.liquidity.sugef210_master_maturity_bridge import (
     MasterPrincipalEvidence,
 )
@@ -544,3 +547,157 @@ def test_offbalance_approved_systemic_stress_visible_as_usd_outflow_not_cash(qt_
         assert panel._governed_flow_details.rowCount() == 0
     finally:
         panel.close()
+
+
+def test_investment_reconciliation_separates_sight_principal_coupon_and_excel_numeric(
+    qt_app, tmp_path, monkeypatch
+):
+    panel = SUGEF210ProjectionPanel()
+    try:
+        cutoff = date(2026, 9, 30)
+        panel._date.setDate(QDate(2026, 9, 30))
+        principal = LiquidityProjectionFlow(
+            reference="MASTER:" + "c" * 64 + ":ROW-1:PRINCIPAL",
+            source="TEST-MASTER-ROW-1",
+            currency="CRC",
+            payment_date=cutoff + timedelta(days=31),
+            amount=Decimal("120.00"),
+            side=LiquidityFlowSide.INFLOW,
+            area=LiquidityBalanceArea.ASSET,
+            evidence=LiquidityEvidence.CONTRACTUAL,
+        )
+        coupon = LiquidityProjectionFlow(
+            reference="MASTER_COUPON:" + "c" * 64 + ":TEST-USD-CUPON",
+            source="TEST-CUSTODY-USD",
+            currency="USD",
+            payment_date=cutoff + timedelta(days=31),
+            amount=Decimal("5.25"),
+            side=LiquidityFlowSide.INFLOW,
+            area=LiquidityBalanceArea.ASSET,
+            evidence=LiquidityEvidence.CONTRACTUAL,
+        )
+        master = MasterPrincipalEvidence(
+            cutoff=cutoff,
+            master_sha256="c" * 64,
+            positions_read=1,
+            flows=(principal,),
+            excluded=(),
+            principal_by_currency=(("CRC", Decimal("120.00")), ("USD", Decimal(0))),
+        )
+        coupons = ApprovedMasterCouponSchedule(
+            cutoff=cutoff,
+            events=(coupon,),
+            master_sha256="c" * 64,
+            ledger_sha256="e" * 64,
+            custodian_sha256="f" * 64,
+            nonduplication_references=frozenset({"TEST-COUPON-RECON"}),
+        )
+        assembly = assemble_partial_institutional_projection(
+            cutoff=cutoff,
+            scenario="BASE",
+            master=master,
+            master_maturity_recognition_reference="TEST-PRINCIPAL-SETTLEMENT",
+            approved_investment_coupons=coupons,
+            opening_by_currency={"CRC": Decimal("1000"), "USD": Decimal("85.25")},
+            opening_certifications={"CRC": "TEST-ICL-CRC", "USD": "TEST-ICL-USD"},
+            opening_nonduplication_reference="TEST-ICL-OPENING",
+        )
+        session = ConfiguredOpeningSession(
+            cutoff=cutoff,
+            scenario="BASE",
+            assembly=assembly,
+            sight_records_approved=1,
+            sight_source_sha256="a" * 64,
+            bank_support_sha256="b" * 64,
+            bank_document_sha256="d" * 64,
+            master_principal_events_approved=1,
+            master_coupon_events_approved=1,
+            master_source_sha256="c" * 64,
+            master_coupon_custodian_sha256="f" * 64,
+            sight_added_by_currency=(("CRC", Decimal("0")), ("USD", Decimal("75.25"))),
+        )
+        panel._receive_governed_opening(cutoff, "BASE", session)
+        table = panel._investment_reconciliation
+        assert table.rowCount() == 6
+        assert table.item(1, 0).text() == "MASTER_RECOGNIZED_PRINCIPAL"
+        assert table.item(1, 3).text() == "1"
+        assert table.item(1, 5).text() == "120.00"
+        assert table.item(3, 1).text().startswith("APERTURA")
+        assert table.item(3, 5).text() == "75.25"
+        assert table.item(3, 3).text() == "N/D"
+        assert table.item(5, 0).text() == "APPROVED_MASTER_COUPONS"
+        assert table.item(5, 5).text() == "5.25"
+        assert table.item(5, 7).text() == "f" * 64
+        destination = tmp_path / "investment_sources.xlsx"
+        monkeypatch.setattr(
+            "aip.ui.modules.liquidity.views.sugef210_projection_panel."
+            "QFileDialog.getSaveFileName",
+            lambda *_args, **_kwargs: (str(destination), "Excel (*.xlsx)"),
+        )
+        panel.export_reconciliation()
+        workbook = load_workbook(destination, read_only=True, data_only=True)
+        try:
+            sheet = workbook["Conciliacion inversiones"]
+            assert sheet.max_row == 7
+            assert sheet.cell(3, 4).value == 1
+            assert sheet.cell(3, 4).data_type == "n"
+            assert sheet.cell(3, 6).value == 120
+            assert sheet.cell(3, 6).data_type == "n"
+            assert sheet.cell(5, 6).value == 75.25
+            assert sheet.cell(5, 6).data_type == "n"
+            assert sheet.cell(5, 4).value == "N/D"
+            assert sheet.cell(7, 6).value == 5.25
+            assert sheet.cell(7, 6).data_type == "n"
+            assert sheet.cell(7, 8).value == "f" * 64
+            assert dict(workbook["Control"].iter_rows(values_only=True))[
+                "flujo_integral_certificado"
+            ] == "NO"
+        finally:
+            workbook.close()
+        panel._scenario.setCurrentText("SYSTEMIC")
+        assert table.rowCount() == 0
+        assert panel._governed_projection is None
+    finally:
+        panel.close()
+
+
+def test_investment_reconciliation_missing_evidence_stays_nd_and_inconsistent_counts_block(
+    qt_app
+):
+    panel = SUGEF210ProjectionPanel()
+    try:
+        cutoff = date(2026, 9, 30)
+        panel._date.setDate(QDate(2026, 9, 30))
+        assembly = assemble_partial_institutional_projection(
+            cutoff=cutoff,
+            scenario="BASE",
+            opening_by_currency={"CRC": Decimal(20), "USD": Decimal(10)},
+            opening_certifications={"CRC": "TEST-CRC", "USD": "TEST-USD"},
+            opening_nonduplication_reference="TEST-OPENING-RECON",
+        )
+        session = ConfiguredOpeningSession(
+            cutoff=cutoff,
+            scenario="BASE",
+            assembly=assembly,
+            sight_records_approved=0,
+            sight_source_sha256="a" * 64,
+            bank_support_sha256="b" * 64,
+            bank_document_sha256="d" * 64,
+        )
+        panel._receive_governed_opening(cutoff, "BASE", session)
+        table = panel._investment_reconciliation
+        assert table.rowCount() == 6
+        assert all(table.item(i, 5).text() == "N/D" for i in range(6))
+        assert all(table.item(i, 3).text() == "N/D" for i in range(6) if i % 3 == 0)
+        panel._invalidate_governed_projection()
+        with pytest.raises(ValueError, match="Investment event counts differ"):
+            panel._receive_governed_opening(
+                cutoff,
+                "BASE",
+                replace(session, master_coupon_events_approved=1),
+            )
+        assert table.rowCount() == 0
+        assert panel._governed_projection is None
+    finally:
+        panel.close()
+
