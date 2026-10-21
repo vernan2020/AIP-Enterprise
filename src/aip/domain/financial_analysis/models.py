@@ -230,9 +230,7 @@ class FinancialAnalysisSnapshot:
     reference_matrix_maximum: Decimal | None = None
     reference_matrix_coverage: str = "Sin cotejo"
     reference_matrix_diagnostics: tuple[str, ...] = field(default_factory=tuple)
-    reference_matrix_indicators: tuple[MatrixReferenceBreakdown, ...] = field(
-        default_factory=tuple
-    )
+    reference_matrix_indicators: tuple[MatrixReferenceBreakdown, ...] = field(default_factory=tuple)
     indicator_reconciliations: tuple[FinancialIndicatorReconciliation, ...] = field(
         default_factory=tuple
     )
