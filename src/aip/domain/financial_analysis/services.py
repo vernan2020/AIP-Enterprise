@@ -153,11 +153,18 @@ class FinancialAnalysisService:
             reference_maximum = reference.score_maximum
             reference_coverage = (
                 f"{len(reference.entities)}/38 entidades de matriz, "
-                f"{len(reference.incomplete_entities)} sin nota completa"
+                f"{len(reference.incomplete_entities)} con indicadores incompletos"
+                f" · Estado: {reference.classification_status}"
             )
             notes = []
             if absent_entities:
-                notes.append("No aparecen en el corte " + ", ".join(absent_entities))
+                notes.append("Entidades ausentes del universo homologado: "
+                             + ", ".join(absent_entities))
+            if reference.classification_status != "APTA":
+                notes.append(
+                    "Calificación matricial suspendida: el máximo de una cohorte "
+                    "incompleta no representa la distribución metodológica aprobada."
+                )
             if selected_reference is None:
                 notes.append("La entidad seleccionada no integra la cohorte de matriz.")
             elif selected_reference.missing:
