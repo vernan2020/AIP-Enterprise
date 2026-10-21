@@ -168,6 +168,21 @@ class RatingScoreAuditRow:
 
 
 @dataclass(frozen=True, slots=True)
+class RatingMatrixComparisonRow:
+    indicator: str
+    value: str
+    aip_p15: str
+    matrix_p15: str
+    aip_p85: str
+    matrix_p85: str
+    matrix_weight: str
+    aip_points: str
+    matrix_points: str
+    delta_points: str
+    matrix_origin: str
+
+
+@dataclass(frozen=True, slots=True)
 class IndicatorReconciliationRow:
     indicator: str
     published_value: str
@@ -208,6 +223,7 @@ class FinancialAnalysisViewModel:
     score_audit_warning: str = ""
     score_matrix_summary: str = ""
     score_matrix_notes: str = ""
+    score_matrix_rows: tuple[RatingMatrixComparisonRow, ...] = field(default_factory=tuple)
     indicator_reconciliations: tuple[IndicatorReconciliationRow, ...] = field(default_factory=tuple)
     rating_diagnostics: tuple[str, ...] = field(default_factory=tuple)
     diagnostics: tuple[str, ...] = field(default_factory=tuple)
