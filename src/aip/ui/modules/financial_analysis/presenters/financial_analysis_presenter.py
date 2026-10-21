@@ -406,12 +406,6 @@ class FinancialAnalysisPresenter:
             if score_audit.issues:
                 score_audit_summary += " · " + " / ".join(score_audit.issues)
             score_audit_warning = score_audit.criterion_warning
-            if score_audit.alternative_proportional_score is not None:
-                score_audit_warning += (
-                    f" Escenario alternativo: "
-                    f"{score_audit.alternative_proportional_score:,.3f} "
-                    f"({score_audit.alternative_proportional_grade})."
-                )
         else:
             score_audit_summary = "Sin calificación seleccionada"
             score_audit_warning = ""
