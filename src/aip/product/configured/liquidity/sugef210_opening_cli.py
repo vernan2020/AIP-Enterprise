@@ -54,6 +54,10 @@ def summarize_session(session: ConfiguredOpeningSession) -> dict[str, object]:
             for account, source_type, currency_code, count, balance in session.demand_deposit_native_reconciliations
         ],
         "source_flows_included": result.source_flow_count,
+        "individual_events_reconciled": len(session.assembly.audited_events),
+        "events_after_365_days_reconciled": sum(
+            event.horizon_status == "AFTER_365D" for event in session.assembly.audited_events
+        ),
         "not_a_regulatory_cashflow_certification": True,
         "document_hash_is_not_a_bank_signature": True,
         "projection_status": result.status,

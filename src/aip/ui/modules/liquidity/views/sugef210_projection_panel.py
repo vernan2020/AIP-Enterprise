@@ -36,6 +36,9 @@ from aip.product.configured.liquidity.financial_plan_source import (
     FinancialPlanSourceAudit,
     read_financial_plan_assumptions,
 )
+from aip.product.configured.liquidity.sugef210_projection_assembler import (
+    LiquidityAuditedCashEvent,
+)
 from aip.product.configured.liquidity.sugef210_opening_session import (
     ConfiguredOpeningSession,
     run_configured_sight_opening,
@@ -149,6 +152,22 @@ class SUGEF210ProjectionPanel(QWidget):
         "Saldo proyectado CRC†",
         "Saldo proyectado USD†",
     )
+    _EVENT_AUDIT_HEADERS = (
+        "Grupo fuente",
+        "Referencia evento",
+        "Referencia origen",
+        "Fecha pago",
+        "Moneda original",
+        "Importe nativo",
+        "Área",
+        "Sentido",
+        "Evidencia",
+        "Supuesto",
+        "Banda SUGEF 2-10",
+        "Horizonte",
+        "Cobertura",
+    )
+    _EVENT_AUDIT_UI_LIMIT = 300
     _INVESTMENT_RECONCILIATION_HEADERS = (
         "Origen de inversión",
         "Naturaleza",
@@ -207,6 +226,7 @@ class SUGEF210ProjectionPanel(QWidget):
         self._opening_worker: _SUGEF210OpeningWorker | None = None
         self._plan_audit: FinancialPlanSourceAudit | None = None
         self._governed_projection: LiquidityProjectionResult | None = None
+        self._audited_events: tuple[LiquidityAuditedCashEvent, ...] = ()
         self._cutoff = date.today()
         main = QVBoxLayout(self)
         main.setContentsMargins(10, 10, 10, 10)
@@ -329,6 +349,10 @@ class SUGEF210ProjectionPanel(QWidget):
             "sugef210InvestmentOpeningPrincipalCouponReconciliation",
         )
         self._planning_tabs.addTab(self._investment_reconciliation, "Conciliación inversiones")
+        self._event_audit_table = self._table(
+            self._EVENT_AUDIT_HEADERS, "sugef210IndividualEventAudit"
+        )
+        self._planning_tabs.addTab(self._event_audit_table, "Trazabilidad por operación")
         self._demand_deposit_reconciliation = self._table(
             (
                 "Cuenta contable XML210",
@@ -472,6 +496,8 @@ class SUGEF210ProjectionPanel(QWidget):
 
     def _invalidate_governed_projection(self) -> None:
         self._governed_projection = None
+        self._audited_events = ()
+        self._event_audit_table.setRowCount(0)
         self._governed_flow_details.setRowCount(0)
         self._demand_deposit_reconciliation.setRowCount(0)
         self._investment_reconciliation.setRowCount(0)
@@ -810,6 +836,65 @@ class SUGEF210ProjectionPanel(QWidget):
                 )
         return tuple(rows)
 
+    @staticmethod
+    def _event_audit_row(event: LiquidityAuditedCashEvent) -> tuple[str, ...]:
+        return (
+            event.source_group,
+            event.reference,
+            event.source_reference,
+            event.payment_date.isoformat(),
+            event.currency,
+            str(event.native_amount),
+            event.area.value,
+            event.side.value,
+            event.evidence.value,
+            event.assumption_id or "N/D",
+            event.band_key,
+            event.horizon_status,
+            event.source_status,
+        )
+
+    def _validated_event_audit(
+        self, session: ConfiguredOpeningSession
+    ) -> tuple[LiquidityAuditedCashEvent, ...]:
+        """Do not render tampered/unreconciled cash-event lineage."""
+        events = session.assembly.audited_events
+        projection = session.assembly.projection
+        if len(events) != projection.source_flow_count:
+            raise ValueError("Event lineage count differs from approved projection")
+        if sum(e.horizon_status == "AFTER_365D" for e in events) != projection.excluded_out_of_horizon:
+            raise ValueError("Event lineage beyond 365 days differs from projection")
+        if len({e.reference for e in events}) != len(events):
+            raise ValueError("Duplicated institutional cash-event lineage")
+        for event in events:
+            if (
+                not event.native_amount.is_finite()
+                or event.native_amount <= 0
+                or event.currency not in {"CRC", "USD"}
+            ):
+                raise ValueError("Invalid source amount or currency in event audit")
+            if event.horizon_status == "AFTER_365D":
+                if (
+                    event.band_key != "OUTSIDE_365D"
+                    or event.payment_date <= projection.windows[-1].end
+                ):
+                    raise ValueError("Cash-event outside-horizon classification inconsistent")
+            elif event.horizon_status == "IN_365D":
+                window = next(
+                    (w for w in projection.windows if w.key == event.band_key), None
+                )
+                if window is None or not window.start <= event.payment_date <= window.end:
+                    raise ValueError("Cash-event band classification inconsistent")
+            else:
+                raise ValueError("Unknown cash-event horizon classification")
+        for row in projection.rows:
+            if sum(
+                event.band_key == row.window.key and event.currency == row.currency
+                for event in events
+            ) != row.event_count:
+                raise ValueError("Event lineage does not reconcile to 34 projected bands")
+        return events
+
     def _receive_governed_opening(
         self, cutoff: date, scenario: str, session: ConfiguredOpeningSession
     ) -> None:
@@ -819,7 +904,20 @@ class SUGEF210ProjectionPanel(QWidget):
             raise ValueError("Loaded opening cutoff or scenario does not match the request")
         # Fail closed on source-level mismatches before changing the visible forecast.
         investment_rows = self._investment_reconciliation_rows(session)
+        audited_events = self._validated_event_audit(session)
         self.present_governed_projection(session.assembly.projection)
+        self._audited_events = audited_events
+        self._event_audit_table.setUpdatesEnabled(False)
+        try:
+            for event in audited_events[: self._EVENT_AUDIT_UI_LIMIT]:
+                self._append(self._event_audit_table, self._event_audit_row(event))
+        finally:
+            self._event_audit_table.setUpdatesEnabled(True)
+        self._status.setText(
+            self._status.text()
+            + f" Trazabilidad: {min(len(audited_events), self._EVENT_AUDIT_UI_LIMIT)}"
+            + f" de {len(audited_events)} operaciones en pantalla; Excel incluye todas."
+        )
         self._investment_reconciliation.setRowCount(0)
         for values in investment_rows:
             self._append(self._investment_reconciliation, values)
@@ -1126,6 +1224,28 @@ class SUGEF210ProjectionPanel(QWidget):
                         )
                     )
                 )
+
+        event_sheet = workbook.create_sheet("Trazabilidad eventos")
+        event_sheet.append(self._EVENT_AUDIT_HEADERS)
+        for audited in self._audited_events:
+            audit_values = self._event_audit_row(audited)
+            event_sheet.append(
+                tuple(
+                    audited.native_amount if column == 5 else safe(value)
+                    for column, value in enumerate(audit_values)
+                )
+            )
+        if projection is not None:
+            metadata.append(("eventos_auditados_linea_a_linea", len(self._audited_events)))
+            metadata.append(
+                (
+                    "eventos_mostrados_en_UI",
+                    min(len(self._audited_events), self._EVENT_AUDIT_UI_LIMIT),
+                )
+            )
+            metadata.append(
+                ("nota_trazabilidad", "Excel incluye todos los eventos; UI muestra máximo 300")
+            )
 
         investment_sheet = workbook.create_sheet("Conciliacion inversiones")
         investment_sheet.append(self._INVESTMENT_RECONCILIATION_HEADERS)
