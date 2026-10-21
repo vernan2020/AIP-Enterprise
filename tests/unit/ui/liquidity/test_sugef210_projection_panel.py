@@ -7,6 +7,7 @@ from decimal import Decimal
 import pytest
 from openpyxl import load_workbook
 from PySide6.QtCore import QDate
+from PySide6.QtWidgets import QLabel
 
 from aip.domain.liquidity.cashflow.services.sugef210_projection import (
     LiquidityAssumption,
@@ -863,3 +864,48 @@ def test_modified_event_native_amount_never_enters_approved_ui(qt_app):
         assert panel._event_audit_table.rowCount() == 0
     finally:
         panel.close()
+
+
+def test_completed_month_default_is_calendar_hint_not_source_attestation(qt_app):
+    from aip.ui.modules.liquidity.views.sugef210_projection_panel import (
+        last_completed_calendar_month_end,
+    )
+
+    assert last_completed_calendar_month_end(date(2026, 10, 21)) == date(2026, 9, 30)
+    assert last_completed_calendar_month_end(date(2026, 1, 1)) == date(2025, 12, 31)
+    assert last_completed_calendar_month_end(date(2028, 3, 15)) == date(2028, 2, 29)
+    panel = SUGEF210ProjectionPanel()
+    try:
+        assert panel._cutoff == last_completed_calendar_month_end(date.today())
+        label = panel.findChild(
+            QLabel, "sugef210CalendarCutoffHint"
+        )
+        assert label is not None
+        assert "no confirma" in label.toolTip()
+        assert all(panel._windows.item(index, 4).text() == "N/D" for index in range(17))
+    finally:
+        panel.close()
+
+
+def test_readiness_hint_requires_exact_master_and_never_activates_opening(qt_app):
+    panel = SUGEF210ProjectionPanel()
+    try:
+        panel._date.setDate(QDate(2026, 9, 30))
+        def inventory(master_status: str):
+            return {
+                "status": "ACCOUNT_LEVEL_EVIDENCE_ONLY_NO_AVAILABLE_CASH",
+                "xml_records_read": 1,
+                "record_evidence": [],
+                "accounts": [],
+                "master_review_status": master_status,
+            }
+        panel._receive(panel._cutoff, inventory("MASTER_NOT_CONFIGURED"))
+        assert "Maestro exacto no validado" in panel._status.text()
+        assert panel._governed_projection is None
+        panel._receive(panel._cutoff, inventory("MASTER_EXACT_CUTOFF_READ"))
+        assert "seleccione autorización XML" in panel._status.text()
+        assert "NO CERTIFICADA" in panel._status.text()
+        assert panel._governed_projection is None
+    finally:
+        panel.close()
+

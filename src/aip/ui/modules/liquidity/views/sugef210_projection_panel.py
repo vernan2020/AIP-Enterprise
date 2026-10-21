@@ -6,7 +6,7 @@ numbers and does not pretend incomplete source coverage is a complete forecast.
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 
 from PySide6.QtCore import QDate, Qt, QThread, Signal
@@ -48,6 +48,11 @@ from aip.product.configured.liquidity.sugef210_projection_assembler import (
 from aip.product.configured.liquidity.sugef210_source_audit_cli import (
     inspect_xml_investment_source,
 )
+
+
+def last_completed_calendar_month_end(today: date) -> date:
+    """Suggest a completed monthly cutoff; does not claim source publication."""
+    return today.replace(day=1) - timedelta(days=1)
 
 
 class _SUGEF210SourceWorker(QThread):
@@ -229,7 +234,7 @@ class SUGEF210ProjectionPanel(QWidget):
         self._plan_audit: FinancialPlanSourceAudit | None = None
         self._governed_projection: LiquidityProjectionResult | None = None
         self._audited_events: tuple[LiquidityAuditedCashEvent, ...] = ()
-        self._cutoff = date.today()
+        self._cutoff = last_completed_calendar_month_end(date.today())
         main = QVBoxLayout(self)
         main.setContentsMargins(10, 10, 10, 10)
         main.setSpacing(8)
@@ -254,6 +259,12 @@ class SUGEF210ProjectionPanel(QWidget):
         self._date.setDate(QDate(self._cutoff.year, self._cutoff.month, self._cutoff.day))
         self._date.dateChanged.connect(self._on_date_changed)
         controls.addWidget(self._date)
+        cutoff_hint = QLabel("Último fin de mes sugerido; confirme disponibilidad de fuentes")
+        cutoff_hint.setObjectName("sugef210CalendarCutoffHint")
+        cutoff_hint.setToolTip(
+            "La fecha sugerida es calendario, no confirma publicación de XML ni Maestro."
+        )
+        controls.addWidget(cutoff_hint)
         controls.addWidget(QLabel("Escenario:"))
         self._scenario = QComboBox()
         self._scenario.setObjectName("sugef210ScenarioSelection")
@@ -703,11 +714,19 @@ class SUGEF210ProjectionPanel(QWidget):
             )
         self._report = report
         self._export.setEnabled(True)
+        master_status = str(report.get("master_review_status") or "N/D")
+        source_step = (
+            "Maestro exacto del corte identificado; para ejecutar la proyección "
+            "seleccione autorización XML y conciliación Tesorería/ICL vigentes."
+            if master_status == "MASTER_EXACT_CUTOFF_READ"
+            else "Maestro exacto no validado: revise fecha de corte y ruta del portafolio "
+            "antes de cargar saldos o vencimientos."
+        )
         self._status.setText(
             f"XML inversiones: {report.get('xml_records_read', 0)} registros; "
             f"{self._accounts.rowCount()} cuentas/monedas inspeccionadas; "
             f"{self._records.rowCount()} registros trazables. "
-            f"Maestro: {report.get('master_review_status', 'N/D')}. "
+            f"Maestro: {master_status}. {source_step} "
             "Disponibilidad a la vista: NO CERTIFICADA. "
             "Flujo integral: pendiente de fuentes y supuestos institucionales."
         )

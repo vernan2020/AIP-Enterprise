@@ -295,3 +295,14 @@ Para corte o escenario distinto se necesitan autorizaciones específicas.
 hasta ejecutar estos comandos en el equipo que contiene los XML, el Maestro,
 el soporte de ICL y las conciliaciones originales y revisar sus resultados.
 
+### Corte sugerido y preparación visible
+
+El panel Liquidez/SUGEF 2-10 ahora sugiere inicialmente **el último día del
+mes calendario anterior**, con edición manual. Esta sugerencia **no afirma
+que el archivo mensual ya esté publicado**; un XML o Maestro faltante conserva
+su estado de bloqueo, sin utilizar datos de un corte distinto. La pantalla
+explica si el Maestro exacto fue localizado o si debe revisarse la ruta
+institucional antes de seleccionar los dos documentos de autorización.
+La carga inicial nunca activa caja ni flujos por el solo hecho de identificar
+un mes cerrado.
+
