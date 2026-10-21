@@ -31,8 +31,8 @@ from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model 
     PeerSummaryRow,
     RatingDimensionRow,
     RatingIndicatorRow,
-    RatingMatrixComparisonRow,
     MatrixPeerAuditRow,
+    RatingMatrixComparisonRow,
     RatingScoreAuditRow,
 )
 
