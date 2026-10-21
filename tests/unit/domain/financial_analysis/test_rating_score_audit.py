@@ -38,22 +38,22 @@ def _coopenae_rating():
     lines = []
     for definition in FinancialEntityRatingService.INDICATORS:
         if definition.direction is RatingDirection.BINARY:
-            values = (Decimal("0"), Decimal("0"), Decimal("1"),
-                      Decimal("0"), Decimal("1"))
+            values = (Decimal("0"), Decimal("0"), Decimal("1"), Decimal("0"), Decimal("1"))
         else:
             direction = definition.direction
             factor = factors[definition.code]
             selected_value = {
                 RatingDirection.HIGHER_IS_BETTER: {
-                    Decimal("0.75"): Decimal("4"), Decimal("0.50"): Decimal("2")
+                    Decimal("0.75"): Decimal("4"),
+                    Decimal("0.50"): Decimal("2"),
                 },
                 RatingDirection.LOWER_IS_BETTER: {
-                    Decimal("0.75"): Decimal("2"), Decimal("0.50"): Decimal("4")
+                    Decimal("0.75"): Decimal("2"),
+                    Decimal("0.50"): Decimal("4"),
                 },
             }[direction][factor]
             values = (selected_value,) + tuple(
-                x for x in map(Decimal, ("1", "2", "3", "4", "5"))
-                if x != selected_value
+                x for x in map(Decimal, ("1", "2", "3", "4", "5")) if x != selected_value
             )
         for entity, value in zip(entities, values, strict=True):
             lines.append(
@@ -103,8 +103,9 @@ def test_audit_detects_score_level_and_contribution_discrepancies() -> None:
 
 def test_incomplete_rating_does_not_invent_scores_or_alternatives() -> None:
     rating = _coopenae_rating()
-    incomplete = replace(rating, status="INCOMPLETE", score=None, grade=None,
-                         indicators=rating.indicators[:-1])
+    incomplete = replace(
+        rating, status="INCOMPLETE", score=None, grade=None, indicators=rating.indicators[:-1]
+    )
     audit = RatingScoreAuditService.audit(incomplete)
     assert audit.status == "REVISAR"  # Contrato de 13 indicadores roto.
     assert audit.recomputed_score is None
@@ -114,9 +115,7 @@ def test_incomplete_rating_does_not_invent_scores_or_alternatives() -> None:
 def test_p15_p85_exact_boundaries_respect_certified_comparisons() -> None:
     rating = _coopenae_rating()
     higher = next(x for x in rating.indicators if x.code == "ROA")
-    definition = next(
-        x for x in FinancialEntityRatingService.INDICATORS if x.code == "ROA"
-    )
+    definition = next(x for x in FinancialEntityRatingService.INDICATORS if x.code == "ROA")
     for value, expected in (
         (higher.percentile_15, RatingLevel.CRITICAL),
         (higher.midpoint, RatingLevel.IMPROVABLE),
