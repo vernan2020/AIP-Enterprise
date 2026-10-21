@@ -644,6 +644,49 @@ class FinancialAnalysisView(QWidget):
         reconciliation_layout.addWidget(self._reconciliation_table, 1)
         self._rating_content_tabs.addTab(reconciliation, "Reconciliación")
 
+        audit = QWidget()
+        audit_layout = QVBoxLayout(audit)
+        audit_layout.setContentsMargins(8, 8, 8, 8)
+        audit_layout.setSpacing(6)
+        audit_header = QHBoxLayout()
+        self._score_audit_summary = QLabel("Sin nota para verificar")
+        self._score_audit_summary.setWordWrap(True)
+        self._score_audit_summary.setStyleSheet(
+            "font-weight:700; color:#314A5E; font-size:11px;"
+        )
+        audit_header.addWidget(self._score_audit_summary, 1)
+        audit_export = QPushButton("Exportar auditoría CSV")
+        audit_export.setToolTip("Exporta los 13 indicadores, pesos, factores y diferencias para Excel.")
+        audit_export.clicked.connect(
+            lambda: save_table_csv_dialog(self, self._score_audit_table, "auditoria_08ME14-01.csv")
+        )
+        audit_header.addWidget(audit_export)
+        audit_layout.addLayout(audit_header)
+
+        self._score_audit_warning = QLabel("")
+        self._score_audit_warning.setWordWrap(True)
+        self._score_audit_warning.setStyleSheet(
+            "background:#FFF9E8; border:1px solid #E8D79E; border-radius:5px; "
+            "color:#6F541A; padding:5px 8px;"
+        )
+        audit_layout.addWidget(self._score_audit_warning)
+
+        self._score_audit_table = self._table(
+            [
+                "Indicador", "Valor", "P15", "Punto medio", "P85", "Dirección",
+                "Nivel comprobado", "Pts.", "Peso", "Factor", "Esperado",
+                "AIP", "Diferencia", "Estado", "Cuenta fuente", "Regla aplicada",
+            ]
+        )
+        audit_table_header = self._score_audit_table.horizontalHeader()
+        audit_table_header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        for column in range(1, 16):
+            audit_table_header.setSectionResizeMode(
+                column, QHeaderView.ResizeMode.ResizeToContents
+            )
+        audit_layout.addWidget(self._score_audit_table, 1)
+        self._rating_content_tabs.addTab(audit, "Auditoría del puntaje")
+
         layout.addWidget(self._rating_content_tabs, 1)
 
         self._rating_notes = QLabel()
@@ -1076,6 +1119,26 @@ class FinancialAnalysisView(QWidget):
                 if row.source_account:
                     item.setToolTip(f"Cuenta/fuente: {row.source_account}")
                 self._rating_indicator_table.setItem(row_index, column, item)
+
+        self._score_audit_summary.setText(view_model.score_audit_summary)
+        self._score_audit_warning.setText(view_model.score_audit_warning)
+        self._score_audit_warning.setVisible(bool(view_model.score_audit_warning))
+        self._score_audit_table.setRowCount(len(view_model.score_audit_rows))
+        for row_index, row in enumerate(view_model.score_audit_rows):
+            audit_values = (
+                row.indicator, row.value, row.p15, row.midpoint, row.p85,
+                row.direction, row.level, row.points, row.weight, row.factor,
+                row.expected, row.reported, row.difference, row.status,
+                row.source, row.rule,
+            )
+            for column, value in enumerate(audit_values):
+                item = QTableWidgetItem(value)
+                if column in {1, 2, 3, 4, 7, 8, 9, 10, 11, 12}:
+                    item.setTextAlignment(
+                        Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+                    )
+                item.setToolTip(f"Regla: {row.rule}\nFuente: {row.source}")
+                self._score_audit_table.setItem(row_index, column, item)
 
         self._reconciliation_table.setRowCount(len(view_model.indicator_reconciliations))
         for row_index, row in enumerate(view_model.indicator_reconciliations):
