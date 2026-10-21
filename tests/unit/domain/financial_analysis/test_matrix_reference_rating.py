@@ -111,25 +111,24 @@ def test_incomplete_cohort_suspends_every_letter_and_monthly_maximum() -> None:
     from dataclasses import replace
 
     entities = tuple(replace(_entity(i % 4), entity_id=str(i)) for i in range(38))
-    complete = MatrixReferenceRatingService.evaluate(
-        entities, required_cohort_size=38
-    )
+    complete = MatrixReferenceRatingService.evaluate(entities, required_cohort_size=38)
     assert complete.classification_status == "APTA"
     assert complete.expected_cohort_size == 38
     assert complete.score_maximum is not None
     assert all(item.grade is not None for item in complete.entities)
 
-    short = MatrixReferenceRatingService.evaluate(
-        entities[:-1], required_cohort_size=38
-    )
+    short = MatrixReferenceRatingService.evaluate(entities[:-1], required_cohort_size=38)
     assert short.classification_status == "COHORTE_INCOMPLETA"
     assert short.score_maximum is None
     assert all(item.grade is None for item in short.entities)
     assert any(item.score is not None for item in short.entities)
 
     with_missing_liquidity = tuple(
-        replace(item, indicators={**item.indicators, "LIQUIDITY_COVERAGE": None})
-        if item.entity_id == "0" else item
+        (
+            replace(item, indicators={**item.indicators, "LIQUIDITY_COVERAGE": None})
+            if item.entity_id == "0"
+            else item
+        )
         for item in entities
     )
     incomplete = MatrixReferenceRatingService.evaluate(
@@ -143,9 +142,7 @@ def test_incomplete_cohort_suspends_every_letter_and_monthly_maximum() -> None:
 
 def test_reference_cohort_size_parameter_is_strictly_checked() -> None:
     with pytest.raises(ValueError, match="incompatible"):
-        MatrixReferenceRatingService.evaluate(
-            (_entity(0),), required_cohort_size=2
-        )
+        MatrixReferenceRatingService.evaluate((_entity(0),), required_cohort_size=2)
     with pytest.raises(ValueError, match="más entidades"):
         MatrixReferenceRatingService.evaluate(
             tuple(_entity(i) for i in range(4)), required_cohort_size=3
