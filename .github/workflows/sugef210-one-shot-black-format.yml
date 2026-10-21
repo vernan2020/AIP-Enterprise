@@ -6,6 +6,7 @@ name: One-shot SUGEF210 Black Formatting
 # Normalize the independently approved financial plan overlay and regression tests.
 # Normalize custody-evidenced investment coupons without modifying certified formulas.
 # Recheck coupon anti-double-counting and Master read-stability regression formatting.
+# Normalize complete per-operation SUGEF210 cashflow audit and export regressions.
 
 on:
   push:
