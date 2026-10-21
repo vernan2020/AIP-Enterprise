@@ -24,15 +24,44 @@ from aip.domain.financial_analysis.sugef_ratings import (
 
 # Public institutional names from the August 2026 approved comparison universe.
 REFERENCE_AUGUST_2026_CODES: tuple[str, ...] = (
-    "BANCO BAC SANJOSE", "BANCO BCT", "BANCO CMB", "BANCO DE COSTA RICA",
-    "BANCO GENERAL", "BANCO NACIONAL", "BANCO POPULAR", "BANHVI",
-    "CAJA DE ANDE", "BANCO CATHAY", "COOCIQUE", "COOPAVEGRA", "COOPEAYA",
-    "COOPESANMARCOS", "COOPEALIANZA", "COOPEANDE", "COOPEBANPO", "COOPECAJA",
-    "COOPECAR", "COOPEFYL", "COOPEGRECIA", "COOPEJUDICIAL", "COOPEMEDICOS",
-    "COOPEMEP", "COOPENAE", "COOPESANRAMON", "COOPEUNA", "CREDECOOP",
-    "BANCO DAVIVIENDA", "FINANCIERA CAFSA", "FINANCIERA COMECA",
-    "FINANCIERA MONGE", "BANCO IMPROSA", "BANCO LAFISE", "GRUPO MUTUAL",
-    "MUCAP", "BANCO PROMERICA", "DAVIBANK",
+    "BANCO BAC SANJOSE",
+    "BANCO BCT",
+    "BANCO CMB",
+    "BANCO DE COSTA RICA",
+    "BANCO GENERAL",
+    "BANCO NACIONAL",
+    "BANCO POPULAR",
+    "BANHVI",
+    "CAJA DE ANDE",
+    "BANCO CATHAY",
+    "COOCIQUE",
+    "COOPAVEGRA",
+    "COOPEAYA",
+    "COOPESANMARCOS",
+    "COOPEALIANZA",
+    "COOPEANDE",
+    "COOPEBANPO",
+    "COOPECAJA",
+    "COOPECAR",
+    "COOPEFYL",
+    "COOPEGRECIA",
+    "COOPEJUDICIAL",
+    "COOPEMEDICOS",
+    "COOPEMEP",
+    "COOPENAE",
+    "COOPESANRAMON",
+    "COOPEUNA",
+    "CREDECOOP",
+    "BANCO DAVIVIENDA",
+    "FINANCIERA CAFSA",
+    "FINANCIERA COMECA",
+    "FINANCIERA MONGE",
+    "BANCO IMPROSA",
+    "BANCO LAFISE",
+    "GRUPO MUTUAL",
+    "MUCAP",
+    "BANCO PROMERICA",
+    "DAVIBANK",
 )
 
 
@@ -43,8 +72,7 @@ class MatrixSUGEFAdapter:
     def _code(value: str) -> str:
         normalized = unicodedata.normalize("NFKD", value)
         stripped = "".join(
-            character for character in normalized
-            if not unicodedata.combining(character)
+            character for character in normalized if not unicodedata.combining(character)
         )
         return re.sub(r"[^A-Z0-9]+", " ", stripped.upper()).strip()
 
@@ -56,7 +84,8 @@ class MatrixSUGEFAdapter:
     ) -> tuple[tuple[str, ...], tuple[str, ...]]:
         entities = {
             line.entity.entity_id: line.entity
-            for line in lines if line.statement_date == cutoff_date
+            for line in lines
+            if line.statement_date == cutoff_date
         }
         matched: dict[str, str] = {}
         for entity in entities.values():
@@ -68,9 +97,7 @@ class MatrixSUGEFAdapter:
                         raise ValueError(f"Duplicidad de catálogo: {expected}")
                     matched[expected] = entity.entity_id
                     break
-        missing = tuple(
-            code for code in REFERENCE_AUGUST_2026_CODES if code not in matched
-        )
+        missing = tuple(code for code in REFERENCE_AUGUST_2026_CODES if code not in matched)
         return tuple(matched.values()), missing
 
     @classmethod
@@ -111,12 +138,16 @@ class MatrixSUGEFAdapter:
                     entity_id=entity_id,
                     name=source_lines[0].entity.name,
                     indicators=ratios,
-                    regulation_full=(proportional == Decimal("0"))
-                    if proportional in (Decimal("0"), Decimal("1"))
-                    else None,
-                    state_guarantee=(guarantee == Decimal("1"))
-                    if guarantee in (Decimal("0"), Decimal("1"))
-                    else None,
+                    regulation_full=(
+                        (proportional == Decimal("0"))
+                        if proportional in (Decimal("0"), Decimal("1"))
+                        else None
+                    ),
+                    state_guarantee=(
+                        (guarantee == Decimal("1"))
+                        if guarantee in (Decimal("0"), Decimal("1"))
+                        else None
+                    ),
                 )
             )
         return tuple(output)
