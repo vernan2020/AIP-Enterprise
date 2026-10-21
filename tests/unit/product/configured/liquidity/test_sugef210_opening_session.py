@@ -664,3 +664,168 @@ def test_configured_demand_deposit_xml_210_runoff_enters_usd_daily_band(monkeypa
             approval_manifest=authorization,
             bank_support_manifest=bank,
         )
+
+
+def _governed_plan_inputs(tmp_path: Path, sight_approval: Path) -> tuple[Path, Path]:
+    """Generate isolated workbook and ALCO manifest fixtures; never production data."""
+    from openpyxl import Workbook
+
+    workbook = Workbook()
+    matrix = workbook.active
+    assert matrix is not None
+    matrix.title = "Matriz Supuestos"
+    for col, value in enumerate(("ID", "Actividad", "Rubro", "Supuesto / Driver"), start=1):
+        matrix.cell(4, col, value)
+    calendar = workbook.create_sheet("Calendario mensual")
+    months = (
+        "ene-26", "feb-26", "mar-26", "abr-26", "may-26", "jun-26",
+        "jul-26", "ago-26", "sept-26", "oct-26", "nov-26", "dic-26",
+    )
+    for col, title in enumerate(("Driver", *months, "Total 2026"), start=1):
+        calendar.cell(3, col, title)
+    for row, driver in enumerate(
+        (
+            "Colocación bruta",
+            "Emisión nueva CAP (promedio)",
+            "Aportes capital social",
+            "Renuncias capital social",
+        ),
+        start=4,
+    ):
+        calendar.cell(row, 1, driver)
+        for col in range(2, 14):
+            calendar.cell(row, col, 10)
+        calendar.cell(row, 14, 120)
+    plan = tmp_path / "institutional-plan-2026.xlsx"
+    workbook.save(plan)
+    workbook.close()
+    plan_hash = hashlib.sha256(plan.read_bytes()).hexdigest()
+    def allocation(
+        driver: str, currency: str, amount: str, ref: str, ident: str
+    ) -> dict[str, object]:
+        return {
+            "driver": driver,
+            "year": 2026,
+            "month": 10,
+            "payment_date": "2026-10-10",
+            "currency": currency,
+            "incremental_native_amount": amount,
+            "overlap_crc_amount": "0",
+            "fx_crc_per_usd": "500" if currency == "USD" else None,
+            "fx_reference": "TEST-FX-EVIDENCE" if currency == "USD" else "",
+            "source_sha256": plan_hash,
+            "assumption_id": ident,
+            "approval_reference": "TEST-ALCO-PLAN-2026",
+            "plan_document_version": "TEST-2026-v1",
+            "rationale": "UNIT TEST native-currency dated allocation only",
+            "treasury_reconciliation_reference": "TEST-TREASURY-CASH-MOVEMENT",
+            "nonduplication_reference": ref,
+            "valid_from": "2026-09-01",
+            "valid_to": "2026-12-31",
+            "explicitly_approved": True,
+        }
+    authorization = tmp_path / "independent-plan-allocation.json"
+    authorization.write_text(
+        json.dumps(
+            {
+                "schema": "SUGEF210_FINANCIAL_PLAN_ALLOCATION_V1",
+                "cutoff": CUTOFF.isoformat(),
+                "scenario": "BASE",
+                "source_sha256": plan_hash,
+                "allocations": [
+                    allocation("Colocación bruta", "CRC", "1000000", "TEST-NEW-LOAN", "TEST-PLAN-LOAN"),
+                    allocation("Emisión nueva CAP (promedio)", "USD", "2000", "TEST-NEW-CAP", "TEST-PLAN-FUND"),
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    sight = json.loads(sight_approval.read_text(encoding="utf-8"))
+    sight["financial_plan_scenario"] = {
+        "source_file": str(plan),
+        "approval_file": str(authorization),
+    }
+    sight_approval.write_text(json.dumps(sight), encoding="utf-8")
+    return plan, authorization
+
+
+def test_governed_financial_plan_flows_enter_real_session_as_partial_native_currency(
+    monkeypatch, tmp_path
+):
+    _configure(monkeypatch, tmp_path)
+    sight, bank = _files(tmp_path)
+    plan, approval = _governed_plan_inputs(tmp_path, sight)
+    assert plan.is_file() and approval.is_file()
+    result = run_configured_sight_opening(
+        cutoff=CUTOFF, scenario="BASE",
+        approval_manifest=sight, bank_support_manifest=bank,
+    )
+    assert result.financial_plan_events_approved == 2
+    assert result.financial_plan_source_sha256 == hashlib.sha256(plan.read_bytes()).hexdigest()
+    projection = result.assembly.projection
+    crc = next(
+        row for row in projection.rows
+        if row.currency == "CRC" and row.window.key == "W08_14"
+    )
+    usd = next(
+        row for row in projection.rows
+        if row.currency == "USD" and row.window.key == "W08_14"
+    )
+    assert crc.asset_outflows == Decimal("1000000")
+    assert crc.net_flow == Decimal("-1000000")
+    assert crc.financing_need == Decimal("999000")
+    assert usd.liability_inflows == Decimal("2000")
+    assert usd.projected_liquidity == Decimal("2085.25")
+    assert projection.source_flow_count == 2
+    assert result.assembly.status.startswith("PARTIAL")
+    assert not projection.certified_comprehensive
+    assert "PLAN_SCENARIOS_UNAPPROVED_OR_NOT_LOADED" not in (
+        result.assembly.missing_institutional_evidence
+    )
+
+
+def test_governed_plan_blocks_tampered_workbook_or_approval_and_wrong_scenario(
+    monkeypatch, tmp_path
+):
+    _configure(monkeypatch, tmp_path)
+    sight, bank = _files(tmp_path)
+    plan, approval = _governed_plan_inputs(tmp_path, sight)
+    policy = json.loads(approval.read_text(encoding="utf-8"))
+    policy["scenario"] = "SYSTEMIC"
+    approval.write_text(json.dumps(policy), encoding="utf-8")
+    with pytest.raises(ValueError, match="another scenario"):
+        run_configured_sight_opening(
+            cutoff=CUTOFF, scenario="BASE",
+            approval_manifest=sight, bank_support_manifest=bank,
+        )
+    policy["scenario"] = "BASE"
+    approval.write_text(json.dumps(policy), encoding="utf-8")
+    plan.write_bytes(b"CHANGED-PLAN-WITH-NO-APPROVAL")
+    with pytest.raises(ValueError, match="Expected existing|plan workbook|workbook"):
+        run_configured_sight_opening(
+            cutoff=CUTOFF, scenario="BASE",
+            approval_manifest=sight, bank_support_manifest=bank,
+        )
+
+
+def test_governed_plan_missing_allocation_or_unapproved_scenario_never_books(
+    monkeypatch, tmp_path
+):
+    _configure(monkeypatch, tmp_path)
+    sight, bank = _files(tmp_path)
+    _plan, approval = _governed_plan_inputs(tmp_path, sight)
+    policy = json.loads(approval.read_text(encoding="utf-8"))
+    policy["allocations"][0]["explicitly_approved"] = False
+    approval.write_text(json.dumps(policy), encoding="utf-8")
+    with pytest.raises(ValueError, match="pending institutional approval"):
+        run_configured_sight_opening(
+            cutoff=CUTOFF, scenario="BASE",
+            approval_manifest=sight, bank_support_manifest=bank,
+        )
+    policy["allocations"] = []
+    approval.write_text(json.dumps(policy), encoding="utf-8")
+    with pytest.raises(ValueError, match="explicitly approved dated allocations"):
+        run_configured_sight_opening(
+            cutoff=CUTOFF, scenario="BASE",
+            approval_manifest=sight, bank_support_manifest=bank,
+        )
