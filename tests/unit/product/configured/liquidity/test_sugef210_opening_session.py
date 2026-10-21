@@ -678,8 +678,18 @@ def _governed_plan_inputs(tmp_path: Path, sight_approval: Path) -> tuple[Path, P
         matrix.cell(4, col, value)
     calendar = workbook.create_sheet("Calendario mensual")
     months = (
-        "ene-26", "feb-26", "mar-26", "abr-26", "may-26", "jun-26",
-        "jul-26", "ago-26", "sept-26", "oct-26", "nov-26", "dic-26",
+        "ene-26",
+        "feb-26",
+        "mar-26",
+        "abr-26",
+        "may-26",
+        "jun-26",
+        "jul-26",
+        "ago-26",
+        "sept-26",
+        "oct-26",
+        "nov-26",
+        "dic-26",
     )
     for col, title in enumerate(("Driver", *months, "Total 2026"), start=1):
         calendar.cell(3, col, title)
@@ -700,6 +710,7 @@ def _governed_plan_inputs(tmp_path: Path, sight_approval: Path) -> tuple[Path, P
     workbook.save(plan)
     workbook.close()
     plan_hash = hashlib.sha256(plan.read_bytes()).hexdigest()
+
     def allocation(
         driver: str, currency: str, amount: str, ref: str, ident: str
     ) -> dict[str, object]:
@@ -724,6 +735,7 @@ def _governed_plan_inputs(tmp_path: Path, sight_approval: Path) -> tuple[Path, P
             "valid_to": "2026-12-31",
             "explicitly_approved": True,
         }
+
     authorization = tmp_path / "independent-plan-allocation.json"
     authorization.write_text(
         json.dumps(
@@ -733,8 +745,16 @@ def _governed_plan_inputs(tmp_path: Path, sight_approval: Path) -> tuple[Path, P
                 "scenario": "BASE",
                 "source_sha256": plan_hash,
                 "allocations": [
-                    allocation("Colocación bruta", "CRC", "1000000", "TEST-NEW-LOAN", "TEST-PLAN-LOAN"),
-                    allocation("Emisión nueva CAP (promedio)", "USD", "2000", "TEST-NEW-CAP", "TEST-PLAN-FUND"),
+                    allocation(
+                        "Colocación bruta", "CRC", "1000000", "TEST-NEW-LOAN", "TEST-PLAN-LOAN"
+                    ),
+                    allocation(
+                        "Emisión nueva CAP (promedio)",
+                        "USD",
+                        "2000",
+                        "TEST-NEW-CAP",
+                        "TEST-PLAN-FUND",
+                    ),
                 ],
             }
         ),
@@ -757,19 +777,19 @@ def test_governed_financial_plan_flows_enter_real_session_as_partial_native_curr
     plan, approval = _governed_plan_inputs(tmp_path, sight)
     assert plan.is_file() and approval.is_file()
     result = run_configured_sight_opening(
-        cutoff=CUTOFF, scenario="BASE",
-        approval_manifest=sight, bank_support_manifest=bank,
+        cutoff=CUTOFF,
+        scenario="BASE",
+        approval_manifest=sight,
+        bank_support_manifest=bank,
     )
     assert result.financial_plan_events_approved == 2
     assert result.financial_plan_source_sha256 == hashlib.sha256(plan.read_bytes()).hexdigest()
     projection = result.assembly.projection
     crc = next(
-        row for row in projection.rows
-        if row.currency == "CRC" and row.window.key == "W08_14"
+        row for row in projection.rows if row.currency == "CRC" and row.window.key == "W08_14"
     )
     usd = next(
-        row for row in projection.rows
-        if row.currency == "USD" and row.window.key == "W08_14"
+        row for row in projection.rows if row.currency == "USD" and row.window.key == "W08_14"
     )
     assert crc.asset_outflows == Decimal("1000000")
     assert crc.net_flow == Decimal("-1000000")
@@ -795,22 +815,24 @@ def test_governed_plan_blocks_tampered_workbook_or_approval_and_wrong_scenario(
     approval.write_text(json.dumps(policy), encoding="utf-8")
     with pytest.raises(ValueError, match="another scenario"):
         run_configured_sight_opening(
-            cutoff=CUTOFF, scenario="BASE",
-            approval_manifest=sight, bank_support_manifest=bank,
+            cutoff=CUTOFF,
+            scenario="BASE",
+            approval_manifest=sight,
+            bank_support_manifest=bank,
         )
     policy["scenario"] = "BASE"
     approval.write_text(json.dumps(policy), encoding="utf-8")
     plan.write_bytes(b"CHANGED-PLAN-WITH-NO-APPROVAL")
     with pytest.raises(ValueError, match="Expected existing|plan workbook|workbook"):
         run_configured_sight_opening(
-            cutoff=CUTOFF, scenario="BASE",
-            approval_manifest=sight, bank_support_manifest=bank,
+            cutoff=CUTOFF,
+            scenario="BASE",
+            approval_manifest=sight,
+            bank_support_manifest=bank,
         )
 
 
-def test_governed_plan_missing_allocation_or_unapproved_scenario_never_books(
-    monkeypatch, tmp_path
-):
+def test_governed_plan_missing_allocation_or_unapproved_scenario_never_books(monkeypatch, tmp_path):
     _configure(monkeypatch, tmp_path)
     sight, bank = _files(tmp_path)
     _plan, approval = _governed_plan_inputs(tmp_path, sight)
@@ -819,13 +841,17 @@ def test_governed_plan_missing_allocation_or_unapproved_scenario_never_books(
     approval.write_text(json.dumps(policy), encoding="utf-8")
     with pytest.raises(ValueError, match="pending institutional approval"):
         run_configured_sight_opening(
-            cutoff=CUTOFF, scenario="BASE",
-            approval_manifest=sight, bank_support_manifest=bank,
+            cutoff=CUTOFF,
+            scenario="BASE",
+            approval_manifest=sight,
+            bank_support_manifest=bank,
         )
     policy["allocations"] = []
     approval.write_text(json.dumps(policy), encoding="utf-8")
     with pytest.raises(ValueError, match="explicitly approved dated allocations"):
         run_configured_sight_opening(
-            cutoff=CUTOFF, scenario="BASE",
-            approval_manifest=sight, bank_support_manifest=bank,
+            cutoff=CUTOFF,
+            scenario="BASE",
+            approval_manifest=sight,
+            bank_support_manifest=bank,
         )

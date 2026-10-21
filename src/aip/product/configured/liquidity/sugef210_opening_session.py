@@ -280,9 +280,7 @@ def run_configured_sight_opening(
                 settlement_date = date.fromisoformat(_required_text(record, "payment_date"))
             except ValueError as exc:
                 raise ValueError("Invalid approved principal settlement date") from exc
-            master_nonduplication_refs.add(
-                _required_text(record, "nonduplication_reference")
-            )
+            master_nonduplication_refs.add(_required_text(record, "nonduplication_reference"))
             approved.append(
                 ApprovedMasterPrincipalPosition(
                     cashflow_reference=_required_text(record, "cashflow_reference"),
@@ -457,12 +455,8 @@ def run_configured_sight_opening(
             raise ValueError("Plan workbook and authorization must be independent source files")
         contractual_refs = set(master_nonduplication_refs)
         if xml_contractual is not None:
-            contractual_refs.update(
-                {event.reference for event in xml_contractual.events}
-            )
-            contractual_refs.update(
-                {event.source for event in xml_contractual.events}
-            )
+            contractual_refs.update({event.reference for event in xml_contractual.events})
+            contractual_refs.update({event.source for event in xml_contractual.events})
         if contract_policy is not None:
             contractual_refs.add(_required_text(contract_policy, "nonduplication_reference"))
         contractual_refs.update(verified.included_source_references)

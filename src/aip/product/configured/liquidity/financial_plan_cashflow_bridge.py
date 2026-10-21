@@ -8,14 +8,13 @@ already-scheduled contractual amounts before they can be booked.
 
 from __future__ import annotations
 
-from collections import defaultdict
 import json
+from collections import defaultdict
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
-from typing import Any
-from typing import Iterable
+from typing import Any, Iterable
 
 from aip.domain.liquidity.cashflow.services.sugef210_projection import (
     LiquidityAssumption,
@@ -213,6 +212,7 @@ def build_approved_financial_plan_events(
         source_sha256=audit.sha256,
     )
 
+
 def _unique_approval_fields(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     document: dict[str, Any] = {}
     for key, value in pairs:
@@ -334,7 +334,10 @@ def read_approved_financial_plan_overlay(
                 explicitly_approved=item.get("explicitly_approved") is True,
             )
         )
-    if not source.is_file() or read_financial_plan_assumptions(source, cutoff=cutoff).sha256 != audit.sha256:
+    if (
+        not source.is_file()
+        or read_financial_plan_assumptions(source, cutoff=cutoff).sha256 != audit.sha256
+    ):
         raise ValueError("Financial plan workbook changed during authorization review")
     return build_approved_financial_plan_events(
         audit=audit,
