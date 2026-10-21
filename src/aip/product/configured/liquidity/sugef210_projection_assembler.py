@@ -145,7 +145,7 @@ def assemble_partial_institutional_projection(
             raise ValueError("Plan allocation cut-off or scenario is inconsistent")
         groups.append(("APPROVED_PLAN_EVENTS", approved_plan.events, approved_plan.status))
         assumptions.extend(approved_plan.assumptions)
-        areas.add(LiquidityBalanceArea.BUSINESS_EVENT)
+        areas.update(event.area for event in approved_plan.events)
     else:
         missing.append("PLAN_SCENARIOS_UNAPPROVED_OR_NOT_LOADED")
 

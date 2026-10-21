@@ -749,6 +749,8 @@ class SUGEF210ProjectionPanel(QWidget):
             "documentados de cartera, captaciones y obligaciones; "
             f"{session.offbalance_commitments_reviewed} compromisos contingentes revisados, "
             f"{session.contingent_scenario_events_approved} desembolsos potenciales; "
+            f"{session.financial_plan_events_approved} eventos del plan financiero "
+            "con fecha, moneda y conciliación aprobadas; "
             f"{session.demand_deposit_accounts_reviewed} depósitos a la vista revisados, "
             f"{session.demand_deposit_runoff_events_approved} retiros conductuales "
             f"bajo escenario {session.scenario} aprobado. "

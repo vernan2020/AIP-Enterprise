@@ -9,9 +9,12 @@ already-scheduled contractual amounts before they can be booked.
 from __future__ import annotations
 
 from collections import defaultdict
+import json
 from dataclasses import dataclass
 from datetime import date
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
+from pathlib import Path
+from typing import Any
 from typing import Iterable
 
 from aip.domain.liquidity.cashflow.services.sugef210_projection import (
@@ -24,6 +27,7 @@ from aip.domain.liquidity.cashflow.services.sugef210_projection import (
 from aip.product.configured.liquidity.financial_plan_source import (
     FinancialPlanSourceAudit,
     MonthlyFinancialPlanInput,
+    read_financial_plan_assumptions,
 )
 
 _MILLION = Decimal("1000000")
@@ -207,4 +211,135 @@ def build_approved_financial_plan_events(
         events=tuple(events),
         assumptions=tuple(assumptions.values()),
         source_sha256=audit.sha256,
+    )
+
+def _unique_approval_fields(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    document: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in document:
+            raise ValueError("Duplicate financial plan approval JSON field")
+        document[key] = value
+    return document
+
+
+def _approved_text(document: dict[str, Any], key: str) -> str:
+    value = document.get(key)
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("Missing financial plan approval field: " + key)
+    return value.strip()
+
+
+def _approved_decimal(value: Any, key: str) -> Decimal:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("Plan allocation requires decimal string: " + key)
+    try:
+        amount = Decimal(value)
+    except InvalidOperation as exc:
+        raise ValueError("Non-numeric financial plan allocation: " + key) from exc
+    if not amount.is_finite():
+        raise ValueError("Nonfinite financial plan allocation: " + key)
+    return amount
+
+
+def _approved_date(value: Any, key: str) -> date:
+    try:
+        return date.fromisoformat(_approved_text({"value": value}, "value"))
+    except ValueError as exc:
+        raise ValueError("Invalid ISO financial plan approval date: " + key) from exc
+
+
+def read_approved_financial_plan_overlay(
+    *,
+    source_file: str | Path,
+    approval_file: str | Path,
+    cutoff: date,
+    scenario: str,
+    existing_contractual_reconciliation_refs: frozenset[str] = frozenset(),
+) -> ApprovedFinancialPlanEvents:
+    """Load actual plan workbook plus separate, source-hashed ALCO allocations.
+
+    The monthly CRC-equivalent figures never flow directly to cash. Only listed,
+    native-currency incremental allocations enter the partial projection.
+    """
+    source = Path(source_file)
+    approval = Path(approval_file)
+    if source.resolve() == approval.resolve():
+        raise ValueError("Plan workbook and ALCO authorization must be separate files")
+    if not approval.is_file() or approval.stat().st_size > 2 * 1024 * 1024:
+        raise ValueError("Financial plan approval missing or oversized")
+    try:
+        document = json.loads(
+            approval.read_text(encoding="utf-8-sig"),
+            object_pairs_hook=_unique_approval_fields,
+            parse_constant=lambda _: (_ for _ in ()).throw(ValueError("Nonfinite JSON")),
+        )
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise ValueError("Invalid financial plan approval JSON") from exc
+    if not isinstance(document, dict):
+        raise ValueError("Financial plan authorization must be a JSON object")
+    if _approved_text(document, "schema") != "SUGEF210_FINANCIAL_PLAN_ALLOCATION_V1":
+        raise ValueError("Unsupported financial plan approval schema")
+    if _approved_date(document.get("cutoff"), "cutoff") != cutoff:
+        raise ValueError("Financial plan approval cutoff does not match projection")
+    if _approved_text(document, "scenario") != scenario:
+        raise ValueError("Financial plan authorization belongs to another scenario")
+
+    audit = read_financial_plan_assumptions(source, cutoff=cutoff)
+    if _approved_text(document, "source_sha256").lower() != audit.sha256:
+        raise ValueError("Financial plan workbook hash changed since approval")
+    if audit.plan_year != cutoff.year:
+        raise ValueError("Financial plan year differs from projection cutoff")
+    rows = document.get("allocations")
+    if not isinstance(rows, list) or not rows:
+        raise ValueError("Financial plan needs explicitly approved dated allocations")
+    allocations: list[ApprovedFinancialPlanAllocation] = []
+    for item in rows:
+        if not isinstance(item, dict):
+            raise ValueError("Financial plan allocation must be a structured record")
+        year = item.get("year")
+        month = item.get("month")
+        if type(year) is not int or type(month) is not int or not 1 <= month <= 12:
+            raise ValueError("Approved financial plan year/month must be integers")
+        currency = _approved_text(item, "currency")
+        raw_fx = item.get("fx_crc_per_usd")
+        allocations.append(
+            ApprovedFinancialPlanAllocation(
+                driver=_approved_text(item, "driver"),
+                year=year,
+                month=month,
+                payment_date=_approved_date(item.get("payment_date"), "payment_date"),
+                currency=currency,
+                incremental_native_amount=_approved_decimal(
+                    item.get("incremental_native_amount"), "incremental_native_amount"
+                ),
+                overlap_crc_amount=_approved_decimal(
+                    item.get("overlap_crc_amount"), "overlap_crc_amount"
+                ),
+                fx_crc_per_usd=(
+                    _approved_decimal(raw_fx, "fx_crc_per_usd") if raw_fx is not None else None
+                ),
+                fx_reference=item.get("fx_reference", ""),
+                source_sha256=_approved_text(item, "source_sha256"),
+                scenario=scenario,
+                assumption_id=_approved_text(item, "assumption_id"),
+                approval_reference=_approved_text(item, "approval_reference"),
+                plan_document_version=_approved_text(item, "plan_document_version"),
+                rationale=_approved_text(item, "rationale"),
+                treasury_reconciliation_reference=_approved_text(
+                    item, "treasury_reconciliation_reference"
+                ),
+                nonduplication_reference=_approved_text(item, "nonduplication_reference"),
+                valid_from=_approved_date(item.get("valid_from"), "valid_from"),
+                valid_to=_approved_date(item.get("valid_to"), "valid_to"),
+                explicitly_approved=item.get("explicitly_approved") is True,
+            )
+        )
+    if not source.is_file() or read_financial_plan_assumptions(source, cutoff=cutoff).sha256 != audit.sha256:
+        raise ValueError("Financial plan workbook changed during authorization review")
+    return build_approved_financial_plan_events(
+        audit=audit,
+        cutoff=cutoff,
+        scenario=scenario,
+        allocations=allocations,
+        existing_contractual_reconciliation_refs=existing_contractual_reconciliation_refs,
     )

@@ -22,6 +22,9 @@ from aip.product.configured.irrbb.investment_master_discovery import (
     resolve_exact_cutoff_master,
 )
 from aip.product.configured.irrbb.xml_confia_source import XMLConfiaMonthlySourceReader
+from aip.product.configured.liquidity.financial_plan_cashflow_bridge import (
+    read_approved_financial_plan_overlay,
+)
 from aip.product.configured.liquidity.investment_current_account_xml_audit import (
     InvestmentCurrentAccountPolicy,
     audit_investment_current_accounts,
@@ -70,6 +73,8 @@ class ConfiguredOpeningSession:
     xml_contractual_events_approved: int = 0
     contingent_scenario_events_approved: int = 0
     offbalance_commitments_reviewed: int = 0
+    financial_plan_events_approved: int = 0
+    financial_plan_source_sha256: str | None = None
     demand_deposit_accounts_reviewed: int = 0
     demand_deposit_runoff_events_approved: int = 0
     demand_deposit_source_sha256: str | None = None
@@ -248,6 +253,7 @@ def run_configured_sight_opening(
     reconciled_opening = dict(verified.opening_by_currency)
     admitted_master = None
     principal_reference = None
+    master_nonduplication_refs: set[str] = set()
     principal_authorization = policy.get("master_principal_authorization")
     if principal_authorization is not None:
         if not isinstance(principal_authorization, dict):
@@ -274,6 +280,9 @@ def run_configured_sight_opening(
                 settlement_date = date.fromisoformat(_required_text(record, "payment_date"))
             except ValueError as exc:
                 raise ValueError("Invalid approved principal settlement date") from exc
+            master_nonduplication_refs.add(
+                _required_text(record, "nonduplication_reference")
+            )
             approved.append(
                 ApprovedMasterPrincipalPosition(
                     cashflow_reference=_required_text(record, "cashflow_reference"),
@@ -419,12 +428,58 @@ def run_configured_sight_opening(
                 piece.matched_exposure_count for piece in approved_scenarios
             ),
         )
+    approved_plan = None
+    plan_policy = policy.get("financial_plan_scenario")
+    if plan_policy is not None:
+        if not isinstance(plan_policy, dict):
+            raise ValueError("Financial plan authorization must be structured")
+        plan_source = Path(_required_text(plan_policy, "source_file"))
+        plan_approval = Path(_required_text(plan_policy, "approval_file"))
+        used_paths = {
+            approval_path.resolve(),
+            support_path.resolve(),
+            master_path.resolve(),
+            raw_support.resolve(),
+        }
+        if contract_policy is not None:
+            used_paths.add(ledger_path.resolve())
+        if contingent_policy is not None:
+            used_paths.update((register_file.resolve(), policy_file.resolve()))
+        if demand_policy is not None:
+            used_paths.add(demand_approval.resolve())
+        if (
+            not plan_source.is_absolute()
+            or not plan_approval.is_absolute()
+            or plan_source.resolve() in used_paths
+            or plan_approval.resolve() in used_paths
+            or plan_source.resolve() == plan_approval.resolve()
+        ):
+            raise ValueError("Plan workbook and authorization must be independent source files")
+        contractual_refs = set(master_nonduplication_refs)
+        if xml_contractual is not None:
+            contractual_refs.update(
+                {event.reference for event in xml_contractual.events}
+            )
+            contractual_refs.update(
+                {event.source for event in xml_contractual.events}
+            )
+        if contract_policy is not None:
+            contractual_refs.add(_required_text(contract_policy, "nonduplication_reference"))
+        contractual_refs.update(verified.included_source_references)
+        approved_plan = read_approved_financial_plan_overlay(
+            source_file=plan_source,
+            approval_file=plan_approval,
+            cutoff=cutoff,
+            scenario=scenario,
+            existing_contractual_reconciliation_refs=frozenset(contractual_refs),
+        )
     assembly = assemble_partial_institutional_projection(
         cutoff=cutoff,
         scenario=scenario,
         master=admitted_master,
         master_maturity_recognition_reference=principal_reference,
         approved_xml_schedule=xml_contractual,
+        approved_plan=approved_plan,
         approved_behavioral=governed_scenario,
         verified_sight_opening=verified,
         opening_by_currency=reconciled_opening,
@@ -440,6 +495,7 @@ def run_configured_sight_opening(
         + (len(xml_contractual.events) if xml_contractual is not None else 0)
         + (len(offbalance.evidence.flows) if offbalance is not None else 0)
         + (len(demand_runoff.evidence.flows) if demand_runoff is not None else 0)
+        + (len(approved_plan.events) if approved_plan is not None else 0)
     )
     if assembly.projection.source_flow_count != expected_events:
         raise ValueError("Master and XML source payment events did not reconcile")
@@ -462,6 +518,12 @@ def run_configured_sight_opening(
         ),
         offbalance_commitments_reviewed=(
             offbalance.commitments_checked if offbalance is not None else 0
+        ),
+        financial_plan_events_approved=(
+            len(approved_plan.events) if approved_plan is not None else 0
+        ),
+        financial_plan_source_sha256=(
+            approved_plan.source_sha256 if approved_plan is not None else None
         ),
         demand_deposit_accounts_reviewed=(
             demand_runoff.approved_accounts_seen if demand_runoff is not None else 0
