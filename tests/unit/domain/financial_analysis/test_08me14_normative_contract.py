@@ -41,13 +41,11 @@ def test_fixed_document_threshold_boundaries_are_not_cohort_dependent() -> None:
 
 def test_document_rounds_each_profitability_weight_to_667_percent() -> None:
     definition = {
-        indicator.code: indicator
-        for indicator in FinancialEntityRatingService.INDICATORS
+        indicator.code: indicator for indicator in FinancialEntityRatingService.INDICATORS
     }
     profitability = ("MARGIN_INTERMEDIATION", "ROA", "ROE")
     assert all(
-        definition[code].weight_percent == Decimal("20") / Decimal("3")
-        for code in profitability
+        definition[code].weight_percent == Decimal("20") / Decimal("3") for code in profitability
     )
     assert Decimal("6.67") * 3 == Decimal("20.01")
     assert Decimal("20") != Decimal("6.67") * 3
