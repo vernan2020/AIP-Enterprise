@@ -92,9 +92,11 @@ class RatingScoreAuditService:
             definition = definitions.get(item.code)
             if definition is None:
                 issues.append(f"Indicador ajeno a la metodología: {item.code}.")
-            elif (item.weight_percent != definition.weight_percent
-                  or item.dimension != definition.dimension
-                  or item.direction != definition.direction):
+            elif (
+                item.weight_percent != definition.weight_percent
+                or item.dimension != definition.dimension
+                or item.direction != definition.direction
+            ):
                 issues.append(f"Definición o peso alterado: {item.label}.")
             expected_level, factor, rule = cls._recalculate(item, definition)
             expected = item.weight_percent * factor if factor is not None else None
@@ -116,14 +118,24 @@ class RatingScoreAuditService:
             )
             rows.append(
                 ScoreAuditIndicator(
-                    code=item.code, label=item.label, dimension=item.dimension,
-                    value=item.value, direction=item.direction,
-                    p15=item.percentile_15, midpoint=item.midpoint,
-                    p85=item.percentile_85, level=item.level,
-                    expected_level=expected_level, points=points,
-                    weight=item.weight_percent, factor=factor,
-                    expected=expected, reported=item.contribution,
-                    difference=difference, status=status, rule=rule,
+                    code=item.code,
+                    label=item.label,
+                    dimension=item.dimension,
+                    value=item.value,
+                    direction=item.direction,
+                    p15=item.percentile_15,
+                    midpoint=item.midpoint,
+                    p85=item.percentile_85,
+                    level=item.level,
+                    expected_level=expected_level,
+                    points=points,
+                    weight=item.weight_percent,
+                    factor=factor,
+                    expected=expected,
+                    reported=item.contribution,
+                    difference=difference,
+                    status=status,
+                    rule=rule,
                     source=item.source_account or "",
                 )
             )
@@ -132,8 +144,7 @@ class RatingScoreAuditService:
             issues.append("Universo de indicadores diferente de los 13 definidos.")
         for dimension in rating.dimensions:
             recomputed_dimension = sum(
-                (row.expected or Decimal("0") for row in rows
-                 if row.dimension == dimension.name),
+                (row.expected or Decimal("0") for row in rows if row.dimension == dimension.name),
                 start=Decimal("0"),
             ).quantize(_THOUSANDTH)
             if dimension.score != recomputed_dimension:
@@ -145,13 +156,14 @@ class RatingScoreAuditService:
             and all(row.expected is not None for row in rows)
         )
         recomputed = (
-            sum((row.expected for row in rows if row.expected is not None),
-                start=Decimal("0")).quantize(_THOUSANDTH)
-            if complete else None
+            sum(
+                (row.expected for row in rows if row.expected is not None), start=Decimal("0")
+            ).quantize(_THOUSANDTH)
+            if complete
+            else None
         )
         recomputed_grade = (
-            FinancialEntityRatingService.grade(recomputed)
-            if recomputed is not None else None
+            FinancialEntityRatingService.grade(recomputed) if recomputed is not None else None
         )
         if complete and (rating.score != recomputed or rating.grade != recomputed_grade):
             issues.append("Puntaje o categoría global difiere del valor reconstruido.")
@@ -161,9 +173,12 @@ class RatingScoreAuditService:
         return ScoreAuditResult(
             rows=tuple(rows),
             status="REVISAR" if issues else ("CUADRA" if complete else "INCOMPLETA"),
-            recomputed_score=recomputed, reported_score=rating.score,
-            reported_grade=rating.grade, recomputed_grade=recomputed_grade,
-            issues=tuple(issues), criterion_warning=cls.CRITERION_WARNING,
+            recomputed_score=recomputed,
+            reported_score=rating.score,
+            reported_grade=rating.grade,
+            recomputed_grade=recomputed_grade,
+            issues=tuple(issues),
+            criterion_warning=cls.CRITERION_WARNING,
         )
 
     @staticmethod
@@ -177,12 +192,12 @@ class RatingScoreAuditService:
             if item.value not in (Decimal("0"), Decimal("1")) or definition is None:
                 return RatingLevel.UNAVAILABLE, None, rule
             factor = (
-                Decimal("1")
-                if item.value == definition.binary_favorable_value else Decimal("0")
+                Decimal("1") if item.value == definition.binary_favorable_value else Decimal("0")
             )
             return (
                 RatingLevel.OUTSTANDING if factor else RatingLevel.CRITICAL,
-                factor, rule,
+                factor,
+                rule,
             )
 
         rule = (
@@ -205,16 +220,22 @@ class RatingScoreAuditService:
             return RatingLevel.UNAVAILABLE, None, "Bandas no ordenadas; revisar pares."
         if item.direction is RatingDirection.HIGHER_IS_BETTER:
             level = (
-                RatingLevel.OUTSTANDING if value > upper
-                else RatingLevel.SATISFACTORY if value > mid
-                else RatingLevel.IMPROVABLE if value > lower
-                else RatingLevel.CRITICAL
+                RatingLevel.OUTSTANDING
+                if value > upper
+                else (
+                    RatingLevel.SATISFACTORY
+                    if value > mid
+                    else RatingLevel.IMPROVABLE if value > lower else RatingLevel.CRITICAL
+                )
             )
         else:
             level = (
-                RatingLevel.OUTSTANDING if value < lower
-                else RatingLevel.SATISFACTORY if value < mid
-                else RatingLevel.IMPROVABLE if value < upper
-                else RatingLevel.CRITICAL
+                RatingLevel.OUTSTANDING
+                if value < lower
+                else (
+                    RatingLevel.SATISFACTORY
+                    if value < mid
+                    else RatingLevel.IMPROVABLE if value < upper else RatingLevel.CRITICAL
+                )
             )
         return level, _FACTORS[level], rule
