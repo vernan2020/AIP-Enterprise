@@ -64,8 +64,6 @@ class ScoreAuditResult:
     reported_score: Decimal | None
     reported_grade: str | None
     recomputed_grade: str | None
-    alternative_proportional_score: Decimal | None
-    alternative_proportional_grade: str | None
     issues: tuple[str, ...]
     criterion_warning: str
 
@@ -74,10 +72,11 @@ class RatingScoreAuditService:
     """Audita la nota usando las definiciones vigentes, sin escribir valores."""
 
     CRITERION_WARNING = (
-        "Criterio pendiente: el texto 08ME14-01 V01 define 1 si aplica "
-        "supervisión proporcional; su nota de ponderación utiliza otra "
-        "codificación (1=regulación plena, 0=proporcional). El escenario "
-        "alternativo solo mide sensibilidad y NO reemplaza la nota vigente."
+        "Conciliación de codificación: la matriz de referencia representa "
+        "1=regulación plena y 0=proporcional; AIP representa 0=no aplica "
+        "supervisión proporcional y 1=sí aplica. El significado económico "
+        "y los 5 puntos coinciden cuando el catálogo institucional es correcto. "
+        "Revisar la fuente binaria para cada entidad."
     )
 
     @classmethod
@@ -160,30 +159,11 @@ class RatingScoreAuditService:
         if not complete and (rating.score is not None or rating.grade is not None):
             issues.append("Se emitió nota sin los 13 aportes verificables.")
 
-        alternative_score = None
-        alternative_grade = None
-        proportional = next(
-            (row for row in rows if row.code == "PROPORTIONAL_SUPERVISION"), None
-        )
-        if (recomputed is not None and proportional is not None
-                and proportional.value in (Decimal("0"), Decimal("1"))):
-            # Escenario informativo: invertir solo el aporte del indicador binario.
-            alt_contribution = (
-                Decimal("0") if proportional.value == Decimal("0") else proportional.weight
-            )
-            alternative_score = (
-                recomputed - (proportional.expected or Decimal("0"))
-                + alt_contribution
-            ).quantize(_THOUSANDTH)
-            alternative_grade = FinancialEntityRatingService.grade(alternative_score)
-
         return ScoreAuditResult(
             rows=tuple(rows),
             status="REVISAR" if issues else ("CUADRA" if complete else "INCOMPLETA"),
             recomputed_score=recomputed, reported_score=rating.score,
             reported_grade=rating.grade, recomputed_grade=recomputed_grade,
-            alternative_proportional_score=alternative_score,
-            alternative_proportional_grade=alternative_grade,
             issues=tuple(issues), criterion_warning=cls.CRITERION_WARNING,
         )
 
