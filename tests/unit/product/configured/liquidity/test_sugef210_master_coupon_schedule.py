@@ -228,3 +228,26 @@ def test_coupon_source_master_cutoff_and_document_independence(tmp_path):
             approval_file=approval,
             custodian_document_file=custody,
         )
+
+def test_custody_ledger_cannot_drop_approved_coupon_or_repeat_payment(tmp_path):
+    ledger, approval, custody, row, doc = _source(tmp_path)
+    doc["approved_payment_records"].append(
+        {
+            **row,
+            "payment_reference": "TEST-COUPON-SECOND-APPROVED-BUT-MISSING",
+            "explicitly_approved": True,
+        }
+    )
+    approval.write_text(json.dumps(doc), encoding="utf-8")
+    with pytest.raises(ValueError, match="do not exactly match custody ledger"):
+        _read(ledger, approval, custody)
+
+    doc["approved_payment_records"] = [{**row, "explicitly_approved": True}]
+    with ledger.open("a", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=HEADERS)
+        writer.writerow(row)
+    doc["ledger_sha256"] = hashlib.sha256(ledger.read_bytes()).hexdigest()
+    approval.write_text(json.dumps(doc), encoding="utf-8")
+    with pytest.raises(ValueError, match="Duplicate investment coupon payment reference"):
+        _read(ledger, approval, custody)
+
