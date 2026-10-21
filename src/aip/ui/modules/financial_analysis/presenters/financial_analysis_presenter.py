@@ -10,6 +10,7 @@ from aip.domain.financial_analysis.models import (
     FinancialStatementLine,
 )
 from aip.domain.financial_analysis.rating_score_audit import RatingScoreAuditService
+from aip.domain.financial_analysis.ratings import FinancialEntityRatingService
 from aip.product.configured.services.configured_financial_analysis_service import (
     ConfiguredFinancialAnalysisService,
     FinancialAnalysisApplicationSnapshot,
@@ -549,6 +550,14 @@ class FinancialAnalysisPresenter:
                 )
                 + " · "
                 + snapshot.reference_matrix_coverage
+                + (
+                    " · Misma puntuación, escala fija del documento: "
+                    + FinancialEntityRatingService.grade(snapshot.reference_matrix_score)
+                    + " (comparación de bandas, no nueva nota normativa)"
+                    if snapshot.reference_matrix_score is not None
+                    and snapshot.reference_matrix_grade is not None
+                    else ""
+                )
                 + (
                     f" · Diferencia matriz – AIP: "
                     f"{snapshot.reference_matrix_score - rating.score:+,.4f} puntos"
