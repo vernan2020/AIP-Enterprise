@@ -31,6 +31,7 @@ from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model 
     PeerSummaryRow,
     RatingDimensionRow,
     RatingIndicatorRow,
+    RatingMatrixComparisonRow,
     RatingScoreAuditRow,
 )
 
@@ -414,6 +415,61 @@ class FinancialAnalysisPresenter:
         else:
             score_audit_summary = "Sin calificación seleccionada"
             score_audit_warning = ""
+        aip_indicators = {
+            item.code: item for item in rating.indicators
+        } if rating is not None else {}
+        matrix_rows = tuple(
+            RatingMatrixComparisonRow(
+                indicator=(
+                    aip_indicators[measure.code].label
+                    if measure.code in aip_indicators else measure.code
+                ),
+                value=cls._rating_value(
+                    measure.value,
+                    (
+                        aip_indicators[measure.code].direction.value
+                        if measure.code in aip_indicators
+                        else "HIGHER_IS_BETTER"
+                    ),
+                ),
+                aip_p15=(
+                    cls._rating_value(
+                        aip_indicators[measure.code].percentile_15,
+                        aip_indicators[measure.code].direction.value,
+                    )
+                    if measure.code in aip_indicators else "-"
+                ),
+                matrix_p15=cls._rating_value(measure.p15, "HIGHER_IS_BETTER"),
+                aip_p85=(
+                    cls._rating_value(
+                        aip_indicators[measure.code].percentile_85,
+                        aip_indicators[measure.code].direction.value,
+                    )
+                    if measure.code in aip_indicators else "-"
+                ),
+                matrix_p85=cls._rating_value(measure.p85, "HIGHER_IS_BETTER"),
+                matrix_weight=f"{measure.weight:,.3f}%",
+                aip_points=(
+                    f"{aip_indicators[measure.code].contribution:,.4f}"
+                    if measure.code in aip_indicators
+                    and aip_indicators[measure.code].contribution is not None
+                    else "-"
+                ),
+                matrix_points=(
+                    f"{measure.contribution:,.4f}"
+                    if measure.contribution is not None else "-"
+                ),
+                delta_points=(
+                    f"{measure.contribution - aip_indicators[measure.code].contribution:+,.4f}"
+                    if measure.contribution is not None
+                    and measure.code in aip_indicators
+                    and aip_indicators[measure.code].contribution is not None
+                    else "-"
+                ),
+                matrix_origin=measure.origin,
+            )
+            for measure in snapshot.reference_matrix_indicators
+        )
         reconciliations = tuple(
             IndicatorReconciliationRow(
                 indicator=item.label,
@@ -476,12 +532,20 @@ class FinancialAnalysisPresenter:
                 + " · "
                 + snapshot.reference_matrix_coverage
                 + (
+                    f" · Diferencia matriz – AIP: "
+                    f"{snapshot.reference_matrix_score - rating.score:+,.4f} puntos"
+                    if snapshot.reference_matrix_score is not None
+                    and rating is not None and rating.score is not None
+                    else ""
+                )
+                + (
                     f" · Máximo cohorte: {snapshot.reference_matrix_maximum:,.4f}"
                     if snapshot.reference_matrix_maximum is not None
                     else ""
                 )
             ),
             score_matrix_notes="\n".join(snapshot.reference_matrix_diagnostics),
+            score_matrix_rows=matrix_rows,
             indicator_reconciliations=reconciliations,
             rating_diagnostics=rating.diagnostics if rating is not None else (),
             diagnostics=snapshot.diagnostics,
