@@ -811,3 +811,58 @@ def test_tampered_event_lineage_rejected_before_loading_projection(qt_app):
         assert panel._event_audit_table.rowCount() == 0
     finally:
         panel.close()
+
+
+def test_modified_event_native_amount_never_enters_approved_ui(qt_app):
+    from aip.product.configured.liquidity.irrbb_schedule_liquidity_bridge import (
+        LiquiditySourceBridgeResult,
+    )
+
+    panel = SUGEF210ProjectionPanel()
+    try:
+        cutoff = date(2026, 9, 30)
+        panel._date.setDate(QDate(2026, 9, 30))
+        original = LiquidityProjectionFlow(
+            reference="TEST-CREDIT-001",
+            source="TEST-INSTITUTIONAL-ORIGINAL",
+            currency="CRC",
+            payment_date=cutoff + timedelta(days=31),
+            amount=Decimal("150.00"),
+            side=LiquidityFlowSide.INFLOW,
+            area=LiquidityBalanceArea.ASSET,
+            evidence=LiquidityEvidence.CONTRACTUAL,
+        )
+        assembly = assemble_partial_institutional_projection(
+            cutoff=cutoff,
+            scenario="BASE",
+            contractual=LiquiditySourceBridgeResult(
+                cashflows=(original,),
+                covered_balance_areas=frozenset({LiquidityBalanceArea.ASSET}),
+                source_status="CERTIFIED_CONTRACTUAL_DATES_ONLY_OFFBALANCE_NOT_INCLUDED",
+            ),
+            opening_by_currency={"CRC": Decimal("50"), "USD": Decimal("20")},
+            opening_certifications={"CRC": "TEST-BANK-CRC", "USD": "TEST-BANK-USD"},
+            opening_nonduplication_reference="TEST-ICL",
+        )
+        corrupt = replace(
+            assembly,
+            audited_events=(
+                replace(assembly.audited_events[0], native_amount=Decimal("160.00")),
+            ),
+        )
+        session = ConfiguredOpeningSession(
+            cutoff=cutoff,
+            scenario="BASE",
+            assembly=corrupt,
+            sight_records_approved=0,
+            sight_source_sha256="a" * 64,
+            bank_support_sha256="b" * 64,
+            bank_document_sha256="c" * 64,
+        )
+        with pytest.raises(ValueError, match="native amounts differ"):
+            panel._receive_governed_opening(cutoff, "BASE", session)
+        assert panel._governed_projection is None
+        assert panel._event_audit_table.rowCount() == 0
+    finally:
+        panel.close()
+

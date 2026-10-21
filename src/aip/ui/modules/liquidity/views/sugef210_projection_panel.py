@@ -29,6 +29,8 @@ from PySide6.QtWidgets import (
 )
 
 from aip.domain.liquidity.cashflow.services.sugef210_projection import (
+    LiquidityBalanceArea,
+    LiquidityFlowSide,
     LiquidityProjectionResult,
     sugef210_windows,
 )
@@ -897,6 +899,30 @@ class SUGEF210ProjectionPanel(QWidget):
                 != row.event_count
             ):
                 raise ValueError("Event lineage does not reconcile to 34 projected bands")
+            categories = (
+                (LiquidityBalanceArea.ASSET, LiquidityFlowSide.INFLOW, row.asset_inflows),
+                (LiquidityBalanceArea.ASSET, LiquidityFlowSide.OUTFLOW, row.asset_outflows),
+                (LiquidityBalanceArea.LIABILITY, LiquidityFlowSide.INFLOW, row.liability_inflows),
+                (LiquidityBalanceArea.LIABILITY, LiquidityFlowSide.OUTFLOW, row.liability_outflows),
+                (LiquidityBalanceArea.OFF_BALANCE, LiquidityFlowSide.INFLOW, row.off_balance_inflows),
+                (LiquidityBalanceArea.OFF_BALANCE, LiquidityFlowSide.OUTFLOW, row.off_balance_outflows),
+                (LiquidityBalanceArea.BUSINESS_EVENT, LiquidityFlowSide.INFLOW, row.other_inflows),
+                (LiquidityBalanceArea.BUSINESS_EVENT, LiquidityFlowSide.OUTFLOW, row.other_outflows),
+            )
+            for area, direction, expected in categories:
+                observed = sum(
+                    (
+                        event.native_amount
+                        for event in events
+                        if event.band_key == row.window.key
+                        and event.currency == row.currency
+                        and event.area == area
+                        and event.side == direction
+                    ),
+                    Decimal(0),
+                )
+                if observed != expected:
+                    raise ValueError("Event lineage native amounts differ from projection")
         return events
 
     def _receive_governed_opening(
