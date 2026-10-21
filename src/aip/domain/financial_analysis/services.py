@@ -192,16 +192,21 @@ class FinancialAnalysisService:
                 )
             if reference.classification_status != "APTA":
                 notes.append(
-                    "Calificación matricial suspendida: el máximo de una cohorte "
-                    "incompleta no representa la distribución metodológica aprobada."
+                    "Categoría dinámica de la matriz Excel suspendida: "
+                    "una cohorte incompleta no permite validar su máximo."
                 )
             if selected_reference is None:
                 notes.append("La entidad seleccionada no integra la cohorte de matriz.")
             elif selected_reference.missing:
                 notes.append("Indicadores sin dato: " + ", ".join(selected_reference.missing))
             notes.append(
-                "Solo conciliación: 6,67 por rentabilidad, P15 ROA/ROE >= 0 "
-                "y escala según máximo del mismo corte; no altera nota AIP."
+                "PERFIL EXCEL DE CONTRASTE (no equivale a la metodología "
+                "normativa vigente): rentabilidad 6,67 por indicador; "
+                "piso cero en P15 de margen financiero, ROA y ROE; "
+                "categoría dinámica respecto al máximo de esta cohorte. "
+                "Documento 08ME14-01 V01 sección 4.4: categorías fijas; "
+                "sección 4.2: P15 sin piso cero explícito. "
+                "La nota certificada de AIP permanece intacta."
             )
             reference_diagnostics = tuple(notes)
         except (ArithmeticError, KeyError, ValueError) as exc:
