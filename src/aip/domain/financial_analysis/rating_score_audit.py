@@ -17,7 +17,6 @@ from aip.domain.financial_analysis.models import (
 )
 from aip.domain.financial_analysis.ratings import FinancialEntityRatingService
 
-
 _FACTORS: dict[RatingLevel, Decimal] = {
     RatingLevel.OUTSTANDING: Decimal("1"),
     RatingLevel.SATISFACTORY: Decimal("0.75"),
