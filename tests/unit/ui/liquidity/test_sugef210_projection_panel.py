@@ -649,9 +649,10 @@ def test_investment_reconciliation_separates_sight_principal_coupon_and_excel_nu
             assert sheet.cell(7, 6).value == 5.25
             assert sheet.cell(7, 6).data_type == "n"
             assert sheet.cell(7, 8).value == "f" * 64
-            assert dict(workbook["Control"].iter_rows(values_only=True))[
-                "flujo_integral_certificado"
-            ] == "NO"
+            assert (
+                dict(workbook["Control"].iter_rows(values_only=True))["flujo_integral_certificado"]
+                == "NO"
+            )
         finally:
             workbook.close()
         panel._scenario.setCurrentText("SYSTEMIC")
@@ -661,9 +662,7 @@ def test_investment_reconciliation_separates_sight_principal_coupon_and_excel_nu
         panel.close()
 
 
-def test_investment_reconciliation_missing_evidence_stays_nd_and_inconsistent_counts_block(
-    qt_app
-):
+def test_investment_reconciliation_missing_evidence_stays_nd_and_inconsistent_counts_block(qt_app):
     panel = SUGEF210ProjectionPanel()
     try:
         cutoff = date(2026, 9, 30)
@@ -700,4 +699,3 @@ def test_investment_reconciliation_missing_evidence_stays_nd_and_inconsistent_co
         assert panel._governed_projection is None
     finally:
         panel.close()
-

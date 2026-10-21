@@ -328,9 +328,7 @@ class SUGEF210ProjectionPanel(QWidget):
             self._INVESTMENT_RECONCILIATION_HEADERS,
             "sugef210InvestmentOpeningPrincipalCouponReconciliation",
         )
-        self._planning_tabs.addTab(
-            self._investment_reconciliation, "Conciliación inversiones"
-        )
+        self._planning_tabs.addTab(self._investment_reconciliation, "Conciliación inversiones")
         self._demand_deposit_reconciliation = self._table(
             (
                 "Cuenta contable XML210",
@@ -734,10 +732,7 @@ class SUGEF210ProjectionPanel(QWidget):
         self, session: ConfiguredOpeningSession
     ) -> tuple[tuple[str, ...], ...]:
         """Validate original-currency source evidence before updating the UI."""
-        if (
-            session.cutoff != self._cutoff
-            or session.scenario != self._scenario.currentText()
-        ):
+        if session.cutoff != self._cutoff or session.scenario != self._scenario.currentText():
             raise ValueError("Investment reconciliation cutoff/scenario mismatch")
         by_source = {
             (row.source_name, row.currency): row
@@ -759,10 +754,8 @@ class SUGEF210ProjectionPanel(QWidget):
             for source in ("MASTER_RECOGNIZED_PRINCIPAL", "APPROVED_MASTER_COUPONS")
         }
         if (
-            source_counts["MASTER_RECOGNIZED_PRINCIPAL"]
-            != session.master_principal_events_approved
-            or source_counts["APPROVED_MASTER_COUPONS"]
-            != session.master_coupon_events_approved
+            source_counts["MASTER_RECOGNIZED_PRINCIPAL"] != session.master_principal_events_approved
+            or source_counts["APPROVED_MASTER_COUPONS"] != session.master_coupon_events_approved
         ):
             raise ValueError("Investment event counts differ from source reconciliations")
         sight_amounts = dict(session.sight_added_by_currency)
@@ -808,7 +801,8 @@ class SUGEF210ProjectionPanel(QWidget):
                         str(reconciled.events_after_horizon) if reconciled else "N/D",
                         (
                             str(reconciled.principal_or_flow_total_inside_horizon)
-                            if reconciled else "N/D"
+                            if reconciled
+                            else "N/D"
                         ),
                         "PARCIAL · " + reconciled.status if reconciled else "N/D · NO INCORPORADO",
                         digest if reconciled and digest else "N/D",
