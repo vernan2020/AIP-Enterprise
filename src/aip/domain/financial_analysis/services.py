@@ -144,10 +144,7 @@ class FinancialAnalysisService:
                 operational_lines, effective_date
             )
             selected_reference = next(
-                (
-                    item for item in reference.entities
-                    if item.entity_id == selected.entity_id
-                ),
+                (item for item in reference.entities if item.entity_id == selected.entity_id),
                 None,
             )
             if selected_reference is not None:
@@ -160,16 +157,11 @@ class FinancialAnalysisService:
             )
             notes = []
             if absent_entities:
-                notes.append(
-                    "No aparecen en el corte " + ", ".join(absent_entities)
-                )
+                notes.append("No aparecen en el corte " + ", ".join(absent_entities))
             if selected_reference is None:
                 notes.append("La entidad seleccionada no integra la cohorte de matriz.")
             elif selected_reference.missing:
-                notes.append(
-                    "Indicadores sin dato: "
-                    + ", ".join(selected_reference.missing)
-                )
+                notes.append("Indicadores sin dato: " + ", ".join(selected_reference.missing))
             notes.append(
                 "Solo conciliación: 6,67 por rentabilidad, P15 ROA/ROE >= 0 "
                 "y escala según máximo del mismo corte; no altera nota AIP."
@@ -177,8 +169,7 @@ class FinancialAnalysisService:
             reference_diagnostics = tuple(notes)
         except (ArithmeticError, KeyError, ValueError) as exc:
             reference_diagnostics = (
-                "Cotejo matricial no disponible: "
-                f"{type(exc).__name__}: {exc}",
+                "Cotejo matricial no disponible: " f"{type(exc).__name__}: {exc}",
             )
         reconciliations = self._reconciliation.reconcile(
             reconciliation_lines,
