@@ -10,6 +10,7 @@ from aip.domain.financial_analysis.indicator_reconciliation import (
     FinancialIndicatorReconciliationService,
 )
 from aip.domain.financial_analysis.institutional_flags import InstitutionalEntityFlagService
+from aip.domain.financial_analysis.matrix_sugef_adapter import MatrixSUGEFAdapter
 from aip.domain.financial_analysis.models import (
     EntityFinancialSummary,
     EntityRatingSummary,
@@ -133,6 +134,52 @@ class FinancialAnalysisService:
             effective_date,
             rating_service=rating_service,
         )
+        reference_score = None
+        reference_grade = None
+        reference_maximum = None
+        reference_coverage = "Cohorte de referencia no disponible"
+        reference_diagnostics: tuple[str, ...] = ()
+        try:
+            reference, absent_entities = MatrixSUGEFAdapter.validate_reference_cohort(
+                operational_lines, effective_date
+            )
+            selected_reference = next(
+                (
+                    item for item in reference.entities
+                    if item.entity_id == selected.entity_id
+                ),
+                None,
+            )
+            if selected_reference is not None:
+                reference_score = selected_reference.score
+                reference_grade = selected_reference.grade
+            reference_maximum = reference.score_maximum
+            reference_coverage = (
+                f"{len(reference.entities)}/38 entidades de matriz, "
+                f"{len(reference.incomplete_entities)} sin nota completa"
+            )
+            notes = []
+            if absent_entities:
+                notes.append(
+                    "No aparecen en el corte " + ", ".join(absent_entities)
+                )
+            if selected_reference is None:
+                notes.append("La entidad seleccionada no integra la cohorte de matriz.")
+            elif selected_reference.missing:
+                notes.append(
+                    "Indicadores sin dato: "
+                    + ", ".join(selected_reference.missing)
+                )
+            notes.append(
+                "Solo conciliación: 6,67 por rentabilidad, P15 ROA/ROE >= 0 "
+                "y escala según máximo del mismo corte; no altera nota AIP."
+            )
+            reference_diagnostics = tuple(notes)
+        except (ArithmeticError, KeyError, ValueError) as exc:
+            reference_diagnostics = (
+                "Cotejo matricial no disponible: "
+                f"{type(exc).__name__}: {exc}",
+            )
         reconciliations = self._reconciliation.reconcile(
             reconciliation_lines,
             entity_id=selected.entity_id,
@@ -171,6 +218,11 @@ class FinancialAnalysisService:
             market_composition=market_composition,
             peer_ratings=peer_ratings,
             rating=rating,
+            reference_matrix_score=reference_score,
+            reference_matrix_grade=reference_grade,
+            reference_matrix_maximum=reference_maximum,
+            reference_matrix_coverage=reference_coverage,
+            reference_matrix_diagnostics=reference_diagnostics,
             indicator_reconciliations=reconciliations,
             diagnostics=tuple(coverage_diagnostics),
             source_files=source_files,
