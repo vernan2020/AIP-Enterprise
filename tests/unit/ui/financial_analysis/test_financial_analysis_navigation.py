@@ -62,6 +62,7 @@ def test_financial_analysis_exposes_methodology_rating_tab(qt_app) -> None:
         "Ranking de entidades",
         "Indicadores y dimensiones",
         "Reconciliación",
+        "Auditoría del puntaje",
     ]
     assert view._rating_heading.text() == "Calificación interna 08ME14-01 · datos SUGEF"
     assert view._rating_methodology.text() == "Metodología: 08ME14-01"
