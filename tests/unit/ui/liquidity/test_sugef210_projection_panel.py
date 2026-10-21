@@ -846,9 +846,7 @@ def test_modified_event_native_amount_never_enters_approved_ui(qt_app):
         )
         corrupt = replace(
             assembly,
-            audited_events=(
-                replace(assembly.audited_events[0], native_amount=Decimal("160.00")),
-            ),
+            audited_events=(replace(assembly.audited_events[0], native_amount=Decimal("160.00")),),
         )
         session = ConfiguredOpeningSession(
             cutoff=cutoff,
@@ -865,4 +863,3 @@ def test_modified_event_native_amount_never_enters_approved_ui(qt_app):
         assert panel._event_audit_table.rowCount() == 0
     finally:
         panel.close()
-
