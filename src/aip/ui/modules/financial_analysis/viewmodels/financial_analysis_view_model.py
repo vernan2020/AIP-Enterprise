@@ -148,6 +148,19 @@ class RatingIndicatorRow:
 
 
 @dataclass(frozen=True, slots=True)
+class NormativeSourceAuditRow:
+    code: str
+    source_value: str
+    source_peers: str
+    aip_peers: str
+    source_p15: str
+    aip_p15: str
+    source_p85: str
+    aip_p85: str
+    status: str
+
+
+@dataclass(frozen=True, slots=True)
 class RatingScoreAuditRow:
     indicator: str
     value: str
@@ -231,6 +244,11 @@ class FinancialAnalysisViewModel:
     score_audit_status: str = "SIN EVALUACIÓN"
     score_audit_summary: str = "Sin calificación seleccionada"
     score_audit_warning: str = ""
+    normative_source_summary: str = "Fuente SUGEF: sin validar"
+    normative_source_issues: str = ""
+    normative_source_rows: tuple[NormativeSourceAuditRow, ...] = field(
+        default_factory=tuple
+    )
     score_matrix_summary: str = ""
     score_matrix_notes: str = ""
     score_matrix_rows: tuple[RatingMatrixComparisonRow, ...] = field(default_factory=tuple)
