@@ -70,6 +70,7 @@ def test_financial_analysis_exposes_methodology_rating_tab(qt_app) -> None:
         "Indicadores y dimensiones",
         "Reconciliación",
         "Auditoría del puntaje",
+        "Fuente SUGEF 08ME14",
         "Cohorte metodológica",
     ]
     assert view._rating_heading.text() == "Calificación interna 08ME14-01 · datos SUGEF"
@@ -487,6 +488,50 @@ def test_matrix_cohort_tab_reports_per_entity_missing_sugef_inputs(qt_app) -> No
         assert table.item(0, 4).text() == "Suspendida"
         assert table.item(1, 5).text() == "ROA, LIQUIDITY_COVERAGE"
         assert "Pares identificados: 2" in view._matrix_cohort_summary.text()
+    finally:
+        view.close()
+        qt_app.processEvents()
+
+
+def test_normative_source_audit_tab_reports_incorrect_percentile(qt_app) -> None:
+    from aip.domain.financial_analysis.models import NormativeSourceAuditEvidence
+
+    snapshot = FinancialAnalysisSnapshot(
+        status="PARTIAL",
+        cutoff_date=date(2026, 9, 30),
+        selected_entity=None,
+        normative_source_status="REVISAR",
+        normative_source_issues=("ROE: diferencias en P15",),
+        normative_source_rows=(
+            NormativeSourceAuditEvidence(
+                code="ROE",
+                selected_value=Decimal("0.020"),
+                peer_count=38,
+                rated_peer_count=39,
+                source_p15=Decimal("0.010"),
+                aip_p15=Decimal("0.015"),
+                source_p85=Decimal("0.040"),
+                aip_p85=Decimal("0.040"),
+                status="REVISAR",
+            ),
+        ),
+    )
+    vm = FinancialAnalysisPresenter._from_snapshot(snapshot)
+    assert "REVISAR" in vm.normative_source_summary
+    assert "P15" in vm.normative_source_issues
+    assert "ADVERTENCIA" in vm.score_audit_summary
+
+    view = FinancialAnalysisView(presenter=_Presenter())  # type: ignore[arg-type]
+    try:
+        view.bind_view_model(vm)
+        table = view._normative_source_table
+        assert table.rowCount() == 1
+        assert table.columnCount() == 9
+        assert table.item(0, 0).text() == "ROE"
+        assert table.item(0, 2).text() == "38"
+        assert table.item(0, 3).text() == "39"
+        assert table.item(0, 8).text() == "REVISAR"
+        assert "P15" in view._normative_source_summary.toolTip()
     finally:
         view.close()
         qt_app.processEvents()
