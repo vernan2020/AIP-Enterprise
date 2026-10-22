@@ -25,6 +25,89 @@ from aip.product.configured.liquidity.sugef210_source_audit_cli import (
 _EXPECTED_SOURCE_STATUS = "ACCOUNT_LEVEL_EVIDENCE_ONLY_NO_AVAILABLE_CASH"
 _REQUIRED_MASTER_STATUS = "MASTER_EXACT_CUTOFF_READ"
 
+# Keep the native source layout visible, without declaring balances to be cashflows.
+_CONTRACTUAL_SOURCE_ACTIONS = {
+    "CREDIT": (
+        "XML_CARTERA_PAGOS",
+        "Conciliar cronograma individual completo de principal e intereses de cartera "
+        "contra el XML; aportar fechas, montos y autorizaciones independientes.",
+    ),
+    "CAPTACIONES": (
+        "XML_CAPTACIONES_PAGOS",
+        "Separar captación a plazo y a la vista por código original aprobado; "
+        "conciliar pagos contractuales y supuestos de retiros conductuales.",
+    ),
+    "BORROWING": (
+        "XML_OBLIGACIONES_PAGOS",
+        "Conciliar cronograma de principal e intereses de obligaciones con sus "
+        "fechas de pago y respaldos originales.",
+    ),
+    "BORROWING_MATURITY": (
+        "XML_OBLIGACIONES_BANDAS",
+        "Contrastar el bandeo regulatorio con el detalle de obligaciones; "
+        "los saldos agregados por tramo no generan pagos fechados.",
+    ),
+}
+
+
+def build_contractual_source_gates(source_inventory: object) -> list[dict[str, str]]:
+    """Show source-specific execution gaps; no native balances or private paths leak.
+
+    The existing XML inspector already reads these source files. Their dates and
+    accounting balances only establish coverage, never payment settlement amounts.
+    """
+    raw_rows = source_inventory if isinstance(source_inventory, (list, tuple)) else ()
+    indexed: dict[str, dict[str, object]] = {}
+    for row in raw_rows:
+        if not isinstance(row, dict):
+            continue
+        key = row.get("source_key")
+        if isinstance(key, str) and key in _CONTRACTUAL_SOURCE_ACTIONS:
+            if key in indexed:
+                raise ValueError("Repeated source perimeter in CONFIA inventory")
+            indexed[key] = row
+
+    result: list[dict[str, str]] = []
+    for key, (check, action) in _CONTRACTUAL_SOURCE_ACTIONS.items():
+        row = indexed.get(key)
+        if row is None:
+            state = "NOT_INSPECTED"
+            detail = "Inventario contractual no disponible en esta verificación."
+        elif row.get("status") == "SOURCE_UNAVAILABLE_NOT_ASSUMED_ZERO":
+            state = "BLOCKED"
+            detail = "XML original del corte no localizado; no asumir saldo cero."
+        elif row.get("status") != "SOURCE_FIELDS_INSPECTED_NOT_A_PAYMENT_SCHEDULE":
+            state = "BLOCKED"
+            detail = "El estado del XML contractual no permite evaluar cobertura."
+        else:
+            count = row.get("records")
+            if not isinstance(count, int) or isinstance(count, bool) or count < 0:
+                raise ValueError("Invalid contractual source record count")
+            invalid = sum(
+                value
+                for field in ("missing_balance", "invalid_balance", "missing_currency", "missing_account")
+                for value in (row.get(field),)
+                if isinstance(value, int) and not isinstance(value, bool) and value >= 0
+            )
+            date_defects = 0
+            date_fields = row.get("dates")
+            if isinstance(date_fields, list):
+                for field in date_fields:
+                    if not isinstance(field, dict):
+                        continue
+                    for label in ("missing", "invalid"):
+                        value = field.get(label)
+                        if isinstance(value, int) and not isinstance(value, bool) and value > 0:
+                            date_defects += value
+            state = "SOURCE_ONLY" if count else "EMPTY_REVIEW"
+            detail = (
+                f"{count} registros; {invalid} incidencias de campos básicos; "
+                f"{date_defects} fechas ausentes o inválidas. "
+                "No hay cronograma de cobros/pagos individual aprobado. "
+            )
+        result.append({"check": check, "state": state, "next_action": detail + " " + action})
+    return result
+
 
 def build_operational_gates(
     *,
@@ -33,6 +116,7 @@ def build_operational_gates(
     approvals_provided: bool,
     projection_executed: bool = False,
     approval_failed: bool = False,
+    contractual_inventory: object = None,
 ) -> list[dict[str, str]]:
     """Explain the next real-source blockers without exposing institutional data."""
     if approval_failed and projection_executed:
@@ -41,7 +125,7 @@ def build_operational_gates(
     master_ready = master_status == _REQUIRED_MASTER_STATUS
     xml_pending = xml_status == "NOT_INSPECTED"
     master_pending = master_status == "NOT_INSPECTED"
-    return [
+    gates = [
         {
             "check": "XML_CONFIA_CORTE",
             "state": "PENDING" if xml_pending else "READY" if xml_ready else "BLOCKED",
@@ -103,6 +187,9 @@ def build_operational_gates(
             ),
         },
     ]
+    if contractual_inventory is not None:
+        gates.extend(build_contractual_source_gates(contractual_inventory))
+    return gates
 
 
 def evaluate_readiness(
@@ -142,6 +229,7 @@ def evaluate_readiness(
             xml_status=status,
             master_status=master,
             approvals_provided=approval is not None and bank is not None,
+            contractual_inventory=inventory.get("contractual_source_inventory"),
         ),
     }
     if status != _EXPECTED_SOURCE_STATUS:
@@ -208,6 +296,7 @@ def evaluate_readiness(
         master_status=master,
         approvals_provided=True,
         projection_executed=True,
+        contractual_inventory=inventory.get("contractual_source_inventory"),
     )
     basic["next_action"] = (
         "Revisar la cobertura de fuentes y aprobar solo flujos faltantes con "
