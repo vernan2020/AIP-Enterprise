@@ -352,3 +352,55 @@ def test_contractual_perimeter_inventory_rejects_duplicate_source_identity():
     ]
     with pytest.raises(ValueError, match="Repeated source"):
         readiness.build_contractual_source_gates(duplicate)
+
+
+def test_aggregate_obligation_mapping_gates_do_not_misreport_508396_row_defects(
+    monkeypatch,
+):
+    _configured(monkeypatch)
+    mapping_review = {
+        "source_key": "BORROWING_MATURITY",
+        "status": "AGGREGATE_SOURCE_FIELD_MAP_REVIEW_REQUIRED",
+        "records": 254198,
+        "missing_balance": 254198,
+        "missing_account": 254198,
+        "unmapped_source_fields": [
+            "SaldoaPagarPrincipal",
+            "CuentaContablePrincipal",
+        ],
+        "observed_xml_tag_names": ["MontoBandaOriginal", "TipoRangoPasivo"],
+        "source_currency_balances_not_cashflows": {"1": "SENSITIVE"},
+    }
+    monkeypatch.setattr(
+        readiness,
+        "inspect_xml_investment_source",
+        lambda _: {**INVENTORY, "contractual_source_inventory": [mapping_review]},
+    )
+    report = readiness.evaluate_readiness(cutoff=CUTOFF, scenario="BASE")
+    gates = {row["check"]: row for row in report["operational_gates"]}
+    band = gates["XML_OBLIGACIONES_BANDAS"]
+    assert band["state"] == "SCHEMA_REVIEW"
+    assert "254198 registros" in band["next_action"]
+    assert "508396" not in str(report)
+    assert "SENSITIVE" not in str(report)
+    assert report["aggregate_obligation_xml_schema"]["expected_tags_not_observed"] == [
+        "SaldoaPagarPrincipal",
+        "CuentaContablePrincipal",
+    ]
+    assert report["aggregate_obligation_xml_schema"]["observed_tag_names_only"] == [
+        "MontoBandaOriginal",
+        "TipoRangoPasivo",
+    ]
+    assert report["projection_regulatorily_certified"] is False
+
+
+def test_aggregate_obligation_tags_present_remain_reference_only():
+    status = {
+        "source_key": "BORROWING_MATURITY",
+        "status": "AGGREGATE_SOURCE_REFERENCE_NOT_CASHFLOWS",
+        "records": 254198,
+        "unmapped_source_fields": [],
+    }
+    item = readiness.build_contractual_source_gates([status])[-1]
+    assert item["state"] == "REFERENCE_ONLY"
+    assert "calendario de liquidación" in item["next_action"]
