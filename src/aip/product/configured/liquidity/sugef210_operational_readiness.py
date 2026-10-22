@@ -26,7 +26,7 @@ _EXPECTED_SOURCE_STATUS = "ACCOUNT_LEVEL_EVIDENCE_ONLY_NO_AVAILABLE_CASH"
 _REQUIRED_MASTER_STATUS = "MASTER_EXACT_CUTOFF_READ"
 
 
-def _operational_gates(
+def build_operational_gates(
     *,
     xml_status: str,
     master_status: str,
@@ -36,23 +36,33 @@ def _operational_gates(
     """Explain the next real-source blockers without exposing institutional data."""
     xml_ready = xml_status == _EXPECTED_SOURCE_STATUS
     master_ready = master_status == _REQUIRED_MASTER_STATUS
+    xml_pending = xml_status == "NOT_INSPECTED"
+    master_pending = master_status == "NOT_INSPECTED"
     return [
         {
             "check": "XML_CONFIA_CORTE",
-            "state": "READY" if xml_ready else "BLOCKED",
+            "state": "PENDING" if xml_pending else "READY" if xml_ready else "BLOCKED",
             "next_action": (
-                "Fuente XML del corte localizada; saldos a la vista no certificados."
-                if xml_ready
-                else "Verificar configuración XML CONFÍA y archivos originales del corte."
+                "Inspeccionar XML CONFÍA del corte seleccionado."
+                if xml_pending
+                else (
+                    "Fuente XML del corte localizada; saldos a la vista no certificados."
+                    if xml_ready
+                    else "Verificar configuración XML CONFÍA y archivos originales del corte."
+                )
             ),
         },
         {
             "check": "MAESTRO_INVERSIONES_CORTE",
-            "state": "READY" if master_ready else "BLOCKED",
+            "state": "PENDING" if master_pending else "READY" if master_ready else "BLOCKED",
             "next_action": (
-                "Maestro original del corte disponible para conciliación."
-                if master_ready
-                else "Localizar exactamente un Maestro del mismo corte y validar su lectura."
+                "Inspeccionar Maestro de inversiones del corte seleccionado."
+                if master_pending
+                else (
+                    "Maestro original del corte disponible para conciliación."
+                    if master_ready
+                    else "Localizar exactamente un Maestro del mismo corte y validar su lectura."
+                )
             ),
         },
         {
@@ -117,7 +127,7 @@ def evaluate_readiness(
         "xml_records_read": inventory.get("xml_records_read"),
         "master_positions_read": inventory.get("master_positions_read"),
         "projection_regulatorily_certified": False,
-        "operational_gates": _operational_gates(
+        "operational_gates": build_operational_gates(
             xml_status=status,
             master_status=master,
             approvals_provided=approval is not None and bank is not None,
@@ -182,7 +192,7 @@ def evaluate_readiness(
         for source in session.assembly.source_reconciliations
     ]
     basic["missing_evidence"] = list(session.assembly.missing_institutional_evidence)
-    basic["operational_gates"] = _operational_gates(
+    basic["operational_gates"] = build_operational_gates(
         xml_status=status,
         master_status=master,
         approvals_provided=True,
