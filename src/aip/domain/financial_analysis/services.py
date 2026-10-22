@@ -10,6 +10,7 @@ from aip.domain.financial_analysis.indicator_reconciliation import (
     FinancialIndicatorReconciliationService,
 )
 from aip.domain.financial_analysis.institutional_flags import InstitutionalEntityFlagService
+from aip.domain.financial_analysis.matrix_sugef_adapter import MatrixSUGEFAdapter
 from aip.domain.financial_analysis.models import (
     EntityFinancialSummary,
     EntityRatingSummary,
@@ -22,7 +23,11 @@ from aip.domain.financial_analysis.models import (
     FinancialStatementType,
     MarketCompositionPoint,
     MarketCompositionSeries,
+    MatrixReferenceBreakdown,
+    MatrixReferencePeer,
+    NormativeSourceAuditEvidence,
 )
+from aip.domain.financial_analysis.normative_source_audit import NormativeSourcePercentileAuditor
 from aip.domain.financial_analysis.return_on_assets import ReturnOnAssetsService
 from aip.domain.financial_analysis.sugef_ratings import (
     SUGEFOnlyFinancialEntityRatingService,
@@ -133,6 +138,102 @@ class FinancialAnalysisService:
             effective_date,
             rating_service=rating_service,
         )
+        # The binding methodology is audited directly against the same
+        # SUGEF source set. Excel comparisons never determine this status.
+        normative_audit = NormativeSourcePercentileAuditor.audit(
+            operational_lines, entity_id=selected.entity_id, rating=rating
+        )
+        normative_rows = tuple(
+            NormativeSourceAuditEvidence(
+                code=row.code,
+                selected_value=row.selected_value,
+                peer_count=row.observed_peers,
+                rated_peer_count=row.rated_peers,
+                source_p15=row.observed_p15,
+                aip_p15=row.rated_p15,
+                source_p85=row.observed_p85,
+                aip_p85=row.rated_p85,
+                status=row.status,
+            )
+            for row in normative_audit.rows
+        )
+        reference_score = None
+        reference_grade = None
+        reference_maximum = None
+        reference_coverage = "Cohorte de referencia no disponible"
+        reference_diagnostics: tuple[str, ...] = ()
+        reference_indicators: tuple[MatrixReferenceBreakdown, ...] = ()
+        reference_peers: tuple[MatrixReferencePeer, ...] = ()
+        try:
+            reference, absent_entities = MatrixSUGEFAdapter.validate_reference_cohort(
+                operational_lines, effective_date
+            )
+            selected_reference = next(
+                (item for item in reference.entities if item.entity_id == selected.entity_id),
+                None,
+            )
+            if selected_reference is not None:
+                reference_score = selected_reference.score
+                reference_grade = selected_reference.grade
+                reference_indicators = tuple(
+                    MatrixReferenceBreakdown(
+                        code=item.code,
+                        value=item.value,
+                        p15=item.p15,
+                        midpoint=item.midpoint,
+                        p85=item.p85,
+                        weight=item.weight,
+                        contribution=item.contribution,
+                        level=item.level,
+                        origin=item.origin,
+                    )
+                    for item in selected_reference.indicators
+                )
+            reference_peers = tuple(
+                MatrixReferencePeer(
+                    entity_id=peer.entity_id,
+                    entity_name=peer.name,
+                    score=peer.score,
+                    grade=peer.grade,
+                    missing_indicators=peer.missing,
+                    status=peer.status,
+                )
+                for peer in reference.entities
+            )
+            reference_maximum = reference.score_maximum
+            reference_coverage = (
+                f"{len(reference.entities)}/38 entidades de matriz, "
+                f"{len(reference.incomplete_entities)} con indicadores incompletos"
+                f" · Estado: {reference.classification_status}"
+            )
+            notes = []
+            if absent_entities:
+                notes.append(
+                    "Entidades ausentes del universo homologado: " + ", ".join(absent_entities)
+                )
+            if reference.classification_status != "APTA":
+                notes.append(
+                    "Categoría dinámica de la matriz Excel suspendida: "
+                    "una cohorte incompleta no permite validar su máximo."
+                )
+            if selected_reference is None:
+                notes.append("La entidad seleccionada no integra la cohorte de matriz.")
+            elif selected_reference.missing:
+                notes.append("Indicadores sin dato: " + ", ".join(selected_reference.missing))
+            notes.append(
+                "PERFIL EXCEL DE CONTRASTE (no equivale a la metodología "
+                "normativa vigente): rentabilidad 6,67 por indicador; "
+                "piso cero en P15 de margen financiero, ROA y ROE; "
+                "categoría dinámica respecto al máximo de esta cohorte. "
+                "Documento 08ME14-01 V01 sección 4.4: categorías fijas; "
+                "sección 4.2: P15 sin piso cero explícito. "
+                "La nota certificada de AIP permanece intacta."
+            )
+            reference_diagnostics = tuple(notes)
+        except (ArithmeticError, KeyError, ValueError) as exc:
+            reference_diagnostics = (
+                "Cotejo matricial no disponible: " f"{type(exc).__name__}: {exc}",
+            )
         reconciliations = self._reconciliation.reconcile(
             reconciliation_lines,
             entity_id=selected.entity_id,
@@ -171,6 +272,16 @@ class FinancialAnalysisService:
             market_composition=market_composition,
             peer_ratings=peer_ratings,
             rating=rating,
+            reference_matrix_score=reference_score,
+            reference_matrix_grade=reference_grade,
+            reference_matrix_maximum=reference_maximum,
+            reference_matrix_coverage=reference_coverage,
+            reference_matrix_diagnostics=reference_diagnostics,
+            reference_matrix_indicators=reference_indicators,
+            reference_matrix_peers=reference_peers,
+            normative_source_status=normative_audit.status,
+            normative_source_issues=normative_audit.discrepancies,
+            normative_source_rows=normative_rows,
             indicator_reconciliations=reconciliations,
             diagnostics=tuple(coverage_diagnostics),
             source_files=source_files,

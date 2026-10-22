@@ -1,16 +1,23 @@
 from __future__ import annotations
 
 from datetime import date
+from decimal import Decimal
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QTableWidgetItem
 
-from aip.domain.financial_analysis.models import FinancialAnalysisSnapshot
+from aip.domain.financial_analysis.models import (
+    FinancialAnalysisSnapshot,
+    MatrixReferenceBreakdown,
+    MatrixReferencePeer,
+    RatingLevel,
+)
 from aip.ui.modules.financial_analysis.presenters.financial_analysis_presenter import (
     FinancialAnalysisPresenter,
 )
 from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model import (
     FinancialAnalysisViewModel,
+    RatingMatrixComparisonRow,
 )
 from aip.ui.modules.financial_analysis.views.financial_analysis_view import (
     FinancialAnalysisView,
@@ -62,6 +69,9 @@ def test_financial_analysis_exposes_methodology_rating_tab(qt_app) -> None:
         "Ranking de entidades",
         "Indicadores y dimensiones",
         "Reconciliación",
+        "Auditoría del puntaje",
+        "Fuente SUGEF 08ME14",
+        "Cohorte metodológica",
     ]
     assert view._rating_heading.text() == "Calificación interna 08ME14-01 · datos SUGEF"
     assert view._rating_methodology.text() == "Metodología: 08ME14-01"
@@ -368,6 +378,160 @@ def test_missing_official_sugef_data_has_explicit_non_demo_warning(qt_app) -> No
         assert "no se recibieron entidades" in view._cutoff_notice.text()
         assert "Calidad y trazabilidad" in view._cutoff_notice.text()
         assert not view._cutoff_notice.isHidden()
+    finally:
+        view.close()
+        qt_app.processEvents()
+
+
+def test_financial_matrix_comparison_shows_all_audit_columns(qt_app) -> None:
+    view = FinancialAnalysisView(presenter=_Presenter())  # type: ignore[arg-type]
+    try:
+        row = RatingMatrixComparisonRow(
+            indicator="ROA",
+            value="1.20%",
+            aip_p15="-0.20%",
+            matrix_p15="0.00%",
+            aip_p85="3.00%",
+            matrix_p85="3.00%",
+            matrix_weight="6.670%",
+            aip_points="3.3333",
+            matrix_points="5.0025",
+            delta_points="+1.6692",
+            matrix_origin="DATOS_SUGEF",
+        )
+        model = FinancialAnalysisViewModel(
+            score_matrix_summary="Puntaje provisional 66.8825; categoría suspendida",
+            score_matrix_notes="Falta cohorte",
+            score_matrix_rows=(row,),
+        )
+        view.bind_view_model(model)
+        table = view._matrix_comparison_table
+        assert table.rowCount() == 1
+        assert table.columnCount() == 11
+        assert table.item(0, 0).text() == "ROA"
+        assert table.item(0, 3).text() == "0.00%"
+        assert table.item(0, 8).text() == "5.0025"
+        assert table.item(0, 9).text() == "+1.6692"
+        assert "categoría suspendida" in view._score_matrix_summary.text()
+        assert "Falta cohorte" in view._score_matrix_summary.toolTip()
+    finally:
+        view.close()
+        qt_app.processEvents()
+
+
+def test_matrix_breakdown_is_projected_to_user_without_inventing_a_grade() -> None:
+    reference = MatrixReferenceBreakdown(
+        code="ROA",
+        value=Decimal("0.012"),
+        p15=Decimal("0"),
+        midpoint=Decimal("0.015"),
+        p85=Decimal("0.030"),
+        weight=Decimal("6.67"),
+        contribution=Decimal("5.0025"),
+        level=RatingLevel.SATISFACTORY,
+        origin="DATOS_SUGEF",
+    )
+    snapshot = FinancialAnalysisSnapshot(
+        status="PARTIAL",
+        cutoff_date=date(2026, 8, 31),
+        selected_entity=None,
+        reference_matrix_score=Decimal("66.8825"),
+        reference_matrix_grade=None,
+        reference_matrix_coverage="37/38 · Estado: COHORTE_INCOMPLETA",
+        reference_matrix_indicators=(reference,),
+    )
+    vm = FinancialAnalysisPresenter._from_snapshot(snapshot)
+    assert len(vm.score_matrix_rows) == 1
+    assert vm.score_matrix_rows[0].indicator == "ROA"
+    assert vm.score_matrix_rows[0].matrix_points == "5.0025"
+    assert vm.score_matrix_rows[0].aip_points == "-"
+    assert vm.score_matrix_rows[0].delta_points == "-"
+    assert "Puntaje provisional" in vm.score_matrix_summary
+    assert "categoría suspendida" in vm.score_matrix_summary
+
+
+def test_matrix_cohort_tab_reports_per_entity_missing_sugef_inputs(qt_app) -> None:
+    snapshot = FinancialAnalysisSnapshot(
+        status="PARTIAL",
+        cutoff_date=date(2026, 9, 30),
+        selected_entity=None,
+        reference_matrix_coverage="2/38 entidades · Estado: COHORTE_INCOMPLETA",
+        reference_matrix_peers=(
+            MatrixReferencePeer(
+                entity_id="101",
+                entity_name="COOPENAE",
+                score=Decimal("60.833"),
+                grade=None,
+                missing_indicators=(),
+                status="COMPLETE",
+            ),
+            MatrixReferencePeer(
+                entity_id="102",
+                entity_name="BANCO X",
+                score=None,
+                grade=None,
+                missing_indicators=("ROA", "LIQUIDITY_COVERAGE"),
+                status="INCOMPLETE",
+            ),
+        ),
+    )
+    vm = FinancialAnalysisPresenter._from_snapshot(snapshot)
+    assert len(vm.score_matrix_peer_rows) == 2
+    assert vm.score_matrix_peer_rows[0].grade == "Suspendida"
+    assert vm.score_matrix_peer_rows[1].missing == "ROA, LIQUIDITY_COVERAGE"
+    view = FinancialAnalysisView(presenter=_Presenter())  # type: ignore[arg-type]
+    try:
+        view.bind_view_model(vm)
+        table = view._matrix_cohort_table
+        assert table.rowCount() == 2
+        assert table.columnCount() == 6
+        assert table.item(0, 4).text() == "Suspendida"
+        assert table.item(1, 5).text() == "ROA, LIQUIDITY_COVERAGE"
+        assert "Pares identificados: 2" in view._matrix_cohort_summary.text()
+    finally:
+        view.close()
+        qt_app.processEvents()
+
+
+def test_normative_source_audit_tab_reports_incorrect_percentile(qt_app) -> None:
+    from aip.domain.financial_analysis.models import NormativeSourceAuditEvidence
+
+    snapshot = FinancialAnalysisSnapshot(
+        status="PARTIAL",
+        cutoff_date=date(2026, 9, 30),
+        selected_entity=None,
+        normative_source_status="REVISAR",
+        normative_source_issues=("ROE: diferencias en P15",),
+        normative_source_rows=(
+            NormativeSourceAuditEvidence(
+                code="ROE",
+                selected_value=Decimal("0.020"),
+                peer_count=38,
+                rated_peer_count=39,
+                source_p15=Decimal("0.010"),
+                aip_p15=Decimal("0.015"),
+                source_p85=Decimal("0.040"),
+                aip_p85=Decimal("0.040"),
+                status="REVISAR",
+            ),
+        ),
+    )
+    vm = FinancialAnalysisPresenter._from_snapshot(snapshot)
+    assert "REVISAR" in vm.normative_source_summary
+    assert "P15" in vm.normative_source_issues
+    assert "ADVERTENCIA" in vm.score_audit_summary
+
+    view = FinancialAnalysisView(presenter=_Presenter())  # type: ignore[arg-type]
+    try:
+        view.bind_view_model(vm)
+        table = view._normative_source_table
+        assert table.rowCount() == 1
+        assert table.columnCount() == 9
+        assert table.item(0, 0).text() == "ROE"
+        assert table.item(0, 2).text() == "38"
+        assert table.item(0, 3).text() == "39"
+        assert table.item(0, 8).text() == "REVISAR"
+        assert "P15" in view._normative_source_summary.toolTip()
     finally:
         view.close()
         qt_app.processEvents()

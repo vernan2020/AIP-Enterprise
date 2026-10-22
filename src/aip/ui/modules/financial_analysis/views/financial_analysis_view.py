@@ -644,6 +644,168 @@ class FinancialAnalysisView(QWidget):
         reconciliation_layout.addWidget(self._reconciliation_table, 1)
         self._rating_content_tabs.addTab(reconciliation, "Reconciliación")
 
+        audit = QWidget()
+        audit_layout = QVBoxLayout(audit)
+        audit_layout.setContentsMargins(8, 8, 8, 8)
+        audit_layout.setSpacing(6)
+        audit_header = QHBoxLayout()
+        self._score_audit_summary = QLabel("Sin nota para verificar")
+        self._score_audit_summary.setWordWrap(True)
+        self._score_audit_summary.setStyleSheet("font-weight:700; color:#314A5E; font-size:11px;")
+        audit_header.addWidget(self._score_audit_summary, 1)
+        self._score_audit_table: QTableWidget
+        audit_export = QPushButton("Exportar auditoría CSV")
+        audit_export.setToolTip(
+            "Exporta los 13 indicadores, pesos, factores y diferencias para Excel."
+        )
+        audit_export.clicked.connect(
+            lambda: save_table_csv_dialog(self, self._score_audit_table, "auditoria_08ME14-01.csv")
+        )
+        audit_header.addWidget(audit_export)
+        audit_layout.addLayout(audit_header)
+
+        self._score_audit_warning = QLabel("")
+        self._score_audit_warning.setWordWrap(True)
+        self._score_audit_warning.setStyleSheet(
+            "background:#FFF9E8; border:1px solid #E8D79E; border-radius:5px; "
+            "color:#6F541A; padding:5px 8px;"
+        )
+        audit_layout.addWidget(self._score_audit_warning)
+
+        self._score_matrix_summary = QLabel("Simulación Excel NO normativa: sin datos")
+        self._score_matrix_summary.setWordWrap(True)
+        self._score_matrix_summary.setStyleSheet(
+            "color:#143C63; font-weight:600; font-size:11px; padding:5px 2px;"
+        )
+        audit_layout.addWidget(self._score_matrix_summary)
+
+        self._score_audit_table = self._table(
+            [
+                "Indicador",
+                "Valor",
+                "P15",
+                "Punto medio",
+                "P85",
+                "Dirección",
+                "Nivel comprobado",
+                "Pts.",
+                "Peso",
+                "Factor",
+                "Esperado",
+                "AIP",
+                "Diferencia",
+                "Estado",
+                "Cuenta fuente",
+                "Regla aplicada",
+            ]
+        )
+        audit_table_header = self._score_audit_table.horizontalHeader()
+        audit_table_header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        for column in range(1, 16):
+            audit_table_header.setSectionResizeMode(column, QHeaderView.ResizeMode.ResizeToContents)
+        audit_layout.addWidget(self._score_audit_table, 1)
+        matrix_header = QHBoxLayout()
+        matrix_label = QLabel("Auditoría secundaria · AIP oficial frente a simulación Excel")
+        matrix_label.setStyleSheet("color:#143C63; font-weight:700;")
+        matrix_header.addWidget(matrix_label, 1)
+        self._matrix_comparison_table: QTableWidget
+        matrix_export = QPushButton("Exportar comparación CSV")
+        matrix_export.clicked.connect(
+            lambda: save_table_csv_dialog(
+                self, self._matrix_comparison_table, "comparacion_AIP_matriz_08ME14.csv"
+            )
+        )
+        matrix_header.addWidget(matrix_export)
+        audit_layout.addLayout(matrix_header)
+        self._matrix_comparison_table = self._table(
+            [
+                "Indicador",
+                "Valor",
+                "P15 AIP",
+                "P15 Matriz",
+                "P85 AIP",
+                "P85 Matriz",
+                "Peso Matriz",
+                "Puntos AIP",
+                "Puntos Matriz",
+                "Diferencia",
+                "Fuente Matriz",
+            ]
+        )
+        matrix_columns = self._matrix_comparison_table.horizontalHeader()
+        matrix_columns.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        for column in range(1, 11):
+            matrix_columns.setSectionResizeMode(column, QHeaderView.ResizeMode.ResizeToContents)
+        audit_layout.addWidget(self._matrix_comparison_table, 1)
+        self._rating_content_tabs.addTab(audit, "Auditoría del puntaje")
+
+        official_source = QWidget()
+        official_source_layout = QVBoxLayout(official_source)
+        official_source_layout.setContentsMargins(8, 8, 8, 8)
+        official_source_layout.setSpacing(6)
+        official_source_actions = QHBoxLayout()
+        self._normative_source_summary = QLabel("Fuente SUGEF: sin validar")
+        self._normative_source_summary.setWordWrap(True)
+        self._normative_source_summary.setStyleSheet("color:#143C63; font-weight:700;")
+        official_source_actions.addWidget(self._normative_source_summary, 1)
+        self._normative_source_table: QTableWidget
+        official_source_export = QPushButton("Exportar fuente CSV")
+        official_source_export.clicked.connect(
+            lambda: save_table_csv_dialog(
+                self, self._normative_source_table, "auditoria_fuentes_SUGEF_08ME14.csv"
+            )
+        )
+        official_source_actions.addWidget(official_source_export)
+        official_source_layout.addLayout(official_source_actions)
+        self._normative_source_table = self._table(
+            [
+                "Indicador",
+                "Valor fuente",
+                "Pares fuente",
+                "Pares AIP",
+                "P15 fuente",
+                "P15 AIP",
+                "P85 fuente",
+                "P85 AIP",
+                "Resultado",
+            ]
+        )
+        source_header = self._normative_source_table.horizontalHeader()
+        source_header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        for column in range(1, 9):
+            source_header.setSectionResizeMode(column, QHeaderView.ResizeMode.ResizeToContents)
+        official_source_layout.addWidget(self._normative_source_table, 1)
+        self._rating_content_tabs.addTab(official_source, "Fuente SUGEF 08ME14")
+
+        cohort = QWidget()
+        cohort_layout = QVBoxLayout(cohort)
+        cohort_layout.setContentsMargins(8, 8, 8, 8)
+        cohort_layout.setSpacing(6)
+        cohort_actions = QHBoxLayout()
+        self._matrix_cohort_summary = QLabel("Sin datos de cohorte")
+        self._matrix_cohort_summary.setWordWrap(True)
+        cohort_actions.addWidget(self._matrix_cohort_summary, 1)
+        self._matrix_cohort_table: QTableWidget
+        cohort_export = QPushButton("Exportar cohorte CSV")
+        cohort_export.setToolTip("Exporta las entidades, notas y faltantes para Excel.")
+        cohort_export.clicked.connect(
+            lambda: save_table_csv_dialog(
+                self, self._matrix_cohort_table, "auditoria_cohorte_08ME14.csv"
+            )
+        )
+        cohort_actions.addWidget(cohort_export)
+        cohort_layout.addLayout(cohort_actions)
+        self._matrix_cohort_table = self._table(
+            ["Entidad SUGEF", "ID SUGEF", "Estado", "Puntaje", "Categoría", "Faltantes"]
+        )
+        cohort_header = self._matrix_cohort_table.horizontalHeader()
+        cohort_header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        cohort_header.setSectionResizeMode(5, QHeaderView.ResizeMode.Stretch)
+        for column in (1, 2, 3, 4):
+            cohort_header.setSectionResizeMode(column, QHeaderView.ResizeMode.ResizeToContents)
+        cohort_layout.addWidget(self._matrix_cohort_table, 1)
+        self._rating_content_tabs.addTab(cohort, "Cohorte metodológica")
+
         layout.addWidget(self._rating_content_tabs, 1)
 
         self._rating_notes = QLabel()
@@ -1076,6 +1238,101 @@ class FinancialAnalysisView(QWidget):
                 if row.source_account:
                     item.setToolTip(f"Cuenta/fuente: {row.source_account}")
                 self._rating_indicator_table.setItem(row_index, column, item)
+
+        self._score_audit_summary.setText(view_model.score_audit_summary)
+        self._normative_source_summary.setText(view_model.normative_source_summary)
+        self._normative_source_summary.setToolTip(view_model.normative_source_issues)
+        self._normative_source_table.setRowCount(len(view_model.normative_source_rows))
+        for row_index, audit_row in enumerate(view_model.normative_source_rows):
+            source_values = (
+                audit_row.code,
+                audit_row.source_value,
+                audit_row.source_peers,
+                audit_row.aip_peers,
+                audit_row.source_p15,
+                audit_row.aip_p15,
+                audit_row.source_p85,
+                audit_row.aip_p85,
+                audit_row.status,
+            )
+            for column, value in enumerate(source_values):
+                cell = QTableWidgetItem(value)
+                if 1 <= column <= 7:
+                    cell.setTextAlignment(
+                        Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+                    )
+                self._normative_source_table.setItem(row_index, column, cell)
+        self._matrix_cohort_summary.setText(
+            view_model.score_matrix_summary
+            + " · Pares identificados: "
+            + str(len(view_model.score_matrix_peer_rows))
+        )
+        self._matrix_cohort_summary.setToolTip(view_model.score_matrix_notes)
+        self._matrix_cohort_table.setRowCount(len(view_model.score_matrix_peer_rows))
+        for index, peer in enumerate(view_model.score_matrix_peer_rows):
+            for column, value in enumerate(
+                (peer.name, peer.entity_id, peer.status, peer.score, peer.grade, peer.missing)
+            ):
+                cell = QTableWidgetItem(value)
+                if column == 3:
+                    cell.setTextAlignment(
+                        Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+                    )
+                self._matrix_cohort_table.setItem(index, column, cell)
+        self._matrix_comparison_table.setRowCount(len(view_model.score_matrix_rows))
+        for index, item in enumerate(view_model.score_matrix_rows):
+            values = (
+                item.indicator,
+                item.value,
+                item.aip_p15,
+                item.matrix_p15,
+                item.aip_p85,
+                item.matrix_p85,
+                item.matrix_weight,
+                item.aip_points,
+                item.matrix_points,
+                item.delta_points,
+                item.matrix_origin,
+            )
+            for column, value in enumerate(values):
+                cell = QTableWidgetItem(value)
+                if 1 <= column <= 9:
+                    cell.setTextAlignment(
+                        Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+                    )
+                self._matrix_comparison_table.setItem(index, column, cell)
+        self._score_matrix_summary.setText(view_model.score_matrix_summary)
+        self._score_matrix_summary.setToolTip(view_model.score_matrix_notes)
+        self._score_audit_warning.setText(view_model.score_audit_warning)
+        self._score_audit_warning.setVisible(bool(view_model.score_audit_warning))
+        self._score_audit_table.setRowCount(len(view_model.score_audit_rows))
+        for row_index, row in enumerate(view_model.score_audit_rows):
+            audit_values = (
+                row.indicator,
+                row.value,
+                row.p15,
+                row.midpoint,
+                row.p85,
+                row.direction,
+                row.level,
+                row.points,
+                row.weight,
+                row.factor,
+                row.expected,
+                row.reported,
+                row.difference,
+                row.status,
+                row.source,
+                row.rule,
+            )
+            for column, value in enumerate(audit_values):
+                item = QTableWidgetItem(value)
+                if column in {1, 2, 3, 4, 7, 8, 9, 10, 11, 12}:
+                    item.setTextAlignment(
+                        Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+                    )
+                item.setToolTip(f"Regla: {row.rule}\nFuente: {row.source}")
+                self._score_audit_table.setItem(row_index, column, item)
 
         self._reconciliation_table.setRowCount(len(view_model.indicator_reconciliations))
         for row_index, row in enumerate(view_model.indicator_reconciliations):

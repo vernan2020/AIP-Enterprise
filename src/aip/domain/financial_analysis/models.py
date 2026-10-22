@@ -197,6 +197,42 @@ class FinancialAccountCatalogEntry:
 
 
 @dataclass(frozen=True, slots=True)
+class MatrixReferenceBreakdown:
+    code: str
+    value: Decimal | None
+    p15: Decimal | None
+    midpoint: Decimal | None
+    p85: Decimal | None
+    weight: Decimal
+    contribution: Decimal | None
+    level: RatingLevel
+    origin: str
+
+
+@dataclass(frozen=True, slots=True)
+class MatrixReferencePeer:
+    entity_id: str
+    entity_name: str
+    score: Decimal | None
+    grade: str | None
+    missing_indicators: tuple[str, ...]
+    status: str
+
+
+@dataclass(frozen=True, slots=True)
+class NormativeSourceAuditEvidence:
+    code: str
+    selected_value: Decimal | None
+    peer_count: int
+    rated_peer_count: int
+    source_p15: Decimal | None
+    aip_p15: Decimal | None
+    source_p85: Decimal | None
+    aip_p85: Decimal | None
+    status: str
+
+
+@dataclass(frozen=True, slots=True)
 class FinancialAnalysisSnapshot:
     status: str
     cutoff_date: date | None
@@ -212,6 +248,16 @@ class FinancialAnalysisSnapshot:
     market_composition: tuple[MarketCompositionSeries, ...] = field(default_factory=tuple)
     peer_ratings: tuple[EntityRatingSummary, ...] = field(default_factory=tuple)
     rating: EntityFinancialRating | None = None
+    reference_matrix_score: Decimal | None = None
+    reference_matrix_grade: str | None = None
+    reference_matrix_maximum: Decimal | None = None
+    reference_matrix_coverage: str = "Sin cotejo"
+    reference_matrix_diagnostics: tuple[str, ...] = field(default_factory=tuple)
+    reference_matrix_peers: tuple[MatrixReferencePeer, ...] = field(default_factory=tuple)
+    reference_matrix_indicators: tuple[MatrixReferenceBreakdown, ...] = field(default_factory=tuple)
+    normative_source_status: str = "SIN_VALIDAR"
+    normative_source_issues: tuple[str, ...] = field(default_factory=tuple)
+    normative_source_rows: tuple[NormativeSourceAuditEvidence, ...] = field(default_factory=tuple)
     indicator_reconciliations: tuple[FinancialIndicatorReconciliation, ...] = field(
         default_factory=tuple
     )

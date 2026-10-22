@@ -148,6 +148,64 @@ class RatingIndicatorRow:
 
 
 @dataclass(frozen=True, slots=True)
+class NormativeSourceAuditRow:
+    code: str
+    source_value: str
+    source_peers: str
+    aip_peers: str
+    source_p15: str
+    aip_p15: str
+    source_p85: str
+    aip_p85: str
+    status: str
+
+
+@dataclass(frozen=True, slots=True)
+class RatingScoreAuditRow:
+    indicator: str
+    value: str
+    p15: str
+    midpoint: str
+    p85: str
+    direction: str
+    level: str
+    points: str
+    weight: str
+    factor: str
+    expected: str
+    reported: str
+    difference: str
+    status: str
+    source: str
+    rule: str
+
+
+@dataclass(frozen=True, slots=True)
+class MatrixPeerAuditRow:
+    entity_id: str
+    name: str
+    status: str
+    score: str
+    grade: str
+    missing: str
+
+
+@dataclass(frozen=True, slots=True)
+class RatingMatrixComparisonRow:
+    indicator: str
+    value: str
+    aip_p15: str
+    matrix_p15: str
+    aip_p85: str
+    matrix_p85: str
+    matrix_weight: str
+    aip_points: str
+    matrix_points: str
+    delta_points: str
+    matrix_origin: str
+
+
+@dataclass(frozen=True, slots=True)
 class IndicatorReconciliationRow:
     indicator: str
     published_value: str
@@ -182,6 +240,17 @@ class FinancialAnalysisViewModel:
     rating_methodology: str = "08ME14-01"
     rating_dimensions: tuple[RatingDimensionRow, ...] = field(default_factory=tuple)
     rating_indicators: tuple[RatingIndicatorRow, ...] = field(default_factory=tuple)
+    score_audit_rows: tuple[RatingScoreAuditRow, ...] = field(default_factory=tuple)
+    score_audit_status: str = "SIN EVALUACIÓN"
+    score_audit_summary: str = "Sin calificación seleccionada"
+    score_audit_warning: str = ""
+    normative_source_summary: str = "Fuente SUGEF: sin validar"
+    normative_source_issues: str = ""
+    normative_source_rows: tuple[NormativeSourceAuditRow, ...] = field(default_factory=tuple)
+    score_matrix_summary: str = ""
+    score_matrix_notes: str = ""
+    score_matrix_rows: tuple[RatingMatrixComparisonRow, ...] = field(default_factory=tuple)
+    score_matrix_peer_rows: tuple[MatrixPeerAuditRow, ...] = field(default_factory=tuple)
     indicator_reconciliations: tuple[IndicatorReconciliationRow, ...] = field(default_factory=tuple)
     rating_diagnostics: tuple[str, ...] = field(default_factory=tuple)
     diagnostics: tuple[str, ...] = field(default_factory=tuple)

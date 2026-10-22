@@ -9,6 +9,8 @@ from aip.domain.financial_analysis.models import (
     FinancialMetricHistorySeries,
     FinancialStatementLine,
 )
+from aip.domain.financial_analysis.rating_score_audit import RatingScoreAuditService
+from aip.domain.financial_analysis.ratings import FinancialEntityRatingService
 from aip.product.configured.services.configured_financial_analysis_service import (
     ConfiguredFinancialAnalysisService,
     FinancialAnalysisApplicationSnapshot,
@@ -24,12 +26,16 @@ from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model 
     FinancialMetricView,
     FinancialStatementRow,
     IndicatorReconciliationRow,
+    MatrixPeerAuditRow,
+    NormativeSourceAuditRow,
     PeerChartPointView,
     PeerChartSeriesView,
     PeerRatingRow,
     PeerSummaryRow,
     RatingDimensionRow,
     RatingIndicatorRow,
+    RatingMatrixComparisonRow,
+    RatingScoreAuditRow,
 )
 
 
@@ -366,6 +372,145 @@ class FinancialAnalysisPresenter:
             if rating is not None
             else ()
         )
+        score_audit = RatingScoreAuditService.audit(rating) if rating is not None else None
+        score_audit_rows = (
+            tuple(
+                RatingScoreAuditRow(
+                    indicator=item.label,
+                    value=cls._rating_value(item.value, item.direction.value),
+                    p15=cls._rating_value(item.p15, item.direction.value),
+                    midpoint=cls._rating_value(item.midpoint, item.direction.value),
+                    p85=cls._rating_value(item.p85, item.direction.value),
+                    direction=cls._direction_label(item.direction.value),
+                    level=cls._level_label(item.expected_level.value),
+                    points=str(item.points) if item.points is not None else "-",
+                    weight=f"{item.weight:,.3f}%",
+                    factor=(
+                        f"{item.factor * Decimal('100'):,.0f}%" if item.factor is not None else "-"
+                    ),
+                    expected=f"{item.expected:,.3f}" if item.expected is not None else "-",
+                    reported=f"{item.reported:,.3f}" if item.reported is not None else "-",
+                    difference=f"{item.difference:+,.3f}" if item.difference is not None else "-",
+                    status=item.status,
+                    source=item.source,
+                    rule=item.rule,
+                )
+                for item in score_audit.rows
+            )
+            if score_audit is not None
+            else ()
+        )
+        if score_audit is not None:
+            recomputed = (
+                f"{score_audit.recomputed_score:,.3f}"
+                if score_audit.recomputed_score is not None
+                else "-"
+            )
+            score_audit_summary = (
+                f"Verificación: {score_audit.status} · Recalculado: {recomputed} "
+                f"· AIP: {rating.score:,.3f}"
+                if rating.score is not None
+                else f"Verificación: {score_audit.status} · Recalculado: {recomputed} · Sin nota emitida"
+            )
+            if score_audit.issues:
+                score_audit_summary += " · " + " / ".join(score_audit.issues)
+            score_audit_warning = score_audit.criterion_warning
+        else:
+            score_audit_summary = "Sin calificación seleccionada"
+            score_audit_warning = ""
+        normative_source_rows = tuple(
+            NormativeSourceAuditRow(
+                code=item.code,
+                source_value=cls._rating_value(item.selected_value, "HIGHER_IS_BETTER"),
+                source_peers=str(item.peer_count),
+                aip_peers=str(item.rated_peer_count),
+                source_p15=cls._rating_value(item.source_p15, "HIGHER_IS_BETTER"),
+                aip_p15=cls._rating_value(item.aip_p15, "HIGHER_IS_BETTER"),
+                source_p85=cls._rating_value(item.source_p85, "HIGHER_IS_BETTER"),
+                aip_p85=cls._rating_value(item.aip_p85, "HIGHER_IS_BETTER"),
+                status=item.status,
+            )
+            for item in snapshot.normative_source_rows
+        )
+        normative_source_summary = (
+            f"Verificación oficial de fuentes SUGEF: {snapshot.normative_source_status} "
+            f"· {len(normative_source_rows)}/13 indicadores revisados"
+        )
+        normative_source_issues = " / ".join(snapshot.normative_source_issues)
+        if snapshot.normative_source_status == "REVISAR":
+            score_audit_summary += " · ADVERTENCIA: P15/P85 o población SUGEF no concilian."
+        aip_indicators = (
+            {item.code: item for item in rating.indicators} if rating is not None else {}
+        )
+        matrix_rows = tuple(
+            RatingMatrixComparisonRow(
+                indicator=(
+                    aip_indicators[measure.code].label
+                    if measure.code in aip_indicators
+                    else measure.code
+                ),
+                value=cls._rating_value(
+                    measure.value,
+                    (
+                        aip_indicators[measure.code].direction.value
+                        if measure.code in aip_indicators
+                        else "HIGHER_IS_BETTER"
+                    ),
+                ),
+                aip_p15=(
+                    cls._rating_value(
+                        aip_indicators[measure.code].percentile_15,
+                        aip_indicators[measure.code].direction.value,
+                    )
+                    if measure.code in aip_indicators
+                    else "-"
+                ),
+                matrix_p15=cls._rating_value(measure.p15, "HIGHER_IS_BETTER"),
+                aip_p85=(
+                    cls._rating_value(
+                        aip_indicators[measure.code].percentile_85,
+                        aip_indicators[measure.code].direction.value,
+                    )
+                    if measure.code in aip_indicators
+                    else "-"
+                ),
+                matrix_p85=cls._rating_value(measure.p85, "HIGHER_IS_BETTER"),
+                matrix_weight=f"{measure.weight:,.3f}%",
+                aip_points=(
+                    f"{aip_indicators[measure.code].contribution:,.4f}"
+                    if measure.code in aip_indicators
+                    and aip_indicators[measure.code].contribution is not None
+                    else "-"
+                ),
+                matrix_points=(
+                    f"{measure.contribution:,.4f}" if measure.contribution is not None else "-"
+                ),
+                delta_points=(
+                    f"{measure.contribution - aip_indicators[measure.code].contribution:+,.4f}"
+                    if measure.contribution is not None
+                    and measure.code in aip_indicators
+                    and aip_indicators[measure.code].contribution is not None
+                    else "-"
+                ),
+                matrix_origin=measure.origin,
+            )
+            for measure in snapshot.reference_matrix_indicators
+        )
+        matrix_peer_rows = tuple(
+            MatrixPeerAuditRow(
+                entity_id=peer.entity_id,
+                name=peer.entity_name,
+                status=(
+                    "Completo; cohorte aún no homologada"
+                    if peer.score is not None and peer.grade is None
+                    else "Completo" if peer.score is not None else "Incompleto"
+                ),
+                score=f"{peer.score:,.4f}" if peer.score is not None else "-",
+                grade=peer.grade or "Suspendida",
+                missing=", ".join(peer.missing_indicators) if peer.missing_indicators else "-",
+            )
+            for peer in snapshot.reference_matrix_peers
+        )
         reconciliations = tuple(
             IndicatorReconciliationRow(
                 indicator=item.label,
@@ -408,6 +553,53 @@ class FinancialAnalysisPresenter:
             ),
             rating_dimensions=rating_dimensions,
             rating_indicators=rating_indicators,
+            score_audit_rows=score_audit_rows,
+            score_audit_status=score_audit.status if score_audit is not None else "SIN EVALUACIÓN",
+            score_audit_summary=score_audit_summary,
+            score_audit_warning=score_audit_warning,
+            normative_source_summary=normative_source_summary,
+            normative_source_issues=normative_source_issues,
+            normative_source_rows=normative_source_rows,
+            score_matrix_summary=(
+                "SIMULACIÓN EXCEL — NO NORMATIVA (mismo corte SUGEF): "
+                + (
+                    (
+                        f"{snapshot.reference_matrix_score:,.4f} "
+                        f"(escala Excel: {snapshot.reference_matrix_grade})"
+                        if snapshot.reference_matrix_grade is not None
+                        else f"Puntaje provisional {snapshot.reference_matrix_score:,.4f}; "
+                        "categoría suspendida"
+                    )
+                    if snapshot.reference_matrix_score is not None
+                    else "Sin puntaje ni categoría reproducible"
+                )
+                + " · "
+                + snapshot.reference_matrix_coverage
+                + (
+                    " · Aplicando solo la escala fija 08ME14-01 a estos puntos: "
+                    + FinancialEntityRatingService.grade(snapshot.reference_matrix_score)
+                    + " (comparación orientativa; NO es la calificación oficial de AIP)"
+                    if snapshot.reference_matrix_score is not None
+                    and snapshot.reference_matrix_grade is not None
+                    else ""
+                )
+                + (
+                    f" · Diferencia matriz – AIP: "
+                    f"{snapshot.reference_matrix_score - rating.score:+,.4f} puntos"
+                    if snapshot.reference_matrix_score is not None
+                    and rating is not None
+                    and rating.score is not None
+                    else ""
+                )
+                + (
+                    f" · Máximo cohorte: {snapshot.reference_matrix_maximum:,.4f}"
+                    if snapshot.reference_matrix_maximum is not None
+                    else ""
+                )
+            ),
+            score_matrix_notes="\n".join(snapshot.reference_matrix_diagnostics),
+            score_matrix_rows=matrix_rows,
+            score_matrix_peer_rows=matrix_peer_rows,
             indicator_reconciliations=reconciliations,
             rating_diagnostics=rating.diagnostics if rating is not None else (),
             diagnostics=snapshot.diagnostics,
