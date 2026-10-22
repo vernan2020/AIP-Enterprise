@@ -967,3 +967,46 @@ def test_source_readiness_failed_inventory_does_not_claim_cashflow(qt_app):
         assert panel._projected_kpis["USD"].text() == "N/D"
     finally:
         panel.close()
+
+
+def test_rejected_cash_authorization_never_appears_validated(qt_app):
+    panel = SUGEF210ProjectionPanel()
+    try:
+        panel._date.setDate(QDate(2026, 9, 30))
+        panel._governed_opening_error(panel._cutoff, "BASE", "ValueError")
+        table = panel._source_readiness
+        assert table.item(2, 1).text() == "BLOCKED"
+        assert table.item(3, 1).text() == "NOT_EVALUATED"
+        assert panel._governed_projection is None
+        assert all(kpi.text() == "N/D" for kpi in panel._projected_kpis.values())
+    finally:
+        panel.close()
+
+
+def test_institutional_source_scan_and_governed_cash_opening_are_serial(qt_app, monkeypatch):
+    panel = SUGEF210ProjectionPanel()
+    try:
+        panel._opening_worker = object()
+        try:
+            panel.run_source_audit()
+            assert panel._worker is None
+        finally:
+            panel._opening_worker = None
+
+        panel._worker = object()
+        try:
+            def reject_dialog(*_args, **_kwargs):
+                raise AssertionError("Source scan must block concurrent authorization dialog")
+
+            monkeypatch.setattr(
+                "aip.ui.modules.liquidity.views.sugef210_projection_panel."
+                "QFileDialog.getOpenFileName",
+                reject_dialog,
+            )
+            panel.select_governed_opening()
+            assert panel._opening_worker is None
+        finally:
+            panel._worker = None
+    finally:
+        panel.close()
+
