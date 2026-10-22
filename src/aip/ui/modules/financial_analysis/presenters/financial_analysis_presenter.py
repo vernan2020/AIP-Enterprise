@@ -27,6 +27,7 @@ from aip.ui.modules.financial_analysis.viewmodels.financial_analysis_view_model 
     FinancialStatementRow,
     IndicatorReconciliationRow,
     MatrixPeerAuditRow,
+    NormativeSourceAuditRow,
     PeerChartPointView,
     PeerChartSeriesView,
     PeerRatingRow,
@@ -417,6 +418,27 @@ class FinancialAnalysisPresenter:
         else:
             score_audit_summary = "Sin calificación seleccionada"
             score_audit_warning = ""
+        normative_source_rows = tuple(
+            NormativeSourceAuditRow(
+                code=item.code,
+                source_value=cls._rating_value(item.selected_value, "HIGHER_IS_BETTER"),
+                source_peers=str(item.peer_count),
+                aip_peers=str(item.rated_peer_count),
+                source_p15=cls._rating_value(item.source_p15, "HIGHER_IS_BETTER"),
+                aip_p15=cls._rating_value(item.aip_p15, "HIGHER_IS_BETTER"),
+                source_p85=cls._rating_value(item.source_p85, "HIGHER_IS_BETTER"),
+                aip_p85=cls._rating_value(item.aip_p85, "HIGHER_IS_BETTER"),
+                status=item.status,
+            )
+            for item in snapshot.normative_source_rows
+        )
+        normative_source_summary = (
+            f"Verificación oficial de fuentes SUGEF: {snapshot.normative_source_status} "
+            f"· {len(normative_source_rows)}/13 indicadores revisados"
+        )
+        normative_source_issues = " / ".join(snapshot.normative_source_issues)
+        if snapshot.normative_source_status == "REVISAR":
+            score_audit_summary += " · ADVERTENCIA: P15/P85 o población SUGEF no concilian."
         aip_indicators = (
             {item.code: item for item in rating.indicators} if rating is not None else {}
         )
@@ -535,6 +557,9 @@ class FinancialAnalysisPresenter:
             score_audit_status=score_audit.status if score_audit is not None else "SIN EVALUACIÓN",
             score_audit_summary=score_audit_summary,
             score_audit_warning=score_audit_warning,
+            normative_source_summary=normative_source_summary,
+            normative_source_issues=normative_source_issues,
+            normative_source_rows=normative_source_rows,
             score_matrix_summary=(
                 "SIMULACIÓN EXCEL — NO NORMATIVA (mismo corte SUGEF): "
                 + (
