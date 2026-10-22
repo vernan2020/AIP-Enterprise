@@ -4,9 +4,15 @@ from __future__ import annotations
 
 import argparse
 import json
+from bisect import bisect_left
 from datetime import date
+from decimal import Decimal
 
-from aip.domain.liquidity.cashflow.services.sugef210_projection import sugef210_windows
+from aip.domain.liquidity.cashflow.services.sugef210_projection import (
+    LiquidityProjectionFlow,
+    LiquidityWindow,
+    sugef210_windows,
+)
 from aip.product.configured.irrbb.investment_master_discovery import (
     resolve_exact_cutoff_master,
 )
@@ -26,6 +32,24 @@ from aip.product.configured.readers.institutional_portfolio_master_reader import
     InstitutionalPortfolioMasterReader,
 )
 from aip.product.demo.configuration.environment_loader import EnvironmentLoader
+
+
+def native_principal_by_maturity_band(
+    flows: tuple[LiquidityProjectionFlow, ...],
+    windows: tuple[LiquidityWindow, ...],
+) -> dict[tuple[str, str], Decimal]:
+    """Index each original-currency Master principal event into one dated band."""
+    if not windows:
+        raise ValueError("SUGEF210 maturity inventory requires regulatory windows")
+    ends = [window.end for window in windows]
+    totals: dict[tuple[str, str], Decimal] = {}
+    for flow in flows:
+        index = bisect_left(ends, flow.payment_date)
+        if index == len(windows) or flow.payment_date < windows[index].start:
+            continue
+        key = (flow.currency, windows[index].key)
+        totals[key] = totals.get(key, Decimal(0)) + flow.amount
+    return totals
 
 
 def inspect_xml_investment_source(cutoff: date) -> dict[str, object]:
@@ -71,6 +95,7 @@ def inspect_xml_investment_source(cutoff: date) -> dict[str, object]:
                 maturity_source_header=read.detected_column_mapping.get("maturity_date"),
             )
             windows = sugef210_windows(cutoff)
+            maturity_totals = native_principal_by_maturity_band(principal.flows, windows)
             maturity_evidence = {
                 "status": principal.status,
                 "coverage_complete": False,
@@ -95,15 +120,7 @@ def inspect_xml_investment_source(cutoff: date) -> dict[str, object]:
                         "to": window.end.isoformat(),
                         "currency": currency,
                         "principal_maturing": str(
-                            sum(
-                                (
-                                    flow.amount
-                                    for flow in principal.flows
-                                    if flow.currency == currency
-                                    and window.start <= flow.payment_date <= window.end
-                                ),
-                                0,
-                            )
+                            maturity_totals.get((currency, window.key), Decimal(0))
                         ),
                         "status": "MATURITY_ONLY_NOT_CERTIFIED_CASH_INFLOW",
                     }
