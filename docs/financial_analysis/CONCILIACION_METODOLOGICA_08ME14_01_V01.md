@@ -2,6 +2,10 @@
 
 Estado: **validación técnica**. Este documento es una lista de diferencias y decisiones de gobierno metodológico; **no implica autorización para sustituir** el motor financiero certificado.
 
+## Criterio definitivo
+
+La metodología institucional 08ME14-01 V01 rige la calificación oficial en AIP. La escala del Excel solo se conserva como referencia no normativa de conciliación, sin potestad de modificar la nota oficial.
+
 ## Precedencia de fuentes
 
 1. La metodología 08ME14-01, versión 01, establece en su sección 4.4 **umbrales fijos**: AA >73.319; A desde 64.690; BB desde 56.067; B desde 47.442; CC por debajo. La función `FinancialEntityRatingService.grade` de AIP mantiene estos umbrales.
