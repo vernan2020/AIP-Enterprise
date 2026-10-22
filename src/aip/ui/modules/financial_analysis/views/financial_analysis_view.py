@@ -739,6 +739,46 @@ class FinancialAnalysisView(QWidget):
         audit_layout.addWidget(self._matrix_comparison_table, 1)
         self._rating_content_tabs.addTab(audit, "Auditoría del puntaje")
 
+        official_source = QWidget()
+        official_source_layout = QVBoxLayout(official_source)
+        official_source_layout.setContentsMargins(8, 8, 8, 8)
+        official_source_layout.setSpacing(6)
+        official_source_actions = QHBoxLayout()
+        self._normative_source_summary = QLabel("Fuente SUGEF: sin validar")
+        self._normative_source_summary.setWordWrap(True)
+        self._normative_source_summary.setStyleSheet("color:#143C63; font-weight:700;")
+        official_source_actions.addWidget(self._normative_source_summary, 1)
+        self._normative_source_table: QTableWidget
+        official_source_export = QPushButton("Exportar fuente CSV")
+        official_source_export.clicked.connect(
+            lambda: save_table_csv_dialog(
+                self, self._normative_source_table, "auditoria_fuentes_SUGEF_08ME14.csv"
+            )
+        )
+        official_source_actions.addWidget(official_source_export)
+        official_source_layout.addLayout(official_source_actions)
+        self._normative_source_table = self._table(
+            [
+                "Indicador",
+                "Valor fuente",
+                "Pares fuente",
+                "Pares AIP",
+                "P15 fuente",
+                "P15 AIP",
+                "P85 fuente",
+                "P85 AIP",
+                "Resultado",
+            ]
+        )
+        source_header = self._normative_source_table.horizontalHeader()
+        source_header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        for column in range(1, 9):
+            source_header.setSectionResizeMode(
+                column, QHeaderView.ResizeMode.ResizeToContents
+            )
+        official_source_layout.addWidget(self._normative_source_table, 1)
+        self._rating_content_tabs.addTab(official_source, "Fuente SUGEF 08ME14")
+
         cohort = QWidget()
         cohort_layout = QVBoxLayout(cohort)
         cohort_layout.setContentsMargins(8, 8, 8, 8)
@@ -1202,6 +1242,24 @@ class FinancialAnalysisView(QWidget):
                 self._rating_indicator_table.setItem(row_index, column, item)
 
         self._score_audit_summary.setText(view_model.score_audit_summary)
+        self._normative_source_summary.setText(view_model.normative_source_summary)
+        self._normative_source_summary.setToolTip(view_model.normative_source_issues)
+        self._normative_source_table.setRowCount(len(view_model.normative_source_rows))
+        for row_index, audit_row in enumerate(view_model.normative_source_rows):
+            values = (
+                audit_row.code, audit_row.source_value,
+                audit_row.source_peers, audit_row.aip_peers,
+                audit_row.source_p15, audit_row.aip_p15,
+                audit_row.source_p85, audit_row.aip_p85,
+                audit_row.status,
+            )
+            for column, value in enumerate(values):
+                cell = QTableWidgetItem(value)
+                if 1 <= column <= 7:
+                    cell.setTextAlignment(
+                        Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+                    )
+                self._normative_source_table.setItem(row_index, column, cell)
         self._matrix_cohort_summary.setText(
             view_model.score_matrix_summary
             + " · Pares identificados: "
