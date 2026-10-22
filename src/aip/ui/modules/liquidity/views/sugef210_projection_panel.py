@@ -814,7 +814,7 @@ class SUGEF210ProjectionPanel(QWidget):
         worker = _SUGEF210OpeningWorker(cutoff, scenario, approval, bank)
         self._opening_worker = worker
         worker.completed.connect(
-            lambda session: self._receive_governed_opening(cutoff, scenario, session)
+            lambda session: self._consume_governed_opening(cutoff, scenario, session)
         )
         worker.failed.connect(
             lambda category: self._governed_opening_error(cutoff, scenario, category)
@@ -995,6 +995,18 @@ class SUGEF210ProjectionPanel(QWidget):
                 if audit_amounts.get(key, Decimal(0)) != expected:
                     raise ValueError("Event lineage native amounts differ from projection")
         return events
+
+    def _consume_governed_opening(
+        self, cutoff: date, scenario: str, session: ConfiguredOpeningSession
+    ) -> None:
+        """Reject mismatched event evidence without raising through a Qt signal."""
+        if cutoff != self._cutoff or scenario != self._scenario.currentText():
+            return
+        try:
+            self._receive_governed_opening(cutoff, scenario, session)
+        except Exception as exc:
+            # Never print paths or amounts from confidential institution files.
+            self._governed_opening_error(cutoff, scenario, type(exc).__name__)
 
     def _receive_governed_opening(
         self, cutoff: date, scenario: str, session: ConfiguredOpeningSession
