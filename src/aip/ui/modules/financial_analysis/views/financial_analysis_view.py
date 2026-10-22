@@ -672,7 +672,7 @@ class FinancialAnalysisView(QWidget):
         )
         audit_layout.addWidget(self._score_audit_warning)
 
-        self._score_matrix_summary = QLabel("Contraste matriz: sin datos")
+        self._score_matrix_summary = QLabel("Simulación Excel NO normativa: sin datos")
         self._score_matrix_summary.setWordWrap(True)
         self._score_matrix_summary.setStyleSheet(
             "color:#143C63; font-weight:600; font-size:11px; padding:5px 2px;"
@@ -705,7 +705,7 @@ class FinancialAnalysisView(QWidget):
             audit_table_header.setSectionResizeMode(column, QHeaderView.ResizeMode.ResizeToContents)
         audit_layout.addWidget(self._score_audit_table, 1)
         matrix_header = QHBoxLayout()
-        matrix_label = QLabel("Comparación por indicador · AIP frente a matriz")
+        matrix_label = QLabel("Auditoría secundaria · AIP oficial frente a simulación Excel")
         matrix_label.setStyleSheet("color:#143C63; font-weight:700;")
         matrix_header.addWidget(matrix_label, 1)
         self._matrix_comparison_table: QTableWidget
