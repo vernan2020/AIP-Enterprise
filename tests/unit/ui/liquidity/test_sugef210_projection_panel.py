@@ -995,6 +995,7 @@ def test_institutional_source_scan_and_governed_cash_opening_are_serial(qt_app, 
 
         panel._worker = object()
         try:
+
             def reject_dialog(*_args, **_kwargs):
                 raise AssertionError("Source scan must block concurrent authorization dialog")
 
@@ -1011,9 +1012,7 @@ def test_institutional_source_scan_and_governed_cash_opening_are_serial(qt_app, 
         panel.close()
 
 
-def test_bad_governed_worker_result_fails_closed_without_qt_slot_exception(
-    qt_app, monkeypatch
-):
+def test_bad_governed_worker_result_fails_closed_without_qt_slot_exception(qt_app, monkeypatch):
     panel = SUGEF210ProjectionPanel()
     try:
         panel._date.setDate(QDate(2026, 9, 30))
@@ -1030,4 +1029,3 @@ def test_bad_governed_worker_result_fails_closed_without_qt_slot_exception(
         assert all(amount.text() == "N/D" for amount in panel._projected_kpis.values())
     finally:
         panel.close()
-

@@ -241,7 +241,10 @@ def test_rejected_approval_is_explicitly_blocked_not_pending():
         approval_failed=True,
     )
     assert [row["state"] for row in gates] == [
-        "READY", "READY", "BLOCKED", "NOT_EVALUATED",
+        "READY",
+        "READY",
+        "BLOCKED",
+        "NOT_EVALUATED",
     ]
     assert "rechazada" in gates[2]["next_action"]
     with pytest.raises(ValueError, match="Rejected authorization"):
@@ -252,4 +255,3 @@ def test_rejected_approval_is_explicitly_blocked_not_pending():
             approval_failed=True,
             projection_executed=True,
         )
-
