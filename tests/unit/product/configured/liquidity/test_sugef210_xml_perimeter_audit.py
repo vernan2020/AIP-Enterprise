@@ -109,3 +109,55 @@ def test_raw_currency_codes_do_not_become_crc_or_usd_without_catalog():
     assert result[1]["source_currency_balances_not_cashflows"] == {"2": "150"}
     assert result[3]["individual_payment_amounts_certified"] is False
     assert result[3]["records"] == 0
+
+
+class MaturityBucketReader(Reader):
+    """A bucket XML may carry different native tags than a contract ledger."""
+
+    def resolve_source(self, *, key: str, cutoff_date: date) -> XMLConfiaResolvedSource:
+        if key == "BORROWING_MATURITY":
+            return XMLConfiaResolvedSource(
+                key,
+                Path("Pasivos_Tabla_Vencimiento_Obligaciones.xml"),
+                XMLConfiaHeader("1", key, date(2026, 9, 1), "3004045138", "1", "1"),
+            )
+        return super().resolve_source(key=key, cutoff_date=cutoff_date)
+
+    def iter_records(self, source: XMLConfiaResolvedSource):
+        if source.key == "BORROWING_MATURITY":
+            for ordinal in ("5", "6"):
+                yield XMLConfiaRecord(
+                    ordinal,
+                    "insertar",
+                    {
+                        "TipoMonedaObligacion": "1",
+                        "TipoRangoPasivo": "01",
+                        "MontoBandaOriginal": "125",
+                    },
+                )
+        else:
+            yield from super().iter_records(source)
+
+
+def test_aggregate_maturity_schema_mismatch_is_not_dated_cash_or_row_defect():
+    reports = audit_xml_liquidity_perimeters(reader=MaturityBucketReader(), cutoff=CUTOFF)
+    maturity = reports[-1]
+    assert maturity.records == 2
+    assert maturity.status == "AGGREGATE_SOURCE_FIELD_MAP_REVIEW_REQUIRED"
+    assert maturity.unmapped_source_fields == (
+        "SaldoaPagarPrincipal",
+        "CuentaContablePrincipal",
+    )
+    assert maturity.observed_xml_tag_names == (
+        "MontoBandaOriginal",
+        "TipoMonedaObligacion",
+        "TipoRangoPasivo",
+    )
+    assert maturity.missing_balance == 2
+    assert maturity.missing_account == 2
+    assert not maturity.payment_amounts_certified
+    display = summarize_xml_liquidity_perimeters(reports)[-1]
+    assert display["basic_field_missingness_interpretation"] == (
+        "SCHEMA_MAPPING_UNRESOLVED_NOT_ROW_QUALITY"
+    )
+    assert display["individual_payment_amounts_certified"] is False
