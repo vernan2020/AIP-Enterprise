@@ -76,6 +76,8 @@ class XMLLiquiditySourceCoverage:
     native_balances: tuple[tuple[str, Decimal], ...]
     original_categories: tuple[tuple[str, int], ...]
     error_type: str | None = None
+    unmapped_source_fields: tuple[str, ...] = ()
+    observed_xml_tag_names: tuple[str, ...] = ()
 
     @property
     def payment_amounts_certified(self) -> bool:
@@ -138,12 +140,16 @@ def audit_xml_liquidity_perimeters(
         missing_account = 0
         native_balances: dict[str, Decimal] = defaultdict(Decimal)
         categories: Counter[str] = Counter()
+        observed_xml_tags: set[str] = set()
         date_counts: dict[str, list[int]] = {
             name: [0, 0, 0] for name in layout.date_fields
         }  # supplied, missing, malformed
         for record in reader.iter_records(source):
             rows += 1
             values = record.values
+            if layout.key == "BORROWING_MATURITY":
+                # Only structural XML tag names: no source amounts or account values.
+                observed_xml_tags.update(values)
             currency = (values.get(layout.currency_field) or "").strip()
             account = (values.get(layout.accounting_field) or "").strip()
             raw_balance = (values.get(layout.balance_field) or "").strip()
@@ -169,11 +175,33 @@ def audit_xml_liquidity_perimeters(
                     date_counts[field][0] += 1
                 else:
                     date_counts[field][2] += 1
+        missing_maturity_mapping: tuple[str, ...] = ()
+        if layout.key == "BORROWING_MATURITY":
+            missing_maturity_mapping = tuple(
+                field
+                for field in (
+                    layout.balance_field,
+                    layout.currency_field,
+                    layout.accounting_field,
+                    layout.classification_field,
+                )
+                if field and field not in observed_xml_tags
+            )
+        aggregate_mapping_unresolved = bool(missing_maturity_mapping)
+        source_status = (
+            "AGGREGATE_SOURCE_FIELD_MAP_REVIEW_REQUIRED"
+            if aggregate_mapping_unresolved
+            else (
+                "AGGREGATE_SOURCE_REFERENCE_NOT_CASHFLOWS"
+                if layout.key == "BORROWING_MATURITY"
+                else "SOURCE_FIELDS_INSPECTED_NOT_A_PAYMENT_SCHEDULE"
+            )
+        )
         output.append(
             XMLLiquiditySourceCoverage(
                 key=layout.key,
                 cutoff=cutoff,
-                status="SOURCE_FIELDS_INSPECTED_NOT_A_PAYMENT_SCHEDULE",
+                status=source_status,
                 file_name=source.path.name,
                 source_sha256=reader.sha256(source.path),
                 reporting_period=source.header.periodo,
@@ -188,6 +216,8 @@ def audit_xml_liquidity_perimeters(
                 ),
                 native_balances=tuple(sorted(native_balances.items())),
                 original_categories=tuple(sorted(categories.items())),
+                unmapped_source_fields=missing_maturity_mapping,
+                observed_xml_tag_names=tuple(sorted(observed_xml_tags))[:80],
             )
         )
     return tuple(output)
@@ -212,6 +242,13 @@ def summarize_xml_liquidity_perimeters(
             "invalid_balance": row.invalid_balance,
             "missing_currency": row.missing_currency,
             "missing_account": row.missing_account,
+            "unmapped_source_fields": list(row.unmapped_source_fields),
+            "observed_xml_tag_names": list(row.observed_xml_tag_names),
+            "basic_field_missingness_interpretation": (
+                "SCHEMA_MAPPING_UNRESOLVED_NOT_ROW_QUALITY"
+                if row.key == "BORROWING_MATURITY" and row.unmapped_source_fields
+                else "ROW_LEVEL_INSPECTION_ONLY_NOT_PAYMENT_COVERAGE"
+            ),
             "dates": [
                 {"field": name, "valid": valid, "missing": missing, "invalid": invalid}
                 for name, valid, missing, invalid in row.date_counts
