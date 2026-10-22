@@ -18,7 +18,7 @@ def test_excel_relative_letter_does_not_mask_fixed_document_letter() -> None:
         reference_matrix_coverage="38/38; Estado: APTA",
     )
     vm = FinancialAnalysisPresenter._from_snapshot(snapshot)
-    assert "Perfil Excel agosto 2026" in vm.score_matrix_summary
-    assert "(BB)" in vm.score_matrix_summary
-    assert "escala fija del documento: A" in vm.score_matrix_summary
-    assert "no nueva nota normativa" in vm.score_matrix_summary
+    assert "SIMULACIÓN EXCEL — NO NORMATIVA" in vm.score_matrix_summary
+    assert "(escala Excel: BB)" in vm.score_matrix_summary
+    assert "escala fija 08ME14-01 a estos puntos: A" in vm.score_matrix_summary
+    assert "NO es la calificación oficial de AIP" in vm.score_matrix_summary
