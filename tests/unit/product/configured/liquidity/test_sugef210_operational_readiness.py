@@ -222,8 +222,10 @@ def test_source_gates_before_inspection_are_pending_not_false_failures():
         approvals_provided=False,
     )
     assert [row["state"] for row in gates] == [
-        "PENDING", "PENDING", "REQUIRED", "NOT_EVALUATED",
+        "PENDING",
+        "PENDING",
+        "REQUIRED",
+        "NOT_EVALUATED",
     ]
     assert "Inspeccionar" in gates[0]["next_action"]
     assert "Inspeccionar" in gates[1]["next_action"]
-

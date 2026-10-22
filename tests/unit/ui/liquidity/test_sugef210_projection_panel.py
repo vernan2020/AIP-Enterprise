@@ -912,8 +912,7 @@ def test_real_source_readiness_tab_tracks_cutoff_and_governed_evidence(qt_app):
     try:
         panel._date.setDate(QDate(2026, 9, 30))
         tab_names = [
-            panel._planning_tabs.tabText(index)
-            for index in range(panel._planning_tabs.count())
+            panel._planning_tabs.tabText(index) for index in range(panel._planning_tabs.count())
         ]
         assert "Estado de fuentes" in tab_names
         table = panel._source_readiness
@@ -968,4 +967,3 @@ def test_source_readiness_failed_inventory_does_not_claim_cashflow(qt_app):
         assert panel._projected_kpis["USD"].text() == "N/D"
     finally:
         panel.close()
-
