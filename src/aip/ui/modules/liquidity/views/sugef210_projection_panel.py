@@ -513,6 +513,7 @@ class SUGEF210ProjectionPanel(QWidget):
         master_status: str = "NOT_INSPECTED",
         approved: bool = False,
         projected: bool = False,
+        approval_failed: bool = False,
     ) -> None:
         """Represent source readiness, never comprehensive liquidity certification."""
         gates = build_operational_gates(
@@ -520,6 +521,7 @@ class SUGEF210ProjectionPanel(QWidget):
             master_status=master_status,
             approvals_provided=approved,
             projection_executed=projected,
+            approval_failed=approval_failed,
         )
         self._source_readiness.setRowCount(0)
         for gate in gates:
@@ -683,7 +685,7 @@ class SUGEF210ProjectionPanel(QWidget):
         self._fill_windows()
 
     def run_source_audit(self) -> None:
-        if self._worker is not None:
+        if self._worker is not None or self._opening_worker is not None:
             return
         self._invalidate_governed_projection()
         self._opening_status.setText("Auditoría actualizada: volver a validar caja inicial.")
@@ -692,6 +694,7 @@ class SUGEF210ProjectionPanel(QWidget):
         worker = _SUGEF210SourceWorker(requested_cutoff)
         self._worker = worker
         self._button.setEnabled(False)
+        self._opening_button.setEnabled(False)
         self._status.setText("Consultando XML institucional; no se calculan flujos sin evidencia…")
         worker.completed.connect(lambda report: self._receive(requested_cutoff, report))
         worker.failed.connect(lambda category: self._error(requested_cutoff, category))
@@ -787,7 +790,7 @@ class SUGEF210ProjectionPanel(QWidget):
 
     def select_governed_opening(self) -> None:
         """Run real configured Master/XML and two separate institutional approvals."""
-        if self._opening_worker is not None:
+        if self._opening_worker is not None or self._worker is not None:
             return
         approval, _kind = QFileDialog.getOpenFileName(
             self, "Autorización de inversiones a la vista SUGEF210", "", "JSON (*.json)"
@@ -803,6 +806,7 @@ class SUGEF210ProjectionPanel(QWidget):
         scenario = self._scenario.currentText()
         self._invalidate_governed_projection()
         self._opening_button.setEnabled(False)
+        self._button.setEnabled(False)
         self._opening_status.setText(
             "Validando XML real, Maestro, cuenta a la vista y respaldo bancario. "
             "No se aceptan saldos sin trazabilidad."
@@ -1076,6 +1080,7 @@ class SUGEF210ProjectionPanel(QWidget):
             xml_status=str(report.get("status") or "NOT_INSPECTED"),
             master_status=str(report.get("master_review_status") or "NOT_INSPECTED"),
             approved=True,
+            approval_failed=True,
         )
         self._opening_status.setText(
             f"BLOCKED_GOVERNED_OPENING ({category}). No se incorporó caja XML."
@@ -1087,6 +1092,8 @@ class SUGEF210ProjectionPanel(QWidget):
             self._opening_worker = None
             worker.deleteLater()
             self._opening_button.setEnabled(True)
+            if self._worker is None:
+                self._button.setEnabled(True)
 
     def select_financial_plan(self) -> None:
         """Read local institutional workbook without copying it into the Git repository."""
@@ -1471,3 +1478,5 @@ class SUGEF210ProjectionPanel(QWidget):
             self._worker = None
             worker.deleteLater()
             self._button.setEnabled(True)
+            if self._opening_worker is None:
+                self._opening_button.setEnabled(True)
