@@ -229,3 +229,27 @@ def test_source_gates_before_inspection_are_pending_not_false_failures():
     ]
     assert "Inspeccionar" in gates[0]["next_action"]
     assert "Inspeccionar" in gates[1]["next_action"]
+
+
+def test_rejected_approval_is_explicitly_blocked_not_pending():
+    import pytest
+
+    gates = readiness.build_operational_gates(
+        xml_status="ACCOUNT_LEVEL_EVIDENCE_ONLY_NO_AVAILABLE_CASH",
+        master_status="MASTER_EXACT_CUTOFF_READ",
+        approvals_provided=True,
+        approval_failed=True,
+    )
+    assert [row["state"] for row in gates] == [
+        "READY", "READY", "BLOCKED", "NOT_EVALUATED",
+    ]
+    assert "rechazada" in gates[2]["next_action"]
+    with pytest.raises(ValueError, match="Rejected authorization"):
+        readiness.build_operational_gates(
+            xml_status="ACCOUNT_LEVEL_EVIDENCE_ONLY_NO_AVAILABLE_CASH",
+            master_status="MASTER_EXACT_CUTOFF_READ",
+            approvals_provided=True,
+            approval_failed=True,
+            projection_executed=True,
+        )
+
