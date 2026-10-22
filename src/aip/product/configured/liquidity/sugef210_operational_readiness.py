@@ -32,8 +32,11 @@ def build_operational_gates(
     master_status: str,
     approvals_provided: bool,
     projection_executed: bool = False,
+    approval_failed: bool = False,
 ) -> list[dict[str, str]]:
     """Explain the next real-source blockers without exposing institutional data."""
+    if approval_failed and projection_executed:
+        raise ValueError("Rejected authorization cannot certify a completed projection")
     xml_ready = xml_status == _EXPECTED_SOURCE_STATUS
     master_ready = master_status == _REQUIRED_MASTER_STATUS
     xml_pending = xml_status == "NOT_INSPECTED"
@@ -68,17 +71,25 @@ def build_operational_gates(
         {
             "check": "AUTORIZACION_Y_CONCILIACION_ICL",
             "state": (
-                "VALIDATED"
-                if projection_executed
-                else "PENDING_VALIDATION" if approvals_provided else "REQUIRED"
+                "BLOCKED"
+                if approval_failed
+                else (
+                    "VALIDATED"
+                    if projection_executed
+                    else "PENDING_VALIDATION" if approvals_provided else "REQUIRED"
+                )
             ),
             "next_action": (
-                "Documentos originales verificados según los controles de la sesión."
-                if projection_executed
+                "Apertura rechazada: corregir autorización y conciliación originales del corte."
+                if approval_failed
                 else (
-                    "Validar ambos documentos independientes en la misma sesión."
-                    if approvals_provided
-                    else "Seleccionar autorización institucional y conciliación bancaria/ICL."
+                    "Documentos originales verificados según los controles de la sesión."
+                    if projection_executed
+                    else (
+                        "Validar ambos documentos independientes en la misma sesión."
+                        if approvals_provided
+                        else "Seleccionar autorización institucional y conciliación bancaria/ICL."
+                    )
                 )
             ),
         },
