@@ -514,6 +514,7 @@ class SUGEF210ProjectionPanel(QWidget):
         approved: bool = False,
         projected: bool = False,
         approval_failed: bool = False,
+        contractual_inventory: object = None,
     ) -> None:
         """Represent source readiness, never comprehensive liquidity certification."""
         gates = build_operational_gates(
@@ -522,6 +523,7 @@ class SUGEF210ProjectionPanel(QWidget):
             approvals_provided=approved,
             projection_executed=projected,
             approval_failed=approval_failed,
+            contractual_inventory=contractual_inventory,
         )
         self._source_readiness.setRowCount(0)
         for gate in gates:
@@ -536,6 +538,7 @@ class SUGEF210ProjectionPanel(QWidget):
         self._fill_operational_gates(
             xml_status=str(report.get("status") or "NOT_INSPECTED"),
             master_status=str(report.get("master_review_status") or "NOT_INSPECTED"),
+            contractual_inventory=report.get("contractual_source_inventory"),
         )
         self._opening_status.setText("Escenario cambiado: validar de nuevo caja inicial.")
         self._status.setText(
@@ -726,6 +729,7 @@ class SUGEF210ProjectionPanel(QWidget):
         self._fill_operational_gates(
             xml_status=status,
             master_status=str(report.get("master_review_status") or "NOT_INSPECTED"),
+            contractual_inventory=report.get("contractual_source_inventory"),
         )
         if status != "ACCOUNT_LEVEL_EVIDENCE_ONLY_NO_AVAILABLE_CASH":
             self._status.setText(f"Fuente de inversiones no utilizable para inspección: {status}")
@@ -1074,6 +1078,7 @@ class SUGEF210ProjectionPanel(QWidget):
             master_status="MASTER_EXACT_CUTOFF_READ",
             approved=True,
             projected=True,
+            contractual_inventory=(self._report or {}).get("contractual_source_inventory"),
         )
         self._opening_status.setText(
             f"Caja inicial documentada: {session.sight_records_approved} inversiones "
@@ -1108,6 +1113,7 @@ class SUGEF210ProjectionPanel(QWidget):
             master_status=str(report.get("master_review_status") or "NOT_INSPECTED"),
             approved=True,
             approval_failed=True,
+            contractual_inventory=report.get("contractual_source_inventory"),
         )
         self._opening_status.setText(
             f"BLOCKED_GOVERNED_OPENING ({category}). No se incorporó caja XML."
