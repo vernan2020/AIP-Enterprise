@@ -246,9 +246,7 @@ class FinancialAnalysisViewModel:
     score_audit_warning: str = ""
     normative_source_summary: str = "Fuente SUGEF: sin validar"
     normative_source_issues: str = ""
-    normative_source_rows: tuple[NormativeSourceAuditRow, ...] = field(
-        default_factory=tuple
-    )
+    normative_source_rows: tuple[NormativeSourceAuditRow, ...] = field(default_factory=tuple)
     score_matrix_summary: str = ""
     score_matrix_notes: str = ""
     score_matrix_rows: tuple[RatingMatrixComparisonRow, ...] = field(default_factory=tuple)
