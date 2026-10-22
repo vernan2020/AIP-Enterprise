@@ -1029,3 +1029,45 @@ def test_bad_governed_worker_result_fails_closed_without_qt_slot_exception(qt_ap
         assert all(amount.text() == "N/D" for amount in panel._projected_kpis.values())
     finally:
         panel.close()
+
+
+def test_malformed_source_inventory_fails_closed_without_qt_slot_exception(qt_app):
+    panel = SUGEF210ProjectionPanel()
+    try:
+        panel._date.setDate(QDate(2026, 9, 30))
+        panel._consume_source_audit(
+            panel._cutoff,
+            {
+                "status": "ACCOUNT_LEVEL_EVIDENCE_ONLY_NO_AVAILABLE_CASH",
+                "master_review_status": "MASTER_EXACT_CUTOFF_READ",
+                "accounts": [{"account_code": "PRIVATE-INSTITUTIONAL-VALUE"}],
+                "record_evidence": [],
+            },
+        )
+        assert panel._report is None
+        assert panel._accounts.rowCount() == 0
+        assert panel._source_readiness.item(0, 1).text() == "BLOCKED"
+        assert "BLOCKED_SOURCE_READ (KeyError)" in panel._status.text()
+        assert "PRIVATE-INSTITUTIONAL-VALUE" not in panel._status.text()
+        assert all(kpi.text() == "N/D" for kpi in panel._projected_kpis.values())
+
+        panel._consume_source_audit(panel._cutoff, object())
+        assert "BLOCKED_SOURCE_READ (TypeError)" in panel._status.text()
+        assert panel._export.isEnabled() is False
+    finally:
+        panel.close()
+
+
+def test_malformed_plan_worker_result_fails_closed_without_qt_slot_exception(qt_app):
+    panel = SUGEF210ProjectionPanel()
+    try:
+        panel._date.setDate(QDate(2026, 9, 30))
+        panel._plan_audit = object()
+        panel._consume_financial_plan(panel._cutoff, object())
+        assert panel._plan_audit is None
+        assert panel._plan_months.rowCount() == 0
+        assert panel._plan_parameters.rowCount() == 0
+        assert "BLOCKED_FINANCIAL_PLAN_TypeError" in panel._plan_status.text()
+        assert all(kpi.text() == "N/D" for kpi in panel._projected_kpis.values())
+    finally:
+        panel.close()
