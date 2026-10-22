@@ -325,3 +325,18 @@ insumos institucionales esté certificado. `BLOCKED_RUNTIME_SELFTEST`
 separa un problema de instalación o dependencias de la falta de fuentes.
 Después ejecutar `--cutoff 2026-09-30` para validar el origen real.
 
+### Diagnóstico operativo por puerta de control
+
+El comando `VERIFICAR_LIQUIDEZ_SUGEF210_OPERATIVO.cmd --cutoff 2026-09-30`
+agrega `operational_gates`, una matriz de cuatro controles sin saldos,
+nombres de documentos ni rutas internas: (1) XML CONFÍA del corte, (2)
+Maestro exacto de inversiones, (3) autorización y conciliación Tesorería/ICL,
+(4) perímetro contractual. `READY` verifica solo lectura de fuentes;
+`REQUIRED` significa que faltan dos respaldos independientes;
+`VALIDATED` significa que esos respaldos superaron los controles de la
+sesión (no es una validación criptográfica de firmas); `PARTIAL` refleja
+que todavía existen fuentes u operaciones no incorporadas.
+El resultado incluye `next_action` en español y nunca certifica
+regulatoriamente la proyección. No se registran credenciales ni cifras
+del ICL en este diagnóstico.
+

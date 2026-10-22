@@ -113,6 +113,9 @@ def test_operational_status_is_partial_with_authorized_real_source_contract(monk
     assert result["projection_rows"] == 34
     assert result["band_count"] == 17
     assert result["approved_source_events"] == 1
+    states = {row["check"]: row["state"] for row in result["operational_gates"]}
+    assert states["AUTORIZACION_Y_CONCILIACION_ICL"] == "VALIDATED"
+    assert states["PERIMETRO_CONTRACTUAL_INTEGRAL"] == "PARTIAL"
     assert result["opening_supported_currencies"] == ["CRC", "USD"]
     assert result["projection_regulatorily_certified"] is False
     assert "bank_or_icl_source_file" not in str(result)
@@ -176,3 +179,38 @@ def test_self_test_refuses_source_arguments_and_demo_configuration(monkeypatch, 
     assert readiness.main(["--self-test"]) == 2
     status = capsys.readouterr().out
     assert "BLOCKED_NOT_CONFIGURED" in status
+
+
+def test_source_preflight_exposes_actionable_gates_without_private_details(monkeypatch):
+    _configured(monkeypatch)
+    monkeypatch.setattr(readiness, "inspect_xml_investment_source", lambda _: INVENTORY)
+    result = readiness.evaluate_readiness(cutoff=CUTOFF, scenario="BASE")
+    gates = {row["check"]: row for row in result["operational_gates"]}
+    assert gates["XML_CONFIA_CORTE"]["state"] == "READY"
+    assert gates["MAESTRO_INVERSIONES_CORTE"]["state"] == "READY"
+    assert gates["AUTORIZACION_Y_CONCILIACION_ICL"]["state"] == "REQUIRED"
+    assert gates["PERIMETRO_CONTRACTUAL_INTEGRAL"]["state"] == "NOT_EVALUATED"
+    assert all("next_action" in row for row in gates.values())
+    assert "RUTA_" not in str(result)
+    assert result["projection_regulatorily_certified"] is False
+
+
+def test_readiness_gates_reject_mismatched_master_and_xml(monkeypatch):
+    _configured(monkeypatch)
+    monkeypatch.setattr(
+        readiness,
+        "inspect_xml_investment_source",
+        lambda _: {
+            **INVENTORY,
+            "status": "BLOCKED_XML_SOURCE_UNAVAILABLE",
+            "master_review_status": "MASTER_NOT_CONFIGURED",
+        },
+    )
+    result = readiness.evaluate_readiness(cutoff=CUTOFF, scenario="BASE")
+    assert result["status"] == "BLOCKED_SOURCE_INVENTORY"
+    gates = {row["check"]: row["state"] for row in result["operational_gates"]}
+    assert gates["XML_CONFIA_CORTE"] == "BLOCKED"
+    assert gates["MAESTRO_INVERSIONES_CORTE"] == "BLOCKED"
+    assert gates["AUTORIZACION_Y_CONCILIACION_ICL"] == "REQUIRED"
+    assert result["projection_regulatorily_certified"] is False
+

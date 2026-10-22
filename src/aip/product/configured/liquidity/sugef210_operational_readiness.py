@@ -26,6 +26,65 @@ _EXPECTED_SOURCE_STATUS = "ACCOUNT_LEVEL_EVIDENCE_ONLY_NO_AVAILABLE_CASH"
 _REQUIRED_MASTER_STATUS = "MASTER_EXACT_CUTOFF_READ"
 
 
+
+def _operational_gates(
+    *,
+    xml_status: str,
+    master_status: str,
+    approvals_provided: bool,
+    projection_executed: bool = False,
+) -> list[dict[str, str]]:
+    """Explain the next real-source blockers without exposing institutional data."""
+    xml_ready = xml_status == _EXPECTED_SOURCE_STATUS
+    master_ready = master_status == _REQUIRED_MASTER_STATUS
+    return [
+        {
+            "check": "XML_CONFIA_CORTE",
+            "state": "READY" if xml_ready else "BLOCKED",
+            "next_action": (
+                "Fuente XML del corte localizada; saldos a la vista no certificados."
+                if xml_ready
+                else "Verificar configuración XML CONFÍA y archivos originales del corte."
+            ),
+        },
+        {
+            "check": "MAESTRO_INVERSIONES_CORTE",
+            "state": "READY" if master_ready else "BLOCKED",
+            "next_action": (
+                "Maestro original del corte disponible para conciliación."
+                if master_ready
+                else "Localizar exactamente un Maestro del mismo corte y validar su lectura."
+            ),
+        },
+        {
+            "check": "AUTORIZACION_Y_CONCILIACION_ICL",
+            "state": (
+                "VALIDATED"
+                if projection_executed
+                else "PENDING_VALIDATION"
+                if approvals_provided
+                else "REQUIRED"
+            ),
+            "next_action": (
+                "Documentos originales verificados según los controles de la sesión."
+                if projection_executed
+                else "Validar ambos documentos independientes en la misma sesión."
+                if approvals_provided
+                else "Seleccionar autorización institucional y conciliación bancaria/ICL."
+            ),
+        },
+        {
+            "check": "PERIMETRO_CONTRACTUAL_INTEGRAL",
+            "state": "PARTIAL" if projection_executed else "NOT_EVALUATED",
+            "next_action": (
+                "Conciliar las fuentes y operaciones todavía excluidas antes de certificar."
+                if projection_executed
+                else "No reconocer cobros/pagos futuros sin fechas y aprobaciones específicas."
+            ),
+        },
+    ]
+
+
 def evaluate_readiness(
     *,
     cutoff: date,
@@ -59,14 +118,22 @@ def evaluate_readiness(
         "xml_records_read": inventory.get("xml_records_read"),
         "master_positions_read": inventory.get("master_positions_read"),
         "projection_regulatorily_certified": False,
+        "operational_gates": _operational_gates(
+            xml_status=status,
+            master_status=master,
+            approvals_provided=approval is not None and bank is not None,
+        ),
     }
     if status != _EXPECTED_SOURCE_STATUS:
+        basic["next_action"] = "Revisar XML CONFÍA del corte en la configuración institucional."
         return basic
     if master != _REQUIRED_MASTER_STATUS:
         basic["status"] = "BLOCKED_MASTER_AT_CUTOFF"
+        basic["next_action"] = "Revisar ruta, fecha y unicidad del Maestro original del corte."
         return basic
     if (approval is None) != (bank is None):
         basic["status"] = "BLOCKED_APPROVAL_PAIR_REQUIRED"
+        basic["next_action"] = "Proporcionar ambos respaldos independientes o ninguno."
         return basic
     if approval is None:
         basic["status"] = "SOURCE_READY_APPROVALS_REQUIRED"
@@ -116,6 +183,16 @@ def evaluate_readiness(
         for source in session.assembly.source_reconciliations
     ]
     basic["missing_evidence"] = list(session.assembly.missing_institutional_evidence)
+    basic["operational_gates"] = _operational_gates(
+        xml_status=status,
+        master_status=master,
+        approvals_provided=True,
+        projection_executed=True,
+    )
+    basic["next_action"] = (
+        "Revisar la cobertura de fuentes y aprobar solo flujos faltantes con "
+        "evidencia contractual individual; la proyección sigue siendo PARCIAL."
+    )
     return basic
 
 
