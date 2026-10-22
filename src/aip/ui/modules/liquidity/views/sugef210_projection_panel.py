@@ -696,7 +696,9 @@ class SUGEF210ProjectionPanel(QWidget):
         self._button.setEnabled(False)
         self._opening_button.setEnabled(False)
         self._status.setText("Consultando XML institucional; no se calculan flujos sin evidencia…")
-        worker.completed.connect(lambda report: self._consume_source_audit(requested_cutoff, report))
+        worker.completed.connect(
+            lambda report: self._consume_source_audit(requested_cutoff, report)
+        )
         worker.failed.connect(lambda category: self._error(requested_cutoff, category))
         worker.finished.connect(self._release_worker)
         worker.start()
@@ -1140,7 +1142,9 @@ class SUGEF210ProjectionPanel(QWidget):
             "Leyendo la matriz institucional en modo seguro. "
             "No se registrarán importes como flujos contractuales."
         )
-        worker.completed.connect(lambda evidence: self._consume_financial_plan(cutoff, evidence))
+        worker.completed.connect(
+            lambda evidence: self._consume_financial_plan(cutoff, evidence)
+        )
         worker.failed.connect(lambda reason: self._financial_plan_error(cutoff, reason))
         worker.finished.connect(self._release_plan_worker)
         worker.start()
