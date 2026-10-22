@@ -1244,7 +1244,7 @@ class FinancialAnalysisView(QWidget):
         self._normative_source_summary.setToolTip(view_model.normative_source_issues)
         self._normative_source_table.setRowCount(len(view_model.normative_source_rows))
         for row_index, audit_row in enumerate(view_model.normative_source_rows):
-            values = (
+            source_values = (
                 audit_row.code,
                 audit_row.source_value,
                 audit_row.source_peers,
@@ -1255,7 +1255,7 @@ class FinancialAnalysisView(QWidget):
                 audit_row.aip_p85,
                 audit_row.status,
             )
-            for column, value in enumerate(values):
+            for column, value in enumerate(source_values):
                 cell = QTableWidgetItem(value)
                 if 1 <= column <= 7:
                     cell.setTextAlignment(
