@@ -255,3 +255,91 @@ def test_rejected_approval_is_explicitly_blocked_not_pending():
             approval_failed=True,
             projection_executed=True,
         )
+
+
+def test_contractual_xml_gates_expose_real_coverage_without_promoting_balances_to_cash():
+    inventory = [
+        {
+            "source_key": "CREDIT",
+            "status": "SOURCE_FIELDS_INSPECTED_NOT_A_PAYMENT_SCHEDULE",
+            "records": 102560,
+            "missing_balance": 12,
+            "invalid_balance": 3,
+            "missing_currency": 0,
+            "missing_account": 2,
+            "dates": [
+                {"field": "FechaProximoPagoPrincipal", "valid": 81853, "missing": 20707, "invalid": 0},
+                {"field": "FechaProximoPagoIntereses", "valid": 55774, "missing": 46786, "invalid": 0},
+            ],
+            "source_currency_balances_not_cashflows": {"1": "999999999999"},
+            "file": "CONFIDENTIAL.xml",
+        },
+        {
+            "source_key": "CAPTACIONES",
+            "status": "SOURCE_FIELDS_INSPECTED_NOT_A_PAYMENT_SCHEDULE",
+            "records": 0,
+            "missing_balance": 0,
+            "invalid_balance": 0,
+            "missing_currency": 0,
+            "missing_account": 0,
+            "dates": [],
+        },
+        {
+            "source_key": "BORROWING",
+            "status": "SOURCE_UNAVAILABLE_NOT_ASSUMED_ZERO",
+            "records": 0,
+        },
+    ]
+    gates = readiness.build_contractual_source_gates(inventory)
+    state = {row["check"]: row["state"] for row in gates}
+    assert state == {
+        "XML_CARTERA_PAGOS": "SOURCE_ONLY",
+        "XML_CAPTACIONES_PAGOS": "EMPTY_REVIEW",
+        "XML_OBLIGACIONES_PAGOS": "BLOCKED",
+        "XML_OBLIGACIONES_BANDAS": "NOT_INSPECTED",
+    }
+    assert "102560 registros" in gates[0]["next_action"]
+    assert "67500 fechas" not in gates[0]["next_action"]
+    assert "67493 fechas" in gates[0]["next_action"]
+    assert "999999999999" not in str(gates)
+    assert "CONFIDENTIAL.xml" not in str(gates)
+    assert all(row["state"] != "READY" for row in gates)
+
+
+def test_operator_preflight_includes_each_xml_contractual_perimeter_when_inspected(monkeypatch):
+    _configured(monkeypatch)
+    inspection = {
+        **INVENTORY,
+        "contractual_source_inventory": [
+            {
+                "source_key": "CAPTACIONES",
+                "status": "SOURCE_FIELDS_INSPECTED_NOT_A_PAYMENT_SCHEDULE",
+                "records": 10,
+                "dates": [{"field": "FechaVencimiento", "valid": 8, "missing": 2, "invalid": 0}],
+            }
+        ],
+    }
+    monkeypatch.setattr(readiness, "inspect_xml_investment_source", lambda _: inspection)
+    monkeypatch.setattr(
+        readiness,
+        "run_configured_sight_opening",
+        lambda **kwargs: (_ for _ in ()).throw(AssertionError("Approvals required")),
+    )
+    outcome = readiness.evaluate_readiness(cutoff=CUTOFF, scenario="BASE")
+    gates = {item["check"]: item["state"] for item in outcome["operational_gates"]}
+    assert outcome["status"] == "SOURCE_READY_APPROVALS_REQUIRED"
+    assert gates["XML_CAPTACIONES_PAGOS"] == "SOURCE_ONLY"
+    assert gates["XML_CARTERA_PAGOS"] == "NOT_INSPECTED"
+    assert gates["AUTORIZACION_Y_CONCILIACION_ICL"] == "REQUIRED"
+    assert outcome["projection_regulatorily_certified"] is False
+
+
+def test_contractual_perimeter_inventory_rejects_duplicate_source_identity():
+    import pytest
+
+    duplicate = [
+        {"source_key": "CREDIT", "status": "SOURCE_UNAVAILABLE_NOT_ASSUMED_ZERO"},
+        {"source_key": "CREDIT", "status": "SOURCE_UNAVAILABLE_NOT_ASSUMED_ZERO"},
+    ]
+    with pytest.raises(ValueError, match="Repeated source"):
+        readiness.build_contractual_source_gates(duplicate)
