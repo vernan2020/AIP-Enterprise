@@ -76,6 +76,32 @@ def build_contractual_source_gates(source_inventory: object) -> list[dict[str, s
         elif row.get("status") == "SOURCE_UNAVAILABLE_NOT_ASSUMED_ZERO":
             state = "BLOCKED"
             detail = "XML original del corte no localizado; no asumir saldo cero."
+        elif key == "BORROWING_MATURITY" and row.get("status") in {
+            "AGGREGATE_SOURCE_FIELD_MAP_REVIEW_REQUIRED",
+            "AGGREGATE_SOURCE_REFERENCE_NOT_CASHFLOWS",
+        }:
+            count = row.get("records")
+            if not isinstance(count, int) or isinstance(count, bool) or count < 0:
+                raise ValueError("Invalid aggregated obligation source record count")
+            absent = row.get("unmapped_source_fields")
+            unmapped = [
+                field for field in (absent if isinstance(absent, list) else ())
+                if isinstance(field, str) and field.strip()
+            ]
+            if row.get("status") == "AGGREGATE_SOURCE_FIELD_MAP_REVIEW_REQUIRED":
+                state = "SCHEMA_REVIEW"
+                detail = (
+                    f"{count} registros de bandeo; etiquetas sin correspondencia: "
+                    f"{', '.join(unmapped) or 'por inspeccionar'}. "
+                    "La ausencia de etiquetas a nivel de archivo no equivale a "
+                    "incidencias de saldos por cada registro. "
+                )
+            else:
+                state = "REFERENCE_ONLY"
+                detail = (
+                    f"{count} registros de bandeo revisados. "
+                    "La fuente agregada no es un calendario de liquidación. "
+                )
         elif row.get("status") != "SOURCE_FIELDS_INSPECTED_NOT_A_PAYMENT_SCHEDULE":
             state = "BLOCKED"
             detail = "El estado del XML contractual no permite evaluar cobertura."
@@ -237,6 +263,16 @@ def evaluate_readiness(
             contractual_inventory=inventory.get("contractual_source_inventory"),
         ),
     }
+    for perimeter in inventory.get("contractual_source_inventory") or ():
+        if isinstance(perimeter, dict) and perimeter.get("source_key") == "BORROWING_MATURITY":
+            basic["aggregate_obligation_xml_schema"] = {
+                "status": perimeter.get("status"),
+                "records": perimeter.get("records"),
+                "expected_tags_not_observed": perimeter.get("unmapped_source_fields", []),
+                "observed_tag_names_only": perimeter.get("observed_xml_tag_names", []),
+                "native_balances_or_payments_reported_here": False,
+            }
+            break
     if status != _EXPECTED_SOURCE_STATUS:
         basic["next_action"] = "Revisar XML CONFÍA del corte en la configuración institucional."
         return basic
