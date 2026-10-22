@@ -1010,3 +1010,24 @@ def test_institutional_source_scan_and_governed_cash_opening_are_serial(qt_app, 
     finally:
         panel.close()
 
+
+def test_bad_governed_worker_result_fails_closed_without_qt_slot_exception(
+    qt_app, monkeypatch
+):
+    panel = SUGEF210ProjectionPanel()
+    try:
+        panel._date.setDate(QDate(2026, 9, 30))
+
+        def invalid_result(*_args):
+            raise ValueError("PRIVATE-INSTITUTIONAL-FILENAME")
+
+        monkeypatch.setattr(panel, "_receive_governed_opening", invalid_result)
+        panel._consume_governed_opening(panel._cutoff, "BASE", object())
+        assert panel._governed_projection is None
+        assert panel._source_readiness.item(2, 1).text() == "BLOCKED"
+        assert "BLOCKED_GOVERNED_OPENING (ValueError)" in panel._opening_status.text()
+        assert "PRIVATE-INSTITUTIONAL-FILENAME" not in panel._opening_status.text()
+        assert all(amount.text() == "N/D" for amount in panel._projected_kpis.values())
+    finally:
+        panel.close()
+
