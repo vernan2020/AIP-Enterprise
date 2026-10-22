@@ -85,7 +85,12 @@ def build_contractual_source_gates(source_inventory: object) -> list[dict[str, s
                 raise ValueError("Invalid contractual source record count")
             invalid = sum(
                 value
-                for field in ("missing_balance", "invalid_balance", "missing_currency", "missing_account")
+                for field in (
+                    "missing_balance",
+                    "invalid_balance",
+                    "missing_currency",
+                    "missing_account",
+                )
                 for value in (row.get(field),)
                 if isinstance(value, int) and not isinstance(value, bool) and value >= 0
             )
