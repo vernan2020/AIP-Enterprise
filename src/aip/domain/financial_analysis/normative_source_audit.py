@@ -55,7 +55,11 @@ class NormativeSourcePercentileAuditor:
         rank = (len(ordered) - 1) * percentile
         left = int(rank)
         right = min(left + 1, len(ordered) - 1)
-        return ordered[left] * (right - rank) + ordered[right] * (rank - left) if left != right else ordered[left]
+        return (
+            ordered[left] * (right - rank) + ordered[right] * (rank - left)
+            if left != right
+            else ordered[left]
+        )
 
     @classmethod
     def audit(
@@ -68,9 +72,7 @@ class NormativeSourcePercentileAuditor:
         service = SUGEFOnlyFinancialEntityRatingService()
         cutoff = rating.effective_date
         canonical = service._canonical_roa_lines(lines, cutoff_date=cutoff)
-        current = (*(
-            line for line in lines if line.statement_date == cutoff
-        ), *canonical)
+        current = (*(line for line in lines if line.statement_date == cutoff), *canonical)
         by_entity: dict[str, list[FinancialStatementLine]] = defaultdict(list)
         for line in current:
             by_entity[line.entity.entity_id].append(line)
@@ -82,9 +84,7 @@ class NormativeSourcePercentileAuditor:
             if item is None:
                 issues.append(f"Indicador obligatorio ausente: {definition.code}")
                 continue
-            current_value = service._find_indicator(
-                tuple(by_entity.get(entity_id, ())), definition
-            )
+            current_value = service._find_indicator(tuple(by_entity.get(entity_id, ())), definition)
             expected = current_value.amount if current_value is not None else None
             if definition.direction is RatingDirection.BINARY:
                 peers = 0
