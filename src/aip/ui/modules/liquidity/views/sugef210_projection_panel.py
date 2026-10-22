@@ -42,11 +42,11 @@ from aip.product.configured.liquidity.sugef210_opening_session import (
     ConfiguredOpeningSession,
     run_configured_sight_opening,
 )
-from aip.product.configured.liquidity.sugef210_projection_assembler import (
-    LiquidityAuditedCashEvent,
-)
 from aip.product.configured.liquidity.sugef210_operational_readiness import (
     build_operational_gates,
+)
+from aip.product.configured.liquidity.sugef210_projection_assembler import (
+    LiquidityAuditedCashEvent,
 )
 from aip.product.configured.liquidity.sugef210_source_audit_cli import (
     inspect_xml_investment_source,

@@ -66,6 +66,7 @@ def main() -> int:
                     for required in (
                         "Flujo proyectado · SUGEF 2-10",
                         "Conciliación inversiones",
+                        "Estado de fuentes",
                         "Trazabilidad por operación",
                         "Conciliación captaciones vista",
                     ):

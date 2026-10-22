@@ -231,6 +231,7 @@ def verify_runtime_without_institutional_data() -> dict[str, Any]:
         names = {tab.tabText(index) for tab in tabs for index in range(tab.count())}
         required = {
             "Conciliación inversiones",
+            "Estado de fuentes",
             "Trazabilidad por operación",
             "Conciliación captaciones vista",
         }
