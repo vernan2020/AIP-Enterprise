@@ -45,6 +45,9 @@ from aip.product.configured.liquidity.sugef210_opening_session import (
 from aip.product.configured.liquidity.sugef210_projection_assembler import (
     LiquidityAuditedCashEvent,
 )
+from aip.product.configured.liquidity.sugef210_operational_readiness import (
+    build_operational_gates,
+)
 from aip.product.configured.liquidity.sugef210_source_audit_cli import (
     inspect_xml_investment_source,
 )
@@ -159,6 +162,7 @@ class SUGEF210ProjectionPanel(QWidget):
         "Saldo proyectado CRC†",
         "Saldo proyectado USD†",
     )
+    _SOURCE_READINESS_HEADERS = ("Control", "Estado", "Acción siguiente")
     _EVENT_AUDIT_HEADERS = (
         "Grupo fuente",
         "Referencia evento",
@@ -341,6 +345,10 @@ class SUGEF210ProjectionPanel(QWidget):
         self._records = self._table(self._DETAIL_HEADERS, "sugef210XMLRecordEvidence")
         splitter.addWidget(self._records)
         self._planning_tabs = QTabWidget()
+        self._source_readiness = self._table(
+            self._SOURCE_READINESS_HEADERS, "sugef210RealSourceReadiness"
+        )
+        self._planning_tabs.addTab(self._source_readiness, "Estado de fuentes")
         self._plan_months = self._table(self._PLAN_HEADERS, "sugef210FinancialPlanMonthlyEvidence")
         self._plan_parameters = self._table(
             self._PLAN_PARAMETER_HEADERS, "sugef210FinancialPlanParameters"
@@ -384,6 +392,7 @@ class SUGEF210ProjectionPanel(QWidget):
         splitter.setSizes([235, 150, 210, 220])
         main.addWidget(splitter, 1)
         self._fill_windows()
+        self._fill_operational_gates()
 
         note = QLabel(
             "Importante: Crediticio_InversionesActivas.xml se utiliza para detectar "
@@ -497,8 +506,35 @@ class SUGEF210ProjectionPanel(QWidget):
                 ),
             )
 
+    def _fill_operational_gates(
+        self,
+        *,
+        xml_status: str = "NOT_INSPECTED",
+        master_status: str = "NOT_INSPECTED",
+        approved: bool = False,
+        projected: bool = False,
+    ) -> None:
+        """Represent source readiness, never comprehensive liquidity certification."""
+        gates = build_operational_gates(
+            xml_status=xml_status,
+            master_status=master_status,
+            approvals_provided=approved,
+            projection_executed=projected,
+        )
+        self._source_readiness.setRowCount(0)
+        for gate in gates:
+            self._append(
+                self._source_readiness,
+                (gate["check"], gate["state"], gate["next_action"]),
+            )
+
     def _on_scenario_changed(self, _scenario: str) -> None:
         self._invalidate_governed_projection()
+        report = self._report or {}
+        self._fill_operational_gates(
+            xml_status=str(report.get("status") or "NOT_INSPECTED"),
+            master_status=str(report.get("master_review_status") or "NOT_INSPECTED"),
+        )
         self._opening_status.setText("Escenario cambiado: validar de nuevo caja inicial.")
         self._status.setText(
             "Escenario cambiado: sus flujos deben estar aprobados por separado. "
@@ -631,6 +667,7 @@ class SUGEF210ProjectionPanel(QWidget):
         self._xml_perimeters.setRowCount(0)
         self._report = None
         self._export.setEnabled(False)
+        self._fill_operational_gates()
         self._plan_audit = None
         self._plan_months.setRowCount(0)
         self._plan_parameters.setRowCount(0)
@@ -650,6 +687,7 @@ class SUGEF210ProjectionPanel(QWidget):
             return
         self._invalidate_governed_projection()
         self._opening_status.setText("Auditoría actualizada: volver a validar caja inicial.")
+        self._fill_operational_gates()
         requested_cutoff = self._cutoff
         worker = _SUGEF210SourceWorker(requested_cutoff)
         self._worker = worker
@@ -668,6 +706,10 @@ class SUGEF210ProjectionPanel(QWidget):
         self._report = None
         self._export.setEnabled(False)
         status = str(report.get("status", "BLOCKED"))
+        self._fill_operational_gates(
+            xml_status=status,
+            master_status=str(report.get("master_review_status") or "NOT_INSPECTED"),
+        )
         if status != "ACCOUNT_LEVEL_EVIDENCE_ONLY_NO_AVAILABLE_CASH":
             self._status.setText(f"Fuente de inversiones no utilizable para inspección: {status}")
             return
@@ -736,6 +778,9 @@ class SUGEF210ProjectionPanel(QWidget):
             self._xml_perimeters.setRowCount(0)
             self._report = None
             self._export.setEnabled(False)
+            self._fill_operational_gates(
+                xml_status="BLOCKED_SOURCE_READ", master_status="NOT_INSPECTED"
+            )
             self._status.setText(
                 f"BLOCKED_SOURCE_READ ({category}). Sin sustituir información ni mostrar flujos."
             )
@@ -993,6 +1038,12 @@ class SUGEF210ProjectionPanel(QWidget):
                     session.demand_deposit_source_sha256 or "N/D",
                 ),
             )
+        self._fill_operational_gates(
+            xml_status="ACCOUNT_LEVEL_EVIDENCE_ONLY_NO_AVAILABLE_CASH",
+            master_status="MASTER_EXACT_CUTOFF_READ",
+            approved=True,
+            projected=True,
+        )
         self._opening_status.setText(
             f"Caja inicial documentada: {session.sight_records_approved} inversiones "
             f"a la vista revisadas contra XML/Maestro; "
@@ -1020,6 +1071,12 @@ class SUGEF210ProjectionPanel(QWidget):
         if cutoff != self._cutoff or scenario != self._scenario.currentText():
             return
         self._invalidate_governed_projection()
+        report = self._report or {}
+        self._fill_operational_gates(
+            xml_status=str(report.get("status") or "NOT_INSPECTED"),
+            master_status=str(report.get("master_review_status") or "NOT_INSPECTED"),
+            approved=True,
+        )
         self._opening_status.setText(
             f"BLOCKED_GOVERNED_OPENING ({category}). No se incorporó caja XML."
         )
