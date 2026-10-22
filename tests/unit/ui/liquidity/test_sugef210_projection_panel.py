@@ -905,3 +905,67 @@ def test_readiness_hint_requires_exact_master_and_never_activates_opening(qt_app
         assert panel._governed_projection is None
     finally:
         panel.close()
+
+
+def test_real_source_readiness_tab_tracks_cutoff_and_governed_evidence(qt_app):
+    panel = SUGEF210ProjectionPanel()
+    try:
+        panel._date.setDate(QDate(2026, 9, 30))
+        tab_names = [
+            panel._planning_tabs.tabText(index)
+            for index in range(panel._planning_tabs.count())
+        ]
+        assert "Estado de fuentes" in tab_names
+        table = panel._source_readiness
+        assert table.rowCount() == 4
+        assert table.item(0, 1).text() == "PENDING"
+        assert table.item(1, 1).text() == "PENDING"
+        assert table.item(2, 1).text() == "REQUIRED"
+        panel._receive(
+            panel._cutoff,
+            {
+                "status": "ACCOUNT_LEVEL_EVIDENCE_ONLY_NO_AVAILABLE_CASH",
+                "master_review_status": "MASTER_EXACT_CUTOFF_READ",
+                "accounts": [],
+                "record_evidence": [],
+                "xml_records_read": 1,
+            },
+        )
+        assert table.item(0, 1).text() == "READY"
+        assert table.item(1, 1).text() == "READY"
+        assert table.item(2, 1).text() == "REQUIRED"
+        assert "no certificados" in table.item(0, 2).text()
+        panel._fill_operational_gates(
+            xml_status="ACCOUNT_LEVEL_EVIDENCE_ONLY_NO_AVAILABLE_CASH",
+            master_status="MASTER_EXACT_CUTOFF_READ",
+            approved=True,
+            projected=True,
+        )
+        assert table.item(2, 1).text() == "VALIDATED"
+        assert table.item(3, 1).text() == "PARTIAL"
+        panel._scenario.setCurrentText("SYSTEMIC")
+        assert table.item(0, 1).text() == "READY"
+        assert table.item(2, 1).text() == "REQUIRED"
+        assert table.item(3, 1).text() == "NOT_EVALUATED"
+        panel._date.setDate(QDate(2026, 10, 31))
+        assert table.item(0, 1).text() == "PENDING"
+        assert table.item(1, 1).text() == "PENDING"
+        assert table.item(2, 1).text() == "REQUIRED"
+    finally:
+        panel.close()
+
+
+def test_source_readiness_failed_inventory_does_not_claim_cashflow(qt_app):
+    panel = SUGEF210ProjectionPanel()
+    try:
+        panel._date.setDate(QDate(2026, 9, 30))
+        panel._receive(panel._cutoff, {"status": "BLOCKED_XML_CONFIA_UNCONFIGURED"})
+        assert panel._source_readiness.item(0, 1).text() == "BLOCKED"
+        assert panel._source_readiness.item(1, 1).text() == "PENDING"
+        assert panel._source_readiness.item(2, 1).text() == "REQUIRED"
+        assert panel._governed_projection is None
+        assert panel._projected_kpis["CRC"].text() == "N/D"
+        assert panel._projected_kpis["USD"].text() == "N/D"
+    finally:
+        panel.close()
+
