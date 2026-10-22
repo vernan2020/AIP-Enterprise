@@ -773,9 +773,7 @@ class FinancialAnalysisView(QWidget):
         source_header = self._normative_source_table.horizontalHeader()
         source_header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         for column in range(1, 9):
-            source_header.setSectionResizeMode(
-                column, QHeaderView.ResizeMode.ResizeToContents
-            )
+            source_header.setSectionResizeMode(column, QHeaderView.ResizeMode.ResizeToContents)
         official_source_layout.addWidget(self._normative_source_table, 1)
         self._rating_content_tabs.addTab(official_source, "Fuente SUGEF 08ME14")
 
@@ -1247,10 +1245,14 @@ class FinancialAnalysisView(QWidget):
         self._normative_source_table.setRowCount(len(view_model.normative_source_rows))
         for row_index, audit_row in enumerate(view_model.normative_source_rows):
             values = (
-                audit_row.code, audit_row.source_value,
-                audit_row.source_peers, audit_row.aip_peers,
-                audit_row.source_p15, audit_row.aip_p15,
-                audit_row.source_p85, audit_row.aip_p85,
+                audit_row.code,
+                audit_row.source_value,
+                audit_row.source_peers,
+                audit_row.aip_peers,
+                audit_row.source_p15,
+                audit_row.aip_p15,
+                audit_row.source_p85,
+                audit_row.aip_p85,
                 audit_row.status,
             )
             for column, value in enumerate(values):
