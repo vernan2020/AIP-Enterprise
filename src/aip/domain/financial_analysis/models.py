@@ -220,6 +220,19 @@ class MatrixReferencePeer:
 
 
 @dataclass(frozen=True, slots=True)
+class NormativeSourceAuditEvidence:
+    code: str
+    selected_value: Decimal | None
+    peer_count: int
+    rated_peer_count: int
+    source_p15: Decimal | None
+    aip_p15: Decimal | None
+    source_p85: Decimal | None
+    aip_p85: Decimal | None
+    status: str
+
+
+@dataclass(frozen=True, slots=True)
 class FinancialAnalysisSnapshot:
     status: str
     cutoff_date: date | None
@@ -242,6 +255,9 @@ class FinancialAnalysisSnapshot:
     reference_matrix_diagnostics: tuple[str, ...] = field(default_factory=tuple)
     reference_matrix_peers: tuple[MatrixReferencePeer, ...] = field(default_factory=tuple)
     reference_matrix_indicators: tuple[MatrixReferenceBreakdown, ...] = field(default_factory=tuple)
+    normative_source_status: str = "SIN_VALIDAR"
+    normative_source_issues: tuple[str, ...] = field(default_factory=tuple)
+    normative_source_rows: tuple[NormativeSourceAuditEvidence, ...] = field(default_factory=tuple)
     indicator_reconciliations: tuple[FinancialIndicatorReconciliation, ...] = field(
         default_factory=tuple
     )
