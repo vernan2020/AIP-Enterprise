@@ -34,8 +34,7 @@ def test_monthly_source_inventory_index_matches_reference_scan_for_all_34_rows()
     cutoff = date(2026, 9, 30)
     windows = sugef210_windows(cutoff)
     flows = tuple(
-        _principal(cutoff, n, n % 367, "CRC" if n % 2 == 0 else "USD")
-        for n in range(2040)
+        _principal(cutoff, n, n % 367, "CRC" if n % 2 == 0 else "USD") for n in range(2040)
     )
     totals = native_principal_by_maturity_band(flows, windows)
     assert len(windows) == 17
