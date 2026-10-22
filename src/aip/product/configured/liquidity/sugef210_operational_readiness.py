@@ -26,7 +26,6 @@ _EXPECTED_SOURCE_STATUS = "ACCOUNT_LEVEL_EVIDENCE_ONLY_NO_AVAILABLE_CASH"
 _REQUIRED_MASTER_STATUS = "MASTER_EXACT_CUTOFF_READ"
 
 
-
 def _operational_gates(
     *,
     xml_status: str,
@@ -61,16 +60,16 @@ def _operational_gates(
             "state": (
                 "VALIDATED"
                 if projection_executed
-                else "PENDING_VALIDATION"
-                if approvals_provided
-                else "REQUIRED"
+                else "PENDING_VALIDATION" if approvals_provided else "REQUIRED"
             ),
             "next_action": (
                 "Documentos originales verificados según los controles de la sesión."
                 if projection_executed
-                else "Validar ambos documentos independientes en la misma sesión."
-                if approvals_provided
-                else "Seleccionar autorización institucional y conciliación bancaria/ICL."
+                else (
+                    "Validar ambos documentos independientes en la misma sesión."
+                    if approvals_provided
+                    else "Seleccionar autorización institucional y conciliación bancaria/ICL."
+                )
             ),
         },
         {

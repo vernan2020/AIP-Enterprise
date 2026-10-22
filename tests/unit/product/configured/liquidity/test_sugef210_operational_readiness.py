@@ -213,4 +213,3 @@ def test_readiness_gates_reject_mismatched_master_and_xml(monkeypatch):
     assert gates["MAESTRO_INVERSIONES_CORTE"] == "BLOCKED"
     assert gates["AUTORIZACION_Y_CONCILIACION_ICL"] == "REQUIRED"
     assert result["projection_regulatorily_certified"] is False
-
