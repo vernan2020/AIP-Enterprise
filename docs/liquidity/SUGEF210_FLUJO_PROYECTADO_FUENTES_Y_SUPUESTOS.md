@@ -340,3 +340,20 @@ El resultado incluye `next_action` en español y nunca certifica
 regulatoriamente la proyección. No se registran credenciales ni cifras
 del ICL en este diagnóstico.
 
+### Estado de fuentes visible en el PREVIEW
+
+La pestaña **Estado de fuentes** del módulo Liquidez muestra las mismas
+cuatro verificaciones del comando `VERIFICAR_LIQUIDEZ_SUGEF210_OPERATIVO.cmd`:
+XML CONFÍA, Maestro original del corte, conciliaciones/autorizaciones
+Tesorería/ICL y cobertura contractual de los flujos. Se utiliza el mismo
+evaluador de estados en la interfaz y en CMD, sin trasladar importes ni
+credenciales institucionales al resumen. Al abrir un corte todavía no
+inspeccionado, XML y Maestro aparecen como `PENDING`, y no como falsos
+bloqueos por ausencia de información.
+
+Después de la inspección, `READY` indica **fuente leída**, no caja
+certificada. Una apertura autorizada puede marcar la verificación de
+documentos como `VALIDATED`, pero el perímetro permanece `PARTIAL`.
+Al cambiar de escenario, se conservan los estados de fuentes del mismo
+corte, pero se invalida la aprobación. Al cambiar de corte se invalidan
+también las verificaciones XML y Maestro; ningún monto anterior se reutiliza.
