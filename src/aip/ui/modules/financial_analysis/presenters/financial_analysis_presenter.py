@@ -536,11 +536,11 @@ class FinancialAnalysisPresenter:
             score_audit_summary=score_audit_summary,
             score_audit_warning=score_audit_warning,
             score_matrix_summary=(
-                "Perfil Excel agosto 2026 (recalculado al corte SUGEF): "
+                "SIMULACIÓN EXCEL — NO NORMATIVA (mismo corte SUGEF): "
                 + (
                     (
                         f"{snapshot.reference_matrix_score:,.4f} "
-                        f"({snapshot.reference_matrix_grade})"
+                        f"(escala Excel: {snapshot.reference_matrix_grade})"
                         if snapshot.reference_matrix_grade is not None
                         else f"Puntaje provisional {snapshot.reference_matrix_score:,.4f}; "
                         "categoría suspendida"
@@ -551,9 +551,9 @@ class FinancialAnalysisPresenter:
                 + " · "
                 + snapshot.reference_matrix_coverage
                 + (
-                    " · Misma puntuación, escala fija del documento: "
+                    " · Aplicando solo la escala fija 08ME14-01 a estos puntos: "
                     + FinancialEntityRatingService.grade(snapshot.reference_matrix_score)
-                    + " (comparación de bandas, no nueva nota normativa)"
+                    + " (comparación orientativa; NO es la calificación oficial de AIP)"
                     if snapshot.reference_matrix_score is not None
                     and snapshot.reference_matrix_grade is not None
                     else ""
