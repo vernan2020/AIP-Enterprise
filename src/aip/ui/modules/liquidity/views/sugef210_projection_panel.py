@@ -696,10 +696,22 @@ class SUGEF210ProjectionPanel(QWidget):
         self._button.setEnabled(False)
         self._opening_button.setEnabled(False)
         self._status.setText("Consultando XML institucional; no se calculan flujos sin evidencia…")
-        worker.completed.connect(lambda report: self._receive(requested_cutoff, report))
+        worker.completed.connect(lambda report: self._consume_source_audit(requested_cutoff, report))
         worker.failed.connect(lambda category: self._error(requested_cutoff, category))
         worker.finished.connect(self._release_worker)
         worker.start()
+
+    def _consume_source_audit(self, cutoff: date, report: object) -> None:
+        """Keep malformed institutional inventory results out of the Qt event loop."""
+        if cutoff != self._cutoff:
+            return
+        try:
+            if not isinstance(report, dict):
+                raise TypeError("Institutional source inventory must be an object")
+            self._receive(cutoff, report)
+        except Exception as exc:
+            # Display the error category only, never the private source value.
+            self._error(cutoff, type(exc).__name__)
 
     def _receive(self, cutoff: date, report: dict[str, object]) -> None:
         if cutoff != self._cutoff:
@@ -776,6 +788,7 @@ class SUGEF210ProjectionPanel(QWidget):
 
     def _error(self, cutoff: date, category: str) -> None:
         if cutoff == self._cutoff:
+            self._invalidate_governed_projection()
             self._accounts.setRowCount(0)
             self._records.setRowCount(0)
             self._xml_perimeters.setRowCount(0)
@@ -1127,10 +1140,21 @@ class SUGEF210ProjectionPanel(QWidget):
             "Leyendo la matriz institucional en modo seguro. "
             "No se registrarán importes como flujos contractuales."
         )
-        worker.completed.connect(lambda evidence: self._receive_financial_plan(cutoff, evidence))
+        worker.completed.connect(lambda evidence: self._consume_financial_plan(cutoff, evidence))
         worker.failed.connect(lambda reason: self._financial_plan_error(cutoff, reason))
         worker.finished.connect(self._release_plan_worker)
         worker.start()
+
+    def _consume_financial_plan(self, cutoff: date, evidence: object) -> None:
+        """Reset an invalid workbook payload without an uncaught Qt slot exception."""
+        if cutoff != self._cutoff:
+            return
+        try:
+            if not isinstance(evidence, FinancialPlanSourceAudit):
+                raise TypeError("Financial plan audit must be validated evidence")
+            self._receive_financial_plan(cutoff, evidence)
+        except Exception as exc:
+            self._financial_plan_error(cutoff, type(exc).__name__)
 
     def _receive_financial_plan(self, cutoff: date, evidence: FinancialPlanSourceAudit) -> None:
         if cutoff != self._cutoff:
