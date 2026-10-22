@@ -133,4 +133,6 @@ def test_binary_guarantee_and_supervision_have_distinct_favorable_values() -> No
     by_code = {row.code: row for row in audit.rows}
     assert by_code["PROPORTIONAL_SUPERVISION"].expected == Decimal("5")
     assert by_code["STATE_GUARANTEE"].expected == Decimal("0")
-    assert "Conciliación de codificación" in audit.criterion_warning
+    assert "sección 3.6.1" in audit.criterion_warning
+    assert "contradicción" in audit.criterion_warning
+    assert "FIJA" in audit.criterion_warning
