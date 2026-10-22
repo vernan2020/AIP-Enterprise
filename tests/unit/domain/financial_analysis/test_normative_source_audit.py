@@ -29,7 +29,9 @@ def _source_data() -> tuple[FinancialStatementLine, ...]:
             if definition.code == "ROA":
                 continue  # Historical accounting unavailable: canonical ROA stays absent.
             if definition.direction is RatingDirection.BINARY:
-                value = Decimal("0") if definition.code == "PROPORTIONAL_SUPERVISION" else Decimal("1")
+                value = (
+                    Decimal("0") if definition.code == "PROPORTIONAL_SUPERVISION" else Decimal("1")
+                )
             else:
                 value = Decimal(i + 1) / Decimal("100")
             records.append(
@@ -66,15 +68,18 @@ def test_audit_detects_wrong_percentiles_even_when_total_score_is_unchanged() ->
     index = next(i for i, row in enumerate(rating.indicators) if row.code == "ROE")
     original = rating.indicators[index]
     changed = replace(
-        original, percentile_15=original.percentile_15 + Decimal("0.002"),
+        original,
+        percentile_15=original.percentile_15 + Decimal("0.002"),
         peer_count=original.peer_count - 1,
     )
-    new_items = (*rating.indicators[:index], changed, *rating.indicators[index + 1:])
+    new_items = (*rating.indicators[:index], changed, *rating.indicators[index + 1 :])
     report = NormativeSourcePercentileAuditor.audit(
         source, entity_id="0", rating=replace(rating, indicators=new_items)
     )
     assert report.status == "REVISAR"
-    assert any("ROE" in issue and "P15" in issue and "pares" in issue for issue in report.discrepancies)
+    assert any(
+        "ROE" in issue and "P15" in issue and "pares" in issue for issue in report.discrepancies
+    )
 
 
 def test_source_audit_identifies_missing_peer_in_selected_cutoff() -> None:
@@ -83,11 +88,8 @@ def test_source_audit_identifies_missing_peer_in_selected_cutoff() -> None:
         source, selected_entity_id="0", cutoff_date=date(2026, 9, 30)
     )
     incomplete_source = tuple(
-        row for row in source
-        if not (row.entity.entity_id == "3" and row.account_code == "ROE")
+        row for row in source if not (row.entity.entity_id == "3" and row.account_code == "ROE")
     )
-    report = NormativeSourcePercentileAuditor.audit(
-        incomplete_source, entity_id="0", rating=rating
-    )
+    report = NormativeSourcePercentileAuditor.audit(incomplete_source, entity_id="0", rating=rating)
     assert report.status == "REVISAR"
     assert any("ROE" in issue and "pares" in issue for issue in report.discrepancies)
