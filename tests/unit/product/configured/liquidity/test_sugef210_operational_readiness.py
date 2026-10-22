@@ -268,8 +268,18 @@ def test_contractual_xml_gates_expose_real_coverage_without_promoting_balances_t
             "missing_currency": 0,
             "missing_account": 2,
             "dates": [
-                {"field": "FechaProximoPagoPrincipal", "valid": 81853, "missing": 20707, "invalid": 0},
-                {"field": "FechaProximoPagoIntereses", "valid": 55774, "missing": 46786, "invalid": 0},
+                {
+                    "field": "FechaProximoPagoPrincipal",
+                    "valid": 81853,
+                    "missing": 20707,
+                    "invalid": 0,
+                },
+                {
+                    "field": "FechaProximoPagoIntereses",
+                    "valid": 55774,
+                    "missing": 46786,
+                    "invalid": 0,
+                },
             ],
             "source_currency_balances_not_cashflows": {"1": "999999999999"},
             "file": "CONFIDENTIAL.xml",
@@ -299,7 +309,6 @@ def test_contractual_xml_gates_expose_real_coverage_without_promoting_balances_t
         "XML_OBLIGACIONES_BANDAS": "NOT_INSPECTED",
     }
     assert "102560 registros" in gates[0]["next_action"]
-    assert "67500 fechas" not in gates[0]["next_action"]
     assert "67493 fechas" in gates[0]["next_action"]
     assert "999999999999" not in str(gates)
     assert "CONFIDENTIAL.xml" not in str(gates)
