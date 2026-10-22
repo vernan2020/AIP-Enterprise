@@ -85,7 +85,8 @@ def build_contractual_source_gates(source_inventory: object) -> list[dict[str, s
                 raise ValueError("Invalid aggregated obligation source record count")
             absent = row.get("unmapped_source_fields")
             unmapped = [
-                field for field in (absent if isinstance(absent, list) else ())
+                field
+                for field in (absent if isinstance(absent, list) else ())
                 if isinstance(field, str) and field.strip()
             ]
             if row.get("status") == "AGGREGATE_SOURCE_FIELD_MAP_REVIEW_REQUIRED":
