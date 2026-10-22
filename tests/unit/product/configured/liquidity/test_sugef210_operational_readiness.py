@@ -213,3 +213,17 @@ def test_readiness_gates_reject_mismatched_master_and_xml(monkeypatch):
     assert gates["MAESTRO_INVERSIONES_CORTE"] == "BLOCKED"
     assert gates["AUTORIZACION_Y_CONCILIACION_ICL"] == "REQUIRED"
     assert result["projection_regulatorily_certified"] is False
+
+
+def test_source_gates_before_inspection_are_pending_not_false_failures():
+    gates = readiness.build_operational_gates(
+        xml_status="NOT_INSPECTED",
+        master_status="NOT_INSPECTED",
+        approvals_provided=False,
+    )
+    assert [row["state"] for row in gates] == [
+        "PENDING", "PENDING", "REQUIRED", "NOT_EVALUATED",
+    ]
+    assert "Inspeccionar" in gates[0]["next_action"]
+    assert "Inspeccionar" in gates[1]["next_action"]
+
