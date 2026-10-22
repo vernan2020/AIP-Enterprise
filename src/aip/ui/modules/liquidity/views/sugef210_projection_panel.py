@@ -1142,9 +1142,7 @@ class SUGEF210ProjectionPanel(QWidget):
             "Leyendo la matriz institucional en modo seguro. "
             "No se registrarán importes como flujos contractuales."
         )
-        worker.completed.connect(
-            lambda evidence: self._consume_financial_plan(cutoff, evidence)
-        )
+        worker.completed.connect(lambda evidence: self._consume_financial_plan(cutoff, evidence))
         worker.failed.connect(lambda reason: self._financial_plan_error(cutoff, reason))
         worker.finished.connect(self._release_plan_worker)
         worker.start()
