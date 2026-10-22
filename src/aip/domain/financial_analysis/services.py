@@ -25,7 +25,9 @@ from aip.domain.financial_analysis.models import (
     MarketCompositionSeries,
     MatrixReferenceBreakdown,
     MatrixReferencePeer,
+    NormativeSourceAuditEvidence,
 )
+from aip.domain.financial_analysis.normative_source_audit import NormativeSourcePercentileAuditor
 from aip.domain.financial_analysis.return_on_assets import ReturnOnAssetsService
 from aip.domain.financial_analysis.sugef_ratings import (
     SUGEFOnlyFinancialEntityRatingService,
@@ -135,6 +137,25 @@ class FinancialAnalysisService:
             operational_lines,
             effective_date,
             rating_service=rating_service,
+        )
+        # The binding methodology is audited directly against the same
+        # SUGEF source set. Excel comparisons never determine this status.
+        normative_audit = NormativeSourcePercentileAuditor.audit(
+            operational_lines, entity_id=selected.entity_id, rating=rating
+        )
+        normative_rows = tuple(
+            NormativeSourceAuditEvidence(
+                code=row.code,
+                selected_value=row.selected_value,
+                peer_count=row.observed_peers,
+                rated_peer_count=row.rated_peers,
+                source_p15=row.observed_p15,
+                aip_p15=row.rated_p15,
+                source_p85=row.observed_p85,
+                aip_p85=row.rated_p85,
+                status=row.status,
+            )
+            for row in normative_audit.rows
         )
         reference_score = None
         reference_grade = None
@@ -258,6 +279,9 @@ class FinancialAnalysisService:
             reference_matrix_diagnostics=reference_diagnostics,
             reference_matrix_indicators=reference_indicators,
             reference_matrix_peers=reference_peers,
+            normative_source_status=normative_audit.status,
+            normative_source_issues=normative_audit.discrepancies,
+            normative_source_rows=normative_rows,
             indicator_reconciliations=reconciliations,
             diagnostics=tuple(coverage_diagnostics),
             source_files=source_files,
