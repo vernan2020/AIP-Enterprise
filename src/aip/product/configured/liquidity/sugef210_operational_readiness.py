@@ -287,15 +287,19 @@ def evaluate_readiness(
         basic["obligation_identity_linkage"] = linkage
         matches = linkage.get("unique_maturity_rows_matched", 0)
         issue = str(linkage.get("status") or "N/D")
-        basic["operational_gates"].append({
-            "check": "XML_OBLIGACIONES_VINCULACION",
-            "state": "REFERENCE_ONLY" if issue == "MATCHED_REFERENCE_ONLY" else "REVIEW_REQUIRED",
-            "next_action": (
-                f"Coincidencias únicas por clave compuesta: {matches}. "
-                "Revisar registros ambiguos/no vinculados y validar catálogo de rangos "
-                "y cronogramas contractuales; no se reconocen flujos."
-            ),
-        })
+        basic["operational_gates"].append(
+            {
+                "check": "XML_OBLIGACIONES_VINCULACION",
+                "state": (
+                    "REFERENCE_ONLY" if issue == "MATCHED_REFERENCE_ONLY" else "REVIEW_REQUIRED"
+                ),
+                "next_action": (
+                    f"Coincidencias únicas por clave compuesta: {matches}. "
+                    "Revisar registros ambiguos/no vinculados y validar catálogo de rangos "
+                    "y cronogramas contractuales; no se reconocen flujos."
+                ),
+            }
+        )
     for perimeter in inventory.get("contractual_source_inventory") or ():
         if isinstance(perimeter, dict) and perimeter.get("source_key") == "BORROWING_MATURITY":
             basic["aggregate_obligation_xml_schema"] = {
