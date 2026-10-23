@@ -21,6 +21,11 @@ from aip.product.configured.liquidity.sugef210_opening_session import (
 from aip.product.configured.liquidity.sugef210_source_audit_cli import (
     inspect_xml_investment_source,
 )
+from aip.product.configured.liquidity.sugef210_obligation_identity_audit import (
+    audit_obligation_maturity_identity,
+)
+from aip.product.configured.irrbb.xml_confia_source import XMLConfiaMonthlySourceReader
+from aip.product.demo.configuration.environment_loader import EnvironmentLoader
 
 _EXPECTED_SOURCE_STATUS = "ACCOUNT_LEVEL_EVIDENCE_ONLY_NO_AVAILABLE_CASH"
 _REQUIRED_MASTER_STATUS = "MASTER_EXACT_CUTOFF_READ"
@@ -224,12 +229,25 @@ def build_operational_gates(
     return gates
 
 
+def inspect_obligation_identity_with_config(cutoff: date) -> dict[str, Any]:
+    """Run opt-in read-only reference matching with existing private source config."""
+    config = EnvironmentLoader().load_source_config()
+    if not config.xml_confia.enabled or not config.xml_confia.root:
+        return {
+            "status": "BLOCKED_XML_CONFIA_UNCONFIGURED",
+            "cashflows_recognized": 0,
+        }
+    reader = XMLConfiaMonthlySourceReader(config.xml_confia.root)
+    return audit_obligation_maturity_identity(reader=reader, cutoff=cutoff)
+
+
 def evaluate_readiness(
     *,
     cutoff: date,
     scenario: str,
     approval: str | Path | None = None,
     bank: str | Path | None = None,
+    identity_linkage: bool = False,
 ) -> dict[str, Any]:
     """Return a source-backed operational gate, deliberately not a certification."""
     if os.environ.get("AIP_EXECUTION_MODE", "").upper() != "CONFIGURED" or os.environ.get(
@@ -264,6 +282,20 @@ def evaluate_readiness(
             contractual_inventory=inventory.get("contractual_source_inventory"),
         ),
     }
+    if identity_linkage:
+        linkage = inspect_obligation_identity_with_config(cutoff)
+        basic["obligation_identity_linkage"] = linkage
+        matches = linkage.get("unique_maturity_rows_matched", 0)
+        issue = str(linkage.get("status") or "N/D")
+        basic["operational_gates"].append({
+            "check": "XML_OBLIGACIONES_VINCULACION",
+            "state": "REFERENCE_ONLY" if issue == "MATCHED_REFERENCE_ONLY" else "REVIEW_REQUIRED",
+            "next_action": (
+                f"Coincidencias únicas por clave compuesta: {matches}. "
+                "Revisar registros ambiguos/no vinculados y validar catálogo de rangos "
+                "y cronogramas contractuales; no se reconocen flujos."
+            ),
+        })
     for perimeter in inventory.get("contractual_source_inventory") or ():
         if isinstance(perimeter, dict) and perimeter.get("source_key") == "BORROWING_MATURITY":
             basic["aggregate_obligation_xml_schema"] = {
@@ -416,11 +448,16 @@ def main(argv: list[str] | None = None) -> int:
         choices=("BASE", "IDIOSYNCRATIC", "SYSTEMIC", "COMBINED"),
         default="BASE",
     )
+    parser.add_argument(
+        "--identity-linkage",
+        action="store_true",
+        help="Auditar claves compuestas en XML reales; sin reconocer flujos ni importes",
+    )
     parser.add_argument("--approval")
     parser.add_argument("--bank")
     args = parser.parse_args(argv)
     if args.self_test:
-        if args.cutoff or args.approval or args.bank:
+        if args.cutoff or args.approval or args.bank or args.identity_linkage:
             parser.error("--self-test cannot be combined with institutional source arguments")
         if os.environ.get("AIP_EXECUTION_MODE", "").upper() != "CONFIGURED" or os.environ.get(
             "AIP_DEMO_MODE_ENABLED", ""
@@ -451,6 +488,7 @@ def main(argv: list[str] | None = None) -> int:
                 scenario=args.scenario,
                 approval=args.approval,
                 bank=args.bank,
+                identity_linkage=args.identity_linkage,
             )
         except (OSError, ValueError, TypeError, KeyError) as exc:
             outcome = {
