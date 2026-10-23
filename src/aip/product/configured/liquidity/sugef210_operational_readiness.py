@@ -15,16 +15,16 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
+from aip.product.configured.irrbb.xml_confia_source import XMLConfiaMonthlySourceReader
+from aip.product.configured.liquidity.sugef210_obligation_identity_audit import (
+    audit_obligation_maturity_identity,
+)
 from aip.product.configured.liquidity.sugef210_opening_session import (
     run_configured_sight_opening,
 )
 from aip.product.configured.liquidity.sugef210_source_audit_cli import (
     inspect_xml_investment_source,
 )
-from aip.product.configured.liquidity.sugef210_obligation_identity_audit import (
-    audit_obligation_maturity_identity,
-)
-from aip.product.configured.irrbb.xml_confia_source import XMLConfiaMonthlySourceReader
 from aip.product.demo.configuration.environment_loader import EnvironmentLoader
 
 _EXPECTED_SOURCE_STATUS = "ACCOUNT_LEVEL_EVIDENCE_ONLY_NO_AVAILABLE_CASH"
