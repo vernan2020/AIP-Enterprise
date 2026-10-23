@@ -16,6 +16,7 @@ if not exist ".venv\Scripts\python.exe" (
 if "%~1"=="" (
     echo USO: VERIFICAR_LIQUIDEZ_SUGEF210_OPERATIVO.cmd --self-test
     echo       VERIFICAR_LIQUIDEZ_SUGEF210_OPERATIVO.cmd --cutoff YYYY-MM-DD
+    echo VINCULACION: agregar --identity-linkage al comando con --cutoff
     echo PARA FLUJO: agregar --scenario BASE --approval "archivo.json" --bank "conciliacion.json"
     exit /b 2
 )
