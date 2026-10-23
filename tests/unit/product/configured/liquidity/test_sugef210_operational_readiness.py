@@ -406,7 +406,6 @@ def test_aggregate_obligation_tags_present_remain_reference_only():
     assert "calendario de liquidación" in item["next_action"]
 
 
-
 def test_identity_linkage_is_opt_in_and_never_recognizes_cashflows(monkeypatch):
     _configured(monkeypatch)
     monkeypatch.setattr(readiness, "inspect_xml_investment_source", lambda _: INVENTORY)
@@ -426,15 +425,14 @@ def test_identity_linkage_is_opt_in_and_never_recognizes_cashflows(monkeypatch):
     assert calls == []
     assert "obligation_identity_linkage" not in ordinary
 
-    enriched = readiness.evaluate_readiness(
-        cutoff=CUTOFF, scenario="BASE", identity_linkage=True
-    )
+    enriched = readiness.evaluate_readiness(cutoff=CUTOFF, scenario="BASE", identity_linkage=True)
     assert calls == [CUTOFF]
     assert enriched["status"] == "SOURCE_READY_APPROVALS_REQUIRED"
     assert enriched["projection_regulatorily_certified"] is False
     assert enriched["obligation_identity_linkage"]["cashflows_recognized"] == 0
     matching_gate = next(
-        row for row in enriched["operational_gates"]
+        row
+        for row in enriched["operational_gates"]
         if row["check"] == "XML_OBLIGACIONES_VINCULACION"
     )
     assert matching_gate["state"] == "REFERENCE_ONLY"
@@ -449,12 +447,9 @@ def test_linkage_mismatch_not_reported_as_ready(monkeypatch):
         "inspect_obligation_identity_with_config",
         lambda _: {"status": "BLOCKED_SOURCE_HEADER_MISMATCH", "cashflows_recognized": 0},
     )
-    output = readiness.evaluate_readiness(
-        cutoff=CUTOFF, scenario="BASE", identity_linkage=True
-    )
+    output = readiness.evaluate_readiness(cutoff=CUTOFF, scenario="BASE", identity_linkage=True)
     matching_gate = next(
-        row for row in output["operational_gates"]
-        if row["check"] == "XML_OBLIGACIONES_VINCULACION"
+        row for row in output["operational_gates"] if row["check"] == "XML_OBLIGACIONES_VINCULACION"
     )
     assert matching_gate["state"] == "REVIEW_REQUIRED"
     assert output["projection_regulatorily_certified"] is False
