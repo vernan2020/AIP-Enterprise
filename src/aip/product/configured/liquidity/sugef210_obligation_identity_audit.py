@@ -41,7 +41,6 @@ def audit_obligation_maturity_identity(
         }
 
     contract_index: dict[tuple[str, str], tuple[str, str, str] | None] = {}
-    candidates = Counter()
     contracts_observed: set[str] = set()
     source_details: list[dict[str, Any]] = []
     header_mismatch = False
@@ -84,7 +83,6 @@ def audit_obligation_maturity_identity(
                 (record.values.get("TipoMonedaObligacion") or "").strip(),
                 (record.values.get("CuentaContablePrincipal") or "").strip(),
             )
-            candidates[source_key] += 1
         contracts_observed.update(observed_tags)
         source_details.append(
             {
