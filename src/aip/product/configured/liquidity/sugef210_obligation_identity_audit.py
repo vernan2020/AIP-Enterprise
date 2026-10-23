@@ -50,11 +50,13 @@ def audit_obligation_maturity_identity(
         try:
             source = reader.resolve_source(key=source_key, cutoff_date=cutoff)
         except (OSError, ValueError, KeyError) as exc:
-            source_details.append({
-                "source_key": source_key,
-                "status": "SOURCE_UNAVAILABLE_NOT_ASSUMED_ZERO",
-                "error_type": type(exc).__name__,
-            })
+            source_details.append(
+                {
+                    "source_key": source_key,
+                    "status": "SOURCE_UNAVAILABLE_NOT_ASSUMED_ZERO",
+                    "error_type": type(exc).__name__,
+                }
+            )
             continue
 
         header_ok = (
@@ -84,17 +86,19 @@ def audit_obligation_maturity_identity(
             )
             candidates[source_key] += 1
         contracts_observed.update(observed_tags)
-        source_details.append({
-            "source_key": source_key,
-            "status": "INDEX_INSPECTED_NO_CASHFLOWS",
-            "records": records,
-            "records_without_composite_identity": missing_identity,
-            "duplicate_identity_rows": duplicated_records,
-            "required_identity_tags_present": all(
-                name in observed_tags for name in _JOIN_FIELDS
-            ),
-            "same_entity_and_reporting_period": header_ok,
-        })
+        source_details.append(
+            {
+                "source_key": source_key,
+                "status": "INDEX_INSPECTED_NO_CASHFLOWS",
+                "records": records,
+                "records_without_composite_identity": missing_identity,
+                "duplicate_identity_rows": duplicated_records,
+                "required_identity_tags_present": all(
+                    name in observed_tags for name in _JOIN_FIELDS
+                ),
+                "same_entity_and_reporting_period": header_ok,
+            }
+        )
 
     maturity_rows = 0
     incomplete = 0
@@ -124,8 +128,7 @@ def audit_obligation_maturity_identity(
                 unique_account += bool(match[2])
 
     missing_contract_sources = sum(
-        row["status"] == "SOURCE_UNAVAILABLE_NOT_ASSUMED_ZERO"
-        for row in source_details
+        row["status"] == "SOURCE_UNAVAILABLE_NOT_ASSUMED_ZERO" for row in source_details
     )
     if header_mismatch:
         status = "BLOCKED_SOURCE_HEADER_MISMATCH"
