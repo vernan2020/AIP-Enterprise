@@ -164,9 +164,7 @@ def test_distinct_contracts_and_native_principal_reconciliation():
     assert output["contract_identities_without_maturity_bands_by_source"] == {"CAPTACIONES": 1}
     assert output["range_code_record_counts"] == {"01": 1, "02": 1, "03": 1}
     assert output["unbanded_contracts_by_original_type_code"] == {"CAPTACIONES:VISTA": 1}
-    assert output["unbanded_contracts_by_original_maturity_state"] == {
-        "SOURCE_MATURITY_BLANK": 1
-    }
+    assert output["unbanded_contracts_by_original_maturity_state"] == {"SOURCE_MATURITY_BLANK": 1}
     assert output["unbanded_contracts_by_native_currency_code"] == {"1": 1}
     totals = output["principal_reconciliation"]
     assert totals["distinct_contracts_reconciled_exactly"] == 1
@@ -206,7 +204,6 @@ def test_non_finite_principal_and_unexpected_range_code_are_not_accepted():
     assert output["cashflows_recognized"] == 0
 
 
-
 class BothInvalidPrincipalReader(ReconciledReader):
     def iter_records(self, source):
         if source.key == "CAPTACIONES":
@@ -238,9 +235,7 @@ class BothInvalidPrincipalReader(ReconciledReader):
 
 
 def test_invalid_source_and_band_balances_are_counted_independently():
-    output = audit_obligation_maturity_identity(
-        reader=BothInvalidPrincipalReader(), cutoff=CUTOFF
-    )
+    output = audit_obligation_maturity_identity(reader=BothInvalidPrincipalReader(), cutoff=CUTOFF)
     principal = output["principal_reconciliation"]
     assert principal["matched_contracts_without_usable_source_principal"] == 1
     assert principal["matched_contracts_without_usable_band_principal"] == 1
