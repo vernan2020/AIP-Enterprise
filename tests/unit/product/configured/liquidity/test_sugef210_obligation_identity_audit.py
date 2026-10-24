@@ -115,7 +115,6 @@ def test_missing_original_source_not_considered_empty():
     assert output["contract_sources"][0]["status"] == "SOURCE_UNAVAILABLE_NOT_ASSUMED_ZERO"
 
 
-
 class ReconciledReader(Reader):
     """One valid split, one unreconciled principal, and an unbanded contract."""
 
@@ -192,7 +191,9 @@ class InvalidBandReader(ReconciledReader):
 def test_non_finite_principal_and_unexpected_range_code_are_not_accepted():
     output = audit_obligation_maturity_identity(reader=InvalidBandReader(), cutoff=CUTOFF)
     assert output["maturity_principal_values_missing_or_invalid"] == 1
-    assert output["principal_reconciliation"]["matched_contracts_without_usable_band_principal"] == 1
+    assert (
+        output["principal_reconciliation"]["matched_contracts_without_usable_band_principal"] == 1
+    )
     assert output["range_code_record_counts"] == {"(SIN CÓDIGO)": 1}
     assert "SENSITIVE" not in str(output)
     assert output["cashflows_recognized"] == 0
