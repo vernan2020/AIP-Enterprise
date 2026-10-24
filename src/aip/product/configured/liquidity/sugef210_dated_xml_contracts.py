@@ -315,9 +315,7 @@ def merge_approved_xml_contractual_schedules(
             events.append(event)
     if not events or not seen_records or not source_hashes:
         raise ValueError("Approved payment partitions must contain dated source events")
-    combined_hash = hashlib.sha256(
-        "\n".join(sorted(seen_files)).encode("ascii")
-    ).hexdigest()
+    combined_hash = hashlib.sha256("\n".join(sorted(seen_files)).encode("ascii")).hexdigest()
     return ApprovedXMLContractualSchedule(
         cutoff=cutoff,
         events=tuple(events),
