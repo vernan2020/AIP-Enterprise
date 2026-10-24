@@ -322,9 +322,7 @@ def run_configured_sight_opening(
     if single_contract_policy is not None and partition_policies is not None:
         raise ValueError("Choose either a single contractual ledger or approved partitions")
     if partition_policies is not None:
-        if not isinstance(partition_policies, list) or not (
-            1 <= len(partition_policies) <= 32
-        ):
+        if not isinstance(partition_policies, list) or not (1 <= len(partition_policies) <= 32):
             raise ValueError("Approved contractual partitions must contain 1 to 32 manifests")
         contract_policies = partition_policies
     elif single_contract_policy is not None:
@@ -340,7 +338,8 @@ def run_configured_sight_opening(
         ledger_path = Path(_required_text(contract_policy, "ledger_file"))
         if (
             not ledger_path.is_absolute()
-            or ledger_path.resolve() in {
+            or ledger_path.resolve()
+            in {
                 approval_path.resolve(),
                 support_path.resolve(),
                 master_path.resolve(),
@@ -372,9 +371,7 @@ def run_configured_sight_opening(
                 approved_xml_sha256=xml_hashes,
                 approved_currency_codes=currency_codes,
                 approved_term_deposit_codes=frozenset(term_codes),
-                source_payment_approval=_required_text(
-                    contract_policy, "source_payment_approval"
-                ),
+                source_payment_approval=_required_text(contract_policy, "source_payment_approval"),
                 settlement_approval=_required_text(contract_policy, "settlement_approval"),
                 nonduplication_reference=nondup_ref,
             )
