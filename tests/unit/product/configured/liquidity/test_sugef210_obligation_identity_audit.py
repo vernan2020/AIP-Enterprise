@@ -42,6 +42,7 @@ class Reader:
                 "IdOperacion": "A1",
                 "TipoMonedaObligacion": "1",
                 "CuentaContablePrincipal": "211",
+                "SaldoPrincipal": "200",
             }
             yield XMLConfiaRecord("1", "insertar", values)
             if self.duplicate:
@@ -55,6 +56,7 @@ class Reader:
                     "IdOperacion": "A2",
                     "TipoMonedaObligacion": "2",
                     "CuentaContablePrincipal": "220",
+                    "SaldoPrincipal": "300",
                 },
             )
         if source.key == "BORROWING_MATURITY":
@@ -111,3 +113,86 @@ def test_missing_original_source_not_considered_empty():
     assert output["status"] == "PARTIAL_SOURCE_COVERAGE"
     assert output["unique_maturity_rows_matched"] == 1
     assert output["contract_sources"][0]["status"] == "SOURCE_UNAVAILABLE_NOT_ASSUMED_ZERO"
+
+
+
+class ReconciledReader(Reader):
+    """One valid split, one unreconciled principal, and an unbanded contract."""
+
+    def iter_records(self, source):
+        if source.key == "CAPTACIONES":
+            for index, principal in (("A1", "200"), ("A9", "50")):
+                yield XMLConfiaRecord(
+                    index,
+                    "insertar",
+                    {
+                        "IdAcreedor": "P1",
+                        "IdOperacion": index,
+                        "TipoMonedaObligacion": "1",
+                        "CuentaContablePrincipal": "211",
+                        "SaldoPrincipal": principal,
+                    },
+                )
+        elif source.key == "BORROWING":
+            yield from super().iter_records(source)
+        elif source.key == "BORROWING_MATURITY":
+            for index, (issuer, operation, principal, band) in enumerate(
+                (
+                    ("P1", "A1", "100", "01"),
+                    ("P1", "A1", "100", "02"),
+                    ("P2", "A2", "250", "03"),
+                )
+            ):
+                yield XMLConfiaRecord(
+                    str(index),
+                    "insertar",
+                    {
+                        "IdAcreedor": issuer,
+                        "IdOperacion": operation,
+                        "SaldoaPagarPrincipal": principal,
+                        "TipoRangoPasivo": band,
+                    },
+                )
+
+
+def test_distinct_contracts_and_native_principal_reconciliation():
+    output = audit_obligation_maturity_identity(reader=ReconciledReader(), cutoff=CUTOFF)
+    assert output["unique_maturity_rows_matched"] == 3
+    assert output["distinct_contracts_with_maturity_bands"] == 2
+    assert output["matched_maturity_rows_on_repeated_contracts"] == 1
+    assert output["contract_identities_without_maturity_bands_by_source"] == {"CAPTACIONES": 1}
+    assert output["range_code_record_counts"] == {"01": 1, "02": 1, "03": 1}
+    totals = output["principal_reconciliation"]
+    assert totals["distinct_contracts_reconciled_exactly"] == 1
+    assert totals["distinct_contracts_with_principal_difference"] == 1
+    assert totals["matched_contracts_without_usable_band_principal"] == 0
+    assert totals["monetary_tolerance_applied"] is False
+    assert output["cashflows_recognized"] == 0
+    assert "250" not in str(output)
+    assert "P1" not in str(output)
+
+
+class InvalidBandReader(ReconciledReader):
+    def iter_records(self, source):
+        if source.key == "BORROWING_MATURITY":
+            yield XMLConfiaRecord(
+                "1",
+                "insertar",
+                {
+                    "IdAcreedor": "P1",
+                    "IdOperacion": "A1",
+                    "SaldoaPagarPrincipal": "NaN",
+                    "TipoRangoPasivo": "SENSITIVE BAD STRING",
+                },
+            )
+        else:
+            yield from super().iter_records(source)
+
+
+def test_non_finite_principal_and_unexpected_range_code_are_not_accepted():
+    output = audit_obligation_maturity_identity(reader=InvalidBandReader(), cutoff=CUTOFF)
+    assert output["maturity_principal_values_missing_or_invalid"] == 1
+    assert output["principal_reconciliation"]["matched_contracts_without_usable_band_principal"] == 1
+    assert output["range_code_record_counts"] == {"(SIN CÓDIGO)": 1}
+    assert "SENSITIVE" not in str(output)
+    assert output["cashflows_recognized"] == 0
