@@ -248,7 +248,7 @@ def test_partition_merge_rejects_conflicting_xml_and_cutoffs(tmp_path):
     two_dir.mkdir()
     first = _import(one_dir, [_row("CREDIT")])
     second = _import(two_dir, [_row("CREDIT")])
-    conflict = replace(second, source_hashes=(("CREDIT", "c" * 64),))
+    conflict = replace(second, ledger_sha256="d" * 64, source_hashes=(("CREDIT", "c" * 64),))
     with pytest.raises(ValueError, match="Conflicting source hashes"):
         merge_approved_xml_contractual_schedules(cutoff=CUTOFF, schedules=(first, conflict))
     with pytest.raises(ValueError, match="cutoffs"):
