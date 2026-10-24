@@ -17,6 +17,7 @@ from aip.product.configured.irrbb.xml_confia_source import (
 )
 from aip.product.configured.liquidity.sugef210_dated_xml_contracts import (
     import_approved_xml_contractual_payments,
+    merge_approved_xml_contractual_schedules,
 )
 
 CUTOFF = date(2026, 9, 30)
@@ -212,3 +213,54 @@ def test_original_xml_duplicate_record_ids_block_cash(monkeypatch, tmp_path):
     monkeypatch.setattr(modules[__name__], "Reader", DuplicateReader)
     with pytest.raises(ValueError, match="ambiguous record IDs"):
         _import(tmp_path, [_row("CREDIT")])
+
+
+
+def test_partitioned_contractual_schedules_merge_without_new_certification(tmp_path):
+    first_dir = tmp_path / "first"
+    second_dir = tmp_path / "second"
+    first_dir.mkdir()
+    second_dir.mkdir()
+    first = _import(first_dir, [_row("CREDIT")])
+    second = _import(second_dir, [_row("BORROWING")])
+    joined = merge_approved_xml_contractual_schedules(
+        cutoff=CUTOFF, schedules=(first, second)
+    )
+    assert len(joined.events) == 2
+    assert len(joined.included_source_records) == 2
+    assert {event.area.value for event in joined.events} == {"ASSET", "LIABILITY"}
+    assert joined.certifies_entire_perimeter is False
+    assert joined.ledger_sha256 not in {first.ledger_sha256, second.ledger_sha256}
+
+
+def test_partitioned_contracts_reject_duplicate_sources_and_contracts(tmp_path):
+    part_dir = tmp_path / "part"
+    part_dir.mkdir()
+    first = _import(part_dir, [_row("CREDIT")])
+    with pytest.raises(ValueError, match="repeated"):
+        merge_approved_xml_contractual_schedules(cutoff=CUTOFF, schedules=(first, first))
+    duplicated = replace(first, ledger_sha256="b" * 64)
+    with pytest.raises(ValueError, match="operation repeats"):
+        merge_approved_xml_contractual_schedules(
+            cutoff=CUTOFF, schedules=(first, duplicated)
+        )
+
+
+def test_partition_merge_rejects_conflicting_xml_and_cutoffs(tmp_path):
+    one_dir = tmp_path / "p1"
+    two_dir = tmp_path / "p2"
+    one_dir.mkdir()
+    two_dir.mkdir()
+    first = _import(one_dir, [_row("CREDIT")])
+    second = _import(two_dir, [_row("CREDIT")])
+    conflict = replace(
+        second, source_hashes=(("CREDIT", "c" * 64),)
+    )
+    with pytest.raises(ValueError, match="Conflicting source hashes"):
+        merge_approved_xml_contractual_schedules(
+            cutoff=CUTOFF, schedules=(first, conflict)
+        )
+    with pytest.raises(ValueError, match="cutoffs"):
+        merge_approved_xml_contractual_schedules(
+            cutoff=CUTOFF, schedules=(replace(first, cutoff=date(2026, 8, 31)),)
+        )
