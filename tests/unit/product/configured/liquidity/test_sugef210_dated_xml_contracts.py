@@ -215,7 +215,6 @@ def test_original_xml_duplicate_record_ids_block_cash(monkeypatch, tmp_path):
         _import(tmp_path, [_row("CREDIT")])
 
 
-
 def test_partitioned_contractual_schedules_merge_without_new_certification(tmp_path):
     first_dir = tmp_path / "first"
     second_dir = tmp_path / "second"
