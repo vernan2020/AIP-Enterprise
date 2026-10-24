@@ -130,6 +130,8 @@ class ReconciledReader(Reader):
                         "TipoMonedaObligacion": "1",
                         "CuentaContablePrincipal": "211",
                         "SaldoPrincipal": principal,
+                        "TipoCuenta": "VISTA" if index == "A9" else "TERM",
+                        "FechaVencimiento": "" if index == "A9" else "30/12/2026",
                     },
                 )
         elif source.key == "BORROWING":
@@ -161,6 +163,11 @@ def test_distinct_contracts_and_native_principal_reconciliation():
     assert output["matched_maturity_rows_on_repeated_contracts"] == 1
     assert output["contract_identities_without_maturity_bands_by_source"] == {"CAPTACIONES": 1}
     assert output["range_code_record_counts"] == {"01": 1, "02": 1, "03": 1}
+    assert output["unbanded_contracts_by_original_type_code"] == {"CAPTACIONES:VISTA": 1}
+    assert output["unbanded_contracts_by_original_maturity_state"] == {
+        "SOURCE_MATURITY_BLANK": 1
+    }
+    assert output["unbanded_contracts_by_native_currency_code"] == {"1": 1}
     totals = output["principal_reconciliation"]
     assert totals["distinct_contracts_reconciled_exactly"] == 1
     assert totals["distinct_contracts_with_principal_difference"] == 1
@@ -196,4 +203,48 @@ def test_non_finite_principal_and_unexpected_range_code_are_not_accepted():
     )
     assert output["range_code_record_counts"] == {"(SIN CÓDIGO)": 1}
     assert "SENSITIVE" not in str(output)
+    assert output["cashflows_recognized"] == 0
+
+
+
+class BothInvalidPrincipalReader(ReconciledReader):
+    def iter_records(self, source):
+        if source.key == "CAPTACIONES":
+            yield XMLConfiaRecord(
+                "one",
+                "insertar",
+                {
+                    "IdAcreedor": "P1",
+                    "IdOperacion": "A1",
+                    "SaldoPrincipal": "",
+                    "TipoMonedaObligacion": "1",
+                    "CuentaContablePrincipal": "211",
+                    "TipoCuenta": "TERM",
+                },
+            )
+        elif source.key == "BORROWING_MATURITY":
+            yield XMLConfiaRecord(
+                "one",
+                "insertar",
+                {
+                    "IdAcreedor": "P1",
+                    "IdOperacion": "A1",
+                    "SaldoaPagarPrincipal": "",
+                    "TipoRangoPasivo": "2",
+                },
+            )
+        else:
+            yield from super().iter_records(source)
+
+
+def test_invalid_source_and_band_balances_are_counted_independently():
+    output = audit_obligation_maturity_identity(
+        reader=BothInvalidPrincipalReader(), cutoff=CUTOFF
+    )
+    principal = output["principal_reconciliation"]
+    assert principal["matched_contracts_without_usable_source_principal"] == 1
+    assert principal["matched_contracts_without_usable_band_principal"] == 1
+    assert principal["distinct_contracts_with_invalid_principal_on_either_side"] == 1
+    assert principal["source_principal_issue_causes"] == {"BLANK": 1}
+    assert output["maturity_principal_values_missing_or_invalid"] == 1
     assert output["cashflows_recognized"] == 0
