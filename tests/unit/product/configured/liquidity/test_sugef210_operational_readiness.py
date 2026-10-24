@@ -453,3 +453,37 @@ def test_linkage_mismatch_not_reported_as_ready(monkeypatch):
     )
     assert matching_gate["state"] == "REVIEW_REQUIRED"
     assert output["projection_regulatorily_certified"] is False
+
+
+def test_principal_reconciliation_gate_remains_reference_only_without_cash(monkeypatch):
+    _configured(monkeypatch)
+    monkeypatch.setattr(readiness, "inspect_xml_investment_source", lambda _: INVENTORY)
+    monkeypatch.setattr(
+        readiness,
+        "inspect_obligation_identity_with_config",
+        lambda _: {
+            "status": "MATCHED_REFERENCE_ONLY",
+            "unique_maturity_rows_matched": 4,
+            "contract_identities_without_maturity_bands_by_source": {"CAPTACIONES": 2},
+            "principal_reconciliation": {
+                "distinct_contracts_reconciled_exactly": 2,
+                "distinct_contracts_with_principal_difference": 1,
+                "matched_contracts_without_usable_source_principal": 0,
+                "matched_contracts_without_usable_band_principal": 0,
+            },
+            "cashflows_recognized": 0,
+        },
+    )
+    outcome = readiness.evaluate_readiness(
+        cutoff=CUTOFF, scenario="BASE", identity_linkage=True
+    )
+    gate = next(
+        row
+        for row in outcome["operational_gates"]
+        if row["check"] == "XML_OBLIGACIONES_CONCILIACION_PRINCIPAL"
+    )
+    assert gate["state"] == "REVIEW_REQUIRED"
+    assert "diferencias: 1" in gate["next_action"]
+    assert "operaciones sin bandeo: 2" in gate["next_action"]
+    assert outcome["projection_regulatorily_certified"] is False
+    assert "approved_source_events" not in outcome
