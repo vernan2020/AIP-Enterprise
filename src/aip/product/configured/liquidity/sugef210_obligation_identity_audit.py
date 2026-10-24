@@ -268,12 +268,8 @@ def audit_obligation_maturity_identity(
         "contract_identities_without_maturity_bands_by_source": dict(
             sorted(unbanded_by_source.items())
         ),
-        "unbanded_contracts_by_original_type_code": _bounded_counts(
-            unbanded_type_counts
-        ),
-        "unbanded_contracts_by_native_currency_code": _bounded_counts(
-            unbanded_currency_counts
-        ),
+        "unbanded_contracts_by_original_type_code": _bounded_counts(unbanded_type_counts),
+        "unbanded_contracts_by_native_currency_code": _bounded_counts(unbanded_currency_counts),
         "unbanded_contracts_by_original_maturity_state": dict(
             sorted(unbanded_maturity_categories.items())
         ),
@@ -288,9 +284,7 @@ def audit_obligation_maturity_identity(
             "distinct_contracts_with_invalid_principal_on_either_side": (
                 contracts_with_any_principal_issue
             ),
-            "source_principal_issue_causes": dict(
-                sorted(contract_principal_issue_reasons.items())
-            ),
+            "source_principal_issue_causes": dict(sorted(contract_principal_issue_reasons.items())),
             "monetary_tolerance_applied": False,
             "sensitive_amounts_disclosed": False,
             "cashflow_payments_approved": 0,
