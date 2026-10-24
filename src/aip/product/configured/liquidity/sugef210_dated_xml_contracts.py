@@ -274,7 +274,6 @@ def import_approved_xml_contractual_payments(
     )
 
 
-
 def merge_approved_xml_contractual_schedules(
     *, cutoff: date, schedules: Iterable[ApprovedXMLContractualSchedule]
 ) -> ApprovedXMLContractualSchedule:
