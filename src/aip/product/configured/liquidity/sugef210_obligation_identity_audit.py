@@ -8,7 +8,7 @@ numbers, currency amounts or private paths leave the diagnostic.
 from __future__ import annotations
 
 from collections import Counter
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
@@ -41,6 +41,43 @@ def _range_code(value: str) -> str:
     return raw if raw and len(raw) <= 12 and raw.isascii() and raw.isalnum() else "(SIN CÓDIGO)"
 
 
+def _maturity_category(value: str, cutoff: date) -> str:
+    """Inspect the literal date; do not infer contractual tenor or withdrawal."""
+    if not value.strip():
+        return "SOURCE_MATURITY_BLANK"
+    try:
+        maturity = datetime.strptime(value.strip(), "%d/%m/%Y").date()
+    except ValueError:
+        return "SOURCE_MATURITY_INVALID"
+    days = (maturity - cutoff).days
+    if days <= 0:
+        return "SOURCE_MATURITY_PAST_OR_CUTOFF"
+    return "SOURCE_MATURITY_WITHIN_365D" if days <= 365 else "SOURCE_MATURITY_AFTER_365D"
+
+
+def _principal_problem(value: str) -> str:
+    """Only short categories are returned; financial input is never echoed."""
+    raw = value.strip()
+    if not raw:
+        return "BLANK"
+    try:
+        amount = Decimal(raw)
+    except InvalidOperation:
+        return "NOT_A_DECIMAL"
+    if not amount.is_finite():
+        return "NONFINITE"
+    return "NEGATIVE" if amount < 0 else "VALID"
+
+
+def _bounded_counts(values: Counter[str], limit: int = 25) -> dict[str, int]:
+    ordered = sorted(values.items(), key=lambda item: (-item[1], item[0]))
+    result = dict(ordered[:limit])
+    remainder = sum(count for _, count in ordered[limit:])
+    if remainder:
+        result["(OTHER_CATEGORIES)"] = remainder
+    return result
+
+
 def audit_obligation_maturity_identity(
     *, reader: XMLConfiaMonthlySourceReader, cutoff: date
 ) -> dict[str, Any]:
@@ -58,7 +95,9 @@ def audit_obligation_maturity_identity(
             "cashflows_recognized": 0,
         }
 
-    contract_index: dict[tuple[str, str], tuple[str, str, str, Decimal | None] | None] = {}
+    contract_index: dict[
+        tuple[str, str], tuple[str, str, str, Decimal | None, str, str, str] | None
+    ] = {}
     contracts_observed: set[str] = set()
     source_details: list[dict[str, Any]] = []
     header_mismatch = False
@@ -101,6 +140,9 @@ def audit_obligation_maturity_identity(
                 (record.values.get("TipoMonedaObligacion") or "").strip(),
                 (record.values.get("CuentaContablePrincipal") or "").strip(),
                 _principal(record.values.get("SaldoPrincipal") or ""),
+                _range_code(record.values.get("TipoCuenta") or ""),
+                _maturity_category(record.values.get("FechaVencimiento") or "", cutoff),
+                _principal_problem(record.values.get("SaldoPrincipal") or ""),
             )
         contracts_observed.update(observed_tags)
         source_details.append(
@@ -165,16 +207,29 @@ def audit_obligation_maturity_identity(
     differing_principal = 0
     contract_principal_unusable = 0
     band_principal_unusable = 0
+    contracts_with_any_principal_issue = 0
+    contract_principal_issue_reasons: Counter[str] = Counter()
+    unbanded_type_counts: Counter[str] = Counter()
+    unbanded_maturity_categories: Counter[str] = Counter()
+    unbanded_currency_counts: Counter[str] = Counter()
     for identity, contract in contract_index.items():
         if contract is None:
             continue
         if identity not in distinct_matched:
             unbanded_by_source[contract[0]] += 1
+            unbanded_type_counts[f"{contract[0]}:{contract[4]}"] += 1
+            unbanded_maturity_categories[contract[5]] += 1
+            unbanded_currency_counts[_range_code(contract[1])] += 1
             continue
-        if contract[3] is None:
+        missing_source_principal = contract[3] is None
+        missing_band_principal = identity in invalid_maturity_identities
+        if missing_source_principal:
             contract_principal_unusable += 1
-        elif identity in invalid_maturity_identities:
+            contract_principal_issue_reasons[contract[6]] += 1
+        if missing_band_principal:
             band_principal_unusable += 1
+        if missing_source_principal or missing_band_principal:
+            contracts_with_any_principal_issue += 1
         elif maturity_sums[identity] == contract[3]:
             exact_principal += 1
         else:
@@ -213,6 +268,15 @@ def audit_obligation_maturity_identity(
         "contract_identities_without_maturity_bands_by_source": dict(
             sorted(unbanded_by_source.items())
         ),
+        "unbanded_contracts_by_original_type_code": _bounded_counts(
+            unbanded_type_counts
+        ),
+        "unbanded_contracts_by_native_currency_code": _bounded_counts(
+            unbanded_currency_counts
+        ),
+        "unbanded_contracts_by_original_maturity_state": dict(
+            sorted(unbanded_maturity_categories.items())
+        ),
         "range_code_record_counts": dict(sorted(range_counts.items())),
         "maturity_principal_values_missing_or_invalid": maturity_amounts_missing_or_invalid,
         "principal_reconciliation": {
@@ -221,6 +285,12 @@ def audit_obligation_maturity_identity(
             "distinct_contracts_with_principal_difference": differing_principal,
             "matched_contracts_without_usable_source_principal": contract_principal_unusable,
             "matched_contracts_without_usable_band_principal": band_principal_unusable,
+            "distinct_contracts_with_invalid_principal_on_either_side": (
+                contracts_with_any_principal_issue
+            ),
+            "source_principal_issue_causes": dict(
+                sorted(contract_principal_issue_reasons.items())
+            ),
             "monetary_tolerance_applied": False,
             "sensitive_amounts_disclosed": False,
             "cashflow_payments_approved": 0,
