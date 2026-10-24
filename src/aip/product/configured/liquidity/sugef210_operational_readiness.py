@@ -319,7 +319,12 @@ def evaluate_readiness(
                     "check": "XML_OBLIGACIONES_CONCILIACION_PRINCIPAL",
                     "state": (
                         "REFERENCE_RECONCILED"
-                        if not (different or unusable_contract or unusable_bands)
+                        if not (
+                            different
+                            or unusable_contract
+                            or unusable_bands
+                            or remaining
+                        )
                         and exact > 0
                         and issue == "MATCHED_REFERENCE_ONLY"
                         else "REVIEW_REQUIRED"
