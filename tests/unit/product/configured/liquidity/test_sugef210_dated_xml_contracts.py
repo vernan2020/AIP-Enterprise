@@ -223,9 +223,7 @@ def test_partitioned_contractual_schedules_merge_without_new_certification(tmp_p
     second_dir.mkdir()
     first = _import(first_dir, [_row("CREDIT")])
     second = _import(second_dir, [_row("BORROWING")])
-    joined = merge_approved_xml_contractual_schedules(
-        cutoff=CUTOFF, schedules=(first, second)
-    )
+    joined = merge_approved_xml_contractual_schedules(cutoff=CUTOFF, schedules=(first, second))
     assert len(joined.events) == 2
     assert len(joined.included_source_records) == 2
     assert {event.area.value for event in joined.events} == {"ASSET", "LIABILITY"}
@@ -241,9 +239,7 @@ def test_partitioned_contracts_reject_duplicate_sources_and_contracts(tmp_path):
         merge_approved_xml_contractual_schedules(cutoff=CUTOFF, schedules=(first, first))
     duplicated = replace(first, ledger_sha256="b" * 64)
     with pytest.raises(ValueError, match="operation repeats"):
-        merge_approved_xml_contractual_schedules(
-            cutoff=CUTOFF, schedules=(first, duplicated)
-        )
+        merge_approved_xml_contractual_schedules(cutoff=CUTOFF, schedules=(first, duplicated))
 
 
 def test_partition_merge_rejects_conflicting_xml_and_cutoffs(tmp_path):
@@ -253,13 +249,9 @@ def test_partition_merge_rejects_conflicting_xml_and_cutoffs(tmp_path):
     two_dir.mkdir()
     first = _import(one_dir, [_row("CREDIT")])
     second = _import(two_dir, [_row("CREDIT")])
-    conflict = replace(
-        second, source_hashes=(("CREDIT", "c" * 64),)
-    )
+    conflict = replace(second, source_hashes=(("CREDIT", "c" * 64),))
     with pytest.raises(ValueError, match="Conflicting source hashes"):
-        merge_approved_xml_contractual_schedules(
-            cutoff=CUTOFF, schedules=(first, conflict)
-        )
+        merge_approved_xml_contractual_schedules(cutoff=CUTOFF, schedules=(first, conflict))
     with pytest.raises(ValueError, match="cutoffs"):
         merge_approved_xml_contractual_schedules(
             cutoff=CUTOFF, schedules=(replace(first, cutoff=date(2026, 8, 31)),)
