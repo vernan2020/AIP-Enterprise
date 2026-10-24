@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections import Counter
 from datetime import date
+from decimal import Decimal, InvalidOperation
 from typing import Any
 
 from aip.product.configured.irrbb.xml_confia_source import XMLConfiaMonthlySourceReader
@@ -21,6 +22,23 @@ _MATURITY_SOURCE = "BORROWING_MATURITY"
 def _identity(values: dict[str, str]) -> tuple[str, str] | None:
     parts = tuple((values.get(name) or "").strip() for name in _JOIN_FIELDS)
     return (parts[0], parts[1]) if all(parts) else None
+
+
+def _principal(value: str) -> Decimal | None:
+    """Strict native decimal parsing; unsigned principal, no currency conversion."""
+    if not value.strip():
+        return None
+    try:
+        principal = Decimal(value.strip())
+    except InvalidOperation:
+        return None
+    return principal if principal.is_finite() and principal >= 0 else None
+
+
+def _range_code(value: str) -> str:
+    """Do not echo unexpected text from a source code in operator diagnostics."""
+    raw = value.strip()
+    return raw if raw and len(raw) <= 12 and raw.isascii() and raw.isalnum() else "(SIN CÓDIGO)"
 
 
 def audit_obligation_maturity_identity(
@@ -40,7 +58,7 @@ def audit_obligation_maturity_identity(
             "cashflows_recognized": 0,
         }
 
-    contract_index: dict[tuple[str, str], tuple[str, str, str] | None] = {}
+    contract_index: dict[tuple[str, str], tuple[str, str, str, Decimal | None] | None] = {}
     contracts_observed: set[str] = set()
     source_details: list[dict[str, Any]] = []
     header_mismatch = False
@@ -82,6 +100,7 @@ def audit_obligation_maturity_identity(
                 source_key,
                 (record.values.get("TipoMonedaObligacion") or "").strip(),
                 (record.values.get("CuentaContablePrincipal") or "").strip(),
+                _principal(record.values.get("SaldoPrincipal") or ""),
             )
         contracts_observed.update(observed_tags)
         source_details.append(
@@ -106,10 +125,17 @@ def audit_obligation_maturity_identity(
     unique_currency = 0
     unique_account = 0
     matched_sources: Counter[str] = Counter()
+    distinct_matched: set[tuple[str, str]] = set()
+    repeated_maturity_rows = 0
+    maturity_sums: dict[tuple[str, str], Decimal] = {}
+    invalid_maturity_identities: set[tuple[str, str]] = set()
+    maturity_amounts_missing_or_invalid = 0
+    range_counts: Counter[str] = Counter()
     maturity_observed_tags: set[str] = set()
     for record in reader.iter_records(maturity):
         maturity_rows += 1
         maturity_observed_tags.update(record.values)
+        range_counts[_range_code(record.values.get("TipoRangoPasivo") or "")] += 1
         identity = _identity(record.values)
         if identity is None:
             incomplete += 1
@@ -124,6 +150,35 @@ def audit_obligation_maturity_identity(
                 matched_sources[match[0]] += 1
                 unique_currency += bool(match[1])
                 unique_account += bool(match[2])
+                if identity in distinct_matched:
+                    repeated_maturity_rows += 1
+                distinct_matched.add(identity)
+                principal = _principal(record.values.get("SaldoaPagarPrincipal") or "")
+                if principal is None:
+                    maturity_amounts_missing_or_invalid += 1
+                    invalid_maturity_identities.add(identity)
+                else:
+                    maturity_sums[identity] = maturity_sums.get(identity, Decimal(0)) + principal
+
+    unbanded_by_source: Counter[str] = Counter()
+    exact_principal = 0
+    differing_principal = 0
+    contract_principal_unusable = 0
+    band_principal_unusable = 0
+    for identity, contract in contract_index.items():
+        if contract is None:
+            continue
+        if identity not in distinct_matched:
+            unbanded_by_source[contract[0]] += 1
+            continue
+        if contract[3] is None:
+            contract_principal_unusable += 1
+        elif identity in invalid_maturity_identities:
+            band_principal_unusable += 1
+        elif maturity_sums[identity] == contract[3]:
+            exact_principal += 1
+        else:
+            differing_principal += 1
 
     missing_contract_sources = sum(
         row["status"] == "SOURCE_UNAVAILABLE_NOT_ASSUMED_ZERO" for row in source_details
@@ -153,6 +208,24 @@ def audit_obligation_maturity_identity(
         ),
         "candidate_distinct_identities": len(contract_index),
         "unique_maturity_rows_matched": unique,
+        "distinct_contracts_with_maturity_bands": len(distinct_matched),
+        "matched_maturity_rows_on_repeated_contracts": repeated_maturity_rows,
+        "contract_identities_without_maturity_bands_by_source": dict(
+            sorted(unbanded_by_source.items())
+        ),
+        "range_code_record_counts": dict(sorted(range_counts.items())),
+        "maturity_principal_values_missing_or_invalid": maturity_amounts_missing_or_invalid,
+        "principal_reconciliation": {
+            "status": "COUNTED_NOT_CERTIFIED",
+            "distinct_contracts_reconciled_exactly": exact_principal,
+            "distinct_contracts_with_principal_difference": differing_principal,
+            "matched_contracts_without_usable_source_principal": contract_principal_unusable,
+            "matched_contracts_without_usable_band_principal": band_principal_unusable,
+            "monetary_tolerance_applied": False,
+            "sensitive_amounts_disclosed": False,
+            "cashflow_payments_approved": 0,
+        },
+        "identity_match_coverage_complete": unique == maturity_rows and maturity_rows > 0,
         "ambiguous_maturity_rows": ambiguous,
         "unmatched_maturity_rows": unmatched,
         "maturity_rows_without_composite_identity": incomplete,
