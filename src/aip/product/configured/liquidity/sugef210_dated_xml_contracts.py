@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 
 from aip.domain.liquidity.cashflow.services.sugef210_projection import (
     LiquidityBalanceArea,
@@ -271,4 +271,57 @@ def import_approved_xml_contractual_payments(
         source_hashes=tuple(sorted((key, info[1]) for key, info in by_key.items())),
         ledger_sha256=ledger_hash,
         included_source_records=tuple(sorted(contract_details)),
+    )
+
+
+
+def merge_approved_xml_contractual_schedules(
+    *, cutoff: date, schedules: Iterable[ApprovedXMLContractualSchedule]
+) -> ApprovedXMLContractualSchedule:
+    """Merge independently attested CSV partitions without counting a contract twice.
+
+    Each partition must reconcile a contract's entire outstanding principal
+    independently; splitting installments for one contract across CSVs is
+    deliberately rejected. Each file retains its own source SHA and approval.
+    """
+    partitions = tuple(schedules)
+    if not partitions or len(partitions) > 32:
+        raise ValueError("One to 32 independently approved payment partitions required")
+    source_hashes: dict[str, str] = {}
+    seen_files: set[str] = set()
+    seen_records: set[tuple[str, int]] = set()
+    seen_events: set[str] = set()
+    events: list[LiquidityProjectionFlow] = []
+    for item in partitions:
+        if item.cutoff != cutoff or item.status != (
+            "SELECTED_SOURCE_DATED_PAYMENTS_NOT_COMPLETE_PERIMETER"
+        ):
+            raise ValueError("Contractual payment partitions have conflicting cutoffs or status")
+        if len(item.ledger_sha256) != 64 or item.ledger_sha256 in seen_files:
+            raise ValueError("Contractual payment CSV partition is repeated")
+        seen_files.add(item.ledger_sha256)
+        for key, digest in item.source_hashes:
+            if key in source_hashes and source_hashes[key] != digest:
+                raise ValueError("Conflicting source hashes across contractual partitions")
+            source_hashes[key] = digest
+        for record in item.included_source_records:
+            if record in seen_records:
+                raise ValueError("Contractual operation repeats across approved partitions")
+            seen_records.add(record)
+        for event in item.events:
+            if event.reference in seen_events:
+                raise ValueError("Contractual cash event repeats across approved partitions")
+            seen_events.add(event.reference)
+            events.append(event)
+    if not events or not seen_records or not source_hashes:
+        raise ValueError("Approved payment partitions must contain dated source events")
+    combined_hash = hashlib.sha256(
+        "\n".join(sorted(seen_files)).encode("ascii")
+    ).hexdigest()
+    return ApprovedXMLContractualSchedule(
+        cutoff=cutoff,
+        events=tuple(events),
+        source_hashes=tuple(sorted(source_hashes.items())),
+        ledger_sha256=combined_hash,
+        included_source_records=tuple(sorted(seen_records)),
     )
