@@ -300,6 +300,40 @@ def evaluate_readiness(
                 ),
             }
         )
+        principal = linkage.get("principal_reconciliation")
+        if isinstance(principal, dict):
+            exact = principal.get("distinct_contracts_reconciled_exactly", 0)
+            different = principal.get("distinct_contracts_with_principal_difference", 0)
+            unusable_contract = principal.get(
+                "matched_contracts_without_usable_source_principal", 0
+            )
+            unusable_bands = principal.get(
+                "matched_contracts_without_usable_band_principal", 0
+            )
+            unbanded = linkage.get("contract_identities_without_maturity_bands_by_source")
+            remaining = sum(
+                value
+                for value in (unbanded.values() if isinstance(unbanded, dict) else ())
+                if isinstance(value, int) and not isinstance(value, bool) and value >= 0
+            )
+            basic["operational_gates"].append(
+                {
+                    "check": "XML_OBLIGACIONES_CONCILIACION_PRINCIPAL",
+                    "state": (
+                        "REFERENCE_RECONCILED"
+                        if not (different or unusable_contract or unusable_bands)
+                        and exact > 0 and issue == "MATCHED_REFERENCE_ONLY"
+                        else "REVIEW_REQUIRED"
+                    ),
+                    "next_action": (
+                        f"Contratos conciliados exactamente: {exact}; diferencias: {different}; "
+                        f"principal contractual inválido: {unusable_contract}; "
+                        f"principal bandeado inválido: {unusable_bands}; "
+                        f"operaciones sin bandeo: {remaining}. "
+                        "No asignar fechas ni retiros sin la metodología y evidencia aprobadas."
+                    ),
+                }
+            )
     for perimeter in inventory.get("contractual_source_inventory") or ():
         if isinstance(perimeter, dict) and perimeter.get("source_key") == "BORROWING_MATURITY":
             basic["aggregate_obligation_xml_schema"] = {
