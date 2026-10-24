@@ -474,9 +474,7 @@ def test_principal_reconciliation_gate_remains_reference_only_without_cash(monke
             "cashflows_recognized": 0,
         },
     )
-    outcome = readiness.evaluate_readiness(
-        cutoff=CUTOFF, scenario="BASE", identity_linkage=True
-    )
+    outcome = readiness.evaluate_readiness(cutoff=CUTOFF, scenario="BASE", identity_linkage=True)
     gate = next(
         row
         for row in outcome["operational_gates"]
