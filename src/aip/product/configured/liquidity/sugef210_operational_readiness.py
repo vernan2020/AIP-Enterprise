@@ -307,9 +307,7 @@ def evaluate_readiness(
             unusable_contract = principal.get(
                 "matched_contracts_without_usable_source_principal", 0
             )
-            unusable_bands = principal.get(
-                "matched_contracts_without_usable_band_principal", 0
-            )
+            unusable_bands = principal.get("matched_contracts_without_usable_band_principal", 0)
             unbanded = linkage.get("contract_identities_without_maturity_bands_by_source")
             remaining = sum(
                 value
@@ -322,7 +320,8 @@ def evaluate_readiness(
                     "state": (
                         "REFERENCE_RECONCILED"
                         if not (different or unusable_contract or unusable_bands)
-                        and exact > 0 and issue == "MATCHED_REFERENCE_ONLY"
+                        and exact > 0
+                        and issue == "MATCHED_REFERENCE_ONLY"
                         else "REVIEW_REQUIRED"
                     ),
                     "next_action": (
