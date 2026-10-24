@@ -35,6 +35,7 @@ from aip.product.configured.liquidity.sugef210_approved_master_principal import 
 )
 from aip.product.configured.liquidity.sugef210_dated_xml_contracts import (
     import_approved_xml_contractual_payments,
+    merge_approved_xml_contractual_schedules,
 )
 from aip.product.configured.liquidity.sugef210_demand_deposit_runoff import (
     read_approved_demand_deposit_runoff,
@@ -316,18 +317,43 @@ def run_configured_sight_opening(
             records=approved,
         )
     xml_contractual = None
-    contract_policy = policy.get("xml_contractual_schedule")
-    if contract_policy is not None:
+    single_contract_policy = policy.get("xml_contractual_schedule")
+    partition_policies = policy.get("xml_contractual_schedules")
+    if single_contract_policy is not None and partition_policies is not None:
+        raise ValueError("Choose either a single contractual ledger or approved partitions")
+    if partition_policies is not None:
+        if not isinstance(partition_policies, list) or not (
+            1 <= len(partition_policies) <= 32
+        ):
+            raise ValueError("Approved contractual partitions must contain 1 to 32 manifests")
+        contract_policies = partition_policies
+    elif single_contract_policy is not None:
+        contract_policies = [single_contract_policy]
+    else:
+        contract_policies = []
+    ledger_paths: set[Path] = set()
+    nonduplication_references: set[str] = set()
+    selected_schedules = []
+    for contract_policy in contract_policies:
         if not isinstance(contract_policy, dict):
             raise ValueError("XML contractual schedule approval must be structured")
         ledger_path = Path(_required_text(contract_policy, "ledger_file"))
-        if not ledger_path.is_absolute() or ledger_path.resolve() in {
-            approval_path.resolve(),
-            support_path.resolve(),
-            master_path.resolve(),
-            raw_support.resolve(),
-        }:
-            raise ValueError("Original dated payment ledger must be independent of source inputs")
+        if (
+            not ledger_path.is_absolute()
+            or ledger_path.resolve() in {
+                approval_path.resolve(),
+                support_path.resolve(),
+                master_path.resolve(),
+                raw_support.resolve(),
+            }
+            or ledger_path.resolve() in ledger_paths
+        ):
+            raise ValueError("Approved contractual ledgers must be independent original files")
+        ledger_paths.add(ledger_path.resolve())
+        nondup_ref = _required_text(contract_policy, "nonduplication_reference")
+        if nondup_ref in nonduplication_references:
+            raise ValueError("Duplicate contractual partition nonduplication reference")
+        nonduplication_references.add(nondup_ref)
         xml_hashes = contract_policy.get("approved_xml_sha256")
         currency_codes = contract_policy.get("approved_currency_codes")
         term_codes = contract_policy.get("approved_term_deposit_codes", [])
@@ -337,17 +363,25 @@ def run_configured_sight_opening(
             not isinstance(code, str) for code in term_codes
         ):
             raise ValueError("Approved term-deposit account type codes must be a list")
-        xml_contractual = import_approved_xml_contractual_payments(
-            reader=reader,
-            cutoff=cutoff,
-            ledger_file=ledger_path,
-            expected_ledger_sha256=_required_text(contract_policy, "ledger_sha256"),
-            approved_xml_sha256=xml_hashes,
-            approved_currency_codes=currency_codes,
-            approved_term_deposit_codes=frozenset(term_codes),
-            source_payment_approval=_required_text(contract_policy, "source_payment_approval"),
-            settlement_approval=_required_text(contract_policy, "settlement_approval"),
-            nonduplication_reference=_required_text(contract_policy, "nonduplication_reference"),
+        selected_schedules.append(
+            import_approved_xml_contractual_payments(
+                reader=reader,
+                cutoff=cutoff,
+                ledger_file=ledger_path,
+                expected_ledger_sha256=_required_text(contract_policy, "ledger_sha256"),
+                approved_xml_sha256=xml_hashes,
+                approved_currency_codes=currency_codes,
+                approved_term_deposit_codes=frozenset(term_codes),
+                source_payment_approval=_required_text(
+                    contract_policy, "source_payment_approval"
+                ),
+                settlement_approval=_required_text(contract_policy, "settlement_approval"),
+                nonduplication_reference=nondup_ref,
+            )
+        )
+    if selected_schedules:
+        xml_contractual = merge_approved_xml_contractual_schedules(
+            cutoff=cutoff, schedules=selected_schedules
         )
     offbalance = None
     contingent_policy = policy.get("offbalance_scenario")
@@ -362,8 +396,7 @@ def run_configured_sight_opening(
             master_path.resolve(),
             raw_support.resolve(),
         }
-        if contract_policy is not None:
-            used_inputs.add(ledger_path.resolve())
+        used_inputs.update(ledger_paths)
         if (
             not register_file.is_absolute()
             or not policy_file.is_absolute()
@@ -395,8 +428,7 @@ def run_configured_sight_opening(
             master_path.resolve(),
             raw_support.resolve(),
         }
-        if contract_policy is not None:
-            used_paths.add(ledger_path.resolve())
+        used_paths.update(ledger_paths)
         if contingent_policy is not None:
             used_paths.add(register_file.resolve())
             used_paths.add(policy_file.resolve())
@@ -431,8 +463,7 @@ def run_configured_sight_opening(
             master_path.resolve(),
             raw_support.resolve(),
         }
-        if contract_policy is not None:
-            other_sources.add(ledger_path.resolve())
+        other_sources.update(ledger_paths)
         if contingent_policy is not None:
             other_sources.update((register_file.resolve(), policy_file.resolve()))
         if demand_policy is not None:
@@ -457,8 +488,7 @@ def run_configured_sight_opening(
         if xml_contractual is not None:
             prohibited_refs.update(event.reference for event in xml_contractual.events)
             prohibited_refs.update(event.source for event in xml_contractual.events)
-        if contract_policy is not None:
-            prohibited_refs.add(_required_text(contract_policy, "nonduplication_reference"))
+        prohibited_refs.update(nonduplication_references)
         approved_coupons = read_approved_master_coupons(
             source=source_principal,
             cutoff=cutoff,
@@ -502,8 +532,7 @@ def run_configured_sight_opening(
             master_path.resolve(),
             raw_support.resolve(),
         }
-        if contract_policy is not None:
-            used_paths.add(ledger_path.resolve())
+        used_paths.update(ledger_paths)
         if contingent_policy is not None:
             used_paths.update((register_file.resolve(), policy_file.resolve()))
         if demand_policy is not None:
@@ -526,8 +555,7 @@ def run_configured_sight_opening(
         if xml_contractual is not None:
             contractual_refs.update({event.reference for event in xml_contractual.events})
             contractual_refs.update({event.source for event in xml_contractual.events})
-        if contract_policy is not None:
-            contractual_refs.add(_required_text(contract_policy, "nonduplication_reference"))
+        contractual_refs.update(nonduplication_references)
         contractual_refs.update(verified.included_source_references)
         approved_plan = read_approved_financial_plan_overlay(
             source_file=plan_source,
