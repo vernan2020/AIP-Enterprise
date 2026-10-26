@@ -485,3 +485,47 @@ def test_principal_reconciliation_gate_remains_reference_only_without_cash(monke
     assert "operaciones sin bandeo: 2" in gate["next_action"]
     assert outcome["projection_regulatorily_certified"] is False
     assert "approved_source_events" not in outcome
+
+
+def test_next_day_maturity_anomaly_is_not_a_certified_cash_outflow(monkeypatch):
+    _configured(monkeypatch)
+    monkeypatch.setattr(readiness, "inspect_xml_investment_source", lambda _: INVENTORY)
+    monkeypatch.setattr(
+        readiness,
+        "inspect_obligation_identity_with_config",
+        lambda _: {
+            "status": "MATCHED_REFERENCE_ONLY",
+            "unique_maturity_rows_matched": 254198,
+            "unbanded_date_evidence_by_sugef210_window": {
+                "next_day_concentration_review": {
+                    "status": "REVIEW_SOURCE_DATE_SEMANTICS",
+                    "next_day_unbanded_contracts": 33726,
+                    "future_dated_unbanded_contracts": 33727,
+                    "cashflow_payments_recognized": 0,
+                }
+            },
+            "principal_reconciliation": {
+                "distinct_contracts_reconciled_exactly": 254161,
+                "distinct_contracts_with_principal_difference": 1,
+                "matched_contracts_without_usable_source_principal": 36,
+                "matched_contracts_without_usable_band_principal": 36,
+                "negative_contracts_matching_signed_band_total": 36,
+            },
+            "contract_identities_without_maturity_bands_by_source": {
+                "CAPTACIONES": 34046,
+                "BORROWING": 13,
+            },
+            "cashflows_recognized": 0,
+        },
+    )
+    report = readiness.evaluate_readiness(cutoff=CUTOFF, scenario="BASE", identity_linkage=True)
+    gates = {row["check"]: row for row in report["operational_gates"]}
+    assert gates["XML_CAPTACIONES_FECHA_CORTE_MAS_UN_DIA"]["state"] == "REVIEW_REQUIRED"
+    assert "33726 de 33727" in gates["XML_CAPTACIONES_FECHA_CORTE_MAS_UN_DIA"][
+        "next_action"
+    ]
+    assert "negativos conciliados con signo (no efectivo): 36" in gates[
+        "XML_OBLIGACIONES_CONCILIACION_PRINCIPAL"
+    ]["next_action"]
+    assert report["projection_regulatorily_certified"] is False
+    assert report["status"] == "SOURCE_READY_APPROVALS_REQUIRED"
