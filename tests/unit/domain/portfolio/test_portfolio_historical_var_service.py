@@ -99,13 +99,9 @@ def test_incremental_var_recomputes_portfolio_after_removing_each_position() -> 
 
     assert combined.portfolio_var_crc > Decimal("0")
     assert without_risky.portfolio_var_crc == Decimal("0")
+    assert results["RISKY"].var_without_position_crc == without_risky.portfolio_var_crc
     assert (
-        results["RISKY"].var_without_position_crc
-        == without_risky.portfolio_var_crc
-    )
-    assert (
-        results["DIVERSIFYING"].var_without_position_crc
-        == without_diversifying.portfolio_var_crc
+        results["DIVERSIFYING"].var_without_position_crc == without_diversifying.portfolio_var_crc
     )
     assert results["RISKY"].incremental_var_crc == (
         combined.portfolio_var_crc - without_risky.portfolio_var_crc
@@ -115,10 +111,13 @@ def test_incremental_var_recomputes_portfolio_after_removing_each_position() -> 
     )
     assert results["RISKY"].incremental_var_crc > 0
     assert results["DIVERSIFYING"].incremental_var_crc < 0
-    assert sum(
-        (item.pnl_at_portfolio_var_scenario_crc for item in combined.positions),
-        Decimal("0"),
-    ) == combined.selected_scenario_pnl_crc
+    assert (
+        sum(
+            (item.pnl_at_portfolio_var_scenario_crc for item in combined.positions),
+            Decimal("0"),
+        )
+        == combined.selected_scenario_pnl_crc
+    )
 
 
 def test_incremental_var_reranks_all_scenarios_after_exclusion() -> None:
@@ -144,11 +143,13 @@ def test_incremental_var_reranks_all_scenarios_after_exclusion() -> None:
         )
 
     first = make_position(
-        "FIRST", "2000000",
+        "FIRST",
+        "2000000",
         lambda i: 0.0001 * i + 0.04 * math.sin(0.043 * i) + 0.015 * math.sin(0.13 * i),
     )
     second = make_position(
-        "SECOND", "1000000",
+        "SECOND",
+        "1000000",
         lambda i: -0.00012 * i + 0.025 * math.cos(0.039 * i) + 0.012 * math.sin(0.091 * i),
     )
     full = PortfolioHistoricalVaRService.calculate(positions=(first, second))
