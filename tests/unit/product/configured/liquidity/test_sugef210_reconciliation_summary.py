@@ -16,6 +16,7 @@ CUTOFF = date(2026, 9, 30)
 def test_summary_shows_all_17_reference_windows_without_amounts():
     evidence = {
         "cutoff": CUTOFF.isoformat(),
+        "status": "MATCHED_REFERENCE_ONLY",
         "maturity_records": 254198,
         "unique_maturity_rows_matched": 254198,
         "principal_reconciliation": {
@@ -59,6 +60,7 @@ def test_summary_rejects_old_cutoff_and_untrusted_private_values():
         cutoff=CUTOFF,
         evidence={
             "cutoff": CUTOFF.isoformat(),
+            "status": "MATCHED_REFERENCE_ONLY",
             "unique_maturity_rows_matched": "PRIVATE_ACCOUNT",
             "maturity_records": -12,
             "unbanded_date_evidence_by_sugef210_window": {
@@ -69,3 +71,14 @@ def test_summary_rejects_old_cutoff_and_untrusted_private_values():
     assert len(rows) == 21
     assert "PRIVATE" not in str(rows)
     assert "cero pagos autorizados" in str(rows)
+
+
+
+def test_missing_xml_linkage_fails_closed_without_fabricated_zero_rows():
+    rows = summarize_contractual_reconciliation(
+        cutoff=CUTOFF,
+        evidence={"cutoff": CUTOFF.isoformat(), "status": "PARTIAL_SOURCE_COVERAGE"},
+    )
+    assert len(rows) == 1
+    assert rows[0][1] == "NO DISPONIBLE"
+    assert "no hay pagos reconocidos" in rows[0][2]
