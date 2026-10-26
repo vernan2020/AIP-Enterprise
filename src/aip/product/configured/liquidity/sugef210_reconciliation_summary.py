@@ -36,6 +36,12 @@ def summarize_contractual_reconciliation(
     rows: list[tuple[str, str, str]] = []
     matched = _count(evidence, "unique_maturity_rows_matched")
     maturity = _count(evidence, "maturity_records")
+    identity_issues = (
+        matched != maturity
+        or _count(evidence, "ambiguous_maturity_rows") > 0
+        or _count(evidence, "unmatched_maturity_rows") > 0
+        or _count(evidence, "maturity_rows_without_composite_identity") > 0
+    )
     exact = _count(
         evidence.get("principal_reconciliation"), "distinct_contracts_reconciled_exactly"
     )
@@ -49,7 +55,11 @@ def summarize_contractual_reconciliation(
     outstanding = sum(_count(missing, key) for key in ("CAPTACIONES", "BORROWING"))
     rows.extend(
         (
-            ("Vinculación XML", "REFERENCIA", f"{matched} de {maturity} filas ligadas; sin pagos"),
+            (
+                "Vinculación XML",
+                "REVISAR" if identity_issues else "REFERENCIA",
+                f"{matched} de {maturity} filas ligadas; sin pagos",
+            ),
             (
                 "Principal contractual",
                 "REVISAR" if differences else "REFERENCIA",
