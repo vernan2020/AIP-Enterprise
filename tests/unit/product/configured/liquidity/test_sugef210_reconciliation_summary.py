@@ -82,7 +82,6 @@ def test_missing_xml_linkage_fails_closed_without_fabricated_zero_rows():
     assert "no hay pagos reconocidos" in rows[0][2]
 
 
-
 def test_partial_identity_linkage_is_explicitly_marked_for_review():
     rows = summarize_contractual_reconciliation(
         cutoff=CUTOFF,
