@@ -400,12 +400,8 @@ class ClusteredNextDayReader(ReconciledReader):
 
 
 def test_large_next_day_cluster_flags_date_semantics_without_cash():
-    result = audit_obligation_maturity_identity(
-        reader=ClusteredNextDayReader(), cutoff=CUTOFF
-    )
-    cluster = result["unbanded_date_evidence_by_sugef210_window"][
-        "next_day_concentration_review"
-    ]
+    result = audit_obligation_maturity_identity(reader=ClusteredNextDayReader(), cutoff=CUTOFF)
+    cluster = result["unbanded_date_evidence_by_sugef210_window"]["next_day_concentration_review"]
     assert cluster["status"] == "REVIEW_SOURCE_DATE_SEMANTICS"
     assert cluster["next_day_after_cutoff"] == "2026-10-01"
     assert cluster["next_day_unbanded_contracts"] == 110
@@ -424,9 +420,7 @@ def test_small_next_day_cluster_does_not_prove_date_convention():
     result = audit_obligation_maturity_identity(
         reader=ClusteredNextDayReader(next_day_count=2), cutoff=CUTOFF
     )
-    cluster = result["unbanded_date_evidence_by_sugef210_window"][
-        "next_day_concentration_review"
-    ]
+    cluster = result["unbanded_date_evidence_by_sugef210_window"]["next_day_concentration_review"]
     assert cluster["status"] == "NO_LARGE_NEXT_DAY_CLUSTER_DETECTED"
     assert cluster["next_day_unbanded_contracts"] == 2
     assert cluster["cashflow_payments_recognized"] == 0
