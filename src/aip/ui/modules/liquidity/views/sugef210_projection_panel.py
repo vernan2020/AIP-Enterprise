@@ -760,7 +760,7 @@ class SUGEF210ProjectionPanel(QWidget):
             self._contractual_reconciliation.setRowCount(0)
             for row in rows:
                 self._append(self._contractual_reconciliation, row)
-            flagged = any(row[1] == "REVISAR" for row in rows)
+            flagged = any(row[1] in {"REVISAR", "NO DISPONIBLE"} for row in rows)
             self._status.setText(
                 "Conciliación contractual leída de XML reales. "
                 + (
