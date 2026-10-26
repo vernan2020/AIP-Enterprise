@@ -178,8 +178,7 @@ class PortfolioHistoricalVaRService:
             # Reuse cached vectors instead of reloading PiPCA or recalculating
             # each remaining position for every exclusion.
             remaining_ranked = sorted(
-                portfolio_scenarios[index] - scenarios[index]
-                for index in range(scenario_count)
+                portfolio_scenarios[index] - scenarios[index] for index in range(scenario_count)
             )
             var_without_position = max(
                 Decimal("0"), -remaining_ranked[cls.SELECTED_SCENARIO_RANK - 1]
