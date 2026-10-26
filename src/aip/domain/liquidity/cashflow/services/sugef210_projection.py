@@ -235,7 +235,7 @@ def project_sugef210(
     outside = 0
     for event in events:
         days = (event.payment_date - cutoff).days
-        if days > 365:
+        if event.payment_date > horizon_end:
             outside += 1
             continue
         key = (event.currency, window_index[days])
