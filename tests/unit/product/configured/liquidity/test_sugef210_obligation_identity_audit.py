@@ -317,3 +317,58 @@ def test_unbanded_original_type_and_maturity_cross_tab_has_no_amounts():
     }
     assert "P1" not in str(result)
     assert result["cashflows_recognized"] == 0
+
+
+
+class FutureUnbandedReader(ReconciledReader):
+    """Synthetic source dates demonstrate band grouping without payable events."""
+
+    def iter_records(self, source):
+        yield from super().iter_records(source)
+        if source.key == "CAPTACIONES":
+            for operation, account_type, currency, maturity in (
+                ("A10", "4", "2", "01/10/2026"),
+                ("A11", "2", "1", "30/12/2026"),
+                ("A12", "4", "1", "01/10/2027"),
+                ("A13", "2", "1", "30/09/2026"),
+            ):
+                yield XMLConfiaRecord(
+                    operation,
+                    "insertar",
+                    {
+                        "IdAcreedor": "P1",
+                        "IdOperacion": operation,
+                        "SaldoPrincipal": "10",
+                        "TipoMonedaObligacion": currency,
+                        "CuentaContablePrincipal": "211",
+                        "TipoCuenta": account_type,
+                        "FechaVencimiento": maturity,
+                    },
+                )
+
+
+def test_evidenced_unbanded_dates_are_grouped_in_17_horizons_without_cashflows():
+    result = audit_obligation_maturity_identity(reader=FutureUnbandedReader(), cutoff=CUTOFF)
+    preview = result["unbanded_date_evidence_by_sugef210_window"]
+    assert preview["status"] == "DATE_REFERENCE_ONLY_NOT_PAYMENT_SCHEDULE"
+    assert preview["regulatory_bands"] == 17
+    assert preview["future_within_365d_count"] == 2
+    assert preview["by_window"] == {"D01": 1, "Q01": 1}
+    assert preview["by_source_type_native_currency_window"] == {
+        "CAPTACIONES:2:1:Q01": 1,
+        "CAPTACIONES:4:2:D01": 1,
+    }
+    assert preview["payments_recognized"] == 0
+    assert result["cashflows_recognized"] == 0
+    assert result["payment_schedule_certified"] is False
+
+
+def test_single_principal_difference_is_attributed_only_to_original_source_codes():
+    result = audit_obligation_maturity_identity(reader=ReconciledReader(), cutoff=CUTOFF)
+    differences = result["principal_reconciliation"]
+    assert differences["distinct_contracts_with_principal_difference"] == 1
+    assert differences["differences_by_source_type_native_currency"] == {
+        "BORROWING:(SIN CÓDIGO):2": 1
+    }
+    assert "P2" not in str(result)
+    assert "250" not in str(result)
