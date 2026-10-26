@@ -244,9 +244,7 @@ def audit_obligation_maturity_identity(
             unbanded_type_counts[f"{contract[0]}:{contract[4]}"] += 1
             unbanded_maturity_categories[contract[5]] += 1
             unbanded_currency_counts[_range_code(contract[1])] += 1
-            unbanded_type_maturity_counts[
-                f"{contract[0]}:{contract[4]}:{contract[5]}"
-            ] += 1
+            unbanded_type_maturity_counts[f"{contract[0]}:{contract[4]}:{contract[5]}"] += 1
             continue
         missing_source_principal = contract[3] is None
         missing_band_principal = identity in invalid_maturity_identities
