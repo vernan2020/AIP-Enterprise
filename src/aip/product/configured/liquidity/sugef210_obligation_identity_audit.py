@@ -24,15 +24,21 @@ def _identity(values: dict[str, str]) -> tuple[str, str] | None:
     return (parts[0], parts[1]) if all(parts) else None
 
 
-def _principal(value: str) -> Decimal | None:
-    """Strict native decimal parsing; unsigned principal, no currency conversion."""
+def _signed_principal(value: str) -> Decimal | None:
+    """Read original signed numeric data for reconciliation, never cash booking."""
     if not value.strip():
         return None
     try:
-        principal = Decimal(value.strip())
+        value_decimal = Decimal(value.strip())
     except InvalidOperation:
         return None
-    return principal if principal.is_finite() and principal >= 0 else None
+    return value_decimal if value_decimal.is_finite() else None
+
+
+def _principal(value: str) -> Decimal | None:
+    """Nonnegative principal is eligible for amount comparison, never cash booking."""
+    principal = _signed_principal(value)
+    return principal if principal is not None and principal >= 0 else None
 
 
 def _range_code(value: str) -> str:
@@ -96,7 +102,7 @@ def audit_obligation_maturity_identity(
         }
 
     contract_index: dict[
-        tuple[str, str], tuple[str, str, str, Decimal | None, str, str, str] | None
+        tuple[str, str], tuple[str, str, str, Decimal | None, str, str, str, Decimal | None] | None
     ] = {}
     contracts_observed: set[str] = set()
     source_details: list[dict[str, Any]] = []
@@ -143,6 +149,7 @@ def audit_obligation_maturity_identity(
                 _range_code(record.values.get("TipoCuenta") or ""),
                 _maturity_category(record.values.get("FechaVencimiento") or "", cutoff),
                 _principal_problem(record.values.get("SaldoPrincipal") or ""),
+                _signed_principal(record.values.get("SaldoPrincipal") or ""),
             )
         contracts_observed.update(observed_tags)
         source_details.append(
@@ -170,7 +177,10 @@ def audit_obligation_maturity_identity(
     distinct_matched: set[tuple[str, str]] = set()
     repeated_maturity_rows = 0
     maturity_sums: dict[tuple[str, str], Decimal] = {}
+    signed_maturity_sums: dict[tuple[str, str], Decimal] = {}
     invalid_maturity_identities: set[tuple[str, str]] = set()
+    signed_maturity_invalid: set[tuple[str, str]] = set()
+    negative_maturity_ids: set[tuple[str, str]] = set()
     maturity_amounts_missing_or_invalid = 0
     range_counts: Counter[str] = Counter()
     maturity_observed_tags: set[str] = set()
@@ -195,7 +205,17 @@ def audit_obligation_maturity_identity(
                 if identity in distinct_matched:
                     repeated_maturity_rows += 1
                 distinct_matched.add(identity)
-                principal = _principal(record.values.get("SaldoaPagarPrincipal") or "")
+                raw_principal = record.values.get("SaldoaPagarPrincipal") or ""
+                signed = _signed_principal(raw_principal)
+                principal = _principal(raw_principal)
+                if signed is None:
+                    signed_maturity_invalid.add(identity)
+                else:
+                    signed_maturity_sums[identity] = (
+                        signed_maturity_sums.get(identity, Decimal(0)) + signed
+                    )
+                    if signed < 0:
+                        negative_maturity_ids.add(identity)
                 if principal is None:
                     maturity_amounts_missing_or_invalid += 1
                     invalid_maturity_identities.add(identity)
@@ -212,6 +232,10 @@ def audit_obligation_maturity_identity(
     unbanded_type_counts: Counter[str] = Counter()
     unbanded_maturity_categories: Counter[str] = Counter()
     unbanded_currency_counts: Counter[str] = Counter()
+    unbanded_type_maturity_counts: Counter[str] = Counter()
+    negative_contract_signed_equal = 0
+    negative_contract_signed_different = 0
+    negative_contract_signed_unverifiable = 0
     for identity, contract in contract_index.items():
         if contract is None:
             continue
@@ -220,12 +244,22 @@ def audit_obligation_maturity_identity(
             unbanded_type_counts[f"{contract[0]}:{contract[4]}"] += 1
             unbanded_maturity_categories[contract[5]] += 1
             unbanded_currency_counts[_range_code(contract[1])] += 1
+            unbanded_type_maturity_counts[
+                f"{contract[0]}:{contract[4]}:{contract[5]}"
+            ] += 1
             continue
         missing_source_principal = contract[3] is None
         missing_band_principal = identity in invalid_maturity_identities
         if missing_source_principal:
             contract_principal_unusable += 1
             contract_principal_issue_reasons[contract[6]] += 1
+            if contract[6] == "NEGATIVE":
+                if identity in signed_maturity_invalid or identity not in signed_maturity_sums:
+                    negative_contract_signed_unverifiable += 1
+                elif signed_maturity_sums[identity] == contract[7]:
+                    negative_contract_signed_equal += 1
+                else:
+                    negative_contract_signed_different += 1
         if missing_band_principal:
             band_principal_unusable += 1
         if missing_source_principal or missing_band_principal:
@@ -270,6 +304,9 @@ def audit_obligation_maturity_identity(
         ),
         "unbanded_contracts_by_original_type_code": _bounded_counts(unbanded_type_counts),
         "unbanded_contracts_by_native_currency_code": _bounded_counts(unbanded_currency_counts),
+        "unbanded_contracts_by_type_and_maturity_state": _bounded_counts(
+            unbanded_type_maturity_counts
+        ),
         "unbanded_contracts_by_original_maturity_state": dict(
             sorted(unbanded_maturity_categories.items())
         ),
@@ -285,6 +322,13 @@ def audit_obligation_maturity_identity(
                 contracts_with_any_principal_issue
             ),
             "source_principal_issue_causes": dict(sorted(contract_principal_issue_reasons.items())),
+            "negative_contracts_matching_signed_band_total": negative_contract_signed_equal,
+            "negative_contracts_differing_signed_band_total": negative_contract_signed_different,
+            "negative_contracts_without_usable_signed_comparison": (
+                negative_contract_signed_unverifiable
+            ),
+            "negative_banded_contracts": len(negative_maturity_ids),
+            "signed_negative_balances_accepted_as_cashflows": False,
             "monetary_tolerance_applied": False,
             "sensitive_amounts_disclosed": False,
             "cashflow_payments_approved": 0,
