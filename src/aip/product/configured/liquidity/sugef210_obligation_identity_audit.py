@@ -259,6 +259,7 @@ def audit_obligation_maturity_identity(
     negative_contract_signed_unverifiable = 0
     unbanded_reference_window_counts: Counter[str] = Counter()
     unbanded_reference_window_type_currency_counts: Counter[str] = Counter()
+    unbanded_next_day_type_currency_counts: Counter[str] = Counter()
     principal_differences_by_source_type_currency: Counter[str] = Counter()
     for identity, contract in contract_index.items():
         if contract is None:
@@ -271,6 +272,10 @@ def audit_obligation_maturity_identity(
             unbanded_type_maturity_counts[f"{contract[0]}:{contract[4]}:{contract[5]}"] += 1
             if contract[8] is not None:
                 unbanded_reference_window_counts[contract[8]] += 1
+                if contract[8] == "D01":
+                    unbanded_next_day_type_currency_counts[
+                        f"{contract[0]}:{contract[4]}:{_range_code(contract[1])}"
+                    ] += 1
                 unbanded_reference_window_type_currency_counts[
                     f"{contract[0]}:{contract[4]}:{_range_code(contract[1])}:{contract[8]}"
                 ] += 1
@@ -298,6 +303,13 @@ def audit_obligation_maturity_identity(
             principal_differences_by_source_type_currency[
                 f"{contract[0]}:{contract[4]}:{_range_code(contract[1])}"
             ] += 1
+
+    future_unbanded_count = sum(unbanded_reference_window_counts.values())
+    next_day_count = unbanded_reference_window_counts["D01"]
+    next_day_concentration_flag = (
+        future_unbanded_count >= 100
+        and next_day_count * 100 >= future_unbanded_count * 90
+    )
 
     missing_contract_sources = sum(
         row["status"] == "SOURCE_UNAVAILABLE_NOT_ASSUMED_ZERO" for row in source_details
@@ -342,6 +354,23 @@ def audit_obligation_maturity_identity(
         ),
         "unbanded_date_evidence_by_sugef210_window": {
             "status": "DATE_REFERENCE_ONLY_NOT_PAYMENT_SCHEDULE",
+            "next_day_concentration_review": {
+                "status": (
+                    "REVIEW_SOURCE_DATE_SEMANTICS"
+                    if next_day_concentration_flag
+                    else "NO_LARGE_NEXT_DAY_CLUSTER_DETECTED"
+                ),
+                "next_day_after_cutoff": windows[1].start.isoformat(),
+                "next_day_unbanded_contracts": next_day_count,
+                "future_dated_unbanded_contracts": future_unbanded_count,
+                "next_day_by_original_source_type_currency": _bounded_counts(
+                    unbanded_next_day_type_currency_counts
+                ),
+                "threshold_applied": ">=100 future-dated and >=90pct on cutoff+1",
+                "placeholder_date_confirmed": False,
+                "payable_maturity_confirmed": False,
+                "cashflow_payments_recognized": 0,
+            },
             "regulatory_bands": len(windows),
             "future_within_365d_count": sum(unbanded_reference_window_counts.values()),
             "by_window": dict(sorted(unbanded_reference_window_counts.items())),
