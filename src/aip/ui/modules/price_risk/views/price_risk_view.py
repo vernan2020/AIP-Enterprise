@@ -1023,9 +1023,7 @@ class PriceRiskView(QWidget):
                         "Negativo: la eliminación aumenta el VeR (diversificación)."
                     )
                     try:
-                        incremental_value = Decimal(
-                            value.replace("₡", "").replace(",", "").strip()
-                        )
+                        incremental_value = Decimal(value.replace("₡", "").replace(",", "").strip())
                     except Exception:
                         incremental_value = Decimal("0")
                     if incremental_value < 0:
