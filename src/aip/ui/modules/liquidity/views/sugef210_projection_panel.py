@@ -380,9 +380,7 @@ class SUGEF210ProjectionPanel(QWidget):
             ("Control contractual", "Estado", "Evidencia sin efectivo"),
             "sugef210ContractualReconciliationDetail",
         )
-        self._planning_tabs.addTab(
-            self._contractual_reconciliation, "Conciliación contractual"
-        )
+        self._planning_tabs.addTab(self._contractual_reconciliation, "Conciliación contractual")
         self._plan_months = self._table(self._PLAN_HEADERS, "sugef210FinancialPlanMonthlyEvidence")
         self._plan_parameters = self._table(
             self._PLAN_PARAMETER_HEADERS, "sugef210FinancialPlanParameters"
