@@ -44,9 +44,13 @@ from aip.product.configured.liquidity.sugef210_opening_session import (
 )
 from aip.product.configured.liquidity.sugef210_operational_readiness import (
     build_operational_gates,
+    inspect_obligation_identity_with_config,
 )
 from aip.product.configured.liquidity.sugef210_projection_assembler import (
     LiquidityAuditedCashEvent,
+)
+from aip.product.configured.liquidity.sugef210_reconciliation_summary import (
+    summarize_contractual_reconciliation,
 )
 from aip.product.configured.liquidity.sugef210_source_audit_cli import (
     inspect_xml_investment_source,
@@ -73,6 +77,24 @@ class _SUGEF210SourceWorker(QThread):
             self.failed.emit(type(exc).__name__)
             return
         self.completed.emit(report)
+
+
+class _SUGEF210ContractualWorker(QThread):
+    completed = Signal(object)
+    failed = Signal(str)
+
+    def __init__(self, cutoff: date) -> None:
+        super().__init__()
+        self._cutoff = cutoff
+
+    def run(self) -> None:
+        try:
+            audit = inspect_obligation_identity_with_config(self._cutoff)
+        except Exception as exc:
+            # The UI must not expose operation IDs, source files or balances.
+            self.failed.emit(type(exc).__name__)
+            return
+        self.completed.emit(audit)
 
 
 class _SUGEF210FinancialPlanWorker(QThread):
@@ -232,6 +254,7 @@ class SUGEF210ProjectionPanel(QWidget):
         super().__init__()
         self.setObjectName("sugef210LiquidityProjectionPanel")
         self._worker: _SUGEF210SourceWorker | None = None
+        self._contractual_worker: _SUGEF210ContractualWorker | None = None
         self._report: dict[str, object] | None = None
         self._plan_worker: _SUGEF210FinancialPlanWorker | None = None
         self._opening_worker: _SUGEF210OpeningWorker | None = None
@@ -276,6 +299,10 @@ class SUGEF210ProjectionPanel(QWidget):
         self._button = QPushButton("Inspeccionar XML de inversiones")
         self._button.clicked.connect(self.run_source_audit)
         controls.addWidget(self._button)
+        self._contractual_button = QPushButton("Conciliar captaciones y obligaciones XML")
+        self._contractual_button.setObjectName("sugef210RunContractualReconciliation")
+        self._contractual_button.clicked.connect(self.run_contractual_audit)
+        controls.addWidget(self._contractual_button)
         self._export = QPushButton("Exportar conciliación a Excel")
         self._export.setEnabled(False)
         self._export.clicked.connect(self.export_reconciliation)
@@ -349,6 +376,13 @@ class SUGEF210ProjectionPanel(QWidget):
             self._SOURCE_READINESS_HEADERS, "sugef210RealSourceReadiness"
         )
         self._planning_tabs.addTab(self._source_readiness, "Estado de fuentes")
+        self._contractual_reconciliation = self._table(
+            ("Control contractual", "Estado", "Evidencia sin efectivo"),
+            "sugef210ContractualReconciliationDetail",
+        )
+        self._planning_tabs.addTab(
+            self._contractual_reconciliation, "Conciliación contractual"
+        )
         self._plan_months = self._table(self._PLAN_HEADERS, "sugef210FinancialPlanMonthlyEvidence")
         self._plan_parameters = self._table(
             self._PLAN_PARAMETER_HEADERS, "sugef210FinancialPlanParameters"
@@ -673,6 +707,7 @@ class SUGEF210ProjectionPanel(QWidget):
         self._report = None
         self._export.setEnabled(False)
         self._fill_operational_gates()
+        self._contractual_reconciliation.setRowCount(0)
         self._plan_audit = None
         self._plan_months.setRowCount(0)
         self._plan_parameters.setRowCount(0)
@@ -687,8 +722,82 @@ class SUGEF210ProjectionPanel(QWidget):
         )
         self._fill_windows()
 
+    def run_contractual_audit(self) -> None:
+        """Read real CONFÍA liabilities without blocking the PySide6 event loop."""
+        if (
+            self._contractual_worker is not None
+            or self._worker is not None
+            or self._opening_worker is not None
+        ):
+            return
+        requested_cutoff = self._cutoff
+        worker = _SUGEF210ContractualWorker(requested_cutoff)
+        self._contractual_worker = worker
+        self._contractual_button.setEnabled(False)
+        self._button.setEnabled(False)
+        self._opening_button.setEnabled(False)
+        self._contractual_reconciliation.setRowCount(0)
+        self._status.setText(
+            "Conciliando claves, principal y fechas de los XML reales en segundo plano. "
+            "No se reconocen flujos contractuales sin autorización."
+        )
+        worker.completed.connect(
+            lambda report: self._receive_contractual_audit(requested_cutoff, report)
+        )
+        worker.failed.connect(
+            lambda category: self._contractual_audit_error(requested_cutoff, category)
+        )
+        worker.finished.connect(self._release_contractual_worker)
+        worker.start()
+
+    def _receive_contractual_audit(self, cutoff: date, report: object) -> None:
+        if cutoff != self._cutoff:
+            return
+        try:
+            if not isinstance(report, dict):
+                raise TypeError("Contractual XML audit must be a structured result")
+            rows = summarize_contractual_reconciliation(cutoff=cutoff, evidence=report)
+            self._contractual_reconciliation.setRowCount(0)
+            for row in rows:
+                self._append(self._contractual_reconciliation, row)
+            flagged = any(row[1] == "REVISAR" for row in rows)
+            self._status.setText(
+                "Conciliación contractual leída de XML reales. "
+                + (
+                    "Hay excepciones y posibles fechas operativas por confirmar. "
+                    if flagged
+                    else "No se detectaron excepciones en los conteos examinados. "
+                )
+                + "La proyección integral permanece sin certificar."
+            )
+            self._planning_tabs.setCurrentWidget(self._contractual_reconciliation)
+        except Exception as exc:
+            self._contractual_audit_error(cutoff, type(exc).__name__)
+
+    def _contractual_audit_error(self, cutoff: date, category: str) -> None:
+        if cutoff == self._cutoff:
+            self._contractual_reconciliation.setRowCount(0)
+            self._status.setText(
+                f"Auditoría contractual bloqueada ({category}); sin datos sustitutivos."
+            )
+
+    def _release_contractual_worker(self) -> None:
+        worker = self._contractual_worker
+        if worker is not None and worker.isFinished():
+            self._contractual_worker = None
+            worker.deleteLater()
+            self._contractual_button.setEnabled(True)
+            if self._worker is None:
+                self._button.setEnabled(True)
+            if self._opening_worker is None:
+                self._opening_button.setEnabled(True)
+
     def run_source_audit(self) -> None:
-        if self._worker is not None or self._opening_worker is not None:
+        if (
+            self._worker is not None
+            or self._opening_worker is not None
+            or self._contractual_worker is not None
+        ):
             return
         self._invalidate_governed_projection()
         self._opening_status.setText("Auditoría actualizada: volver a validar caja inicial.")
@@ -698,6 +807,7 @@ class SUGEF210ProjectionPanel(QWidget):
         self._worker = worker
         self._button.setEnabled(False)
         self._opening_button.setEnabled(False)
+        self._contractual_button.setEnabled(False)
         self._status.setText("Consultando XML institucional; no se calculan flujos sin evidencia…")
         worker.completed.connect(
             lambda report: self._consume_source_audit(requested_cutoff, report)
@@ -809,7 +919,11 @@ class SUGEF210ProjectionPanel(QWidget):
 
     def select_governed_opening(self) -> None:
         """Run real configured Master/XML and two separate institutional approvals."""
-        if self._opening_worker is not None or self._worker is not None:
+        if (
+            self._opening_worker is not None
+            or self._worker is not None
+            or self._contractual_worker is not None
+        ):
             return
         approval, _kind = QFileDialog.getOpenFileName(
             self, "Autorización de inversiones a la vista SUGEF210", "", "JSON (*.json)"
@@ -826,6 +940,7 @@ class SUGEF210ProjectionPanel(QWidget):
         self._invalidate_governed_projection()
         self._opening_button.setEnabled(False)
         self._button.setEnabled(False)
+        self._contractual_button.setEnabled(False)
         self._opening_status.setText(
             "Validando XML real, Maestro, cuenta a la vista y respaldo bancario. "
             "No se aceptan saldos sin trazabilidad."
@@ -1127,6 +1242,8 @@ class SUGEF210ProjectionPanel(QWidget):
             self._opening_button.setEnabled(True)
             if self._worker is None:
                 self._button.setEnabled(True)
+            if self._contractual_worker is None:
+                self._contractual_button.setEnabled(True)
 
     def select_financial_plan(self) -> None:
         """Read local institutional workbook without copying it into the Git repository."""
@@ -1524,3 +1641,5 @@ class SUGEF210ProjectionPanel(QWidget):
             self._button.setEnabled(True)
             if self._opening_worker is None:
                 self._opening_button.setEnabled(True)
+            if self._contractual_worker is None:
+                self._contractual_button.setEnabled(True)
