@@ -71,7 +71,6 @@ def test_summary_rejects_old_cutoff_and_untrusted_private_values():
     assert "cero pagos autorizados" in str(rows)
 
 
-
 def test_missing_xml_linkage_fails_closed_without_fabricated_zero_rows():
     rows = summarize_contractual_reconciliation(
         cutoff=CUTOFF,
