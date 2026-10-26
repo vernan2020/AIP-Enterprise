@@ -82,3 +82,19 @@ def test_missing_xml_linkage_fails_closed_without_fabricated_zero_rows():
     assert len(rows) == 1
     assert rows[0][1] == "NO DISPONIBLE"
     assert "no hay pagos reconocidos" in rows[0][2]
+
+
+
+def test_partial_identity_linkage_is_explicitly_marked_for_review():
+    rows = summarize_contractual_reconciliation(
+        cutoff=CUTOFF,
+        evidence={
+            "cutoff": CUTOFF.isoformat(),
+            "status": "MATCHED_REFERENCE_ONLY",
+            "maturity_records": 4,
+            "unique_maturity_rows_matched": 3,
+            "unmatched_maturity_rows": 1,
+        },
+    )
+    assert rows[0][1] == "REVISAR"
+    assert "3 de 4" in rows[0][2]
