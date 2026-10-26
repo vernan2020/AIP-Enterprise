@@ -371,3 +371,62 @@ def test_single_principal_difference_is_attributed_only_to_original_source_codes
     }
     assert "P2" not in str(result)
     assert "250" not in str(result)
+
+
+class ClusteredNextDayReader(ReconciledReader):
+    """Synthetic repeated next-day dates, never a payment schedule."""
+
+    def __init__(self, *, next_day_count=110):
+        super().__init__()
+        self.next_day_count = next_day_count
+
+    def iter_records(self, source):
+        yield from super().iter_records(source)
+        if source.key == "CAPTACIONES":
+            for index in range(self.next_day_count):
+                yield XMLConfiaRecord(
+                    str(index + 100),
+                    "insertar",
+                    {
+                        "IdAcreedor": "P1",
+                        "IdOperacion": f"Q{index}",
+                        "SaldoPrincipal": "100",
+                        "TipoMonedaObligacion": "1" if index % 2 else "2",
+                        "CuentaContablePrincipal": "211",
+                        "TipoCuenta": "4",
+                        "FechaVencimiento": "01/10/2026",
+                    },
+                )
+
+
+def test_large_next_day_cluster_flags_date_semantics_without_cash():
+    result = audit_obligation_maturity_identity(
+        reader=ClusteredNextDayReader(), cutoff=CUTOFF
+    )
+    cluster = result["unbanded_date_evidence_by_sugef210_window"][
+        "next_day_concentration_review"
+    ]
+    assert cluster["status"] == "REVIEW_SOURCE_DATE_SEMANTICS"
+    assert cluster["next_day_after_cutoff"] == "2026-10-01"
+    assert cluster["next_day_unbanded_contracts"] == 110
+    assert cluster["future_dated_unbanded_contracts"] == 110
+    assert cluster["next_day_by_original_source_type_currency"] == {
+        "CAPTACIONES:4:1": 55,
+        "CAPTACIONES:4:2": 55,
+    }
+    assert cluster["placeholder_date_confirmed"] is False
+    assert cluster["payable_maturity_confirmed"] is False
+    assert cluster["cashflow_payments_recognized"] == 0
+    assert result["cashflows_recognized"] == 0
+
+
+def test_small_next_day_cluster_does_not_prove_date_convention():
+    result = audit_obligation_maturity_identity(
+        reader=ClusteredNextDayReader(next_day_count=2), cutoff=CUTOFF
+    )
+    cluster = result["unbanded_date_evidence_by_sugef210_window"][
+        "next_day_concentration_review"
+    ]
+    assert cluster["status"] == "NO_LARGE_NEXT_DAY_CLUSTER_DETECTED"
+    assert cluster["next_day_unbanded_contracts"] == 2
+    assert cluster["cashflow_payments_recognized"] == 0
