@@ -41,6 +41,8 @@ class PortfolioVaRPositionResult:
     individual_var_percent: Decimal
     real_price_observations: int
     synthetic_price_observations: int
+    var_without_position_crc: Decimal = Decimal("0")
+    incremental_var_crc: Decimal = Decimal("0")
 
 
 @dataclass(frozen=True, slots=True)
@@ -171,6 +173,18 @@ class PortfolioHistoricalVaRService:
         position_results: list[PortfolioVaRPositionResult] = []
         for position, scenarios in position_scenarios:
             pnl_at_selected = scenarios[selected_index]
+            # Leave-one-out VeR: remove this title from *all* 500 scenarios,
+            # then select the 25th-worst remaining-portfolio scenario anew.
+            # Reuse cached vectors instead of reloading PiPCA or recalculating
+            # each remaining position for every exclusion.
+            remaining_ranked = sorted(
+                portfolio_scenarios[index] - scenarios[index]
+                for index in range(scenario_count)
+            )
+            var_without_position = max(
+                Decimal("0"), -remaining_ranked[cls.SELECTED_SCENARIO_RANK - 1]
+            )
+            incremental_var = portfolio_var - var_without_position
             individual_selected = sorted(scenarios)[cls.SELECTED_SCENARIO_RANK - 1]
             individual_var = max(Decimal("0"), -individual_selected)
             individual_var_percent = (
@@ -197,6 +211,8 @@ class PortfolioHistoricalVaRService:
                         position.price_series.observation_count - synthetic_count
                     ),
                     synthetic_price_observations=synthetic_count,
+                    var_without_position_crc=var_without_position,
+                    incremental_var_crc=incremental_var,
                 )
             )
 
