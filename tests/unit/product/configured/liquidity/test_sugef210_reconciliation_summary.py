@@ -39,12 +39,12 @@ def test_summary_shows_all_17_reference_windows_without_amounts():
     }
     rows = summarize_contractual_reconciliation(cutoff=CUTOFF, evidence=evidence)
     assert len(rows) == 22
-    assert rows[0] == (
-        "Vinculación XML", "REFERENCIA", "254198 de 254198 filas ligadas; sin pagos"
-    )
-    assert ("Fecha corte + 1 día", "REVISAR", (
-        "33726 de 33727 fechas futuras. No son pagos confirmados."
-    )) in rows
+    assert rows[0] == ("Vinculación XML", "REFERENCIA", "254198 de 254198 filas ligadas; sin pagos")
+    assert (
+        "Fecha corte + 1 día",
+        "REVISAR",
+        ("33726 de 33727 fechas futuras. No son pagos confirmados."),
+    ) in rows
     assert ("Ventana D01", "SOLO FECHAS", "33726 fechas de origen; cero pagos autorizados") in rows
     assert ("Ventana Q01", "SOLO FECHAS", "1 fechas de origen; cero pagos autorizados") in rows
     assert rows[-1][1] == "SIN CERTIFICAR"
@@ -53,9 +53,7 @@ def test_summary_shows_all_17_reference_windows_without_amounts():
 
 def test_summary_rejects_old_cutoff_and_untrusted_private_values():
     with pytest.raises(ValueError, match="cutoff"):
-        summarize_contractual_reconciliation(
-            cutoff=CUTOFF, evidence={"cutoff": "2026-08-31"}
-        )
+        summarize_contractual_reconciliation(cutoff=CUTOFF, evidence={"cutoff": "2026-08-31"})
     rows = summarize_contractual_reconciliation(
         cutoff=CUTOFF,
         evidence={
