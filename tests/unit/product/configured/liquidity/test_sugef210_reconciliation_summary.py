@@ -1,0 +1,71 @@
+"""Source-count reporting tests: UI must not invent institutional cash events."""
+
+from __future__ import annotations
+
+from datetime import date
+
+import pytest
+
+from aip.product.configured.liquidity.sugef210_reconciliation_summary import (
+    summarize_contractual_reconciliation,
+)
+
+CUTOFF = date(2026, 9, 30)
+
+
+def test_summary_shows_all_17_reference_windows_without_amounts():
+    evidence = {
+        "cutoff": CUTOFF.isoformat(),
+        "maturity_records": 254198,
+        "unique_maturity_rows_matched": 254198,
+        "principal_reconciliation": {
+            "distinct_contracts_reconciled_exactly": 254161,
+            "negative_contracts_matching_signed_band_total": 36,
+            "distinct_contracts_with_principal_difference": 1,
+        },
+        "contract_identities_without_maturity_bands_by_source": {
+            "CAPTACIONES": 34046,
+            "BORROWING": 13,
+        },
+        "unbanded_date_evidence_by_sugef210_window": {
+            "by_window": {"D01": 33726, "Q01": 1},
+            "next_day_concentration_review": {
+                "status": "REVIEW_SOURCE_DATE_SEMANTICS",
+                "next_day_unbanded_contracts": 33726,
+                "future_dated_unbanded_contracts": 33727,
+            },
+        },
+    }
+    rows = summarize_contractual_reconciliation(cutoff=CUTOFF, evidence=evidence)
+    assert len(rows) == 22
+    assert rows[0] == (
+        "Vinculación XML", "REFERENCIA", "254198 de 254198 filas ligadas; sin pagos"
+    )
+    assert ("Fecha corte + 1 día", "REVISAR", (
+        "33726 de 33727 fechas futuras. No son pagos confirmados."
+    )) in rows
+    assert ("Ventana D01", "SOLO FECHAS", "33726 fechas de origen; cero pagos autorizados") in rows
+    assert ("Ventana Q01", "SOLO FECHAS", "1 fechas de origen; cero pagos autorizados") in rows
+    assert rows[-1][1] == "SIN CERTIFICAR"
+    assert "P1" not in str(rows)
+
+
+def test_summary_rejects_old_cutoff_and_untrusted_private_values():
+    with pytest.raises(ValueError, match="cutoff"):
+        summarize_contractual_reconciliation(
+            cutoff=CUTOFF, evidence={"cutoff": "2026-08-31"}
+        )
+    rows = summarize_contractual_reconciliation(
+        cutoff=CUTOFF,
+        evidence={
+            "cutoff": CUTOFF.isoformat(),
+            "unique_maturity_rows_matched": "PRIVATE_ACCOUNT",
+            "maturity_records": -12,
+            "unbanded_date_evidence_by_sugef210_window": {
+                "by_window": {"D01": "PRIVATE_AMOUNT"},
+            },
+        },
+    )
+    assert len(rows) == 21
+    assert "PRIVATE" not in str(rows)
+    assert "cero pagos autorizados" in str(rows)
