@@ -307,8 +307,7 @@ def audit_obligation_maturity_identity(
     future_unbanded_count = sum(unbanded_reference_window_counts.values())
     next_day_count = unbanded_reference_window_counts["D01"]
     next_day_concentration_flag = (
-        future_unbanded_count >= 100
-        and next_day_count * 100 >= future_unbanded_count * 90
+        future_unbanded_count >= 100 and next_day_count * 100 >= future_unbanded_count * 90
     )
 
     missing_contract_sources = sum(
