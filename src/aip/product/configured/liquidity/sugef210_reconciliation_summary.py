@@ -6,10 +6,10 @@ paths, or assumed cashflows are accepted from the raw institutional sources.
 
 from __future__ import annotations
 
+from datetime import date
 from typing import Any
 
 from aip.domain.liquidity.cashflow.services.sugef210_projection import sugef210_windows
-from datetime import date
 
 
 def _count(data: object, key: str) -> int:
@@ -28,7 +28,9 @@ def summarize_contractual_reconciliation(
     rows: list[tuple[str, str, str]] = []
     matched = _count(evidence, "unique_maturity_rows_matched")
     maturity = _count(evidence, "maturity_records")
-    exact = _count(evidence.get("principal_reconciliation"), "distinct_contracts_reconciled_exactly")
+    exact = _count(
+        evidence.get("principal_reconciliation"), "distinct_contracts_reconciled_exactly"
+    )
     negative = _count(
         evidence.get("principal_reconciliation"), "negative_contracts_matching_signed_band_total"
     )
@@ -48,7 +50,10 @@ def summarize_contractual_reconciliation(
             (
                 "Operaciones sin bandeo",
                 "REVISAR" if outstanding else "REFERENCIA",
-                f"{_count(missing, 'CAPTACIONES')} captaciones; {_count(missing, 'BORROWING')} obligaciones",
+                (
+                    f"{_count(missing, 'CAPTACIONES')} captaciones; "
+                    f"{_count(missing, 'BORROWING')} obligaciones"
+                ),
             ),
         )
     )
@@ -80,6 +85,10 @@ def summarize_contractual_reconciliation(
             )
         )
     rows.append(
-        ("Flujo integral CRC/USD", "SIN CERTIFICAR", "Faltan pagos aprobados y caja inicial conciliada")
+        (
+            "Flujo integral CRC/USD",
+            "SIN CERTIFICAR",
+            "Faltan pagos aprobados y caja inicial conciliada",
+        )
     )
     return tuple(rows)
