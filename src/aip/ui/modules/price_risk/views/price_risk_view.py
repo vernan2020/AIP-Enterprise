@@ -545,7 +545,7 @@ class PriceRiskView(QWidget):
             )
         layout.addWidget(self._price_hover_readout)
 
-        table_group = QGroupBox("Contribución por título al escenario VeR")
+        table_group = QGroupBox("Riesgo por título · escenario y VeR incremental")
         table_group.setStyleSheet(self._group_style())
         table_layout = QVBoxLayout(table_group)
         table_header = QHBoxLayout()
@@ -571,19 +571,27 @@ class PriceRiskView(QWidget):
         table_layout.addLayout(table_header)
 
         self._table = QTableWidget()
-        self._table.setColumnCount(9)
+        self._table.setColumnCount(10)
         self._table.setHorizontalHeaderLabels(
             [
                 "Serie",
                 "Emisor",
                 "Moneda",
                 "Valor de Mercado",
-                "P&L Escenario",
+                "P&L (Gan./Pérd.)",
+                "ΔVeR sin título",
                 "Contribución %",
                 "VeR Individual %",
                 "Obs. Reales",
                 "Backfill",
             ]
+        )
+        self._table.horizontalHeaderItem(4).setToolTip(
+            "Ganancia (+) o pérdida (-) del título en el escenario VeR del portafolio."
+        )
+        self._table.horizontalHeaderItem(5).setToolTip(
+            "VeR incremental por eliminación: VeR original menos VeR recalculado sin "
+            "este instrumento. Un resultado negativo indica diversificación."
         )
         self._table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self._table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
@@ -988,6 +996,7 @@ class PriceRiskView(QWidget):
                 row.currency,
                 row.market_value,
                 row.pnl_scenario,
+                row.incremental_var,
                 row.contribution_percent,
                 row.individual_var_percent,
                 str(row.real_observations),
@@ -1007,7 +1016,23 @@ class PriceRiskView(QWidget):
                         negative = False
                     if negative:
                         item.setForeground(QColor("#E4002B"))
-                if row_index < 3 and column_index == 5:
+                if column_index == 5:
+                    item.setToolTip(
+                        f"VeR sin este instrumento: {row.var_without_position}\n"
+                        "ΔVeR = VeR original - VeR sin el título.\n"
+                        "Negativo: la eliminación aumenta el VeR (diversificación)."
+                    )
+                    try:
+                        incremental_value = Decimal(
+                            value.replace("₡", "").replace(",", "").strip()
+                        )
+                    except Exception:
+                        incremental_value = Decimal("0")
+                    if incremental_value < 0:
+                        item.setForeground(QColor("#16803C"))
+                    elif incremental_value > 0:
+                        item.setForeground(QColor("#C02B34"))
+                if row_index < 3 and column_index == 6:
                     font = item.font()
                     font.setBold(True)
                     item.setFont(font)
