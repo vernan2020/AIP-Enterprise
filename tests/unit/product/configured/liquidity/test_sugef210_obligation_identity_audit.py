@@ -243,3 +243,76 @@ def test_invalid_source_and_band_balances_are_counted_independently():
     assert principal["source_principal_issue_causes"] == {"BLANK": 1}
     assert output["maturity_principal_values_missing_or_invalid"] == 1
     assert output["cashflows_recognized"] == 0
+
+
+
+class SignedNegativeReader(ReconciledReader):
+    def __init__(self, *, band_principal="-12", original_principal="-12"):
+        super().__init__()
+        self.band_principal = band_principal
+        self.original_principal = original_principal
+
+    def iter_records(self, source):
+        if source.key == "CAPTACIONES":
+            yield XMLConfiaRecord(
+                "one",
+                "insertar",
+                {
+                    "IdAcreedor": "P1",
+                    "IdOperacion": "A1",
+                    "SaldoPrincipal": self.original_principal,
+                    "TipoMonedaObligacion": "1",
+                    "CuentaContablePrincipal": "211",
+                    "TipoCuenta": "4",
+                    "FechaVencimiento": "10/10/2026",
+                },
+            )
+        elif source.key == "BORROWING_MATURITY":
+            yield XMLConfiaRecord(
+                "one",
+                "insertar",
+                {
+                    "IdAcreedor": "P1",
+                    "IdOperacion": "A1",
+                    "SaldoaPagarPrincipal": self.band_principal,
+                    "TipoRangoPasivo": "2",
+                },
+            )
+        else:
+            yield from super().iter_records(source)
+
+
+def test_negative_principal_matches_signed_source_but_never_becomes_cash():
+    result = audit_obligation_maturity_identity(reader=SignedNegativeReader(), cutoff=CUTOFF)
+    proof = result["principal_reconciliation"]
+    assert proof["negative_contracts_matching_signed_band_total"] == 1
+    assert proof["negative_contracts_differing_signed_band_total"] == 0
+    assert proof["negative_banded_contracts"] == 1
+    assert proof["distinct_contracts_reconciled_exactly"] == 0
+    assert proof["signed_negative_balances_accepted_as_cashflows"] is False
+    assert result["cashflows_recognized"] == 0
+    assert "-12" not in str(result)
+
+
+def test_signed_negative_disagreement_and_unusable_band_remain_exceptions():
+    different = audit_obligation_maturity_identity(
+        reader=SignedNegativeReader(band_principal="-11"), cutoff=CUTOFF
+    )
+    assert different["principal_reconciliation"]["negative_contracts_differing_signed_band_total"] == 1
+    missing = audit_obligation_maturity_identity(
+        reader=SignedNegativeReader(band_principal=""), cutoff=CUTOFF
+    )
+    assert (
+        missing["principal_reconciliation"]["negative_contracts_without_usable_signed_comparison"]
+        == 1
+    )
+    assert missing["cashflows_recognized"] == 0
+
+
+def test_unbanded_original_type_and_maturity_cross_tab_has_no_amounts():
+    result = audit_obligation_maturity_identity(reader=ReconciledReader(), cutoff=CUTOFF)
+    assert result["unbanded_contracts_by_type_and_maturity_state"] == {
+        "CAPTACIONES:VISTA:SOURCE_MATURITY_BLANK": 1
+    }
+    assert "P1" not in str(result)
+    assert result["cashflows_recognized"] == 0
