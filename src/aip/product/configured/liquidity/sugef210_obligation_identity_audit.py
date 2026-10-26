@@ -71,8 +71,10 @@ def _reference_window(value: str, windows: tuple[LiquidityWindow, ...]) -> str |
         maturity = datetime.strptime(value.strip(), "%d/%m/%Y").date()
     except ValueError:
         return None
+    if maturity <= windows[0].start:
+        return None
     for window in windows:
-        if window.start < maturity <= window.end:
+        if window.start <= maturity <= window.end:
             return window.key
     return None
 
