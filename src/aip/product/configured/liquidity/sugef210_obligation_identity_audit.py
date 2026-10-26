@@ -122,8 +122,7 @@ def audit_obligation_maturity_identity(
     windows = sugef210_windows(cutoff)
     contract_index: dict[
         tuple[str, str],
-        tuple[str, str, str, Decimal | None, str, str, str, Decimal | None, str | None]
-        | None,
+        tuple[str, str, str, Decimal | None, str, str, str, Decimal | None, str | None] | None,
     ] = {}
     contracts_observed: set[str] = set()
     source_details: list[dict[str, Any]] = []
