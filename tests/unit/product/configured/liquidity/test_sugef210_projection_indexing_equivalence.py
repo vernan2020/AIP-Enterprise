@@ -57,8 +57,7 @@ def test_one_pass_window_index_matches_independent_reference_sums():
             selected = [
                 event
                 for event in flows
-                if event.currency == currency
-                and window.start <= event.payment_date <= window.end
+                if event.currency == currency and window.start <= event.payment_date <= window.end
             ]
 
             def subtotal(area: LiquidityBalanceArea, side: LiquidityFlowSide) -> Decimal:
@@ -91,9 +90,7 @@ def test_one_pass_window_index_matches_independent_reference_sums():
             )
             running += net
             row = next(
-                item
-                for item in actual.rows
-                if item.currency == currency and item.window == window
+                item for item in actual.rows if item.currency == currency and item.window == window
             )
             assert row.asset_inflows == asset_in
             assert row.asset_outflows == asset_out
@@ -106,9 +103,7 @@ def test_one_pass_window_index_matches_independent_reference_sums():
             assert row.net_flow == net
             assert row.accumulated_flow == running
             assert row.projected_liquidity == opening[currency] + running
-            assert row.financing_need == max(
-                Decimal(0), -(opening[currency] + running)
-            )
+            assert row.financing_need == max(Decimal(0), -(opening[currency] + running))
             assert row.event_count == len(selected)
 
 
