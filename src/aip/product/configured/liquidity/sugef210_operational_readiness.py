@@ -300,6 +300,25 @@ def evaluate_readiness(
                 ),
             }
         )
+        date_evidence = linkage.get("unbanded_date_evidence_by_sugef210_window")
+        if isinstance(date_evidence, dict):
+            cluster = date_evidence.get("next_day_concentration_review")
+            if isinstance(cluster, dict):
+                affected = cluster.get("next_day_unbanded_contracts", 0)
+                dated = cluster.get("future_dated_unbanded_contracts", 0)
+                flagged = cluster.get("status") == "REVIEW_SOURCE_DATE_SEMANTICS"
+                basic["operational_gates"].append(
+                    {
+                        "check": "XML_CAPTACIONES_FECHA_CORTE_MAS_UN_DIA",
+                        "state": "REVIEW_REQUIRED" if flagged else "REFERENCE_ONLY",
+                        "next_action": (
+                            f"Contratos sin bandeo fechados en corte+1: {affected} de {dated} "
+                            "fechas futuras. Verificar si FechaVencimiento representa "
+                            "una convención operativa o un vencimiento exigible. "
+                            "No asignar salida del día 1 sin evidencia y aprobación."
+                        ),
+                    }
+                )
         principal = linkage.get("principal_reconciliation")
         if isinstance(principal, dict):
             exact = principal.get("distinct_contracts_reconciled_exactly", 0)
@@ -308,6 +327,7 @@ def evaluate_readiness(
                 "matched_contracts_without_usable_source_principal", 0
             )
             unusable_bands = principal.get("matched_contracts_without_usable_band_principal", 0)
+            signed_match = principal.get("negative_contracts_matching_signed_band_total", 0)
             unbanded = linkage.get("contract_identities_without_maturity_bands_by_source")
             remaining = sum(
                 value
@@ -328,7 +348,8 @@ def evaluate_readiness(
                         f"Contratos conciliados exactamente: {exact}; diferencias: {different}; "
                         f"principal contractual inválido: {unusable_contract}; "
                         f"principal bandeado inválido: {unusable_bands}; "
-                        f"operaciones sin bandeo: {remaining}. "
+                        f"operaciones sin bandeo: {remaining}; "
+                        f"negativos conciliados con signo (no efectivo): {signed_match}. "
                         "No asignar fechas ni retiros sin la metodología y evidencia aprobadas."
                     ),
                 }
