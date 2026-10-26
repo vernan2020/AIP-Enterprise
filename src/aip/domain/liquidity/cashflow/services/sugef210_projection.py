@@ -224,16 +224,27 @@ def project_sugef210(
     windows = sugef210_windows(cutoff)
     horizon_end = windows[-1].end
     projected: list[LiquidityProjectionRow] = []
-    outside = sum(e.payment_date > horizon_end for e in events)
+    # Index the immutable event stream once. This preserves the original
+    # per-window source order, Decimal summation and every certified formula,
+    # while avoiding 34 full traversals of the institutional payment ledger.
+    window_index: list[str] = [""] * 366
+    for window in windows:
+        for day in range((window.start - cutoff).days, (window.end - cutoff).days + 1):
+            window_index[day] = window.key
+    buckets: dict[tuple[str, str], list[LiquidityProjectionFlow]] = {}
+    outside = 0
+    for event in events:
+        days = (event.payment_date - cutoff).days
+        if days > 365:
+            outside += 1
+            continue
+        key = (event.currency, window_index[days])
+        buckets.setdefault(key, []).append(event)
     # Both supported currencies are kept separate even if source has no events.
     for currency in ("CRC", "USD"):
         running = Decimal(0)
         for window in windows:
-            included = tuple(
-                e
-                for e in events
-                if e.currency == currency and window.start <= e.payment_date <= window.end
-            )
+            included = buckets.get((currency, window.key), ())
 
             def subtotal(area: LiquidityBalanceArea, side: LiquidityFlowSide) -> Decimal:
                 return sum(
