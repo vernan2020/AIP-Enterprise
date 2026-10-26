@@ -319,7 +319,6 @@ def test_unbanded_original_type_and_maturity_cross_tab_has_no_amounts():
     assert result["cashflows_recognized"] == 0
 
 
-
 class FutureUnbandedReader(ReconciledReader):
     """Synthetic source dates demonstrate band grouping without payable events."""
 
