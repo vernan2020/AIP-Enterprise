@@ -25,6 +25,14 @@ def summarize_contractual_reconciliation(
     """Convert native reference checks into 17-band UI rows, never payable cash."""
     if evidence.get("cutoff") != cutoff.isoformat():
         raise ValueError("Contractual reconciliation and current cutoff do not match")
+    if evidence.get("status") != "MATCHED_REFERENCE_ONLY":
+        return (
+            (
+                "Conciliación contractual",
+                "NO DISPONIBLE",
+                "La fuente no permite validar identidades; no hay pagos reconocidos.",
+            ),
+        )
     rows: list[tuple[str, str, str]] = []
     matched = _count(evidence, "unique_maturity_rows_matched")
     maturity = _count(evidence, "maturity_records")
