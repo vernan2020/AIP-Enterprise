@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date
 
 from PySide6.QtCore import QDate
-from PySide6.QtWidgets import QApplication, QPushButton, QTabWidget, QTableWidget
+from PySide6.QtWidgets import QApplication, QPushButton, QTableWidget, QTabWidget
 
 from aip.ui.modules.liquidity.views.sugef210_projection_panel import SUGEF210ProjectionPanel
 
