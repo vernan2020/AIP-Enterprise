@@ -12,6 +12,10 @@ from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
+from aip.domain.liquidity.cashflow.services.sugef210_projection import (
+    LiquidityWindow,
+    sugef210_windows,
+)
 from aip.product.configured.irrbb.xml_confia_source import XMLConfiaMonthlySourceReader
 
 _JOIN_FIELDS = ("IdAcreedor", "IdOperacion")
@@ -61,6 +65,18 @@ def _maturity_category(value: str, cutoff: date) -> str:
     return "SOURCE_MATURITY_WITHIN_365D" if days <= 365 else "SOURCE_MATURITY_AFTER_365D"
 
 
+def _reference_window(value: str, windows: tuple[LiquidityWindow, ...]) -> str | None:
+    """Find an evidenced date in regulatory windows without recognizing a payment."""
+    try:
+        maturity = datetime.strptime(value.strip(), "%d/%m/%Y").date()
+    except ValueError:
+        return None
+    for window in windows:
+        if window.start < maturity <= window.end:
+            return window.key
+    return None
+
+
 def _principal_problem(value: str) -> str:
     """Only short categories are returned; financial input is never echoed."""
     raw = value.strip()
@@ -101,8 +117,11 @@ def audit_obligation_maturity_identity(
             "cashflows_recognized": 0,
         }
 
+    windows = sugef210_windows(cutoff)
     contract_index: dict[
-        tuple[str, str], tuple[str, str, str, Decimal | None, str, str, str, Decimal | None] | None
+        tuple[str, str],
+        tuple[str, str, str, Decimal | None, str, str, str, Decimal | None, str | None]
+        | None,
     ] = {}
     contracts_observed: set[str] = set()
     source_details: list[dict[str, Any]] = []
@@ -150,6 +169,7 @@ def audit_obligation_maturity_identity(
                 _maturity_category(record.values.get("FechaVencimiento") or "", cutoff),
                 _principal_problem(record.values.get("SaldoPrincipal") or ""),
                 _signed_principal(record.values.get("SaldoPrincipal") or ""),
+                _reference_window(record.values.get("FechaVencimiento") or "", windows),
             )
         contracts_observed.update(observed_tags)
         source_details.append(
@@ -236,6 +256,9 @@ def audit_obligation_maturity_identity(
     negative_contract_signed_equal = 0
     negative_contract_signed_different = 0
     negative_contract_signed_unverifiable = 0
+    unbanded_reference_window_counts: Counter[str] = Counter()
+    unbanded_reference_window_type_currency_counts: Counter[str] = Counter()
+    principal_differences_by_source_type_currency: Counter[str] = Counter()
     for identity, contract in contract_index.items():
         if contract is None:
             continue
@@ -245,6 +268,11 @@ def audit_obligation_maturity_identity(
             unbanded_maturity_categories[contract[5]] += 1
             unbanded_currency_counts[_range_code(contract[1])] += 1
             unbanded_type_maturity_counts[f"{contract[0]}:{contract[4]}:{contract[5]}"] += 1
+            if contract[8] is not None:
+                unbanded_reference_window_counts[contract[8]] += 1
+                unbanded_reference_window_type_currency_counts[
+                    f"{contract[0]}:{contract[4]}:{_range_code(contract[1])}:{contract[8]}"
+                ] += 1
             continue
         missing_source_principal = contract[3] is None
         missing_band_principal = identity in invalid_maturity_identities
@@ -266,6 +294,9 @@ def audit_obligation_maturity_identity(
             exact_principal += 1
         else:
             differing_principal += 1
+            principal_differences_by_source_type_currency[
+                f"{contract[0]}:{contract[4]}:{_range_code(contract[1])}"
+            ] += 1
 
     missing_contract_sources = sum(
         row["status"] == "SOURCE_UNAVAILABLE_NOT_ASSUMED_ZERO" for row in source_details
@@ -308,12 +339,25 @@ def audit_obligation_maturity_identity(
         "unbanded_contracts_by_original_maturity_state": dict(
             sorted(unbanded_maturity_categories.items())
         ),
+        "unbanded_date_evidence_by_sugef210_window": {
+            "status": "DATE_REFERENCE_ONLY_NOT_PAYMENT_SCHEDULE",
+            "regulatory_bands": len(windows),
+            "future_within_365d_count": sum(unbanded_reference_window_counts.values()),
+            "by_window": dict(sorted(unbanded_reference_window_counts.items())),
+            "by_source_type_native_currency_window": _bounded_counts(
+                unbanded_reference_window_type_currency_counts
+            ),
+            "payments_recognized": 0,
+        },
         "range_code_record_counts": dict(sorted(range_counts.items())),
         "maturity_principal_values_missing_or_invalid": maturity_amounts_missing_or_invalid,
         "principal_reconciliation": {
             "status": "COUNTED_NOT_CERTIFIED",
             "distinct_contracts_reconciled_exactly": exact_principal,
             "distinct_contracts_with_principal_difference": differing_principal,
+            "differences_by_source_type_native_currency": _bounded_counts(
+                principal_differences_by_source_type_currency
+            ),
             "matched_contracts_without_usable_source_principal": contract_principal_unusable,
             "matched_contracts_without_usable_band_principal": band_principal_unusable,
             "distinct_contracts_with_invalid_principal_on_either_side": (
