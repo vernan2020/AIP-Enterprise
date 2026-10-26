@@ -521,11 +521,10 @@ def test_next_day_maturity_anomaly_is_not_a_certified_cash_outflow(monkeypatch):
     report = readiness.evaluate_readiness(cutoff=CUTOFF, scenario="BASE", identity_linkage=True)
     gates = {row["check"]: row for row in report["operational_gates"]}
     assert gates["XML_CAPTACIONES_FECHA_CORTE_MAS_UN_DIA"]["state"] == "REVIEW_REQUIRED"
-    assert "33726 de 33727" in gates["XML_CAPTACIONES_FECHA_CORTE_MAS_UN_DIA"][
-        "next_action"
-    ]
-    assert "negativos conciliados con signo (no efectivo): 36" in gates[
-        "XML_OBLIGACIONES_CONCILIACION_PRINCIPAL"
-    ]["next_action"]
+    assert "33726 de 33727" in gates["XML_CAPTACIONES_FECHA_CORTE_MAS_UN_DIA"]["next_action"]
+    assert (
+        "negativos conciliados con signo (no efectivo): 36"
+        in gates["XML_OBLIGACIONES_CONCILIACION_PRINCIPAL"]["next_action"]
+    )
     assert report["projection_regulatorily_certified"] is False
     assert report["status"] == "SOURCE_READY_APPROVALS_REQUIRED"
