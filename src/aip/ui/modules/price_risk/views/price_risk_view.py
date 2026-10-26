@@ -586,13 +586,17 @@ class PriceRiskView(QWidget):
                 "Backfill",
             ]
         )
-        self._table.horizontalHeaderItem(4).setToolTip(
-            "Ganancia (+) o pérdida (-) del título en el escenario VeR del portafolio."
-        )
-        self._table.horizontalHeaderItem(5).setToolTip(
-            "VeR incremental por eliminación: VeR original menos VeR recalculado sin "
-            "este instrumento. Un resultado negativo indica diversificación."
-        )
+        pnl_header = self._table.horizontalHeaderItem(4)
+        if pnl_header is not None:
+            pnl_header.setToolTip(
+                "Ganancia (+) o pérdida (-) del título en el escenario VeR del portafolio."
+            )
+        incremental_header = self._table.horizontalHeaderItem(5)
+        if incremental_header is not None:
+            incremental_header.setToolTip(
+                "VeR incremental por eliminación: VeR original menos VeR recalculado sin "
+                "este instrumento. Un resultado negativo indica diversificación."
+            )
         self._table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self._table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self._table.setAlternatingRowColors(True)
