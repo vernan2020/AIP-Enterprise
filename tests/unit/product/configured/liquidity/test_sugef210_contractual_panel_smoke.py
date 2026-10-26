@@ -47,9 +47,7 @@ def test_contractual_tab_and_cutoff_invalidation_without_private_cash():
         },
     )
     assert table.rowCount() == 22
-    assert "SIN CERTIFICAR" in [
-        table.item(row, 1).text() for row in range(table.rowCount())
-    ]
+    assert "SIN CERTIFICAR" in [table.item(row, 1).text() for row in range(table.rowCount())]
     assert "privado" not in table.item(0, 2).text().lower()
     assert tabs.currentWidget() is table
 
