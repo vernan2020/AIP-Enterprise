@@ -267,6 +267,16 @@ class PriceRiskPresenter:
                     currency=str(position.currency),
                     market_value=cls._format_crc_mm(position.market_value_crc),
                     pnl_scenario=cls._format_crc(position.pnl_at_portfolio_var_scenario_crc),
+                    incremental_var=(
+                        cls._format_crc(position.incremental_var_crc)
+                        if hasattr(position, "incremental_var_crc")
+                        else "N/A"
+                    ),
+                    var_without_position=(
+                        cls._format_crc(position.var_without_position_crc)
+                        if hasattr(position, "var_without_position_crc")
+                        else "N/A"
+                    ),
                     contribution_percent=cls._format_percent(
                         position.contribution_at_var_scenario_percent,
                         decimals=4,
