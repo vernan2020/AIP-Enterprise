@@ -245,7 +245,6 @@ def test_invalid_source_and_band_balances_are_counted_independently():
     assert output["cashflows_recognized"] == 0
 
 
-
 class SignedNegativeReader(ReconciledReader):
     def __init__(self, *, band_principal="-12", original_principal="-12"):
         super().__init__()
@@ -298,7 +297,9 @@ def test_signed_negative_disagreement_and_unusable_band_remain_exceptions():
     different = audit_obligation_maturity_identity(
         reader=SignedNegativeReader(band_principal="-11"), cutoff=CUTOFF
     )
-    assert different["principal_reconciliation"]["negative_contracts_differing_signed_band_total"] == 1
+    assert (
+        different["principal_reconciliation"]["negative_contracts_differing_signed_band_total"] == 1
+    )
     missing = audit_obligation_maturity_identity(
         reader=SignedNegativeReader(band_principal=""), cutoff=CUTOFF
     )
