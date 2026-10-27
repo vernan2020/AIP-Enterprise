@@ -34,6 +34,7 @@ from aip.product.configured.liquidity.sugef210_approved_master_principal import 
     admit_approved_master_principal,
 )
 from aip.product.configured.liquidity.sugef210_dated_xml_contracts import (
+    VerifiedContractualXMLSource,
     import_approved_xml_contractual_payments,
     merge_approved_xml_contractual_schedules,
 )
@@ -332,6 +333,7 @@ def run_configured_sight_opening(
     ledger_paths: set[Path] = set()
     nonduplication_references: set[str] = set()
     selected_schedules = []
+    verified_xml_cache: dict[str, VerifiedContractualXMLSource] = {}
     for contract_policy in contract_policies:
         if not isinstance(contract_policy, dict):
             raise ValueError("XML contractual schedule approval must be structured")
@@ -374,6 +376,7 @@ def run_configured_sight_opening(
                 source_payment_approval=_required_text(contract_policy, "source_payment_approval"),
                 settlement_approval=_required_text(contract_policy, "settlement_approval"),
                 nonduplication_reference=nondup_ref,
+                verified_source_cache=verified_xml_cache,
             )
         )
     if selected_schedules:
