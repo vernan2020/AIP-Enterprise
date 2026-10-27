@@ -314,7 +314,7 @@ def test_verified_xml_cache_fails_closed_when_source_changes_between_partitions(
     cache: dict[str, VerifiedContractualXMLSource] = {}
     _cached_partition(reader, tmp_path, suffix="A", cache=cache)
     (tmp_path / "CREDIT.xml").write_bytes(b"modified-after-first-signed-ledger")
-    with pytest.raises(ValueError, match="changed after approval"):
+    with pytest.raises(ValueError, match="changed between approved partitions"):
         _cached_partition(reader, tmp_path, suffix="B", cache=cache)
     assert reader.parses == {"CREDIT": 1}
 
