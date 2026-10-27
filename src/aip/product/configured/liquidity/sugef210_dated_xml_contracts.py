@@ -74,6 +74,7 @@ class VerifiedContractualXMLSource:
     path: Path
     sha256: str
     entity_id: str
+    selected_ordinals: frozenset[int]
     indexed_rows: dict[int, XMLConfiaRecord]
 
 
@@ -129,6 +130,7 @@ def import_approved_xml_contractual_payments(
     nonduplication_reference: str,
     already_booked_references: frozenset[str] = frozenset(),
     verified_source_cache: dict[str, VerifiedContractualXMLSource] | None = None,
+    selected_source_ordinals: dict[str, frozenset[int]] | None = None,
 ) -> ApprovedXMLContractualSchedule:
     """Admit selected source payments; record lineage and native amount must agree.
 
@@ -177,6 +179,17 @@ def import_approved_xml_contractual_payments(
         raise ValueError("Blank approved term-deposit source classification")
     by_key: dict[str, tuple[dict[int, Any], str]] = {}
     selected_sources = {_require(row.get("source_key"), "source_key") for row in rows}
+    needed_ordinals: dict[str, set[int]] = defaultdict(set)
+    for row in rows:
+        source_key = _require(row.get("source_key"), "source_key")
+        ordinal_text = _require(row.get("source_ordinal"), "source_ordinal")
+        if not ordinal_text.isdecimal() or int(ordinal_text) <= 0:
+            raise ValueError("Original XML row ordinal must be positive")
+        needed_ordinals[source_key].add(int(ordinal_text))
+    if selected_source_ordinals is not None:
+        for source_key, requested in needed_ordinals.items():
+            if not requested.issubset(selected_source_ordinals.get(source_key, frozenset())):
+                raise ValueError("Contractual ledger row is absent from batch source selection")
     if not selected_sources.issubset(_SUPPORTED) or selected_sources != set(approved_xml_sha256):
         raise ValueError("Selected XML contractual sources and approved hashes disagree")
     source_entity_ids: set[str] = set()
@@ -196,6 +209,11 @@ def import_approved_xml_contractual_payments(
         cached = (
             verified_source_cache.get(key) if verified_source_cache is not None else None
         )
+        target_ordinals = (
+            selected_source_ordinals[key]
+            if selected_source_ordinals is not None
+            else frozenset(needed_ordinals[key])
+        )
         if cached is not None:
             if (
                 cached.path.resolve() != original.path.resolve()
@@ -203,15 +221,20 @@ def import_approved_xml_contractual_payments(
                 or cached.entity_id != original.header.id_entidad
             ):
                 raise ValueError("Contractual XML changed between approved partitions")
-            indexed = cached.indexed_rows
-        else:
+            if needed_ordinals[key].issubset(cached.selected_ordinals):
+                indexed = cached.indexed_rows
+            else:
+                target_ordinals = cached.selected_ordinals | target_ordinals
+                cached = None
+        if cached is None:
             indexed = {}
             raw_ids: set[str] = set()
             for ordinal, item in enumerate(reader.iter_records(original), 1):
                 if not item.record_id.strip() or item.record_id in raw_ids:
                     raise ValueError("Original contractual XML contains ambiguous record IDs")
                 raw_ids.add(item.record_id)
-                indexed[ordinal] = item
+                if ordinal in target_ordinals:
+                    indexed[ordinal] = item
             if reader.sha256(original.path) != actual_hash:
                 raise ValueError("Contractual XML changed while indexing original source")
             if verified_source_cache is not None:
@@ -219,6 +242,7 @@ def import_approved_xml_contractual_payments(
                     path=original.path,
                     sha256=actual_hash,
                     entity_id=original.header.id_entidad,
+                    selected_ordinals=target_ordinals,
                     indexed_rows=indexed,
                 )
         by_key[key] = indexed, actual_hash
