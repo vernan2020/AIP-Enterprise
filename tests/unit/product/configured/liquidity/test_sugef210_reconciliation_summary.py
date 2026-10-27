@@ -7,6 +7,7 @@ from datetime import date
 import pytest
 
 from aip.product.configured.liquidity.sugef210_reconciliation_summary import (
+    summarize_approved_contractual_source_coverage,
     summarize_contractual_reconciliation,
 )
 
@@ -94,3 +95,43 @@ def test_partial_identity_linkage_is_explicitly_marked_for_review():
     )
     assert rows[0][1] == "REVISAR"
     assert "3 de 4" in rows[0][2]
+
+
+
+def test_contractual_coverage_displays_missing_sources_as_unknown_not_zero():
+    result = summarize_approved_contractual_source_coverage((("CREDIT", 2, 200),))
+    assert tuple(item["source_key"] for item in result) == (
+        "CREDIT",
+        "CAPTACIONES",
+        "BORROWING",
+    )
+    assert result[0]["approved_contracts"] == 2
+    assert result[0]["original_xml_contracts"] == 200
+    assert result[0]["unselected_source_records_not_automatically_cashflows"] == 198
+    for item in result[1:]:
+        assert item["status"] == "NO_APPROVED_CONTRACTUAL_SCHEDULE"
+        assert item["approved_contracts"] is None
+        assert item["original_xml_contracts"] is None
+        assert item["coverage_certified"] is False
+
+
+def test_contractual_coverage_all_selected_still_not_financially_certified():
+    result = summarize_approved_contractual_source_coverage((("CAPTACIONES", 4, 4),))
+    assert result[1]["status"] == "ALL_ORIGINAL_ROWS_SELECTED_NOT_FINANCIALLY_CERTIFIED"
+    assert result[1]["unselected_source_records_not_automatically_cashflows"] == 0
+    assert result[1]["coverage_certified"] is False
+
+
+@pytest.mark.parametrize(
+    "source_rows",
+    [
+        (("CREDIT", 3, 2),),
+        (("CREDIT", -1, 2),),
+        (("CREDIT", True, 2),),
+        (("CAPTACIONES", 1, 2), ("CAPTACIONES", 1, 2)),
+        (("UNSUPPORTED", 1, 1),),
+    ],
+)
+def test_contractual_coverage_rejects_untrusted_denominators(source_rows):
+    with pytest.raises(ValueError, match="Invalid original contractual XML source coverage"):
+        summarize_approved_contractual_source_coverage(source_rows)
