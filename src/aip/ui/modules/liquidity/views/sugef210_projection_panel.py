@@ -50,6 +50,7 @@ from aip.product.configured.liquidity.sugef210_projection_assembler import (
     LiquidityAuditedCashEvent,
 )
 from aip.product.configured.liquidity.sugef210_reconciliation_summary import (
+    summarize_approved_contractual_source_coverage,
     summarize_contractual_reconciliation,
 )
 from aip.product.configured.liquidity.sugef210_source_audit_cli import (
@@ -1193,20 +1194,30 @@ class SUGEF210ProjectionPanel(QWidget):
             projected=True,
             contractual_inventory=(self._report or {}).get("contractual_source_inventory"),
         )
-        for source_key, approved_count, original_count in session.xml_contractual_source_coverage:
-            if approved_count > original_count:
-                raise ValueError("Approved contractual source coverage exceeds original XML")
+        for coverage in summarize_approved_contractual_source_coverage(
+            session.xml_contractual_source_coverage
+        ):
+            source_key = str(coverage["source_key"])
+            approved_count = coverage["approved_contracts"]
+            original_count = coverage["original_xml_contracts"]
+            if approved_count is None:
+                gate_status = "NO_APROBADO"
+                detail = (
+                    "Sin cronograma contractual aprobado para esta fuente XML. "
+                    "Cobertura y pagos no determinados; no equivale a cero."
+                )
+            else:
+                gate_status = (
+                    "REVIEW_REQUIRED" if approved_count != original_count else "REFERENCE_ONLY"
+                )
+                detail = (
+                    f"{approved_count} contratos aprobados de {original_count} "
+                    "registros XML originales. Los no seleccionados requieren "
+                    "clasificación; cobertura completa no equivale a certificación."
+                )
             self._append(
                 self._source_readiness,
-                (
-                    f"XML_CRONOGRAMA_{source_key}",
-                    "REVIEW_REQUIRED" if approved_count != original_count else "REFERENCE_ONLY",
-                    (
-                        f"{approved_count} contratos aprobados de {original_count} "
-                        "registros XML originales. Los no seleccionados requieren "
-                        "clasificación; cobertura completa no equivale a certificación."
-                    ),
-                ),
+                (f"XML_CRONOGRAMA_{source_key}", gate_status, detail),
             )
         self._opening_status.setText(
             f"Caja inicial documentada: {session.sight_records_approved} inversiones "
