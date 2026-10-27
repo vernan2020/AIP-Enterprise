@@ -85,7 +85,11 @@ def _source_snapshot(session: ConfiguredOpeningSession) -> tuple[object, ...]:
         session.master_coupon_events_approved,
         session.xml_contractual_events_approved,
         tuple((row.currency, row.window.key, row.opening_liquidity) for row in projection.rows),
+        projection.missing_source_areas,
+        projection.opening_liquidity_missing,
+        projection.unattested_areas,
         projection.unattested_opening_currencies,
+        projection.off_balance_source_covered,
         _fixed_cashflow_identity(session),
     )
 
