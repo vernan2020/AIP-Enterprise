@@ -212,7 +212,6 @@ def test_scenario_comparison_requires_four_unique_correct_cutoffs():
         compare_approved_sugef210_scenarios(sessions)
 
 
-
 def test_comparison_rejects_audited_event_amount_not_matching_projection_components():
     sessions = [_session(s) for s in SCENARIOS]
     original = sessions[1]
@@ -271,7 +270,6 @@ def test_comparison_rejects_invented_cash_when_opening_unknown():
         compare_approved_sugef210_scenarios(sessions)
 
 
-
 def test_comparison_rejects_cash_event_dated_in_wrong_band():
     sessions = [_session(s) for s in SCENARIOS]
     original = sessions[1]
@@ -306,7 +304,6 @@ def test_comparison_rejects_repeated_audit_reference():
     )
     with pytest.raises(ValueError, match="duplicates a contractual"):
         compare_approved_sugef210_scenarios(sessions)
-
 
 
 def test_comparison_requires_same_original_coverage_gaps_across_scenarios():
