@@ -1598,6 +1598,84 @@ class SUGEF210ProjectionPanel(QWidget):
                     )
                 )
 
+        comparison_sheet = workbook.create_sheet("Comparación 4 escenarios")
+        comparison_sheet.append(
+            (
+                "Escenario",
+                "Corte",
+                "Banda",
+                "Moneda",
+                "Flujo neto",
+                "Δ flujo neto vs BASE",
+                "Δ GAP acumulado vs BASE",
+                "Saldo proyectado",
+                "Δ saldo proyectado vs BASE",
+                "Necesidad de financiamiento",
+                "Δ necesidad vs BASE",
+                "Evidencia faltante",
+                "Certificación",
+            )
+        )
+        if len(self._scenario_sessions) == 4:
+            try:
+                compared = compare_approved_sugef210_scenarios(
+                    self._scenario_sessions.values()
+                )
+            except ValueError:
+                metadata.append(("comparacion_escenarios", "BLOQUEADA: fuentes no comparables"))
+                comparison_sheet.append(
+                    ("BLOQUEADA", self._cutoff.isoformat(), "N/D", "N/D", "N/D")
+                )
+            else:
+                metadata.append(
+                    ("comparacion_escenarios", "COMPARABLE; NO ES CERTIFICACION REGULATORIA")
+                )
+                by_scenario = dict(compared.missing_evidence_by_scenario)
+                for item in compared.rows:
+                    comparison_sheet.append(
+                        tuple(
+                            safe(value)
+                            for value in (
+                                item.scenario,
+                                compared.cutoff,
+                                item.band_key,
+                                item.currency,
+                                item.net_flow,
+                                item.net_flow_delta_vs_base,
+                                item.accumulated_flow_delta_vs_base,
+                                (
+                                    item.projected_liquidity
+                                    if item.projected_liquidity is not None
+                                    else "N/D"
+                                ),
+                                (
+                                    item.projected_liquidity_delta_vs_base
+                                    if item.projected_liquidity_delta_vs_base is not None
+                                    else "N/D"
+                                ),
+                                (
+                                    item.financing_need
+                                    if item.financing_need is not None
+                                    else "N/D"
+                                ),
+                                (
+                                    item.financing_need_delta_vs_base
+                                    if item.financing_need_delta_vs_base is not None
+                                    else "N/D"
+                                ),
+                                ", ".join(by_scenario.get(item.scenario, ())),
+                                "NO CERTIFICADO",
+                            )
+                        )
+                    )
+        else:
+            metadata.append(
+                ("comparacion_escenarios", "INCOMPLETA: requieren cuatro sesiones aprobadas")
+            )
+            comparison_sheet.append(
+                ("INCOMPLETA", self._cutoff.isoformat(), "N/D", "N/D", "N/D")
+            )
+
         event_sheet = workbook.create_sheet("Trazabilidad eventos")
         event_sheet.append(self._EVENT_AUDIT_HEADERS)
         for audited in self._audited_events:
