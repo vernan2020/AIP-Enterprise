@@ -290,8 +290,8 @@ def assemble_partial_institutional_projection(
             if flow.reference in seen:
                 raise ValueError("Duplicate cash event across institutional sources")
             seen.add(flow.reference)
-            if flow.payment_date <= cutoff:
-                raise ValueError("Cutoff-day or historical source flow must reconcile to opening, not projected liquidity")
+            if flow.payment_date < cutoff:
+                raise ValueError("Historical source flow cannot enter projected liquidity")
             all_events.append(flow)
             band_key = next(
                 (
