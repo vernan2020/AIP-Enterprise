@@ -111,6 +111,7 @@ def summarize_contractual_reconciliation(
     )
     return tuple(rows)
 
+
 _XML_CONTRACT_SOURCES = ("CREDIT", "CAPTACIONES", "BORROWING")
 
 
@@ -127,8 +128,10 @@ def summarize_approved_contractual_source_coverage(
         if (
             source_key not in _XML_CONTRACT_SOURCES
             or source_key in by_key
-            or type(selected) is not int
-            or type(original) is not int
+            or not isinstance(selected, int)
+            or isinstance(selected, bool)
+            or not isinstance(original, int)
+            or isinstance(original, bool)
             or selected < 0
             or original < selected
         ):
