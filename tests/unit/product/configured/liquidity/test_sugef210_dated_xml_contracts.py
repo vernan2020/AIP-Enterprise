@@ -464,3 +464,41 @@ def test_contractual_coverage_rejects_more_selected_than_original_xml(tmp_path):
     corrupt = replace(original, source_record_counts=(("CREDIT", 0),))
     with pytest.raises(ValueError, match="exceeds original"):
         _ = corrupt.source_coverage
+
+
+def test_approved_contractual_csv_cannot_change_during_xml_payment_reconciliation(tmp_path):
+    class MutatingReader(Reader):
+        def __init__(self, root):
+            super().__init__(root)
+            self.source_hash_checks = 0
+
+        def sha256(self, path):
+            digest = super().sha256(path)
+            if path.suffix == ".xml":
+                self.source_hash_checks += 1
+                if self.source_hash_checks == 3:
+                    (self.root / "contractual-payments.csv").write_text(
+                        "changed-while-using-source", encoding="utf-8"
+                    )
+            return digest
+
+    reader = MutatingReader(tmp_path)
+    ledger = tmp_path / "contractual-payments.csv"
+    with ledger.open("w", encoding="utf-8", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=HEADERS)
+        writer.writeheader()
+        writer.writerow(_row("CREDIT"))
+    original_hash = Reader.sha256(ledger)
+    with pytest.raises(ValueError, match="CSV changed during reconciliation"):
+        import_approved_xml_contractual_payments(
+            reader=reader,
+            cutoff=CUTOFF,
+            ledger_file=ledger,
+            expected_ledger_sha256=original_hash,
+            approved_xml_sha256={"CREDIT": Reader.sha256(tmp_path / "CREDIT.xml")},
+            approved_currency_codes={"1": "CRC"},
+            source_payment_approval="TEST-DATED-CONTRACTUAL-APPROVAL",
+            settlement_approval="TEST-TREASURY-SETTLEMENT",
+            nonduplication_reference="TEST-RECONCILIATION-INTEGRITY",
+        )
+    assert reader.source_hash_checks == 3
