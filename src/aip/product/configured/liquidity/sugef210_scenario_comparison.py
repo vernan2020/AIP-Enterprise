@@ -105,8 +105,8 @@ def _reconcile_audited_cashflows(session: ConfiguredOpeningSession) -> None:
     if len(audited) != projection.source_flow_count:
         raise ValueError("Scenario event count differs from audited payment ledger")
     expected_bands = {window.key: window for window in projection.windows}
-    amounts: dict[tuple[str, str, LiquidityBalanceArea, LiquidityFlowSide], Decimal] = (
-        defaultdict(Decimal)
+    amounts: dict[tuple[str, str, LiquidityBalanceArea, LiquidityFlowSide], Decimal] = defaultdict(
+        Decimal
     )
     counts: dict[tuple[str, str], int] = defaultdict(int)
     outside = 0
@@ -120,10 +120,7 @@ def _reconcile_audited_cashflows(session: ConfiguredOpeningSession) -> None:
         if event.currency not in {"CRC", "USD"} or event.payment_date < session.cutoff:
             raise ValueError("Scenario audit contains unknown currency or historical payment")
         if event.horizon_status == "AFTER_365D":
-            if (
-                event.band_key != "OUTSIDE_365D"
-                or event.payment_date <= projection.windows[-1].end
-            ):
+            if event.band_key != "OUTSIDE_365D" or event.payment_date <= projection.windows[-1].end:
                 raise ValueError("Out-of-horizon event has inconsistent payment date or band")
             outside += 1
             continue
@@ -139,9 +136,7 @@ def _reconcile_audited_cashflows(session: ConfiguredOpeningSession) -> None:
             raise ValueError("Scenario cash event lacks an approved assumption reference")
         if event.evidence == LiquidityEvidence.CONTRACTUAL and event.assumption_id:
             raise ValueError("Contractual scenario cash event cannot contain a stress assumption")
-        amounts[(event.currency, event.band_key, event.area, event.side)] += (
-            event.native_amount
-        )
+        amounts[(event.currency, event.band_key, event.area, event.side)] += event.native_amount
         counts[(event.currency, event.band_key)] += 1
     if outside != projection.excluded_out_of_horizon:
         raise ValueError("Audited payments after 365 days differ from projection")
@@ -163,10 +158,7 @@ def _reconcile_audited_cashflows(session: ConfiguredOpeningSession) -> None:
         if row.event_count != counts[(row.currency, row.window.key)]:
             raise ValueError("Scenario band event count differs from audited payments")
         inflows = (
-            row.asset_inflows
-            + row.liability_inflows
-            + row.off_balance_inflows
-            + row.other_inflows
+            row.asset_inflows + row.liability_inflows + row.off_balance_inflows + row.other_inflows
         )
         outflows = (
             row.asset_outflows
@@ -184,11 +176,12 @@ def _reconcile_audited_cashflows(session: ConfiguredOpeningSession) -> None:
                 raise ValueError("Scenario cannot invent closing cash without approved opening")
         else:
             expected_cash = row.opening_liquidity + row.accumulated_flow
-            if (
-                row.projected_liquidity != expected_cash
-                or row.financing_need != max(Decimal(0), -expected_cash)
+            if row.projected_liquidity != expected_cash or row.financing_need != max(
+                Decimal(0), -expected_cash
             ):
-                raise ValueError("Scenario projected liquidity or financing need does not reconcile")
+                raise ValueError(
+                    "Scenario projected liquidity or financing need does not reconcile"
+                )
 
 
 def compare_approved_sugef210_scenarios(
