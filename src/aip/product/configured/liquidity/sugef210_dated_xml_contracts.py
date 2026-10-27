@@ -61,6 +61,7 @@ class ApprovedXMLContractualSchedule:
     included_source_records: tuple[tuple[str, int], ...]
     status: str = "SELECTED_SOURCE_DATED_PAYMENTS_NOT_COMPLETE_PERIMETER"
     source_entity_id: str | None = None
+    source_record_counts: tuple[tuple[str, int], ...] = ()
 
     @property
     def certifies_entire_perimeter(self) -> bool:
@@ -75,6 +76,7 @@ class VerifiedContractualXMLSource:
     sha256: str
     entity_id: str
     selected_ordinals: frozenset[int]
+    total_records: int
     indexed_rows: dict[int, XMLConfiaRecord]
 
 
@@ -234,6 +236,7 @@ def import_approved_xml_contractual_payments(
     if not selected_sources.issubset(_SUPPORTED) or selected_sources != set(approved_xml_sha256):
         raise ValueError("Selected XML contractual sources and approved hashes disagree")
     source_entity_ids: set[str] = set()
+    source_record_counts: dict[str, int] = {}
     for key in sorted(selected_sources):
         original = reader.resolve_source(key=key, cutoff_date=cutoff)
         if (original.header.periodo.year, original.header.periodo.month) != (
@@ -262,13 +265,16 @@ def import_approved_xml_contractual_payments(
                 raise ValueError("Contractual XML changed between approved partitions")
             if needed_ordinals[key].issubset(cached.selected_ordinals):
                 indexed = cached.indexed_rows
+                source_record_counts[key] = cached.total_records
             else:
                 target_ordinals = cached.selected_ordinals | target_ordinals
                 cached = None
         if cached is None:
             indexed = {}
+            original_count = 0
             raw_ids: set[str] = set()
             for ordinal, item in enumerate(reader.iter_records(original), 1):
+                original_count = ordinal
                 if not item.record_id.strip() or item.record_id in raw_ids:
                     raise ValueError("Original contractual XML contains ambiguous record IDs")
                 raw_ids.add(item.record_id)
@@ -276,12 +282,14 @@ def import_approved_xml_contractual_payments(
                     indexed[ordinal] = item
             if reader.sha256(original.path) != actual_hash:
                 raise ValueError("Contractual XML changed while indexing original source")
+            source_record_counts[key] = original_count
             if verified_source_cache is not None:
                 verified_source_cache[key] = VerifiedContractualXMLSource(
                     path=original.path,
                     sha256=actual_hash,
                     entity_id=original.header.id_entidad,
                     selected_ordinals=target_ordinals,
+                    total_records=original_count,
                     indexed_rows=indexed,
                 )
         by_key[key] = indexed, actual_hash
@@ -375,6 +383,7 @@ def import_approved_xml_contractual_payments(
         ledger_sha256=ledger_hash,
         included_source_records=tuple(sorted(contract_details)),
         source_entity_id=next(iter(source_entity_ids)),
+        source_record_counts=tuple(sorted(source_record_counts.items())),
     )
 
 
@@ -391,6 +400,7 @@ def merge_approved_xml_contractual_schedules(
     if not partitions or len(partitions) > 32:
         raise ValueError("One to 32 independently approved payment partitions required")
     source_hashes: dict[str, str] = {}
+    source_record_counts: dict[str, int] = {}
     seen_files: set[str] = set()
     seen_records: set[tuple[str, int]] = set()
     seen_events: set[str] = set()
@@ -413,6 +423,12 @@ def merge_approved_xml_contractual_schedules(
             if key in source_hashes and source_hashes[key] != digest:
                 raise ValueError("Conflicting source hashes across contractual partitions")
             source_hashes[key] = digest
+        for key, total in item.source_record_counts:
+            if key not in dict(item.source_hashes) or total < 0:
+                raise ValueError("Contractual XML source count has no original source proof")
+            if key in source_record_counts and source_record_counts[key] != total:
+                raise ValueError("Contractual XML total source records conflict across partitions")
+            source_record_counts[key] = total
         for record in item.included_source_records:
             if record in seen_records:
                 raise ValueError("Contractual operation repeats across approved partitions")
@@ -432,4 +448,5 @@ def merge_approved_xml_contractual_schedules(
         ledger_sha256=combined_hash,
         included_source_records=tuple(sorted(seen_records)),
         source_entity_id=source_entity_id,
+        source_record_counts=tuple(sorted(source_record_counts.items())),
     )
