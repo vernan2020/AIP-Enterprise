@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import csv
 import hashlib
-from collections import defaultdict
+from collections import Counter, defaultdict
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
@@ -66,6 +66,20 @@ class ApprovedXMLContractualSchedule:
     @property
     def certifies_entire_perimeter(self) -> bool:
         return False
+
+    @property
+    def source_coverage(self) -> tuple[tuple[str, int, int], ...]:
+        """Original XML row counts vs selected contract rows, not cash coverage."""
+        admitted = Counter(source for source, _ordinal in self.included_source_records)
+        coverage: list[tuple[str, int, int]] = []
+        for key, source_total in self.source_record_counts:
+            selected = admitted.pop(key, 0)
+            if selected > source_total or source_total < 0:
+                raise ValueError("Approved source selection exceeds original XML row total")
+            coverage.append((key, selected, source_total))
+        if admitted:
+            raise ValueError("Approved contract count lacks original XML source coverage")
+        return tuple(coverage)
 
 
 @dataclass(frozen=True, slots=True)
