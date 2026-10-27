@@ -80,8 +80,8 @@ class ApprovedScenarioRule:
             raise ValueError("Unapproved scenario parameter cannot be activated")
         if not self.factor.is_finite() or not Decimal(0) <= self.factor <= Decimal(1):
             raise ValueError("Scenario factor must be between 0 and 1")
-        if not 1 <= self.projection_day <= 365:
-            raise ValueError("Scenario payment day must be 1 to 365 after the cutoff")
+        if not 0 <= self.projection_day <= 365:
+            raise ValueError("Scenario day must be inside the requested 365-day horizon")
         if self.valid_from > self.valid_to or self.approved_on > self.valid_from:
             raise ValueError("Scenario approval or validity chronology is inconsistent")
         if self.area == LiquidityBalanceArea.ASSET and self.flow_side != LiquidityFlowSide.INFLOW:
