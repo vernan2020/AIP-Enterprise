@@ -1618,9 +1618,7 @@ class SUGEF210ProjectionPanel(QWidget):
         )
         if len(self._scenario_sessions) == 4:
             try:
-                compared = compare_approved_sugef210_scenarios(
-                    self._scenario_sessions.values()
-                )
+                compared = compare_approved_sugef210_scenarios(self._scenario_sessions.values())
             except ValueError:
                 metadata.append(("comparacion_escenarios", "BLOQUEADA: fuentes no comparables"))
                 comparison_sheet.append(
@@ -1653,11 +1651,7 @@ class SUGEF210ProjectionPanel(QWidget):
                                     if item.projected_liquidity_delta_vs_base is not None
                                     else "N/D"
                                 ),
-                                (
-                                    item.financing_need
-                                    if item.financing_need is not None
-                                    else "N/D"
-                                ),
+                                (item.financing_need if item.financing_need is not None else "N/D"),
                                 (
                                     item.financing_need_delta_vs_base
                                     if item.financing_need_delta_vs_base is not None
@@ -1672,9 +1666,7 @@ class SUGEF210ProjectionPanel(QWidget):
             metadata.append(
                 ("comparacion_escenarios", "INCOMPLETA: requieren cuatro sesiones aprobadas")
             )
-            comparison_sheet.append(
-                ("INCOMPLETA", self._cutoff.isoformat(), "N/D", "N/D", "N/D")
-            )
+            comparison_sheet.append(("INCOMPLETA", self._cutoff.isoformat(), "N/D", "N/D", "N/D"))
 
         event_sheet = workbook.create_sheet("Trazabilidad eventos")
         event_sheet.append(self._EVENT_AUDIT_HEADERS)
