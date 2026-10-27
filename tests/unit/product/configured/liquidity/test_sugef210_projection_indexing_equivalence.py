@@ -25,7 +25,7 @@ def _events() -> tuple[LiquidityProjectionFlow, ...]:
             reference=f"src-{number}",
             source="APPROVED_TEST_ONLY",
             currency=("CRC", "USD")[number % 2],
-            payment_date=CUTOFF + timedelta(days=number % 367),
+            payment_date=CUTOFF + timedelta(days=(number % 366) + 1),
             amount=Decimal(number % 29 + 1) / Decimal("7"),
             side=sides[(number // 2) % len(sides)],
             area=areas[(number // 4) % len(areas)],
