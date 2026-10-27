@@ -269,3 +269,40 @@ def test_comparison_rejects_invented_cash_when_opening_unknown():
     )
     with pytest.raises(ValueError, match="invent closing cash"):
         compare_approved_sugef210_scenarios(sessions)
+
+
+
+def test_comparison_rejects_cash_event_dated_in_wrong_band():
+    sessions = [_session(s) for s in SCENARIOS]
+    original = sessions[1]
+    wrong_day = replace(
+        original.assembly.audited_events[1],
+        payment_date=CUTOFF + timedelta(days=3),
+    )
+    sessions[1] = replace(
+        original,
+        assembly=replace(
+            original.assembly,
+            audited_events=(original.assembly.audited_events[0], wrong_day),
+        ),
+    )
+    with pytest.raises(ValueError, match="payment date does not belong"):
+        compare_approved_sugef210_scenarios(sessions)
+
+
+def test_comparison_rejects_repeated_audit_reference():
+    sessions = [_session(s) for s in SCENARIOS]
+    original = sessions[1]
+    duplicate = replace(
+        original.assembly.audited_events[1],
+        reference=original.assembly.audited_events[0].reference,
+    )
+    sessions[1] = replace(
+        original,
+        assembly=replace(
+            original.assembly,
+            audited_events=(original.assembly.audited_events[0], duplicate),
+        ),
+    )
+    with pytest.raises(ValueError, match="duplicates a contractual"):
+        compare_approved_sugef210_scenarios(sessions)
