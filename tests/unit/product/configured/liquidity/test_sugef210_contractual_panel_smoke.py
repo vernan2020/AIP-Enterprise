@@ -134,7 +134,6 @@ def test_four_scenario_tab_blocks_mixed_source_snapshots(monkeypatch):
     panel.close()
 
 
-
 def test_four_scenario_excel_export_preserves_numeric_deltas_and_unknown_cash(
     monkeypatch, tmp_path
 ):
@@ -168,9 +167,7 @@ def test_four_scenario_excel_export_preserves_numeric_deltas_and_unknown_cash(
             cutoff=panel._cutoff.isoformat(),
             scenarios=("BASE", "IDIOSYNCRATIC", "SYSTEMIC", "COMBINED"),
             rows=(row,),
-            missing_evidence_by_scenario=(
-                ("COMBINED", ("UNAPPROVED_PERIMETER",)),
-            ),
+            missing_evidence_by_scenario=(("COMBINED", ("UNAPPROVED_PERIMETER",)),),
         ),
     )
     destination = tmp_path / "four-scenario-test.xlsx"
