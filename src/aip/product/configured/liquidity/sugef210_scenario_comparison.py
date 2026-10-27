@@ -100,31 +100,41 @@ def _reconcile_audited_cashflows(session: ConfiguredOpeningSession) -> None:
     audited = session.assembly.audited_events
     if len(audited) != projection.source_flow_count:
         raise ValueError("Scenario event count differs from audited payment ledger")
-    expected_bands = {window.key for window in projection.windows}
+    expected_bands = {window.key: window for window in projection.windows}
     amounts: dict[tuple[str, str, LiquidityBalanceArea, LiquidityFlowSide], Decimal] = (
         defaultdict(Decimal)
     )
     counts: dict[tuple[str, str], int] = defaultdict(int)
     outside = 0
+    seen_references: set[str] = set()
     for event in audited:
+        if event.reference in seen_references:
+            raise ValueError("Scenario audit duplicates a contractual or governed cash event")
+        seen_references.add(event.reference)
         if not event.native_amount.is_finite() or event.native_amount <= 0:
             raise ValueError("Scenario audit contains invalid native cash amount")
+        if event.currency not in {"CRC", "USD"} or event.payment_date < session.cutoff:
+            raise ValueError("Scenario audit contains unknown currency or historical payment")
         if event.horizon_status == "AFTER_365D":
-            if event.band_key != "OUTSIDE_365D":
-                raise ValueError("Out-of-horizon event has inconsistent band")
+            if (
+                event.band_key != "OUTSIDE_365D"
+                or event.payment_date <= projection.windows[-1].end
+            ):
+                raise ValueError("Out-of-horizon event has inconsistent payment date or band")
             outside += 1
             continue
-        if (
-            event.horizon_status != "IN_365D"
-            or event.band_key not in expected_bands
-            or event.currency not in {"CRC", "USD"}
-        ):
+        if event.horizon_status != "IN_365D" or event.band_key not in expected_bands:
             raise ValueError("Audited scenario cash event lacks a recognized 365-day band")
+        window = expected_bands[event.band_key]
+        if not window.start <= event.payment_date <= window.end:
+            raise ValueError("Audited scenario payment date does not belong to reported band")
         if (
             event.evidence == LiquidityEvidence.GOVERNED_ASSUMPTION
             and event.assumption_id not in projection.assumption_ids
         ):
             raise ValueError("Scenario cash event lacks an approved assumption reference")
+        if event.evidence == LiquidityEvidence.CONTRACTUAL and event.assumption_id:
+            raise ValueError("Contractual scenario cash event cannot contain a stress assumption")
         amounts[(event.currency, event.band_key, event.area, event.side)] += (
             event.native_amount
         )
