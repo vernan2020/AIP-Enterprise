@@ -429,7 +429,6 @@ def test_unselected_original_id_ambiguity_still_blocks_batch_source(tmp_path):
 
 
 def test_contractual_batch_selection_fails_closed_for_changed_signed_csv(tmp_path):
-    reader = ManyRowReader(tmp_path)
     ledger = tmp_path / "approved.csv"
     with ledger.open("w", encoding="utf-8", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=HEADERS)
