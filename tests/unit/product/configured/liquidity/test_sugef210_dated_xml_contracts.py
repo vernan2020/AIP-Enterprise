@@ -259,7 +259,6 @@ def test_partition_merge_rejects_conflicting_xml_and_cutoffs(tmp_path):
         )
 
 
-
 class CountingReader(Reader):
     """Synthetic reader can prove XML parse is reused across approved partitions."""
 
@@ -336,7 +335,6 @@ def test_partition_merge_rejects_different_institution_entity_ids(tmp_path):
     )
     with pytest.raises(ValueError, match="different entities"):
         merge_approved_xml_contractual_schedules(cutoff=CUTOFF, schedules=(first, second))
-
 
 
 class ManyRowReader(Reader):
