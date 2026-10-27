@@ -390,6 +390,8 @@ def import_approved_xml_contractual_payments(
         original = reader.resolve_source(key=source_key, cutoff_date=cutoff)
         if reader.sha256(original.path) != by_key[source_key][1]:
             raise ValueError("Contractual XML changed during payment reconciliation")
+    if _sha256(path) != ledger_hash:
+        raise ValueError("Contractual payment CSV changed during reconciliation")
     return ApprovedXMLContractualSchedule(
         cutoff=cutoff,
         events=tuple(payments),
