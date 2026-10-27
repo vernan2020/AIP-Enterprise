@@ -1271,9 +1271,7 @@ class SUGEF210ProjectionPanel(QWidget):
         if len(self._scenario_sessions) != 4:
             return
         try:
-            comparison = compare_approved_sugef210_scenarios(
-                self._scenario_sessions.values()
-            )
+            comparison = compare_approved_sugef210_scenarios(self._scenario_sessions.values())
         except ValueError:
             self._append(
                 self._scenario_comparison,
