@@ -16,6 +16,7 @@ from aip.product.configured.irrbb.xml_confia_source import (
     XMLConfiaResolvedSource,
 )
 from aip.product.configured.liquidity.sugef210_dated_xml_contracts import (
+    VerifiedContractualXMLSource,
     import_approved_xml_contractual_payments,
     merge_approved_xml_contractual_schedules,
 )
@@ -255,3 +256,82 @@ def test_partition_merge_rejects_conflicting_xml_and_cutoffs(tmp_path):
         merge_approved_xml_contractual_schedules(
             cutoff=CUTOFF, schedules=(replace(first, cutoff=date(2026, 8, 31)),)
         )
+
+
+
+class CountingReader(Reader):
+    """Synthetic reader can prove XML parse is reused across approved partitions."""
+
+    def __init__(self, root: Path):
+        super().__init__(root)
+        self.parses: dict[str, int] = {}
+
+    def iter_records(self, source):
+        self.parses[source.key] = self.parses.get(source.key, 0) + 1
+        yield from super().iter_records(source)
+
+
+def _cached_partition(reader, tmp_path, *, suffix, cache, amount="200"):
+    ledger = tmp_path / f"partition-{suffix}.csv"
+    with ledger.open("w", encoding="utf-8", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=HEADERS)
+        writer.writeheader()
+        writer.writerow(_row("CREDIT", payment=suffix, amount=amount))
+    return import_approved_xml_contractual_payments(
+        reader=reader,
+        cutoff=CUTOFF,
+        ledger_file=ledger,
+        expected_ledger_sha256=Reader.sha256(ledger),
+        approved_xml_sha256={"CREDIT": Reader.sha256(tmp_path / "CREDIT.xml")},
+        approved_currency_codes={"1": "CRC", "2": "USD"},
+        source_payment_approval="TEST-CONTRACTUAL-SCHEDULE",
+        settlement_approval="TEST-SETTLEMENT",
+        nonduplication_reference=f"PARTITION-{suffix}",
+        verified_source_cache=cache,
+    )
+
+
+def test_verified_xml_cache_avoids_reparsing_same_source_between_partitions(tmp_path):
+    reader = CountingReader(tmp_path)
+    cache: dict[str, VerifiedContractualXMLSource] = {}
+    first = _cached_partition(reader, tmp_path, suffix="A", cache=cache)
+    second = _cached_partition(reader, tmp_path, suffix="B", cache=cache)
+    assert reader.parses == {"CREDIT": 1}
+    assert list(cache) == ["CREDIT"]
+    assert first.source_entity_id == second.source_entity_id == "TEST"
+    assert first.events[0].source != second.events[0].source
+    assert first.events[0].amount == second.events[0].amount == 200
+    assert first.certifies_entire_perimeter is False
+
+
+def test_verified_xml_cache_fails_closed_when_source_changes_between_partitions(tmp_path):
+    reader = CountingReader(tmp_path)
+    cache: dict[str, VerifiedContractualXMLSource] = {}
+    _cached_partition(reader, tmp_path, suffix="A", cache=cache)
+    (tmp_path / "CREDIT.xml").write_bytes(b"modified-after-first-signed-ledger")
+    with pytest.raises(ValueError, match="changed after approval"):
+        _cached_partition(reader, tmp_path, suffix="B", cache=cache)
+    assert reader.parses == {"CREDIT": 1}
+
+
+def test_cached_source_path_cannot_switch_without_invalidating_snapshot(tmp_path):
+    reader = CountingReader(tmp_path)
+    cache: dict[str, VerifiedContractualXMLSource] = {}
+    _cached_partition(reader, tmp_path, suffix="A", cache=cache)
+    cache["CREDIT"] = replace(cache["CREDIT"], path=tmp_path / "SOME-OTHER-XML.xml")
+    with pytest.raises(ValueError, match="changed between approved partitions"):
+        _cached_partition(reader, tmp_path, suffix="B", cache=cache)
+
+
+def test_partition_merge_rejects_different_institution_entity_ids(tmp_path):
+    folder = tmp_path / "entity"
+    folder.mkdir()
+    first = _import(folder, [_row("CREDIT")])
+    second = replace(
+        first,
+        ledger_sha256="f" * 64,
+        source_entity_id="FOREIGN-ENTITY",
+        included_source_records=(("BORROWING", 7),),
+    )
+    with pytest.raises(ValueError, match="different entities"):
+        merge_approved_xml_contractual_schedules(cutoff=CUTOFF, schedules=(first, second))
