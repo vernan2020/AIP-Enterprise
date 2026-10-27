@@ -3,10 +3,15 @@
 from __future__ import annotations
 
 from datetime import date
+from decimal import Decimal
 
 from PySide6.QtCore import QDate
 from PySide6.QtWidgets import QApplication, QPushButton, QTableWidget, QTabWidget
 
+from aip.product.configured.liquidity.sugef210_scenario_comparison import (
+    LiquidityFourScenarioComparison,
+    LiquidityScenarioDifference,
+)
 from aip.ui.modules.liquidity.views.sugef210_projection_panel import SUGEF210ProjectionPanel
 
 
@@ -54,4 +59,77 @@ def test_contractual_tab_and_cutoff_invalidation_without_private_cash():
     next_cutoff = date(cutoff.year - 1, cutoff.month, cutoff.day)
     panel._on_date_changed(QDate(next_cutoff.year, next_cutoff.month, next_cutoff.day))
     assert table.rowCount() == 0
+    panel.close()
+
+
+
+def test_four_scenario_tab_renders_partial_delta_then_invalidates_cutoff(monkeypatch):
+    from aip.ui.modules.liquidity.views import sugef210_projection_panel as module
+
+    app = QApplication.instance() or QApplication([])
+    panel = SUGEF210ProjectionPanel()
+    table = panel.findChild(QTableWidget, "sugef210FourScenarioComparison")
+    assert app is not None and table is not None
+    assert table.rowCount() == 0
+
+    row = LiquidityScenarioDifference(
+        scenario="COMBINED",
+        currency="CRC",
+        band_key="D02",
+        net_flow=Decimal("-20"),
+        net_flow_delta_vs_base=Decimal("-20"),
+        accumulated_flow_delta_vs_base=Decimal("-20"),
+        projected_liquidity=None,
+        projected_liquidity_delta_vs_base=None,
+        financing_need=None,
+        financing_need_delta_vs_base=None,
+    )
+
+    def comparison(_sessions):
+        assert len(tuple(_sessions)) == 4
+        return LiquidityFourScenarioComparison(
+            cutoff=panel._cutoff.isoformat(),
+            scenarios=("BASE", "IDIOSYNCRATIC", "SYSTEMIC", "COMBINED"),
+            rows=(row,),
+            missing_evidence_by_scenario=(),
+        )
+
+    monkeypatch.setattr(module, "compare_approved_sugef210_scenarios", comparison)
+    panel._scenario_sessions.update(
+        {"BASE": None, "IDIOSYNCRATIC": None, "SYSTEMIC": None, "COMBINED": None}
+    )
+    panel._refresh_four_scenario_comparison()
+    assert table.rowCount() == 1
+    assert table.item(0, 0).text() == "COMBINED"
+    assert table.item(0, 3).text() == "-20"
+    assert table.item(0, 4).text() == "N/D"
+    assert table.item(0, 5).text() == "N/D"
+    assert "NO CERTIFICADO" in table.item(0, 6).text()
+    cutoff = panel._cutoff
+    previous = date(cutoff.year - 1, cutoff.month, cutoff.day)
+    panel._on_date_changed(QDate(previous.year, previous.month, previous.day))
+    assert table.rowCount() == 0
+    assert panel._scenario_sessions == {}
+    panel.close()
+
+
+def test_four_scenario_tab_blocks_mixed_source_snapshots(monkeypatch):
+    from aip.ui.modules.liquidity.views import sugef210_projection_panel as module
+
+    app = QApplication.instance() or QApplication([])
+    panel = SUGEF210ProjectionPanel()
+    table = panel.findChild(QTableWidget, "sugef210FourScenarioComparison")
+    assert app is not None and table is not None
+
+    def incompatible(_sessions):
+        raise ValueError("Financial source snapshot does not match")
+
+    monkeypatch.setattr(module, "compare_approved_sugef210_scenarios", incompatible)
+    panel._scenario_sessions.update(
+        {"BASE": None, "IDIOSYNCRATIC": None, "SYSTEMIC": None, "COMBINED": None}
+    )
+    panel._refresh_four_scenario_comparison()
+    assert table.rowCount() == 1
+    assert table.item(0, 0).text() == "BLOQUEADO"
+    assert "no coinciden" in table.item(0, 6).text()
     panel.close()
