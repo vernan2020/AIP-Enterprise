@@ -19,6 +19,7 @@ from aip.product.configured.liquidity.sugef210_dated_xml_contracts import (
     VerifiedContractualXMLSource,
     import_approved_xml_contractual_payments,
     merge_approved_xml_contractual_schedules,
+    select_approved_partition_source_ordinals,
 )
 
 CUTOFF = date(2026, 9, 30)
@@ -335,3 +336,106 @@ def test_partition_merge_rejects_different_institution_entity_ids(tmp_path):
     )
     with pytest.raises(ValueError, match="different entities"):
         merge_approved_xml_contractual_schedules(cutoff=CUTOFF, schedules=(first, second))
+
+
+
+class ManyRowReader(Reader):
+    """Large synthetic XML stream with a tiny original-contract selection."""
+
+    def __init__(self, root: Path, *, duplicate_unselected: bool = False):
+        super().__init__(root)
+        self.parses = 0
+        self.duplicate_unselected = duplicate_unselected
+
+    def iter_records(self, source):
+        self.parses += 1
+        for ordinal in range(1, 201):
+            record_id = f"SOURCE-{ordinal}"
+            if self.duplicate_unselected and ordinal == 150:
+                record_id = "SOURCE-149"
+            yield XMLConfiaRecord(
+                record_id=record_id,
+                action="insertar",
+                values=SRC[source.key],
+            )
+
+
+def test_batch_source_selection_keeps_only_required_original_xml_rows(tmp_path):
+    reader = ManyRowReader(tmp_path)
+    ledgers = []
+    for ordinal in (2, 199):
+        ledger = tmp_path / f"source-ordinal-{ordinal}.csv"
+        with ledger.open("w", encoding="utf-8", newline="") as stream:
+            writer = csv.DictWriter(stream, fieldnames=HEADERS)
+            writer.writeheader()
+            writer.writerow(
+                {
+                    **_row("CREDIT", payment=f"PAY-{ordinal}"),
+                    "source_ordinal": str(ordinal),
+                    "source_record_id": f"SOURCE-{ordinal}",
+                }
+            )
+        ledgers.append((ledger, Reader.sha256(ledger)))
+    ordinals = select_approved_partition_source_ordinals(ledgers)
+    assert ordinals == {"CREDIT": frozenset({2, 199})}
+    cache: dict[str, VerifiedContractualXMLSource] = {}
+    for index, (ledger, digest) in enumerate(ledgers):
+        result = import_approved_xml_contractual_payments(
+            reader=reader,
+            cutoff=CUTOFF,
+            ledger_file=ledger,
+            expected_ledger_sha256=digest,
+            approved_xml_sha256={"CREDIT": Reader.sha256(tmp_path / "CREDIT.xml")},
+            approved_currency_codes={"1": "CRC"},
+            source_payment_approval="TEST-DATED-SCHEDULE",
+            settlement_approval="TEST-SETTLEMENT",
+            nonduplication_reference=f"BATCH-{index}",
+            verified_source_cache=cache,
+            selected_source_ordinals=ordinals,
+        )
+        assert len(result.events) == 1
+    assert reader.parses == 1
+    assert cache["CREDIT"].selected_ordinals == frozenset({2, 199})
+    assert sorted(cache["CREDIT"].indexed_rows) == [2, 199]
+
+
+def test_unselected_original_id_ambiguity_still_blocks_batch_source(tmp_path):
+    reader = ManyRowReader(tmp_path, duplicate_unselected=True)
+    ledger = tmp_path / "selected.csv"
+    with ledger.open("w", encoding="utf-8", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=HEADERS)
+        writer.writeheader()
+        writer.writerow(
+            {
+                **_row("CREDIT"),
+                "source_ordinal": "2",
+                "source_record_id": "SOURCE-2",
+            }
+        )
+    selected = select_approved_partition_source_ordinals([(ledger, Reader.sha256(ledger))])
+    with pytest.raises(ValueError, match="ambiguous record IDs"):
+        import_approved_xml_contractual_payments(
+            reader=reader,
+            cutoff=CUTOFF,
+            ledger_file=ledger,
+            expected_ledger_sha256=Reader.sha256(ledger),
+            approved_xml_sha256={"CREDIT": Reader.sha256(tmp_path / "CREDIT.xml")},
+            approved_currency_codes={"1": "CRC"},
+            source_payment_approval="TEST-APPROVED-PAYMENTS",
+            settlement_approval="TEST-SETTLEMENT",
+            nonduplication_reference="TEST-UNIQUE",
+            selected_source_ordinals=selected,
+        )
+
+
+def test_contractual_batch_selection_fails_closed_for_changed_signed_csv(tmp_path):
+    reader = ManyRowReader(tmp_path)
+    ledger = tmp_path / "approved.csv"
+    with ledger.open("w", encoding="utf-8", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=HEADERS)
+        writer.writeheader()
+        writer.writerow(_row("CREDIT"))
+    old_hash = Reader.sha256(ledger)
+    ledger.write_text("changed", encoding="utf-8")
+    with pytest.raises(ValueError, match="changed after approval"):
+        select_approved_partition_source_ordinals([(ledger, old_hash)])
