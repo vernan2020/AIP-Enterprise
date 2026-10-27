@@ -132,3 +132,91 @@ def test_four_scenario_tab_blocks_mixed_source_snapshots(monkeypatch):
     assert table.item(0, 0).text() == "BLOQUEADO"
     assert "no coinciden" in table.item(0, 6).text()
     panel.close()
+
+
+
+def test_four_scenario_excel_export_preserves_numeric_deltas_and_unknown_cash(
+    monkeypatch, tmp_path
+):
+    from openpyxl import load_workbook
+
+    from aip.ui.modules.liquidity.views import sugef210_projection_panel as module
+
+    app = QApplication.instance() or QApplication([])
+    panel = SUGEF210ProjectionPanel()
+    assert app is not None
+    panel._report = {"cutoff": panel._cutoff.isoformat()}
+    panel._scenario_sessions.update(
+        {"BASE": None, "IDIOSYNCRATIC": None, "SYSTEMIC": None, "COMBINED": None}
+    )
+    row = LiquidityScenarioDifference(
+        scenario="COMBINED",
+        currency="CRC",
+        band_key="D02",
+        net_flow=Decimal("-30"),
+        net_flow_delta_vs_base=Decimal("-30"),
+        accumulated_flow_delta_vs_base=Decimal("-30"),
+        projected_liquidity=None,
+        projected_liquidity_delta_vs_base=None,
+        financing_need=None,
+        financing_need_delta_vs_base=None,
+    )
+    monkeypatch.setattr(
+        module,
+        "compare_approved_sugef210_scenarios",
+        lambda _sessions: LiquidityFourScenarioComparison(
+            cutoff=panel._cutoff.isoformat(),
+            scenarios=("BASE", "IDIOSYNCRATIC", "SYSTEMIC", "COMBINED"),
+            rows=(row,),
+            missing_evidence_by_scenario=(
+                ("COMBINED", ("UNAPPROVED_PERIMETER",)),
+            ),
+        ),
+    )
+    destination = tmp_path / "four-scenario-test.xlsx"
+    monkeypatch.setattr(
+        module.QFileDialog,
+        "getSaveFileName",
+        lambda *_args, **_kwargs: (str(destination), "Excel (*.xlsx)"),
+    )
+    panel.export_reconciliation()
+    book = load_workbook(destination, read_only=True, data_only=True)
+    try:
+        sheet = book["Comparación 4 escenarios"]
+        assert sheet.max_row == 2
+        assert sheet["A2"].value == "COMBINED"
+        assert sheet["F2"].value == -30
+        assert sheet["I2"].value == "N/D"
+        assert sheet["K2"].value == "N/D"
+        assert sheet["L2"].value == "UNAPPROVED_PERIMETER"
+        assert sheet["M2"].value == "NO CERTIFICADO"
+    finally:
+        book.close()
+        panel.close()
+
+
+def test_four_scenario_excel_export_blocks_missing_scenario_sessions(monkeypatch, tmp_path):
+    from openpyxl import load_workbook
+
+    from aip.ui.modules.liquidity.views import sugef210_projection_panel as module
+
+    app = QApplication.instance() or QApplication([])
+    panel = SUGEF210ProjectionPanel()
+    assert app is not None
+    panel._report = {"cutoff": panel._cutoff.isoformat()}
+    destination = tmp_path / "four-scenario-incomplete.xlsx"
+    monkeypatch.setattr(
+        module.QFileDialog,
+        "getSaveFileName",
+        lambda *_args, **_kwargs: (str(destination), "Excel (*.xlsx)"),
+    )
+    panel.export_reconciliation()
+    book = load_workbook(destination, read_only=True, data_only=True)
+    try:
+        sheet = book["Comparación 4 escenarios"]
+        assert sheet.max_row == 2
+        assert sheet["A2"].value == "INCOMPLETA"
+        assert sheet["E2"].value == "N/D"
+    finally:
+        book.close()
+        panel.close()
