@@ -200,8 +200,8 @@ def project_sugef210(
             raise ValueError("Duplicate liquidity event (risk of double counting)")
         seen.add(event.reference)
         areas.add(event.area)
-        if event.payment_date <= cutoff:
-            raise ValueError("Cutoff-day or historical cashflow belongs to opening reconciliation, not future bands")
+        if event.payment_date < cutoff:
+            raise ValueError("Historical flow cannot be rolled forward to day zero")
         if event.evidence == LiquidityEvidence.GOVERNED_ASSUMPTION:
             approved_policy = policies.get(event.assumption_id or "")
             if approved_policy is None or approved_policy.scenario != scenario:
