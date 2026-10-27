@@ -97,7 +97,6 @@ def test_partial_identity_linkage_is_explicitly_marked_for_review():
     assert "3 de 4" in rows[0][2]
 
 
-
 def test_contractual_coverage_displays_missing_sources_as_unknown_not_zero():
     result = summarize_approved_contractual_source_coverage((("CREDIT", 2, 200),))
     assert tuple(item["source_key"] for item in result) == (
