@@ -116,6 +116,47 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def select_approved_partition_source_ordinals(
+    ledgers: Iterable[tuple[Path, str]],
+) -> dict[str, frozenset[int]]:
+    """Select only XML rows referenced by signed ledgers before parsing large sources.
+
+    This is a preflight index, NOT an approval and NOT a cashflow. Each ledger
+    and XML are independently reverified during actual payment admission.
+    """
+    selected: dict[str, set[int]] = defaultdict(set)
+    for path, expected_hash in ledgers:
+        if not path.is_file() or path.stat().st_size > _MAX_CSV_SIZE:
+            raise ValueError("Contractual payment ledger missing or oversized")
+        if len(expected_hash) != 64 or _sha256(path) != expected_hash.lower():
+            raise ValueError("Contractual ledger changed after approval")
+        with path.open("r", encoding="utf-8-sig", newline="") as stream:
+            reader = csv.DictReader(stream)
+            if (
+                reader.fieldnames is None
+                or len(reader.fieldnames) != len(set(reader.fieldnames))
+                or set(reader.fieldnames) != set(_REQUIRED)
+            ):
+                raise ValueError("Source payment CSV must have exact unique governed columns")
+            count = 0
+            for row in reader:
+                count += 1
+                if count > 250000:
+                    raise ValueError("Contractual payment ledger exceeds approved size")
+                source_key = _require(row.get("source_key"), "source_key")
+                if source_key not in _SUPPORTED:
+                    raise ValueError("Unsupported original contractual source")
+                original_ordinal = _require(row.get("source_ordinal"), "source_ordinal")
+                if not original_ordinal.isdecimal() or int(original_ordinal) <= 0:
+                    raise ValueError("Original XML row ordinal must be positive")
+                selected[source_key].add(int(original_ordinal))
+            if count == 0:
+                raise ValueError("No real contractual payment records were supplied")
+        if _sha256(path) != expected_hash.lower():
+            raise ValueError("Contractual ledger changed during partition preflight")
+    return {key: frozenset(values) for key, values in selected.items()}
+
+
 def import_approved_xml_contractual_payments(
     *,
     reader: XMLConfiaMonthlySourceReader,
