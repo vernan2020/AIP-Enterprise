@@ -1,4 +1,4 @@
-"""Cutoff-day cash belongs to bank-reconciled opening, never future liquidity bands."""
+"""SUGEF 2-10 retains intraday D00; prior days must not enter a new cutoff."""
 
 from __future__ import annotations
 
@@ -37,65 +37,84 @@ def _flow(day: int) -> LiquidityProjectionFlow:
     )
 
 
-@pytest.mark.parametrize("day", (-1, 0))
-def test_engine_rejects_cutoff_or_historical_cash_instead_of_dropping_event(day):
-    with pytest.raises(ValueError, match="opening reconciliation"):
+def test_historical_cash_cannot_roll_into_new_cutoff():
+    with pytest.raises(ValueError, match="Historical flow"):
         project_sugef210(
             cutoff=CUTOFF,
             scenario="BASE",
-            flows=(_flow(day),),
+            flows=(_flow(-1),),
             opening_liquidity={"CRC": Decimal("200")},
         )
 
 
-@pytest.mark.parametrize("day", (-1, 0))
-def test_assembler_blocks_cutoff_day_prior_to_future_band_audit(day):
-    with pytest.raises(ValueError, match="reconcile to opening"):
+def test_assembler_rejects_historical_cash_before_audit():
+    with pytest.raises(ValueError, match="Historical source flow"):
         assemble_partial_institutional_projection(
             cutoff=CUTOFF,
             scenario="BASE",
-            off_balance_flows=(_flow(day),),
+            off_balance_flows=(_flow(-1),),
             off_balance_certification_reference="SYNTHETIC-REVIEW",
         )
 
 
-def test_first_future_day_is_included_and_opening_kept_separate():
+def test_intraday_d00_and_next_day_d01_are_distinct_and_reconciled():
     result = project_sugef210(
         cutoff=CUTOFF,
         scenario="BASE",
-        flows=(_flow(1),),
-        opening_liquidity={"CRC": Decimal("200")},
+        flows=(_flow(0), _flow(1)),
+        opening_liquidity={"CRC": Decimal("300")},
     )
-    crc_day_one = next(
-        row
-        for row in result.rows
-        if row.currency == "CRC" and row.window.key == "D01"
-    )
-    assert crc_day_one.event_count == 1
-    assert crc_day_one.net_flow == Decimal("-100")
-    assert crc_day_one.opening_liquidity == Decimal("200")
-    assert crc_day_one.projected_liquidity == Decimal("100")
+    rows = {row.window.key: row for row in result.rows if row.currency == "CRC"}
+    assert rows["D00"].event_count == 1
+    assert rows["D00"].net_flow == Decimal("-100")
+    assert rows["D00"].projected_liquidity == Decimal("200")
+    assert rows["D01"].event_count == 1
+    assert rows["D01"].net_flow == Decimal("-100")
+    assert rows["D01"].accumulated_flow == Decimal("-200")
+    assert rows["D01"].projected_liquidity == Decimal("100")
+    assert result.source_flow_count == 2
     assert result.excluded_out_of_horizon == 0
 
 
+def test_assembler_audits_intraday_cash_with_native_d00_band():
+    result = assemble_partial_institutional_projection(
+        cutoff=CUTOFF,
+        scenario="BASE",
+        off_balance_flows=(_flow(0),),
+        off_balance_certification_reference="SYNTHETIC-REVIEW",
+    )
+    assert len(result.audited_events) == 1
+    assert result.audited_events[0].band_key == "D00"
+    assert result.audited_events[0].horizon_status == "IN_365D"
+    assert result.projection.source_flow_count == 1
+    assert result.projection.certified_comprehensive is False
 
-@pytest.mark.parametrize("projection_day", (0, 366))
-def test_governed_scenario_rule_rejects_days_outside_future_bands(projection_day):
-    with pytest.raises(ValueError, match="1 to 365"):
-        ApprovedScenarioRule(
-            reference="TEST-SCENARIO-RULE",
-            scenario="BASE",
-            exposure_category="TEST-EXPOSURE",
-            factor=Decimal("0.1"),
-            projection_day=projection_day,
-            flow_side=LiquidityFlowSide.OUTFLOW,
-            area=LiquidityBalanceArea.LIABILITY,
-            rationale="Synthetic scenario boundary check",
-            approval_reference="SYNTHETIC-NOT-AN-INSTITUTIONAL-APPROVAL",
-            source_reference="SYNTHETIC",
-            version="1",
-            approved_on=CUTOFF - timedelta(days=2),
-            valid_from=CUTOFF - timedelta(days=1),
-            valid_to=CUTOFF + timedelta(days=30),
-            explicitly_approved=True,
-        )
+
+def _rule(projection_day: int) -> ApprovedScenarioRule:
+    return ApprovedScenarioRule(
+        reference="TEST-SCENARIO-RULE",
+        scenario="BASE",
+        exposure_category="TEST-EXPOSURE",
+        factor=Decimal("0.1"),
+        projection_day=projection_day,
+        flow_side=LiquidityFlowSide.OUTFLOW,
+        area=LiquidityBalanceArea.LIABILITY,
+        rationale="Synthetic scenario boundary check",
+        approval_reference="SYNTHETIC-NOT-AN-INSTITUTIONAL-APPROVAL",
+        source_reference="SYNTHETIC",
+        version="1",
+        approved_on=CUTOFF - timedelta(days=2),
+        valid_from=CUTOFF - timedelta(days=1),
+        valid_to=CUTOFF + timedelta(days=30),
+        explicitly_approved=True,
+    )
+
+
+def test_approved_scenario_rule_can_use_intraday_d00():
+    assert _rule(0).projection_day == 0
+
+
+@pytest.mark.parametrize("projection_day", (-1, 366))
+def test_governed_scenario_rules_reject_dates_outside_d00_to_day365(projection_day):
+    with pytest.raises(ValueError, match="requested 365-day horizon"):
+        _rule(projection_day)
