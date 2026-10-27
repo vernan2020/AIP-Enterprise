@@ -36,6 +36,16 @@ def summarize_session(session: ConfiguredOpeningSession) -> dict[str, object]:
         "credit_deposits_borrowing_payment_events_approved": (
             session.xml_contractual_events_approved
         ),
+        "contractual_xml_selected_contracts_by_source": [
+            {
+                "source_key": key,
+                "approved_contracts": selected,
+                "original_xml_contracts": total,
+                "unselected_source_records_not_automatically_cashflows": total - selected,
+                "coverage_certified": False,
+            }
+            for key, selected, total in session.xml_contractual_source_coverage
+        ],
         "offbalance_commitments_reviewed": session.offbalance_commitments_reviewed,
         "governed_offbalance_scenario_events": (session.contingent_scenario_events_approved),
         "financial_plan_events_approved": session.financial_plan_events_approved,
