@@ -1193,6 +1193,21 @@ class SUGEF210ProjectionPanel(QWidget):
             projected=True,
             contractual_inventory=(self._report or {}).get("contractual_source_inventory"),
         )
+        for source_key, approved_count, original_count in session.xml_contractual_source_coverage:
+            if approved_count > original_count:
+                raise ValueError("Approved contractual source coverage exceeds original XML")
+            self._append(
+                self._source_readiness,
+                (
+                    f"XML_CRONOGRAMA_{source_key}",
+                    "REVIEW_REQUIRED" if approved_count != original_count else "REFERENCE_ONLY",
+                    (
+                        f"{approved_count} contratos aprobados de {original_count} "
+                        "registros XML originales. Los no seleccionados requieren "
+                        "clasificación; cobertura completa no equivale a certificación."
+                    ),
+                ),
+            )
         self._opening_status.setText(
             f"Caja inicial documentada: {session.sight_records_approved} inversiones "
             f"a la vista revisadas contra XML/Maestro; "
