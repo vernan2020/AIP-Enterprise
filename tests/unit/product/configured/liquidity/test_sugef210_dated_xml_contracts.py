@@ -153,6 +153,11 @@ def test_three_xml_perimeters_preserve_original_native_cash_dates_and_sides(tmp_
     assert [e.area.value for e in result.events] == ["ASSET", "LIABILITY", "LIABILITY"]
     assert [e.side.value for e in result.events] == ["INFLOW", "OUTFLOW", "OUTFLOW"]
     assert result.certifies_entire_perimeter is False
+    assert result.source_coverage == (
+        ("BORROWING", 1, 1),
+        ("CAPTACIONES", 1, 1),
+        ("CREDIT", 1, 1),
+    )
 
 
 def test_full_principal_reconciliation_allows_separate_contractual_coupon(tmp_path):
@@ -377,6 +382,7 @@ def test_batch_source_selection_keeps_only_required_original_xml_rows(tmp_path):
     ordinals = select_approved_partition_source_ordinals(ledgers)
     assert ordinals == {"CREDIT": frozenset({2, 199})}
     cache: dict[str, VerifiedContractualXMLSource] = {}
+    partitions = []
     for index, (ledger, digest) in enumerate(ledgers):
         result = import_approved_xml_contractual_payments(
             reader=reader,
@@ -392,6 +398,12 @@ def test_batch_source_selection_keeps_only_required_original_xml_rows(tmp_path):
             selected_source_ordinals=ordinals,
         )
         assert len(result.events) == 1
+        partitions.append(result)
+    combined = merge_approved_xml_contractual_schedules(
+        cutoff=CUTOFF, schedules=partitions
+    )
+    assert combined.source_coverage == (("CREDIT", 2, 200),)
+    assert combined.certifies_entire_perimeter is False
     assert reader.parses == 1
     assert cache["CREDIT"].selected_ordinals == frozenset({2, 199})
     assert sorted(cache["CREDIT"].indexed_rows) == [2, 199]
@@ -436,3 +448,24 @@ def test_contractual_batch_selection_fails_closed_for_changed_signed_csv(tmp_pat
     ledger.write_text("changed", encoding="utf-8")
     with pytest.raises(ValueError, match="changed after approval"):
         select_approved_partition_source_ordinals([(ledger, old_hash)])
+
+
+
+def test_contractual_partition_source_totals_conflict_fails_closed(tmp_path):
+    first = _import(tmp_path, [_row("CREDIT")])
+    inconsistent = replace(
+        first,
+        ledger_sha256="f" * 64,
+        source_record_counts=(("CREDIT", 2),),
+    )
+    with pytest.raises(ValueError, match="total source records conflict"):
+        merge_approved_xml_contractual_schedules(
+            cutoff=CUTOFF, schedules=(first, inconsistent)
+        )
+
+
+def test_contractual_coverage_rejects_more_selected_than_original_xml(tmp_path):
+    original = _import(tmp_path, [_row("CREDIT")])
+    corrupt = replace(original, source_record_counts=(("CREDIT", 0),))
+    with pytest.raises(ValueError, match="exceeds original"):
+        _ = corrupt.source_coverage
