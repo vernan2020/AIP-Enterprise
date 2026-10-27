@@ -14,6 +14,9 @@ from aip.domain.liquidity.cashflow.services.sugef210_projection import (
     LiquidityProjectionFlow,
     project_sugef210,
 )
+from aip.domain.liquidity.cashflow.services.sugef210_scenario_rules import (
+    ApprovedScenarioRule,
+)
 from aip.product.configured.liquidity.sugef210_projection_assembler import (
     assemble_partial_institutional_projection,
 )
@@ -73,3 +76,26 @@ def test_first_future_day_is_included_and_opening_kept_separate():
     assert crc_day_one.opening_liquidity == Decimal("200")
     assert crc_day_one.projected_liquidity == Decimal("100")
     assert result.excluded_out_of_horizon == 0
+
+
+
+@pytest.mark.parametrize("projection_day", (0, 366))
+def test_governed_scenario_rule_rejects_days_outside_future_bands(projection_day):
+    with pytest.raises(ValueError, match="1 to 365"):
+        ApprovedScenarioRule(
+            reference="TEST-SCENARIO-RULE",
+            scenario="BASE",
+            exposure_category="TEST-EXPOSURE",
+            factor=Decimal("0.1"),
+            projection_day=projection_day,
+            flow_side=LiquidityFlowSide.OUTFLOW,
+            area=LiquidityBalanceArea.LIABILITY,
+            rationale="Synthetic scenario boundary check",
+            approval_reference="SYNTHETIC-NOT-AN-INSTITUTIONAL-APPROVAL",
+            source_reference="SYNTHETIC",
+            version="1",
+            approved_on=CUTOFF - timedelta(days=2),
+            valid_from=CUTOFF - timedelta(days=1),
+            valid_to=CUTOFF + timedelta(days=30),
+            explicitly_approved=True,
+        )
