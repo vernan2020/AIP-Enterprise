@@ -40,9 +40,7 @@ def summarize_session(session: ConfiguredOpeningSession) -> dict[str, object]:
             session.xml_contractual_events_approved
         ),
         "contractual_xml_selected_contracts_by_source": list(
-            summarize_approved_contractual_source_coverage(
-                session.xml_contractual_source_coverage
-            )
+            summarize_approved_contractual_source_coverage(session.xml_contractual_source_coverage)
         ),
         "offbalance_commitments_reviewed": session.offbalance_commitments_reviewed,
         "governed_offbalance_scenario_events": (session.contingent_scenario_events_approved),
