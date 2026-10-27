@@ -81,10 +81,7 @@ def _source_snapshot(session: ConfiguredOpeningSession) -> tuple[object, ...]:
         session.master_principal_events_approved,
         session.master_coupon_events_approved,
         session.xml_contractual_events_approved,
-        tuple(
-            (row.currency, row.window.key, row.opening_liquidity)
-            for row in projection.rows
-        ),
+        tuple((row.currency, row.window.key, row.opening_liquidity) for row in projection.rows),
         projection.unattested_opening_currencies,
         _fixed_cashflow_identity(session),
     )
@@ -97,7 +94,9 @@ def compare_approved_sugef210_scenarios(
     supplied = tuple(sessions)
     indexed = {session.scenario: session for session in supplied}
     if len(supplied) != 4 or len(indexed) != 4 or set(indexed) != set(_REQUIRED_SCENARIOS):
-        raise ValueError("Four distinct BASE, IDIOSYNCRATIC, SYSTEMIC and COMBINED sessions required")
+        raise ValueError(
+            "Four distinct BASE, IDIOSYNCRATIC, SYSTEMIC and COMBINED sessions required"
+        )
     base = indexed["BASE"]
     common = _source_snapshot(base)
     cutoff = base.cutoff
@@ -110,12 +109,18 @@ def compare_approved_sugef210_scenarios(
     for scenario in _REQUIRED_SCENARIOS:
         session = indexed[scenario]
         projection = session.assembly.projection
-        if session.cutoff != cutoff or projection.cutoff != cutoff or projection.scenario != scenario:
+        if (
+            session.cutoff != cutoff
+            or projection.cutoff != cutoff
+            or projection.scenario != scenario
+        ):
             raise ValueError("Scenario cutoffs and names must match the source session")
         if projection.windows != base_projection.windows or len(projection.rows) != 34:
             raise ValueError("Liquidity scenario windows differ from baseline")
         if _source_snapshot(session) != common:
-            raise ValueError("Scenario has different opening, evidence or fixed contractual cashflows")
+            raise ValueError(
+                "Scenario has different opening, evidence or fixed contractual cashflows"
+            )
         unique: set[tuple[str, str]] = set()
         for row in projection.rows:
             key = row.currency, row.window.key
