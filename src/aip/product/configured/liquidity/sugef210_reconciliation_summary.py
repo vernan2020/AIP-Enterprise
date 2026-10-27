@@ -110,3 +110,58 @@ def summarize_contractual_reconciliation(
         )
     )
     return tuple(rows)
+
+_XML_CONTRACT_SOURCES = ("CREDIT", "CAPTACIONES", "BORROWING")
+
+
+def summarize_approved_contractual_source_coverage(
+    coverage: tuple[tuple[str, int, int], ...],
+) -> tuple[dict[str, object], ...]:
+    """Report all XML perimeters, including those without approved schedules.
+
+    A missing approved schedule is unknown coverage, never zero outstanding
+    contractual principal or proof that the source has no future payments.
+    """
+    by_key: dict[str, tuple[int, int]] = {}
+    for source_key, selected, original in coverage:
+        if (
+            source_key not in _XML_CONTRACT_SOURCES
+            or source_key in by_key
+            or type(selected) is not int
+            or type(original) is not int
+            or selected < 0
+            or original < selected
+        ):
+            raise ValueError("Invalid original contractual XML source coverage")
+        by_key[source_key] = selected, original
+    output: list[dict[str, object]] = []
+    for source_key in _XML_CONTRACT_SOURCES:
+        counts = by_key.get(source_key)
+        if counts is None:
+            output.append(
+                {
+                    "source_key": source_key,
+                    "status": "NO_APPROVED_CONTRACTUAL_SCHEDULE",
+                    "approved_contracts": None,
+                    "original_xml_contracts": None,
+                    "unselected_source_records_not_automatically_cashflows": None,
+                    "coverage_certified": False,
+                }
+            )
+        else:
+            selected, original = counts
+            output.append(
+                {
+                    "source_key": source_key,
+                    "status": (
+                        "ALL_ORIGINAL_ROWS_SELECTED_NOT_FINANCIALLY_CERTIFIED"
+                        if selected == original
+                        else "PARTIALLY_SELECTED_NOT_FINANCIALLY_CERTIFIED"
+                    ),
+                    "approved_contracts": selected,
+                    "original_xml_contracts": original,
+                    "unselected_source_records_not_automatically_cashflows": original - selected,
+                    "coverage_certified": False,
+                }
+            )
+    return tuple(output)
