@@ -135,14 +135,26 @@ def test_scenarios_compare_crc_and_usd_without_fake_certification():
     assert result.scenarios == SCENARIOS
     assert result.cutoff == CUTOFF.isoformat()
     assert result.status == "FOUR_SCENARIO_COMPARISON_NOT_REGULATORY_CERTIFICATION"
-    base = next(row for row in result.rows if row.scenario == "BASE" and row.band_key == "D02" and row.currency == "CRC")
-    combined = next(row for row in result.rows if row.scenario == "COMBINED" and row.band_key == "D02" and row.currency == "CRC")
+    base = next(
+        row
+        for row in result.rows
+        if row.scenario == "BASE" and row.band_key == "D02" and row.currency == "CRC"
+    )
+    combined = next(
+        row
+        for row in result.rows
+        if row.scenario == "COMBINED" and row.band_key == "D02" and row.currency == "CRC"
+    )
     assert base.projected_liquidity == Decimal("120")
     assert combined.projected_liquidity == Decimal("90")
     assert combined.net_flow_delta_vs_base == Decimal("-30")
     assert combined.accumulated_flow_delta_vs_base == Decimal("-30")
     assert combined.projected_liquidity_delta_vs_base == Decimal("-30")
-    assert all(row.projected_liquidity_delta_vs_base == Decimal(0) for row in result.rows if row.scenario == "BASE")
+    assert all(
+        row.projected_liquidity_delta_vs_base == Decimal(0)
+        for row in result.rows
+        if row.scenario == "BASE"
+    )
     assert all(row.currency in {"CRC", "USD"} for row in result.rows)
     assert len(result.missing_evidence_by_scenario) == 4
 
@@ -176,11 +188,10 @@ def test_scenario_comparison_rejects_changed_contractual_baseline():
 
 
 def test_scenario_comparison_preserves_unknown_opening_without_zero_substitution():
-    result = compare_approved_sugef210_scenarios(
-        _session(s, no_opening=True) for s in SCENARIOS
-    )
+    result = compare_approved_sugef210_scenarios(_session(s, no_opening=True) for s in SCENARIOS)
     combined = next(
-        row for row in result.rows
+        row
+        for row in result.rows
         if row.scenario == "COMBINED" and row.currency == "CRC" and row.band_key == "D02"
     )
     assert combined.net_flow_delta_vs_base == Decimal("-30")
