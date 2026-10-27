@@ -62,7 +62,6 @@ def test_contractual_tab_and_cutoff_invalidation_without_private_cash():
     panel.close()
 
 
-
 def test_four_scenario_tab_renders_partial_delta_then_invalidates_cutoff(monkeypatch):
     from aip.ui.modules.liquidity.views import sugef210_projection_panel as module
 
