@@ -247,9 +247,7 @@ def import_approved_xml_contractual_payments(
         actual_hash = reader.sha256(original.path)
         if actual_hash != approved_xml_sha256[key].lower():
             raise ValueError("Original CONFIA XML source hash changed after approval")
-        cached = (
-            verified_source_cache.get(key) if verified_source_cache is not None else None
-        )
+        cached = verified_source_cache.get(key) if verified_source_cache is not None else None
         target_ordinals = (
             selected_source_ordinals[key]
             if selected_source_ordinals is not None
