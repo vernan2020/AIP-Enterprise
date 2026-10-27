@@ -210,3 +210,62 @@ def test_scenario_comparison_requires_four_unique_correct_cutoffs():
     sessions[-1] = replace(sessions[-1], cutoff=CUTOFF - timedelta(days=1))
     with pytest.raises(ValueError, match="cutoffs and names"):
         compare_approved_sugef210_scenarios(sessions)
+
+
+
+def test_comparison_rejects_audited_event_amount_not_matching_projection_components():
+    sessions = [_session(s) for s in SCENARIOS]
+    original = sessions[1]
+    bad_audit = replace(
+        original.assembly.audited_events[1],
+        native_amount=Decimal("11"),
+    )
+    sessions[1] = replace(
+        original,
+        assembly=replace(
+            original.assembly,
+            audited_events=(original.assembly.audited_events[0], bad_audit),
+        ),
+    )
+    with pytest.raises(ValueError, match="source flow component differs from audited"):
+        compare_approved_sugef210_scenarios(sessions)
+
+
+def test_comparison_rejects_band_count_or_nonmatching_total():
+    sessions = [_session(s) for s in SCENARIOS]
+    original = sessions[1]
+    projection = original.assembly.projection
+    rows = list(projection.rows)
+    index = next(
+        i for i, row in enumerate(rows) if row.currency == "CRC" and row.window.key == "D02"
+    )
+    rows[index] = replace(rows[index], event_count=2)
+    sessions[1] = replace(
+        original,
+        assembly=replace(
+            original.assembly,
+            projection=replace(projection, rows=tuple(rows)),
+        ),
+    )
+    with pytest.raises(ValueError, match="band event count differs"):
+        compare_approved_sugef210_scenarios(sessions)
+
+
+def test_comparison_rejects_invented_cash_when_opening_unknown():
+    sessions = [_session(s, no_opening=True) for s in SCENARIOS]
+    original = sessions[1]
+    projection = original.assembly.projection
+    rows = list(projection.rows)
+    index = next(
+        i for i, row in enumerate(rows) if row.currency == "CRC" and row.window.key == "D02"
+    )
+    rows[index] = replace(rows[index], projected_liquidity=Decimal("999"))
+    sessions[1] = replace(
+        original,
+        assembly=replace(
+            original.assembly,
+            projection=replace(projection, rows=tuple(rows)),
+        ),
+    )
+    with pytest.raises(ValueError, match="invent closing cash"):
+        compare_approved_sugef210_scenarios(sessions)
