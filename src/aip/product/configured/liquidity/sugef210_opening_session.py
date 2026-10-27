@@ -37,6 +37,7 @@ from aip.product.configured.liquidity.sugef210_dated_xml_contracts import (
     VerifiedContractualXMLSource,
     import_approved_xml_contractual_payments,
     merge_approved_xml_contractual_schedules,
+    select_approved_partition_source_ordinals,
 )
 from aip.product.configured.liquidity.sugef210_demand_deposit_runoff import (
     read_approved_demand_deposit_runoff,
@@ -330,6 +331,23 @@ def run_configured_sight_opening(
         contract_policies = [single_contract_policy]
     else:
         contract_policies = []
+    # Snapshot only ordinals actually used by the approved partitions; keep
+    # all private source contents local and independently revalidate each import.
+    partition_ledger_sources: list[tuple[Path, str]] = []
+    for contract_policy in contract_policies:
+        if not isinstance(contract_policy, dict):
+            raise ValueError("XML contractual schedule approval must be structured")
+        partition_ledger_sources.append(
+            (
+                Path(_required_text(contract_policy, "ledger_file")),
+                _required_text(contract_policy, "ledger_sha256"),
+            )
+        )
+    requested_xml_ordinals = (
+        select_approved_partition_source_ordinals(partition_ledger_sources)
+        if partition_ledger_sources
+        else None
+    )
     ledger_paths: set[Path] = set()
     nonduplication_references: set[str] = set()
     selected_schedules = []
@@ -377,6 +395,7 @@ def run_configured_sight_opening(
                 settlement_approval=_required_text(contract_policy, "settlement_approval"),
                 nonduplication_reference=nondup_ref,
                 verified_source_cache=verified_xml_cache,
+                selected_source_ordinals=requested_xml_ordinals,
             )
         )
     if selected_schedules:
