@@ -82,6 +82,7 @@ class ConfiguredOpeningSession:
     master_source_sha256: str | None = None
     sight_added_by_currency: tuple[tuple[str, Decimal], ...] = ()
     xml_contractual_events_approved: int = 0
+    xml_contractual_source_coverage: tuple[tuple[str, int, int], ...] = ()
     contingent_scenario_events_approved: int = 0
     offbalance_commitments_reviewed: int = 0
     financial_plan_events_approved: int = 0
@@ -637,6 +638,9 @@ def run_configured_sight_opening(
         ),
         xml_contractual_events_approved=(
             len(xml_contractual.events) if xml_contractual is not None else 0
+        ),
+        xml_contractual_source_coverage=(
+            xml_contractual.source_coverage if xml_contractual is not None else ()
         ),
         contingent_scenario_events_approved=(
             len(offbalance.evidence.flows) if offbalance is not None else 0
