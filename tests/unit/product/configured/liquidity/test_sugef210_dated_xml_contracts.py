@@ -399,9 +399,7 @@ def test_batch_source_selection_keeps_only_required_original_xml_rows(tmp_path):
         )
         assert len(result.events) == 1
         partitions.append(result)
-    combined = merge_approved_xml_contractual_schedules(
-        cutoff=CUTOFF, schedules=partitions
-    )
+    combined = merge_approved_xml_contractual_schedules(cutoff=CUTOFF, schedules=partitions)
     assert combined.source_coverage == (("CREDIT", 2, 200),)
     assert combined.certifies_entire_perimeter is False
     assert reader.parses == 1
@@ -450,7 +448,6 @@ def test_contractual_batch_selection_fails_closed_for_changed_signed_csv(tmp_pat
         select_approved_partition_source_ordinals([(ledger, old_hash)])
 
 
-
 def test_contractual_partition_source_totals_conflict_fails_closed(tmp_path):
     first = _import(tmp_path, [_row("CREDIT")])
     inconsistent = replace(
@@ -459,9 +456,7 @@ def test_contractual_partition_source_totals_conflict_fails_closed(tmp_path):
         source_record_counts=(("CREDIT", 2),),
     )
     with pytest.raises(ValueError, match="total source records conflict"):
-        merge_approved_xml_contractual_schedules(
-            cutoff=CUTOFF, schedules=(first, inconsistent)
-        )
+        merge_approved_xml_contractual_schedules(cutoff=CUTOFF, schedules=(first, inconsistent))
 
 
 def test_contractual_coverage_rejects_more_selected_than_original_xml(tmp_path):
