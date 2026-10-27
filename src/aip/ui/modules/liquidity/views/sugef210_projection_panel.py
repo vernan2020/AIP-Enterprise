@@ -53,6 +53,9 @@ from aip.product.configured.liquidity.sugef210_reconciliation_summary import (
     summarize_approved_contractual_source_coverage,
     summarize_contractual_reconciliation,
 )
+from aip.product.configured.liquidity.sugef210_scenario_comparison import (
+    compare_approved_sugef210_scenarios,
+)
 from aip.product.configured.liquidity.sugef210_source_audit_cli import (
     inspect_xml_investment_source,
 )
@@ -261,6 +264,7 @@ class SUGEF210ProjectionPanel(QWidget):
         self._opening_worker: _SUGEF210OpeningWorker | None = None
         self._plan_audit: FinancialPlanSourceAudit | None = None
         self._governed_projection: LiquidityProjectionResult | None = None
+        self._scenario_sessions: dict[str, ConfiguredOpeningSession] = {}
         self._audited_events: tuple[LiquidityAuditedCashEvent, ...] = ()
         self._cutoff = last_completed_calendar_month_end(date.today())
         main = QVBoxLayout(self)
@@ -396,6 +400,19 @@ class SUGEF210ProjectionPanel(QWidget):
             self._GOVERNED_FLOW_DETAIL_HEADERS, "sugef210GovernedFlowBreakdown"
         )
         self._planning_tabs.addTab(self._governed_flow_details, "Detalle de flujo · fuentes")
+        self._scenario_comparison = self._table(
+            (
+                "Escenario",
+                "Banda",
+                "Moneda",
+                "Δ flujo neto vs BASE",
+                "Δ caja proyectada vs BASE",
+                "Δ necesidad de financiamiento vs BASE",
+                "Estado",
+            ),
+            "sugef210FourScenarioComparison",
+        )
+        self._planning_tabs.addTab(self._scenario_comparison, "Comparación 4 escenarios")
         self._investment_reconciliation = self._table(
             self._INVESTMENT_RECONCILIATION_HEADERS,
             "sugef210InvestmentOpeningPrincipalCouponReconciliation",
@@ -699,6 +716,8 @@ class SUGEF210ProjectionPanel(QWidget):
         if not isinstance(selected_date, date):
             raise TypeError("La fecha de corte seleccionada no es válida")
         self._cutoff = selected_date
+        self._scenario_sessions.clear()
+        self._scenario_comparison.setRowCount(0)
         self._invalidate_governed_projection()
         self._accounts.setRowCount(0)
         self._records.setRowCount(0)
@@ -936,6 +955,8 @@ class SUGEF210ProjectionPanel(QWidget):
             return
         cutoff = self._cutoff
         scenario = self._scenario.currentText()
+        self._scenario_sessions.pop(scenario, None)
+        self._scenario_comparison.setRowCount(0)
         self._invalidate_governed_projection()
         self._opening_button.setEnabled(False)
         self._button.setEnabled(False)
@@ -1219,6 +1240,8 @@ class SUGEF210ProjectionPanel(QWidget):
                 self._source_readiness,
                 (f"XML_CRONOGRAMA_{source_key}", gate_status, detail),
             )
+        self._scenario_sessions[scenario] = session
+        self._refresh_four_scenario_comparison()
         self._opening_status.setText(
             f"Caja inicial documentada: {session.sight_records_approved} inversiones "
             f"a la vista revisadas contra XML/Maestro; "
@@ -1242,9 +1265,60 @@ class SUGEF210ProjectionPanel(QWidget):
             "La herramienta no verifica por sí sola firmas ni cifras de certificados bancarios."
         )
 
+    def _refresh_four_scenario_comparison(self) -> None:
+        """Compare loaded approvals only when all four share one source snapshot."""
+        self._scenario_comparison.setRowCount(0)
+        if len(self._scenario_sessions) != 4:
+            return
+        try:
+            comparison = compare_approved_sugef210_scenarios(
+                self._scenario_sessions.values()
+            )
+        except ValueError:
+            self._append(
+                self._scenario_comparison,
+                (
+                    "BLOQUEADO",
+                    "N/D",
+                    "N/D",
+                    "N/D",
+                    "N/D",
+                    "N/D",
+                    "Cortes, fuentes, caja o pagos contractuales no coinciden entre escenarios",
+                ),
+            )
+            return
+        self._scenario_comparison.setUpdatesEnabled(False)
+        try:
+            for row in comparison.rows:
+                self._append(
+                    self._scenario_comparison,
+                    (
+                        row.scenario,
+                        row.band_key,
+                        row.currency,
+                        str(row.net_flow_delta_vs_base),
+                        (
+                            str(row.projected_liquidity_delta_vs_base)
+                            if row.projected_liquidity_delta_vs_base is not None
+                            else "N/D"
+                        ),
+                        (
+                            str(row.financing_need_delta_vs_base)
+                            if row.financing_need_delta_vs_base is not None
+                            else "N/D"
+                        ),
+                        "PARCIAL · NO CERTIFICADO",
+                    ),
+                )
+        finally:
+            self._scenario_comparison.setUpdatesEnabled(True)
+
     def _governed_opening_error(self, cutoff: date, scenario: str, category: str) -> None:
         if cutoff != self._cutoff or scenario != self._scenario.currentText():
             return
+        self._scenario_sessions.pop(scenario, None)
+        self._scenario_comparison.setRowCount(0)
         self._invalidate_governed_projection()
         report = self._report or {}
         self._fill_operational_gates(
