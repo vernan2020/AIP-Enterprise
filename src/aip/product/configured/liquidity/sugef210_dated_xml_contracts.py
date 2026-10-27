@@ -23,7 +23,10 @@ from aip.domain.liquidity.cashflow.services.sugef210_projection import (
     LiquidityFlowSide,
     LiquidityProjectionFlow,
 )
-from aip.product.configured.irrbb.xml_confia_source import XMLConfiaMonthlySourceReader
+from aip.product.configured.irrbb.xml_confia_source import (
+    XMLConfiaMonthlySourceReader,
+    XMLConfiaRecord,
+)
 
 _REQUIRED = (
     "source_key",
@@ -57,10 +60,21 @@ class ApprovedXMLContractualSchedule:
     ledger_sha256: str
     included_source_records: tuple[tuple[str, int], ...]
     status: str = "SELECTED_SOURCE_DATED_PAYMENTS_NOT_COMPLETE_PERIMETER"
+    source_entity_id: str | None = None
 
     @property
     def certifies_entire_perimeter(self) -> bool:
         return False
+
+
+@dataclass(frozen=True, slots=True)
+class VerifiedContractualXMLSource:
+    """One verified on-disk source, scoped to a single opening-session invocation."""
+
+    path: Path
+    sha256: str
+    entity_id: str
+    indexed_rows: dict[int, XMLConfiaRecord]
 
 
 def _require(value: Any, name: str) -> str:
@@ -114,6 +128,7 @@ def import_approved_xml_contractual_payments(
     settlement_approval: str,
     nonduplication_reference: str,
     already_booked_references: frozenset[str] = frozenset(),
+    verified_source_cache: dict[str, VerifiedContractualXMLSource] | None = None,
 ) -> ApprovedXMLContractualSchedule:
     """Admit selected source payments; record lineage and native amount must agree.
 
@@ -178,13 +193,34 @@ def import_approved_xml_contractual_payments(
         actual_hash = reader.sha256(original.path)
         if actual_hash != approved_xml_sha256[key].lower():
             raise ValueError("Original CONFIA XML source hash changed after approval")
-        indexed: dict[int, Any] = {}
-        raw_ids: set[str] = set()
-        for ordinal, item in enumerate(reader.iter_records(original), 1):
-            if not item.record_id.strip() or item.record_id in raw_ids:
-                raise ValueError("Original contractual XML contains ambiguous record IDs")
-            raw_ids.add(item.record_id)
-            indexed[ordinal] = item
+        cached = (
+            verified_source_cache.get(key) if verified_source_cache is not None else None
+        )
+        if cached is not None:
+            if (
+                cached.path.resolve() != original.path.resolve()
+                or cached.sha256 != actual_hash
+                or cached.entity_id != original.header.id_entidad
+            ):
+                raise ValueError("Contractual XML changed between approved partitions")
+            indexed = cached.indexed_rows
+        else:
+            indexed = {}
+            raw_ids: set[str] = set()
+            for ordinal, item in enumerate(reader.iter_records(original), 1):
+                if not item.record_id.strip() or item.record_id in raw_ids:
+                    raise ValueError("Original contractual XML contains ambiguous record IDs")
+                raw_ids.add(item.record_id)
+                indexed[ordinal] = item
+            if reader.sha256(original.path) != actual_hash:
+                raise ValueError("Contractual XML changed while indexing original source")
+            if verified_source_cache is not None:
+                verified_source_cache[key] = VerifiedContractualXMLSource(
+                    path=original.path,
+                    sha256=actual_hash,
+                    entity_id=original.header.id_entidad,
+                    indexed_rows=indexed,
+                )
         by_key[key] = indexed, actual_hash
 
     payments: list[LiquidityProjectionFlow] = []
@@ -265,12 +301,17 @@ def import_approved_xml_contractual_payments(
     for record_identity, (original_principal, _maturity, _currency) in contract_details.items():
         if contract_principal[record_identity] != original_principal:
             raise ValueError("Scheduled principal does not reconcile to original XML exposure")
+    for source_key in selected_sources:
+        original = reader.resolve_source(key=source_key, cutoff_date=cutoff)
+        if reader.sha256(original.path) != by_key[source_key][1]:
+            raise ValueError("Contractual XML changed during payment reconciliation")
     return ApprovedXMLContractualSchedule(
         cutoff=cutoff,
         events=tuple(payments),
         source_hashes=tuple(sorted((key, info[1]) for key, info in by_key.items())),
         ledger_sha256=ledger_hash,
         included_source_records=tuple(sorted(contract_details)),
+        source_entity_id=next(iter(source_entity_ids)),
     )
 
 
@@ -290,6 +331,7 @@ def merge_approved_xml_contractual_schedules(
     seen_files: set[str] = set()
     seen_records: set[tuple[str, int]] = set()
     seen_events: set[str] = set()
+    source_entity_id: str | None = None
     events: list[LiquidityProjectionFlow] = []
     for item in partitions:
         if item.cutoff != cutoff or item.status != (
@@ -298,6 +340,11 @@ def merge_approved_xml_contractual_schedules(
             raise ValueError("Contractual payment partitions have conflicting cutoffs or status")
         if len(item.ledger_sha256) != 64 or item.ledger_sha256 in seen_files:
             raise ValueError("Contractual payment CSV partition is repeated")
+        if not item.source_entity_id:
+            raise ValueError("Contractual partition lacks original reporting entity")
+        if source_entity_id is not None and item.source_entity_id != source_entity_id:
+            raise ValueError("Approved contractual partitions belong to different entities")
+        source_entity_id = item.source_entity_id
         seen_files.add(item.ledger_sha256)
         for key, digest in item.source_hashes:
             if key in source_hashes and source_hashes[key] != digest:
@@ -321,4 +368,5 @@ def merge_approved_xml_contractual_schedules(
         source_hashes=tuple(sorted(source_hashes.items())),
         ledger_sha256=combined_hash,
         included_source_records=tuple(sorted(seen_records)),
+        source_entity_id=source_entity_id,
     )
