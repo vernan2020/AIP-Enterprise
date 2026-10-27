@@ -306,3 +306,22 @@ def test_comparison_rejects_repeated_audit_reference():
     )
     with pytest.raises(ValueError, match="duplicates a contractual"):
         compare_approved_sugef210_scenarios(sessions)
+
+
+
+def test_comparison_requires_same_original_coverage_gaps_across_scenarios():
+    sessions = [_session(s) for s in SCENARIOS]
+    original = sessions[2]
+    projection = original.assembly.projection
+    sessions[2] = replace(
+        original,
+        assembly=replace(
+            original.assembly,
+            projection=replace(
+                projection,
+                missing_source_areas=("ASSET",),
+            ),
+        ),
+    )
+    with pytest.raises(ValueError, match="different opening, evidence"):
+        compare_approved_sugef210_scenarios(sessions)
