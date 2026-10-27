@@ -7,12 +7,15 @@ when institutional opening balances and fixed contractual evidence match.
 
 from __future__ import annotations
 
+from collections import defaultdict
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Iterable
 
 from aip.domain.liquidity.cashflow.services.sugef210_projection import (
+    LiquidityBalanceArea,
     LiquidityEvidence,
+    LiquidityFlowSide,
 )
 from aip.product.configured.liquidity.sugef210_opening_session import (
     ConfiguredOpeningSession,
@@ -87,6 +90,93 @@ def _source_snapshot(session: ConfiguredOpeningSession) -> tuple[object, ...]:
     )
 
 
+def _reconcile_audited_cashflows(session: ConfiguredOpeningSession) -> None:
+    """Recompute the 34 band totals from real audited event evidence.
+
+    All eight source/side components must reconcile separately. Opposite-sign
+    events cannot cancel an individual accounting mismatch.
+    """
+    projection = session.assembly.projection
+    audited = session.assembly.audited_events
+    if len(audited) != projection.source_flow_count:
+        raise ValueError("Scenario event count differs from audited payment ledger")
+    expected_bands = {window.key for window in projection.windows}
+    amounts: dict[tuple[str, str, LiquidityBalanceArea, LiquidityFlowSide], Decimal] = (
+        defaultdict(Decimal)
+    )
+    counts: dict[tuple[str, str], int] = defaultdict(int)
+    outside = 0
+    for event in audited:
+        if not event.native_amount.is_finite() or event.native_amount <= 0:
+            raise ValueError("Scenario audit contains invalid native cash amount")
+        if event.horizon_status == "AFTER_365D":
+            if event.band_key != "OUTSIDE_365D":
+                raise ValueError("Out-of-horizon event has inconsistent band")
+            outside += 1
+            continue
+        if (
+            event.horizon_status != "IN_365D"
+            or event.band_key not in expected_bands
+            or event.currency not in {"CRC", "USD"}
+        ):
+            raise ValueError("Audited scenario cash event lacks a recognized 365-day band")
+        if (
+            event.evidence == LiquidityEvidence.GOVERNED_ASSUMPTION
+            and event.assumption_id not in projection.assumption_ids
+        ):
+            raise ValueError("Scenario cash event lacks an approved assumption reference")
+        amounts[(event.currency, event.band_key, event.area, event.side)] += (
+            event.native_amount
+        )
+        counts[(event.currency, event.band_key)] += 1
+    if outside != projection.excluded_out_of_horizon:
+        raise ValueError("Audited payments after 365 days differ from projection")
+    running = {"CRC": Decimal(0), "USD": Decimal(0)}
+    mappings = (
+        ("asset_inflows", LiquidityBalanceArea.ASSET, LiquidityFlowSide.INFLOW),
+        ("asset_outflows", LiquidityBalanceArea.ASSET, LiquidityFlowSide.OUTFLOW),
+        ("liability_inflows", LiquidityBalanceArea.LIABILITY, LiquidityFlowSide.INFLOW),
+        ("liability_outflows", LiquidityBalanceArea.LIABILITY, LiquidityFlowSide.OUTFLOW),
+        ("off_balance_inflows", LiquidityBalanceArea.OFF_BALANCE, LiquidityFlowSide.INFLOW),
+        ("off_balance_outflows", LiquidityBalanceArea.OFF_BALANCE, LiquidityFlowSide.OUTFLOW),
+        ("other_inflows", LiquidityBalanceArea.BUSINESS_EVENT, LiquidityFlowSide.INFLOW),
+        ("other_outflows", LiquidityBalanceArea.BUSINESS_EVENT, LiquidityFlowSide.OUTFLOW),
+    )
+    for row in projection.rows:
+        for attr, area, side in mappings:
+            if getattr(row, attr) != amounts[(row.currency, row.window.key, area, side)]:
+                raise ValueError("Scenario source flow component differs from audited payments")
+        if row.event_count != counts[(row.currency, row.window.key)]:
+            raise ValueError("Scenario band event count differs from audited payments")
+        inflows = (
+            row.asset_inflows
+            + row.liability_inflows
+            + row.off_balance_inflows
+            + row.other_inflows
+        )
+        outflows = (
+            row.asset_outflows
+            + row.liability_outflows
+            + row.off_balance_outflows
+            + row.other_outflows
+        )
+        if row.net_flow != inflows - outflows:
+            raise ValueError("Scenario net cashflow differs from auditable source components")
+        running[row.currency] += row.net_flow
+        if row.accumulated_flow != running[row.currency]:
+            raise ValueError("Scenario accumulated cashflow differs from audited source ledger")
+        if row.opening_liquidity is None:
+            if row.projected_liquidity is not None or row.financing_need is not None:
+                raise ValueError("Scenario cannot invent closing cash without approved opening")
+        else:
+            expected_cash = row.opening_liquidity + row.accumulated_flow
+            if (
+                row.projected_liquidity != expected_cash
+                or row.financing_need != max(Decimal(0), -expected_cash)
+            ):
+                raise ValueError("Scenario projected liquidity or financing need does not reconcile")
+
+
 def compare_approved_sugef210_scenarios(
     sessions: Iterable[ConfiguredOpeningSession],
 ) -> LiquidityFourScenarioComparison:
@@ -121,6 +211,7 @@ def compare_approved_sugef210_scenarios(
             raise ValueError(
                 "Scenario has different opening, evidence or fixed contractual cashflows"
             )
+        _reconcile_audited_cashflows(session)
         unique: set[tuple[str, str]] = set()
         for row in projection.rows:
             key = row.currency, row.window.key
