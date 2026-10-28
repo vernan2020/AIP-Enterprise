@@ -55,6 +55,7 @@ def validate_path(name: str) -> Path:
                 "run_aip_configured.cmd",
                 "run_aip_ux_preview.cmd",
                 "DIAGNOSTICAR_BCCR_SUGEF.cmd",
+                "DIAGNOSTICAR_BCCR_V2.cmd",
                 "DIAGNOSTICAR_RTILB_XML.cmd",
                 "DIAGNOSTICAR_LIQUIDEZ_SUGEF210_XML_INVERSIONES.cmd",
                 "DIAGNOSTICAR_LIQUIDEZ_SUGEF210_PLAN.cmd",

@@ -43,6 +43,7 @@ from aip.ui.modules.financial_analysis.views.financial_statement_history_panel i
 )
 from aip.ui.themes.typography import numeric_font_family
 from aip.ui.widgets.table_csv_export import save_table_csv_dialog
+from aip.ui.widgets.table_excel_export import save_table_excel_dialog
 
 
 class _ComparisonWorker(QObject):
@@ -350,6 +351,20 @@ class FinancialAnalysisView(QWidget):
         for index, widget in enumerate(widgets):
             controls.addWidget(widget, 0, index)
         controls.addWidget(self._export_statement_button, 0, 4)
+        self._export_statement_excel_button = QPushButton("Exportar Excel")
+        self._export_statement_excel_button.setToolTip(
+            "Exportar los estados y cuentas SUGEF visibles a un archivo XLSX real."
+        )
+        self._export_statement_excel_button.clicked.connect(
+            lambda: save_table_excel_dialog(
+                self,
+                self._statement_table,
+                "aip-sugef-estados.xlsx",
+                visible_rows_only=True,
+                title="Estados SUGEF",
+            )
+        )
+        controls.addWidget(self._export_statement_excel_button, 0, 5)
         controls.setColumnStretch(0, 1)
         self._statement_controls_grid = controls
         self._statement_controls = widgets
