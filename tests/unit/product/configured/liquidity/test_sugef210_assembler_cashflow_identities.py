@@ -44,7 +44,8 @@ def _run():
 def test_valid_individual_scenario_reconciles_audited_cash_and_opening():
     assembled = _run()
     row = next(
-        item for item in assembled.projection.rows
+        item
+        for item in assembled.projection.rows
         if item.currency == "CRC" and item.window.key == "D01"
     )
     assert row.off_balance_outflows == Decimal("25")
@@ -71,8 +72,7 @@ def test_individual_scenario_blocks_any_corrupted_projected_identity(
     assembled = _run()
     rows = list(assembled.projection.rows)
     index = next(
-        i for i, row in enumerate(rows)
-        if row.currency == "CRC" and row.window.key == "D01"
+        i for i, row in enumerate(rows) if row.currency == "CRC" and row.window.key == "D01"
     )
     rows[index] = replace(rows[index], **{changed_field: changed_value})
     corrupted = replace(assembled.projection, rows=tuple(rows))
@@ -85,12 +85,9 @@ def test_individual_scenario_blocks_unknown_opening_with_invented_cash(monkeypat
     assembled = _run()
     rows = list(assembled.projection.rows)
     index = next(
-        i for i, row in enumerate(rows)
-        if row.currency == "CRC" and row.window.key == "D01"
+        i for i, row in enumerate(rows) if row.currency == "CRC" and row.window.key == "D01"
     )
-    rows[index] = replace(
-        rows[index], opening_liquidity=None, projected_liquidity=Decimal("75")
-    )
+    rows[index] = replace(rows[index], opening_liquidity=None, projected_liquidity=Decimal("75"))
     corrupted = replace(assembled.projection, rows=tuple(rows))
     monkeypatch.setattr(assembler, "project_sugef210", lambda **kwargs: corrupted)
     with pytest.raises(ValueError, match="Missing opening liquidity"):
