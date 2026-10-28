@@ -374,6 +374,7 @@ def assemble_partial_institutional_projection(
         audit_counts[group] = audit_counts.get(group, 0) + 1
         key = (item.currency, item.band_key, item.area, item.side)
         audit_amounts[key] = audit_amounts.get(key, Decimal(0)) + item.native_amount
+    running_by_currency: dict[str, Decimal] = {"CRC": Decimal(0), "USD": Decimal(0)}
     for row in projection.rows:
         group = (row.currency, row.window.key)
         if audit_counts.get(group, 0) != row.event_count:
@@ -392,6 +393,33 @@ def assemble_partial_institutional_projection(
             key = (row.currency, row.window.key, area, direction)
             if audit_amounts.get(key, Decimal(0)) != expected:
                 raise ValueError("Band audit native amounts differ from projected sources")
+        inflows = (
+            row.asset_inflows
+            + row.liability_inflows
+            + row.off_balance_inflows
+            + row.other_inflows
+        )
+        outflows = (
+            row.asset_outflows
+            + row.liability_outflows
+            + row.off_balance_outflows
+            + row.other_outflows
+        )
+        if row.net_flow != inflows - outflows:
+            raise ValueError("Net cashflow differs from the independently audited source sides")
+        running_by_currency[row.currency] += row.net_flow
+        if row.accumulated_flow != running_by_currency[row.currency]:
+            raise ValueError("Accumulated liquidity gap does not reconcile by currency")
+        if row.opening_liquidity is None:
+            if row.projected_liquidity is not None or row.financing_need is not None:
+                raise ValueError("Missing opening liquidity cannot yield a cash or funding balance")
+        else:
+            ending = row.opening_liquidity + running_by_currency[row.currency]
+            if (
+                row.projected_liquidity != ending
+                or row.financing_need != max(Decimal(0), -ending)
+            ):
+                raise ValueError("Projected cash and financing need do not reconcile to opening")
     if projection.certified_comprehensive:
         raise ValueError("Partial assembly must never claim full regulatory certification")
     return InstitutionalLiquidityAssembly(
