@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
+from typing import Any
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QFileDialog, QMessageBox, QTableWidget, QWidget
@@ -32,7 +33,7 @@ def export_table_excel(
     for row_index in range(table.rowCount()):
         if visible_rows_only and table.isRowHidden(row_index):
             continue
-        values = []
+        values: list[Any] = []
         for column_index in columns:
             item = table.item(row_index, column_index)
             if item is None:
