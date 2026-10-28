@@ -63,7 +63,7 @@ def test_excel_text_does_not_become_executable_formulas(tmp_path) -> None:
     output = TableExportService().export_records(
         tmp_path / "seguridad.xlsx",
         headers=["Código"],
-        rows=[["=HYPERLINK(\"https://example.com\")"], ["+SUM(1,2)"], ["@SUM(1,2)"]],
+        rows=[['=HYPERLINK("https://example.com")'], ["+SUM(1,2)"], ["@SUM(1,2)"]],
         export_format="excel",
     )
     sheet = load_workbook(output).active

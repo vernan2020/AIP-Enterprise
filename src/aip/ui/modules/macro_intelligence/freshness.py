@@ -33,12 +33,9 @@ def economic_source_freshness_notice(snapshot: EconomicSnapshot, *, as_of: date)
     else:
         reason = "Algunos indicadores BCCR requieren revisión de vigencia."
     detail = "; ".join(outdated) if outdated else "Sin confirmación de conexión en línea"
-    return (
-        f"AVISO DE VIGENCIA — {reason} "
-        f"Últimas observaciones: {detail}. "
-        (
-            "Servicio BCCR temporalmente no disponible; reintentar actualización."
-            if upstream_failed
-            else "Revisar token en la sesión CONFIGURED y conexión BCCR."
-        )
+    advice = (
+        "Servicio BCCR temporalmente no disponible; reintentar actualización."
+        if upstream_failed
+        else "Revisar token en la sesión CONFIGURED y conexión BCCR."
     )
+    return f"AVISO DE VIGENCIA — {reason} Últimas observaciones: {detail}. {advice}"

@@ -76,7 +76,7 @@ def test_bccr_v2_launcher_preserves_private_config_and_exit_code() -> None:
     cmd = (root / "DIAGNOSTICAR_BCCR_V2.cmd").read_text(encoding="utf-8")
     assert 'set "AIP_EXECUTION_MODE=CONFIGURED"' in cmd
     assert "sdde_v2_diagnostic %*" in cmd
-    assert "config\\runtime.local.cmd" in cmd
+    assert "scripts\\launch\\load_existing_institutional_runtime.cmd" in cmd
     assert "AIP_BCCR_TOKEN" not in cmd
     assert "echo BCCR SDDE v2" in cmd
 
@@ -85,12 +85,17 @@ def test_bccr_v2_live_diagnostic_reports_latency_and_window_without_secrets(
     monkeypatch: pytest.MonkeyPatch, capsys
 ) -> None:
     settings = SimpleNamespace(
-        enabled=True, base_url="https://apim.bccr.fi.cr",
-        token="SECRET.TOKEN", name="Private account", email="private@example.invalid",
-        timeout_seconds=5.0, retries=0,
+        enabled=True,
+        base_url="https://apim.bccr.fi.cr",
+        token="SECRET.TOKEN",
+        name="Private account",
+        email="private@example.invalid",
+        timeout_seconds=5.0,
+        retries=0,
     )
     monkeypatch.setattr(
-        diagnostic, "EnvironmentLoader",
+        diagnostic,
+        "EnvironmentLoader",
         lambda: SimpleNamespace(load_source_config=lambda: SimpleNamespace(bccr=settings)),
     )
 
@@ -101,9 +106,21 @@ def test_bccr_v2_live_diagnostic_reports_latency_and_window_without_secrets(
         def fetch_series(self, *, indicator_code, from_date, to_date):
             assert indicator_code == "317"
             assert from_date <= to_date
-            return {"body": {"datos": [{"codigoIndicador": "317", "series": [
-                {"fecha": diagnostic.date.today().isoformat(), "valorDatoPorPeriodo": "449.12"}
-            ]}]}}
+            return {
+                "body": {
+                    "datos": [
+                        {
+                            "codigoIndicador": "317",
+                            "series": [
+                                {
+                                    "fecha": diagnostic.date.today().isoformat(),
+                                    "valorDatoPorPeriodo": "449.12",
+                                }
+                            ],
+                        }
+                    ]
+                }
+            }
 
         def close(self):
             pass
@@ -112,6 +129,7 @@ def test_bccr_v2_live_diagnostic_reports_latency_and_window_without_secrets(
     assert diagnostic.run(["--codes", "317", "--days", "20"]) == 0
     output = capsys.readouterr().out
     import json
+
     report = json.loads(output)
     assert report["status"] == "LIVE_OK"
     assert report["window"]["to"] == diagnostic.date.today().strftime("%Y/%m/%d")
@@ -124,12 +142,17 @@ def test_bccr_v2_http_500_diagnostic_includes_latency_and_redacted_status(
     monkeypatch: pytest.MonkeyPatch, capsys
 ) -> None:
     settings = SimpleNamespace(
-        enabled=True, base_url="https://apim.bccr.fi.cr",
-        token="SECRET.TOKEN", name="Account", email="private@example.invalid",
-        timeout_seconds=5.0, retries=0,
+        enabled=True,
+        base_url="https://apim.bccr.fi.cr",
+        token="SECRET.TOKEN",
+        name="Account",
+        email="private@example.invalid",
+        timeout_seconds=5.0,
+        retries=0,
     )
     monkeypatch.setattr(
-        diagnostic, "EnvironmentLoader",
+        diagnostic,
+        "EnvironmentLoader",
         lambda: SimpleNamespace(load_source_config=lambda: SimpleNamespace(bccr=settings)),
     )
 
@@ -146,6 +169,7 @@ def test_bccr_v2_http_500_diagnostic_includes_latency_and_redacted_status(
     monkeypatch.setattr(diagnostic, "SDDEv2Client", StubClient)
     assert diagnostic.run(["--codes", "317"]) == 2
     import json
+
     report = json.loads(capsys.readouterr().out)
     item = report["indicators"][0]
     assert item["status"] == "HTTP_ERROR"
