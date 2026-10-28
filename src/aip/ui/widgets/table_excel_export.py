@@ -21,14 +21,11 @@ def export_table_excel(
 ) -> int:
     """Export exactly the visible columns and selected rows in displayed order."""
     columns = [index for index in range(table.columnCount()) if not table.isColumnHidden(index)]
-    headers = tuple(
-        (
-            table.horizontalHeaderItem(index).text()
-            if table.horizontalHeaderItem(index) is not None
-            else ""
-        )
-        for index in columns
-    )
+    header_values: list[str] = []
+    for column_index in columns:
+        header = table.horizontalHeaderItem(column_index)
+        header_values.append(header.text() if header is not None else "")
+    headers = tuple(header_values)
     if not headers:
         raise ValueError("No hay columnas visibles que exportar")
     rows = []
