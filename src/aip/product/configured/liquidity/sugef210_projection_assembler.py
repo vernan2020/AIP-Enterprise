@@ -394,10 +394,7 @@ def assemble_partial_institutional_projection(
             if audit_amounts.get(key, Decimal(0)) != expected:
                 raise ValueError("Band audit native amounts differ from projected sources")
         inflows = (
-            row.asset_inflows
-            + row.liability_inflows
-            + row.off_balance_inflows
-            + row.other_inflows
+            row.asset_inflows + row.liability_inflows + row.off_balance_inflows + row.other_inflows
         )
         outflows = (
             row.asset_outflows
@@ -415,10 +412,7 @@ def assemble_partial_institutional_projection(
                 raise ValueError("Missing opening liquidity cannot yield a cash or funding balance")
         else:
             ending = row.opening_liquidity + running_by_currency[row.currency]
-            if (
-                row.projected_liquidity != ending
-                or row.financing_need != max(Decimal(0), -ending)
-            ):
+            if row.projected_liquidity != ending or row.financing_need != max(Decimal(0), -ending):
                 raise ValueError("Projected cash and financing need do not reconcile to opening")
     if projection.certified_comprehensive:
         raise ValueError("Partial assembly must never claim full regulatory certification")
