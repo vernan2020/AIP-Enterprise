@@ -80,7 +80,9 @@ def add_partial_cashflow_charts(
         ("CRC", 2, 3, "G4"),
         ("USD", 4, 5, "G24"),
     ):
-        if not any(row.event_count for row in projection.rows if row.currency == currency):
+        if not any(
+            row.event_count for row in projection.rows if row.currency == currency
+        ):
             continue
         net_chart = BarChart()
         net_chart.type = "col"
