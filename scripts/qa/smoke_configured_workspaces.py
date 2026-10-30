@@ -56,6 +56,22 @@ def main() -> int:
                 widget = window.workspace.currentWidget()
                 if widget is None:
                     raise RuntimeError("workspace missing")
+                if route == "liquidity":
+                    tabs = widget.findChildren(QTabWidget)
+                    names = {
+                        tab.tabText(index)
+                        for tab in tabs
+                        for index in range(tab.count())
+                    }
+                    for required in (
+                        "Flujo proyectado · SUGEF 2-10",
+                        "Conciliación inversiones",
+                        "Estado de fuentes",
+                        "Trazabilidad por operación",
+                        "Conciliación captaciones vista",
+                    ):
+                        if required not in names:
+                            raise RuntimeError("SUGEF210 operational tab unavailable")
                 if route == "rate_risk":
                     tabs = widget.findChildren(QTabWidget)
                     tab_text = {

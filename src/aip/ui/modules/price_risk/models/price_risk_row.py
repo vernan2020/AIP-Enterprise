@@ -22,6 +22,8 @@ class PriceRiskRow:
     dv01: str = "N/A"
     bucket: str = "N/A"
     dv01_status: str = "UNAVAILABLE"
+    incremental_var: str = "N/A"
+    var_without_position: str = "N/A"
 
 
 @dataclass(frozen=True, slots=True)
