@@ -1501,6 +1501,11 @@ class SUGEF210ProjectionPanel(QWidget):
             return "'" + content if content.startswith(("=", "+", "-", "@")) else content
 
         if projection is not None:
+            from aip.product.configured.liquidity.sugef210_excel_charts import (
+                add_partial_cashflow_charts,
+            )
+
+            add_partial_cashflow_charts(workbook, projection)
             projected = workbook.create_sheet("Flujo proyectado 365d")
             projected.append(
                 (
