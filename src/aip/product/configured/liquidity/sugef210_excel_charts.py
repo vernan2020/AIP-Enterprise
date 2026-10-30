@@ -15,9 +15,7 @@ from aip.domain.liquidity.cashflow.services.sugef210_projection import (
 )
 
 
-def add_partial_cashflow_charts(
-    workbook: Workbook, projection: LiquidityProjectionResult
-) -> None:
+def add_partial_cashflow_charts(workbook: Workbook, projection: LiquidityProjectionResult) -> None:
     """Plot evidenced native-currency cashflows without inventing missing flows."""
     sheet = workbook.create_sheet("Gráficos parciales")
     sheet.sheet_view.showGridLines = False
@@ -64,13 +62,11 @@ def add_partial_cashflow_charts(
             row = indexed[currency, window.key]
             # A missing payment schedule is not a certified zero-flow interval.
             cells.append(row.net_flow if row.event_count else "N/D")
-            cells.append(
-                row.accumulated_flow if projection.source_flow_count else "N/D"
-            )
+            cells.append(row.accumulated_flow if projection.source_flow_count else "N/D")
         for column, value in enumerate(cells, 1):
             cell = sheet.cell(row=offset, column=column, value=value)
             if column > 1 and value != "N/D":
-                cell.number_format = '#,##0.00;[Red](#,##0.00)'
+                cell.number_format = "#,##0.00;[Red](#,##0.00)"
     if not projection.source_flow_count:
         sheet["A24"] = "Sin eventos de caja aprobados: no se generan gráficos."
         return
@@ -80,9 +76,7 @@ def add_partial_cashflow_charts(
         ("CRC", 2, 3, "G4"),
         ("USD", 4, 5, "G24"),
     ):
-        if not any(
-            row.event_count for row in projection.rows if row.currency == currency
-        ):
+        if not any(row.event_count for row in projection.rows if row.currency == currency):
             continue
         net_chart = BarChart()
         net_chart.type = "col"
