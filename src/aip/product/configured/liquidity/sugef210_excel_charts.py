@@ -46,8 +46,8 @@ def add_partial_cashflow_charts(workbook: Workbook, projection: LiquidityProject
         cell.font = Font(bold=True, color="FFFFFF")
         cell.fill = PatternFill("solid", fgColor="1760A5")
     sheet.column_dimensions["A"].width = 27
-    for column in "BCDE":
-        sheet.column_dimensions[column].width = 27
+    for letter in "BCDE":
+        sheet.column_dimensions[letter].width = 27
     sheet.freeze_panes = "B5"
 
     indexed = {(row.currency, row.window.key): row for row in projection.rows}
