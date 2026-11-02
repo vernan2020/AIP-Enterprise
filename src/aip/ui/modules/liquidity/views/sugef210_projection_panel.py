@@ -1503,11 +1503,11 @@ class SUGEF210ProjectionPanel(QWidget):
         source_sheet = workbook.create_sheet("Estado de fuentes")
         source_sheet.append(self._SOURCE_READINESS_HEADERS)
         for row_index in range(self._source_readiness.rowCount()):
-            cells: list[str | Decimal] = []
+            source_gate_cells: list[str | Decimal] = []
             for column in range(len(self._SOURCE_READINESS_HEADERS)):
                 item = self._source_readiness.item(row_index, column)
-                cells.append(safe(item.text()) if item is not None else "N/D")
-            source_sheet.append(tuple(cells))
+                source_gate_cells.append(safe(item.text()) if item is not None else "N/D")
+            source_sheet.append(tuple(source_gate_cells))
         metadata.append(("controles_fuentes_exportados", self._source_readiness.rowCount()))
 
         coverage_sheet = workbook.create_sheet("Cobertura y supuestos")
