@@ -1500,6 +1500,55 @@ class SUGEF210ProjectionPanel(QWidget):
             content = "" if value is None else str(value)
             return "'" + content if content.startswith(("=", "+", "-", "@")) else content
 
+        source_sheet = workbook.create_sheet("Estado de fuentes")
+        source_sheet.append(self._SOURCE_READINESS_HEADERS)
+        for row_index in range(self._source_readiness.rowCount()):
+            cells: list[str] = []
+            for column in range(len(self._SOURCE_READINESS_HEADERS)):
+                item = self._source_readiness.item(row_index, column)
+                cells.append(safe(item.text()) if item is not None else "N/D")
+            source_sheet.append(tuple(cells))
+        metadata.append(("controles_fuentes_exportados", self._source_readiness.rowCount()))
+
+        coverage_sheet = workbook.create_sheet("Cobertura y supuestos")
+        coverage_sheet.append(("Tipo", "Referencia", "Alcance"))
+        coverage_sheet.append(
+            (
+                "ADVERTENCIA",
+                "PROYECCION PARCIAL NO CERTIFICADA",
+                "N/D no equivale a cero; la lectura de un XML no certifica caja ni flujos.",
+            )
+        )
+        if projection is None:
+            coverage_sheet.append(
+                ("SIN PROYECCION", "N/D", "Solo inventario de fuentes; no hay flujo validado.")
+            )
+        else:
+            for missing_area in projection.missing_source_areas:
+                coverage_sheet.append(
+                    (
+                        "FUENTE PENDIENTE",
+                        safe(missing_area),
+                        "Sin cobertura integral aprobada: no interpretar como flujo cero.",
+                    )
+                )
+            for assumption_id in projection.assumption_ids:
+                coverage_sheet.append(
+                    (
+                        "SUPUESTO TRAZABLE",
+                        safe(assumption_id),
+                        "Referencia documental; la firma debe validarse institucionalmente.",
+                    )
+                )
+            if not projection.missing_source_areas and not projection.certified_comprehensive:
+                coverage_sheet.append(
+                    (
+                        "CERTIFICACION PENDIENTE",
+                        "NO CERTIFICADO",
+                        "La ausencia de alertas identificadas no acredita cobertura integral.",
+                    )
+                )
+
         if projection is not None:
             from aip.product.configured.liquidity.sugef210_excel_charts import (
                 add_partial_cashflow_charts,
