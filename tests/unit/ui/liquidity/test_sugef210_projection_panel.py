@@ -1081,3 +1081,41 @@ def test_malformed_plan_worker_result_fails_closed_without_qt_slot_exception(qt_
         assert all(kpi.text() == "N/D" for kpi in panel._projected_kpis.values())
     finally:
         panel.close()
+
+
+def test_documented_cashflow_chart_preserves_missing_currency_and_resets(qt_app):
+    panel = SUGEF210ProjectionPanel()
+    try:
+        cutoff = date(2026, 9, 30)
+        panel._date.setDate(QDate(2026, 9, 30))
+        event = LiquidityProjectionFlow(
+            reference="unit-credit-cashflow",
+            source="unit-contractual-schedule",
+            currency="CRC",
+            payment_date=cutoff + timedelta(days=1),
+            amount=Decimal("125.50"),
+            side=LiquidityFlowSide.INFLOW,
+            area=LiquidityBalanceArea.ASSET,
+            evidence=LiquidityEvidence.CONTRACTUAL,
+        )
+        projection = project_sugef210(
+            cutoff=cutoff,
+            scenario="BASE",
+            flows=(event,),
+            opening_liquidity=None,
+        )
+        panel.present_governed_projection(projection)
+        tabs = [panel._planning_tabs.tabText(i) for i in range(panel._planning_tabs.count())]
+        assert "Gráfico · flujo documentado" in tabs
+        assert panel._documented_chart.documented_bands("CRC") == 1
+        assert panel._documented_chart.documented_bands("USD") == 0
+        assert panel._documented_chart._series["USD"] == (None,) * 17
+        with pytest.raises(ValueError, match="currency/band"):
+            panel._documented_chart.load_projection(
+                replace(projection, rows=projection.rows[:-1])
+            )
+        panel._scenario.setCurrentText("SYSTEMIC")
+        assert panel._documented_chart.documented_bands("CRC") == 0
+        assert panel._documented_chart.documented_bands("USD") == 0
+    finally:
+        panel.close()
