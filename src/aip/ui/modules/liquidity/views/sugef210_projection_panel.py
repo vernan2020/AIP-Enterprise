@@ -59,6 +59,9 @@ from aip.product.configured.liquidity.sugef210_scenario_comparison import (
 from aip.product.configured.liquidity.sugef210_source_audit_cli import (
     inspect_xml_investment_source,
 )
+from aip.ui.modules.liquidity.widgets.sugef210_documented_flow_chart import (
+    SUGEF210DocumentedFlowChart,
+)
 
 
 def last_completed_calendar_month_end(today: date) -> date:
@@ -400,6 +403,8 @@ class SUGEF210ProjectionPanel(QWidget):
             self._GOVERNED_FLOW_DETAIL_HEADERS, "sugef210GovernedFlowBreakdown"
         )
         self._planning_tabs.addTab(self._governed_flow_details, "Detalle de flujo · fuentes")
+        self._documented_chart = SUGEF210DocumentedFlowChart()
+        self._planning_tabs.addTab(self._documented_chart, "Gráfico · flujo documentado")
         self._scenario_comparison = self._table(
             (
                 "Escenario",
@@ -603,6 +608,7 @@ class SUGEF210ProjectionPanel(QWidget):
         self._governed_flow_details.setRowCount(0)
         self._demand_deposit_reconciliation.setRowCount(0)
         self._investment_reconciliation.setRowCount(0)
+        self._documented_chart.load_projection(None)
         self._fill_windows()
         for amount in self._projected_kpis.values():
             amount.setText("N/D")
@@ -621,6 +627,7 @@ class SUGEF210ProjectionPanel(QWidget):
             raise ValueError("Projection currencies and horizon rows do not reconcile")
         self._invalidate_governed_projection()
         self._governed_projection = result
+        self._documented_chart.load_projection(result)
         self._fill_governed_flow_details(result)
         if self._report is not None:
             self._fill_master_maturities(self._report)
