@@ -1111,9 +1111,7 @@ def test_documented_cashflow_chart_preserves_missing_currency_and_resets(qt_app)
         assert panel._documented_chart.documented_bands("USD") == 0
         assert panel._documented_chart._series["USD"] == (None,) * 17
         with pytest.raises(ValueError, match="currency/band"):
-            panel._documented_chart.load_projection(
-                replace(projection, rows=projection.rows[:-1])
-            )
+            panel._documented_chart.load_projection(replace(projection, rows=projection.rows[:-1]))
         panel._scenario.setCurrentText("SYSTEMIC")
         assert panel._documented_chart.documented_bands("CRC") == 0
         assert panel._documented_chart.documented_bands("USD") == 0
