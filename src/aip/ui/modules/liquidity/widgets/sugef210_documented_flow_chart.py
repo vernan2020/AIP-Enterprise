@@ -46,9 +46,7 @@ class SUGEF210DocumentedFlowChart(QWidget):
             self.update()
             return
         indexed = {(row.window.key, row.currency): row for row in projection.rows}
-        if len(indexed) != len(projection.rows) or len(indexed) != 2 * len(
-            projection.windows
-        ):
+        if len(indexed) != len(projection.rows) or len(indexed) != 2 * len(projection.windows):
             raise ValueError("Incomplete or duplicate CRC/USD liquidity chart bands")
         self._bands = tuple(window.label for window in projection.windows)
         series: dict[str, tuple[Decimal | None, ...]] = {}
@@ -114,11 +112,7 @@ class SUGEF210DocumentedFlowChart(QWidget):
                         "?",
                     )
                     continue
-                extent = (
-                    int(Decimal(amplitude) * abs(value) / maximum)
-                    if maximum > 0
-                    else 0
-                )
+                extent = int(Decimal(amplitude) * abs(value) / maximum) if maximum > 0 else 0
                 if extent:
                     painter.fillRect(
                         QRectF(
