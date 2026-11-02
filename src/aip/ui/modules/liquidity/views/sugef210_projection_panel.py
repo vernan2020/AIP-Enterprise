@@ -1503,7 +1503,7 @@ class SUGEF210ProjectionPanel(QWidget):
         source_sheet = workbook.create_sheet("Estado de fuentes")
         source_sheet.append(self._SOURCE_READINESS_HEADERS)
         for row_index in range(self._source_readiness.rowCount()):
-            cells: list[str] = []
+            cells: list[str | Decimal] = []
             for column in range(len(self._SOURCE_READINESS_HEADERS)):
                 item = self._source_readiness.item(row_index, column)
                 cells.append(safe(item.text()) if item is not None else "N/D")
