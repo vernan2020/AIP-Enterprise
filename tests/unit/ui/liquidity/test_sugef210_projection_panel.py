@@ -318,6 +318,15 @@ def test_governed_partial_projection_can_export_without_xml_inventory(
         try:
             assert "Flujo proyectado 365d" in workbook.sheetnames
             assert "Captaciones vista XML210" in workbook.sheetnames
+            assert "Estado de fuentes" in workbook.sheetnames
+            assert "Cobertura y supuestos" in workbook.sheetnames
+            gate_sheet = workbook["Estado de fuentes"]
+            assert gate_sheet.max_row == 5  # Four operational gates.
+            assert gate_sheet.cell(2, 1).value == "XML_CONFIA_CORTE"
+            assert gate_sheet.cell(2, 2).value == "PENDING"
+            coverage = workbook["Cobertura y supuestos"]
+            assert coverage.cell(2, 1).value == "ADVERTENCIA"
+            assert "N/D no equivale a cero" in coverage.cell(2, 3).value
             assert workbook["Captaciones vista XML210"].max_row == 1
             projection = workbook["Flujo proyectado 365d"]
             assert projection.max_row == 35
@@ -327,6 +336,7 @@ def test_governed_partial_projection_can_export_without_xml_inventory(
             metadata = dict(workbook["Control"].iter_rows(values_only=True))
             assert metadata["flujo_integral_certificado"] == "NO"
             assert metadata["escenario"] == "BASE"
+            assert metadata["controles_fuentes_exportados"] == 4
         finally:
             workbook.close()
     finally:
