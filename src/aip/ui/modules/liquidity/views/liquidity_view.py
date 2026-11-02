@@ -20,6 +20,9 @@ from PySide6.QtWidgets import (
 from aip.ui.modules.liquidity.models.liquidity_row import LiquidityRow
 from aip.ui.modules.liquidity.presenters.liquidity_presenter import LiquidityPresenter
 from aip.ui.modules.liquidity.viewmodels.liquidity_view_model import LiquidityViewModel
+from aip.ui.modules.liquidity.views.sugef210_projection_panel import (
+    SUGEF210ProjectionPanel,
+)
 from aip.ui.widgets.chart_tooltip import build_chart_tooltip, show_chart_tooltip
 
 
@@ -598,6 +601,8 @@ class LiquidityView(QWidget):
         self._hqla_table = self._build_eligibility_tab("HQLA")
         self._mil_table = self._build_eligibility_tab("MIL")
         self._build_stress_tab()
+        self._projection_sugef210 = SUGEF210ProjectionPanel()
+        self._tabs.addTab(self._projection_sugef210, "Flujo proyectado · SUGEF 2-10")
 
         self._status = QLabel("")
         self._status.setWordWrap(True)

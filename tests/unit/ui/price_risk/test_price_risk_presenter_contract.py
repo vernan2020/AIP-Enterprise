@@ -77,6 +77,8 @@ def test_var_rows_join_dv01_detail_by_security_key() -> None:
         individual_var_percent=Decimal("0.40"),
         real_price_observations=517,
         synthetic_price_observations=4,
+        incremental_var_crc=Decimal("250000"),
+        var_without_position_crc=Decimal("750000"),
     )
     dv01_result = SimpleNamespace(
         title_details=(
@@ -97,3 +99,5 @@ def test_var_rows_join_dv01_detail_by_security_key() -> None:
     assert rows[0].dv01 == "₡0.07 MM"
     assert rows[0].bucket == "1 a 5 años"
     assert rows[0].dv01_status == "CALCULATED"
+    assert rows[0].incremental_var == "₡250,000.00"
+    assert rows[0].var_without_position == "₡750,000.00"

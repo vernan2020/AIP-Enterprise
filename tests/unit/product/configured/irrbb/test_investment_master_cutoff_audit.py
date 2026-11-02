@@ -228,9 +228,7 @@ def test_maturity_exception_rows_preserve_excel_references_without_guessing_date
     sheet.cell(row=4, column=5).value = date(2026, 9, 1)
     workbook.save(filename)
 
-    result = inspect_investment_master_cutoff(
-        cutoff=date(2026, 9, 30), folder=folder
-    )
+    result = inspect_investment_master_cutoff(cutoff=date(2026, 9, 30), folder=folder)
     assert result["status"] == "INVESTMENT_MASTER_SOURCE_INSPECTED_NOT_CERTIFIED"
     assert result["maturity_date_column_detected"] is True
     details = {row["excel_row"]: row for row in result["maturity_exception_rows"]}
@@ -247,10 +245,10 @@ def test_maturity_exception_rows_preserve_excel_references_without_guessing_date
     assert details[4]["parsed_maturity"] == "2026-09-01"
     assert details[4]["reason"] == "PAST_MATURITY"
     assert details[4]["source_principal"] == "72.25"
-    assert all("isin" not in record and "contract_number" not in record for record in details.values())
-    reconciliations = {
-        row["source_currency"]: row for row in result["maturity_reconciliation"]
-    }
+    assert all(
+        "isin" not in record and "contract_number" not in record for record in details.values()
+    )
+    reconciliations = {row["source_currency"]: row for row in result["maturity_reconciliation"]}
     assert reconciliations["CRC"]["difference"] == "0"
     assert reconciliations["USD"]["difference"] == "0"
     assert reconciliations["USD"]["excluded_valid_principal"] == "572.25"
