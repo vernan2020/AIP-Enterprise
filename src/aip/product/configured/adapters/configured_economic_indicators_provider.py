@@ -21,14 +21,11 @@ from aip.integration.bccr.configuration.bccr_config import (
 from aip.integration.bccr.connector.cache import (
     BCCRCache,
 )
-from aip.integration.bccr.connector.rest_client import (
-    BCCRRestClient,
+from aip.integration.bccr.connector.sdde_v2_client import (
+    SDDEv2Client,
 )
 from aip.integration.bccr.normalization.economic_series_parser import (
     BCCREconomicSeriesParser,
-)
-from aip.integration.bccr.providers.select_official_transport import (
-    select_official_bccr_transport,
 )
 from aip.integration.economic.official_indicator_mappings import (
     build_official_indicator_mapper,
@@ -86,10 +83,7 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
     ) -> None:
         self._bccr_config = bccr_config
 
-        self._client = BCCRRestClient(
-            config=bccr_config,
-            provider=select_official_bccr_transport(),
-        )
+        self._client = SDDEv2Client(config=bccr_config)
 
         self._mapper = build_official_indicator_mapper()
 
@@ -97,6 +91,15 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
 
         self._cache = BCCRCache(ttl_seconds=300)
         self._history_watermarks: dict[str, date] = {}
+
+    @staticmethod
+    def _safe_live_failure(exc: Exception) -> str:
+        """Expose only the safe HTTP code, never server text or credentials."""
+        detail = str(exc)
+        for status in ("401", "403", "404", "429", "500", "502", "503", "504"):
+            if f"HTTP {status}" in detail:
+                return f"HTTP {status}"
+        return type(exc).__name__
 
     def invalidate_cache(self) -> None:
         """Explicit user refresh must query BCCR rather than reuse an old response."""
@@ -303,7 +306,7 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
                     if indicator is not None:
                         indicators.append(indicator)
             except (ConnectionError, TimeoutError, OSError, ValueError) as exc:
-                diagnostics.append(f"FX: {type(exc).__name__}")
+                diagnostics.append(f"FX: {self._safe_live_failure(exc)}")
 
             for logical_code, future in core_futures.items():
                 try:
@@ -316,7 +319,7 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
                     if indicator is not None:
                         indicators.append(indicator)
                 except (ConnectionError, TimeoutError, OSError, ValueError) as exc:
-                    diagnostics.append(f"{logical_code}: {type(exc).__name__}")
+                    diagnostics.append(f"{logical_code}: {self._safe_live_failure(exc)}")
 
             try:
                 grouped = labor_future.result()
@@ -330,7 +333,7 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
                     if indicator is not None:
                         indicators.append(indicator)
             except (ConnectionError, TimeoutError, OSError, ValueError) as exc:
-                diagnostics.append(f"LABOR: {type(exc).__name__}")
+                diagnostics.append(f"LABOR: {self._safe_live_failure(exc)}")
 
             try:
                 grouped = tri_future.result()
@@ -340,7 +343,7 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
                     if indicator is not None:
                         indicators.append(indicator)
             except (ConnectionError, TimeoutError, OSError, ValueError) as exc:
-                diagnostics.append(f"TRI: {type(exc).__name__}")
+                diagnostics.append(f"TRI: {self._safe_live_failure(exc)}")
 
         unemployment = self._build_unemployment_indicator(observations_by_code)
         if unemployment is not None:

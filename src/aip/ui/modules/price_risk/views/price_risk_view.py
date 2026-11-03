@@ -31,6 +31,7 @@ from aip.ui.modules.price_risk.widgets.risk_charts import ParetoChartWidget, Ris
 from aip.ui.themes.typography import numeric_font_family
 from aip.ui.widgets.chart_png_export import save_widget_png_dialog
 from aip.ui.widgets.table_csv_export import save_table_csv_dialog
+from aip.ui.widgets.table_excel_export import save_table_excel_dialog
 
 
 class _PriceRiskWorker(QObject):
@@ -568,6 +569,20 @@ class PriceRiskView(QWidget):
             )
         )
         table_header.addWidget(self._export_positions_button)
+        self._export_positions_excel_button = QPushButton("Exportar Excel")
+        self._export_positions_excel_button.setToolTip(
+            "Exportar posiciones y ΔVeR sin título en un libro XLSX real."
+        )
+        self._export_positions_excel_button.clicked.connect(
+            lambda: save_table_excel_dialog(
+                self,
+                self._table,
+                "aip-var-posiciones.xlsx",
+                visible_rows_only=True,
+                title="Riesgo por título",
+            )
+        )
+        table_header.addWidget(self._export_positions_excel_button)
         table_layout.addLayout(table_header)
 
         self._table = QTableWidget()
@@ -728,6 +743,18 @@ class PriceRiskView(QWidget):
         )
         shock_table_layout.addWidget(
             self._export_shock_button, alignment=Qt.AlignmentFlag.AlignRight
+        )
+        self._export_shock_excel_button = QPushButton("Exportar Excel")
+        self._export_shock_excel_button.clicked.connect(
+            lambda: save_table_excel_dialog(
+                self,
+                self._shock_table,
+                "aip-dv01-shocks.xlsx",
+                title="Escenarios DV01",
+            )
+        )
+        shock_table_layout.addWidget(
+            self._export_shock_excel_button, alignment=Qt.AlignmentFlag.AlignRight
         )
         self._shock_table = QTableWidget(0, 3)
         self._shock_table.setHorizontalHeaderLabels(

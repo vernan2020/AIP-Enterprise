@@ -364,7 +364,7 @@ class EconomicViewModel:
 
         if isinstance(
             raw_diagnostics,
-            list,
+            (list, tuple),
         ):
             return tuple(str(item) for item in raw_diagnostics)
 
