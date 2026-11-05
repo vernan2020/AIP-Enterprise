@@ -9,7 +9,8 @@ from ticotrader_web import connections
 
 
 class Runtime:
-    def __init__(self):
+    def __init__(self, source_config=None):
+        self._source_config = source_config
         self.lock = RLock()
         self._factory = None
 
@@ -21,21 +22,24 @@ class Runtime:
 
             loader = EnvironmentLoader()
             # CONFIGURED only. No synthetic/demo observations in this application.
-            source = loader.load_source_config()
-            personal = connections.read()
-            source = replace(
-                source,
-                bccr=replace(
-                    source.bccr,
-                    token=personal.get("bccr_token")
-                    or os.getenv("TICOTRADER_BCCR_TOKEN")
-                    or source.bccr.token,
-                    email=personal.get("bccr_email")
-                    or os.getenv("TICOTRADER_BCCR_EMAIL")
-                    or source.bccr.email,
-                    name=personal.get("bccr_name") or "TicoTrader",
-                ),
-            )
+            if self._source_config is not None:
+                source = self._source_config
+            else:
+                source = loader.load_source_config()
+                personal = connections.read()
+                source = replace(
+                    source,
+                    bccr=replace(
+                        source.bccr,
+                        token=personal.get("bccr_token")
+                        or os.getenv("TICOTRADER_BCCR_TOKEN")
+                        or source.bccr.token,
+                        email=personal.get("bccr_email")
+                        or os.getenv("TICOTRADER_BCCR_EMAIL")
+                        or source.bccr.email,
+                        name=personal.get("bccr_name") or "TicoTrader",
+                    ),
+                )
             # These two pages require public economic and financial sources, not
             # the user's private portfolio, SQL, CONFIA or investment masters.
             source = replace(
@@ -48,8 +52,10 @@ class Runtime:
                 vector=replace(source.vector, enabled=False),
                 curves=replace(source.curves, enabled=False),
             )
+            from aip.product.demo.configuration.demo_config import DemoConfig
+
             config = replace(
-                loader.load(),
+                DemoConfig() if self._source_config is not None else loader.load(),
                 execution_mode="CONFIGURED",
                 demo_mode_enabled=False,
                 environment_name="ticotrader",

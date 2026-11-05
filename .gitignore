@@ -37,3 +37,6 @@ AIP_BEFORE_CERTIFIED_RECOVERY_*.zip
 build/
 dist/
 *.egg-info/
+
+# Atlas credentials
+.streamlit/secrets.toml

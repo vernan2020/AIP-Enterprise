@@ -38,6 +38,9 @@ dependencies = [
 [project.optional-dependencies]
 web = ["fastapi==0.115.12", "starlette==0.46.2", "anyio==4.9.0", "uvicorn>=0.32,<1"]
 dev = [
+  "streamlit[auth]==1.66.0",
+  "plotly>=6,<7",
+  "psutil>=6,<8",
   "fastapi==0.115.12",
   "starlette==0.46.2",
   "anyio==4.9.0",
