@@ -36,7 +36,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+web = ["fastapi==0.115.12", "starlette==0.46.2", "anyio==4.9.0", "uvicorn>=0.32,<1"]
 dev = [
+  "fastapi==0.115.12",
+  "starlette==0.46.2",
+  "anyio==4.9.0",
   "black>=24.10",
   "build>=1.2",
   "coverage>=7.4",
@@ -64,7 +68,7 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
 addopts = "-ra --strict-markers"
 filterwarnings = ["error"]
 
