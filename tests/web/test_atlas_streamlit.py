@@ -185,9 +185,12 @@ def test_twenty_distinct_forecasts_never_compute_in_parallel():
     assert peak == 1
 
 
-def test_authorized_reader_sees_pages_without_admin_controls():
+def test_authorized_reader_sees_pages_without_admin_controls(monkeypatch):
     from streamlit.testing.v1 import AppTest
 
+    from ticotrader_streamlit import catalog
+
+    monkeypatch.setattr(catalog, "load_entities", lambda: {"123": "Entidad de prueba"})
     source = """
 import runpy
 import time
@@ -213,6 +216,13 @@ runpy.run_path('ticotrader_streamlit/app.py')
     app.radio[0].set_value("Forecast Lab").run()
     assert not app.exception
     assert app.selectbox[0].value == "TBP"
+    app.radio[0].set_value("Comparativo histórico").run()
+    assert not app.exception
+    assert app.multiselect[0].options == ["Entidad de prueba"]
+    assert not app.text_input
+    assert "Activos" in app.selectbox[0].options
+    assert "ROE" in app.selectbox[0].options
+    assert "job_financial" not in app.session_state
 
 
 def test_real_isolated_forecast_without_token_returns_no_fabricated_projection():
@@ -221,3 +231,25 @@ def test_real_isolated_forecast_without_token_returns_no_fabricated_projection()
     result = isolated(Query(kind="forecast").model_dump(mode="json"), {}, timeout=30)
     assert result["status"] != "AVAILABLE"
     assert not result["points"]
+
+
+def test_entity_catalog_preserves_codes_and_rejects_incomplete_rows():
+    from ticotrader_streamlit.catalog import entity_options
+
+    assert entity_options(
+        [
+            {"codigoEntidad": "002", "nombreEntidad": "Entidad Z"},
+            {"codigoEntidad": "001", "nombreEntidad": "Entidad A"},
+            {"codigoEntidad": "003"},
+            {"nombreEntidad": "Sin código"},
+        ]
+    ) == {"001": "Entidad A", "002": "Entidad Z"}
+
+
+def test_comparison_series_match_engine_definitions():
+    from aip.domain.financial_analysis.financial_metric_history import FinancialMetricHistoryService
+    from ticotrader_streamlit.catalog import COMPARISON_SERIES
+
+    assert COMPARISON_SERIES == {
+        code: label for code, label, _unit in FinancialMetricHistoryService._DEFINITIONS
+    }

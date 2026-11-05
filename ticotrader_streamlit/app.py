@@ -12,6 +12,7 @@ for path in (ROOT, ROOT / "src"):
 import streamlit as st  # noqa: E402
 
 from ticotrader_streamlit.access import authorize  # noqa: E402
+from ticotrader_streamlit.catalog import COMPARISON_SERIES, load_entities  # noqa: E402
 from ticotrader_streamlit.jobs import Jobs  # noqa: E402
 from ticotrader_streamlit.views import show  # noqa: E402
 from ticotrader_web.forecast_policy import FORECAST_INDICATORS  # noqa: E402
@@ -86,6 +87,19 @@ if st.session_state.get("job_financial"):
     except KeyError:
         pass
 entities = {str(code): name for code, name in financial_data.get("entities", [])}
+if kind in ("financial", "compare"):
+    try:
+        with st.spinner("Cargando nombres de entidades desde SUGEF…"):
+            entities = load_entities()
+    except Exception:
+        if entities:
+            st.warning("SUGEF no respondió. Se usa el catálogo de tu última consulta.")
+        else:
+            st.warning("No fue posible cargar las entidades desde SUGEF.")
+            if st.button("Reintentar carga de entidades"):
+                load_entities.clear()
+                st.rerun()
+            st.stop()
 with st.form("query"):
     if kind == "financial":
         if entities:
@@ -100,24 +114,20 @@ with st.form("query"):
         query["indicator"] = st.selectbox("Indicador", FORECAST_INDICATORS)
         st.caption("Seleccioná una TRI por moneda y plazo. No se calculan todas simultáneamente.")
     elif kind == "compare":
-        if entities:
-            query["entity_ids"] = st.multiselect(
-                "Entidades", list(entities), format_func=entities.get, max_selections=5
-            )
-        else:
-            codes = st.text_input("Códigos de entidades separados por coma (máximo 5)")
-            query["entity_ids"] = [x.strip() for x in codes.split(",") if x.strip()]
-            st.caption("Consultá Análisis financiero para habilitar el selector de entidades.")
+        query["entity_ids"] = st.multiselect(
+            "Entidades",
+            list(entities),
+            format_func=entities.get,
+            max_selections=5,
+            help="Escribí parte del nombre y seleccioná hasta cinco entidades.",
+        )
         series = {
             item["code"]: item.get("label", item["code"])
             for item in financial_data.get("metric_history", [])
             + financial_data.get("statement_history", [])
         }
-        query["series_code"] = (
-            st.selectbox("Serie", list(series), format_func=series.get)
-            if series
-            else st.text_input("Código de serie", "ASSETS")
-        )
+        series = {**COMPARISON_SERIES, **series}
+        query["series_code"] = st.selectbox("Serie", list(series), format_func=series.get)
         query["horizon"] = st.selectbox("Horizonte", ["12M", "24M", "36M", "5Y", "ALL", "CUSTOM"])
         start = st.date_input("Desde (para CUSTOM)", date(2023, 1, 1))
         end = st.date_input("Hasta", date.today())
