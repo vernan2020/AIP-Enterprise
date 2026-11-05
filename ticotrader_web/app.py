@@ -81,7 +81,7 @@ class Query(BaseModel):
 
 
 def create_app(runtime=None):
-    app = FastAPI(title='TicoTrader · Inteligencia Financiera', docs_url=None, redoc_url=None, openapi_url=None)
+    app = FastAPI(title='TicoTrader Atlas · Inteligencia Financiera', docs_url=None, redoc_url=None, openapi_url=None)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=os.getenv('TICOTRADER_ALLOWED_HOSTS','localhost,127.0.0.1,testserver').split(','))
     engine = runtime or Runtime()
     executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix='ticotrader')
@@ -214,7 +214,7 @@ def create_app(runtime=None):
         if not job['future'].done(): raise HTTPException(409,'Consulta en proceso')
         try: data=job['future'].result()
         except Exception: raise HTTPException(409,'La consulta no tiene resultados exportables')
-        filename='TicoTrader_'+job['query'].kind
+        filename='TicoTrader_Atlas_'+job['query'].kind
         if format=='json':
             return Response(json.dumps(data,ensure_ascii=False,indent=2),media_type='application/json',headers={'Content-Disposition':f'attachment; filename="{filename}.json"'})
         tables={k:v for k,v in data.items() if isinstance(v,list) and v and isinstance(v[0],dict)}

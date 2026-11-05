@@ -1,4 +1,4 @@
-# TicoTrader · Inteligencia Financiera
+# TicoTrader Atlas · Inteligencia Financiera
 
 Aplicación web privada de Análisis Financiero, Inteligencia Macroeconómica y Forecast Lab. Conserva los motores Python y los presentadores de AIP; la interfaz web usa la identidad TicoTrader y el logo del repositorio Portafolio 360.
 
@@ -59,7 +59,7 @@ La proyección institucional requiere un escenario aprobado disponible en la bas
 - Suite original: indicadores, calificaciones, reconciliación, análisis financiero, motores macro y universo de forecasting.
 - Catálogo SUGEF real: respondió con 49 entidades durante la revisión.
 - BCCR real: se comprobó el diagnóstico de credencial ausente; no está certificado con token personal todavía.
-- La revisión visual en navegador no pudo ejecutarse: el servicio de previsualización disponible no tiene Python. El backend se prueba con TestClient y el JavaScript se verifica con Node.
+- Se revisó visualmente la pantalla de acceso Atlas mediante previsualización estática. El flujo autenticado completo no pudo revisarse en navegador porque el servicio de previsualización no tiene Python. El backend se prueba con TestClient y el JavaScript se verifica con Node.
 - No se ha publicado en un VPS ni probado Docker en un servidor. Debe verificarse capacidad y conexión BCCR antes de declararlo operativo en producción.
 
 ```sh
