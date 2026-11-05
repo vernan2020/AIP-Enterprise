@@ -450,7 +450,11 @@ class ConfiguredEconomicIndicatorsProvider(EconomicIndicatorsProvider):
                 },
                 "diagnostics": (
                     f"Live BCCR unavailable: {reason}",
-                    "Using persisted official economic history",
+                    (
+                        "Using persisted official economic history"
+                        if indicators
+                        else "No persisted official economic observations available"
+                    ),
                 ),
                 "cache": {"entries": 0},
             }

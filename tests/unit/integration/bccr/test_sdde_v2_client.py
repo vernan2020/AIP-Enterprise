@@ -133,7 +133,8 @@ def test_sdde_v2_rejects_false_success_and_malformed_payload(body: dict) -> None
         client.close()
 
 
-def test_sdde_v2_retries_429_then_reuses_successful_transport(monkeypatch) -> None:
+@pytest.mark.parametrize("status", [429, 500, 502, 503, 504])
+def test_sdde_v2_retries_transient_failure_then_reuses_transport(monkeypatch, status) -> None:
     import aip.integration.bccr.connector.sdde_v2_client as module
 
     monkeypatch.setattr(module.time, "sleep", lambda _delay: None)
@@ -142,7 +143,7 @@ def test_sdde_v2_retries_429_then_reuses_successful_transport(monkeypatch) -> No
     def handler(request):
         calls.append(request)
         if len(calls) == 1:
-            return httpx.Response(429, headers={"Retry-After": "0"})
+            return httpx.Response(status, headers={"Retry-After": "0"})
         return httpx.Response(200, json={"estado": True, "datos": []})
 
     client = _client(handler, retries=1)
@@ -172,5 +173,26 @@ def test_sdde_v2_supports_chart_series_with_same_authentication() -> None:
             == 200
         )
         assert request_paths[0].endswith("/cuadro/1/series")
+    finally:
+        client.close()
+
+
+@pytest.mark.parametrize("status, expected_calls", [(500, 2), (401, 1), (403, 1)])
+def test_sdde_retry_budget_and_credential_redaction(monkeypatch, status, expected_calls):
+    import aip.integration.bccr.connector.sdde_v2_client as module
+
+    monkeypatch.setattr(module.time, "sleep", lambda _delay: None)
+    calls = []
+
+    def handler(request):
+        calls.append(request)
+        return httpx.Response(status, text="PRIVATE.TEST.SIGNATURE")
+
+    client = _client(handler, retries=1)
+    try:
+        with pytest.raises(ConnectionError, match=f"HTTP {status}") as error:
+            client.fetch_series(indicator_code="317", from_date="2026/10/01", to_date="2026/10/15")
+        assert len(calls) == expected_calls
+        assert "PRIVATE.TEST.SIGNATURE" not in str(error.value)
     finally:
         client.close()

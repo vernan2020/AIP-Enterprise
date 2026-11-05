@@ -12,5 +12,7 @@ def test_http_500_macro_notice_is_explicit_and_does_not_blame_token() -> None:
     )
     notice = economic_source_freshness_notice(snapshot, as_of=date(2026, 10, 28))
     assert "HTTP 500" in notice
-    assert "histórico institucional" in notice
+    assert "No hay observaciones históricas disponibles" in notice
+    assert "causa no está confirmada" in notice
+    assert "temporalmente no disponible" not in notice
     assert "Revisar token" not in notice
