@@ -23,6 +23,10 @@ REM set "AIP_PORTFOLIO_ROOT=C:\Users\%%USERNAME%%\COOPEALIANZA R.L\Seidy Fonseca
 REM set "AIP_ICL_ROOT=C:\Users\%%USERNAME%%\COOPEALIANZA R.L\Liquidez e Inversiones - Documentos\General\Análisis Financiero"
 REM set "AIP_DATA_CUTOFF_DATE=2026-08-27"
 
+REM Previously approved 2026 financial-plan workbook. Source remains on
+REM the institutional drive; AIP reads it automatically, without copying it.
+REM set "AIP_FINANCIAL_PLAN_2026_PATH=C:\RutaInstitucional\PlanFinanciero2026.xlsx"
+
 REM Official SUGEF public REST API (enabled by default; no credentials required).
 REM set "AIP_SUGEF_FINANCIAL_ENABLED=true"
 REM set "AIP_SUGEF_FINANCIAL_API_ENABLED=true"

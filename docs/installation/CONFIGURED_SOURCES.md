@@ -34,6 +34,7 @@ This document captures the safe, configuration-driven source settings for the co
 - AIP_BCCR_RETRIES=3
 - AIP_BCCR_CACHE_ENABLED=true
 - AIP_INSTITUTIONAL_DATA_ROOT=
+- AIP_FINANCIAL_PLAN_2026_PATH= (ruta existente de la matriz financiera 2026)
 
 ## Path resolution design
 
@@ -57,4 +58,10 @@ python -m aip.tools.diagnose_configured_sources
 - Portfolio: portfolio master files, SQL Server, vector prices, and existing portfolio workflows.
 - Market: BCCR, curves workbook, vector prices, and existing market workflows.
 - Liquidity: SQL Server cash-flow data, ICL files, portfolio positions, and existing liquidity workflows.
+- Financial plan: `AIP_FINANCIAL_PLAN_2026_PATH` (or legacy `AIP_FINANCIAL_PLAN_PATH`)
+  is read automatically when the Liquidity panel opens or the cutoff changes.
+  The workbook stays on the institutional filesystem. Only validated reference
+  assumptions are displayed; cashflow authorizations remain separate.
+- Start the configured application with `run_aip_configured.cmd`, not with a bare
+  `python main.py`, because the latter does not load the private Windows CMD.
 - Executive: aggregate application-layer outputs only.

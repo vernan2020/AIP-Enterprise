@@ -6,10 +6,11 @@ numbers and does not pretend incomplete source coverage is a complete forecast.
 
 from __future__ import annotations
 
+import os
 from datetime import date, timedelta
 from decimal import Decimal
 
-from PySide6.QtCore import QDate, Qt, QThread, Signal
+from PySide6.QtCore import QDate, Qt, QThread, QTimer, Signal
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QComboBox,
@@ -33,6 +34,9 @@ from aip.domain.liquidity.cashflow.services.sugef210_projection import (
     LiquidityFlowSide,
     LiquidityProjectionResult,
     sugef210_windows,
+)
+from aip.product.configured.liquidity.financial_plan_path import (
+    configured_financial_plan_path,
 )
 from aip.product.configured.liquidity.financial_plan_source import (
     FinancialPlanSourceAudit,
@@ -59,6 +63,7 @@ from aip.product.configured.liquidity.sugef210_scenario_comparison import (
 from aip.product.configured.liquidity.sugef210_source_audit_cli import (
     inspect_xml_investment_source,
 )
+from aip.product.demo.configuration.environment_loader import EnvironmentLoader
 from aip.ui.modules.liquidity.widgets.sugef210_documented_flow_chart import (
     SUGEF210DocumentedFlowChart,
 )
@@ -266,6 +271,9 @@ class SUGEF210ProjectionPanel(QWidget):
         self._plan_worker: _SUGEF210FinancialPlanWorker | None = None
         self._opening_worker: _SUGEF210OpeningWorker | None = None
         self._plan_audit: FinancialPlanSourceAudit | None = None
+        self._pending_plan_refresh = False
+        self._pending_source_refresh = False
+        self._initial_source_refresh_requested = False
         self._governed_projection: LiquidityProjectionResult | None = None
         self._scenario_sessions: dict[str, ConfiguredOpeningSession] = {}
         self._audited_events: tuple[LiquidityAuditedCashEvent, ...] = ()
@@ -315,7 +323,7 @@ class SUGEF210ProjectionPanel(QWidget):
         self._export.setEnabled(False)
         self._export.clicked.connect(self.export_reconciliation)
         controls.addWidget(self._export)
-        self._plan_button = QPushButton("Cargar planificación financiera 2026")
+        self._plan_button = QPushButton("Actualizar planificación financiera 2026")
         self._plan_button.clicked.connect(self.select_financial_plan)
         controls.addWidget(self._plan_button)
         self._opening_button = QPushButton("Validar caja inicial XML + Tesorería/ICL")
@@ -459,6 +467,65 @@ class SUGEF210ProjectionPanel(QWidget):
         )
         note.setWordWrap(True)
         main.addWidget(note)
+
+    def showEvent(self, event) -> None:
+        """Refresh only when the panel first becomes visible to the user."""
+        super().showEvent(event)
+        if not self._initial_source_refresh_requested:
+            self._initial_source_refresh_requested = True
+            # Avoid background reads for hidden tabs and never show a picker.
+            QTimer.singleShot(0, self._refresh_configured_sources)
+
+    def _refresh_configured_sources(self) -> None:
+        """Inspect existing paths at the selected cutoff, without accepting cash."""
+        if os.getenv("AIP_EXECUTION_MODE", "").upper() != "CONFIGURED":
+            return
+        self._autoload_financial_plan()
+        try:
+            xml_config = EnvironmentLoader().load_source_config().xml_confia
+        except Exception:
+            self._status.setText("Configuración institucional no disponible; sin datos DEMO.")
+            return
+        if not xml_config.enabled or not xml_config.root:
+            # An absent XML root is not evidence that the institutional files
+            # have disappeared. The private launcher must load the configuration.
+            self._status.setText(
+                "XML CONFIA no configurado en esta sesión. "
+                "Verifique el inicio con run_aip_configured.cmd; sin datos DEMO."
+            )
+            return
+        if (
+            self._worker is not None
+            or self._opening_worker is not None
+            or self._contractual_worker is not None
+        ):
+            self._pending_source_refresh = True
+            return
+        self._pending_source_refresh = False
+        self.run_source_audit()
+
+    def _autoload_financial_plan(self) -> None:
+        """Use the private configured path; never show a file picker on startup."""
+        source = configured_financial_plan_path()
+        if source is None:
+            self._pending_plan_refresh = False
+            self._plan_status.setText(
+                "Plan financiero 2026: ruta institucional no configurada en esta sesión. "
+                "No se activan supuestos automáticamente."
+            )
+            return
+        if not source.is_absolute() or not source.is_file():
+            self._pending_plan_refresh = False
+            self._plan_status.setText(
+                "Plan financiero 2026: archivo configurado no disponible. "
+                "No se activan supuestos automáticamente."
+            )
+            return
+        if self._plan_worker is not None:
+            self._pending_plan_refresh = True
+            return
+        self._pending_plan_refresh = False
+        self._start_financial_plan_worker(str(source))
 
     @staticmethod
     def _table(headers: tuple[str, ...], name: str) -> QTableWidget:
@@ -746,6 +813,7 @@ class SUGEF210ProjectionPanel(QWidget):
             "Corte cambiado: auditoría pendiente. No se reutilizan cifras del corte anterior."
         )
         self._fill_windows()
+        QTimer.singleShot(0, self._refresh_configured_sources)
 
     def run_contractual_audit(self) -> None:
         """Read real CONFÍA liabilities without blocking the PySide6 event loop."""
@@ -816,6 +884,8 @@ class SUGEF210ProjectionPanel(QWidget):
                 self._button.setEnabled(True)
             if self._opening_worker is None:
                 self._opening_button.setEnabled(True)
+            if self._pending_source_refresh:
+                QTimer.singleShot(0, self._refresh_configured_sources)
 
     def run_source_audit(self) -> None:
         if (
@@ -1347,18 +1417,33 @@ class SUGEF210ProjectionPanel(QWidget):
                 self._button.setEnabled(True)
             if self._contractual_worker is None:
                 self._contractual_button.setEnabled(True)
+            if self._pending_source_refresh:
+                QTimer.singleShot(0, self._refresh_configured_sources)
 
     def select_financial_plan(self) -> None:
-        """Read local institutional workbook without copying it into the Git repository."""
+        """Refresh the configured plan; retain a manual fallback for legacy installs."""
         if self._plan_worker is not None:
             return
-        source_path, _file_filter = QFileDialog.getOpenFileName(
-            self,
-            "Seleccionar Matriz de Supuestos del Flujo de Efectivo 2026",
-            "",
-            "Excel (*.xlsx)",
-        )
+        configured_path = configured_financial_plan_path()
+        if configured_path is not None:
+            if not configured_path.is_absolute() or not configured_path.is_file():
+                self._financial_plan_error(self._cutoff, "CONFIGURED_SOURCE_UNAVAILABLE")
+                return
+            source_path = str(configured_path)
+        else:
+            source_path, _file_filter = QFileDialog.getOpenFileName(
+                self,
+                "Seleccionar Matriz de Supuestos del Flujo de Efectivo 2026",
+                "",
+                "Excel (*.xlsx)",
+            )
         if not source_path:
+            return
+        self._start_financial_plan_worker(source_path)
+
+    def _start_financial_plan_worker(self, source_path: str) -> None:
+        """Run the same validated reader for configured and legacy selections."""
+        if self._plan_worker is not None:
             return
         cutoff = self._cutoff
         worker = _SUGEF210FinancialPlanWorker(cutoff, source_path)
@@ -1447,6 +1532,8 @@ class SUGEF210ProjectionPanel(QWidget):
             self._plan_worker = None
             worker.deleteLater()
             self._plan_button.setEnabled(True)
+            if self._pending_plan_refresh:
+                QTimer.singleShot(0, self._autoload_financial_plan)
 
     def export_reconciliation(self) -> None:
         """Export real audit evidence; never classify a balance as cash."""
@@ -1870,3 +1957,5 @@ class SUGEF210ProjectionPanel(QWidget):
                 self._opening_button.setEnabled(True)
             if self._contractual_worker is None:
                 self._contractual_button.setEnabled(True)
+            if self._pending_source_refresh:
+                QTimer.singleShot(0, self._refresh_configured_sources)
