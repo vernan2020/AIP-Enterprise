@@ -66,3 +66,39 @@ La proyección institucional requiere un escenario aprobado disponible en la bas
 PYTHONPATH=src:. python -m pytest tests/web -q
 node --check ticotrader_web/static/app.js
 ```
+
+## Forecast ligero para el piloto Atlas
+
+Forecast admite únicamente TBP, tipo de cambio de compra/venta y TRI por moneda
+(CRC/USD) y plazo. Se calcula una serie seleccionada por solicitud; no se ejecuta
+una batería automática sobre todas las TRI. El catálogo macroeconómico conserva
+sus indicadores de consulta.
+
+El perfil Atlas usa NAIVE, DRIFT, AR(1) y AR(2), con hasta 12 orígenes de
+backtesting por horizonte (1/3/6/12 meses), mínimo de 8 evaluaciones y hasta 3
+modelos en el ensemble. Conserva los controles de fechas, datos faltantes y
+selección del motor original. El universo general de AIP sigue con 16 modelos.
+El perfil ligero no descarga variables SUGEF para Forecast porque sus candidatos
+son univariados; Análisis Financiero conserva su conexión SUGEF. Los resultados
+se reutilizan mientras no cambie la firma de fechas de las series históricas,
+salvo actualización forzada. La API existente serializa los cálculos.
+
+Esto reduce trabajo, no demuestra igual precisión que el universo completo:
+la comparación fuera de muestra con históricos oficiales sigue pendiente.
+
+Medición local del 5 de noviembre de 2026, Python 3.12, fixture sintético de 120
+meses de `test_advanced_macro_forecasting.py`, BLAS/OMP limitados a un hilo:
+
+| Serie | Segundos |
+|---|---:|
+| TBP | 0.531 |
+| FX_SELL | 0.450 |
+| TRI_CRC_12M | 0.483 |
+| TRI_USD_12M | 0.588 |
+
+Pico RSS del proceso: 182.6 MiB (incluye importaciones y cuatro cálculos
+secuenciales). No incluye Streamlit, descarga de fuentes ni usuarios concurrentes.
+Estas cifras no certifican el rendimiento del alojamiento. El fixture generó
+advertencias de matriz singular en series deterministas; no se usa para evaluar
+precisión financiera. Faltan la adaptación Streamlit, el límite duro de tiempo
+por proceso y la prueba de carga del despliegue privado.
