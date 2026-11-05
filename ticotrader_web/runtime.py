@@ -72,6 +72,19 @@ class Runtime:
             self._factory.container.register_instance(
                 ConfiguredAdvancedMacroForecastingService, configured_service()
             )
+            from aip.product.configured.context.valuation_date_context import ValuationDateContext
+            from aip.product.configured.services.configured_financial_analysis_service import (
+                ConfiguredFinancialAnalysisService,
+            )
+
+            self._factory.container.register_instance(
+                ConfiguredFinancialAnalysisService,
+                ConfiguredFinancialAnalysisService(
+                    source.sugef_financial,
+                    self._factory.container.resolve(ValuationDateContext),
+                    comparison_history_only=True,
+                ),
+            )
         return self._factory
 
     def financial(self, entity_id=None, cutoff=None, refresh=False):
