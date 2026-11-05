@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import replace
 from datetime import date, timedelta
 from decimal import Decimal
+from types import SimpleNamespace
 
 import pytest
 from openpyxl import load_workbook
@@ -48,6 +49,56 @@ def test_sugef210_panel_shows_compliant_horizons_without_demo_amounts(qt_app):
         assert panel._windows.item(13, 2).text() == "29/12/2026"
         assert panel._windows.item(16, 2).text() == "30/09/2027"
         assert panel._accounts.rowCount() == 0
+    finally:
+        panel.close()
+
+
+def test_configured_plan_refresh_avoids_manual_dialog(qt_app, monkeypatch, tmp_path):
+    path = tmp_path / "approved-plan-2026.xlsx"
+    path.write_bytes(b"synthetic-only-path-check")
+    monkeypatch.setenv("AIP_FINANCIAL_PLAN_2026_PATH", str(path))
+    panel = SUGEF210ProjectionPanel()
+    try:
+        requested = []
+        monkeypatch.setattr(panel, "_start_financial_plan_worker", requested.append)
+
+        def forbid_manual_picker(*_args, **_kwargs):
+            raise AssertionError("Configured source must not open a file picker")
+
+        monkeypatch.setattr(
+            "aip.ui.modules.liquidity.views.sugef210_projection_panel."
+            "QFileDialog.getOpenFileName",
+            forbid_manual_picker,
+        )
+        panel.select_financial_plan()
+        assert requested == [str(path)]
+    finally:
+        panel.close()
+
+
+def test_configured_panel_refreshes_existing_sources_without_file_picker(
+    qt_app, monkeypatch, tmp_path
+):
+    panel = SUGEF210ProjectionPanel()
+    try:
+        path = tmp_path / "plan-2026.xlsx"
+        path.write_bytes(b"synthetic-only-path-check")
+        monkeypatch.setenv("AIP_EXECUTION_MODE", "CONFIGURED")
+        monkeypatch.setenv("AIP_FINANCIAL_PLAN_2026_PATH", str(path))
+        monkeypatch.setattr(
+            "aip.ui.modules.liquidity.views.sugef210_projection_panel."
+            "EnvironmentLoader.load_source_config",
+            lambda self: SimpleNamespace(
+                xml_confia=SimpleNamespace(enabled=True, root=str(tmp_path))
+            ),
+        )
+        requested_plan = []
+        requested_source = []
+        monkeypatch.setattr(panel, "_start_financial_plan_worker", requested_plan.append)
+        monkeypatch.setattr(panel, "run_source_audit", lambda: requested_source.append(True))
+        panel._refresh_configured_sources()
+        assert requested_plan == [str(path)]
+        assert requested_source == [True]
     finally:
         panel.close()
 
