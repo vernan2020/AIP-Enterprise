@@ -65,6 +65,15 @@ with st.sidebar:
 
 if page == "Administración":
     st.success("Token BCCR configurado" if bccr.get("token") else "Token BCCR pendiente")
+    if st.button("Validar suscripción BCCR"):
+        from ticotrader_streamlit.subscription import check_subscription
+
+        with st.spinner("Consultando la suscripción en el BCCR…"):
+            valid, message = check_subscription(bccr.get("token"), bccr.get("email"))
+        if valid:
+            st.success(message)
+        else:
+            st.warning(message)
     st.write("Usuarios autorizados:", len(settings["atlas"]["allowed_emails"]))
     st.info(
         "Las credenciales y los accesos se administran desde Settings → Secrets en Streamlit. No se muestran ni se editan tokens en esta pantalla."
