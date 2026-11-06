@@ -1,0 +1,21 @@
+services:
+  research:
+    build:
+      context: ..
+      dockerfile: ticotrader_web/Dockerfile
+    env_file: .env
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - research-config:/home/trader/.config
+      - research-cache:/home/trader/.cache
+      - research-db:/app/src/database
+      - research-db-root:/app/database
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+volumes:
+  research-config:
+  research-cache:
+  research-db:
+  research-db-root:

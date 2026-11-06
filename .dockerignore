@@ -1,0 +1,10 @@
+.git
+**/.env
+**/.env.*
+**/__pycache__
+**/*.duckdb*
+**/*.sqlite*
+**/database
+**/.venv*
+recovery
+brand-source

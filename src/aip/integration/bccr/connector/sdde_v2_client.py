@@ -153,7 +153,7 @@ class SDDEv2Client:
                     "status_code": status,
                     "body": {"estado": True, "mensaje": "Consulta exitosa", "datos": data},
                 }
-            if status not in (429, 502, 503, 504) or attempt + 1 == attempts:
+            if status not in (429, 500, 502, 503, 504) or attempt + 1 == attempts:
                 raise ConnectionError(f"BCCR SDDE HTTP {status} on {resource} request")
             retry_header = result.get("headers") or {}
             raw_retry = next(

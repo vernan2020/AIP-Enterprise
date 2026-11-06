@@ -1,0 +1,24 @@
+name: TicoTrader private web
+on:
+  push:
+    branches: [feature/ticotrader-financial-macro]
+  pull_request:
+    paths: ["ticotrader_web/**", "ticotrader_streamlit/**", ".streamlit/config.toml", "tests/web/**", ".github/workflows/ticotrader-web.yml"]
+permissions:
+  contents: read
+jobs:
+  web-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: ticotrader_web/requirements.txt
+      - run: python -m pip install -r ticotrader_web/requirements.txt -r ticotrader_streamlit/requirements.txt pytest ruff black
+      - run: PYTHONPATH=src:. python -m pytest tests/web -q
+      - run: python -m ruff check ticotrader_streamlit ticotrader_web tests/web
+      - run: python -m black --check ticotrader_streamlit ticotrader_web tests/web
+      - run: node --check ticotrader_web/static/app.js
+      - run: docker build -f ticotrader_web/Dockerfile -t ticotrader-research:ci .

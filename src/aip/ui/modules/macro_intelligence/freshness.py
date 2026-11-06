@@ -26,15 +26,20 @@ def economic_source_freshness_notice(snapshot: EconomicSnapshot, *, as_of: date)
     upstream_failed = any("HTTP 500" in item for item in snapshot.diagnostics)
     if not outdated and not historical:
         return ""
+    history_detail = (
+        "Se muestra el histórico local con las fechas de sus observaciones."
+        if snapshot.market_snapshot
+        else "No hay observaciones históricas disponibles para mostrar."
+    )
     if upstream_failed:
-        reason = "El servicio oficial BCCR respondió HTTP 500; se presenta histórico institucional."
+        reason = f"La consulta al BCCR devolvió HTTP 500. {history_detail}"
     elif historical:
-        reason = "Sin actualización BCCR en línea; se presenta histórico institucional."
+        reason = f"Sin actualización BCCR en línea. {history_detail}"
     else:
         reason = "Algunos indicadores BCCR requieren revisión de vigencia."
     detail = "; ".join(outdated) if outdated else "Sin confirmación de conexión en línea"
     advice = (
-        "Servicio BCCR temporalmente no disponible; reintentar actualización."
+        "La causa no está confirmada; reintentar la consulta y revisar el diagnóstico si persiste."
         if upstream_failed
         else "Revisar token en la sesión CONFIGURED y conexión BCCR."
     )

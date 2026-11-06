@@ -58,8 +58,10 @@ class ConfiguredFinancialAnalysisService:
         history_reader: SUGEFFinancialHistoryReader | None = None,
         history_service: FinancialMetricHistoryService | None = None,
         account_catalog_reader: SUGEFAccountCatalogReader | None = None,
+        comparison_history_only: bool = False,
     ) -> None:
         self._config = config
+        self._comparison_history_only = comparison_history_only
         self._valuation_date_context = valuation_date_context
         # Runtime productivo: nunca completa saldos/indicadores con la matriz
         # histórica incluida en el paquete. Solo API pública o exportación SUGEF.
@@ -181,7 +183,13 @@ class ConfiguredFinancialAnalysisService:
         started = perf_counter()
         requested_date = cutoff_date or self._valuation_date_context.value
         common_started = perf_counter()
-        result = self._read(cutoff_date=requested_date, force_refresh=False)
+        # Atlas comparisons need only the selected entities' accounting history.
+        # Avoid the full peer/credit/liquidity/capital refresh used by the dashboard.
+        result = (
+            SUGEFFinancialReadResult((), (), (), "COMPARISON_HISTORY_ONLY")
+            if self._comparison_history_only
+            else self._read(cutoff_date=requested_date, force_refresh=False)
+        )
         common_seconds = perf_counter() - common_started
 
         histories: dict[str, SUGEFApiReadResult] = {}
@@ -225,7 +233,11 @@ class ConfiguredFinancialAnalysisService:
                 selected_entity_id=entity_id,
                 cutoff_date=requested_date,
                 diagnostics=result.diagnostics + history_result.diagnostics,
-                source_files=result.source_files,
+                source_files=(
+                    history_result.endpoints
+                    if self._comparison_history_only
+                    else result.source_files
+                ),
             )
             if snapshot.selected_entity is None or snapshot.cutoff_date is None:
                 snapshots.append(snapshot)
