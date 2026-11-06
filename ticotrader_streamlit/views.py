@@ -65,7 +65,7 @@ def diagnostics(data):
 def workbook(data):
     from openpyxl import Workbook
 
-    from ticotrader_web.app import safe_cell
+    from ticotrader_web.contracts import safe_cell
 
     wb = Workbook()
     ws = wb.active
@@ -145,6 +145,12 @@ def show(data, kind):
             chart(entity.get("points", []), ["value"], title=entity.get("entity_name", "Entidad"))
             table(entity.get("points"))
         diagnostics(data)
+    elif (
+        kind == "projection"
+        and data.get("status") == "UNAVAILABLE"
+        and data.get("diagnostic") == "No approved institutional macro scenario is available"
+    ):
+        st.info("Todavía no hay un escenario macroeconómico aprobado disponible en Atlas.")
     else:
         table(data.get("rows"))
         diagnostics(data)

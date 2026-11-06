@@ -224,6 +224,21 @@ runpy.run_path('ticotrader_streamlit/app.py')
     assert "ROE" in app.selectbox[0].options
     assert "job_financial" not in app.session_state
 
+    app.radio[0].set_value("Escenario aprobado").run()
+
+    def blocked(queue, owner, query, admin):
+        from ticotrader_streamlit.jobs import QueueFull
+
+        assert query == {"kind": "projection", "refresh": False}
+        raise QueueFull("Ya tenés dos consultas pendientes.")
+
+    monkeypatch.setattr(Jobs, "submit", blocked)
+    next(button for button in app.button if button.label == "Consultar").click().run()
+    assert not app.exception
+    assert [warning.value for warning in app.warning] == ["Ya tenés dos consultas pendientes."]
+    assert not app.error
+    assert not app.info
+
 
 def test_real_isolated_forecast_without_token_returns_no_fabricated_projection():
     from ticotrader_web.app import Query
@@ -253,3 +268,15 @@ def test_comparison_series_match_engine_definitions():
     assert COMPARISON_SERIES == {
         code: label for code, label, _unit in FinancialMetricHistoryService._DEFINITIONS
     }
+
+
+def test_projection_reads_approved_scenario_without_entity_dates_or_credentials():
+    from ticotrader_web.contracts import Query
+
+    query = Query(kind="projection").model_dump(mode="json")
+    data = isolated(query, {}, timeout=30)
+    assert data["status"] in ("AVAILABLE", "UNAVAILABLE")
+    if data["status"] == "AVAILABLE":
+        assert data["rows"]
+    else:
+        assert data["diagnostic"] == "No approved institutional macro scenario is available"

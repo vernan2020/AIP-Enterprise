@@ -37,7 +37,7 @@ def compute(pipe, query, settings):
     ):
         os.environ[name] = "1"
     try:
-        from ticotrader_web.app import clean
+        from ticotrader_web.contracts import clean
         from ticotrader_web.runtime import Runtime
 
         runtime = Runtime(source_config=personal_source(settings))

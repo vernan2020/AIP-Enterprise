@@ -13,7 +13,7 @@ import streamlit as st  # noqa: E402
 
 from ticotrader_streamlit.access import authorize  # noqa: E402
 from ticotrader_streamlit.catalog import COMPARISON_SERIES, load_entities  # noqa: E402
-from ticotrader_streamlit.jobs import Jobs  # noqa: E402
+from ticotrader_streamlit.jobs import Jobs, QueueFull  # noqa: E402
 from ticotrader_streamlit.views import show  # noqa: E402
 from ticotrader_web.forecast_policy import FORECAST_INDICATORS  # noqa: E402
 
@@ -134,16 +134,28 @@ with st.form("query"):
         query["custom_from"] = start.isoformat() if query["horizon"] == "CUSTOM" else None
         query["custom_to"] = end.isoformat()
     query["refresh"] = (
-        st.checkbox("Actualizar desde la fuente", disabled=not admin) if admin else False
+        st.checkbox("Actualizar desde la fuente") if admin and kind != "projection" else False
     )
     submitted = st.form_submit_button("Consultar", type="primary")
 if submitted:
     try:
         st.session_state[f"job_{kind}"] = jobs.submit(owner, query, admin)
-    except (ValueError, PermissionError):
-        st.error(
-            "Revisá los parámetros: de una a cinco entidades, fechas válidas y hasta dos consultas pendientes."
-        )
+    except QueueFull as exc:
+        st.warning(str(exc))
+        st.stop()
+    except PermissionError:
+        st.error("Se requiere acceso de administrador para actualizar desde la fuente.")
+        st.stop()
+    except ValueError:
+        if kind == "compare" and not query["entity_ids"]:
+            st.error("Seleccioná al menos una entidad para comparar.")
+        elif (
+            kind == "compare" and query["custom_from"] and query["custom_from"] > query["custom_to"]
+        ):
+            st.error("La fecha inicial debe ser anterior o igual a la fecha final.")
+        else:
+            st.error(f"No se pudo iniciar la consulta de {page}.")
+        st.stop()
 
 
 @st.fragment(run_every=2)

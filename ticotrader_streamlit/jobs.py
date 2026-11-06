@@ -68,6 +68,10 @@ def isolated(query, settings, timeout=180, memory_mb=600, command=None):
                     process.wait()
 
 
+class QueueFull(ValueError):
+    """Safe message for the user when pending work reaches a limit."""
+
+
 class Jobs:
     def __init__(self, settings, runner=isolated, ttl=900):
         self.settings = settings
@@ -78,7 +82,7 @@ class Jobs:
         self.jobs = {}
 
     def submit(self, owner, query, admin=False):
-        from ticotrader_web.app import Query
+        from ticotrader_web.contracts import Query
 
         query = Query(**query).model_dump(mode="json")
         if query["refresh"] and not admin:
@@ -98,9 +102,9 @@ class Jobs:
                 sum(owner in j["owners"] and not j["future"].done() for j in self.jobs.values())
                 >= 2
             ):
-                raise ValueError("Ya tenés dos consultas pendientes.")
+                raise QueueFull("Ya tenés dos consultas pendientes.")
             if sum(not j["future"].done() for j in self.jobs.values()) >= 20:
-                raise ValueError(
+                raise QueueFull(
                     "La cola está completa. Intentá nuevamente al finalizar una consulta."
                 )
             while len(self.jobs) >= 12:
